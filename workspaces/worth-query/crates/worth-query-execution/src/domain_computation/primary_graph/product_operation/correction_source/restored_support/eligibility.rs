@@ -190,6 +190,25 @@ fn compare(
         .ok_or(Denial::SemanticMaterialUnavailable)?;
     for fact in facts.iter() {
         match fact {
+            Fact::SourceAdjacencyRevision {
+                relation_kind,
+                anchor,
+                direction,
+                ..
+            } => {
+                if !original_view
+                    .compare_adjacency_support(
+                        &execution,
+                        &target_view,
+                        *anchor,
+                        *relation_kind,
+                        *direction,
+                    )
+                    .map_err(|cause| Denial::RestoredSupport(Stop::Adjacency(cause)))?
+                {
+                    return Err(Denial::SourceDiverged);
+                }
+            }
             Fact::SourceFieldRevision {
                 entity_id, locator, ..
             } => {

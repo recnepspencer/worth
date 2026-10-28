@@ -2122,6 +2122,88 @@ strict `SourceDiverged` control. A separate focused bare acquisition is not an
 automatic rerun. Keep all original failed evidence. Build grants, final acceptance,
 default integration and commits are outside this source-only turn.
 
+### Complete Live Adjacency Restoration Repair
+
+**Public focused proof passed; final Source review and private qualification pending.** The original `b00984ec` Entry
+failure on `SourceAdjacencyRevision` remains evidence of the pre-synchronization
+gap. Public `250c5f0` contains exact master `7d94f267` and the common Native
+Store/witness integration repairs; private `b02f27e0` has compiled the resulting
+consumer compatibility correction. That ABI result does not qualify adjacency,
+runtime behavior or Phase19, and does not replace the old Entry failures.
+
+The actual private replace handler reads complete incoming ModelFeature
+membership and separately reads the model ResolutionField. Its rebased adjacency
+fact's merged endpoint coverage cannot establish relation identity, multiplicity
+or order. Native now owns paired exact-root live membership support beside
+`field_support.rs`: same runtime, full-generation anchor and both endpoints,
+compatible installed relation/endpoint meaning, complete relation identities and
+cardinality. Original-request region admission precedes access; actual selected
+bucket storage is fallible and temporary. Audit visibility, unavailable source,
+storage, allocation and request stops remain typed. Structural revision equality
+is not a target restoration requirement.
+
+Canonical authored history gains anchor/kind/direction postings in its existing
+residency-owned discardable accelerator. Resolved allocations, authored endpoint
+intents and lifecycle evidence select genuine full-generation membership touches.
+Both directions of all old/new endpoint pairs contribute even when one role is
+unchanged or the endpoint operation is a no-op. Relation aspect edits retain their
+separate field meaning. Cascade retirement is included; audit lifecycle without
+complete membership coordinates marks the interval incomplete rather than empty.
+Cold reconstruction uses the same canonical derivation. No new store, registry,
+journal, request authority or dense-coordinate generation inference is introduced.
+
+Query retains strict original fact verification, selected ancestry and sealed
+performed reversal cancellation. Only after those checks does it compare paired
+live adjacency support. Anchor lifecycle is also selected; separate resolution
+field facts continue to diverge independently. The existing AspectPresence scalar
+lowering and typed Native witness execution denial are retained.
+
+Evidence is grouped into the existing Native authored-write-history family and
+Query application_graph consecutive-undo group. Native covers entrant/removal,
+unchanged-role endpoint moves, endpoint no-ops, disjoint relation field edits,
+cascade/audit retirement, exact IDs before/after discard and durable recovery,
+paired full-GEN/meaning/request refusal and the existing cold-medium storage
+fixture. Query uses a genuine incoming-list handler and a real correctable model
+configuration/link: a later exact reverse restores empty membership and permits
+7-to-3 original reversal; live membership cycles/authored no-ops and changed model
+resolution remain SourceDiverged. Existing sibling/reapplication/custody evidence
+is reused. Query's current authoring facade has link/unlink, so true endpoint-update
+no-op evidence stays at the Native owner instead of adding a fixture-only API.
+
+Persistent all-three review030 Source-cleared the candidate, including the two
+common Native test API joins. Current focused qualification on public `250c5f0`
+plus this uncommitted repair has passed Native19 and Query8 exact runtime cases,
+with no ignored selected cases, and Native24 plus QueryExecution122 doctests.
+Both actual own-source runtime artifacts were emitted Fresh=false; Query's
+wrapper-issued UUID matches its emitted dependency record. Native occurrence
+rebuild/cold storage, adjacency reverse success, live/no-op blockers, independent
+model resolution, old consecutive/reapplication/sibling/custody and required-output
+composition evidence all remain strict.
+
+Compiler and fixture setup failures were preserved and corrected at their test
+owners: config-owned policy imports, coherent Native schema basis and distinct
+physical relation identities, explicit path-mounted child tests, typed String
+idempotency keys and a unique fixture operation identifier. No production or
+reversal assertion changed after Source clearance. The17 completed Native passes
+were retained and only the two failed setup cases retried; all eight Query cases
+passed after installation setup correction. This is not a claim that the older23
+private failures are fixed; only the session's adjacency cause was independently
+identified, and current private runtime evidence is still required.
+
+Normal guidance and snapshot generation, boundary and context checks passed.
+The first cached guidance executable was rejected because its embedded caller
+lists differed from this tree. An ordinary rebuild from unchanged actual local
+inputs emitted Fresh=false and incorporated both real control/certification lists;
+no gate override was used. Snapshot outputs matched existing Git blobs; generated
+copies were retained and checkout line endings preserved. Final evidence/status
+prose and all corrective test joins remain subject to independent final review.
+
+No immutable SDK commit, private repin or default/Phase19 acceptance is published.
+A later reviewed immutable adoption must preserve85 stable private cause variants,
+append the typed adjacency receiving category and retain all strict original
+journeys. One mandatory unfiltered Entry gate must execute bare, producer and
+session cases unchanged. Preserve held acceptance drafts and all failed evidence.
+
 ## Documentation And Successor Handoff For The Added Phases
 
 - Revise `docs/capability-index.md` and `docs/build-an-application.md` for

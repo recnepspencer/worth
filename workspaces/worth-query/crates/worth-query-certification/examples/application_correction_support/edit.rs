@@ -1,4 +1,5 @@
 //! A field edit reads and writes only the chosen authored value.
+use super::authored_identity_model::AuthoredReference;
 use super::schema::*;
 use worth_query_host::facade::{
     declaration::{application_operation::*, application_schema::*},
@@ -12,6 +13,7 @@ pub enum Value {
     Secondary(u64),
     ReadEnabled(bool),
     Ceiling(u64),
+    AdjacentPrimary(u64),
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Edit {
@@ -26,7 +28,7 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "num
 worth_query_structured_value_binding!(pub ResultBinding for Edited { identity: "numeric-correction.edit.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for MissingValue { identity: "numeric-correction.edit.denial.v1" });
 worth_query_operation!(pub EditNumber for NumericSchema, input InputBinding);
-worth_query_operation_reads!(EditNumber => [Key, Primary, Ceiling]);
+worth_query_operation_reads!(EditNumber => [Number, Key, Primary, Ceiling, AuthoredReference]);
 worth_query_operation_writes!(EditNumber => [Primary]);
 
 impl ApplicationDeclaredOperation<NumericSchema> for EditNumber {
@@ -38,6 +40,8 @@ impl ApplicationDeclaredOperation<NumericSchema> for EditNumber {
             .operation_read_field(Self::reference(), Key::reference())
             .operation_read_field(Self::reference(), Primary::reference())
             .operation_read_field(Self::reference(), Ceiling::reference())
+            .operation_read_entity(Self::reference(), Number::reference())
+            .operation_read_relation(Self::reference(), AuthoredReference::reference())
             .operation_write(Self::reference(), Primary::reference())
     }
 }
@@ -122,16 +126,36 @@ impl OperationHandler<NumericSchema, EditBinding> for Handler {
             Ok(root) => root,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        let ceiling = match reader.field(&root, Ceiling::reference()) {
+        // This branch consumes the complete incoming list, including empty.
+        // The adjacent model's ceiling remains an independent field fact.
+        let related = if matches!(input.value, Value::AdjacentPrimary(_)) {
+            match reader
+                .reader()
+                .decision_relations_to(AuthoredReference::reference(), &root)
+            {
+                Ok(related) => Some(related),
+                Err(cause) => {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
+                }
+            }
+        } else {
+            None
+        };
+        let ceiling_root = match related.as_deref() {
+            Some([relation]) => relation.from(),
+            None | Some([]) => &root,
+            Some(_) => return HandlerResult::DomainDenied(MissingValue),
+        };
+        let ceiling = match reader.field(ceiling_root, Ceiling::reference()) {
             Ok(Some(value)) => value,
             Ok(None) => return HandlerResult::DomainDenied(MissingValue),
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
         let present = match input.value {
-            Value::Primary(value) if value > ceiling => {
+            Value::Primary(value) | Value::AdjacentPrimary(value) if value > ceiling => {
                 return HandlerResult::DomainDenied(MissingValue)
             }
-            Value::Primary(_) => reader
+            Value::Primary(_) | Value::AdjacentPrimary(_) => reader
                 .field(&root, Primary::reference())
                 .map(|value| value.is_some()),
             _ => return HandlerResult::DomainDenied(MissingValue),
@@ -159,7 +183,9 @@ impl OperationHandler<NumericSchema, EditBinding> for Handler {
             }
         };
         let written = match input.value {
-            Value::Primary(value) => writer.write_field(&target, Primary::reference(), value),
+            Value::Primary(value) | Value::AdjacentPrimary(value) => {
+                writer.write_field(&target, Primary::reference(), value)
+            }
             _ => return HandlerResult::DomainDenied(MissingValue),
         };
         match written {

@@ -17,7 +17,7 @@ pub(super) struct Selection {
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
-/// The scalar MVP projects every captured fact or refuses the whole selection.
+/// Project every eligible captured fact or refuse the whole selection.
 pub(super) fn select(
     execution: ExecutionRequest<'_, '_>,
     facts: &FactPayload,
@@ -147,8 +147,11 @@ pub(super) fn select(
                 }
             }
             Fact::SourceAspectRevision { .. } => return Err(unsupported("SourceAspectRevision")),
-            Fact::SourceAdjacencyRevision { .. } => {
-                return Err(unsupported("SourceAdjacencyRevision"))
+            Fact::SourceAdjacencyRevision { anchor, .. } => {
+                if anchor.generation_value() == 0 {
+                    return Err(unsupported("adjacency-generation"));
+                }
+                (2, 0)
             }
             Fact::Relation { .. } => return Err(unsupported("Relation")),
             Fact::Adjacency { .. } => return Err(unsupported("Adjacency")),
@@ -181,6 +184,34 @@ pub(super) fn select(
     let mut keys = ExecutionRequestArrayBuilder::allocate(execution, count).map_err(array_stop)?;
     for fact in facts.iter() {
         execution.consult().map_err(Stop::Request)?;
+        if let Fact::SourceAdjacencyRevision {
+            relation_kind,
+            anchor,
+            direction,
+            ..
+        } = fact
+        {
+            use worth_relational::facade::history::RelationalTouchAdjacencyDirection as Direction;
+            keys.push(Key::Adjacency {
+                anchor: *anchor,
+                kind: *relation_kind,
+                direction: match direction {
+                    worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing => {
+                        Direction::Outgoing
+                    }
+                    worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming => {
+                        Direction::Incoming
+                    }
+                },
+            })
+            .map_err(array_stop)?;
+            keys.push(Key::Record {
+                record: RecordRef::Entity(*anchor),
+                scope: Scope::Lifecycle,
+            })
+            .map_err(array_stop)?;
+            continue;
+        }
         if let Fact::IndexedEntitySelection {
             definition,
             entity_kind,

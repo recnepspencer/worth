@@ -43,7 +43,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
             return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
         };
         let value = match original.value {
-            Value::Primary(_) => Value::Primary(
+            Value::Primary(_) | Value::AdjacentPrimary(_) => Value::Primary(
                 U64ApplicationValueBinding::decode(
                     preimage
                         .field(&DeclaredPreImageLocus::from_field(Primary::reference()))

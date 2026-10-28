@@ -54,6 +54,7 @@ impl OperationHandler<NumericSchema, OtherBinding> for Handler {
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
         let present = match input.value {
+            Value::AdjacentPrimary(_) => return HandlerResult::DomainDenied(MissingValue),
             Value::Primary(value) => {
                 match reader.field(&root, Ceiling::reference()) {
                     Ok(Some(ceiling)) if value <= ceiling => {}
@@ -98,6 +99,7 @@ impl OperationHandler<NumericSchema, OtherBinding> for Handler {
             }
         };
         let written = match input.value {
+            Value::AdjacentPrimary(_) => return HandlerResult::DomainDenied(MissingValue),
             Value::Primary(value) => writer.write_field(&target, Primary::reference(), value),
             Value::Ceiling(value) => writer.write_field(&target, Ceiling::reference(), value),
             Value::Secondary(value) => writer.write_field(&target, Secondary::reference(), value),

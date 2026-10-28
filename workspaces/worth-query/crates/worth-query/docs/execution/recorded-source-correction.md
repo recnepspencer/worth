@@ -723,7 +723,7 @@ read by the source handler can refuse correction while primary still equals `11`
 
 ### Reverse consecutive original sources
 
-For scalar field dependencies on a canonical single-parent ancestry, a later
+For supported dependencies on a canonical single-parent ancestry, a later
 write stops blocking an older source only after that exact performed occurrence
 has its own performed reversal on the selected ancestry. For example, start at
 `3`, perform A to `7`, perform B to `8`, reverse original B to `7`, then freshly
@@ -759,8 +759,27 @@ Native resolves the actual single-field Authoritative or Planned index descripto
 Query preserves that descriptor rather than relabeling it as permission.
 The latter include exact positive and empty index support: authored equal-key
 writes and competing membership changes cannot disappear behind unchanged values.
-Unprojected aggregate, adjacency, other index kinds, workflow or publication facts
-and unproven merge intervals return typed
+Rebased source-adjacency facts retain complete live membership at both exact
+roots: relation identity, cardinality, both full-generation endpoints and the
+ordinary deterministic order must agree under compatible installed relation and
+endpoint meaning. Canonical selection uses anchor, kind and direction, so it
+finds later entrants even when the original list was empty. Old and new endpoints
+in both directions contribute, including authored endpoint no-ops and a move
+whose other anchor is unchanged. A disjoint relation-field edit does not author
+membership. Separate fields read through a relationship remain dependencies;
+restoring the list does not restore a changed model resolution field.
+
+Strict original fact verification and genuine canonical cancellation still
+precede target support comparison. Advancing structural revisions during a real
+reverse is allowed; equal final lists never substitute for that reverse.
+Cascade retirement contributes membership occurrences. Audit retention without
+full-generation membership evidence returns `IncompleteAdjacencyHistory`;
+audit-visible membership comparison returns `UnsupportedVisibility`. Neither
+refusal asserts an empty list. Native storage, request and allocation refusals
+remain typed through `RestoredSupport::Adjacency` or its canonical-history cause.
+
+Unprojected aggregate, raw adjacency/relation/walk, other index kinds, workflow
+or publication facts and unproven merge intervals return typed
 `RestoredSupport` refusals. Missing canonical material or a discarded Native
 write generation also refuses; ordinary preparation does not scan history to
 rebuild it. Explicit Native reconstruction is a separate funded maintenance
@@ -774,9 +793,15 @@ until a genuine preparation/replay owner can reissue it. Durable restart availab
 for this restoration path is a separate handoff.
 
 The [ordinary Numeric journeys](../../../worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
-exercise consecutive originals, equal-value and reapplication blockers,
-independent dependencies, disjoint preservation and sibling isolation through
-the same request correction API.
+exercise consecutive originals, empty-list restoration, equal-value and live
+membership round-trip blockers, independent model dependencies, reapplication,
+disjoint preservation and sibling isolation through
+the same request correction API. The required-output reapplication journey uses
+the same installed contribution and program composition. Native's
+[authored-history cases](../../../../../../crates/worth-relational/src/tests/transactions/core/authored_write_history.rs)
+cover actual endpoint moves/no-ops, equal-endpoint physical relation identities,
+retirement, and exact occurrence recovery; its existing durable-medium fixture
+also checks the paired receiver's typed current-head storage refusal.
 
 The caller needs current disclosure and current admission for the inverse.
 Another authorized actor can correct the source after the original actor's

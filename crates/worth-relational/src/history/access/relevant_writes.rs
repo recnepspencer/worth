@@ -25,6 +25,8 @@ pub enum RelationalAuthoredWriteDenial {
     GenerationUnavailable,
     UnsupportedMergeInterval,
     IncompleteIndexHistory,
+    IncompleteAdjacencyHistory,
+    UnsupportedAdjacencySelector,
     UnsupportedIndexSelector,
     NotSelectedPrefix,
     EmptySelection,

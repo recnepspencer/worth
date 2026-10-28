@@ -1,4 +1,5 @@
 //! One authored numeric model shared by the correction example and its public court.
+pub mod adjacency_link;
 pub mod adoption;
 pub mod adoption_courts;
 pub mod authored_identity_correction;

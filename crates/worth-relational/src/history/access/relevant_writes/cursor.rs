@@ -56,6 +56,11 @@ impl RelationalRuntime {
         super::run(execution, |context| {
             for key in selectors {
                 super::visit(context)?;
+                if let Key::Adjacency { anchor, .. } = key
+                    && anchor.generation_value() == 0
+                {
+                    return Err(Denial::UnsupportedAdjacencySelector);
+                }
                 if let Key::EntityFieldIndex { definition, .. } = key
                     && !super::RelationalAuthoredEntityIndexDefinition::supports_locator(
                         &definition.locator,
@@ -90,6 +95,19 @@ impl RelationalRuntime {
             let next = original_ordinal
                 .checked_add(1)
                 .ok_or(Denial::SizeOverflow)?;
+            if selectors
+                .iter()
+                .any(|key| matches!(key, Key::Adjacency { .. }))
+            {
+                super::ordered_visit(context, generation.incomplete_adjacency.len(), 8)?;
+                if generation
+                    .incomplete_adjacency
+                    .first_at_or_after(&next)
+                    .is_some()
+                {
+                    return Err(Denial::IncompleteAdjacencyHistory);
+                }
+            }
             super::ordered_visit(context, 0, selectors.len() as u64)?;
             if selectors
                 .iter()

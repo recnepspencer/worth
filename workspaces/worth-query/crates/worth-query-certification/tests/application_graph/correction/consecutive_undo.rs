@@ -5,6 +5,8 @@ use worth_query_execution::facade::primary_graph::{
     fact_verification_on_this_thread_for_test, WorthQueryExecutionObservation,
 };
 use worth_query_host::facade::product::WorthQueryApplicationCommitReceipt;
+#[path = "consecutive_undo/adjacency.rs"]
+mod adjacency;
 
 fn diverged(host: &host::Host, source: &WorthQueryApplicationCommitReceipt) {
     let scope = request_scope();

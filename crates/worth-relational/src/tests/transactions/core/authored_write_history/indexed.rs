@@ -9,14 +9,17 @@ use worth_foundational::facade::{
 };
 
 fn register(runtime: &RelationalRuntime, locator: AspectFieldLocator) -> DerivedIndexDefinition {
-    runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "authored-predicate".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator,
-        },
-        branch_scoped: true,
-    })
+    runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "authored-predicate".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator,
+            },
+            branch_scoped: true,
+        })
+        .expect("actual authored-field index registration succeeds")
 }
 
 fn key(definition: &DerivedIndexDefinition, value: &str) -> RelationalAuthoredWriteSelector {
@@ -211,7 +214,7 @@ fn indexed_history_visits_exclude_other_values_and_sibling_ancestry() {
     let created = create_entity_outcome(&execution, &runtime, "match");
     let entity = changed_entities(&created)[0];
     let source = test_owner_main_basis(&runtime).unwrap();
-    super::super::owner_service_phase3::fork_from_main(&runtime, "index-sibling");
+    super::super::owner_service_phase3::fork_from_main(&execution, &runtime, "index-sibling");
     let one = update_entity(&execution, &runtime, entity, "away");
     let two = update_entity(&execution, &runtime, entity, "match");
     let target = test_owner_main_basis(&runtime).unwrap();
