@@ -141,3 +141,22 @@ fn retired_descriptor_versions_and_the_retired_anchor_refuse_without_advancing()
         ));
     }
 }
+
+#[test]
+fn missing_record_family_with_other_store_residue_is_never_initialized() {
+    let parent = tempfile::tempdir().unwrap();
+    let location = parent.path().join("home");
+    let request = workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    open(&location, &execution).unwrap().close();
+    // Remove only this test's disposable physical record family, leaving the
+    // Store's other durable families. This models damaged existing media.
+    fs::remove_dir_all(location.join("families/records")).unwrap();
+    fs::remove_dir_all(location.join("staging/records")).unwrap();
+    let residue = location.join("families/interrupted-owner");
+    fs::create_dir_all(&residue).unwrap();
+    fs::write(residue.join("truth"), b"retained").unwrap();
+    assert!(open(&location, &execution).is_err());
+    assert!(!location.join("families/records").exists());
+    assert_eq!(fs::read(residue.join("truth")).unwrap(), b"retained");
+}

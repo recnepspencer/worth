@@ -4,13 +4,19 @@ use worth_store_physical_format::RecordArtifactFile;
 use super::{PhysicalRecordArtifactTree, RecordFamilyCreationFailure, RecordFamilyInventory};
 
 impl PhysicalRecordArtifactTree<'_> {
-    pub(in crate::physical_runtime::record_serving) fn inventory(
+    pub(in crate::physical_runtime) fn inventory(
         &self,
     ) -> Result<RecordFamilyInventory, ArtifactTreeFailure> {
         let family = self.tree.directory_exists(&self.record_family)?;
         let staging = self.tree.directory_exists(&self.record_staging)?;
         if !family && !staging {
-            return Ok(RecordFamilyInventory::ProvenAbsent);
+            let other_store_artifacts = self.tree.directory_has_entries(&self.families)?
+                || self.tree.directory_has_entries(&self.staging)?;
+            return Ok(if other_store_artifacts {
+                RecordFamilyInventory::Residue
+            } else {
+                RecordFamilyInventory::ProvenAbsent
+            });
         }
         let catalog = self
             .tree

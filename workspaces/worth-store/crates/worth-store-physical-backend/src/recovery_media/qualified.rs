@@ -10,6 +10,12 @@ pub struct QualifiedRecoveryFilesystemMedia {
 }
 
 impl QualifiedRecoveryFilesystemMedia {
+    pub(crate) fn from_parts(
+        parts: crate::filesystem_media::recovery_qualification::QualifiedRecoveryParts,
+    ) -> Self {
+        Self { parts }
+    }
+
     pub fn qualify_existing(
         root: impl AsRef<Path>,
     ) -> Result<Self, RecoveryFilesystemQualificationError> {

@@ -116,6 +116,23 @@ pub struct MediaAdmissionInspectionRequired {
 }
 
 impl MediaAdmissionInspectionRequired {
+    /// A contender may have created the namespace before losing the lease.
+    /// The original failure retains that partial setup posture.
+    pub fn mutation_owner_contended(&self) -> bool {
+        matches!(
+            &self.cause,
+            MediaAdmissionInspectionCause::BackendFailure(
+                MediaQualificationFailure::OwnerAfterEffect {
+                    denial:
+                        worth_store_physical_backend::FilesystemMediaOwnerAdmissionDenial::Ownership(
+                            worth_store_physical_backend::MutationOwnershipDenial::Contended
+                        ),
+                    ..
+                }
+            )
+        )
+    }
+
     pub(super) const fn backend_failure(
         runtime_identity: RuntimeIdentity,
         terminal: AbortedRuntime,

@@ -1,8 +1,6 @@
 //! Preserve unsupported-root schema meaning from physical integrity ingress.
 use super::*;
-use worth_store_physical_integrity::{
-    PhysicalArtifactScopeIdentity, PhysicalIntegrityRejection, PhysicalIntegrityVersionAxis,
-};
+use worth_store_physical_integrity::{PhysicalIntegrityRejection, PhysicalIntegrityVersionAxis};
 use worth_store_recovery_runtime::{
     PhysicalRecoveryIntegrityObservationOutcome as Outcome,
     PhysicalRecoveryIntegrityRejection as Rejection,
@@ -20,10 +18,7 @@ pub(super) fn classify(outcome: PhysicalRecoveryOutcome) -> Refusal {
         ))) = observation.outcome()
         {
             if version.axis() == PhysicalIntegrityVersionAxis::EnvelopeSchema
-                && matches!(
-                    version.scope().identity(),
-                    PhysicalArtifactScopeIdentity::RootManifest { .. }
-                )
+                && version.scope().artifact_family() == worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::RootManifest
             {
                 refusal.kind = RelationalStorePhysicalRefusalKind::UnsupportedRootSchema {
                     observed: version.observed(),

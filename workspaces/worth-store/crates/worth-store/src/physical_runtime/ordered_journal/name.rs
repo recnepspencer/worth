@@ -1,10 +1,5 @@
-//! The registry of ordered-journal names: the one place a home's ordered
-//! journals are named.
-//!
-//! The set is closed. An ordered-journal name is a registered one, and every
-//! registered name is reserved against the anchored-record door, so the two
-//! doors never share an anchor and a journal's anchor only ever selects that
-//! journal's records.
+//! Well-formed ordered-journal names. Membership is granted only by the
+//! closed registry declared on the runtime's open or initialization request.
 
 use worth_store_physical_format::RecordAnchorName;
 
@@ -14,8 +9,8 @@ pub const RELATIONAL_CANONICAL_COMMITS: &str = "relational.canonical-commits";
 /// The journal holding Relational's branch transition artifacts.
 pub const RELATIONAL_BRANCH_TRANSITIONS: &str = "relational.branch-transitions";
 
-/// The name of one ordered journal: a valid anchor name registered as an
-/// ordered journal.
+/// A well-formed journal name. A runtime checks membership in its own
+/// home-declared registry before granting journal access.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OrderedJournalName(RecordAnchorName);
 
@@ -34,12 +29,12 @@ impl OrderedJournalName {
 
     /// The journal of Relational's canonical commits.
     pub fn relational_canonical_commits() -> Self {
-        Self::registered(RELATIONAL_CANONICAL_COMMITS)
+        Self::well_formed(RELATIONAL_CANONICAL_COMMITS)
     }
 
     /// The journal of Relational's branch transitions.
     pub fn relational_branch_transitions() -> Self {
-        Self::registered(RELATIONAL_BRANCH_TRANSITIONS)
+        Self::well_formed(RELATIONAL_BRANCH_TRANSITIONS)
     }
 
     pub fn as_str(&self) -> &str {
@@ -50,7 +45,7 @@ impl OrderedJournalName {
         self.0
     }
 
-    fn registered(name: &'static str) -> Self {
-        Self::new(name).expect("a registered journal name is a valid ordered-journal name")
+    fn well_formed(name: &'static str) -> Self {
+        Self::new(name).expect("the named journal has valid syntax")
     }
 }

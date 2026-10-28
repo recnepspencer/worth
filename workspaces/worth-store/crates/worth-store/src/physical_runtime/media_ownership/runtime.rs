@@ -18,6 +18,36 @@ pub struct MediaOwnedPhysicalRuntime {
 }
 
 impl MediaOwnedPhysicalRuntime {
+    /// Observe Store presence only under this runtime's continuously held lease.
+    pub fn observe_record_store(
+        &self,
+    ) -> Result<
+        crate::physical_runtime::RecordFamilyInventory,
+        worth_store_physical_backend::ArtifactTreeFailure,
+    > {
+        crate::physical_runtime::record_serving::residency::artifact_tree::PhysicalRecordArtifactTree::new(&self.media).inventory()
+    }
+
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub fn into_recovery_media(
+        self,
+    ) -> Result<
+        worth_store_physical_backend::QualifiedRecoveryFilesystemMedia,
+        worth_store_physical_backend::RecoveryFilesystemQualificationError,
+    > {
+        let root = self.core.declared_store_root().as_path().to_owned();
+        let Self {
+            termination,
+            media,
+            core,
+            ..
+        } = self;
+        let transferred = media.into_recovery(&root);
+        drop(termination);
+        core.close();
+        transferred
+    }
+
     pub(in crate::physical_runtime) const fn record_serving_media(
         &self,
     ) -> &QualifiedFilesystemMedia {

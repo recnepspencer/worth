@@ -63,7 +63,7 @@ fn qualify_existing_recovery_with_schedule(
     finish_existing_qualification(root, owner, access)
 }
 
-fn finish_existing_qualification(
+pub(super) fn finish_existing_qualification(
     root: &Path,
     owner: FilesystemMediaOwner,
     access: super::FilesystemAccessContract,

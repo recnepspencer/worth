@@ -3,10 +3,19 @@ use super::OrderedJournalName;
 use std::collections::BTreeSet;
 use worth_store_physical_format::RecordAnchorName;
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderedJournalRegistry {
     version: u16,
     names: BTreeSet<RecordAnchorName>,
+}
+
+impl Default for OrderedJournalRegistry {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            names: BTreeSet::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

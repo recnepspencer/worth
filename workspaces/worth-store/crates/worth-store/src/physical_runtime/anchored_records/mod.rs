@@ -64,8 +64,8 @@ pub(in crate::physical_runtime) use membership::AnchoredMembershipCache;
 pub use publication::{AnchoredRecordPublication, AnchoredRecordPublished};
 pub use value::{AnchoredRecord, AnchoredRecordMembership, AnchoredRecordVersion};
 
-/// The name of one anchored record: a valid anchor name that no other Store
-/// door owns.
+/// A well-formed anchored-record name. Publications check the bound runtime's
+/// registry so a journal name cannot become an anchored record.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AnchoredRecordName(RecordAnchorName);
 

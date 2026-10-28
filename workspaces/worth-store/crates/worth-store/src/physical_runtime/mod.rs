@@ -231,14 +231,7 @@ pub use ordered_journal::{
 pub use record_serving::PhysicalIntegrityScrubReadDeferral;
 pub use record_serving::*;
 #[cfg(feature = "recovery-runtime-owner")]
-pub use recovery_construction::{
-    ExceededSelectedWalInventoryBound, PhysicalRecoveryConstructionAuthority,
-    PhysicalRecoveryConstructionPort, PhysicalRecoveryRejoinResidentBoundary,
-    PhysicalRecoverySelectedRejoinMismatch, PhysicalRecoveryWalResidentStage,
-    RecoveredMediaAdmissionOutcome, RecoveredMediaOwnedPhysicalRuntime,
-    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
-    RecoveredPhysicalServingHandoff, SelectedWalInventoryBound,
-};
+pub use recovery_construction::*;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_coordination::{
     AbsentCheckpointWitness, ClosedPhysicalRecoveryCleanup,

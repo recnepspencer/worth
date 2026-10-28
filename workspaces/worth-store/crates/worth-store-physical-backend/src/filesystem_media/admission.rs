@@ -1,3 +1,6 @@
+#[cfg(feature = "recovery-runtime-owner")]
+#[path = "admission/recovery_transfer.rs"]
+mod recovery_transfer;
 use std::sync::Arc;
 use worth_proof::ProofOutcome;
 use worth_store_physical_format::store_namespace::StableStoreIdentity;

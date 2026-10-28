@@ -11,7 +11,7 @@ use worth_store_physical_format::{RecordArtifactFile, RecordFrameCoordinate};
 mod family_lifecycle;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::physical_runtime::record_serving) enum RecordFamilyInventory {
+pub enum RecordFamilyInventory {
     ProvenAbsent,
     Published,
     Residue,
