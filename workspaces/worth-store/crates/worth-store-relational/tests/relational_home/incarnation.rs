@@ -169,12 +169,15 @@ fn missing_record_family_with_only_namespace_identity_is_never_initialized() {
     let execution = ExecutionRequest::serial(&request);
     open(&location, &execution).unwrap().close();
     let identity = fs::read(location.join("namespace/identity")).unwrap();
-    // Identity is the only durable Store artifact left after losing the family.
-    // It cannot prove that this was an interrupted first initialization.
-    fs::remove_dir_all(location.join("families/records")).unwrap();
-    fs::remove_dir_all(location.join("staging/records")).unwrap();
-    assert_eq!(fs::read_dir(location.join("families")).unwrap().count(), 0);
-    assert_eq!(fs::read_dir(location.join("staging")).unwrap().count(), 0);
+    // Lose all family data in this test's disposable home, including its
+    // physical-work families. Identity alone cannot prove that the previous
+    // open stopped during first initialization.
+    for directory in ["families", "staging"] {
+        let directory = location.join(directory);
+        fs::remove_dir_all(&directory).unwrap();
+        fs::create_dir(&directory).unwrap();
+        assert_eq!(fs::read_dir(&directory).unwrap().count(), 0);
+    }
     assert!(open(&location, &execution).is_err());
     assert!(!location.join("families/records").exists());
     assert_eq!(
