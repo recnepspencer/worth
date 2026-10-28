@@ -45,8 +45,6 @@ pub(crate) struct IndexingState {
     pub(crate) entity_unique_aspect_field_index: UniqueEntityAspectFieldIndex,
     pub(crate) next_index_id: u64,
     pub(crate) next_generation_id: u64,
-    /// Durable high-water mark; abandoned reservations do not change checkpoints.
-    pub(crate) published_generation_frontier: u64,
 }
 
 impl IndexingState {
@@ -72,7 +70,6 @@ impl IndexingState {
             entity_unique_aspect_field_index: BTreeMap::new(),
             next_index_id: 1,
             next_generation_id: 1,
-            published_generation_frontier: 1,
         }
     }
 
@@ -110,16 +107,16 @@ impl IndexingState {
         self.next_generation_id = self
             .next_generation_id
             .max(generation.generation_id.0.saturating_add(1));
-        self.published_generation_frontier = self
-            .published_generation_frontier
-            .max(generation.generation_id.0.saturating_add(1));
         self.generations.insert(generation);
     }
 
-    fn publish_generation(&mut self, generation: DerivedIndexGeneration) {
-        let frontier = generation.generation_id.0.saturating_add(1);
-        self.generations.publish(generation);
-        self.published_generation_frontier = self.published_generation_frontier.max(frontier);
+    pub(crate) fn generation_frontier(&self) -> u64 {
+        self.generations.generation_frontier()
+    }
+
+    pub(crate) fn restore_generation_frontier(&mut self, frontier: u64) {
+        self.next_generation_id = self.next_generation_id.max(frontier);
+        self.generations.restore_frontier(frontier);
     }
 }
 
@@ -319,7 +316,7 @@ impl IndexingSubsystem {
     }
 
     pub(crate) fn publish_generation(&self, generation: DerivedIndexGeneration) {
-        self.state.write().publish_generation(generation);
+        self.state.write().generations.publish(generation);
     }
 
     /// Install a generation carried by a canonical envelope, replacing any

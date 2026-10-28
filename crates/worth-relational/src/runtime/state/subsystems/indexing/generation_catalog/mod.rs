@@ -24,6 +24,8 @@ use scope::GenerationScope;
 #[derive(Debug, Clone, Default)]
 pub(super) struct GenerationCatalog {
     entries: BTreeMap<DerivedIndexGenerationId, Arc<DerivedIndexGeneration>>,
+    /// Published identities remain burned after reclamation; reservations stay private.
+    generation_high_water: u64,
     scopes: BTreeMap<DerivedIndexId, BTreeMap<Option<BranchId>, GenerationScope>>,
     commits: BTreeMap<CommitId, BTreeSet<DerivedIndexGenerationId>>,
     versions: BTreeMap<VersionId, BTreeSet<DerivedIndexGenerationId>>,
@@ -31,6 +33,14 @@ pub(super) struct GenerationCatalog {
 }
 
 impl GenerationCatalog {
+    pub(super) fn generation_frontier(&self) -> u64 {
+        self.generation_high_water.saturating_add(1)
+    }
+
+    pub(super) fn restore_frontier(&mut self, frontier: u64) {
+        self.generation_high_water = self.generation_high_water.max(frontier.saturating_sub(1));
+    }
+
     /// Retain selectable generations at exact root bases, plus one current
     /// locator per index and publishing branch for latest-generation callers.
     /// Selection maps are rebuilt so no stale scope remains.
@@ -139,7 +149,7 @@ impl GenerationCatalog {
 
     pub(super) fn publish(&mut self, generation: DerivedIndexGeneration) {
         assert!(
-            /* Proof: Only native generation publication calls publish. Generation identities are allocated by the checked, non-wrapping owner issuer; checkpoint capture carries its issuer frontier in the eager manifest, and cold installation restores it before any reservation. Deferred generation readmission rejects every identity at or above that frontier before it can enter the live catalog. No facade accepts a caller-chosen generation identity for this insertion. */
+            /* Proof: Only native generation publication calls publish. Generation identities are allocated by the checked, non-wrapping owner issuer; checkpoint capture carries the catalog publication frontier in the eager manifest, and cold installation restores it before any reservation. Deferred generation readmission rejects every identity at or above that frontier before it can enter the live catalog. No facade accepts a caller-chosen generation identity for this insertion. */
             !self.entries.contains_key(&generation.generation_id),
             "native index publication cannot replace a retained generation identity"
         );
@@ -147,6 +157,7 @@ impl GenerationCatalog {
     }
 
     pub(super) fn insert(&mut self, generation: DerivedIndexGeneration) {
+        self.generation_high_water = self.generation_high_water.max(generation.generation_id.0);
         if let Some(previous) = self.entries.remove(&generation.generation_id) {
             self.remove_bindings(&previous);
         }

@@ -12,7 +12,7 @@ impl PreparedGenerationBatch {
     pub(crate) fn publish(self) {
         let mut state = self.catalog.write();
         for generation in self.generations {
-            state.publish_generation(generation);
+            state.generations.publish(generation);
         }
     }
 }

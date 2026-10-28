@@ -5,7 +5,7 @@ use super::*;
 fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    for bulk in [false, true] {
+    for (bulk, admitted) in [(false, false), (true, false), (false, true), (true, true)] {
         let fixture = super::cold_index_fixture::reopened(execution);
         let owner = &fixture.runtime.indexes;
         let reserved = if bulk {
@@ -17,7 +17,14 @@ fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
         assert_eq!(fixture.source.reads.load(Ordering::Relaxed), 0);
         let mut published = fixture.generation.as_ref().clone();
         published.generation_id = reserved;
-        owner.publish_generation(published.clone());
+        if admitted {
+            owner
+                .publish_generations_admitted(&[published.clone()], |_, _| Ok::<_, ()>(()))
+                .unwrap();
+        } else {
+            owner.publish_generation(published.clone());
+        }
+        assert_eq!(owner.snapshot().generation_frontier(), reserved.0 + 1);
         assert_eq!(fixture.source.reads.load(Ordering::Relaxed), 0);
         owner
             .definition_read_binding()
