@@ -29,7 +29,7 @@ impl std::error::Error for BoundsDenial {}
 pub struct Box2(Box2Coordinates);
 
 impl Box2 {
-    pub const LENGTH_UNIT: &'static str = "fixture.integer-length.v1";
+    pub const LENGTH_UNIT: &'static str = "fixture-integer-length-v1";
     pub const FRAME: &'static str = "fixture.cartesian-xy.v1";
 
     pub fn new(coordinates: Box2Coordinates) -> Result<Self, BoundsDenial> {

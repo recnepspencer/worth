@@ -3,6 +3,8 @@ use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_execution::facade::primary_graph::WorthQueryManagedIndex;
 
+mod governed;
+
 impl<'application, 'principal, 'scope, Schema, Intent>
     WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, Schema, Intent>
 where
@@ -12,8 +14,8 @@ where
     /// Opens the installed index's shared registration in Created state.
     /// This does not read Source or build a root. Repeated opens share status;
     /// closing any sibling disposes that registration for all siblings.
-    /// The installed Parent must have Public authorization and Public disclosure
-    /// without capability/rule governance; other postures refuse during binding.
+    /// This entrance uses ordinary Parent admission. Use `open_index_governed`
+    /// or `open_index_approved` when disclosure requires a capability.
     pub fn open_index<I: ApplicationManagedIndexBinding<Schema>>(
         self,
     ) -> Result<WorthQueryManagedIndex<Schema, I>, WorthQueryApplicationRequestQueryDenial>

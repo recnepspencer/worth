@@ -202,12 +202,16 @@ fn validate_parent(
         return Err(denied(Kind::ManagedIndexBindingMeaningChanged, name));
     }
     let disclosure = definition.disclosure();
-    if definition.authorization() != &ApplicationQueryAuthorizationRequirement::Public
-        || disclosure.posture() != ApplicationQueryDisclosurePosture::Public
-        || disclosure.capability_name().is_some()
-        || disclosure.capability_type().is_some()
-        || !disclosure.rules().is_empty()
-    {
+    let supported_disclosure = match disclosure.posture() {
+        ApplicationQueryDisclosurePosture::Public => {
+            disclosure.capability_name().is_none()
+                && disclosure.capability_type().is_none()
+                && disclosure.rules().is_empty()
+        }
+        ApplicationQueryDisclosurePosture::Governed => true,
+        ApplicationQueryDisclosurePosture::InstalledPolicyRequired => false,
+    };
+    if !supported_disclosure {
         return Err(denied(Kind::ManagedIndexParentUnsupported, name));
     }
     Ok(())

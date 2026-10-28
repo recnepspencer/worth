@@ -118,7 +118,7 @@ where
             ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
         <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
-    {
+{
         self.retain_expression_context = true;
         self.execute()
     }
@@ -143,7 +143,7 @@ where
                 Schema,
                 <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
             >,
-    {
+{
         let application = self.application;
         let scope = self.scope;
         application
@@ -172,23 +172,9 @@ where
                 Schema,
                 <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
             >,
-    {
+{
         self.with_admitted_query(phase, |application, binding, external, plan| {
-            let result = if binding
-                .query()
-                .read_graph()
-                .managed_index_selection()
-                .is_some()
-            {
-                application
-                    .execute_application_query_binding_one_shot(phase, binding, external, plan)
-                    .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)?
-            } else {
-                application
-                    .execute_application_query_one_shot(phase, plan)
-                    .map_err(WorthQueryApplicationRequestQueryDenial::Execution)?
-            };
-            Ok(publish_application_result(result.into_admitted_disclosed()))
+            admitted::execute_admitted_query(phase, application, binding, external, plan)
         })
     }
 }

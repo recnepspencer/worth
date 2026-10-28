@@ -1,5 +1,5 @@
 //! The source universe and external principal are actual installed graph meaning.
-use super::{prefix, query};
+use super::{boxes, prefix, query};
 use worth_query_decl::facade::{application_schema::*, authentication::*, *};
 
 worth_query_application! { pub Catalog {
@@ -9,7 +9,7 @@ worth_query_application! { pub Catalog {
 worth_query_application_contribution! { pub contribution CatalogContribution in Catalog {
     identity: "worth.query.consumer.managed-catalog.contribution.v1",
     members: |schema| {
-        schema.entity(ExternalMapping::reference()).entity(Principal::reference())
+        boxes::declare(schema.entity(ExternalMapping::reference()).entity(Principal::reference())
             .entity(Directory::reference()).entity(Item::reference())
             .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
             .aspect(Principal::reference(), PrincipalFacts::reference())
@@ -29,7 +29,7 @@ worth_query_application_contribution! { pub contribution CatalogContribution in 
             .application_query_binding::<query::SourceBinding>()
             .application_query(query::prefix_definition())
             .application_query_binding::<query::PrefixBinding>()
-            .managed_index(ApplicationManagedIndexDefinition::<Catalog, prefix::PrefixIndex>::new())
+            .managed_index(ApplicationManagedIndexDefinition::<Catalog, prefix::PrefixIndex>::new()))
     }
 }}
 use worth_query_decl::facade::application_query::ApplicationManagedIndexDefinition;

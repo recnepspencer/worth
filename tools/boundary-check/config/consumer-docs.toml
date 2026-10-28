@@ -163,3 +163,15 @@ name = "logical_relation_projection.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification"
 target = "tests/application_graph.rs"
 source = "tests/application_graph/relation_laws/logical/committed.rs"
+
+[[compiled_sources]]
+name = "managed_prefix_index.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/prefix.rs"
+
+[[compiled_sources]]
+name = "managed_box_index.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/boxes/provider.rs"

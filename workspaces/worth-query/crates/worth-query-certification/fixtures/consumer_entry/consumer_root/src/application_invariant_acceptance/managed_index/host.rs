@@ -1,6 +1,6 @@
 //! Genuine application contribution, authenticated principal and committed source.
 use super::super::{authentication, resources};
-use super::{prefix, schema::*};
+use super::{boxes, prefix, schema::*};
 use std::sync::Arc;
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::{
@@ -21,20 +21,41 @@ impl ApplicationProgramDefinition<Catalog> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("managed-catalog.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<Catalog, Feature>().finish()]
+        vec![ApplicationFeatureSpec::root::<Catalog, Feature>()
+            .native_action::<boxes::status::Binding>()
+            .finish_action()
+            .operation::<boxes::access::InspectBoxes>()
+            .finish()]
     }
 }
 impl WorthQueryApplicationContribution<Catalog> for CatalogContribution {
-    type Configuration = Arc<prefix::Calls>;
+    type Configuration = Configuration;
     fn configure(
-        calls: Self::Configuration,
+        configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.managed_index::<prefix::PrefixIndex, _>(prefix::Provider(calls))
+        setup.managed_index::<prefix::PrefixIndex, _>(prefix::Provider(configuration.prefix))?;
+        boxes::configure(configuration.boxes, configuration.incompatible, setup)
     }
+}
+pub struct Configuration {
+    pub prefix: Arc<prefix::Calls>,
+    pub boxes: Arc<boxes::Calls>,
+    pub incompatible: bool,
 }
 pub type Host = WorthQueryProgramApplicationRuntime<Catalog, Program>;
 pub fn install(calls: Arc<prefix::Calls>) -> Host {
+    install_boxes(calls, Arc::new(boxes::Calls::default()))
+}
+pub fn install_boxes(prefix: Arc<prefix::Calls>, boxes: Arc<boxes::Calls>) -> Host {
+    try_install(prefix, boxes, false)
+        .expect("the actual public managed sources and both providers install")
+}
+pub fn try_install(
+    prefix: Arc<prefix::Calls>,
+    boxes: Arc<boxes::Calls>,
+    incompatible: bool,
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()
@@ -42,7 +63,11 @@ pub fn install(calls: Arc<prefix::Calls>) -> Host {
             .validated_program()
             .unwrap(),
         declaration,
-        (calls,),
+        (Configuration {
+            prefix,
+            boxes,
+            incompatible,
+        },),
         ApplicationBuildIdentity::parse("19191919-1919-1919-1919-191919191919").unwrap(),
         resources::application_limits(),
         |_, graph, installed| {
@@ -55,7 +80,14 @@ pub fn install(calls: Arc<prefix::Calls>) -> Host {
                 authentication::external_identity(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
-            for directory in ["catalog", "empty"] {
+            for directory in [
+                "catalog",
+                "empty",
+                "boxes",
+                "empty-boxes",
+                "invalid-boxes",
+                "other-boxes",
+            ] {
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(
                         Directory::reference(),
@@ -81,7 +113,12 @@ pub fn install(calls: Arc<prefix::Calls>) -> Host {
                     )
                     .field(ItemIdentity::reference(), identity.to_owned())
                     .field(ItemName::reference(), name.to_owned())
-                    .field(ItemEnabled::reference(), enabled),
+                    .field(ItemEnabled::reference(), enabled)
+                    // Name-only rows still populate every required ItemFacts field.
+                    .field(
+                        boxes::ItemBounds::reference(),
+                        boxes::Coordinates::new(0, 0, 0, 0),
+                    ),
                 )?;
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(
                     Contains::reference(),
@@ -90,10 +127,10 @@ pub fn install(calls: Arc<prefix::Calls>) -> Host {
                     key,
                 ))?;
             }
+            boxes::seed::populate(graph)?;
             Ok(())
         },
     )
-    .expect("the actual public managed source and provider install")
 }
 fn directory_key(identity: &str) -> WorthQueryApplicationEntityKey<Catalog, Directory> {
     WorthQueryApplicationEntityKey::new(identity).unwrap()

@@ -12,6 +12,7 @@ use worth_query_host::facade::primary_graph::*;
 
 mod storage;
 pub struct PrefixIndex;
+// compiled-example: begin
 impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     type SourceBinding = query::SourceBinding;
     type ProbeBinding = query::ProbeBinding;
@@ -20,6 +21,7 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
 }
+// compiled-example: end
 pub type Node = PrefixNode<WorthQueryManagedIndexNodeId>;
 pub type Stop = WorthQueryManagedIndexProviderStop<PrefixIndexDenial>;
 #[derive(Default)]

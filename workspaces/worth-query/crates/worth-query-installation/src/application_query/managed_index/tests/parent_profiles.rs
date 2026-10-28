@@ -80,17 +80,19 @@ pub(super) fn check_actual_parent_profiles() {
         foreign.subject(),
         queries::ModelIndex::<model::ParentSchema<1>>::NAME
     );
-    let protected = bind::<2>()
-        .err()
-        .expect("the actually declared ability Parent is unsupported");
-    assert_eq!(protected.kind(), SchemaKind::ManagedIndexParentUnsupported);
-    assert_eq!(
-        protected.subject(),
-        queries::ModelIndex::<model::ParentSchema<2>>::NAME
-    );
+    type Protected = model::ParentSchema<2>;
+    let protected = bind::<2>().expect("the genuinely declared READ ability can bind");
+    assert!(protected
+        .installed_managed_index::<queries::ModelIndex<Protected>>()
+        .unwrap()
+        .admits_parent(
+            &protected
+                .installed_query_binding::<queries::ParentBinding<Protected>>()
+                .unwrap()
+        ));
     let disclosure = bind::<3>()
         .err()
-        .expect("the actual installed policy Parent is unsupported");
+        .expect("an opaque installed-policy recipe still lacks executable disclosure");
     assert_eq!(disclosure.kind(), SchemaKind::ManagedIndexParentUnsupported);
     assert_eq!(
         disclosure.subject(),

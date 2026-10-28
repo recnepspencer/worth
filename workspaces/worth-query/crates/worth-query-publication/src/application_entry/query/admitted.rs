@@ -4,6 +4,8 @@ use worth_query_declaration::facade::application_query::ApplicationQueryScopeBin
 use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationQueryPlan;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
+mod governed;
+
 pub(super) type RequestPlan<'a, S, B> = WorthQueryAdmittedApplicationQueryPlan<
     'a, S, <B as ApplicationQueryBinding<S>>::Query,
     <<B as ApplicationQueryBinding<S>>::ParameterBinding as ApplicationStructuredValueBinding>::Value,
@@ -116,4 +118,41 @@ where
         };
         perform(self.application, &binding, self.principal, plan)
     }
+}
+
+/// Keep ordinary failure vocabulary while selecting the installed binding's executor.
+pub(super) fn execute_admitted_query<Schema, Binding>(
+    phase: &AdvancementPhase<'_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    binding: &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+    external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    plan: RequestPlan<'_, Schema, Binding>,
+) -> Result<
+    WorthQueryPublishedApplicationResult<
+        Binding::Query,
+        <Binding::ResultBinding as ApplicationStructuredValueBinding>::Value,
+    >,
+    WorthQueryApplicationRequestQueryDenial,
+>
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationQueryBinding<Schema>,
+    <Binding::ResultBinding as ApplicationStructuredValueBinding>::Value:
+        WorthQueryApplicationProjection<Schema, Binding::Query>,
+{
+    let result = if binding
+        .query()
+        .read_graph()
+        .managed_index_selection()
+        .is_some()
+    {
+        application
+            .execute_application_query_binding_one_shot(phase, binding, external, plan)
+            .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)?
+    } else {
+        application
+            .execute_application_query_one_shot(phase, plan)
+            .map_err(WorthQueryApplicationRequestQueryDenial::Execution)?
+    };
+    Ok(publish_application_result(result.into_admitted_disclosed()))
 }
