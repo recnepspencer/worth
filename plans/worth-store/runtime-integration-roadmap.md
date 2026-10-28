@@ -17,8 +17,8 @@ proposal. A later specification must reconcile a capability against the
 current owners and Database Foundation handoff before implementation.
 
 The active near-term milestones are Milestone 1 canonical durable publication, Milestone 2
-Relational cutover, Milestone 3 production host and original-result retry, Milestone 4 database
-scale/lifecycle, and Milestone 5 complete runtime recovery. S.10 through S.12 and
+Relational cutover, Milestone 3 durable application runtime (including original-result retry), and
+Milestone 4 database scale/lifecycle. S.10 through S.12 and
 the remaining C portfolios are deferred under the new roadmap.
 
 ## Governing Summaries
