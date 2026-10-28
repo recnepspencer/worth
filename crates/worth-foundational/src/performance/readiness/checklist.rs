@@ -155,11 +155,11 @@ impl FoundationalPerformanceProductionReadinessReport {
         let expected_evidence = std::collections::BTreeSet::from([
             (
                 FoundationalPerformanceRuntimeAdoptionPressure::CrossCrateMeaningParityMatrix,
-                "tests/certification/performance/runtime_parity.rs",
+                "tests/worth_foundational/fast/certification/performance/runtime_parity.rs",
             ),
             (
                 FoundationalPerformanceRuntimeAdoptionPressure::CertifiedBundleSourceCompatibilityMatrix,
-                "tests/certification/performance/runtime_parity.rs",
+                "tests/worth_foundational/fast/certification/performance/runtime_parity.rs",
             ),
         ]);
         let actual_evidence: std::collections::BTreeSet<_> = self

@@ -26,7 +26,7 @@ pub(super) fn certified_surface_evidence() -> Vec<CanonicalCertifiedSurfaceEvide
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::BasisGrammar,
             CanonicalSyntheticRuntimePressure::OrderedAuthorityProducer,
-            "tests/certification/canonicalization/basis/basis_grammar.rs",
+            "tests/worth_foundational/fast/certification/canonicalization/basis/basis_grammar.rs",
             CanonicalCompileFailBoundary::RawBasisCannotSatisfyReadiness,
             "tests/ui/canonicalization/basis/readiness/raw_sequence_cannot_satisfy_ready_basis_api.rs",
             CanonicalCostCounterEvidence::BasisSequenceConstruction,
@@ -35,7 +35,7 @@ pub(super) fn certified_surface_evidence() -> Vec<CanonicalCertifiedSurfaceEvide
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::MilestoneOneBasisBuilders,
             CanonicalSyntheticRuntimePressure::ReorderedCompatibilityProducer,
-            "tests/certification/canonicalization/digest_preparation/canonical_basis_builders.rs",
+            "tests/worth_foundational/fast/certification/canonicalization/digest_preparation/canonical_basis_builders.rs",
             CanonicalCompileFailBoundary::RawBasisCannotSatisfyReadiness,
             "tests/ui/digest_preparation/non_ready_state_cannot_satisfy_digest_basis_api.rs",
             CanonicalCostCounterEvidence::MilestoneOneSurfaceLowering,
@@ -44,7 +44,7 @@ pub(super) fn certified_surface_evidence() -> Vec<CanonicalCertifiedSurfaceEvide
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::EquivalenceBasis,
             CanonicalSyntheticRuntimePressure::BlindMismatchConsumer,
-            "tests/certification/canonicalization/equivalence/comparison_readiness.rs",
+            "tests/worth_foundational/fast/certification/canonicalization/equivalence/comparison_readiness.rs",
             CanonicalCompileFailBoundary::RawComparisonCannotSatisfyEquivalence,
             "tests/ui/canonicalization/equivalence/raw_ready_basis_cannot_satisfy_comparison_api.rs",
             CanonicalCostCounterEvidence::BasisSequenceConstruction,
@@ -53,7 +53,7 @@ pub(super) fn certified_surface_evidence() -> Vec<CanonicalCertifiedSurfaceEvide
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::MismatchBasis,
             CanonicalSyntheticRuntimePressure::BlindMismatchConsumer,
-            "tests/certification/canonicalization/equivalence/comparison_readiness.rs",
+            "tests/worth_foundational/fast/certification/canonicalization/equivalence/comparison_readiness.rs",
             CanonicalCompileFailBoundary::RawComparisonCannotSatisfyEquivalence,
             "tests/ui/canonicalization/equivalence/raw_ready_basis_cannot_satisfy_comparison_api.rs",
             CanonicalCostCounterEvidence::BasisSequenceConstruction,
@@ -62,7 +62,7 @@ pub(super) fn certified_surface_evidence() -> Vec<CanonicalCertifiedSurfaceEvide
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::ExportBundles,
             CanonicalSyntheticRuntimePressure::SupportExportConsumer,
-            "tests/certification/canonicalization/export/export_ready_fixtures.rs",
+            "tests/worth_foundational/fast/certification/canonicalization/export/export_ready_fixtures.rs",
             CanonicalCompileFailBoundary::BoundaryExportRequiresReadmission,
             "tests/ui/canonicalization/export/boundary_bridged_export_cannot_satisfy_current_export_api.rs",
             CanonicalCostCounterEvidence::ExportManifestRows,
@@ -71,7 +71,7 @@ pub(super) fn certified_surface_evidence() -> Vec<CanonicalCertifiedSurfaceEvide
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::DigestAlgorithmSlots,
             CanonicalSyntheticRuntimePressure::CategoryAdjacentHostileProducer,
-            "tests/certification/canonicalization/digest_slots/digest_derivation.rs",
+            "tests/worth_foundational/fast/certification/canonicalization/digest_slots/digest_derivation.rs",
             CanonicalCompileFailBoundary::DigestDerivationRequiresReadyArtifact,
             "tests/ui/canonicalization/digest_slots/raw_bytes_cannot_satisfy_digest_derivation.rs",
             CanonicalCostCounterEvidence::DigestInputMetadata,
@@ -307,7 +307,7 @@ pub(super) fn public_surface_inventory() -> Vec<CanonicalPublicSurfaceEntry> {
 }
 
 pub(super) const fn public_surface_evidence_path() -> &'static str {
-    "tests/certification/canonicalization/grouped_surface.rs"
+    "tests/worth_foundational/fast/certification/canonicalization/grouped_surface.rs"
 }
 
 pub(super) const fn public_surface_compile_fail_path() -> &'static str {

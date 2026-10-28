@@ -42,49 +42,49 @@ pub(super) fn certified_surface_evidence() -> Vec<FoundationalTransitionCertifie
             FoundationalTransitionCertifiedSurface::BranchLocalSeparation,
             FoundationalTransitionSyntheticRuntimePressure::AuthoritySeparation,
             FoundationalTransitionCompileFailBoundary::BranchLocalSurfacesCannotSatisfyAuthorityApis,
-            "tests/certification/transitions/branch_local.rs",
+            "tests/worth_foundational/fast/certification/transitions/branch_local.rs",
             "tests/ui/transitions/branch_local/branch_candidate_cannot_satisfy_authoritative_boundary_api.rs",
-            "tests/certification/transitions/branch_local.rs",
+            "tests/worth_foundational/fast/certification/transitions/branch_local.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::MergeVerdictLaw,
             FoundationalTransitionSyntheticRuntimePressure::MergeTopologyHonesty,
             FoundationalTransitionCompileFailBoundary::MergeAdmissionSurfacesRemainNonAuthoritative,
-            "tests/certification/transitions/merge_verdicts.rs",
+            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
             "tests/ui/transitions/merge_admission/merge_verdict_has_no_receipt_api.rs",
-            "tests/certification/transitions/merge_verdicts.rs",
+            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::CommittedAuthorityTransitions,
             FoundationalTransitionSyntheticRuntimePressure::NoOpVersusCommitClassification,
             FoundationalTransitionCompileFailBoundary::CommittedAuthorityRequiresProofBearingAdmission,
-            "tests/certification/transitions/committed_authority.rs",
+            "tests/worth_foundational/fast/certification/transitions/committed_authority.rs",
             "tests/ui/transitions/committed_authority/merge_verdict_has_no_committed_authority_api.rs",
-            "tests/certification/transitions/committed_authority.rs",
+            "tests/worth_foundational/fast/certification/transitions/committed_authority.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::CommitReceiptsAndBundles,
             FoundationalTransitionSyntheticRuntimePressure::ReceiptIssuanceBoundary,
             FoundationalTransitionCompileFailBoundary::ReceiptAndCloseoutPreserveAuthoritySeparation,
-            "tests/certification/transitions/receipts_and_bundles.rs",
+            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
             "tests/ui/transitions/receipt_boundaries/plain_boundary_receipt_surface_has_no_transition_receipt_api.rs",
-            "tests/certification/transitions/receipts_and_bundles.rs",
+            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::CanonicalBasisAndLocatorIntegration,
             FoundationalTransitionSyntheticRuntimePressure::AmbientBasisChoiceHostility,
             FoundationalTransitionCompileFailBoundary::Phase5BasisAndCurrentBasisRequireStrengthenedArtifacts,
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
             "tests/ui/transitions/phase5_boundaries/raw_committed_authority_cannot_satisfy_current_basis_transition_api.rs",
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::ProfileRichnessAndCurrentBasisBehavior,
             FoundationalTransitionSyntheticRuntimePressure::ReducedRichnessPreservation,
             FoundationalTransitionCompileFailBoundary::Phase5BasisAndCurrentBasisRequireStrengthenedArtifacts,
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
             "tests/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs",
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
     ]
 }
@@ -190,47 +190,47 @@ pub(super) fn synthetic_pressure_evidence() -> Vec<FoundationalTransitionSynthet
     vec![
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::AuthoritySeparation,
-            "tests/certification/transitions/branch_local.rs",
+            "tests/worth_foundational/fast/certification/transitions/branch_local.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::MergeTopologyHonesty,
-            "tests/certification/transitions/merge_verdicts.rs",
+            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::NoOpVersusCommitClassification,
-            "tests/certification/transitions/committed_authority.rs",
+            "tests/worth_foundational/fast/certification/transitions/committed_authority.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ReceiptIssuanceBoundary,
-            "tests/certification/transitions/receipts_and_bundles.rs",
+            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ReplayInterpretationBoundary,
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ReducedRichnessPreservation,
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::AmbientBasisChoiceHostility,
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::HiddenStrategyInfluenceHostility,
-            "tests/certification/transitions/merge_verdicts.rs",
+            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ThinReceiptRejection,
-            "tests/certification/transitions/receipts_and_bundles.rs",
+            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::GenericTransitionResultBagRejection,
-            "tests/certification/transitions/receipts_and_bundles.rs",
+            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::CheapConvenienceBypassRejection,
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
     ]
 }
@@ -291,27 +291,27 @@ pub(super) fn phase_gates() -> Vec<FoundationalTransitionPhaseGateEvidence> {
     vec![
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::BranchLocalSeparation,
-            "tests/certification/transitions/branch_local.rs",
+            "tests/worth_foundational/fast/certification/transitions/branch_local.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::MergeVerdictLaw,
-            "tests/certification/transitions/merge_verdicts.rs",
+            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::CommittedAuthorityTransitionLaw,
-            "tests/certification/transitions/committed_authority.rs",
+            "tests/worth_foundational/fast/certification/transitions/committed_authority.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::CommitReceiptsAndBundles,
-            "tests/certification/transitions/receipts_and_bundles.rs",
+            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::CanonicalBasisLocatorAndProfileIntegration,
-            "tests/certification/transitions/phase5_basis.rs",
+            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::ProductionReadiness,
-            "tests/certification/transitions/readiness.rs",
+            "tests/worth_foundational/fast/certification/transitions/readiness.rs",
         ),
     ]
 }
