@@ -181,6 +181,14 @@ A repeated reversal of the same active correction edge is already-corrected, not
 second inverse; after a performed reapplication a new reversal names that new occurrence.
 An alternative is consumed only in its exact target lineage, never process-globally.
 
+**Required follow-through:** [9.18.1 Phase 19](milestone-9.18.1.md#phase-19-consecutive-undo-after-verified-source-restoration)
+adds correction-aware consecutive undo. Once later overlapping source occurrences
+have been genuinely reversed and their support restored on the selected target,
+their completed correction pairs must not permanently block an earlier reversal.
+Live/reapplied overlapping writes and changed independent dependencies still
+diverge; equal field bytes alone prove no restoration. This is new required
+qualification, not a claim that historical 9.18 acceptance already supplied it.
+
 Each correction appends to the selected target head; its source/correction relationship
 is canonical causal metadata, not a second ancestry parent. Program compatibility is
 checked between exact retained source meaning and the target's admitted current program.

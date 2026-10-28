@@ -19,7 +19,8 @@ pub use value_lowering::canonical_basis_value_for_aspect_value;
 
 pub use basis::{
     prepare_canonical_basis_bundle, prepare_canonical_basis_sequence,
-    prepare_owned_canonical_basis_sequence_admitted, CanonicalBasisBundle,
+    prepare_owned_canonical_basis_sequence_admitted,
+    with_refused_canonical_sort_qualification_for_test, CanonicalBasisBundle,
     CanonicalBasisConstructionDenial, CanonicalBasisDomain, CanonicalBasisEntry,
     CanonicalBasisEntryId, CanonicalBasisEntryKind, CanonicalBasisLocus,
     CanonicalBasisPreparationPhase, CanonicalBasisPreparationQuote, CanonicalBasisPreparationStop,
@@ -31,8 +32,8 @@ pub use basis::{
     CanonicalEquivalenceBasisDeclared, CanonicalExportManifestBound,
     CanonicalExportReadinessProofs, CanonicalExportReady, CanonicalFloatWidth,
     CanonicalIntegerWidth, CanonicalMismatchLociBound, CanonicalProductionReadinessCertified,
-    CanonicalProductionTestReady, CanonicalRuleVersionBound, CanonicalizationCost,
-    CanonicalizationCostObserved, CanonicalizationRuleVersion,
+    CanonicalProductionTestReady, CanonicalRuleVersionBound, CanonicalSortImplementationDenial,
+    CanonicalizationCost, CanonicalizationCostObserved, CanonicalizationRuleVersion,
 };
 pub use contract_preparation::{
     aspect_contract_digest_preparation_basis, prepare_aspect_contract_for_canonical_basis,

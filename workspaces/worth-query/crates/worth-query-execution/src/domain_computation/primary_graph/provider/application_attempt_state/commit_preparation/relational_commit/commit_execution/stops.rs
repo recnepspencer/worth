@@ -243,6 +243,9 @@ pub(super) fn source_rebase_preparation_stop(
             "source rebase preparation interrupted",
         ));
     }
+    if let Denial::Retention(StoreDenial::ExecutionRequest(stop)) = &cause {
+        return relational_execution_stop((*stop).into(), None);
+    }
     if let Denial::Retention(StoreDenial::Allocation(allocation)) = cause {
         use worth_execution::{
             ExecutionAllocationDenialClass as Class, MapKernelStop as Kernel,

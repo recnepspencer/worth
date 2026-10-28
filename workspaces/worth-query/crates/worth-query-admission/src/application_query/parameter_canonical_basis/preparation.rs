@@ -13,6 +13,7 @@ pub(in crate::application_query) enum ParameterBasisPreparationStop<Stop> {
         quote: worth_foundational::facade::CanonicalBasisPreparationQuote,
     },
     Derivation(CanonicalDigestDerivationDenial),
+    UnsupportedSortImplementation(worth_foundational::facade::CanonicalSortImplementationDenial),
     AccountingOverflow,
 }
 
@@ -37,8 +38,10 @@ pub(in crate::application_query) fn prepare_parameter_basis_admitted<Stop>(
             ParameterBasisPreparationStop::Preparation { cause, quote }
         }
         CanonicalBasisPreparationStop::Construction(_) => unreachable!("parameter loci are unique"),
-        CanonicalBasisPreparationStop::AccountingOverflow
-        | CanonicalBasisPreparationStop::UnsupportedSortImplementation => AccountingOverflow,
+        CanonicalBasisPreparationStop::AccountingOverflow => AccountingOverflow,
+        CanonicalBasisPreparationStop::UnsupportedSortImplementation(cause) => {
+            ParameterBasisPreparationStop::UnsupportedSortImplementation(cause)
+        }
     })?;
     admit(basis.payload().entries().len(), 0).map_err(Admission)?;
     // The digest consumes a copy while the admitted parameter retains its basis.

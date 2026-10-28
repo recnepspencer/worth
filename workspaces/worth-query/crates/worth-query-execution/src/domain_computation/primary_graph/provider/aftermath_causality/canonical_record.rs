@@ -4,6 +4,8 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCorrectionSourceCoordinates,
 };
 use worth_relational::facade::history::{CommitId, RelationalCommitReceipt};
+mod borrowed;
+pub(super) use borrowed::matches_reverse;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryCanonicalCorrectionFact {

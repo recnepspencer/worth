@@ -51,6 +51,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::MissingApplicableProducer
             | Self::AmbiguousApplicableProducer
             | Self::ManagedCleanupRequired(_)
+            | Self::UnobservedWrite(_)
             | Self::ProducerUnavailable
             | Self::ProducerDomainDenied
             | Self::RequestAuthorization(_)

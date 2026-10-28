@@ -1,14 +1,14 @@
 //! AVL path replacement. Child and entry cells retain their original funding.
+use super::funding::Funding;
 use super::{
     node::{build, height, Entry, Link, Node},
     ExecutionOrderedMapDenial as Denial,
 };
-use crate::ExecutionAllocationPolicy as Policy;
 use std::{cmp::Ordering, sync::Arc};
 pub(super) fn insert<K: Ord, V>(
     root: &Link<K, V>,
     entry: Arc<Entry<K, V>>,
-    policy: Policy<'_, '_>,
+    policy: Funding<'_, '_>,
 ) -> Result<Arc<Node<K, V>>, Denial> {
     let Some(old) = root else {
         return build(entry, None, None, policy);
@@ -32,7 +32,7 @@ pub(super) fn insert<K: Ord, V>(
 pub(super) fn remove<K: Ord, V>(
     root: &Link<K, V>,
     key: &K,
-    policy: Policy<'_, '_>,
+    policy: Funding<'_, '_>,
 ) -> Result<Link<K, V>, Denial> {
     let Some(old) = root else { return Ok(None) };
     match key.cmp(&old.entry.key) {
@@ -73,7 +73,7 @@ fn balanced<K, V>(
     entry: Arc<Entry<K, V>>,
     left: Link<K, V>,
     right: Link<K, V>,
-    policy: Policy<'_, '_>,
+    policy: Funding<'_, '_>,
 ) -> Result<Arc<Node<K, V>>, Denial> {
     if height(&left) > height(&right) + 1 {
         let child = left.as_ref().expect("left-heavy node has a left child");

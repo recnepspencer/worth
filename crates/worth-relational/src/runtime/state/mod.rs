@@ -19,9 +19,10 @@ pub(in crate::runtime) use runtime_state::{
     RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
 };
 pub(crate) use subsystems::{
-    readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
-    CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
-    CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexDefinitionReadBinding,
+    authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
+    BranchHeadVersionIndexAuthority, CanonicalCheckpointAdmissionError, CanonicalPositionAdmission,
+    CanonicalPublicationRecordError, CommitStrategiesSubsystem, DurabilitySubsystem,
+    HistorySubsystem, IndexCatalogCoverage, IndexDefinitionCatalog, IndexDefinitionReadBinding,
     IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
     PartitionEdition, PendingRecordAllocations, PerformedCheckpointSelection,
     PreparedCanonicalPublicationRoute, PreparedGenerationBatch,

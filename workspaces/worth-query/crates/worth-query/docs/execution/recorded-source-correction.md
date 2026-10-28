@@ -720,9 +720,58 @@ shows publication recovery, explicit cleanup and native output settlement.
 
 Recorded-inverse eligibility compares the original operation's complete semantic dependencies
 against the target. Own writes are compared with their committed after-state.
-A later primary edit conflicts with restoring primary; a secondary edit is
-preserved. A changed decision dependency also matters: changing a ceiling read
-by the source handler can refuse correction while primary still equals `11`.
+A live later primary edit conflicts with restoring primary; a secondary edit
+is preserved. A changed decision dependency also matters: changing a ceiling
+read by the source handler can refuse correction while primary still equals `11`.
+
+### Reverse consecutive original sources
+
+For scalar field dependencies on a canonical single-parent ancestry, a later
+write stops blocking an older source only after that exact performed occurrence
+has its own performed reversal on the selected ancestry. For example, start at
+`3`, perform A to `7`, perform B to `8`, reverse original B to `7`, then freshly
+select and reverse original A to `3`. Three sources use the same sequence in
+reverse order. Keep each original receipt; reversing a reapplication selects
+that new performed receipt. Reapplication itself does not undo the older source.
+
+For source and reversal endpoints needed across later publications, call
+`request.retain_current_read()` immediately after that endpoint lands and keep
+the returned read observation alive through the later correction. It retains
+that actual optional Product history; receipts alone do not extend its lifetime.
+Correction still performs fresh disclosure and current inverse admission.
+
+Query checks canonical authored writes, including equal-value writes that do
+not change the native field revision. It validates each source/reversal pair
+against genuine performed World and Native evidence, then compares actual
+field presence, value, kind and installed contract against the retained original
+source root. Matching values alone are insufficient. A live equal-value write,
+an unreversed reapplication, a changed independent decision dependency, or a
+reversal performed only on a sibling branch still blocks the older source.
+
+This restoration path supports complete entity/field dependency facts and
+bounded installed equality selections over authoritative stored fields. Native
+resolves the actual single-field Authoritative or Planned index descriptor;
+Query preserves that descriptor rather than relabeling it as permission.
+The latter include exact positive and empty index support: authored equal-key
+writes and competing membership changes cannot disappear behind unchanged values.
+Unprojected aggregate, adjacency, other index kinds, workflow or publication facts
+and unproven merge intervals return typed
+`RestoredSupport` refusals. Missing canonical material or a discarded Native
+write generation also refuses; ordinary preparation does not scan history to
+rebuild it. Explicit Native reconstruction is a separate funded maintenance
+operation. Relevant write paging visits selected postings; World ancestry
+validation and explicit reconstruction retain their own history traversal cost.
+Neither derived postings nor serialized receipts extend canonical retention.
+A live generation can be discarded and rebuilt from its still-verified retained
+canonical owners. A checkpoint's decoded index-write descriptions do not carry
+that live verification; decoded-only intervals return incomplete-history refusal
+until a genuine preparation/replay owner can reissue it. Durable restart availability
+for this restoration path is a separate handoff.
+
+The [ordinary Numeric journeys](../../../worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
+exercise consecutive originals, equal-value and reapplication blockers,
+independent dependencies, disjoint preservation and sibling isolation through
+the same request correction API.
 
 The caller needs current disclosure and current admission for the inverse.
 Another authorized actor can correct the source after the original actor's

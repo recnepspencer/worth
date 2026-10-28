@@ -51,8 +51,8 @@ fn admitted_preparation_preserves_entry_order_and_actual_comparison_evidence() {
             )
             .unwrap();
             assert_eq!(admitted.payload(), ordinary.payload());
-            assert_eq!(admitted.payload().entries()[0], entry(0));
-            assert_eq!(admitted.payload().entries()[count - 1], entry(count - 1));
+            let expected: Vec<_> = (0..count).map(entry).collect();
+            assert_eq!(admitted.payload().entries(), expected.as_slice());
             assert!(charged.0 >= admitted.payload().cost().ordering_comparisons() as usize);
             assert!(charged.1 >= version().as_str().len());
         }

@@ -117,10 +117,31 @@ impl RelationalPreparationHistory {
 
     pub(crate) fn reserve_canonical_publication_route(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         envelope: Arc<CanonicalCommitEnvelope>,
         root: Arc<RelationalBranchRoot>,
-    ) -> Result<super::PreparedCanonicalPublicationRoute, &'static str> {
-        RelationalCanonicalPublicationRoutes::reserve(&self.canonical_routes, envelope, root)
+    ) -> Result<
+        super::PreparedCanonicalPublicationRoute,
+        crate::transactions::data::TransactionCommitError,
+    > {
+        let generation = self
+            .canonical_routes
+            .prepare_authored_generation(execution, &envelope)
+            .map_err(super::canonical_publication_routes::authored_write_commit_denial)?;
+        RelationalCanonicalPublicationRoutes::reserve(
+            &self.canonical_routes,
+            envelope,
+            root,
+            generation,
+        )
+        .map_err(|detail| {
+            crate::transactions::data::TransactionCommitError::publication(
+                crate::publication::data::PublicationError::new(
+                    crate::publication::bundle::PublicationStage::BundleAssembly,
+                    detail,
+                ),
+            )
+        })
     }
 
     pub(crate) fn inspect_merge_from_bindings(

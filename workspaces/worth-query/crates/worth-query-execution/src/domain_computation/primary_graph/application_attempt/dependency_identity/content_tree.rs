@@ -27,6 +27,15 @@ pub(in crate::domain_computation::primary_graph) struct CompletedFactRoutes {
     routes: Arc<FactRoutes>,
 }
 impl CompletedFactRoutes {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn observes_field(
+        &self,
+        body: &FactPayload,
+        entity: worth_relational::facade::identity::EntityId,
+        locator: &worth_foundational::facade::AspectFieldLocator,
+    ) -> Option<bool> {
+        self.matches_body(body)
+            .then(|| self.routes.field(entity, locator).is_some())
+    }
     pub(in crate::domain_computation::primary_graph) fn walk_touches_entity(
         &self,
         body: &FactPayload,

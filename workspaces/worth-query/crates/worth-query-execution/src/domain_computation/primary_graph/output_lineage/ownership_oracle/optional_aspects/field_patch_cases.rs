@@ -35,14 +35,26 @@ fn absent_parent_write_requires_each_actual_target_observation() {
     let denial = journey::demand(&runtime, true)
         .err()
         .expect("the invalid write must refuse");
+    let WorthQueryOutputDemandDenialKind::UnobservedWrite(cause) = denial.kind() else {
+        panic!("the original writer cause must survive producer delivery: {denial:?}");
+    };
     assert_eq!(
         denial.commit_denial_kind(),
-        Some(WorthQueryApplicationCommitDenialKind::ProviderRejected)
+        None,
+        "the writer refused before commit lowering"
     );
-    let detail = format!("{denial:?}");
-    assert!(
-        detail.contains("ProposalBinding"),
-        "unobserved Required Content must refuse at proposal binding: {detail}"
+    assert_eq!(
+        cause.locator(),
+        runtime
+            .primary_provider
+            .graph
+            .layout
+            .field_locator("Body", "SourceNotes", "SourceContent")
+            .unwrap()
+    );
+    assert_eq!(
+        denial.recovery_posture(),
+        WorthQueryOutputDemandRecoveryPosture::Terminal
     );
     assert_eq!(source_values(&runtime), (None, None));
 }

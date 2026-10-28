@@ -56,6 +56,16 @@ evaluation will read. Evaluation cannot expand its prepared entity/relation
 scope. Declare every field and relation the rule needs; resolving a binding
 does not make undeclared access legal.
 
+An existing-entity candidate write must name a field in its completed decision
+read set. Observed values, observed field absence and observed whole-aspect
+absence satisfy this requirement; resolving the entity alone does not. A
+missing observation returns `UnobservedWrite` with the exact entity generation
+and field locator. It carries no field contents or access authority. The common
+writer refuses before retaining the effect. A defensive lowering refusal keeps
+that same cause and the `EffectLowering` stage; an earlier handler refusal is
+not described as a commit attempt. New-entity initialization and stale or
+foreign target checks retain their separate contracts.
+
 For complete multi-hop reads, see [Invariant walks](invariant-walks.md). They
 admit every visited entity and physical edge and preserve the original request
 and payer through typed results and refusals.

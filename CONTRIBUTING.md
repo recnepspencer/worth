@@ -8,6 +8,42 @@ Before working on code, read [AGENTS.md](./AGENTS.md) and every document under
 truth ownership, phase progression, physical placement, performance, and test
 evidence as mechanically enforced architecture rather than local convention.
 
+## Rust toolchain and canonical sort qualification
+
+The repository toolchain and CI select stable Rust **1.99.1**, compiler commit
+`58cf8f9c35b355199727627d07ae34a4e2846d67`. This is the current
+[Phase 18 qualification candidate](plans/WORTH-query/milestone-9.18.1.md#phase-18-mandatory-current-rust-toolchain-qualification);
+runtime and Proprietary acceptance remain pending. The minimum language version
+remains Rust 1.94. The supported older canonical-sort identities remain exact
+Rust 1.94.0 / `4a4ef493e3a1488c6e321570238084b38948f6db` and Rust 1.98.0 /
+`88d9e12ae178fab0fb5cc050a94da85685d449ea`.
+
+`worth-foundational/build.rs` admits only the listed release/full-commit pairs;
+the canonical sort boundary also requires a 32-bit or 64-bit target. Record
+`rustc --version --verbose` for qualification. A different compiler or target
+returns typed `UnsupportedSortImplementation` with the actual release, full
+commit and pointer width before admission callbacks. It produces no canonical
+artifact and must not be relabeled as arithmetic overflow or request exhaustion.
+The closed refusal courts continue to exercise this boundary after an upgrade.
+
+When upgrading, first verify the latest official stable release and full commit
+against the [published toolchain manifest](https://static.rust-lang.org/dist/channel-rust-1.99.1.toml)
+and [release announcements](https://blog.rust-lang.org/releases/). Review that
+exact revision's core stable/shared sort, alloc slice/Vec buffer allocation and
+any changed compiler specialization semantics against the existing admitted
+comparison, move and scratch bounds. The reviewed 1.99.1 algorithms and allocation
+path preserve the 1.98.0 bounds; the two renamed specialization attributes still
+select the same compiler `Marker` meaning.
+
+Keep ordinary ordering and actual comparison counts unchanged: counts participate
+in canonical material, so a changed algorithm requires the canonical compatibility
+owner's version decision. Run the existing ordering, digest, admission and typed
+refusal courts on emitted artifacts, then update the repository/CI pins together.
+Qualify the same immutable SDK and development compiler through Proprietary's
+correction probe, installed consumer courts and mandatory repository gates before
+acceptance. Retain older exact entries only while their compatibility commitment
+remains valid; a wildcard, version comparison or disabled guard is insufficient.
+
 ## Build and test speed
 
 The repository is several Cargo workspaces over one dependency graph, so a

@@ -1,11 +1,12 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-> **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
+> **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 accepted on 2026-10-27.
 > Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
 > Phases 13–14 and 16–18 remain required here, including Rust 1.99.x qualification.
+> Addendum 1 adds required P1 Phase 19: correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -484,9 +485,9 @@ links compiled projection, handler, query and privileged lineage examples.
 Proprietary's [CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md)
 records genuine sheet edits, holes, split/merge lineage and current-main
 qualification at `33278669079835d5f0f5c96556697784fa449eb9`, retaining SDK `b9cdf607`.
-The derived-orbit substrate is qualified under Phase 6; complete Phase 6
-acceptance remains open. Governed and tracked lineage reads remain separate
-unavailable capabilities.
+The derived-orbit substrate and its private consumer gates are qualified under
+accepted Phase 6. Governed and tracked lineage reads remain separate unavailable
+capabilities.
 
 ### Requirements
 
@@ -520,8 +521,8 @@ unavailable capabilities.
   - the current identity that a retired identity's lineage leads to.
 - **Composing orbits.** An orbit relation may itself be a derived relation (Phase
   6), so a composed permutation becomes an orbit without new platform vocabulary.
-  The qualified Phase 6 substrate also binds derived permutation sources;
-  complete Phase 6 acceptance still requires its private consumer gates.
+  The accepted Phase 6 substrate binds derived permutation sources and is
+  qualified through the private consumer gates.
 
 ### Tests That Prove It
 
@@ -600,14 +601,17 @@ and tracked lineage decisions remain separate unfinished capabilities.
 
 ## Phase 5: Components With Persistent Identity
 
+**Accepted, 2026-10-27.** The component identity, lineage and maintenance courts
+and the complete current-main CAD qualification recorded under Phase 6 accept
+this phase. The SDK remains `5b01312ed0048ad4591e6b4a50e08685ea6d77ba`.
+
 **Depends on:** Phase 4 (aggregate identity and lineage).
 
 ### Requirements
 
 - An application declares a component set over one or more relations, read as
   undirected coupling, for example components of a declared adjacency relation.
-- Query gains the plan shape that `plans/deferred-work.md` defers under
-  "Components (islands) plan shape in Query":
+- Query installs the component-set root and component-read plan shape:
   - it lowers onto `ComponentPartitioner` and its incremental maintenance
     (9.17.6.3 Slice 6.8);
   - it gives each component the Phase 4 aggregate identity, not the
@@ -654,8 +658,14 @@ membership, identities, incident lineage and historical-name resolution across
 one, two and eight workers. Parallel runs require actual overlapping invariant
 readers and staged-parallel metadata; they do not claim parallel partition
 maintenance. See [component replay and worker determinism](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-replay-and-worker-determinism).
-Phase 5 remains open for private CAD shell integration and the final guide/phase
-acceptance audit.
+**Accepted, 2026-10-27.** Installed CAD reads retain genuine Native shell
+components over derived face-use adjacency. The eleven focused Entry courts
+cover independent topology oracles, actual split/merge and least-member removal,
+whole-cohort context transfer, versioned ingress and tessellation consumption,
+typed side-anchor refusal, retained decisions and cache invalidation. Production
+reclamation reuses the original face slot with a higher generation while the
+original historical fields and retained component remain valid; a stale current
+seed refuses. The Components deferred-work entry is removed.
 
 ### Gaps To Watch
 
@@ -687,7 +697,7 @@ let count = reader.component_count(FaceIslands::reference())?;
 
 ## Phase 6: Derived Relations Readable By Rules
 
-**Status: open.** The public logical-source substrate is qualified by 35
+**Accepted, 2026-10-27.** The public logical-source substrate is qualified by 35
 runtime courts and a Host compile-pass/compile-fail pair. Genuine Native sources
 feed proposed/committed rule reads, declared decisions, ordinary committed
 projection and framework-owned managed counts. The evidence covers derived
@@ -700,9 +710,26 @@ The 10/10,000 courts compare actual maintenance and business-read acquisition
 category totals. Equal totals do not claim fixed work or an acquisition-identity
 roster. The public production-maintenance prerequisite is separately qualified
 at `5b01312ed004` by ten Native courts, one Query owner court and a Host example.
-Actual private generation-reuse and CAD adoption receipts, followed by combined
-Phase 5/6 acceptance, remain required; these public qualifications do not close
-either phase.
+The same SDK pin is adopted by the eleven focused CAD Entry courts. Actual
+region/exterior incidence supplies derived shell adjacency and retained decisions;
+malformed both/neither anchors refuse without publication. A retained guarded
+decision becomes stale before an unchanged physical-only twin commits in the
+same world, and a fresh guarded decision then commits. Cold/warm, unrelated-body
+and source-transition cache controls preserve their distinct causes. Combined
+public and private evidence accepts Phases 5–6; no derived value grants authority.
+
+The complete private qualification integrates incoming main `52b0fd370ee428f1`
+in merge `70aa8334bd8eb558bcbe589507152049b9805728`, retaining SDK
+`5b01312ed0048ad4591e6b4a50e08685ea6d77ba`. Its
+[CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/70aa8334bd8eb558bcbe589507152049b9805728/cad/docs/plans/query-9.18.1-adoption.md)
+records all 356 Entry tests passing with one existing ignored test, all 3,480
+workspace CI tests passing with 78 skipped, 62 cost tests passing, 213 doc tests
+passing, and an all-target check. The CI and cost lanes exclude only Entry, whose
+complete required lane ran separately. Oracle, determinism, repository Python,
+policy, dependency and line-cap gates also pass. The earlier Entry and CI failures
+remain recorded alongside their reviewed corrections and successful full retries.
+This qualification used Rust 1.98.0 (`88d9e12ae178fab0fb5cc050a94da85685d449ea`);
+it does not close Phase 18’s required Rust 1.99.x qualification.
 
 **Depends on:** Phase 3 (walk reads), and the existing derived-view owner.
 
@@ -769,7 +796,7 @@ let neighbours = reader.derived_relations_from(FaceAdjacency::reference(), &face
 
 ## CAD Shell Member Domain
 
-This contract governs the unfinished CAD shell adoption in Phases 5–6. The
+This contract governs the CAD shell adoption accepted with Phases 5–6. The
 qualified public substrate supports finite carrier/case members through the same
 Native evaluator and aggregate coordinator, including actual logical component,
 lineage and committed-projection reads. Generic projected membership and public
@@ -781,8 +808,8 @@ Existing entity-domain member bytes and absent-domain schema identities remain
 unchanged; older Frame18 readers reject tag44 as an unsupported variant. Actual
 schema binding now resolves the registered Native domain/case owner; only a
 genuine selected view can issue member observations. See [declaration status and focused courts](../../workspaces/worth-query/crates/worth-query-decl/README.md#projected-member-domain-meaning).
-Neither the meaning prerequisite nor the qualified public logical-source
-substrate closes the CAD obligations below.
+The installed CAD courts supply the consumer evidence below; public meaning and
+logical-source qualification alone do not establish CAD adoption.
 
 ### Actual Consumer And Decisive Proof
 
@@ -946,7 +973,8 @@ meaning and exact compatibility; Native source/domain admission and recipe
 evaluation; shared aggregate persistence and read handoffs; ordinary Query
 rule/decision/disclosure consumption; actual CAD adoption and removal of its
 representative-name publication path. Each reviewed slice is committed, but
-Phases 5–6 stay open until their complete original obligations pass.
+a slice alone never accepts a phase: its complete original obligations govern
+acceptance.
 
 The continuing CAD contract is `cad/docs/plans/query-9.18.1-adoption.md` with the
 cell-complex naming rules and general-modeling use-name contract updated in the
@@ -1592,10 +1620,24 @@ required scope in [9.19](milestone-9.19.md), whose final phase performs Propriet
 cutover after public qualification. Numbers 12 and 15 are retained as transfer
 references, not local implementation phases or claims of completion.
 
+**Addendum 1.** Partitioned computation with per-partition reuse is withdrawn as
+a gap: the existing managed-computation contract in
+[`docs/build-an-application.md` section 3.6](../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+already supplies declared partitions/keys, tracked gathering, pure partition
+computation, owner completion and reuse retained on the producer record at the
+reported SDK. The one-retained-computation-per-handler rule remains a consumer
+design constraint; this finding does not require another retained stage or a
+relaxed handler limit. This withdrawal names the reuse finding, not Phase 13's
+separate compiler-qualification refusal. The spatial finding remains required in
+9.19 on both committed preparation and candidate invariant readers. Consecutive
+same-field undo is a new P1 correction-derivation requirement in Phase 19 below;
+all other findings retain their scope and priority.
+
 | Priority | Finding | Required phase and owner |
 | --- | --- | --- |
 | P1 | Retained spatial range reads in preparation and candidate validation | 12 transferred to 9.19 — general managed-index extension; provider owns spatial mechanics |
 | P1 | Unqualified compiler reported as byte overflow | 13 — worth-foundational + Query Admission/Execution |
+| P1 | Consecutive undo refuses an earlier source after later overlapping sources are reversed | 19 — Query correction derivation and canonical correction lineage |
 | P2 | Unobserved field write loses its cause | 14 — worth-query-execution |
 | P2 | Scoped invariants must stay local on real large bodies | 15 transferred to 9.19 — public qualification followed by final Proprietary adoption |
 | P3, required | Cell-version storage and live-at-k cost | 16 — Relational + Query, with Proprietary CAD acceptance |
@@ -1700,8 +1742,9 @@ and 12. Rust 1.99 qualification does not substitute for this repair.
 
 ### Requirements And Acceptance
 
-`canonical_verified_std_sort` currently recognizes only exact release/commit
-pairs for Rust 1.94.0 and 1.98.0. Preserve an unqualified implementation as a typed
+`canonical_verified_std_sort` requires an exact release/full-commit identity;
+the [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
+lists the supported identities. Preserve an unqualified implementation as a typed
 compiler-qualification refusal containing the actual compiler release and full
 commit, rather than `AccountingOverflow` or
 `ExecutionResource { denial: ChargedBytesOverflow }`. Carry that cause through
@@ -1829,6 +1872,15 @@ SDK qualification.
 Source review can run alongside Phase 13; closure includes Phase 13's honest
 refusal on an unqualified compiler.
 
+The current qualification candidate selects official stable Rust 1.99.1,
+full compiler commit `58cf8f9c35b355199727627d07ae34a4e2846d67`, with the
+existing 32/64-bit target boundary. Exact core sort, alloc buffer and compiler
+specialization-owner review preserves the existing bounds and canonical version.
+The [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
+owns the exact compiler identities and upgrade procedure. Public runtime and
+Proprietary SDK qualification remain pending; source eligibility alone does not
+close this phase.
+
 ### Requirements And Acceptance
 
 Qualify an official stable Rust 1.99.x release for `canonical_verified_std_sort`.
@@ -1852,6 +1904,140 @@ required official release is unavailable, the phase remains unfinished; remainin
 on 1.98 or treating qualification as a nice-to-have cannot close the milestone.
 Record the exact supported release/commit and upgrade procedure in existing
 toolchain/contributor documentation, including the typed unqualified outcome.
+
+---
+
+## Phase 19: Consecutive Undo After Verified Source Restoration
+
+**Status: unfinished; required. Priority: P1.**
+**Owner:** Query correction derivation, consuming existing canonical occurrence,
+footprint and correction-lineage owners. **Depends on:** 9.18's recorded source
+capture, ordinary correction binding, exact target ancestry and fresh admission.
+Independent of managed indexes, async resources and causal inspection. Schedule
+this correction fix ahead of the remaining P2/P3 findings; numbering does not
+make it a last-priority task.
+
+### Problem And Required Outcome
+
+For one authored parameter initially 3, let A write 7 and B write 8. After a
+performed reversal of B, the parameter is 7. An ordinary reversal of A must then
+be applicable and restore A's captured pre-image, 3. The reported implementation
+instead returns `Derivation(SourceDiverged)` because the source facts moved after
+A, without recognizing the later occurrence's completed reversal. Three successive
+authored writes followed by three selected reversals must similarly walk back
+to the original value. This is required multi-step undo through existing ordinary
+correction requests, not replay, rebasing or restoration of an old world head.
+
+The consumer-provided reproducer is
+`crates/worth-cad-entry/tests/operation_family/installed/correction/source_only_probe.rs`
+on Proprietary branch `codex/undo-redo-20261027`, commit `46304f85e`. It uses one
+bare setter through `ApplicationCorrectionBinding` and `request.corrections()`.
+The reference is supplied evidence to obtain and qualify, not a claim that this
+specification edit executed that private probe.
+
+### Requirements And Applicability Contract
+
+- Derive eligibility from the exact selected target's retained canonical source
+  occurrences, complete semantic dependency footprints and performed correction
+  lineage. An earlier source becomes applicable when every later overlapping
+  occurrence that blocks its recorded support has been lawfully reversed on that
+  target and the original support has been verified as restored. Include the
+  restorative writes of those reversals in this lineage reasoning; they cannot
+  themselves remain unexplained blockers. Append history normally and retain all
+  original occurrences, reversals and identities.
+- Value equality alone is insufficient. An ordinary write of the same bytes,
+  a live overlapping occurrence, or a performed reapplication remains divergence
+  until its own exact occurrence is reversed. Reapplication is a new occurrence;
+  reversing its predecessor does not cancel it. A still-live change to another
+  semantic dependency of A also retains `SourceDiverged`, even when A's written
+  field happens to match its after-image. Disjoint changes remain preserved.
+- Inspect/select the original B receipt, prepare/publish its ordinary reversal,
+  then freshly select the original A receipt on the resulting target and
+  prepare/publish A's reversal. This is the required user-visible call sequence.
+  Selecting the latest correction as redo is a distinct action and cannot be
+  presented as the only route for a second undo. Do not require a new application
+  inverse, custom setter, private undo stack or cert-only replay entrance.
+- Preserve exact entity generation, source/program compatibility, original
+  pre-image/input custody, current disclosure/principal/purpose and inverse
+  admission. A copied receipt, matching locator or caller assertion of restoration
+  cannot supply eligibility. A sibling reversal cannot cancel a blocker in the
+  selected ancestry; inherited ancestor corrections retain their real provenance.
+- The eligibility decision and prepared correction remain bound to the exact
+  current target. A subsequent conflicting publication must fail the existing
+  stale-target check. Equivalent retries retain the original performed outcome;
+  repeated reversal cannot publish a second inverse. Missing/expired evidence,
+  cancelled comparison and unavailable program support keep their typed refusal
+  before effects rather than being treated as successful restoration.
+- Scope is reversible recorded-source applicability. Compensation, reconciliation
+  and irreversible external effects keep their existing owners and effect posture;
+  none is implicitly cancelled by matching local field values. Required derived
+  outputs settle through ordinary demand after source publication.
+
+### Destination And Cost
+
+Extend the existing owner, with Query crate paths below rooted at
+`workspaces/worth-query/crates/`:
+
+```text
+worth-query-execution/src/domain_computation/primary_graph/product_operation/
+  correction_source/
+    compatibility.rs                  E consume correction-aware source eligibility
+    lineage.rs                        E exact reversal/reapplication association
+    restored_support/                 N interpret eligible restored support
+      overlap.rs                      N compare canonical dependency footprints
+      cancellation.rs                 N resolve performed correction relationships
+      eligibility.rs                  N produce the checked restoration result
+worth-query-certification/tests/application_graph/
+  correction/                         N consecutive-source regression scenarios
+```
+
+`E` extends existing production owners; `N` is populated by implementation, not
+created as an empty placeholder. Reuse the existing correction history/index and
+source-fact comparison owners; an auxiliary lookup is derived from canonical
+history and must rebuild without changing eligibility. It cannot become a second
+undo history or a process-local stack. Dependency direction remains from native
+history/source authority into Query's correction interpretation, never the reverse.
+The public facade remains `request.corrections()`.
+
+Ordinary edits incur no new correction-history scan or eager inverse work.
+Correction work follows relevant overlap and correction ancestry under existing
+request/history controls; unrelated fields, bodies and branches must not cause
+a whole-world scan. Exhaustion refuses honestly. Preserve original request and
+storage custody while walking or rebuilding relevant correction evidence.
+
+### Verification And Completion
+
+Use an actual installed bare setter and genuine performed receipts through only
+Decl/Host, with independently authored expected values and lineage observations:
+
+- `3 -> A:7 -> B:8 -> reverse(B):7 -> reverse(A):3` must perform both reversals.
+- `3 -> A:7 -> B:8 -> C:9`, reversed C, B, A, must produce 8, 7, 3 respectively.
+- Live B refuses A. Reversing B then reapplying its retained meaning also refuses
+  A; reverse that new occurrence before A can qualify. A later live equal-value
+  write and a changed independent handler dependency must not be laundered into
+  restoration by an after-image comparison.
+- Preserve a disjoint field edit, reject sibling/counterfeit restoration, and
+  preserve generation/current-authority checks. Exercise stale preparation,
+  duplicate request/reversal, missing lineage and request interruption with no
+  extra publication. Release/rebuild derived correction indexes and require the
+  same verdicts from retained canonical history. Compare a fixed overlap chain
+  beside increasing unrelated authored history without ordinary-edit tax.
+
+Extend the existing grouped correction certification target and real private
+`source_only_probe.rs`; do not add a parallel test binary or replace the setter
+with a test-only bypass. Review any prior court expecting `SourceDiverged` after
+verified reversal/restoration and replace only that obsolete expectation. Retain
+genuine live-write, independent-dependency and reapplication divergence controls.
+
+At implementation, revise
+`workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md`,
+`docs/build-an-application.md` and `docs/capability-index.md` with a compiled,
+pragmatic consecutive-undo sequence, explicit source selection versus redo,
+current authority and typed refusal/retry behavior. Consumer guides describe the
+available implementation when it ships, not this phase's progress or future API.
+This phase closes only after public qualification and the candidate-SDK private
+probe pass, reviewed corrections to the superseded expectation, and required
+repository checks. A plan change or a value-equality shortcut cannot close it.
 
 ## Documentation And Successor Handoff For The Added Phases
 
@@ -1897,7 +2083,7 @@ specification change checks links, scope and path claims without compiling runti
 ## Closing The Milestone
 
 - 9.18.1 closes when every phase's "How We Know It's Done" list holds on master.
-- Phases 1–11, 13–14 and 16–18 are required here: sixteen implementation phases,
+- Phases 1–11, 13–14 and 16–19 are required here: seventeen implementation phases,
   with numbers 12 and 15 retained solely as transfer references to required 9.19
   scope. No transferred finding is marked completed. Phases 1–6 retain their
   original acceptance
@@ -1906,7 +2092,8 @@ specification change checks links, scope and path claims without compiling runti
   No added finding is satisfied by a raw re-export, a future-work note or an old
   lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
   The retained Proprietary findings include storage/acceptance qualification and
-  mandatory current Rust qualification. 9.19 owns the general index extension,
+  mandatory current Rust qualification, plus P1 consecutive source undo after
+  verified reversal/restoration. 9.19 owns the general index extension,
   both index readers and their final private locality cutover. Phase numbering
   does not impose serial execution:
   use each phase's actual dependencies.

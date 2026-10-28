@@ -1,10 +1,10 @@
 use super::entry_measurement::EntryComparisonWidth;
 use crate::canonicalization::basis::CanonicalBasisEntry;
 
-/// Bounds the unchanged Rust 1.94.0 and 1.98.0 stable sort. The recorded
+/// Bounds the unchanged Rust 1.94.0, 1.98.0 and 1.99.1 stable sort. The recorded
 /// canonical comparison count remains the count from the actual `sort_by`.
 /// Source: rust-lang/rust, library/core/src/slice/sort/{stable,shared}.
-/// Both reviewed implementations retain insertion <=20, smallsort <=32,
+/// All reviewed implementations retain insertion <=20, smallsort <=32,
 /// 48-entry scratch minimum, 4096-byte stack storage, a per-partition depth
 /// decrement and two bounded powersort merge trees. Qualification does not
 /// replace std sorting: its comparison count is existing canonical material.

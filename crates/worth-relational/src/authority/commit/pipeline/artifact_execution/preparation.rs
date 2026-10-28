@@ -104,6 +104,18 @@ pub(super) fn prepare_publication_artifacts(
         },
         execution,
     )?;
+    let authored_index_writes = super::authored_index_writes::prepare(
+        runtime,
+        selected_branch_state,
+        working_state,
+        merged_plan,
+        record_allocations,
+        schema_continuity.schema_transition.is_none()
+            && merge_execution_authority.is_none()
+            && merge_parent_branches.is_empty()
+            && merge_base_commits.is_empty(),
+        *execution,
+    )?;
     let traces = capture_publication_traces(runtime, &patch, &publication.canonical_deltas);
     let diagnostics_summary = diagnostics_summary_artifact(
         &runtime.config,
@@ -128,6 +140,7 @@ pub(super) fn prepare_publication_artifacts(
             changed_records: &publication.changed_records,
             diagnostics_summary: &diagnostics_summary,
             descriptive_touches,
+            authored_index_writes,
         },
     )?;
     Ok(finish_publication_preparation(PublicationCompletionInput {
@@ -197,6 +210,7 @@ struct PublicationAuthorityInput<'a> {
     changed_records: &'a [RecordRef],
     diagnostics_summary: &'a crate::diagnostics::data::RelationalDiagnosticArtifact,
     descriptive_touches: crate::history::data::RelationalDescriptiveTouchGraph,
+    authored_index_writes: crate::history::data::CanonicalAuthoredIndexWrites,
 }
 
 struct PreparedPublicationAuthority {
@@ -257,6 +271,7 @@ fn prepare_authoritative_publication(
         crate::indexes::data::DerivedIndexArtifacts::default(),
         input.schema_continuity,
     )?;
+    canonical_commit_envelope.authored_index_writes = input.authored_index_writes;
     canonical_commit_envelope.install_record_allocations(input.record_allocations.to_vec());
     Ok(PreparedPublicationAuthority {
         artifacts,

@@ -100,7 +100,8 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
             false
         }
         Kind::ProductSelection(denial) => !denial.is_transient(),
-        Kind::SourceQueryInstallation(_)
+        Kind::UnobservedWrite(_)
+        | Kind::SourceQueryInstallation(_)
         | Kind::ManagedSourceExpansionUnsupported
         | Kind::ForeignSource
         | Kind::MissingApplicableProducer

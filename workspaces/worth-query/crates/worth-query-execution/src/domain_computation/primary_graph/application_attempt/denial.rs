@@ -43,6 +43,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     SourceRetired,
     SourceChanged,
     AmbiguousRelation,
+    /// An existing field write has no exact completed decision observation.
+    UnobservedWrite,
     UndeclaredEffect,
     InvalidEffectValue,
     ForeignEffectTarget,
@@ -185,6 +187,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 /// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
+    UnobservedWrite(Box<WorthQueryApplicationUnobservedWrite>),
     SourceDisclosureParameters(Box<worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial>),
     IndexedLookup(Box<worth_relational::facade::indexes::BoundedEntityFieldLookupDenial>),
     OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
@@ -352,6 +355,8 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
     }
 }
 
+mod unobserved_write;
+pub use unobserved_write::WorthQueryApplicationUnobservedWrite;
 mod output_observation;
 mod source_disclosure;
 

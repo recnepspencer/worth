@@ -124,30 +124,6 @@ Bring a backend back when a real workload needs it: browser parallelism for a
 shipped web product, a computation that outgrows one machine, or a kernel that
 needs an accelerator.
 
-### Components (islands) plan shape in Query
-
-Spec: [milestone-9.17.6.3.md](WORTH-query/milestone-9.17.6.3.md), Slice 6.8
-and the isolation-and-reuse requirements.
-
-`worth-execution`'s `ComponentPartitioner` routes islands by their least current
-member. Query's installed component definitions use the Native committed aggregate
-identity and lineage owner; that routing key is never their public identity.
-Typed component-set declarations, privileged inspection, scoped operation/decision
-reads, ordinary invariant proposed/committed selection/enumeration/count and
-complete one-shot Of/Census Query results are implemented. The
-[component guide](../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-set-declarations)
-explains visibility, disclosure and retained source evidence.
-
-[Milestone 9.18.1 Phase 5](WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity)
-now includes the public topology island consumer, independent seeded union-find
-merge/split/anchor-removal courts and actual split business-read locality beside
-10 and 10,000 unrelated rings. The [Native replay and worker courts](../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-replay-and-worker-determinism)
-audit split/merge replay and identical published identities/lineage across actual
-one-, two- and eight-worker runs. It remains open for Proprietary CAD shell
-adoption and the final guide/phase acceptance audit.
-Keep this entry until those complete-phase gates pass; remove it when Phase 5
-ships rather than describing implemented Query declarations as unavailable.
-
 ## Worth Store
 
 The [Database Foundation Roadmap](database-foundation/roadmap.md) governs the

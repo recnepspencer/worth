@@ -150,6 +150,13 @@ pub(super) fn execution_failed(
         return request_authority_denied(subject, authority.clone());
     }
     if let MutationHandlerExecutionDenial::Attempt(attempt) = &error {
+        if let Some(cause) = attempt.unobserved_write() {
+            return denial(
+                WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()),
+                subject.to_owned(),
+            )
+            .into();
+        }
         match attempt.kind() {
             WorthQueryApplicationAttemptDenialKind::ExecutionRequest(cause) => {
                 return denial(
@@ -264,7 +271,14 @@ pub(super) fn handler_execution_failed(
             }
             denial
         }
-        Err(error) => failed(subject, error),
+        Err(error) => {
+            if let Some(attempt) = std::error::Error::source(&error).and_then(|source| source.downcast_ref::<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>())
+                && let Some(cause) = attempt.unobserved_write()
+            {
+                return denial(WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()), subject.to_owned());
+            }
+            failed(subject, error)
+        }
     }
 }
 

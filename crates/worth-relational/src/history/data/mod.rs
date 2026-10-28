@@ -38,9 +38,9 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 #[cfg(test)]
 pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
 pub(crate) use canonical_commit_envelope::{
-    CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
-    CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
-    CanonicalRequiredOutputOrigin,
+    CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites, CanonicalCodecRetirementKind,
+    CanonicalRequiredOutputCodecRetirement, CanonicalRequiredOutputMaterialization,
+    CanonicalRequiredOutputMaterializationRecord, CanonicalRequiredOutputOrigin,
 };
 pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,

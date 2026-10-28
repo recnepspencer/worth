@@ -47,6 +47,8 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// The selected producer, its applicability, or its output binding is no
     /// longer installed.
     ProducerUnavailable,
+    /// The producer attempted a field write without its completed decision observation.
+    UnobservedWrite(crate::domain_computation::primary_graph::WorthQueryApplicationUnobservedWrite),
     /// The installed producer ran and its domain rejected the decision.
     ProducerDomainDenied,
     /// The selected original source could not supply a concrete resource quote.

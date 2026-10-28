@@ -81,6 +81,8 @@ pub struct WorthQueryFactVerificationForTest {
     pub completion_fresh_key_visits: u64,
     /// Last refusal of an existing native completion candidate; no fact data.
     pub native_completion_last_decline: Option<&'static str>,
+    /// Last actual correction-overlap refusal branch; vocabulary only, no fact data.
+    pub correction_restored_support_last_unsupported: Option<&'static str>,
     /// Admitted source facts walked before interruption/validation filtering.
     pub source_admission_visits: u64,
     /// Postcommit capacity and endpoint preparation walks over source facts.
@@ -126,7 +128,7 @@ thread_local! {
         sealed_computation_index_visits: 0, completion_metadata_visits: 0,
         completed_fact_moves: 0, completed_fact_chunks: 0, completed_fact_joins: 0,
         carried_call_records: 0, fresh_read_key_records: 0, handler_read_key_records: 0, carried_key_expansion_visits: 0, fallback_carried_metadata_visits: 0,
-        completion_call_roster_visits: 0, completion_fresh_key_visits: 0, native_completion_last_decline: None,
+        completion_call_roster_visits: 0, completion_fresh_key_visits: 0, native_completion_last_decline: None, correction_restored_support_last_unsupported: None,
         source_admission_visits: 0, source_currentness_visits: 0,
         provider_application_fact_visits: 0, effect_index_fact_visits: 0, posting_fact_visits: 0, posting_registration_visits: 0, rebase_touch_key_visits: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
@@ -344,4 +346,8 @@ pub(super) fn rebase_touch_key() {
 
 pub(super) fn posting_registration() {
     record(|observed| add(&mut observed.posting_registration_visits, 1));
+}
+
+pub(super) fn correction_restored_support_unsupported(reason: &'static str) {
+    record(|observed| observed.correction_restored_support_last_unsupported = Some(reason));
 }
