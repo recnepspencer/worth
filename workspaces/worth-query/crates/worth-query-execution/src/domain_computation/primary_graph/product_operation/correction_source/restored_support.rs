@@ -15,6 +15,7 @@ pub enum WorthQueryCorrectionRestoredSupportDenial {
     Native(worth_relational::facade::history::RelationalAuthoredWriteDenial),
     Selection(worth_relational::facade::change_source::RelationalCommitSelectionDenial),
     FieldSupport(worth_relational::facade::runtime::RelationalFieldSupportComparisonDenial),
+    AspectPresence(worth_relational::facade::runtime::RelationalAspectPresenceSupportDenial),
     Allocation(worth_execution::ExecutionAllocationDenial),
     Storage(worth_execution::ExecutionOrderedMapDenial),
     Request(worth_execution::WorkCeilingDenial),
