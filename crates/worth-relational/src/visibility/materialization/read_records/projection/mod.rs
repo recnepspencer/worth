@@ -1,6 +1,8 @@
 mod adjacency_revision;
 mod admitted_snapshot;
+mod aspect_presence_support;
 mod aspect_versions;
+pub use aspect_presence_support::RelationalAspectPresenceSupportDenial;
 mod basis_reads;
 mod borrowed_adjacency;
 mod borrowed_records;

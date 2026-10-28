@@ -2039,6 +2039,70 @@ This phase closes only after public qualification and the candidate-SDK private
 probe pass, reviewed corrections to the superseded expectation, and required
 repository checks. A plan change or a value-equality shortcut cannot close it.
 
+### Aspect-Presence Restoration Repair
+
+**Qualification held.** The latest private integration at `01817084` after
+incoming `851478c0` exposes `RestoredSupport(UnsupportedFact)` before the
+producer's first B reversal, and the session live-overlap control records actual
+`AspectPresence` rather than the required `SourceDiverged`. The acceptance draft
+below describes older source and is held pending this repair, independent Source
+review, public qualification, uniform immutable SDK repinning and latest-private
+mandatory gates. No earlier green result qualifies the correction.
+
+The adversarial boundary is a scalar `EntityMutationIntent::UpdateFields` that
+initializes an absent aspect. Its canonical authored scope is only the exact
+Field, while Native lowering uses `SetWhole`. Selecting only Lifecycle and
+WholeAspect would miss this live blocker even if both endpoint presence booleans
+match. Struct `PatchFields` preserves its aspect container, including an empty
+container, and cannot supply that scalar counterexample.
+
+Native owns full-generation slot/kind identity, immutable root schema and field
+lowering. Its borrowed `VisibilityProjectionView` receiver must resolve original
+and target entity/kind/aspect against compatible actual installed contract,
+shape and binding, exposing only the scalar EntityField coordinate when needed.
+Query owns canonical interval selection and genuine performed cancellation;
+presence and original-support validation retain their existing owners. Neither
+an aspect name guessed to be a field nor a matching boolean supplies lineage.
+Foreign owners, wildcard generations, wrong kinds, absent contracts and changed
+bindings refuse before effects. No canonical grammar, ledger, control or private
+undo path changes.
+
+The destination extends the existing Native projection facade with
+`crates/worth-relational/src/visibility/materialization/read_records/projection/aspect_presence_support.rs`.
+It owns paired binding resolution; `view.rs` keeps its schema-plan access private
+to that owner. Query `restored_support/eligibility.rs` selects with both exact
+snapshots held under Native access and releases both on refusal;
+`overlap.rs` selects Lifecycle/WholeAspect and the actual scalar Field. Existing
+canonical cursor, cancellation, strict original/target boolean verification and
+postcommit fact rebasing remain the only authorities. Coordinate copies are
+funded by the original request before construction using existing controls.
+Ordinary writes incur no additional work.
+
+Implement in authority order: add the borrowed Native receiver and typed denial;
+integrate paired-root selection and scalar overlap; add Native regression evidence
+inside the existing authored-write-history family; update consumer guidance.
+Native evidence must observe actual absent-to-present mutation and canonical
+Field-only discovery, refuse incompatible installed bindings with a positive
+target-binding check, and preserve struct container behavior. These are boundary
+tests, not selector-shape mirrors. Existing public consecutive/equal/live/reapply,
+independent-dependency and sibling controls still apply.
+
+Source review must agree the evidence grouping before any Cargo lane is used.
+Then build Native's existing lib target once and run the `authored_write_history`
+family; build the existing Query `application_graph` target once and run its
+`correction::` family. Run affected-owner doctests and the required boundary and
+generated-context commands from AGENTS.md in the serialized lane. Before that
+grant, run only scoped rustfmt, `git diff --check` and
+`scripts/ci/check_workspace_rust_line_caps.sh dirty`.
+
+After public validation and independent final review, commit a new immutable SDK
+and uniformly repin the private root/probe manifests and lockfiles. Root groups
+the producer consecutive Undo and session live-overlap/consecutive Undo cases
+with mandatory latest-private gates; preserve their expected 7 then 3 values and
+strict `SourceDiverged` control. The already-passing bare source probe is not an
+automatic rerun. Keep all original failed evidence. Build grants, final acceptance,
+default integration and commits are outside this source-only turn.
+
 ## Documentation And Successor Handoff For The Added Phases
 
 - Revise `docs/capability-index.md` and `docs/build-an-application.md` for

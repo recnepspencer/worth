@@ -33,9 +33,9 @@ pub use crate::visibility::materialization::read_records::{
     PinnedStructuralWalkVisit, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
     QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
     RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
-    RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,
-    RelationalFieldSupportComparisonDenial, RelationalPinnedRead,
-    RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
+    RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
+    RelationalEntityMetadata, RelationalEntityRetirement, RelationalFieldSupportComparisonDenial,
+    RelationalPinnedRead, RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
     VisibilityProjectionView, VisibilityReadContext,
 };
