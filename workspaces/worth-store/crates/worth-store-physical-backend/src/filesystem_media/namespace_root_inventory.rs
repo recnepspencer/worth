@@ -2,7 +2,7 @@ use cap_fs_ext::{DirExt, FollowSymlinks, OpenOptionsFollowExt};
 use cap_std::fs::{Dir, OpenOptions};
 use std::io::Read;
 use worth_store_physical_format::store_namespace::{
-    classify_store_namespace, NamespaceEntryObservation, NamespaceEntryType,
+    classify_store_namespace, NamespaceDamage, NamespaceEntryObservation, NamespaceEntryType,
     NamespaceRootObservation, StagedNamespaceName, StoreNamespaceClassification,
     StoreNamespaceRelativeRole, STORE_NAMESPACE_IDENTITY_RECORD_LENGTH,
 };
@@ -13,6 +13,34 @@ use super::{MediaOperationRole, NamespaceConfinementDenial};
 const MAX_NAMESPACE_ENTRIES: usize = 1_024;
 
 pub(super) fn classify_opened_root(
+    root: &Dir,
+    boundary: &MediaFaultInterposer,
+) -> Result<StoreNamespaceClassification, NamespaceConfinementDenial> {
+    complete_scaffold_snapshot(classify_once(root, boundary)?, root, boundary)
+}
+
+fn complete_scaffold_snapshot(
+    first: StoreNamespaceClassification,
+    root: &Dir,
+    boundary: &MediaFaultInterposer,
+) -> Result<StoreNamespaceClassification, NamespaceConfinementDenial> {
+    // Identity publication follows all three fixed directories. A root walk
+    // can start before that scaffold exists and read identity after publication.
+    // Reobserve that one mixed-time shape after its identity witness; persistent
+    // missing directories still classify as damage, never as a new namespace.
+    if matches!(
+        first,
+        StoreNamespaceClassification::Damaged(
+            NamespaceDamage::PublishedIdentityWithoutCompleteScaffold
+        )
+    ) {
+        classify_once(root, boundary)
+    } else {
+        Ok(first)
+    }
+}
+
+fn classify_once(
     root: &Dir,
     boundary: &MediaFaultInterposer,
 ) -> Result<StoreNamespaceClassification, NamespaceConfinementDenial> {
@@ -54,6 +82,9 @@ pub(super) fn classify_opened_root(
         &NamespaceRootObservation::directory(observations),
     ))
 }
+
+#[cfg(test)]
+mod snapshot_tests;
 
 fn observe_namespace_directory(
     root: &Dir,
