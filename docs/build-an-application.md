@@ -5318,9 +5318,25 @@ handle leaves the runtime-owned cache alive; explicit close or final runtime
 disposal releases it.
 
 Indexed results retain complete positive, empty and ordering dependencies from
-the original Source. Binding those managed results as mutation source expectations
-or expanding them for retained program dependency facts is currently unsupported
-and returns `ManagedSourceExpansionUnsupported`; no dependency subset is accepted.
+the original Source, including nonmatching rows. The ordinary `expect_source`
+and `expect_result_set` mutation entrances consume these observations under their
+current admitted advancement. Pending expectations own the Source across
+idempotency resolution; fresh execution then borrows the genuine current
+Execution request to materialize facts. An actual recorded retry skips payload
+materialization. No Execution request or grant is retained across calls.
+
+Request-bearing producer, workflow and retained-dependency conversion uses that
+same validation and materialization algorithm. Native currentness still checks
+the complete conservative Source facts; a previously nonmatching record entering
+an empty prefix invalidates the original expectation. Full generations,
+conflicting-revision refusals and merged endpoint evidence remain in force.
+Legacy conversion without an Execution request returns
+`ManagedSourceExpansionUnsupported`; an allocation policy alone grants no
+managed expansion. The
+[managed expectation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/expectations/membership.rs)
+exercise the public API, stale nonmatches, empty results and recorded retry.
+This source implementation still awaits focused build/runtime qualification;
+local membership routing, narrowed footprints and full Phase1 remain unfinished.
 The
 [public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
 shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and

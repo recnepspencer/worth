@@ -318,6 +318,19 @@ pub(super) fn source_preparation_denial(
     stop: crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenial,
 ) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenialKind as Kind;
+    if let Some(cause) = stop.execution_denial() {
+        return denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(*cause)), identity);
+    }
+    if let Some(cause) = stop.retention_interruption() {
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+        return denial(
+            match cause {
+                Stop::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+                Stop::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
+            },
+            identity,
+        );
+    }
     match stop.kind() {
         Kind::ManagedSourceExpansionUnsupported => denial(
             WorthQueryOutputDemandDenialKind::ManagedSourceExpansionUnsupported,

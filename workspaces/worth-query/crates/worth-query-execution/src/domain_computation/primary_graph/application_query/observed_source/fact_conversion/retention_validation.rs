@@ -7,21 +7,19 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
         expected: &str,
-        request: Option<
-            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        >,
+        control: SourceFactExpansionControl<'_, '_>,
     ) -> Result<(), WorthQuerySourceExpectationDenial> {
-        self.require_supported_fact_expansion(expected)?;
+        control.admit(self, expected)?;
         self.validate_completeness(expected)?;
         source_fact_count(self, expected)?;
         let footprint = self.source_meaning.footprint();
-        footprint.validate_selections(layout, request)?;
+        footprint.validate_selections(layout, &|subject| control.poll(subject))?;
         // Temporary borrowed-key indexes remain outside payload custody. They
         // validate the same duplicate body rule without constructing a Fact or
         // cloning endpoints, field locators, or canonical identity material.
         let mut fields = BTreeMap::new();
         for field in footprint.fact_sources().flat_map(|facts| facts.aspects) {
-            check_request(request, expected)?;
+            control.poll(expected)?;
             let contract = layout
                 .aspect_contract(&field.entity_name, &field.aspect)
                 .ok_or_else(|| source_contract_denial(field))?;
@@ -36,7 +34,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         }
         let mut adjacencies = BTreeMap::new();
         for adjacency in footprint.fact_sources().flat_map(|facts| facts.adjacencies) {
-            check_request(request, expected)?;
+            control.poll(expected)?;
             let key = (
                 adjacency.anchor,
                 adjacency.relation_kind,
@@ -50,7 +48,7 @@ impl<Query> WorthQueryObservedSource<Query> {
                 return Err(changed(expected));
             }
         }
-        check_request(request, expected)
+        control.poll(expected)
     }
 }
 fn changed(expected: &str) -> WorthQuerySourceExpectationDenial {
@@ -58,15 +56,4 @@ fn changed(expected: &str) -> WorthQuerySourceExpectationDenial {
         WorthQuerySourceExpectationDenialKind::SourceChanged,
         expected,
     )
-}
-fn check_request(
-    request: Option<
-        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    >,
-    expected: &str,
-) -> Result<(), WorthQuerySourceExpectationDenial> {
-    if let Some(stop) = request.and_then(|request| request.interruption()) {
-        return Err(WorthQuerySourceExpectationDenial::source_retention_denied(expected, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)));
-    }
-    Ok(())
 }

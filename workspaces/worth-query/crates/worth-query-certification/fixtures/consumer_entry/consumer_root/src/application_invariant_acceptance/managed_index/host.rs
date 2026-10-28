@@ -1,6 +1,6 @@
 //! Genuine application contribution, authenticated principal and committed source.
 use super::super::{authentication, resources};
-use super::{boxes, prefix, schema::*};
+use super::{boxes, mutation, prefix, schema::*};
 use std::sync::Arc;
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::{
@@ -22,6 +22,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
         ApplicationProgramIdentity::new("managed-catalog.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<Catalog, Feature>()
+            .native_action::<mutation::Binding>()
+            .finish_action()
             .native_action::<boxes::status::Binding>()
             .finish_action()
             .operation::<boxes::access::InspectBoxes>()
@@ -35,6 +37,7 @@ impl WorthQueryApplicationContribution<Catalog> for CatalogContribution {
         setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.managed_index::<prefix::PrefixIndex, _>(prefix::Provider(configuration.prefix))?;
+        setup.handler::<mutation::Binding, _>(mutation::Handler)?;
         boxes::configure(configuration.boxes, configuration.incompatible, setup)
     }
 }

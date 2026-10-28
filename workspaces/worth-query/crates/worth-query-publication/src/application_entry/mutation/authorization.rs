@@ -256,7 +256,7 @@ where
             .borrowed_preconditions
             .unwrap_or(&staged.preconditions),
     )?;
-    prepare_authorized(request, identities, staged.source, authorized)
+    prepare_authorized(phase, request, identities, staged.source, authorized)
 }
 
 pub(super) fn prepare_selected<Schema, Intent, SourcePreparation>(
@@ -283,10 +283,11 @@ where
             .unwrap_or(&staged.preconditions),
         selected,
     )?;
-    prepare_authorized(request, identities, staged.source, authorized)
+    prepare_authorized(phase, request, identities, staged.source, authorized)
 }
 
 fn prepare_authorized<Schema, Intent, SourcePreparation>(
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
     identities: &Identities<'_, Schema, Intent>,
     source: Option<
@@ -344,6 +345,7 @@ where
                     .request
                     .application
                     .bind_application_source_expectation::<IntentBinding<Schema, Intent>, _>(
+                        phase,
                         &mut admission,
                         source,
                         identities.mutation_input(),
@@ -352,6 +354,7 @@ where
                     .request
                     .application
                     .bind_application_result_set_expectation::<IntentBinding<Schema, Intent>, _>(
+                        phase,
                         &mut admission,
                         source,
                         identities.mutation_input(),

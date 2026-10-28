@@ -104,15 +104,14 @@ impl WorthQueryObservedSourceFootprint {
     pub(super) fn validate_selections(
         &self,
         layout: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-        request: Option<
-            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        >,
+        poll: &impl Fn(&str) -> Result<(), WorthQuerySourceExpectationDenial>,
     ) -> Result<(), WorthQuerySourceExpectationDenial> {
         for selection in self.root_selection.iter().chain(
             self.managed_meanings()
                 .flat_map(|m| m.footprint().root_selection.iter()),
         ) {
-            selection.validate_walks(layout, request)?;
+            poll("source selection")?;
+            selection.validate_walks(layout, poll)?;
         }
         Ok(())
     }

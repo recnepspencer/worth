@@ -52,7 +52,7 @@ pub fn name<Q>() -> ApplicationQueryResultFieldRef<
     ItemFacts,
     ItemName,
     String,
-    ReadOnly,
+    ReadWrite,
     EqualityPredicate,
     NoApplicationUnit,
 > {

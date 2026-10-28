@@ -11,9 +11,7 @@ impl WorthQueryObservedRootSelection {
     pub(in crate::domain_computation::primary_graph::application_query) fn validate_walks(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
-        request: Option<
-            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        >,
+        poll: &impl Fn(&str) -> Result<(), Denial>,
     ) -> Result<(), Denial> {
         if let Some(orbit) = &self.orbit {
             let query = orbit.aggregate.key();
@@ -43,9 +41,7 @@ impl WorthQueryObservedRootSelection {
             }
         }
         for body in self.walks.iter().flat_map(|owned| owned.values()) {
-            if let Some(stop) = request.and_then(|r| r.interruption()) {
-                return Err(Denial::source_retention_denied(body.key().relation(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)));
-            }
+            poll(body.key().relation())?;
             let query = body.key();
             if !layout.relation(query.relation()).is_some_and(|relation| {
                 relation.kind == query.relation_kind()

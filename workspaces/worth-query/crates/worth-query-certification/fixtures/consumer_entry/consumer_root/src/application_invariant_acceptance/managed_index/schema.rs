@@ -1,5 +1,5 @@
 //! The source universe and external principal are actual installed graph meaning.
-use super::{boxes, prefix, query};
+use super::{boxes, mutation, prefix, query};
 use worth_query_decl::facade::{application_schema::*, authentication::*, *};
 
 worth_query_application! { pub Catalog {
@@ -9,7 +9,7 @@ worth_query_application! { pub Catalog {
 worth_query_application_contribution! { pub contribution CatalogContribution in Catalog {
     identity: "worth.query.consumer.managed-catalog.contribution.v1",
     members: |schema| {
-        boxes::declare(schema.entity(ExternalMapping::reference()).entity(Principal::reference())
+        mutation::declare(boxes::declare(schema.entity(ExternalMapping::reference()).entity(Principal::reference())
             .entity(Directory::reference()).entity(Item::reference())
             .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
             .aspect(Principal::reference(), PrincipalFacts::reference())
@@ -29,7 +29,7 @@ worth_query_application_contribution! { pub contribution CatalogContribution in 
             .application_query_binding::<query::SourceBinding>()
             .application_query(query::prefix_definition())
             .application_query_binding::<query::PrefixBinding>()
-            .managed_index(ApplicationManagedIndexDefinition::<Catalog, prefix::PrefixIndex>::new()))
+            .managed_index(ApplicationManagedIndexDefinition::<Catalog, prefix::PrefixIndex>::new())))
     }
 }}
 use worth_query_decl::facade::application_query::ApplicationManagedIndexDefinition;
@@ -50,7 +50,7 @@ worth_query_value_binding!(pub NameBinding for String {
     identity: "managed-catalog.name.v1", scalar: String,
     canonical: ValueDecodeBounds::new(2048, 1024, 8, 8),
 });
-worth_query_field!(pub ItemName for Catalog, Item, ItemFacts: String => NameBinding, read_only, equality);
+worth_query_field!(pub ItemName for Catalog, Item, ItemFacts: String => NameBinding, read_write, equality);
 worth_query_field!(pub ItemEnabled for Catalog, Item, ItemFacts: bool => BoolApplicationValueBinding, read_only, equality);
 worth_query_relation!(pub MappingTarget in Catalog, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub Contains in Catalog, Directory => Item; integrity = same_context_unbounded_retain_dangling);

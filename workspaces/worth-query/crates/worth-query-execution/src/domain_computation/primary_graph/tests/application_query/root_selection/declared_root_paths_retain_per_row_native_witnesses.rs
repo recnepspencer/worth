@@ -228,7 +228,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             &observed_source.query_identity,
             &graph.layout,
             None,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            request_execution,
         )
         .expect("ordinary source binding retains root-path native facts");
 

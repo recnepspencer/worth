@@ -29,7 +29,6 @@ where
             Schema,
         >,
     {
-        source.require_supported_fact_expansion(Binding::IDENTITY)?;
         let expected_query_identifier = <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER
             .ok_or_else(|| {
                 WorthQuerySourceExpectationDenial::new(

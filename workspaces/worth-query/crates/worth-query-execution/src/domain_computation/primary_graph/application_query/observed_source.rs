@@ -12,6 +12,7 @@ pub(in crate::domain_computation::primary_graph::application_query) mod comparis
 mod denial;
 mod expression_context;
 mod fact_conversion;
+pub(in crate::domain_computation::primary_graph) use fact_conversion::SourceFactExpansionControl;
 mod fact_sources;
 mod footprint_accounting;
 mod prepared_expectation;
