@@ -21,7 +21,7 @@ criteria. The cross-cutting decisions below bind every phase.
 | Phase | Name | Depends on | Lands |
 |---|---|---|---|
 | 1 | State survival audit | — | On its own (documentation) |
-| 2 | Store capacity, single writer and incarnation | 1 | On its own |
+| 2 | Store capacity, single writer and incarnation | — | On its own |
 | 3 | Application home and host lifecycle | 2 | Together with Phase 4 |
 | 4 | Durable occurrences and original-result retry | 3 | Together with Phase 3 |
 | 5 | Signal and Bridge authored state; mixed publication | 4 | On its own |
@@ -507,7 +507,16 @@ exact name.
   D13, with its callers. For each caller, give the location it uses in each
   interim phase.
 
-**Deliverable.** `plans/database-foundation/milestone-3-survival-audit.md`.
+**Deliverable.**
+
+- The index is `plans/database-foundation/milestone-3-survival-audit.md`. It
+  holds:
+  - the `DurableStateFamily` list and its capability mapping;
+  - the table of durable rows that record process-local identities;
+  - the defect table;
+  - the interim-path table.
+- Per-owner inventory parts live in
+  `plans/database-foundation/milestone-3-survival-audit/`.
 
 **Required tests.** None; this phase writes no code.
 
