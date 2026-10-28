@@ -319,7 +319,7 @@ pub(super) fn source_preparation_denial(
 ) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenialKind as Kind;
     if let Some(cause) = stop.execution_denial() {
-        return denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(*cause)), identity);
+        return denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(*cause)), identity.to_owned());
     }
     if let Some(cause) = stop.retention_interruption() {
         use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
@@ -328,7 +328,7 @@ pub(super) fn source_preparation_denial(
                 Stop::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
                 Stop::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
             },
-            identity,
+            identity.to_owned(),
         );
     }
     match stop.kind() {

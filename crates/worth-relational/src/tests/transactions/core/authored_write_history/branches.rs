@@ -1,7 +1,7 @@
 use super::*;
 
-fn fork(runtime: &RelationalRuntime, name: &str) {
-    super::super::owner_service_phase3::fork_from_main(runtime, name);
+fn fork(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, name: &str) {
+    super::super::owner_service_phase3::fork_from_main(execution, runtime, name);
 }
 
 #[test]
@@ -12,7 +12,7 @@ fn selected_prefix_excludes_siblings_foreign_sources_and_unproven_merges() {
     let created = create_entity_outcome(&execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let original = test_owner_main_basis(&runtime).unwrap();
-    fork(&runtime, "authored-sibling");
+    fork(&execution, &runtime, "authored-sibling");
     let main = update_entity(&execution, &runtime, entity, "main-value");
     let main_basis = test_owner_main_basis(&runtime).unwrap();
     let sibling = update_entity_on_branch(
@@ -63,7 +63,7 @@ fn selected_prefix_excludes_siblings_foreign_sources_and_unproven_merges() {
         ),
         Err(RelationalAuthoredWriteDenial::ForeignOwner)
     ));
-    fork(&runtime, "authored-merge");
+    fork(&execution, &runtime, "authored-merge");
     let disjoint = create_entity_outcome_on_branch(
         &execution,
         &runtime,
@@ -101,7 +101,7 @@ fn fixed_relevant_write_chain_excludes_growing_unrelated_and_sibling_history() {
     let created = create_entity_outcome(&execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let original = test_owner_main_basis(&runtime).unwrap();
-    fork(&runtime, "cost-sibling");
+    fork(&execution, &runtime, "cost-sibling");
     let one = update_entity(&execution, &runtime, entity, "one");
     let two = update_entity(&execution, &runtime, entity, "two");
     let target = test_owner_main_basis(&runtime).unwrap();

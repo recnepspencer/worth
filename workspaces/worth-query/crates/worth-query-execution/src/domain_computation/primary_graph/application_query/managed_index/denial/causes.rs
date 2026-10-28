@@ -156,9 +156,7 @@ fn session(cause: &WorthQueryManagedIndexSessionDenial) -> Cause<'_> {
         Denial::AuthorityMismatch => Cause::Refused(Refusal::SessionAuthorityMismatch),
         Denial::TerminalReleaseMismatch => Cause::Refused(Refusal::TerminalReleaseMismatch),
         Denial::Parent(cause) => match cause {
-            WorthQueryManagedGraphReadDenial::RequestStop(cause) => {
-                Cause::Request(worth_execution::WorkCeilingDenial::Stopped(*cause))
-            }
+            WorthQueryManagedGraphReadDenial::RequestStop(cause) => Cause::Execution(cause),
             WorthQueryManagedGraphReadDenial::SnapshotUnavailable => {
                 Cause::Refused(Refusal::SnapshotUnavailable)
             }

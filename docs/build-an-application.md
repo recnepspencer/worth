@@ -5346,8 +5346,9 @@ Legacy conversion without an Execution request returns
 managed expansion. The
 [managed expectation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/expectations/membership.rs)
 exercise the public API, stale nonmatches, empty results and recorded retry.
-This source implementation still awaits focused build/runtime qualification;
-local membership routing, narrowed footprints and full Phase1 remain unfinished.
+Focused managed-fact, prefix and governed-box regressions pass on the current
+implementation. Local membership routing, narrowed footprints and full Phase1
+remain unfinished.
 The
 [public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
 shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and
