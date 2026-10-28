@@ -66,7 +66,14 @@ fn pinned_thousand_hops_complete_in_both_directions() {
     release_test_commit_snapshot(&runtime, &committed);
     let pin = runtime
         .read_truth()
-        .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &execution)
+        .pin_read_capability(
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("the live fixture admits its current snapshot"),
+            &[],
+            &execution,
+        )
         .unwrap();
     for (direction, root) in [
         (RelationDirection::Forward, ids[0]),
