@@ -1460,7 +1460,11 @@ courts qualify lawful original-caller funding and final release, wrong binding,
 foreign runtime, cancellation, independent governed capability/revocation and
 actual report-memory refusal with owned-denial custody. Bridge courts retain the
 exact Query reference and original allocation refusal; both legacy generic
-materialization fences remain closed. Public qualification uses actual Rust
+materialization fences remain closed. The [subject identity courts](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/tests/scope_replacement.rs)
+also qualify actual canonical replacement and real Native reclamation followed
+by reuse of the same partition and slot at a higher generation. The recreated
+subject passes a fresh query and inspection; the original observation refuses
+before replacement READ authorization. Public qualification uses actual Rust
 1.94.0 and does not satisfy Phase 18. This is a reviewed slice, not Phase 9
 acceptance: performed-source and exact producer-chain connection, Changed,
 optional richer materialization and their disclosure/availability evidence remain

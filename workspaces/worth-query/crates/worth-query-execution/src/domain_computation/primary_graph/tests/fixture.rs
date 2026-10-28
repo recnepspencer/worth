@@ -198,7 +198,7 @@ pub(in crate::domain_computation) use world_installation::installed_authorizatio
 pub(in crate::domain_computation::primary_graph) use world_installation::{
     installed_authorization_world_with_label, installed_authorization_world_with_product_resources,
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
-    installed_two_principal_authorization_world,
+    installed_reclaiming_authorization_world, installed_two_principal_authorization_world,
 };
 pub(super) use world_installation::{
     installed_world, installed_world_with_policy_fact, restored_world,

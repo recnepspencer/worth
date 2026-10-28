@@ -261,6 +261,13 @@ current READ authorization, then independently admits `ObservationIdentity`,
 looking up protected target metadata. Public payload visibility cannot supply
 metadata admission. This fixed report never exposes `DiagnosticFields`.
 
+The [subject identity courts](../../../worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/tests/scope_replacement.rs)
+exercise real replacement and same-slot reuse after Native reclamation. A new,
+readable generation with the same selector cannot inherit the old observation:
+fresh inspection checks the original full subject identity before its READ gate.
+The reclaiming court supplies the actual Native profile before installation and
+uses ordinary canonical deletion, maintenance and creation without allocator hooks.
+
 A single observation yields `ObservedResult`. `lower_evidence_posture()` is
 `MissingOptional`: lower causal connections are unestablished. It does not claim
 that no producer exists. Matching values, field revisions, Route identities or
