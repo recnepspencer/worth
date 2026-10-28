@@ -21,31 +21,41 @@ each invariant is enforced and where each new type lives.
 
 | Phase | Name | Depends on | Lands |
 |---|---|---|---|
-| 1 | State survival audit | — | On its own (documentation) |
-| 2 | Store capacity, single writer and incarnation | — | On its own |
-| 3 | Application home and host lifecycle | 2 | Together with Phase 4 |
-| 4 | Durable occurrences and original-result retry | 3 | Together with Phase 3 |
-| 5 | Signal and Bridge authored state; mixed publication | 4 | On its own |
-| 6 | Programs, adoption and build identity | 4 | On its own |
-| 7 | Workflows, conditional and long-running work | 5, 6 | On its own |
-| 8 | External dispatch and custody | 4, 7 | On its own |
-| 9 | Correction and original-owner advancement | 4, 6, 7 | On its own |
-| 10 | Public cutover and milestone certification | 1–9 | Closes the milestone |
+| 1 | State survival audit | — | Landing 1 |
+| 2 | Store capacity, single writer and incarnation | — | Landing 1 |
+| 3 | Application home and host lifecycle | 2 | Landing 2 |
+| 4 | Durable occurrences and original-result retry | 3 | Landing 2 |
+| 5 | Signal and Bridge authored state; mixed publication | 4 | Landing 3 |
+| 6 | Programs, adoption and build identity | 4 | Landing 3 |
+| 7 | Workflows, conditional and long-running work | 5, 6 | Landing 3 |
+| 8 | External dispatch and custody | 4, 7 | Landing 3 |
+| 9 | Correction and original-owner advancement | 4, 6, 7 | Landing 3 |
+| 10 | Public cutover and milestone certification | 1–9 | Landing 3; closes the milestone |
 
 **Parallel work and landing order.**
 
 - Phases whose dependencies have landed may be built in parallel, but only
   where their write scopes do not overlap.
-- They land in numerical order unless a reviewed merge proves otherwise.
+- Phases 5 to 10 integrate on one milestone integration branch. Each phase
+  merges into that branch when its own reviewer approves and its Tier-2 run
+  on the branch is green. A phase built in parallel merges the current
+  integration branch first.
 
-**Landing rule.**
+**Landing rule.** The milestone reaches master in three landings:
 
-- A phase lands on master only after its exit criteria hold and an independent
-  reviewer certifies it.
-- Phases 3 and 4 land together. A home that recovered graph state but not
-  World occurrences would silently lose application history.
-- Interim refusals (D15) keep every landed state honest, and master is never in
-  a half-recovered state.
+| Landing | Contents | Why it is a separate landing |
+|---|---|---|
+| 1 | Phases 1–2 | Store foundations and the audit. Nothing is visible to applications. |
+| 2 | Phases 3–4 | The first application-visible durability: a home through the host, with original-result retry. Phases 3 and 4 cannot land apart, because a home that recovered graph state but not World occurrences would silently lose application history. |
+| 3 | Phases 5–10 | One broad cutover. Signal, programs, workflows, dispatch and correction become durable, and the interim paths are deleted in the same landing. |
+
+- A landing reaches master only after its exit criteria hold and the
+  coordinator certifies it at the final gate.
+- Between landings 2 and 3, a directory home refuses every family that Phases
+  5–9 support (D15), and the interim checkpoint door (D13) serves those
+  families' callers. Master is never left half-recovered.
+- Within the landing-3 integration branch, each phase lifts its own refusals
+  as it merges.
 
 **Format stability.** An artifact format defined in a phase is final for the
 milestone. Later phases add new artifacts or new tagged entries in an
@@ -790,9 +800,9 @@ schema, the lease and the incarnation.
 
 **Exit criteria**
 
-- One full lane run on the landing head, with every lane green.
-- The relational_home oracle passes once.
-- Independent certification.
+- Landing 1's Tier-2 run is green on its head (see "Verification tiers"),
+  with the Store crash oracle run exhaustively.
+- Final-gate certification.
 
 ---
 
@@ -1072,13 +1082,12 @@ re-executing anything.
 
 **Exit criteria (Phases 3 and 4 together)**
 
-- **One full lane run on the combined head, every lane green.** That covers
-  Relational, World, Signal (including wasm), Bridge, Server, Query (library,
-  integration, examples, doc and fixture gates), the bank world, and Store
-  (owner, scenario, process-scenario, formal, structural). It also covers
-  boundary-check, agent-context, clippy, formatting and line caps.
-- **Oracles.** The cumulative oracle passes once.
-- **Certification.** An independent reviewer certifies.
+- **Landing 2's Tier-2 run is green on the combined head.** This diff
+  reaches nearly every workspace except worth-ui, so the run is close to the
+  full matrix by construction.
+- **Oracles.** The cumulative oracle runs exhaustively, because the diff
+  reaches the home and owner durability.
+- **Certification.** The coordinator certifies at the final gate.
 
 ---
 
@@ -1179,9 +1188,10 @@ effects.
 
 **Exit criteria**
 
-- One full lane run on the landing head, every lane green.
-- The cumulative oracle passes once.
-- Independent certification.
+- The phase's own reviewer approves, and its Tier-2 run against the
+  integration branch is green. The cumulative oracle runs with the phase's new
+  cases included.
+- Landing verification happens once, at Landing 3 (Phase 10).
 
 ---
 
@@ -1248,9 +1258,10 @@ changed build identity is an oracle dimension rather than a single case.
 
 **Exit criteria.**
 
-- One full lane run on the landing head, with every lane green.
-- The cumulative oracle passes once.
-- An independent reviewer certifies.
+- The phase's own reviewer approves, and its Tier-2 run against the
+  integration branch is green. The cumulative oracle runs with the phase's new
+  cases included.
+- Landing verification happens once, at Landing 3 (Phase 10).
 
 ---
 
@@ -1332,9 +1343,10 @@ It interrupts at every durable boundary, including between workflow steps.
 
 **Exit criteria.**
 
-- One full lane run on the landing head, with every lane green.
-- The cumulative oracle passes once.
-- An independent reviewer certifies.
+- The phase's own reviewer approves, and its Tier-2 run against the
+  integration branch is green. The cumulative oracle runs with the phase's new
+  cases included.
+- Landing verification happens once, at Landing 3 (Phase 10).
 
 ---
 
@@ -1411,10 +1423,10 @@ inbound results are recorded.
 
 **Exit criteria.**
 
-- One full lane run on the landing head, with every lane green, including the
-  bank courtroom and rail suites.
-- The cumulative oracle passes once.
-- Independent certification.
+- The phase's own reviewer approves, and its Tier-2 run against the
+  integration branch is green. The cumulative oracle runs with the phase's new
+  cases included.
+- Landing verification happens once, at Landing 3 (Phase 10).
 
 ---
 
@@ -1505,9 +1517,10 @@ advancement after a reopen.
 
 **Exit criteria.**
 
-- One full lane run on the landing head, with every lane green.
-- The cumulative oracle passes once.
-- An independent reviewer certifies.
+- The phase's own reviewer approves, and its Tier-2 run against the
+  integration branch is green. The cumulative oracle runs with the phase's new
+  cases included.
+- Landing verification happens once, at Landing 3 (Phase 10).
 
 ---
 
@@ -1594,16 +1607,27 @@ steps of `query_gate.py`. The binding stops compiling against the host once
 Phase 3 replaces the `in_memory*` constructors. When worth-ui is picked up,
 its own work adopts the open call; this milestone adds no shim for it.
 
-## Verification discipline (every phase)
+## Verification tiers (every phase)
 
-- **Within a phase:** run only the lanes the diff can affect, once, at the end
-  of each slice. Run only the oracle cases that the diff adds or changes,
-  selected by name.
-- **At each landing:**
-  - exactly one full lane run and one cumulative oracle run, on the final
-    head;
-  - evidence logs record the command, HEAD, a clean-tree flag, times and the
-    exit code;
-  - reviewers verify the evidence and probe; they do not rerun whole suites.
-- **Merging to master:** each landing merges the current master in as a
-  reviewed step, then fast-forwards master. Nothing is ever force-pushed.
+Verification cost is the milestone's main expense. It is spent where a diff
+can actually break something.
+
+| Tier | When | What runs |
+|---|---|---|
+| 1 | Each slice | `cargo check` on touched crates, plus the tests the slice adds or changes, selected by name. |
+| 2 | Each phase merge into the integration branch, and each landing | Only the lanes the diff can reach, computed mechanically by `affected_lanes.py` in the orchestration tooling. A lane is reached when the `cargo metadata` resolution of its workspace includes a changed package, or when the diff changes the lane's non-crate inputs: docs for the doc gates, scripts and workflow steps for their lanes. The constitution check (boundary-check and agent-context), line caps in diff mode, formatting of touched workspaces, and lockfile alignment when Cargo files change are always included. Tool self-tests run only when the tool changed. |
+| 3 | Landing 3 (Phase 10), and idle background runs on master | The full lane matrix and the exhaustive cumulative oracle. |
+
+- **Crash oracle at Tier 2.** The oracle runs exhaustively when the diff
+  reaches its subject: Store publication, recovery, root or journal code, the
+  home, or any owner's durable artifacts, readmission or recovery. Otherwise it
+  runs its focused seed range plus every case the diff adds or changes.
+  Failing seeds reproduce deterministically.
+- **Evidence.** Logs record the command, HEAD, a clean-tree flag, times and
+  the exit code. A lane with a green log on the same HEAD is reused, never
+  rerun. Reviewers verify evidence and probe; they do not rerun suites.
+- **Every lane green.** This is enforced at Tier 3. A Tier-3 failure is fixed
+  before the milestone closes, whichever phase caused it.
+- **Merging to master.** Each landing merges the current master in, runs the
+  Tier-2 lanes that merge reaches, then fast-forwards master. Nothing is ever
+  force-pushed.
