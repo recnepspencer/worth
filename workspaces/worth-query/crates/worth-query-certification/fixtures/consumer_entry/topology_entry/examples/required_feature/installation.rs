@@ -25,10 +25,6 @@ pub fn configuration() -> program::ExampleConfiguration {
     }
 }
 
-#[expect(
-    clippy::result_large_err,
-    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
-)]
 #[allow(
     dead_code,
     reason = "The default-policy example and shared-service example compile this module independently"
@@ -43,10 +39,6 @@ pub fn install<const ERASE: bool>(
     install_configured(configuration, build_identity(), limits(), seeded)
 }
 
-#[expect(
-    clippy::result_large_err,
-    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
-)]
 pub fn install_configured<const ERASE: bool>(
     configuration: program::ExampleConfiguration,
     build_identity: installation::ApplicationBuildIdentity,

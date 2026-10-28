@@ -35,10 +35,6 @@ fn main() {
         .unwrap();
 }
 
-#[expect(
-    clippy::result_large_err,
-    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
-)]
 pub(crate) fn run() {
     // Resolve immutable build input before constructing any worker threads.
     let build =
