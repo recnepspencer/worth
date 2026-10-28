@@ -21,7 +21,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.94.0
-      - uses: taiki-e/install-action@nextest
+      - uses: taiki-e/install-action@v2.87.32
+        with:
+          tool: cargo-nextest
       - name: Checkpoint and recover all 64 certificate records
         run: >-
           cargo nextest run --profile ci --cargo-profile ci-test
