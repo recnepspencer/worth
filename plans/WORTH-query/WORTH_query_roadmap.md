@@ -5784,7 +5784,9 @@ report against SDK `ba86433627` adds compiler and unobserved-write refusals,
 cell-version/live-at-k qualification, fresh ordinary proposal acceptance and
 mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
-Sixteen implementation phases remain required in 9.18.1, preserving the other
+Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
+19 for consecutive source undo after verified correction/restoration.
+Seventeen implementation phases remain required in 9.18.1, preserving the other
 numbers; the report's pin is provenance, not a pin update.
 
 ### Goal
@@ -5802,6 +5804,9 @@ The retained Proprietary follow-through adds honest failure causes, measured
 cell-version/history cost, fresh proposal acceptance and current stable Rust
 qualification. The general index extension and spatial-dependent locality are
 governed by 9.19 with its final integrated private cutover.
+P1 correction follow-through makes an earlier source reversible again once all
+later overlapping occurrences have been genuinely reversed; live or reapplied
+overlap still refuses, regardless of coincidentally equal field values.
 
 ### Specification
 
@@ -5838,6 +5843,8 @@ The governing milestone spec is
 - proposal acceptance reissuing fresh ordinary requests with replay kept cert-only
 - mandatory exact-release Rust 1.99.x sort qualification and current qualified
   stable workspace/CI/Proprietary toolchains
+- P1 consecutive source undo through ordinary correction requests: reverse B then
+  A on one field, preserving genuine live/reapplied divergence and fresh admission
 
 ### Acceptance Evidence
 
@@ -5868,7 +5875,7 @@ without delaying the original graph dependencies. Existing 9.4 async and older
 causal-inspection implementations move into the split owners; they are not rebuilt
 as parallel engines. 9.18 keeps correction/pre-image authority, 9.21 keeps new
 decision attachments/summaries, and Store-backed archives/restart remain successor
-work. All sixteen retained implementation phases must close before 9.18.1 closes;
+work. All seventeen retained implementation phases must close before 9.18.1 closes;
 the index/locality transfer references do not require completion of 9.19 first.
 
 ## Milestone 9.19: Managed Advanced Access And Verified Footprints
@@ -5916,6 +5923,8 @@ branches. Final CAD acceptance exposes stale roots, missing incident/absence
 dependencies, global scope work and refusal leaks. The transferred 9.18.1 Phase
 12/15 findings remain required here. Public phase closure does not claim private
 or milestone closure; no repeated private cutover is required in public phases.
+Partitioned managed computation with per-partition reuse already exists; its
+handler-retention constraint remains consumer design, not another platform gap.
 
 ## Milestone 9.20: Correlated Paths And Conflict-Proof Set Execution
 

@@ -6,6 +6,7 @@
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
 > Phases 13–14 and 16–18 remain required here, including Rust 1.99.x qualification.
+> Addendum 1 adds required P1 Phase 19: correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -1662,10 +1663,24 @@ required scope in [9.19](milestone-9.19.md), whose final phase performs Propriet
 cutover after public qualification. Numbers 12 and 15 are retained as transfer
 references, not local implementation phases or claims of completion.
 
+**Addendum 1.** Partitioned computation with per-partition reuse is withdrawn as
+a gap: the existing managed-computation contract in
+[`docs/build-an-application.md` section 3.6](../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+already supplies declared partitions/keys, tracked gathering, pure partition
+computation, owner completion and reuse retained on the producer record at the
+reported SDK. The one-retained-computation-per-handler rule remains a consumer
+design constraint; this finding does not require another retained stage or a
+relaxed handler limit. This withdrawal names the reuse finding, not Phase 13's
+separate compiler-qualification refusal. The spatial finding remains required in
+9.19 on both committed preparation and candidate invariant readers. Consecutive
+same-field undo is a new P1 correction-derivation requirement in Phase 19 below;
+all other findings retain their scope and priority.
+
 | Priority | Finding | Required phase and owner |
 | --- | --- | --- |
 | P1 | Retained spatial range reads in preparation and candidate validation | 12 transferred to 9.19 — general managed-index extension; provider owns spatial mechanics |
 | P1 | Unqualified compiler reported as byte overflow | 13 — worth-foundational + Query Admission/Execution |
+| P1 | Consecutive undo refuses an earlier source after later overlapping sources are reversed | 19 — Query correction derivation and canonical correction lineage |
 | P2 | Unobserved field write loses its cause | 14 — worth-query-execution |
 | P2 | Scoped invariants must stay local on real large bodies | 15 transferred to 9.19 — public qualification followed by final Proprietary adoption |
 | P3, required | Cell-version storage and live-at-k cost | 16 — Relational + Query, with Proprietary CAD acceptance |
@@ -1923,6 +1938,140 @@ on 1.98 or treating qualification as a nice-to-have cannot close the milestone.
 Record the exact supported release/commit and upgrade procedure in existing
 toolchain/contributor documentation, including the typed unqualified outcome.
 
+---
+
+## Phase 19: Consecutive Undo After Verified Source Restoration
+
+**Status: unfinished; required. Priority: P1.**
+**Owner:** Query correction derivation, consuming existing canonical occurrence,
+footprint and correction-lineage owners. **Depends on:** 9.18's recorded source
+capture, ordinary correction binding, exact target ancestry and fresh admission.
+Independent of managed indexes, async resources and causal inspection. Schedule
+this correction fix ahead of the remaining P2/P3 findings; numbering does not
+make it a last-priority task.
+
+### Problem And Required Outcome
+
+For one authored parameter initially 3, let A write 7 and B write 8. After a
+performed reversal of B, the parameter is 7. An ordinary reversal of A must then
+be applicable and restore A's captured pre-image, 3. The reported implementation
+instead returns `Derivation(SourceDiverged)` because the source facts moved after
+A, without recognizing the later occurrence's completed reversal. Three successive
+authored writes followed by three selected reversals must similarly walk back
+to the original value. This is required multi-step undo through existing ordinary
+correction requests, not replay, rebasing or restoration of an old world head.
+
+The consumer-provided reproducer is
+`crates/worth-cad-entry/tests/operation_family/installed/correction/source_only_probe.rs`
+on Proprietary branch `codex/undo-redo-20261027`, commit `46304f85e`. It uses one
+bare setter through `ApplicationCorrectionBinding` and `request.corrections()`.
+The reference is supplied evidence to obtain and qualify, not a claim that this
+specification edit executed that private probe.
+
+### Requirements And Applicability Contract
+
+- Derive eligibility from the exact selected target's retained canonical source
+  occurrences, complete semantic dependency footprints and performed correction
+  lineage. An earlier source becomes applicable when every later overlapping
+  occurrence that blocks its recorded support has been lawfully reversed on that
+  target and the original support has been verified as restored. Include the
+  restorative writes of those reversals in this lineage reasoning; they cannot
+  themselves remain unexplained blockers. Append history normally and retain all
+  original occurrences, reversals and identities.
+- Value equality alone is insufficient. An ordinary write of the same bytes,
+  a live overlapping occurrence, or a performed reapplication remains divergence
+  until its own exact occurrence is reversed. Reapplication is a new occurrence;
+  reversing its predecessor does not cancel it. A still-live change to another
+  semantic dependency of A also retains `SourceDiverged`, even when A's written
+  field happens to match its after-image. Disjoint changes remain preserved.
+- Inspect/select the original B receipt, prepare/publish its ordinary reversal,
+  then freshly select the original A receipt on the resulting target and
+  prepare/publish A's reversal. This is the required user-visible call sequence.
+  Selecting the latest correction as redo is a distinct action and cannot be
+  presented as the only route for a second undo. Do not require a new application
+  inverse, custom setter, private undo stack or cert-only replay entrance.
+- Preserve exact entity generation, source/program compatibility, original
+  pre-image/input custody, current disclosure/principal/purpose and inverse
+  admission. A copied receipt, matching locator or caller assertion of restoration
+  cannot supply eligibility. A sibling reversal cannot cancel a blocker in the
+  selected ancestry; inherited ancestor corrections retain their real provenance.
+- The eligibility decision and prepared correction remain bound to the exact
+  current target. A subsequent conflicting publication must fail the existing
+  stale-target check. Equivalent retries retain the original performed outcome;
+  repeated reversal cannot publish a second inverse. Missing/expired evidence,
+  cancelled comparison and unavailable program support keep their typed refusal
+  before effects rather than being treated as successful restoration.
+- Scope is reversible recorded-source applicability. Compensation, reconciliation
+  and irreversible external effects keep their existing owners and effect posture;
+  none is implicitly cancelled by matching local field values. Required derived
+  outputs settle through ordinary demand after source publication.
+
+### Destination And Cost
+
+Extend the existing owner, with Query crate paths below rooted at
+`workspaces/worth-query/crates/`:
+
+```text
+worth-query-execution/src/domain_computation/primary_graph/product_operation/
+  correction_source/
+    compatibility.rs                  E consume correction-aware source eligibility
+    lineage.rs                        E exact reversal/reapplication association
+    restored_support/                 N interpret eligible restored support
+      overlap.rs                      N compare canonical dependency footprints
+      cancellation.rs                 N resolve performed correction relationships
+      eligibility.rs                  N produce the checked restoration result
+worth-query-certification/tests/application_graph/
+  correction/                         N consecutive-source regression scenarios
+```
+
+`E` extends existing production owners; `N` is populated by implementation, not
+created as an empty placeholder. Reuse the existing correction history/index and
+source-fact comparison owners; an auxiliary lookup is derived from canonical
+history and must rebuild without changing eligibility. It cannot become a second
+undo history or a process-local stack. Dependency direction remains from native
+history/source authority into Query's correction interpretation, never the reverse.
+The public facade remains `request.corrections()`.
+
+Ordinary edits incur no new correction-history scan or eager inverse work.
+Correction work follows relevant overlap and correction ancestry under existing
+request/history controls; unrelated fields, bodies and branches must not cause
+a whole-world scan. Exhaustion refuses honestly. Preserve original request and
+storage custody while walking or rebuilding relevant correction evidence.
+
+### Verification And Completion
+
+Use an actual installed bare setter and genuine performed receipts through only
+Decl/Host, with independently authored expected values and lineage observations:
+
+- `3 -> A:7 -> B:8 -> reverse(B):7 -> reverse(A):3` must perform both reversals.
+- `3 -> A:7 -> B:8 -> C:9`, reversed C, B, A, must produce 8, 7, 3 respectively.
+- Live B refuses A. Reversing B then reapplying its retained meaning also refuses
+  A; reverse that new occurrence before A can qualify. A later live equal-value
+  write and a changed independent handler dependency must not be laundered into
+  restoration by an after-image comparison.
+- Preserve a disjoint field edit, reject sibling/counterfeit restoration, and
+  preserve generation/current-authority checks. Exercise stale preparation,
+  duplicate request/reversal, missing lineage and request interruption with no
+  extra publication. Release/rebuild derived correction indexes and require the
+  same verdicts from retained canonical history. Compare a fixed overlap chain
+  beside increasing unrelated authored history without ordinary-edit tax.
+
+Extend the existing grouped correction certification target and real private
+`source_only_probe.rs`; do not add a parallel test binary or replace the setter
+with a test-only bypass. Review any prior court expecting `SourceDiverged` after
+verified reversal/restoration and replace only that obsolete expectation. Retain
+genuine live-write, independent-dependency and reapplication divergence controls.
+
+At implementation, revise
+`workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md`,
+`docs/build-an-application.md` and `docs/capability-index.md` with a compiled,
+pragmatic consecutive-undo sequence, explicit source selection versus redo,
+current authority and typed refusal/retry behavior. Consumer guides describe the
+available implementation when it ships, not this phase's progress or future API.
+This phase closes only after public qualification and the candidate-SDK private
+probe pass, reviewed corrections to the superseded expectation, and required
+repository checks. A plan change or a value-equality shortcut cannot close it.
+
 ## Documentation And Successor Handoff For The Added Phases
 
 - Revise `docs/capability-index.md` and `docs/build-an-application.md` for
@@ -1967,7 +2116,7 @@ specification change checks links, scope and path claims without compiling runti
 ## Closing The Milestone
 
 - 9.18.1 closes when every phase's "How We Know It's Done" list holds on master.
-- Phases 1–11, 13–14 and 16–18 are required here: sixteen implementation phases,
+- Phases 1–11, 13–14 and 16–19 are required here: seventeen implementation phases,
   with numbers 12 and 15 retained solely as transfer references to required 9.19
   scope. No transferred finding is marked completed. Phases 1–6 retain their
   original acceptance
@@ -1976,7 +2125,8 @@ specification change checks links, scope and path claims without compiling runti
   No added finding is satisfied by a raw re-export, a future-work note or an old
   lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
   The retained Proprietary findings include storage/acceptance qualification and
-  mandatory current Rust qualification. 9.19 owns the general index extension,
+  mandatory current Rust qualification, plus P1 consecutive source undo after
+  verified reversal/restoration. 9.19 owns the general index extension,
   both index readers and their final private locality cutover. Phase numbering
   does not impose serial execution:
   use each phase's actual dependencies.
