@@ -10,7 +10,8 @@ fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
         .schema_registry(declared_aspect_schema_registry(
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let seeds = vec![
         create_entity_in_partition(execution, &runtime, "s0", PartitionId(7)),
         create_entity_in_partition(execution, &runtime, "s1", PartitionId(11)),
@@ -40,7 +41,10 @@ fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
             )
         })
         .collect::<Vec<_>>();
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)

@@ -13,7 +13,8 @@ fn main() {
         .schema_setup(|schema| {
             schema.schema_registry(support::demo_schema_registry());
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let (_left_commit, left) = support::create_entity(request_execution, &runtime, "left");
     let (_right_commit, right) = support::create_entity(request_execution, &runtime, "right");

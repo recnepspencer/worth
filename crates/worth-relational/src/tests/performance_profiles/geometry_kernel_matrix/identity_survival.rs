@@ -9,14 +9,14 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
         suite,
         "topology_identity_survival_recovery_round_trip",
         || {
-            let runtime = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::GeometryKernel,
-            );
+            let runtime =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
             let created = create_entity_outcome(execution, &runtime, "topology-source");
             let entity = changed_entities(&created)[0];
             let start_lineage = runtime
                 .lineage_access()
-                .for_record(entity)
+                .for_record(execution, entity)
+                .unwrap()
                 .expect("initial lineage")
                 .lineage_id;
 
@@ -26,38 +26,41 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
             let replaced_entity = changed_entities(&replacement)[0];
             let replacement_lineage = runtime
                 .lineage_access()
-                .for_record(replaced_entity)
+                .for_record(execution, replaced_entity)
+                .unwrap()
                 .expect("replacement lineage")
                 .lineage_id;
 
             runtime.performance_access().reset_counters();
             let resolution_started_at = Instant::now();
-            let resolution =
-                runtime
-                    .lineage_access()
-                    .resolve_historical_lineage(HistoricalResolutionRequest {
+            let resolution = runtime
+                .lineage_access()
+                .resolve_historical_lineage(
+                    execution,
+                    HistoricalResolutionRequest {
                         branch_id: BranchId("main".to_string()),
                         lineage_id: start_lineage,
                         boundedness_basis:
                             HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-                    });
+                    },
+                )
+                .unwrap();
             let lineage_resolution_micros = resolution_started_at.elapsed().as_micros();
             let resolution_counters = runtime.performance_access().counters();
 
             let checkpoint_started_at = Instant::now();
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("geometry topology checkpoint");
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::GeometryKernel,
-            );
+            let plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
@@ -67,14 +70,18 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
 
             recovered.performance_access().reset_counters();
             let recovered_resolution_started_at = Instant::now();
-            let recovered_resolution = recovered.lineage_access().resolve_historical_lineage(
-                HistoricalResolutionRequest {
-                    branch_id: BranchId("main".to_string()),
-                    lineage_id: start_lineage,
-                    boundedness_basis:
-                        HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-                },
-            );
+            let recovered_resolution = recovered
+                .lineage_access()
+                .resolve_historical_lineage(
+                    execution,
+                    HistoricalResolutionRequest {
+                        branch_id: BranchId("main".to_string()),
+                        lineage_id: start_lineage,
+                        boundedness_basis:
+                            HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
+                    },
+                )
+                .unwrap();
             let recovered_lineage_resolution_micros =
                 recovered_resolution_started_at.elapsed().as_micros();
             let recovered_counters = recovered.performance_access().counters();

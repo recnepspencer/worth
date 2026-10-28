@@ -126,9 +126,9 @@ where
         )?;
     }
     if row.occurrence().result.is_some() {
-        close::drain_candidate::<Schema, Binding>(runtime, row)?;
+        close::drain_candidate(runtime, row)?;
         close::close_provider(execution, installed, row)?;
-        close::finish_native::<Schema, Binding>(runtime, row)?;
+        close::finish_native(runtime, row)?;
         return row.finish_native_slot().map_err(ResourceCause::Storage);
     }
     let index = row
@@ -165,9 +165,9 @@ where
         ensure_provider(runtime, execution, installed, row, effect_authority)?;
         match completion::receive(runtime, execution, installed, row, effect_authority)? {
             completion::Received::Committed => {
-                close::drain_candidate::<Schema, Binding>(runtime, row)?;
+                close::drain_candidate(runtime, row)?;
                 close::close_provider(execution, installed, row)?;
-                close::finish_native::<Schema, Binding>(runtime, row)?;
+                close::finish_native(runtime, row)?;
                 row.finish_native_slot().map_err(ResourceCause::Storage)?;
             }
             completion::Received::None | completion::Received::EffectsIndeterminate => {}
@@ -198,7 +198,7 @@ where
     if occurrence.recovery.is_some() {
         return Err(ResourceCause::RecoveryHandoffRequired);
     }
-    close::drain_candidate::<Schema, Binding>(runtime, row)?;
+    close::drain_candidate(runtime, row)?;
     close::close_provider(execution, installed, row)?;
     let occurrence = row.occurrence_mut();
     let ResourceLifecycle::Live { owner, .. } = &mut occurrence.lifecycle else {
@@ -253,7 +253,7 @@ where
     if row.occurrence().recovery.is_some() {
         return Err(ResourceCause::RecoveryHandoffRequired);
     }
-    close::drain_candidate::<Schema, Binding>(runtime, row)?;
+    close::drain_candidate(runtime, row)?;
     finish_previous_provider(execution, installed, row)?;
     let occurrence = row.occurrence_mut();
     let ResourceLifecycle::Live { owner, .. } = &mut occurrence.lifecycle else {

@@ -50,7 +50,8 @@ fn join(
     let (hold_key, hold_root) = named(1);
     let (retry_key, retry_root) = named(2);
     let (identity_key, identity_root) = named(3);
-    let joined = same_subject(
+
+    same_subject(
         attested_key,
         attested_root,
         &TerminalHeadPublicationExcluded::fixture(publication_key, publication_root),
@@ -62,8 +63,7 @@ fn join(
             identity_root,
             basis(),
         ),
-    );
-    joined
+    )
 }
 
 #[test]

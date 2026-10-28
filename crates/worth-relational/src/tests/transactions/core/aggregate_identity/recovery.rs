@@ -50,8 +50,8 @@ fn checkpoint_schema_readmission_and_tail_replay_rederive_identical_private_reco
         records(execution, &recovered, &recovered_snapshot),
         expected
     );
-    let original_envelopes = runtime.history().commit_envelopes_snapshot();
-    let recovered_envelopes = recovered.history().commit_envelopes_snapshot();
+    let original_envelopes = demand_canonical_history_snapshot(execution, &runtime);
+    let recovered_envelopes = demand_canonical_history_snapshot(execution, &recovered);
     assert_eq!(recovered_envelopes, original_envelopes);
     let checkpointed = checkpoint_and_recover_with(execution, &recovered, persisted).1;
     let snapshot = snapshot_for_owner_branch(&checkpointed, &BranchId("main".into()));

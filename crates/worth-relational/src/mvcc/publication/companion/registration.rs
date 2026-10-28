@@ -45,7 +45,7 @@ impl CompanionRegistry {
             self.state.read().map_err(std::sync::TryLockError::Poisoned),
             PublicationCompanionRegistrationStop::PublicationPending,
         )
-        .expect("blocking read has no contention stop");
+        .expect(/* Proof: Blocking RwLock::read returns only a guard or PoisonError; the contention variant belongs exclusively to try_read. */ "blocking read has no contention stop");
         #[cfg(test)]
         guard_fault::after_acquisition(guard_fault::Door::Fork);
         let next = match &*state {

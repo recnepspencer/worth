@@ -5,7 +5,6 @@ pub enum PublicationStage {
     Apply,
     InvariantCheck,
     BundleAssembly,
-    DurableAppend,
     Visibility,
 }
 

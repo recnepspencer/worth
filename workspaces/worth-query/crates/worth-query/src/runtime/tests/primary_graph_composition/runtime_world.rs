@@ -34,6 +34,7 @@ pub(super) fn host_relational_runtime() -> RelationalRuntime {
         .schema_registry(schema)
         .invariant_catalog(host_invariant_catalog())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn mixed_basis_relational_runtime() -> RelationalRuntime {
@@ -51,6 +52,7 @@ pub(super) fn mixed_basis_relational_runtime() -> RelationalRuntime {
         .runtime_name("mixed-basis-host")
         .schema_registry(schema)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn host_entity_registration(

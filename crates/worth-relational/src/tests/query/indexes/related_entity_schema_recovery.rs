@@ -1,5 +1,5 @@
 use super::*;
-use crate::facade::durability::{DurabilityMode, DurableStoreLayout, RecoveryVerificationMode};
+use crate::facade::durability::RecoveryVerificationMode;
 use crate::facade::indexes::{
     BoundedIndexParityMode, BoundedRelatedEntityOrderedLookupRequest, RelatedEntityEndpoint,
     RelatedEntityOrderingDirection, RelatedEntityOrderingField,
@@ -53,7 +53,10 @@ fn recovered_related_ordering_uses_each_exact_roots_schema_contract() {
         assert_eq!(old.child_entity_ids(), &[alpha, beta]);
     }
 
-    let current_snapshot = recovered.visibility_authority().snapshot();
+    let current_snapshot = recovered
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     assert_eq!(
         recovered
             .read_truth()
@@ -85,15 +88,11 @@ fn v1_ordering_runtime(
         CascadeDeletePolicy::CascadeDeleteRelations,
     )
     .build_registry();
-    let store_layout = DurableStoreLayout {
-        root_path: unique_test_store_path("related-ordering-schema-carrier"),
-        segment_commit_capacity: 2,
-    };
+    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(v1_registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout)
-        .build();
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration");
     let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
     let alpha = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
     let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];
@@ -176,20 +175,18 @@ fn transition_checkpoint_and_recover(
     );
     assert!(v2_build.failed_indexes.is_empty());
 
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("checkpoint preserves both schema-qualified generations");
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(v2_registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -198,20 +195,23 @@ fn transition_checkpoint_and_recover(
 }
 
 fn register_related_ordering_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
-    runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "relation.owns.schema-qualified-child-name".to_owned(),
-        kind: DerivedIndexKind::RelatedEntityOrdering {
-            relation_kind: KindId(2),
-            parent_endpoint: RelatedEntityEndpoint::SourceParent,
-            child_kind: KindId(1),
-            ordering: vec![RelatedEntityOrderingField::new(
-                aspect_field_locator(aspect_key("name"), field_key("name")),
-                RelatedEntityOrderingDirection::Ascending,
-            )],
-        },
-        branch_scoped: true,
-    })
+    runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "relation.owns.schema-qualified-child-name".to_owned(),
+            kind: DerivedIndexKind::RelatedEntityOrdering {
+                relation_kind: KindId(2),
+                parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                child_kind: KindId(1),
+                ordering: vec![RelatedEntityOrderingField::new(
+                    aspect_field_locator(aspect_key("name"), field_key("name")),
+                    RelatedEntityOrderingDirection::Ascending,
+                )],
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity")
 }
 
 fn related_request(

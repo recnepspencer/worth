@@ -15,6 +15,10 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationValueDecodeDenial, ApplicationValueEncodeDenial,
 };
 
+#[expect(
+    dead_code,
+    reason = "original typed refusal is retained opaquely; disclosure uses approved projections"
+)]
 pub(super) enum ResourceValueDenial {
     Verification(WorthQueryResourceVerificationFailure),
     Encoding(ApplicationValueEncodeDenial),
@@ -177,14 +181,13 @@ pub(super) fn with_scalar<Binding: ApplicationReadableScalarValueBinding, R>(
             let bytes = usize::try_from(resources.peak_memory_bytes())
                 .map_err(|_| MapKernelFailure::Domain(ResourceValueDenial::ValueLimit))?;
             if admit(work, bytes).is_err() {
-                drop(admit);
                 return Err(MapKernelFailure::Domain(ResourceValueDenial::Request(
                     first.expect("refused native predecode retains its original request cause"),
                 )));
             }
         }
         let decoded = Binding::decode_admitted(value, &mut admit);
-        drop(admit);
+
         if let Some(cause) = first {
             return Err(MapKernelFailure::Domain(ResourceValueDenial::Request(
                 cause,

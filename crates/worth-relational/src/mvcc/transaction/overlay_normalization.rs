@@ -11,8 +11,8 @@ use crate::symbols::data::{ClientKeySymbolPolicy, StringInterner, Symbol};
 use std::collections::BTreeSet;
 
 impl DetachedRelationalTransactionOverlay {
-    /// New symbol entries must still reach the symbol-table snapshot on backing
-    /// refusal, because the existing interner has already admitted those symbols.
+    /// Normalize inside the candidate's private symbol binding. A backing
+    /// refusal abandons this binding with its round, without publishing meaning.
     pub(crate) fn normalize_client_keys(
         &mut self,
         footprint: &mut RelationalTransactionFootprint,
@@ -54,7 +54,10 @@ impl DetachedRelationalTransactionOverlay {
                 return (entries, Err(denial.into()));
             }
             let existed = interner.contains(&raw);
-            let symbol = interner.intern(&raw);
+            let symbol = match interner.intern(&raw) {
+                Ok(symbol) => symbol,
+                Err(denial) => return (entries, Err(denial.into())),
+            };
             normalized.insert(raw.clone(), symbol);
             if !existed {
                 entries.push((symbol, raw));
@@ -67,19 +70,19 @@ impl DetachedRelationalTransactionOverlay {
                 self.index.iter().map(|row| {
                     let key = match &row.key {
                         IndexKey::CreatedEntity(key) => IndexKey::CreatedEntity(
-                            normalize_created_entity(key.clone(), interner, policy),
+                            normalize_created_entity(key.clone(), interner, policy)?,
                         ),
                         IndexKey::CreatedRelation(key) => IndexKey::CreatedRelation(
-                            normalize_created_relation(key.clone(), interner, policy),
+                            normalize_created_relation(key.clone(), interner, policy)?,
                         ),
                         key => key.clone(),
                     };
-                    IndexRow {
+                    Ok::<_, Denial>(IndexRow {
                         key,
                         location: row.location,
                         ordinal: row.ordinal,
                         observes: row.observes,
-                    }
+                    })
                 }),
                 allocation_policy,
             )?;
@@ -90,7 +93,9 @@ impl DetachedRelationalTransactionOverlay {
             Err(denial) => (entries, Err(denial)),
             Ok((index, new_footprint)) => {
                 for intent in self.batches.iter_mut().flat_map(|batch| &mut batch.intents) {
-                    intent.normalize_client_keys(interner, policy);
+                    if let Err(denial) = intent.normalize_client_keys(interner, policy) {
+                        return (entries, Err(denial.into()));
+                    }
                 }
                 self.index = index;
                 *footprint = new_footprint;

@@ -237,23 +237,29 @@ fn perf_inspection_budget_matrix() {
         let retention_started_at = Instant::now();
         let retention = runtime
             .inspect_what_happened()
-            .retention_summary(&default_retention_request());
+            .retention_summary(execution, &default_retention_request())
+            .unwrap();
         let retention_micros = retention_started_at.elapsed().as_micros();
 
         let commit_started_at = Instant::now();
         let commit = runtime
             .inspect_what_happened()
-            .inspect_commit(latest_commit)
+            .inspect_commit(execution, latest_commit)
+            .unwrap()
             .expect("commit inspection");
         let commit_micros = commit_started_at.elapsed().as_micros();
 
         let recent_started_at = Instant::now();
-        let recent = runtime.inspect_what_happened().inspect_recent_commits(
-            &RecentCommitInspectionRequest {
-                branch_id: Some(BranchId("main".to_string())),
-                limit: 3,
-            },
-        );
+        let recent = runtime
+            .inspect_what_happened()
+            .inspect_recent_commits(
+                execution,
+                &RecentCommitInspectionRequest {
+                    branch_id: Some(BranchId("main".to_string())),
+                    limit: 3,
+                },
+            )
+            .unwrap();
         let recent_micros = recent_started_at.elapsed().as_micros();
 
         PerfMeasurement {

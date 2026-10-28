@@ -11,9 +11,7 @@ pub(super) fn record_replay_diagnostic(
     outcome: &RelationalReplayOutcome,
 ) {
     let code = match outcome.failure.as_ref() {
-        Some(ReplayFailureClass::SchemaMismatch | ReplayFailureClass::UnsupportedReplaySchema) => {
-            DiagnosticCode::ReplaySchemaVersionMismatch
-        }
+        Some(ReplayFailureClass::SchemaMismatch) => DiagnosticCode::ReplaySchemaVersionMismatch,
         Some(_) => DiagnosticCode::InvariantViolation,
         None => DiagnosticCode::CommitPublished,
     };

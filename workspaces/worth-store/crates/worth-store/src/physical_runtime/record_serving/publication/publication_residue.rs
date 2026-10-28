@@ -138,16 +138,16 @@ pub(in crate::physical_runtime::record_serving) fn observe_publication_residue(
         )?,
         ..RecordPublicationResidueObservation::default()
     };
-    if let Some(segment) = current_root.last_inline_segment() {
-        if let Some(generation) = segment.generation().get().checked_add(1) {
-            observation.reusable_segment_data = exists(
-                artifacts,
-                RecordArtifactFile::Segment {
-                    segment: segment.segment_id().get(),
-                    generation,
-                },
-            )?;
-        }
+    if let Some(segment) = current_root.last_inline_segment()
+        && let Some(generation) = segment.generation().get().checked_add(1)
+    {
+        observation.reusable_segment_data = exists(
+            artifacts,
+            RecordArtifactFile::Segment {
+                segment: segment.segment_id().get(),
+                generation,
+            },
+        )?;
     }
     Ok(observation)
 }

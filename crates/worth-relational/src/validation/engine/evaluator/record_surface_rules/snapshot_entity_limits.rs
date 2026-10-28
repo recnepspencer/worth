@@ -17,7 +17,7 @@ pub(super) fn evaluate_max_snapshot_entities(
         if !context.checkpoint(1) {
             return None;
         }
-        let Some(partition) = state_view.state().get_partition(partition_id) else {
+        let Some(partition) = state_view.state().get_current_partition(partition_id) else {
             return Some(storage_inconsistency_violation(
                 class,
                 format!(
@@ -34,12 +34,15 @@ pub(super) fn evaluate_max_snapshot_entities(
             ));
         };
         if state_view.version_id() == context.current_version_id()
-            && state_view.state().base_partition(partition_id).is_none()
+            && state_view
+                .state()
+                .base_current_partition(partition_id)
+                .is_none()
         {
-            if !context.checkpoint(partition.entity_arena.slot_count() as u64) {
+            if !context.checkpoint(partition.entity_arena().slot_count() as u64) {
                 return None;
             }
-            visible_entities += partition.entity_arena.live_bitset.count_ones();
+            visible_entities += partition.entity_arena().live_count();
             continue;
         }
         let slots = state_view.try_entity_slots(partition_id, |work, bytes| {

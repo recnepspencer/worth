@@ -28,15 +28,11 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         ),
         ..RelationIntegritySchemaFixture::default()
     };
-    let store_layout = DurableStoreLayout {
-        root_path: unique_test_store_path("worth-relational-rejected-relation-integrity-recovery"),
-        segment_commit_capacity: 2,
-    };
+    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(fixture.build_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout.clone())
-        .build();
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
     let target_b = create_entity(execution, &runtime, "target-b");
@@ -45,6 +41,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
     let latest_commit_before = runtime.history().latest_commit();
     let latest_patch_before = runtime.publication().latest_patch().unwrap().position;
     let main_digest_before = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         relation,
@@ -88,7 +85,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         | TransactionCommitError::PublicationFailed { .. } => {
             panic!("expected relation-integrity conflict, got typed publication outcome")
         }
-        TransactionCommitError::PerformedButDurabilityDeferred { .. } => {
+        TransactionCommitError::DurabilityUnresolved { .. } => {
             panic!("relation-integrity denial must happen before movement")
         }
     }
@@ -100,6 +97,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
     );
     assert_eq!(
         relation_aspect_history_digest_on_branch(
+            execution,
             &runtime,
             &BranchId("main".to_string()),
             relation,
@@ -108,19 +106,17 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         main_digest_before
     );
 
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(fixture.build_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout)
-        .build();
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration");
     let outcome = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -129,6 +125,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
     assert_eq!(outcome.latest_commit, latest_commit_before.clone());
     assert_eq!(
         relation_aspect_history_digest_on_branch(
+            execution,
             &recovered,
             &BranchId("main".to_string()),
             relation,
@@ -138,7 +135,9 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
     );
     assert!(recovered
         .replay()
-        .canonical_commit_envelope(latest_commit_before.unwrap().commit_id)
+        .canonical_commit_envelope(execution, latest_commit_before.unwrap().commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .is_some());
 }
 
@@ -152,22 +151,12 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
     let child = create_entity_outcome(execution, &runtime, "main-b");
     let child_envelope = runtime
         .replay()
-        .canonical_commit_envelope(child.commit.commit_id)
+        .canonical_commit_envelope(execution, child.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let corrupt_plan = RecoveryPlan::new(
         runtime.config().clone(),
-        runtime
-            .config()
-            .durability
-            .policy
-            .store_layout
-            .clone()
-            .map(|layout| DurableStore {
-                layout,
-                segments: Vec::new(),
-                checkpoints: Vec::new(),
-            }),
-        None,
         None,
         vec![
             crate::durability::migration::ReadmittedCanonicalCommit::exact(
@@ -177,20 +166,12 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
                 ),
             ),
         ],
-        RecoveryCursor {
-            checkpoint_id: None,
-            segment_ids: Vec::new(),
-        },
-        RecoveryIntegrityReport {
-            selected_checkpoint_id: None,
-            skipped_corrupt_checkpoints: Vec::new(),
-            verified_segment_ids: Vec::new(),
-            corrupt_segment_id: None,
-        },
+        crate::durability::data::RecoveryBranchTransitions::Contiguous(Vec::new()),
         RecoveryAuthorityContinuityCheck::verified_at(ReplayVerificationLayer::DigestParity),
         RecoveryVerificationMode::NormalRecoveryVerification,
         DescriptorSemanticsVersion::default(),
         vec![child.commit.commit_id],
+        None,
     );
     let mut recovered = runtime_with_test_schema();
     let error = recovered

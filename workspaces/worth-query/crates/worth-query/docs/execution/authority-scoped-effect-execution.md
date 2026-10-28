@@ -15,16 +15,16 @@ A merge runs only through the workspace that owns its runtime
 `EffectExecutionDenialKind::MergeRequiresRuntimeOwner`.
 
 [Effects](effects.md) owns authoring (`workspace.effect`, triggers, and staged
-intent). This guide owns lowering, execution, and recovery when a Relational
-effect performed its branch movement but durability settlement did not finish.
+intent). This guide owns lowering, execution, and the typed outcome when a
+Relational effect's durable fate is unknown.
 
 ## Why You Use It
 
 - Execute admitted effects with the correct owner and receipt type.
 - Check support before claiming a store-backed or durable path exists.
-- Distinguish denial from work that already performed and must be settled.
-- Repair an exact performed Relational publication without rerunning the
-  effect.
+- Distinguish denial from work whose durable fate is unresolved.
+- Repair a performed commit whose witness was lost, by commit identity,
+  without rerunning the effect.
 
 ## Stable Entry Points
 
@@ -35,11 +35,11 @@ Import the lifecycle from `worth_query::facade::foundation`:
 - `evaluate_effect_eligibility(...)` and `admit_effect_intent(...)`
 - `EffectExecutionAuthority`
 - `EffectExecutionStop` and `EffectBatchExecutionStop`
-- `EffectExecutionSettlementDeferred` and `EffectBatchSettlementDeferred`
-- `EffectSettlementRepairError`
+- `EffectExecutionDurabilityUnresolved` and `EffectBatchDurabilityUnresolved`
+- `EffectExecutionAuthority::repair_pending_settlement(...)` and
+  `EffectSettlementRepairError`
 
-The authoring surface remains [Effects](effects.md). A raw Relational
-`DeferredPublicationSettlement` is not a Query application surface.
+The authoring surface remains [Effects](effects.md).
 
 ## Core Mental Model
 
@@ -53,15 +53,19 @@ support discovery
   -> execute with owner authority
        |-> executed receipt
        |-> denied or deferred before performance
-       `-> performed, but settlement deferred
-              -> repair with the same owning Relational runtime
+       `-> durability unresolved
+              -> reopen the owning Relational runtime
 ```
 
-`EffectExecutionStop::SettlementDeferred` and
-`EffectBatchExecutionStop::SettlementDeferred` do not mean execution was
-denied. The canonical branch movement already happened. The opaque carrier
-retains the exact repair capability and exposes `.repair_with(...)`; it does
-not expose the raw lower-runtime token.
+Relational publishes every commit to its durable medium before the live
+cutover, so settlement after a performed commit cannot fail or defer.
+`EffectExecutionStop::DurabilityUnresolved` and
+`EffectBatchExecutionStop::DurabilityUnresolved` (accessor
+`durability_unresolved()`) mean the durable fate is unknown: nothing was
+installed live, but the commit may be durable. They are not denials. The
+carrier exposes `commit_id()` and `unresolved()`; it has no repair method. The
+Relational runtime refuses later publications until it is reopened, and
+reopening resolves the fate.
 
 Support postures remain explicit: `Admitted`, `Advisory`, `Denied`,
 `RebindRequired`, `Deferred`, and `Unsupported`.
@@ -73,11 +77,13 @@ Support postures remain explicit: `Admitted`, `Advisory`, `Denied`,
 3. Lower the admitted effect or batch.
 4. Execute with `EffectExecutionAuthority` for the declared owner.
 5. On success, consume the execution receipt.
-6. On `SettlementDeferred`, retain the typed carrier and call `repair_with`
-   using fresh authority for the runtime that performed the effect.
+6. On `DurabilityUnresolved`, retain the typed carrier and reopen the owning
+   Relational runtime; do not execute the effect program again.
 
-Repair is idempotent. It completes durability for the exact performed route;
-it does not execute the effect program again.
+A performed commit whose witness was lost is repaired by commit identity with
+`EffectExecutionAuthority::repair_pending_settlement(commit_id)` on the runtime
+that performed it. Repair is idempotent and does not execute the effect
+program again.
 
 ## Small Example
 
@@ -88,18 +94,17 @@ use worth_query::facade::foundation::{
 
 match lowered.execute_receipt_with(EffectExecutionAuthority::relational(&mut relational)) {
     Ok(receipt) => consume(receipt),
-    Err(EffectExecutionStop::SettlementDeferred(deferred)) => {
-        let receipt = deferred.repair_with(
-            EffectExecutionAuthority::relational(&mut relational),
-        )?;
-        consume_repaired(receipt);
+    Err(EffectExecutionStop::DurabilityUnresolved(unresolved)) => {
+        record_unresolved(unresolved.commit_id(), unresolved.counters());
+        reopen_relational_owner();
     }
     Err(stop) => handle_non_performed_stop(stop),
 }
 ```
 
-This is the smallest honest recovery example because it branches on the typed
-terminal and repairs the existing publication instead of retrying `lowered`.
+This is the smallest honest example because it branches on the typed terminal
+and leaves the commit's fate to the reopened owner instead of retrying
+`lowered`.
 
 ## Real Example
 
@@ -114,18 +119,16 @@ match lowered_batch.execute_receipt_with(
     EffectExecutionAuthority::relational(&mut relational),
 ) {
     Ok(receipt) => record_batch(receipt),
-    Err(EffectBatchExecutionStop::SettlementDeferred(deferred)) => {
-        audit(deferred.batch_identity(), deferred.counters());
-        deferred.repair_with(
-            EffectExecutionAuthority::relational(&mut relational),
-        )?;
+    Err(EffectBatchExecutionStop::DurabilityUnresolved(unresolved)) => {
+        audit(unresolved.batch_identity(), unresolved.counters());
+        reopen_relational_owner();
     }
     Err(stop) => handle_batch_stop(stop),
 }
 ```
 
-All components in a native mutation batch share the aggregate commit. Repair
-settles that one performed commit and must not loop over components.
+All components in a native mutation batch share the aggregate commit. One
+unresolved outcome covers that one commit; do not loop over components.
 
 ## How It Relates To Other Features
 
@@ -134,26 +137,24 @@ settles that one performed commit and must not loop over components.
 - [Basis Capability Lifecycle](../capabilities/basis-capability-lifecycle.md)
   supplies the exact basis before admission.
 - [Application Aftermath And Recovery](application-aftermath-and-recovery.md)
-  explains the separate application-level settlement and post-commit recovery
-  boundaries.
+  explains the application-level `Indeterminate` outcome and post-commit
+  recovery boundaries.
 
 ## Inspection And Debugging
 
 Inspect the typed stop, lifecycle counters, plan or batch identity, and repair
-error. A performed-but-unsettled effect reports executed work and
-`publication_settlement_deferred_count() == 1`; it must not increment denial
-telemetry.
+error. An effect with an unresolved durable fate reports
+`durability_unresolved_count() == 1`; it must not increment denial telemetry.
 
-`EffectSettlementRepairError::MissingRelationalAuthority` means the repair was
-attempted without the owner required by the carrier. A wrapped settlement error
-can report a foreign runtime, missing or mismatched performed route, or another
-durability failure.
+`EffectSettlementRepairError::MissingRelationalAuthority` means pending
+settlement repair was attempted without Relational authority. The wrapped
+`PublicationSettlementRepairError` reports why the owning runtime could not
+repair that commit identity.
 
 ## Anti-Patterns
 
-- Retrying the effect after `SettlementDeferred`.
-- Treating `SettlementDeferred` as a denial or recording denial telemetry.
-- Extracting, serializing, or accepting a raw lower-runtime settlement token.
+- Retrying the effect after `DurabilityUnresolved`.
+- Treating `DurabilityUnresolved` as a denial or recording denial telemetry.
 - Repairing with another runtime merely because its branch or commit IDs look
   equal.
 - Executing a family on a basis lane marked unsupported.

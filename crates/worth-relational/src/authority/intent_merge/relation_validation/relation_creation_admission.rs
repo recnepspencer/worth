@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::capabilities::{SchemaSource, StorageRead};
+use crate::capabilities::SchemaSource;
 use crate::runtime::RuntimeInstrumentation;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     CommitConflict, ConflictClass, CreatedEntityRef, EntityReference, RelationIdentity,
     RelationSpec,
@@ -12,7 +13,7 @@ use super::relation_identity_scan::existing_relation_targets_for_source;
 use super::schema_relation_admission::require_registered_relation_kind;
 
 pub(super) fn validate_relation_creation_intent(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     schema_source: &impl SchemaSource,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
@@ -36,7 +37,7 @@ pub(super) fn validate_relation_creation_intent(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_relation_creation(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     schema_source: &impl SchemaSource,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
@@ -68,7 +69,7 @@ pub(super) fn validate_relation_creation(
 }
 
 pub(super) fn validate_bulk_relation_creation_intent(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     schema_source: &impl SchemaSource,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
@@ -104,7 +105,7 @@ pub(super) fn validate_bulk_relation_creation_intent(
 }
 
 fn validate_bulk_relation_endpoint_batch(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     relation_cross_context_policy: crate::config::data::CrossContextPolicy,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     created_entities: &BTreeSet<CreatedEntityRef>,
@@ -163,7 +164,7 @@ fn reject_duplicate_relation_identity_in_batch(
 }
 
 fn reject_existing_relation_identity(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     instrumentation: &RuntimeInstrumentation,
     partition_id: crate::identity::data::PartitionId,
     kind_id: crate::identity::data::KindId,

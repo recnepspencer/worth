@@ -1,6 +1,5 @@
 //! Actual post-ACK capture refusal repairs the same complete graph successor.
 use super::*;
-use crate::document_retention_model::operator_identity::request_scope;
 use std::num::NonZeroUsize;
 use worth_foundational::{ExecutionBudget, ExecutionRequestPolicy};
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
@@ -15,19 +14,10 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
     let checkpoint = host::capture(&original);
     let retained = checkpoint.clone();
     let bytes = checkpoint.bytes().to_vec();
-    let scope = request_scope();
     let mut callbacks = 0;
     successor::output::reset_decodes();
-    // The funding lease pays for authoring, the commit and its ACK; the
-    // capture child it names admits no capture memory at all.
-    let funding =
-        worth_execution::ExecutionResourceLease::serial(super::super::capture_child::funding(
-            scope.cancellation().execution_token(),
-            scope.deadline(),
-        ))
-        .unwrap();
-    let capture = super::super::capture_child::exhausted(&funding);
-    let denied = super::super::capture_child::funded_by(&funding, |phase| {
+    let pending = crate::checkpoint_capture::stopped(|phase| {
+        callbacks = 0;
         installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
             phase,
             successor::host::program(),
@@ -39,30 +29,21 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
             ((),),
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             successor::host::limits(),
-            checkpoint,
+            checkpoint.clone(),
             installation::WorthQueryCheckpointProgramPredecessor::new(
                 &host::program().revision().to_string(),
             )
             .unwrap(),
             installation::WorthQueryCheckpointTransitionResources::bounded(8192, 32, 65_536)
-                .unwrap(),
-            installation::WorthQueryCheckpointCapturePolicy::Execution(&capture),
+                .unwrap()
+                .with_capture_memory_limit(0),
+            phase.execution_request().allocation_policy(),
             |_, _| {
                 callbacks += 1;
                 Ok(())
             },
         )
-    })
-    .err()
-    .expect("zero capture memory stops after native acknowledgement");
-    let installation::WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(
-        pending,
-    ) = denied
-    else {
-        panic!("exact acknowledged custody must survive capture: {denied:?}")
-    };
-    assert_eq!(callbacks, 1);
-    assert_eq!(successor::output::decodes(), 0);
+    });
     let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
         pending.capture_denial()
     else {

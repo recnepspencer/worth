@@ -37,7 +37,10 @@ fn relation_join_isolates_both_exact_endpoints_and_certifies_storage_parity() {
     );
     let index = register_relation_join(&runtime, 81);
     build_current_generation(execution, &runtime, index.index_id);
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = || join_request(snapshot.clone(), index.index_id, left, right, 2);
 
     let production = runtime
@@ -90,7 +93,10 @@ fn relation_join_certification_rejects_a_missing_candidate() {
             };
             entries.remove(&key);
         });
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let denial = runtime
         .index_access()
@@ -122,7 +128,10 @@ fn relation_join_requires_an_exact_generation_and_reports_bounded_overflow() {
 
     let second = create_entity(execution, &runtime, "second");
     bind_chain(execution, &runtime, left, second, right, "second");
-    let current = runtime.visibility_authority().snapshot();
+    let current = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let missing = runtime
         .index_access()
         .execute_bounded_relation_join_lookup(
@@ -187,7 +196,10 @@ fn relation_join_rejects_a_candidate_with_substituted_relation_evidence() {
                 substituted_right_relation,
             );
         });
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let denial = runtime
         .index_access()
@@ -222,6 +234,7 @@ fn exact_relation_join_uses_one_branch_root_after_both_heads_diverge() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("join-sibling".to_owned()),
             &BranchId("main".to_owned()),
         )
@@ -291,16 +304,19 @@ fn register_relation_join_with_scope(
     id: u64,
     branch_scoped: bool,
 ) -> DerivedIndexDefinition {
-    runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(id),
-        name: format!("relation.join.{id}"),
-        kind: DerivedIndexKind::RelationJoin(RelationJoinDefinition::new(
-            RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Target, KindId(1)),
-            RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Source, KindId(1)),
-            KindId(1),
-        )),
-        branch_scoped,
-    })
+    runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(id),
+            name: format!("relation.join.{id}"),
+            kind: DerivedIndexKind::RelationJoin(RelationJoinDefinition::new(
+                RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Target, KindId(1)),
+                RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Source, KindId(1)),
+                KindId(1),
+            )),
+            branch_scoped,
+        })
+        .expect("index fixture has identity capacity")
 }
 
 fn build_current_generation(

@@ -1,0 +1,110 @@
+use super::{
+    WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolCounters,
+    WorthQueryProviderSessionProtocolStage,
+};
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryProviderSessionCommitDeferred {
+    kind: WorthQueryProviderSessionCommitDeferredKind,
+    stage: WorthQueryProviderSessionProtocolStage,
+    detail: String,
+    counters: WorthQueryProviderSessionProtocolCounters,
+    prerequisite_denial:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryProviderSessionCommitDeferredKind {
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
+    RetentionCapacityExhausted,
+    PatchPositionReservationContended,
+    CandidateLifetimeExpired {
+        maximum_lifetime_millis: u64,
+    },
+    CandidateCapacityExhausted {
+        maximum_candidates: usize,
+    },
+    PublishedSnapshotCapacityExhausted {
+        maximum_handles: usize,
+    },
+    SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
+    RequiredPrerequisitePending(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+    ),
+}
+
+impl WorthQueryProviderSessionCommitDeferred {
+    pub(in crate::domain_computation) fn new(
+        kind: WorthQueryProviderSessionCommitDeferredKind,
+        detail: impl Into<String>,
+    ) -> Self {
+        Self {
+            kind,
+            prerequisite_denial: None,
+            stage: WorthQueryProviderSessionProtocolStage::Commit,
+            detail: detail.into(),
+            counters: WorthQueryProviderSessionProtocolCounters::default(),
+        }
+    }
+
+    pub(in crate::domain_computation) fn required_prerequisite(
+        denial: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+        detail: impl Into<String>,
+    ) -> Self {
+        let mut deferred = Self::new(
+            WorthQueryProviderSessionCommitDeferredKind::RequiredPrerequisitePending(denial.kind()),
+            detail,
+        );
+        deferred.prerequisite_denial = Some(denial);
+        deferred
+    }
+
+    pub(in crate::domain_computation) fn into_prerequisite_denial(
+        self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        self.prerequisite_denial
+    }
+
+    pub fn kind(&self) -> WorthQueryProviderSessionCommitDeferredKind {
+        self.kind.clone()
+    }
+
+    pub const fn stage(&self) -> WorthQueryProviderSessionProtocolStage {
+        self.stage
+    }
+
+    pub fn detail(&self) -> &str {
+        &self.detail
+    }
+
+    pub const fn counters(&self) -> WorthQueryProviderSessionProtocolCounters {
+        self.counters
+    }
+
+    pub(in crate::domain_computation) fn at_stage(
+        mut self,
+        stage: WorthQueryProviderSessionProtocolStage,
+        counters: WorthQueryProviderSessionProtocolCounters,
+    ) -> Self {
+        self.stage = stage;
+        self.counters = counters;
+        self
+    }
+}
+
+#[derive(Debug)]
+pub enum WorthQueryProviderSessionCommitStop {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
+    PreEffectDenied(WorthQueryProviderSessionFailure),
+    Denied(WorthQueryProviderSessionFailure),
+    Deferred(WorthQueryProviderSessionCommitDeferred),
+    ControlStopped(super::WorthQueryProviderSessionCommitControlStopped),
+}
+
+impl From<WorthQueryProviderSessionFailure> for WorthQueryProviderSessionCommitStop {
+    fn from(failure: WorthQueryProviderSessionFailure) -> Self {
+        Self::Denied(failure)
+    }
+}

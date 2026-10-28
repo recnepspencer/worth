@@ -103,18 +103,30 @@ fn account_discovery_result_limit_denies_before_projecting_an_oversized_union() 
 /// A 250-account root union reads in full with only a result limit: no caller
 /// supplies a work estimate or ceiling.
 #[test]
-fn account_discovery_root_union_reads_without_a_caller_work_ceiling() {
-    let fixture = over_budget_discovery_world("read-root-union-unbudgeted", 250);
-    let actor = fixture.authenticate();
-    let result = fixture
-        .world
-        .runtime
-        .query(queries::accounts())
-        .as_principal(&actor)
-        .controls(controls(250))
-        .execute()
-        .expect("the 250-account union reads with no caller work ceiling");
-    assert_eq!(result.rows().len(), 250);
+fn account_discovery_root_union_work_grows_at_most_linearly() {
+    let mut baseline = None;
+    for count in [16, 64, 250] {
+        let fixture = over_budget_discovery_world("read-root-union-scale", count);
+        let actor = fixture.authenticate();
+        let result = fixture
+            .world
+            .runtime
+            .query(queries::accounts())
+            .as_principal(&actor)
+            .controls(controls(count))
+            .execute()
+            .expect("result-bounded discovery needs no caller work estimate");
+        assert_eq!(result.rows().len(), count);
+        let inspection = result.receipt().inspect();
+        let work = inspection.ordinary_work_units();
+        assert!(work > 0);
+        assert!(inspection.terminal_resources_released());
+        let (base_count, base_work) = *baseline.get_or_insert((count, work));
+        assert!(
+            work * base_count <= base_work * count * 4,
+            "root-union work must remain linear with headroom: {count} rows cost {work}, baseline {base_count} cost {base_work}"
+        );
+    }
 }
 
 fn controls(maximum_results: usize) -> BankReadControls {

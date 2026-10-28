@@ -42,13 +42,6 @@ pub(crate) fn funding(
     request(64 * 1024 * 1024, 8_000_000, cancellation, deadline)
 }
 
-/// A child of `funding` that admits no capture memory.
-pub(crate) fn exhausted<'a>(funding: &ExecutionResourceLease<'a>) -> ExecutionResourceLease<'a> {
-    funding
-        .child(request(0, 1, CancellationToken::new(), None))
-        .unwrap()
-}
-
 /// Runs one in-advancement transition funded by `funding`.
 pub(crate) fn funded_by<T>(
     funding: &ExecutionResourceLease<'_>,

@@ -199,7 +199,7 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         let topology_generation = self.core.topology_generation.load(Ordering::Acquire);
         drop(current);
         let payload = Arc::downcast::<T>(Arc::clone(&image.payload))
-            .expect("registered companion cell retains its original payload type");
+            .expect(/* Proof: Registration binds this cell to T and stores only Arc<T> through that typed handle; no untyped payload replacement door exists. */ "registered companion cell retains its original payload type");
         CompanionBranchImage {
             image: Arc::clone(&image),
             payload,

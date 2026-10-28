@@ -1,11 +1,8 @@
 use std::path::Path;
 use std::process::Command;
 
-const OBSERVER: &str = "WORTH_C9_OBSERVER_EXECUTABLE";
-
 pub(super) fn assert_evacuated_arena_offline(root: &Path, directory: &Path) {
-    let executable = std::env::var_os(OBSERVER)
-        .unwrap_or_else(|| panic!("{OBSERVER} must name the Cargo-built independent observer"));
+    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
     let report_path = directory.join("evacuated-arena-offline.json");
     let output = Command::new(executable)
         .args(["observe", "--store-root"])

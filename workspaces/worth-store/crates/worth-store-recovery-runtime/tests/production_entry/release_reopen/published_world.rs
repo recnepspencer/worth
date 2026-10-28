@@ -69,7 +69,6 @@ pub(crate) fn create(
         }
         Err(failure) => panic!("publication failed: {failure:?}"),
     };
-    drop(blobs);
     let marker = world
         .serving()
         .certification_selected_latest_blob_publication()

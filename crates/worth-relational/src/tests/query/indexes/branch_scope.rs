@@ -10,6 +10,7 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -20,14 +21,17 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
         "feature-a",
         BranchId("feature".to_string()),
     );
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let feature_build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -64,7 +68,8 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
     assert_eq!(
         runtime
             .index_access()
-            .latest_generation(index.index_id, &BranchId("feature".to_string()))
+            .read_latest_generation(execution, index.index_id, &BranchId("feature".to_string()))
+            .unwrap()
             .unwrap()
             .source_branch_id,
         BranchId("feature".to_string())
@@ -88,6 +93,7 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -98,14 +104,17 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
         "feature-a",
         BranchId("feature".to_string()),
     );
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.global".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.global".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -114,7 +123,10 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
             index_ids: vec![index.index_id],
         },
     );
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -143,7 +155,8 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
     assert_eq!(
         runtime
             .index_access()
-            .latest_generation(index.index_id, &BranchId("main".to_string()))
+            .read_latest_generation(execution, index.index_id, &BranchId("main".to_string()))
+            .unwrap()
             .unwrap()
             .source_branch_id,
         BranchId("feature".to_string())
@@ -175,6 +188,7 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -217,14 +231,17 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
     let feature_relation = feature_txn
         .commit(execution, &runtime)
         .expect("feature relation");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(1),
-        name: "relation.label.branch".to_string(),
-        kind: DerivedIndexKind::RelationField {
-            field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(1),
+            name: "relation.label.branch".to_string(),
+            kind: DerivedIndexKind::RelationField {
+                field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -286,6 +303,7 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -296,14 +314,17 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
         "feature-a",
         BranchId("feature".to_string()),
     );
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.branch".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.branch".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {

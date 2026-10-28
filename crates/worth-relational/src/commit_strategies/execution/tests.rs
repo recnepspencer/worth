@@ -243,8 +243,12 @@ fn bound_execution_executes_against_snapshot_and_contains_panics() {
     let runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration.clone())
         .commit_strategy_executor(executor_binding)
-        .build();
-    let snapshot = runtime.visibility_authority().snapshot();
+        .build()
+        .expect("valid native runtime configuration");
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = canonical_request();
 
     let bound = bind_execution(&runtime, &request, &snapshot, execution).expect("bind strategy");
@@ -260,8 +264,12 @@ fn bound_execution_executes_against_snapshot_and_contains_panics() {
     let panic_runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration)
         .commit_strategy_executor(panic_binding)
-        .build();
-    let panic_snapshot: SnapshotHandle = panic_runtime.visibility_authority().snapshot();
+        .build()
+        .expect("valid native runtime configuration");
+    let panic_snapshot: SnapshotHandle = panic_runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let panic_bound = bind_execution(&panic_runtime, &request, &panic_snapshot, execution)
         .expect("bind strategy");
@@ -287,8 +295,12 @@ fn single_partition_locality_rejects_cross_partition_strategy_reads() {
     let runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration)
         .commit_strategy_executor(executor_binding)
-        .build();
-    let snapshot = runtime.visibility_authority().snapshot();
+        .build()
+        .expect("valid native runtime configuration");
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = canonical_request();
 
     let bound = bind_execution(&runtime, &request, &snapshot, execution).expect("bind strategy");
@@ -317,13 +329,18 @@ fn foreign_snapshot_handle_is_rejected_for_strategy_execution() {
     let left_runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration.clone())
         .commit_strategy_executor(executor_binding.clone())
-        .build();
-    let foreign_snapshot = left_runtime.visibility_authority().snapshot();
+        .build()
+        .expect("valid native runtime configuration");
+    let foreign_snapshot = left_runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let right_runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration)
         .commit_strategy_executor(executor_binding)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
 
     let error = match bind_execution(&right_runtime, &request, &foreign_snapshot, execution) {
@@ -351,8 +368,12 @@ fn unsupported_read_contract_is_rejected_before_execution() {
     let runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration)
         .commit_strategy_executor(executor_binding)
-        .build();
-    let snapshot = runtime.visibility_authority().snapshot();
+        .build()
+        .expect("valid native runtime configuration");
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = canonical_request_for(&descriptor);
 
     let error = match bind_execution(&runtime, &request, &snapshot, execution) {

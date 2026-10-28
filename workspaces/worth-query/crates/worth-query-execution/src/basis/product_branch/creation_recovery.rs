@@ -23,6 +23,9 @@ pub enum WorthQueryProductBranchCreationRecoveryCause {
     DestinationAdmissionDenied,
     RetentionAdmissionDenied,
     ProductPublicationLost,
+    /// The Relational owner could not establish whether its commit became
+    /// durable; only reopening it resolves the commit's fate.
+    RelationalDurabilityUnresolved,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -259,6 +262,9 @@ fn map_cause(cause: ProductUnpublishedCause) -> WorthQueryProductBranchCreationR
         }
         Cause::ProductPublicationLost => {
             WorthQueryProductBranchCreationRecoveryCause::ProductPublicationLost
+        }
+        Cause::RelationalDurabilityUnresolved => {
+            WorthQueryProductBranchCreationRecoveryCause::RelationalDurabilityUnresolved
         }
     }
 }

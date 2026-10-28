@@ -32,6 +32,9 @@ pub enum WorthUiPresentationAsyncInstallationError {
     Installation(String),
     Runtime(Box<runtime::WorthQueryRuntimeError>),
     OperatingWorld(Box<worth_query::facade::installed::WorthQueryOperatingWorldEntryDenial>),
+    NativeSourceConstruction(
+        Box<worth_relational::facade::runtime::RelationalRuntimeConstructionDenial>,
+    ),
     NativeSourceBasis(Box<worth_relational::facade::branch::RelationalBranchBasisDenial>),
     NativeSourceAdmission(
         Box<worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial>,

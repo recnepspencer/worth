@@ -9,7 +9,7 @@ pub(crate) const fn owner_effect_count_from_postures(
         | RelationalAttemptProgressPosture::Prepared => 0,
         RelationalAttemptProgressPosture::Performed
         | RelationalAttemptProgressPosture::SettlementRequired
-        | RelationalAttemptProgressPosture::SettlementPending
+        | RelationalAttemptProgressPosture::DurabilityUnresolved
         | RelationalAttemptProgressPosture::Settled => 1,
     };
     let signal = match signal {

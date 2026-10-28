@@ -254,7 +254,8 @@ fn legal_multiple_definitions_refuse_unqualified_source_without_changing_schema_
     .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let born = commit(execution, &runtime, "main", birth(&[1, 0]));
     let denial = pin(execution, &runtime, &born.snapshot)
         .read_aggregate(execution, Scope::new(KindId(2), members(&born, 2)[0]))

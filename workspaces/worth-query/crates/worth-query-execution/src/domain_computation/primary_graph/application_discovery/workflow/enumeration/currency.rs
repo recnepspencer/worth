@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph::application_discovery::workflow
     index: DerivedIndexId,
     mode: WorthQueryWorkflowIndexRead,
 ) -> Result<(), Denial> {
-    if selected_index_is_current(runtime, basis, index) {
+    if selected_index_is_current(execution, runtime, basis, index).map_err(Denial::Relational)? {
         return Ok(());
     }
     let WorthQueryWorkflowIndexRead::Reconstruct(requested) = mode else {
@@ -54,7 +54,7 @@ pub(in crate::domain_computation::primary_graph::application_discovery::workflow
             execution,
         )
         .map_err(Denial::Reconstruction)?;
-    if !selected_index_is_current(runtime, basis, index) {
+    if !selected_index_is_current(execution, runtime, basis, index).map_err(Denial::Relational)? {
         return Err(Denial::SelectedIndexUnavailable);
     }
     Ok(())

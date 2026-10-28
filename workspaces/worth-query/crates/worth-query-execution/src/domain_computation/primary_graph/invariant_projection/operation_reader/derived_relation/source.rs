@@ -106,7 +106,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
                 .pin_read_capability(self.reader.snapshot,&[],self.reader.execution)
                 .map_err(|cause| match cause {
                     worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop)=>
-                        self.reader.walk_stop(worth_execution::WorkCeilingDenial::Stopped(stop).into(),relation.name()),
+                        self.reader.walk_stop(stop,relation.name()),
                     _=>Denial::new(Kind::EndpointUnavailable,relation.name()),
                 })?;
             pin.derived_source(self.reader.execution,&definition,root, shape,

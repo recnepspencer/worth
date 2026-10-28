@@ -93,11 +93,11 @@ pub(in crate::physical_runtime::durability) fn binding_frame_bytes(
     .map_err(PhysicalBindingCompactionReopenFailure::Integrity)
 }
 
-pub(in crate::physical_runtime::durability) fn admit_binding_payload<'record>(
-    record: &'record [u8],
+pub(in crate::physical_runtime::durability) fn admit_binding_payload(
+    record: &[u8],
     identity: PhysicalCheckpointIdentity,
     range: PhysicalByteRange,
-) -> Result<&'record [u8], PhysicalBindingCompactionReopenFailure> {
+) -> Result<&[u8], PhysicalBindingCompactionReopenFailure> {
     let scope = PhysicalArtifactScope::checkpoint_binding(identity, range);
     let input = UntrustedPhysicalArtifact::from_bounded_bytes(record);
     match validate_checkpoint_binding(input, scope).0 {

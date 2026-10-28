@@ -61,7 +61,7 @@ fn allocate_ids(
 }
 
 pub(crate) fn release_ids(ids: Vec<PartitionId>, memory: &mut dyn PartitionIdMemory) {
-    let bytes = partition_id_bytes(ids.capacity()).expect("funded partition ID capacity");
+    let bytes = partition_id_bytes(ids.capacity()).expect(/* Proof: The vector was admitted with this exact partition-ID capacity and element layout before allocation; converting that already funded capacity cannot overflow. */ "funded partition ID capacity");
     drop(ids);
     memory.release(bytes);
 }
@@ -93,7 +93,7 @@ pub(super) fn merge_partition_ids(
                 (None, Some(_)) => right.next(),
                 (None, None) => break,
             };
-            output.push(next.expect("nonempty partition merge side"));
+            output.push(next.expect(/* Proof: The enclosing merge loop continues only while at least one peek is Some; this branch takes that same unchanged peeked side. */ "nonempty partition merge side"));
         }
         Ok(output)
     })();

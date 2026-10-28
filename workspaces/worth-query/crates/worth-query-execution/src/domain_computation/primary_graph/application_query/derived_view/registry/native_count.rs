@@ -40,10 +40,10 @@ impl ManagedDerivedViewRegistry {
             execution.check_live().ok()?;
             retained.rebase_cold(product.selected_commit().clone());
         }
-        if let Ok(Some(cached)) = retained.get(&root, product.selected_commit()) {
-            if cached.0 == count {
-                return Some(cached.0);
-            }
+        if let Ok(Some(cached)) = retained.get(&root, product.selected_commit())
+            && cached.0 == count
+        {
+            return Some(cached.0);
         }
         let mut dependencies = std::collections::BTreeSet::new();
         for (entity, _) in data.entity_dependencies() {

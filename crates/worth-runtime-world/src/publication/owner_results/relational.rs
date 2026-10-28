@@ -1,6 +1,5 @@
 use worth_relational::facade::branch::{AdmittedRelationalBranchBasis, RelationalForkOutcome};
 use worth_relational::facade::history::RelationalCommitIdentity;
-use worth_relational::facade::publication::DeferredPublicationSettlement;
 use worth_relational::facade::transactions::CommitResult;
 
 use super::{CompositeRelationalOwnerResult, CompositeRelationalOwnerResultKind};
@@ -27,16 +26,13 @@ impl CompositeRelationalOwnerResult {
         }
     }
 
-    pub(crate) fn settlement_pending(
-        commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
-        settlement: DeferredPublicationSettlement,
+    /// The owner could not establish whether its commit became durable.
+    pub(crate) fn durability_unresolved(
+        unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
     ) -> Self {
         Self {
-            result: CompositeRelationalOwnerResultKind::SettlementPending {
-                commit_identity,
-                successor_basis,
-                _settlement: settlement,
+            result: CompositeRelationalOwnerResultKind::DurabilityUnresolved {
+                _unresolved: unresolved,
             },
         }
     }

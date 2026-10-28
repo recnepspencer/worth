@@ -19,7 +19,7 @@ fn split(
     WorthQueryInvariantProjectionWork,
 ) {
     let edge = (key(0, "a"), key(1, "a"));
-    let mut world = world::World::new(unrelated + 2, &[edge.clone()]);
+    let mut world = world::World::new(unrelated + 2, std::slice::from_ref(&edge));
     let before = world.groups(&keys(2));
     assert_eq!(before.len(), 1);
     assert_eq!(before[0].members.len(), 6);

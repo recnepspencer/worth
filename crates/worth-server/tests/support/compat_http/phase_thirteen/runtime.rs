@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::sync::{atomic::AtomicUsize, Arc};
 
 use worth_foundational::facade::DiagnosticRichnessProfile;

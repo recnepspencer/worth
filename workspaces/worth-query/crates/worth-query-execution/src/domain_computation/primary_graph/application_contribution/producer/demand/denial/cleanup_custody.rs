@@ -95,10 +95,7 @@ impl CleanupOwner for NativeCleanupOwner {
         }) || state.outcome.as_ref().is_some_and(|outcome| {
             matches!(
                 outcome,
-                Outcome::CleanupRequired(_)
-                    | Outcome::Deferred(_)
-                    | Outcome::SettlementDeferred(_)
-                    | Outcome::Indeterminate(_)
+                Outcome::CleanupRequired(_) | Outcome::Deferred(_) | Outcome::Indeterminate(_)
             )
         }) {
             return Err(Denial::ProducerRecoveryRetained);

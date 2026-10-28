@@ -54,7 +54,8 @@ fn fixture(count: usize) -> (DagFixture, Arc<Hooks>) {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(acyclicity_and_connectivity_registry())
         .custom_invariant(CustomInvariantRegistration::new(ScopeProbe(Arc::clone(&hooks))).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     (DagFixture::from_runtime(runtime, count), hooks)
 }
 
@@ -150,7 +151,8 @@ fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commit
             .custom_invariant(
                 CustomInvariantRegistration::new(ScopeProbe(Arc::clone(&hooks))).unwrap(),
             )
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let fixture = DagFixture::from_runtime(runtime, 2);
         let source = fixture.nodes[0];
         let target = fixture.nodes[1];

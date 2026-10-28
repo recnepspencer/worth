@@ -211,7 +211,7 @@ fn run(workers: usize) -> Vec<Vec<seeded::Group>> {
             .unwrap(),
         );
     }
-    let runtime = builder.build();
+    let runtime = builder.build().expect("valid native runtime configuration");
     let lease = crate::tests::support::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(

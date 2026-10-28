@@ -93,7 +93,9 @@ impl Denial {
                     Err(stop) => return Some(Err(stop)),
                 };
                 match kind {
-                    kind @ (Session::ExecutionResource { .. }
+                    kind @ (Session::ProjectionContract { .. } | Session::HistoricalVisibility { .. }
+                    | Session::StorageUnavailable(_)
+                    | Session::ExecutionResource { .. }
                     | Session::ExecutionNestedPatternStopped { .. }
                     | Session::ExecutionWorkerPanicked { .. }
                     | Session::ExecutionUncheckedCustomKernel { .. }
@@ -190,6 +192,7 @@ pub(super) fn execution_kind(
 ) -> Kind {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     match cause {
+        Ok(Session::StorageUnavailable(failure)) => Kind::StorageUnavailable(failure),
         Ok(Session::ExecutionResource {
             denial,
             partition_identity,
@@ -211,7 +214,9 @@ pub(super) fn execution_kind(
         Ok(Session::ExecutionIdentitiesNotCanonical { partition_identity }) => {
             Kind::ExecutionIdentitiesNotCanonical { partition_identity }
         }
-        Ok(Session::ForeignOperationAttempt)
+        Ok(Session::ProjectionContract { .. })
+        | Ok(Session::HistoricalVisibility { .. })
+        | Ok(Session::ForeignOperationAttempt)
         | Ok(Session::ForeignExecutionBasis)
         | Ok(Session::ForeignGraphAuthority)
         | Ok(Session::UndeclaredOperationScope)

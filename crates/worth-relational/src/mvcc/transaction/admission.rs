@@ -120,7 +120,7 @@ impl crate::runtime::RelationalRuntime {
             crate::history::retention::RelationalRetentionAcquisitionDenial::IdentityExhausted => {
                 RelationalBranchTransactionAdmissionDenial::RetentionIdentityExhausted
             }
-            crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
+            crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
                 RelationalBranchTransactionAdmissionDenial::RetentionInvariantViolation
             }
         }
@@ -144,7 +144,14 @@ impl crate::runtime::RelationalRuntime {
         }
 
         let footprint = super::RelationalTransactionFootprint::for_basis(basis);
+        let maximum_savepoints = if intent.allow_nested_savepoints() {
+            self.config.publication.policy.max_transaction_savepoints
+        } else {
+            0
+        };
         Ok(super::BranchBoundRelationalTransaction {
+            symbols: self.services.symbols.clone(),
+            read_leases: Default::default(),
             basis: basis.clone(),
             mutation_authority: crate::branch::issue_relational_branch_mutation_authority(),
             transaction_id: self.services.next_transaction_id(),
@@ -154,11 +161,12 @@ impl crate::runtime::RelationalRuntime {
             recovered_codec_publication_custody: None,
             schema_authority: basis.inner.root.retained_schema_authority(),
             overlay: super::DetachedRelationalTransactionOverlay::default(),
-            maximum_savepoints: self.config.publication.policy.max_transaction_savepoints,
+            maximum_savepoints,
             footprint,
             savepoints: Vec::new(),
             next_savepoint_ordinal: 1,
             last_merged_plan: None,
+            pending_symbols: None,
             client_key_symbol_policy: self.config.identity.client_key_symbol_policy,
             retention: std::sync::Arc::new(retention),
             control,

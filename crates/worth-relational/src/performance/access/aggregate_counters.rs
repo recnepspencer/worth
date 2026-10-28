@@ -4,7 +4,7 @@ use crate::aggregate_identity::AggregateReadObservations;
 
 impl PerformanceAccess<'_> {
     pub(crate) fn count_aggregate_maintenance_reads(&self, reads: AggregateReadObservations) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.aggregate_maintenance_adjacency_lists = counters
                 .aggregate_maintenance_adjacency_lists
                 .saturating_add(reads.adjacency_lists);

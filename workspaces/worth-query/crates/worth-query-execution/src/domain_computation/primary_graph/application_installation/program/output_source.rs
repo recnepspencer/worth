@@ -102,8 +102,7 @@ where
         >,
         idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
         causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality,
-        root_kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
-        discovery: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
+        payload: recovery::ProgramOutputSourcePayload,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> ProgramSourceCommit
     where
@@ -128,11 +127,6 @@ where
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();
         let selected_program = presented.rendering().clone();
-        let payload = match (root_kind, discovery) {
-            (crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(root), None) => recovery::ProgramOutputSourcePayload::Required(root),
-            (crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(root), Some(discovery)) => recovery::ProgramOutputSourcePayload::Discovered { root, discovery },
-            _ => unreachable!("the typed program source entrance supplies its matching payload"),
-        };
         let correction = match &causality {
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::RecordedCorrection(source) => Some(recovery::UnpublishedCorrectionCommand::new(source.intent(), &idempotency)),
             _ => None,
@@ -182,7 +176,6 @@ where
                 ))
             }
             outcome @ (crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
-                | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
                 | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Indeterminate(_)) => {
                 Ok((outcome, None, Some(pending)))
             }
@@ -191,7 +184,6 @@ where
                     crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::CleanupRequired(required)
                     if matches!(required.outcome(),
                         crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(_)
-                            | crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::SettlementDeferred(_)
                             | crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_))) => {
                 // Cleanup and the pending source are independent original owners.
                 Ok((outcome, None, Some(pending)))

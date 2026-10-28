@@ -225,6 +225,7 @@ pub(super) fn runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry())
         .build()
+        .expect("valid native runtime configuration")
 }
 pub(super) fn created(kind: u32, index: usize) -> CreatedEntityRef {
     CreatedEntityRef {

@@ -53,6 +53,7 @@ fn bulk_commit(rows_per_key: usize) {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
         })
+        .expect("index fixture has identity capacity")
         .index_id;
     let built = runtime.index_authority().build_for_commit(
         &execution,
@@ -103,7 +104,8 @@ fn bulk_commit(rows_per_key: usize) {
     let second = runtime.settle_performed_publication(performed).unwrap();
     let generation = runtime
         .index_access()
-        .latest_generation(index, &BranchId("main".into()))
+        .read_latest_generation(&execution, index, &BranchId("main".into()))
+        .unwrap()
         .unwrap();
     assert_eq!(generation.source_commit_id, second.commit.commit_id);
     let crate::facade::indexes::DerivedIndexEntries::EntityField(entries) = &generation.entries

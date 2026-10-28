@@ -153,7 +153,12 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
         session.executed_steps.push(step.name.clone());
         match &step.operation {
             FintechWorkflowStep::CaptureMainSnapshot { alias } => {
-                let snapshot = session.world.runtime.visibility_authority().snapshot();
+                let snapshot = session
+                    .world
+                    .runtime
+                    .visibility_authority()
+                    .snapshot()
+                    .expect("current snapshot fixture is admitted");
                 session
                     .named_snapshots
                     .insert((*alias).to_string(), snapshot);
@@ -163,7 +168,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                 })
             }
             FintechWorkflowStep::OpenAnalysisBranch { alias } => {
-                let branch = open_analysis_branch(&mut session.world);
+                let branch = open_analysis_branch(execution, &mut session.world);
                 session.named_branches.insert((*alias).to_string(), branch);
                 Ok(WorkflowStepOutcome::applied())
             }
@@ -278,11 +283,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         session.checkpoints.push(checkpoint.checkpoint_name.clone());
-        session
-            .world
-            .runtime
-            .durability_authority()
-            .checkpoint(execution)
+        crate::tests::support::checkpoint_durably(execution, &session.world.runtime)
             .map(|_| ())
             .map_err(|error| error.to_string())
     }

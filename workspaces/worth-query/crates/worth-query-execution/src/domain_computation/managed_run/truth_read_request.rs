@@ -99,7 +99,9 @@ mod tests {
 
     #[test]
     fn ordinary_managed_truth_requests_disable_replay_by_default() {
-        let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
+        let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+            .build()
+            .expect("valid native runtime configuration");
         let identity = runtime.main_branch_identity();
         let (descriptor, _) = runtime.observe_branch(&identity).unwrap();
         let (_, _, replay, _, _, product_observation) =

@@ -62,6 +62,7 @@ pub use scope::{ScopeOutcome, ScopeStop};
 
 pub(crate) use meter::active_serial_memory;
 pub(crate) use meter::active_stop;
+pub(crate) use meter::available_serial_memory_bytes;
 
 mod checkpoint_observation;
 pub use checkpoint_observation::ExecutionCheckpointObservationForTest;

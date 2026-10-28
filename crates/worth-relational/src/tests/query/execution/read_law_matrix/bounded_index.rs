@@ -25,14 +25,17 @@ fn runtime_bounded_index_law_keeps_cold_stop_limit_and_generation() {
             aspect_key("name"),
             CanonicalFieldPath::single(field_key("name")),
         );
-        let definition = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(29),
-            name: "read-law-bounded-name".into(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: locator.clone(),
-            },
-            branch_scoped: false,
-        });
+        let definition = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(29),
+                name: "read-law-bounded-name".into(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: locator.clone(),
+                },
+                branch_scoped: false,
+            })
+            .expect("index fixture has identity capacity");
         if indexed {
             let built = runtime.index_authority().build_for_commit(
                 &setup,
@@ -45,7 +48,10 @@ fn runtime_bounded_index_law_keeps_cold_stop_limit_and_generation() {
             assert!(built.failed_indexes.is_empty());
             assert_eq!(built.generations.len(), 1);
         }
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         assert_eq!(
             runtime
                 .read_truth()

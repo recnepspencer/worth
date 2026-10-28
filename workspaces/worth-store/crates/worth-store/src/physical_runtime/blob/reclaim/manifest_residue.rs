@@ -236,7 +236,7 @@ fn inspect_selected(
             link.reserved.reclaim_attempt()
         });
         if let Ok(index) = descriptor {
-            if !descriptor_matches_manifest(&descriptor_links[index], &value, sha256)
+            if !descriptor_matches_manifest(&descriptor_links[index], value, sha256)
                 || descriptor_links[index].record != record
                 || runtime
                     .discover_blob_manifest_residue_no_effect(store, value.reclaim_attempt())

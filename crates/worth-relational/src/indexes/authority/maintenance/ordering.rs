@@ -102,7 +102,9 @@ fn child_values(
     if record.kind.kind_id != contract.child_kind {
         return Ok(None);
     }
-    let source = IndexProjectionSource::selected(view.unwrap());
+    let source = IndexProjectionSource::selected(
+        view.unwrap(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ ),
+    );
     let Some(plan) = source.entity_aspect_plan(contract.child_kind) else {
         return Ok(None);
     };

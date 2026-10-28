@@ -68,10 +68,11 @@ impl BankHttpContinuationRegistry {
         continuation: Option<BankAccountActivityContinuation>,
         activity: crate::http::protocol::BankHttpAccountActivity,
         publication: crate::http::protocol::BankHttpQueryPublication,
-    ) -> Result<BankHttpAccountActivityPageOutcome, Option<BankAccountActivityContinuation>> {
+    ) -> Result<BankHttpAccountActivityPageOutcome, Option<Box<BankAccountActivityContinuation>>>
+    {
         self.purge_expired();
         if self.records.len() >= self.capacity {
-            return Err(continuation);
+            return Err(continuation.map(Box::new));
         }
         let token = self.new_token();
         let exposed = continuation.as_ref().map(|_| token.clone());
@@ -141,14 +142,15 @@ impl BankHttpContinuationRegistry {
         activity: crate::http::protocol::BankHttpAccountActivity,
         continuation: Option<BankAccountActivityContinuation>,
         publication: crate::http::protocol::BankHttpQueryPublication,
-    ) -> Result<BankHttpAccountActivityPageOutcome, Option<BankAccountActivityContinuation>> {
+    ) -> Result<BankHttpAccountActivityPageOutcome, Option<Box<BankAccountActivityContinuation>>>
+    {
         self.purge_expired();
         let Some(ContinuationRecord::Activity(record)) = self.records.get_mut(token) else {
-            return Err(continuation);
+            return Err(continuation.map(Box::new));
         };
         if !matches!(&record.state, ContinuationState::InFlight(pending) if pending == &request_id)
         {
-            return Err(continuation);
+            return Err(continuation.map(Box::new));
         }
         let exposed = continuation.as_ref().map(|_| token.to_owned());
         let outcome = delivered(request_id.clone(), activity, exposed, publication);

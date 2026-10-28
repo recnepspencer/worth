@@ -4,25 +4,42 @@ use crate::durability::data::{
     CheckpointCoverage, DurabilityError, DurableBranchRootImage, DurableCheckpoint,
     RecoveryFailureClass,
 };
-use crate::lineage::data::{LineageCheckpointArtifact, LineageCheckpointDigestBasis};
+use crate::lineage::data::LineageCheckpointArtifact;
 
 use super::checkpoint_capture::{CapturedCheckpointBasis, CapturedRecordIdentity};
 
 impl CapturedCheckpointBasis {
     pub(super) fn build_checkpoint_image(self) -> Result<DurableCheckpoint, DurabilityError> {
         let CapturedCheckpointBasis {
+            selected_directory: _,
+            symbol_pages_resident: _,
             latest_commit,
             branch_cells,
+            branch_lifecycle,
+            retired_branch_names,
+            covered_transitions,
             branch_roots,
             record_identity,
             envelopes,
+            journal_index: _,
+            envelope_cells: _,
+            lineage_basis,
+            commit_descriptors,
             partitions,
             aspect_contracts,
             mirror_schema_authority,
             lineage_nodes,
+            lineage_events: _,
+            lineage_event_pages_resident: _,
+            lineage_event_leases: _,
+            guarded_member_sources: _,
+            index_state,
+            retained_indexes: _,
             index_definitions,
+            carried_index_image: _,
             derived_index_checkpoint,
             symbol_table,
+            symbol_identity_frontier,
             runtime_name,
         } = self;
         // The mirror retains deleted records and MVCC cells from earlier
@@ -40,36 +57,42 @@ impl CapturedCheckpointBasis {
                 CheckpointAspectContractCatalog::from_plans(&aspect_contracts)?,
             ),
         };
-        let published_lineage_commit_count = envelopes
-            .iter()
-            .filter(|envelope| envelope.has_lineage_authority())
-            .count();
-        let canonical_published_event_ids = envelopes
-            .iter()
-            .flat_map(|envelope| {
-                envelope
-                    .lineage_digest_basis()
-                    .canonical_event_ids()
-                    .iter()
-                    .copied()
-            })
-            .collect();
-        let published_lineage_event_count = envelopes
-            .iter()
-            .map(|envelope| envelope.lineage_digest_basis().lineage_event_count())
-            .sum();
-        let published_lineage_decision_count = envelopes
-            .iter()
-            .map(|envelope| envelope.lineage_digest_basis().lineage_decision_count())
-            .sum();
         let record_identity = checkpoint_record_identity(record_identity)?;
-        let (branch_roots, branch_root_schema_images) = branch_root_images(branch_roots)?;
+        let CapturedBranchRootImages {
+            roots: branch_roots,
+            schemas: branch_root_schema_images,
+            kinds: root_kind_images,
+        } = branch_root_images(branch_roots)?;
+        let mirror_partitions = partitions.materialize_owned_partitions()?;
+        let mirror_kind_images =
+            crate::storage::residency::CheckpointRegionKindImages::capture(&mirror_partitions)
+                .map_err(|cause| {
+                    DurabilityError::new(
+                        RecoveryFailureClass::CorruptCheckpoint,
+                        format!("mirror kind capture: {cause:?}"),
+                    )
+                })?;
+        let mirror_schema_digest = mirror_schema_authority
+            .as_ref()
+            .map(crate::durability::data::DurableBranchRootSchemaImage::capture)
+            .transpose()
+            .map_err(|error| {
+                DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, error.to_string())
+            })?
+            .map(|image| image.carrier_digest());
         Ok(DurableCheckpoint {
+            directory: None,
+            root_kind_images, mirror_kind_images,
+            commit_descriptors,
+            mirror_schema_digest,
             coverage: CheckpointCoverage {
                 up_to_commit: latest_commit.clone(),
                 up_to_version: latest_commit.map(|commit| commit.version_id),
+                up_to_branch_transition: covered_transitions,
             },
             branch_cells,
+            branch_lifecycle,
+            retired_branch_names,
             branch_roots,
             branch_root_schema_images,
             record_identity,
@@ -77,40 +100,37 @@ impl CapturedCheckpointBasis {
             reusable_record_slots: Vec::new(),
             record_slot_frontiers: Vec::new(),
             envelopes,
-            partition_images: partitions
-                .into_iter()
+            partition_images: mirror_partitions.into_iter()
                 .map(|partition| partition_to_image_with_contracts(partition, mirror_plans, &mirror_contracts))
                 .collect::<Result<Vec<_>, _>>()?,
             aspect_contracts: mirror_contracts.portable_contracts(),
-            lineage: LineageCheckpointArtifact::new(
-                LineageCheckpointDigestBasis::new(
-                    published_lineage_commit_count,
-                    canonical_published_event_ids,
-                    published_lineage_event_count,
-                    published_lineage_decision_count,
-                ),
-                lineage_nodes,
-            ),
+            lineage: LineageCheckpointArtifact::new(lineage_basis, lineage_nodes),
             index_definitions,
+            index_generation_frontier: index_state.generation_frontier(),
             derived_index_artifacts: crate::indexes::data::DerivedIndexArtifacts::default(),
             derived_index_checkpoint: Some(derived_index_checkpoint),
             derived_index_checkpoint_format:
                 crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
             symbol_table,
+            symbol_identity_frontier,
             runtime_name,
         })
     }
 }
 
+struct CapturedBranchRootImages {
+    roots: Vec<DurableBranchRootImage>,
+    schemas: Vec<crate::durability::data::DurableBranchRootSchemaImage>,
+    kinds: std::collections::BTreeMap<
+        crate::history::data::CommitId,
+        crate::storage::residency::CheckpointRegionKindImages,
+    >,
+}
+
 fn branch_root_images(
     branch_roots: Vec<crate::branch::RelationalBranchRootCheckpoint>,
-) -> Result<
-    (
-        Vec<DurableBranchRootImage>,
-        Vec<crate::durability::data::DurableBranchRootSchemaImage>,
-    ),
-    DurabilityError,
-> {
+) -> Result<CapturedBranchRootImages, DurabilityError> {
+    let mut root_kind_images = std::collections::BTreeMap::new();
     let mut schema_images = std::collections::BTreeMap::new();
     let root_images = branch_roots
         .into_iter()
@@ -131,8 +151,18 @@ fn branch_root_images(
             let retained_contracts = CheckpointAspectContractCatalog::from_contracts(
                 root.schema_authority().retained_aspect_contracts(),
             )?;
-            let partition_images = root
-                .partitions()
+            let partitions = root.partitions()?;
+            root_kind_images.insert(
+                root.commit_id(),
+                crate::storage::residency::CheckpointRegionKindImages::capture(&partitions)
+                    .map_err(|cause| {
+                        DurabilityError::new(
+                            RecoveryFailureClass::CorruptCheckpoint,
+                            format!("root kind capture: {cause:?}"),
+                        )
+                    })?,
+            );
+            let partition_images = partitions
                 .iter()
                 .cloned()
                 .map(|partition| {
@@ -158,7 +188,7 @@ fn branch_root_images(
                 partition_image_digest,
                 schema_carrier_digest,
             );
-            Ok(DurableBranchRootImage {
+            Ok::<_, DurabilityError>(DurableBranchRootImage {
                 format_version,
                 commit_id: root.commit_id(),
                 partition_images,
@@ -168,7 +198,11 @@ fn branch_root_images(
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok((root_images, schema_images.into_values().collect()))
+    Ok(CapturedBranchRootImages {
+        roots: root_images,
+        schemas: schema_images.into_values().collect(),
+        kinds: root_kind_images,
+    })
 }
 
 fn checkpoint_record_identity(

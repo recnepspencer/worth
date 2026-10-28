@@ -119,6 +119,7 @@ fn populate_and_close(
     }
     let resident = serving.residency_observation();
     assert!(resident.counters().peak_resident_bytes() <= profile.resident_bytes());
+    assert!(resident.counters().peak_operation_bytes() <= profile.operation_bytes());
     assert!(resident.counters().evictions() > 0);
     let shutdown = serving.close();
     if shutdown.records().posture() == RecordServingTerminalPosture::InspectionRequired
@@ -145,12 +146,14 @@ fn populate_and_close(
         );
     }
     println!(
-        "C9 producer profile={} occupied_bytes={} resident_limit={} peak_resident={} evictions={}",
+        "C9 producer profile={} occupied_bytes={} resident_limit={} peak_resident={} evictions={} operation_limit={} peak_operation={}",
         profile.label(),
         manifest.byte_count(),
         profile.resident_bytes(),
         resident.counters().peak_resident_bytes(),
-        resident.counters().evictions()
+        resident.counters().evictions(),
+        profile.operation_bytes(),
+        resident.counters().peak_operation_bytes()
     );
     Ok(manifest)
 }

@@ -126,11 +126,12 @@ pub(crate) fn encode_concrete_physical_key(
         return Ok(CanonicalKeyBytes::new(encoding, bytes));
     }
 
-    if let Some(segment_id) = key.segment_id() {
-        if key.extent_address().is_none() && key.page_address().is_none() {
-            bytes.extend_from_slice(&segment_id.get().to_be_bytes());
-            return Ok(CanonicalKeyBytes::new(encoding, bytes));
-        }
+    if let Some(segment_id) = key.segment_id()
+        && key.extent_address().is_none()
+        && key.page_address().is_none()
+    {
+        bytes.extend_from_slice(&segment_id.get().to_be_bytes());
+        return Ok(CanonicalKeyBytes::new(encoding, bytes));
     }
 
     if let Some((segment_id, extent_id)) = key.extent_address() {

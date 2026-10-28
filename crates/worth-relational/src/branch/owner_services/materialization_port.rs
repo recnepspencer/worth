@@ -18,9 +18,9 @@ use crate::transactions::data::{
 
 use super::owner_binding::RelationalOwnerServiceBinding;
 
-mod manifest;
 mod retained;
-use manifest::{live_record_manifest, source_generated_manifest};
+mod source_manifest;
+use source_manifest::source_generated_manifest;
 
 #[derive(Debug, Clone)]
 pub struct RelationalMaterializationPort {
@@ -47,7 +47,21 @@ impl RelationalMaterializationPort {
             .root
             .commit_id()
             .ok_or(RelationalMaterializationError::SourceCommitMismatch)?;
-        let records = source_generated_manifest(basis, generated_entities)?;
+        let records = crate::storage::residency::probe_full(
+            execution,
+            &crate::branch::SymbolAdmittedRootRead::new(
+                &basis.inner.root,
+                &runtime.services.symbols,
+            ),
+            |state| {
+                source_generated_manifest(
+                    state,
+                    basis.inner.root.schema_authority().registry(),
+                    generated_entities,
+                )
+            },
+        )
+        .map_err(|failure| RelationalMaterializationError::Read(failure.into()))??;
         let (producer_publications, producer_records, producer_memory) =
             crate::history::data::capture_materialization_producers(
                 execution, &runtime, basis, &records,
@@ -204,7 +218,7 @@ impl RelationalMaterializationPort {
                 &runtime,
                 basis,
                 custody,
-                validated.proposed_invariant_state.working_state(),
+                validated.proposed_mutation.state(),
             )
             .map_err(RelationalMaterializationError::Commit)?;
         let invariant_evidence = validated.invariant_evidence().clone();
@@ -213,20 +227,6 @@ impl RelationalMaterializationPort {
             .map_err(RelationalMaterializationError::Commit)?;
         Ok((candidate, invariant_evidence))
     }
-}
-
-fn missing_entity(entity_id: crate::identity::data::EntityId) -> RelationalMaterializationError {
-    RelationalMaterializationError::SourceRecordUnavailable(
-        crate::transactions::data::RecordRef::Entity(entity_id),
-    )
-}
-
-fn missing_relation(
-    relation_id: crate::identity::data::RelationId,
-) -> RelationalMaterializationError {
-    RelationalMaterializationError::SourceRecordUnavailable(
-        crate::transactions::data::RecordRef::Relation(relation_id),
-    )
 }
 
 fn validate_custody_basis(
@@ -277,3 +277,17 @@ mod tests;
 
 mod batch;
 use batch::{rematerialization_batch, suspension_batch};
+
+fn missing_entity(entity_id: crate::identity::data::EntityId) -> RelationalMaterializationError {
+    RelationalMaterializationError::SourceRecordUnavailable(
+        crate::transactions::data::RecordRef::Entity(entity_id),
+    )
+}
+
+fn missing_relation(
+    relation_id: crate::identity::data::RelationId,
+) -> RelationalMaterializationError {
+    RelationalMaterializationError::SourceRecordUnavailable(
+        crate::transactions::data::RecordRef::Relation(relation_id),
+    )
+}

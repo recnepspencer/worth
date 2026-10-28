@@ -14,6 +14,7 @@ use worth_execution::MapKernelContext;
 mod capacity;
 mod map_declaration;
 pub(super) use capacity::{checked_map_memory_requirement, PrecomputeMapBasis};
+mod publication_capacity;
 mod result_custody;
 
 pub(super) enum PreparedEpoch<'tasks, 'request, 'authority> {
@@ -82,59 +83,67 @@ pub(super) fn prepare_epoch<'tasks, 'request, 'authority>(
         request_work.as_deref_mut(),
         preparation.as_deref_mut(),
     )?;
-    let (computed, execution) = result_custody::compute(
+    let computation = result_custody::prepare(
         graph,
         &validated,
         &batch,
         &checked,
-        precompute,
         policy,
         request_work.as_deref_mut(),
         preparation
             .as_deref_mut()
             .expect("checked preparation owner"),
     )?;
+    let tasks = checked.tasks();
+    let values = allocate_epoch_values(
+        tasks.len(),
+        preparation
+            .as_deref_mut()
+            .expect("checked preparation owner"),
+    )?;
+    preparation_budget::claim_vec::<worth_foundational::ExecutionReport>(
+        preparation.as_deref_mut(),
+        1,
+    )?;
+    let publication = publication_capacity::PublicationCapacity::admit(
+        graph,
+        checked,
+        &batch,
+        policy,
+        request_work.as_deref_mut(),
+        preparation.as_deref_mut(),
+    )?;
+    let (computed, execution) = computation.compute(graph, tasks, precompute)?;
     let result_custody::ComputedValues {
         values: computed,
         memory: result_memory,
     } = computed;
     let values = reconcile_prepared_values(
         graph,
-        checked.tasks(),
+        tasks,
         validated,
         computed,
+        values,
         request_work.as_deref_mut(),
-        preparation.as_deref_mut(),
     )?;
     let measured_result_bytes = result_custody::measure_result_maximum(
         &values,
         request_work.as_deref_mut().expect("checked request work"),
     )?;
-    let (metadata, request, apply) = checked.into_prepared_parts(measured_result_bytes)?;
-    let prepared_map = crate::logic::planner::apply::stage::prepare_checked_apply_map(
-        metadata.tasks(),
+    let publication_capacity::PreparedPublication {
+        metadata,
+        request,
+        apply,
+        prepared_map,
+        candidates,
+    } = publication.settle(
+        graph,
         &batch,
-        &apply,
-        request,
-        policy,
-        request_work.as_deref_mut(),
-        preparation.as_deref_mut(),
-    )?;
-    let candidates = graph.prepare_candidate_epoch(
-        metadata.tasks().iter().map(|task| task.node),
         measured_result_bytes,
-        if metadata.tasks().len() < policy.full_parallel_min_tasks() {
-            worth_foundational::ExecutionPosture::Serial
-        } else {
-            request.resolved_posture()
-        },
-        request,
-        request_work.expect("checked request work"),
-        preparation
-            .as_deref_mut()
-            .expect("checked preparation owner"),
+        policy,
+        request_work,
+        preparation,
     )?;
-    preparation_budget::claim_vec::<worth_foundational::ExecutionReport>(preparation, 1)?;
     Ok(PreparedEpoch::Checked {
         metadata,
         values,
@@ -158,7 +167,7 @@ fn prepare_legacy_epoch<'tasks>(
 ) -> Result<PreparedEpoch<'tasks, 'static, 'static>, SignalError> {
     let tasks = admitted.tasks();
     let snapshot = ExecutionSnapshot::new(graph);
-    let mut values = allocate_legacy_values(tasks.len(), preparation)?;
+    let mut values = allocate_epoch_values(tasks.len(), preparation)?;
     for (task, validation) in tasks.iter().zip(validated) {
         match validation {
             PrevalidatedTask::Prepared(prepared) => values.push(prepared),
@@ -194,13 +203,11 @@ fn reconcile_prepared_values(
     tasks: &[EligibleTask],
     validated: Vec<PrevalidatedTask>,
     computed: Vec<PreparedEvaluation>,
+    mut values: Vec<PreparedEvaluation>,
     mut work: Option<&mut MapKernelContext<'_, '_>>,
-    preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<Vec<PreparedEvaluation>, SignalError> {
     super::work::checkpoint(work.as_deref_mut(), tasks.len())?;
-    preparation_budget::claim_vec::<PreparedEvaluation>(preparation, tasks.len())?;
     let mut computed = computed.into_iter();
-    let mut values = Vec::with_capacity(tasks.len());
     for (task, validation) in tasks.iter().zip(validated) {
         match validation {
             PrevalidatedTask::Prepared(prepared) => values.push(prepared),
@@ -257,7 +264,7 @@ fn reconcile_prepared_values(
     Ok(values)
 }
 
-fn allocate_legacy_values(
+fn allocate_epoch_values(
     count: usize,
     preparation: &mut SignalPreparationBudget,
 ) -> Result<Vec<PreparedEvaluation>, SignalError> {

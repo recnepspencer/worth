@@ -26,9 +26,11 @@ fn merged_plan_is_stable_across_batch_order() {
         )
         .expect("test staging stays within configured resource budgets");
     let plan_a = txn_a
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime_a,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .clone();
@@ -57,9 +59,11 @@ fn merged_plan_is_stable_across_batch_order() {
         )
         .expect("test staging stays within configured resource budgets");
     let plan_b = txn_b
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime_b,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .clone();

@@ -53,4 +53,5 @@ pub(super) fn runtime_with_name_merge_policy(
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }

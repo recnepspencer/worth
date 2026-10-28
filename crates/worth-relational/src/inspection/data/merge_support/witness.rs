@@ -123,7 +123,7 @@ fn support_witness_digest(
     bytes.extend_from_slice(request_digest.as_bytes());
     bytes.extend_from_slice(branch_basis_digest.as_bytes());
     bytes.extend_from_slice(
-        &rmp_serde::to_vec_named(rows).expect("support witness rows must encode"),
+        &rmp_serde::to_vec_named(rows).expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "support witness rows must encode"),
     );
     append_profile_bytes(&mut bytes, profile);
     let digest = Sha256::digest(bytes);

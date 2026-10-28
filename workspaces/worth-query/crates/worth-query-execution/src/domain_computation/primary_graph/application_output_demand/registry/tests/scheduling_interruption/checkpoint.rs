@@ -24,6 +24,7 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 false,
             ),
             (Kind::ProducerUnavailable, true),
+            (Kind::RequiredSuccessorStateUnavailable, true),
         ] {
             let fixture = Fixture::new(false);
             {

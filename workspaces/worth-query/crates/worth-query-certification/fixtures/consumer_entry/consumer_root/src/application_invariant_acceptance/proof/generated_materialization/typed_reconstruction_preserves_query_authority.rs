@@ -97,15 +97,6 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         )) => {}
         _ => panic!("an unrelated observed source must not suspend this output"),
     }
-    application
-        .with_host_advancement(|phase| {
-            application.fail_next_durable_append_for_test(
-                &phase
-                    .checked_execution_request_for(application.product_runtime())
-                    .expect("matching installed phase"),
-            )
-        })
-        .expect("installed host call opens");
     let selected = application
         .with_host_advancement(|host_phase| {
             application
@@ -114,46 +105,16 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
                 .expect("the Query-issued output occurrence remains selectable")
         })
         .expect("installed host call opens");
-    let recovery = match selected
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, source)
-    {
-        Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(recovery)) => recovery,
+    let suspended = match selected
+        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
+            scope, source,
+        ) {
+        Ok(suspended) => suspended,
         Err(failure) => panic!(
-            "the injected owner failure must retain opaque suspension recovery; got {}",
+            "the exact observed source must suspend this output; got {}",
             successor::failure_name(&failure)
         ),
-        Ok(_) => panic!("the injected owner failure unexpectedly published"),
     };
-    assert_eq!(recovery.product_branch(), branch);
-    assert_eq!(read(request, &vertices[0].body_key), retained);
-    let recovery = recovery_admission::suspension(application, recovery, scope);
-    assert_eq!(read(request, &vertices[0].body_key), retained);
-    let recovery = match application
-        .continue_generated_output_suspension_recovery::<AlternatePlanarOutputProducer<ConsumerSchema>>(
-            recovery, scope,
-        ) {
-        Ok(_) => panic!("another installed producer cannot inherit suspension recovery"),
-        Err(failure) => {
-            assert_eq!(failure.stage(),
-                worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence);
-            failure.into_recovery()
-        }
-    };
-    let recovery = match foreign
-        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            recovery, scope,
-        ) {
-        Ok(_) => panic!("a foreign Query runtime must not settle suspension custody"),
-        Err(failure) => {
-            assert_eq!(
-                failure.stage(),
-                worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
-            );
-            failure.into_recovery()
-        }
-    };
-    let fresh_scope = crate::application_invariant_acceptance::authentication::request_scope();
-    let suspended = recovery_publication::suspension(application, recovery, &fresh_scope);
 
     let unavailable = request
         .query(PlanarRead {
@@ -177,37 +138,11 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     let suspended = incomplete_manifest_rejection(application, suspended, &vertices);
     let suspended = claim_denials_preserve_session(application, suspended, &vertices);
     let completed = complete(application, suspended, &vertices);
-    application
-        .with_host_advancement(|phase| {
-            application.fail_next_durable_append_for_test(
-                &phase
-                    .checked_execution_request_for(application.product_runtime())
-                    .expect("matching installed phase"),
-            )
-        })
-        .expect("installed host call opens");
-    let recovery = match application.restore_generated_output(completed, scope) {
-        Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputRestorationFailure::ProductUnpublished(unpublished)) => {
-            unpublished.into_recovery()
-        }
-        _ => panic!("the injected owner failure must retain opaque restoration recovery"),
+    let restored = match application.restore_generated_output(completed, scope) {
+        Ok(restored) => restored,
+        Err(_) => panic!("the completed reconstruction must restore its generated output"),
     };
-    assert_eq!(recovery.product_branch(), branch);
-    let recovery = recovery_admission::restoration(application, recovery, scope);
-    let recovery = match foreign
-        .continue_generated_output_restoration_recovery(recovery, &fresh_scope)
-    {
-        Ok(_) => panic!("a foreign Query runtime must not settle restoration custody"),
-        Err(failure) => {
-            assert_eq!(
-                failure.stage(),
-                worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputRestorationRecoveryStage::StaleOccurrence,
-            );
-            failure.into_recovery()
-        }
-    };
-    let fresh_scope = crate::application_invariant_acceptance::authentication::request_scope();
-    recovery_publication::restoration(application, recovery, &fresh_scope);
+    assert_eq!(restored.product_branch(), branch);
 
     for vertex in &vertices {
         let restored = read(request, &vertex.body_key);

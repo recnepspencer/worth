@@ -260,7 +260,12 @@ impl CommitStrategyExecutor for IntentReconciliationStrategy {
         let existing = observation
             .visibility()
             .entity_whole_aspects(execution, input.entity_id, projected_aspect_keys)?
-            .expect("entity was visible during strategy basis read");
+            .ok_or_else(|| {
+                StrategyExecutorFailure::new(
+                    StrategyExecutorFailureClass::DomainRejection,
+                    "strategy target is unavailable in its selected basis",
+                )
+            })?;
         let unchanged = desired_aspect_fields.iter().all(|(target, desired_value)| {
             let [_field] = target.field_path().fields() else {
                 return false;

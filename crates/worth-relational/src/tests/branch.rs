@@ -47,7 +47,7 @@ fn root_owned_artifact_keeps_fork_available_when_catalog_accelerator_is_missing(
     let before_catalog_count = runtime.history.catalog_len();
 
     let forked = runtime
-        .fork_branch(target.clone(), basis)
+        .fork_branch(execution, target.clone(), basis)
         .expect("the exact source root, not the catalog accelerator, authorizes the fork");
 
     assert_eq!(forked.shared_commit_id(), Some(commit.commit.commit_id));

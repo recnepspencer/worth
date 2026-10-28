@@ -33,11 +33,11 @@ impl ArtifactTreeListingAllocator for Storage {
         change: ArtifactTreeListingStorageChange,
     ) -> Result<(), CallbackDenied> {
         self.changes.push(change);
-        if let ArtifactTreeListingStorageChange::Admit { boundary, .. } = change {
-            if self.deny == Some(boundary) {
-                self.deny = None;
-                return Err(CallbackDenied);
-            }
+        if let ArtifactTreeListingStorageChange::Admit { boundary, .. } = change
+            && self.deny == Some(boundary)
+        {
+            self.deny = None;
+            return Err(CallbackDenied);
         }
         Ok(())
     }

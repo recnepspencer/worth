@@ -277,7 +277,7 @@ fn absent_and_rejected_checkpoints_have_distinct_terminal_evidence() {
     );
     assert_eq!(blocked.recovery_effects(), 0);
     let after = PhysicalRecoveryPlatformAuthority::process_counters();
-    assert!(after.sessions_terminated_blocked >= before.sessions_terminated_blocked + 1);
+    assert!(after.sessions_terminated_blocked > before.sessions_terminated_blocked);
 }
 
 #[test]

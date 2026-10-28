@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 #[path = "phase_three_runtime/backend.rs"]
 mod phase_three_backend;
 

@@ -1,3 +1,5 @@
+mod readmission;
+
 use std::sync::Arc;
 
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
@@ -17,8 +19,8 @@ pub(crate) struct RelationalCommitArtifact {
     identity: RelationalCommitIdentity,
     parentage: RelationalCommitParentage,
     roots: RelationalCommitRootDescriptor,
-    envelope: Arc<CanonicalCommitEnvelope>,
-    canonical_payload: Arc<[u8]>,
+    schema_version: crate::schema::data::SchemaVersionId,
+    envelope: Arc<super::RelationalCommitEnvelopeResidency>,
 }
 
 // The Phase-4 fork path may share an immutable catalog handle, but it may
@@ -93,8 +95,11 @@ impl RelationalCommitArtifact {
                     &envelope.schema_authority,
                 ),
             ),
-            envelope,
-            canonical_payload,
+            schema_version: envelope.schema_version,
+            envelope: Arc::new(super::RelationalCommitEnvelopeResidency::resident(
+                envelope,
+                canonical_payload,
+            )),
         })
     }
 
@@ -137,7 +142,10 @@ impl RelationalCommitArtifact {
         root: Option<&Arc<crate::branch::RelationalBranchRoot>>,
         descriptor: Option<&RelationalCommitRootDescriptor>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
-        if !Arc::ptr_eq(&self.envelope, envelope) {
+        if self
+            .resident_envelope()
+            .is_none_or(|resident| !Arc::ptr_eq(&resident, envelope))
+        {
             return Err(RelationalCommitArtifactDenial::RootLinkage);
         }
         let roots = if let Some(root) = root {
@@ -163,9 +171,80 @@ impl RelationalCommitArtifact {
             identity: self.identity.clone(),
             parentage: self.parentage.clone(),
             roots,
-            envelope: Arc::clone(envelope),
-            canonical_payload: Arc::clone(&self.canonical_payload),
+            schema_version: self.schema_version,
+            envelope: Arc::clone(&self.envelope),
         })
+    }
+
+    pub(crate) fn from_index(
+        entry: super::RelationalCommitIndexEntry,
+        source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        admitted: Option<crate::history::data::PositionedCanonicalCommit>,
+    ) -> Result<Self, RelationalCommitArtifactDenial> {
+        if let Some(commit) = &admitted
+            && (commit.position() != entry.position || commit.commit != entry.commit
+                || commit.schema_version != entry.schema_version
+                || entry.root.schema_root() != &crate::schema::data::schema_authority_snapshot_digest_bytes(&commit.schema_authority)
+                || crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::positioned_payload_digest(commit)
+                    .map_err(|_| RelationalCommitArtifactDenial::CanonicalPayloadEncoding)? != entry.payload_digest) {
+                return Err(RelationalCommitArtifactDenial::RootLinkage);
+        }
+        let canonical_payload = admitted
+            .as_ref()
+            .map(|commit| encode_canonical_payload(commit.envelope()))
+            .transpose()?;
+        let parentage = RelationalCommitParentage::from_ordered(entry.commit.parents.clone())
+            .map_err(|_| RelationalCommitArtifactDenial::Parentage)?;
+        Ok(Self {
+            identity: RelationalCommitIdentity::new(
+                entry.commit.commit_id,
+                entry.commit.version_id,
+                entry.commit.branch_id.clone(),
+            ),
+            parentage,
+            roots: entry.root.clone(),
+            schema_version: entry.schema_version,
+            envelope: Arc::new(super::RelationalCommitEnvelopeResidency::cold(
+                entry,
+                source,
+                admitted,
+                canonical_payload
+                    .as_ref()
+                    .map(|bytes| payload_digest(bytes)),
+            )),
+        })
+    }
+
+    pub(crate) fn envelope_residency(&self) -> Arc<super::RelationalCommitEnvelopeResidency> {
+        self.envelope.clone()
+    }
+
+    pub(crate) fn resident_envelope(&self) -> Option<Arc<CanonicalCommitEnvelope>> {
+        self.envelope.get()
+    }
+
+    pub(crate) fn demand_envelope(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<
+        Arc<CanonicalCommitEnvelope>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        self.envelope.demand(execution, limit)
+    }
+
+    pub(crate) fn schema_version(&self) -> crate::schema::data::SchemaVersionId {
+        self.schema_version
+    }
+
+    pub(crate) fn receipt(&self) -> crate::history::data::RelationalCommitReceipt {
+        crate::history::data::RelationalCommitReceipt {
+            commit_id: self.commit_id(),
+            version_id: self.version_id(),
+            branch_id: self.identity.authoring_branch().clone(),
+            parents: self.parentage.as_slice().to_vec(),
+        }
     }
 
     pub fn identity(&self) -> &RelationalCommitIdentity {
@@ -180,18 +259,19 @@ impl RelationalCommitArtifact {
         &self.roots
     }
 
-    pub(crate) fn envelope(&self) -> &Arc<CanonicalCommitEnvelope> {
-        &self.envelope
-    }
-
     pub(crate) fn canonical_payload_bytes(&self) -> u64 {
-        self.canonical_payload.len() as u64
+        self.envelope
+            .resident_payload()
+            .as_ref()
+            .map_or(0, |payload| payload.len() as u64)
     }
 
-    pub(crate) fn canonical_payload_digest(&self) -> [u8; 32] {
-        use sha2::{Digest, Sha256};
-
-        Sha256::digest(self.canonical_payload.as_ref()).into()
+    pub(crate) fn canonical_payload_digest(
+        &self,
+    ) -> Result<[u8; 32], RelationalCommitArtifactDenial> {
+        self.envelope
+            .payload_digest()
+            .ok_or(RelationalCommitArtifactDenial::CanonicalPayloadEncoding)
     }
 
     pub(crate) fn authoritative_allocation_observations(
@@ -208,14 +288,16 @@ impl RelationalCommitArtifact {
             },
             RelationalCommitAuthoritativeAllocationObservation {
                 kind: RelationalCommitAuthoritativeAllocationKind::EnvelopeObject,
-                authoritative_bytes: std::mem::size_of::<CanonicalCommitEnvelope>() as u64,
+                authoritative_bytes: self
+                    .envelope
+                    .get()
+                    .map_or(0, |_| std::mem::size_of::<CanonicalCommitEnvelope>() as u64),
             },
             RelationalCommitAuthoritativeAllocationObservation {
                 kind: RelationalCommitAuthoritativeAllocationKind::EnvelopeNestedOwnerStorage,
-                authoritative_bytes: self
-                    .envelope
-                    .allocation_inventory()
-                    .authoritative_nested_bytes,
+                authoritative_bytes: self.envelope.get().map_or(0, |envelope| {
+                    envelope.allocation_inventory().authoritative_nested_bytes
+                }),
             },
         ]
     }
@@ -223,7 +305,10 @@ impl RelationalCommitArtifact {
     pub(crate) fn excluded_allocation_inventory(
         &self,
     ) -> RelationalCommitExcludedAllocationInventory {
-        let inventory = self.envelope.allocation_inventory();
+        let Some(envelope) = self.envelope.get() else {
+            return RelationalCommitExcludedAllocationInventory::default();
+        };
+        let inventory = envelope.allocation_inventory();
         RelationalCommitExcludedAllocationInventory {
             diagnostic_bytes: inventory.diagnostic_bytes,
             optional_cache_bytes: inventory.optional_cache_bytes,
@@ -231,7 +316,11 @@ impl RelationalCommitArtifact {
     }
 
     pub(crate) fn links_root(&self, root: &Arc<crate::branch::RelationalBranchRoot>) -> bool {
-        root.descriptor() == Some(&self.roots) && root.links_envelope(&self.envelope)
+        root.descriptor() == Some(&self.roots)
+            && self
+                .envelope
+                .get()
+                .is_some_and(|envelope| root.links_envelope(&envelope))
     }
 
     pub(crate) fn commit_id(&self) -> CommitId {
@@ -241,6 +330,11 @@ impl RelationalCommitArtifact {
     pub(crate) fn version_id(&self) -> VersionId {
         self.identity.version_id()
     }
+}
+
+fn payload_digest(bytes: &[u8]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(bytes).into()
 }
 
 fn encode_canonical_payload(

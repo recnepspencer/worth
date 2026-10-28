@@ -1,7 +1,7 @@
 pub mod builder;
-mod configuration;
 mod construction;
-mod durability_fault_injection;
+mod construction_denial;
+pub use construction_denial::RelationalRuntimeConstructionDenial;
 mod field_text;
 mod guided;
 mod initial_schema_installation;
@@ -34,8 +34,9 @@ pub use crate::visibility::materialization::read_records::{
     QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
     RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
     RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
-    RelationalEntityMetadata, RelationalEntityRetirement, RelationalFieldSupportComparisonDenial,
-    RelationalPinnedRead, RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
+    RelationalEntityMetadata, RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
+    RelationalFieldSupportComparisonDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
+    RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
     VisibilityProjectionView, VisibilityReadContext,
 };
@@ -62,11 +63,11 @@ pub use schema_transition_admission::{
     RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
 };
 pub use state::{
-    RelationalBranchSharingCostCounters, RelationalPatchPositionReservationCounters,
-    RelationalPhase4ReferenceCostCounters,
+    RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,
+    RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
 };
 
-pub(crate) use crate::storage::overlay::{PartitionAccess, WorkingState};
+pub(crate) use crate::storage::overlay::WorkingState;
 pub use construction::RelationalRuntimeForkDenial;
 pub(crate) use construction::RuntimeExtensions;
 pub use state::RelationalRuntime;
@@ -74,33 +75,41 @@ pub(crate) use state::RelationalRuntimeState;
 pub(crate) use state::{
     authored_write_commit_denial, readmit_positioned_canonical_commit,
     AdmittedRelationalRuntimeOperation, AuthoredWriteGeneration, BranchHeadVersionIndexAuthority,
-    CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
+    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
+    CanonicalPositionAdmission, CanonicalPublicationRecordError, ColdSymbolDirectoryDenial,
     CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexCatalogCoverage,
     IndexDefinitionCatalog, IndexingState, IndexingSubsystem, LineageIdentityAllocator,
-    LineageState, LineageSubsystem, PartitionEdition, PendingRecordAllocations,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
-    PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
+    LineageState, LineageSubsystem, MirrorResidencyDemandBinding, PartitionEdition,
+    PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
+    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
+    PreparedSymbolPublication, PreparedVersionedArtifactAccelerators,
     PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
     PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
     PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
     RelationalCandidateRegistrationDenial, RelationalCanonicalPublicationRoutes,
-    RelationalDiagnosticArtifactStore, RelationalForkMaterializationCost,
-    RelationalForkOwnerBinding, RelationalPreparationHistory, RelationalPreparationOwnerBinding,
-    RelationalPreparationRuntime, RelationalRuntimeConfigurationBinding,
-    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
-    RelationalRuntimePublicationBinding, ReplayRetentionState, RuntimeInstrumentation,
-    RuntimeServices, RuntimeSubsystem, SchemaContractRuntimeSubsystem, SnapshotHandleBinding,
-    StorageSubsystem, TryPartitionMutationDenied, ValidatedLineageEventBatch, VisibilityResidency,
-    VisibilitySubsystem,
+    RelationalCheckpointManifestPublication, RelationalDiagnosticArtifactStore,
+    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
+    RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
+    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
+    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ResidentLineageEventPage,
+    ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
+    RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
+    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
+    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub(crate) use state::{
-    DeferredRelationalSettlement, PendingRelationalPublicationSettlement,
-    PerformedRelationalSettlement, RelationalPendingSettlementReservation,
-    RelationalSettlementClaim, RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
+    RelationalPendingSettlementReservation, RelationalSettlementClaim,
+    RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
 
 pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;
 
+pub(crate) use state::IndexDefinitionReadBinding;
+
 pub use state::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
 };
+
+pub(crate) use state::TryPartitionMutationDenied;

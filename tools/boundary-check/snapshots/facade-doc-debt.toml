@@ -16,4 +16,7 @@ schema_version = 1
 
 [[facades]]
 package = "worth-query-host::primary_graph"
-undocumented = ["WorthQueryApplicationSourceAdjacencyEndpoints"]
+undocumented = [
+    "StructuralWalkDenialKind",
+    "WorthQueryApplicationSourceAdjacencyEndpoints",
+]

@@ -11,7 +11,10 @@ fn relation_join_pin_keeps_the_cancelled_request_cause() {
     bind_chain(&setup, &runtime, left, shared, right, "shared");
     let index = register_relation_join(&runtime, 81);
     build_current_generation(&setup, &runtime, index.index_id);
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     for leased in [false, true] {
         let cancellation = worth_execution::CancellationSource::new();
         let stopped = worth_execution::SerialRequest::from_memory(

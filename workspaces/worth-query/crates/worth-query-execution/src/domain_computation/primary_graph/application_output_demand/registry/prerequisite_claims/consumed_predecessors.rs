@@ -19,7 +19,7 @@ pub(super) fn select<'a>(
     predecessors: &mut Vec<Arc<WorthQueryOutputDemandKey>>,
 ) -> Result<Option<CheckpointPrerequisiteClaims>, WorthQueryOutputDemandDenial> {
     let maximum = inputs.len();
-    let mut checkpoint_predecessors = None;
+    let mut checkpoint_predecessors: Option<CheckpointPrerequisiteClaims> = None;
     for consumed in inputs {
         let upstream = state
             .settlement_keys
@@ -32,8 +32,7 @@ pub(super) fn select<'a>(
             let verified = consumed.claim_verified_checkpoint_root(owner)
                 .map_err(|stop| match stop {
                     crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => match stop {
-                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-                        | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => prerequisite_denials::work_denial(),
+                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => prerequisite_denials::work_denial(),
                         _ => prerequisite_denials::capacity_denial(),
                     },
                     _ => prerequisite_denials::stale_upstream_denial(),
@@ -41,13 +40,12 @@ pub(super) fn select<'a>(
             if !verified {
                 return Err(prerequisite_denials::stale_upstream_denial());
             }
-            if checkpoint_predecessors.is_none() {
-                checkpoint_predecessors = Some(CheckpointPrerequisiteClaims::prepare(maximum)?);
-            }
-            checkpoint_predecessors
-                .as_mut()
-                .unwrap()
-                .retain_verified(consumed.identity());
+            let claims = if let Some(claims) = &mut checkpoint_predecessors {
+                claims
+            } else {
+                checkpoint_predecessors.insert(CheckpointPrerequisiteClaims::prepare(maximum)?)
+            };
+            claims.retain_verified(consumed.identity());
             continue;
         };
         if upstream.as_ref() == downstream {
@@ -62,9 +60,7 @@ pub(super) fn select<'a>(
             let requested = consumed.requested_read().map_err(|stop| {
                 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
                 match stop {
-                    Stop::WorkExhausted { .. }
-                    | Stop::WorkExhaustedWithoutRequirement { .. }
-                    | Stop::WorkCounterOverflow => prerequisite_denials::work_denial(),
+                    Stop::WorkCounterOverflow => prerequisite_denials::work_denial(),
                     _ => prerequisite_denials::capacity_denial(),
                 }
             })?;

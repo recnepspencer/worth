@@ -19,7 +19,8 @@ use worth_store_physical_format::store_namespace::{
 
 mod boundary;
 
-const POOL: u64 = 65_536;
+// The ample fixture must hold both maximum-sized in-flight binding commands.
+const POOL: u64 = 8 * worth_store_physical_format::MAX_CHECKPOINT_BINDING_RECORD_BYTES as u64;
 
 struct Fixture {
     owner: ReleasePublicationAllocationOwner,

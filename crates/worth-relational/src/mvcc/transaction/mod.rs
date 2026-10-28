@@ -12,11 +12,14 @@ mod intent_locus;
 mod overlay;
 mod overlay_indexing;
 mod overlay_normalization;
+mod plan_preparation;
 mod planning;
 mod preparation_port;
+mod preparation_round;
 mod prepared_change_summary;
 mod read_projection;
 mod read_view;
+mod region_demand;
 mod request_custody;
 mod savepoint;
 mod staging;
@@ -43,3 +46,6 @@ pub use staging::RelationalTransactionStagingDenial;
 pub(crate) use overlay::DetachedRelationalTransactionOverlay;
 #[cfg(test)]
 pub(crate) mod split_contacts;
+
+mod read_denial;
+pub use read_denial::RelationalTransactionReadDenial;

@@ -5,4 +5,4 @@ mod publication;
 pub(crate) mod structural_summary;
 mod touched_scope;
 
-pub(crate) use pipeline::{CommitDurableAppendAdmission, CommitResultSeal};
+pub(crate) use pipeline::CommitResultSeal;

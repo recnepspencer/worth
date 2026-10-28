@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use serde_json::Value;
 use worth_foundational::facade::{AspectValue, CanonicalFieldPath, FieldKey};
 use worth_query::facade::foundation::{

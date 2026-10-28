@@ -35,10 +35,9 @@ fn scenario(rejoin: bool, late_hold: bool) {
             drop(stale);
             let key = newest_key.clone();
             let returned = registry.hold_required_successor(Box::new(refreshing), |successor| {
-                &successor
+                successor
                     .downcast_ref::<WorthQueryOutputDemandInterest>()
-                    .unwrap()
-                    .key
+                    .map(|interest| &interest.key)
             });
             assert!(
                 returned.is_some(),
@@ -168,10 +167,9 @@ fn closing_the_last_stale_owner_releases_its_held_successor() {
         let successor = admit(&registry, &newest_key);
         publish(&registry, &successor, receipt);
         assert!(registry
-            .hold_required_successor(Box::new(successor), |successor| &successor
+            .hold_required_successor(Box::new(successor), |successor| successor
                 .downcast_ref::<WorthQueryOutputDemandInterest>()
-                .unwrap()
-                .key)
+                .map(|interest| &interest.key))
             .is_none());
         assert!(registry.state.lock().unwrap().records[&newest_key]
             .held_successor

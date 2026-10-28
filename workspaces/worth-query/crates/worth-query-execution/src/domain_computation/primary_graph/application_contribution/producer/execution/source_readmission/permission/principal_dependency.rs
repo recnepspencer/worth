@@ -117,9 +117,7 @@ where
 {
     use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
     let kind = match stop {
-        Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
     };
     denial(kind, Binding::IDENTITY).into()

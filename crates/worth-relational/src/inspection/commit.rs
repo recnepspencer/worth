@@ -8,10 +8,20 @@ use crate::publication::patch::data::ordered_aspect_keys;
 use super::access::InspectionAccess;
 
 impl<'runtime> InspectionAccess<'runtime> {
-    pub fn inspect_commit(&self, commit_id: CommitId) -> Option<CommitInspection> {
+    pub fn inspect_commit(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        commit_id: CommitId,
+    ) -> Result<Option<CommitInspection>, crate::execution::RelationalExecutionDenialCause> {
         self.count_commit_read();
-        let envelope = self.commit_envelope(commit_id)?;
-        Some(CommitInspection {
+        let Some(envelope) = self
+            .runtime
+            .history()
+            .demand_commit_envelope(execution, commit_id)?
+        else {
+            return Ok(None);
+        };
+        Ok(Some(CommitInspection {
             commit: envelope.commit.clone(),
             changed_records: envelope
                 .patch
@@ -36,33 +46,46 @@ impl<'runtime> InspectionAccess<'runtime> {
             ),
             origin: InspectionOrigin::CanonicalCommitStorage,
             access_path: InspectionAccessPath::CommitIndexRead,
-        })
+        }))
     }
 
     pub fn inspect_recent_commits(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &RecentCommitInspectionRequest,
-    ) -> RecentCommitInspectionWindow {
-        let limit = usize::try_from(request.limit).unwrap_or(usize::MAX);
-        let commits = self
-            .recent_commit_ids(request.branch_id.as_ref(), limit)
-            .into_iter()
-            .filter_map(|commit_id| self.inspect_commit(commit_id))
-            .collect();
+    ) -> Result<RecentCommitInspectionWindow, crate::execution::RelationalExecutionDenialCause>
+    {
+        crate::execution::check_request(execution)?;
+        let limit = usize::try_from(request.limit).map_err(|_| {
+            crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded
+        })?;
+        let mut commits = Vec::new();
+        for commit_id in self.recent_commit_ids(request.branch_id.as_ref(), limit) {
+            if let Some(commit) = self.inspect_commit(execution, commit_id)? {
+                commits.push(commit);
+            }
+        }
         let branch_head = request
             .branch_id
             .as_ref()
             .and_then(|branch_id| self.branch_head_ref(branch_id));
-        RecentCommitInspectionWindow {
+        Ok(RecentCommitInspectionWindow {
             branch_head,
             commits,
             origin: InspectionOrigin::CanonicalCommitStorage,
             access_path: InspectionAccessPath::CommitIndexRead,
-        }
+        })
     }
 
-    pub fn inspect_branch_head(&self, branch_id: &BranchId) -> Option<CommitInspection> {
-        let head = self.branch_head_ref(branch_id)?;
-        self.inspect_commit(head.commit_id)
+    pub fn inspect_branch_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch_id: &BranchId,
+    ) -> Result<Option<CommitInspection>, crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
+        let Some(head) = self.branch_head_ref(branch_id) else {
+            return Ok(None);
+        };
+        self.inspect_commit(execution, head.commit_id)
     }
 }

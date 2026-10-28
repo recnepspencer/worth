@@ -134,7 +134,15 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
                 } | graph::WorthQueryApplicationCommitDenialKind::ExecutionNestedPatternStopped {
                     partition_identity: None | Some(0) | Some(1),
                 },
-            ) => Terminal::Retryable,
+            ) | Cause::Reentry(graph::WorthQueryConditionalReentryFailure::ApplicationAttempt(
+                graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(
+                    graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                        denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                        partition_identity: None | Some(0) | Some(1),
+                        policy_ancestor: None,
+                    },
+                ),
+            )) => Terminal::Retryable,
             other => panic!("unexpected work-stop cause at a real charge: {other:?}"),
         };
         assert_eq!(terminal, expected_terminal, "charge {required}");

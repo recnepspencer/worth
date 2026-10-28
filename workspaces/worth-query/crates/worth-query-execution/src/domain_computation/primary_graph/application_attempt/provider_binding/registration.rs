@@ -124,18 +124,8 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         Ok(application) => application,
         Err(failure) => {
             let _ = staged.abort();
-            // The read owner already named the request's first stop: keep that
-            // control outcome, as the source-rebase admission below does.
-            use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
-            use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
-            if let Kind::RequestInterrupted(stop) = failure.kind() {
-                return Err(match stop {
-                    Stop::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
-                    Stop::DeadlineExceeded => WorthQueryProviderProgressionOutcome::TimedOut,
-                });
-            }
-            return Err(WorthQueryProviderProgressionOutcome::Denied(
-                super::super::WorthQueryApplicationCommitDenial::decision_read_set_denied(failure),
+            return Err(super::super::provider_compare_denial::read_set_failure(
+                failure,
             ));
         }
     };
@@ -153,12 +143,11 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             );
         }
     };
-    let source_fact_rebase = match match &output_currentness_facts {
-        Some(facts) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
+    let source_fact_rebase = match match (&output_currentness_facts, correction_facts) {
+        (Some(facts), _) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
             facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), control,
         ),
-        None if correction_facts.is_some() => {
-            let facts = correction_facts.expect("declared correction retained the completed payload");
+        (None, Some(facts)) => {
             let semantic = match &workflow_origin {
                 Some(origin) => origin.semantic_facts(&facts, control),
                 None => Ok(facts),
@@ -166,7 +155,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             semantic.map_err(Into::into).and_then(|facts|
                 crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_correction(facts, control))
         },
-        None => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
+        (None, None) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
             decision_facts.facts().explicit_values().filter_map(|fact| fact.observed_source_fact().cloned()).collect(),
             std::sync::Arc::from([]), control,
         ),

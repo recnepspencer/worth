@@ -6,7 +6,6 @@ use crate::config::data::{
     DurableLogPolicy, MvccConfig, PublicationConfig, StorageLayoutConfig, VisibilityCachePolicy,
 };
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::durability::data::{DurabilityMode, DurableStoreLayout};
 use crate::runtime::builder::RelationalRuntimeBuilder;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::symbols::data::ClientKeySymbolPolicy;
@@ -124,11 +123,6 @@ pub struct DurabilitySetup<'a> {
 }
 
 impl<'a> DurabilitySetup<'a> {
-    pub fn durability_mode(&mut self, durability_mode: DurabilityMode) -> &mut Self {
-        self.builder.overrides.durability.mode = Some(durability_mode);
-        self
-    }
-
     pub fn durable_log_policy(&mut self, durable_log_policy: DurableLogPolicy) -> &mut Self {
         self.builder.overrides.durability.log = Some(durable_log_policy);
         self
@@ -136,11 +130,6 @@ impl<'a> DurabilitySetup<'a> {
 
     pub fn durability_policy(&mut self, durability_policy: DurabilityPolicy) -> &mut Self {
         self.builder.overrides.durability.policy = Some(durability_policy);
-        self
-    }
-
-    pub fn durable_store_layout(&mut self, durable_store_layout: DurableStoreLayout) -> &mut Self {
-        self.builder.overrides.durability.store_layout = Some(durable_store_layout);
         self
     }
 }

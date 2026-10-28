@@ -33,7 +33,11 @@ fn additive_foreign_edge_denies_exact_adjacency_and_stales_prior_observation() {
     assert_eq!(current.counters().adjacency_lists_read, 2);
     assert_eq!(current.counters().adjacency_edges_inspected, 3);
     assert_eq!(current.counters().relation_records_inspected, 3);
-    let current_snapshot = fixture.runtime.visibility_authority().snapshot();
+    let current_snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     assert_eq!(
         fixture
             .runtime
@@ -89,7 +93,11 @@ fn observe_exact_adjacency(
         ),
     ]);
     let plan = RelationalAuthorizationObservationPlan::try_new(
-        fixture.runtime.visibility_authority().snapshot(),
+        fixture
+            .runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted"),
         fixture.principal,
         fixture.scope,
         ENTITY_KIND,

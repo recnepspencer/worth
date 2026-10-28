@@ -82,8 +82,11 @@ struct RetainedScaleFixture {
 }
 
 impl RetainedScaleFixture {
-    fn resolution(&self) -> HistoricalLineageResolution {
-        retained_resolution(&self.runtime, self.original, &self.observation)
+    fn resolution(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> HistoricalLineageResolution {
+        retained_resolution(execution, &self.runtime, self.original, &self.observation)
     }
 }
 
@@ -111,7 +114,8 @@ fn retained_scale_fixture(
             .version_id;
         current = runtime
             .read_truth()
-            .project_historical_version(version)
+            .try_project_historical_version(version)
+            .unwrap()
             .all_authoritative_entity_records(execution)
             .expect("read request remains live")
             .into_iter()
@@ -122,7 +126,11 @@ fn retained_scale_fixture(
     let retained_branch = BranchId("retained-feature".to_owned());
     runtime
         .history_authority()
-        .fork_branch_from(retained_branch.clone(), &BranchId("main".to_owned()))
+        .fork_branch_from(
+            execution,
+            retained_branch.clone(),
+            &BranchId("main".to_owned()),
+        )
         .expect("retained feature fork");
     let retained_identity = runtime
         .branch_identity(&retained_branch)
@@ -138,13 +146,15 @@ fn retained_scale_fixture(
 }
 
 fn retained_resolution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     entity_id: EntityId,
     observation: &crate::facade::mvcc::RelationalBranchObservation,
 ) -> HistoricalLineageResolution {
     runtime
         .lineage_access()
-        .resolve_record_history_for_observation(entity_id, observation)
+        .resolve_record_history_for_observation(execution, entity_id, observation)
+        .unwrap()
         .expect("retained fork history")
 }
 
@@ -153,7 +163,7 @@ fn assert_owner_history_scale(
     unrelated_commit_count: usize,
 ) {
     let fixture = retained_scale_fixture(execution, 1);
-    let baseline = fixture.resolution();
+    let baseline = fixture.resolution(execution);
     let baseline_commit_count = fixture.runtime.history().immutable_commit_count();
     let baseline_branch_count = fixture.runtime.history.branch_count();
     for ordinal in 1..=unrelated_commit_count {
@@ -161,12 +171,12 @@ fn assert_owner_history_scale(
         fixture
             .runtime
             .history_authority()
-            .fork_branch_from(branch.clone(), &BranchId("main".to_owned()))
+            .fork_branch_from(execution, branch.clone(), &BranchId("main".to_owned()))
             .expect("owner-created scale branch");
         create_entity_on_branch(execution, &fixture.runtime, branch, ordinal);
     }
 
-    let scaled = fixture.resolution();
+    let scaled = fixture.resolution(execution);
     assert_eq!(scaled.resolved, baseline.resolved);
     assert_eq!(scaled.traversed_event_ids, baseline.traversed_event_ids);
     assert_eq!(scaled.metrics, baseline.metrics);
@@ -233,7 +243,8 @@ fn assert_same_branch_history_scale(
             let (_, basis) = runtime
                 .observe_branch(&identity)
                 .expect("selected main scale observation");
-            let resolution = retained_resolution(&runtime, original, &basis.observation());
+            let resolution =
+                retained_resolution(execution, &runtime, original, &basis.observation());
             assert_eq!(resolution.metrics.reachable_commit_node_visits, 0);
             assert_eq!(resolution.metrics.reachable_commit_catalog_probes, 0);
             assert_eq!(resolution.metrics.reachable_commit_parent_edge_visits, 0);
@@ -252,9 +263,11 @@ fn assert_same_branch_history_scale(
     let unknown = runtime
         .lineage_access()
         .resolve_record_history_for_observation(
+            execution,
             EntityId::new(PartitionId::new(77), 99_999, 1),
             &basis.observation(),
-        );
+        )
+        .unwrap();
     assert!(unknown.is_none());
     let counters = runtime.performance_access().counters();
     assert_eq!(counters.lineage_historical_resolution_requests, 1);

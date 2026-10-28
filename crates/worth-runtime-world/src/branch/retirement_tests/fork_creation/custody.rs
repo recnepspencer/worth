@@ -95,6 +95,8 @@ fn exactly_reused_component_branches_never_enter_custody_and_retirement_emits_no
 
 #[test]
 fn custody_capacity_denies_creation_before_any_owner_effect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (fixture, owner, source) = setup_with_custody_budget(3, 1);
     let lifecycles_before = super::super::owner_lifecycles(&owner);
     let costs_before = owner.state.retention.cost_snapshot();
@@ -102,6 +104,7 @@ fn custody_capacity_denies_creation_before_any_owner_effect() {
     let denial = RuntimeWorldBranchService::create_product_branch(
         &owner,
         RuntimeWorldBranchCreationRequest::new(
+            execution,
             source.clone(),
             fork_intent(
                 "branch-custody-starved",

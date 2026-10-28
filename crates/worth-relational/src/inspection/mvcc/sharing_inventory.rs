@@ -22,13 +22,13 @@ pub(super) struct BranchSharingInventory {
 pub(super) fn inventory_sharing_scope(
     runtime: &RelationalRuntime,
     scope: &[BranchSharingScopeEntry],
-) -> BranchSharingInventory {
+) -> Result<BranchSharingInventory, RelationalBranchSharingInspectionDenial> {
     let mut inventory = empty_inventory(scope.len());
     for entry in scope {
-        observe_entry(runtime, entry, &mut inventory);
+        observe_entry(runtime, entry, &mut inventory)?;
     }
     inventory.coordination_cells.sort_unstable();
-    inventory
+    Ok(inventory)
 }
 
 fn empty_inventory(branch_count: usize) -> BranchSharingInventory {
@@ -49,12 +49,12 @@ fn observe_entry(
     runtime: &RelationalRuntime,
     entry: &BranchSharingScopeEntry,
     inventory: &mut BranchSharingInventory,
-) {
+) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
     let first_root_observation = inventory.root_ids.insert(entry.root.id());
     let commit_id = entry
         .root
         .commit_id()
-        .expect("scope validates commit linkage");
+        .expect(/* Proof: Inspection scope admission validates commit linkage and all root axes before constructing its private inventory entries. */ "scope validates commit linkage");
     inventory.commit_ids.insert(commit_id);
     if first_root_observation {
         observe_root(entry, inventory);
@@ -68,7 +68,7 @@ fn observe_entry(
         &entry.root,
         entry.artifact.as_ref(),
         derived_cache_bytes,
-    );
+    )?;
     inventory
         .coordination_cells
         .push(entry.coordination_cell.clone());
@@ -78,10 +78,11 @@ fn observe_entry(
     inventory.coordination_waits = inventory
         .coordination_waits
         .saturating_add(entry.coordination_waits);
+    Ok(())
 }
 
 fn observe_root(entry: &BranchSharingScopeEntry, inventory: &mut BranchSharingInventory) {
-    let axes = entry.root.axes().expect("scope validates complete axes");
+    let axes = entry.root.axes().expect(/* Proof: Inspection scope admission validates commit linkage and all root axes before constructing its private inventory entries. */ "scope validates complete axes");
     inventory.reconstructed_region_count = inventory
         .reconstructed_region_count
         .saturating_add(entry.root.region_count() as u64);

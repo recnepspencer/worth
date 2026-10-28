@@ -104,13 +104,6 @@ impl SignalOwnedAsyncRequestAdmission {
 }
 
 impl SignalOwnedAsyncRevalidationAdmission {
-    pub(crate) fn new(
-        report: ResourceRevalidationReport,
-        in_flight: Option<InFlightResourceRequest>,
-    ) -> Self {
-        Self { report, in_flight }
-    }
-
     pub fn report(&self) -> &ResourceRevalidationReport {
         &self.report
     }
@@ -121,10 +114,6 @@ impl SignalOwnedAsyncRevalidationAdmission {
 }
 
 impl SignalOwnedAsyncTimeoutAdmission {
-    pub(crate) fn new(report: ResourceTimeoutReport) -> Self {
-        Self { report }
-    }
-
     pub fn report(&self) -> &ResourceTimeoutReport {
         &self.report
     }
@@ -141,13 +130,6 @@ impl SignalOwnedAsyncRetrySchedule {
 }
 
 impl SignalOwnedAsyncRetryAdmission {
-    pub(crate) fn new(
-        report: ResourceRetryAdmissionReport,
-        in_flight: Option<InFlightResourceRequest>,
-    ) -> Self {
-        Self { report, in_flight }
-    }
-
     pub fn report(&self) -> &ResourceRetryAdmissionReport {
         &self.report
     }

@@ -23,10 +23,10 @@ fn healthy_bundle_executes_every_promised_method_family() {
 
     let committed = commit_through_services(execution, &runtime, &services, "six-port-health");
     assert_eq!(committed.commit.branch_id, BranchId("main".to_owned()));
-    let archived_identity = fork_through_services(&services, "archived")
+    let archived_identity = fork_through_services(execution, &services, "archived")
         .target_identity()
         .clone();
-    let deleted_identity = fork_through_services(&services, "deleted")
+    let deleted_identity = fork_through_services(execution, &services, "deleted")
         .target_identity()
         .clone();
 
@@ -74,7 +74,7 @@ fn healthy_bundle_executes_every_promised_method_family() {
 
     services
         .lifecycle_port()
-        .archive_branch(&archived_identity)
+        .archive_branch(execution, &archived_identity)
         .expect("lifecycle service archives the exact branch");
     assert!(matches!(
         runtime.observe_branch(&archived_identity),
@@ -84,7 +84,7 @@ fn healthy_bundle_executes_every_promised_method_family() {
     assert!(matches!(
         services
             .lifecycle_port()
-            .delete_branch(&deleted_identity)
+            .delete_branch(execution, &deleted_identity)
             .expect("lifecycle service deletes an unretained branch"),
         RelationalBranchDeletionOutcome::Deleted(deleted)
             if deleted.identity() == &deleted_identity
@@ -114,7 +114,7 @@ fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
         .expect("the non-empty Supply Chain main branch is a fork source");
     let identity = services
         .fork_port()
-        .fork_branch(BranchId("storm".to_owned()), source)
+        .fork_branch(execution, BranchId("storm".to_owned()), source)
         .expect("the fork port installs the exact storm branch")
         .target_identity()
         .clone();
@@ -178,7 +178,7 @@ fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
     )
     .expect("discarded work leaves the independent baseline unchanged");
     assert!(matches!(
-        services.lifecycle_port().delete_branch(&identity),
+        services.lifecycle_port().delete_branch(execution, &identity),
         Ok(RelationalBranchDeletionOutcome::Deleted(ref deleted))
             if deleted.identity() == &identity
     ));

@@ -112,7 +112,8 @@ pub(super) fn map_bootstrap_staging_denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
-        Denial::AllocationDenied(_)
+        Denial::SymbolIdentityExhausted
+        | Denial::AllocationDenied(_)
         | Denial::CardinalityOverflow
         | Denial::InputDirectoryAllocationDenied { .. } => {
             WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected

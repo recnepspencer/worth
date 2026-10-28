@@ -3,7 +3,7 @@ use worth_foundational::facade::PortablePatchReadmissionPurpose;
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     ApplyEntityAspectPatchIntent, CommitConflict, ConflictClass, EntityFieldUpdateMissingState,
     RecordAspectPatchTarget,
@@ -20,10 +20,10 @@ pub(super) fn apply(
         ensure_entity_target_is_current(context.state, intent.entity_id)?;
         let partition = context
             .state
-            .get_partition(intent.entity_id.partition_id)
+            .get_current_partition(intent.entity_id.partition_id)
             .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Partition))?;
         let slot_view = partition
-            .entity_arena
+            .entity_arena()
             .get_slot(slot)
             .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
         let kind_id = slot_view
@@ -56,13 +56,15 @@ pub(super) fn apply(
         let mut extra = partition
             .entity_arena
             .extra_at(slot)
-            .expect("entity aspect patch requires a materialized slot")
+            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?
             .clone();
         extra.authoritative_aspect_state = new_state.clone();
         partition
             .entity_arena
-            .apply_extra_update(slot, extra, version_id);
-    });
+            .apply_extra_update(slot, extra, version_id)
+            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
+        Ok::<_, CommitConflict>(())
+    })?;
     Ok(MutationOutcome::entity_updated_with_authoritative_patch(
         intent.entity_id,
         kind_id,

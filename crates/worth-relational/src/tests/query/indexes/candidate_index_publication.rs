@@ -20,6 +20,7 @@ fn index(runtime: &RelationalRuntime) -> DerivedIndexId {
             },
             branch_scoped: true,
         })
+        .expect("index fixture has identity capacity")
         .index_id
 }
 
@@ -72,7 +73,8 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
             max_prepared_candidates: Some(1),
             candidate_max_lifetime_millis: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let index_id = index(&runtime);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction

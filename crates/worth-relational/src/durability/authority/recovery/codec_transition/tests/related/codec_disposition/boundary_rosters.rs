@@ -26,11 +26,13 @@ pub(super) fn refuse_missing_and_foreign() {
         .find(|entry| entry.id == sibling_edge)
         .unwrap()
         .clone();
-    let saved = capture(&world.runtime);
-    let decoded =
-        crate::durability::log::native_file_codec::decode_checkpoint(execution, saved.bytes())
-            .unwrap()
-            .checkpoint;
+    let saved = capture(execution, &world.runtime);
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        saved.bytes(),
+    )
+    .unwrap()
+    .checkpoint;
     for missing in [true, false] {
         let mut changed = decoded.clone();
         edit_publication(
@@ -55,7 +57,7 @@ pub(super) fn refuse_missing_and_foreign() {
                 envelope.required_output_origin = Some(std::sync::Arc::new(origin));
             },
         );
-        let (bytes, _) = crate::durability::log::native_file_codec::encode_checkpoint(
+        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &changed,
             execution.allocation_policy(),
         )
@@ -76,7 +78,7 @@ pub(super) fn refuse_missing_and_foreign() {
             .unwrap();
         let (_, installed) = receipt.issue_application_publication_owner();
         let selected = basis(&cold);
-        let before = capture(&cold);
+        let before = capture(execution, &cold);
         let denied = cold
             .readmit_required_output_publication(
                 execution,
@@ -103,7 +105,7 @@ pub(super) fn refuse_missing_and_foreign() {
             "missing={missing}: {denied:?}"
         );
         assert!(selected.is_current());
-        assert_eq!(capture(&cold), before);
+        assert_eq!(capture(execution, &cold), before);
         assert_eq!(
             relation_payload(&cold, boundary),
             relation_payload(&world.runtime, boundary)

@@ -64,14 +64,15 @@ pub(super) fn restore_partition_mirror(
     let mut reconstructed =
         restore_owned_partition_images_with_schema(fallback, plans, contracts, "checkpoint")?;
     reconstructed.extend(reused);
-    crate::storage::partition::rebuild_adjacency_kind_buckets(&mut reconstructed).map_err(
-        |detail| {
+    checkpoint
+        .mirror_kind_images
+        .restore(&mut reconstructed)
+        .map_err(|detail| {
             DurabilityError::new(
                 crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                detail,
+                format!("mirror kind reconstruction: {detail:?}"),
             )
-        },
-    )?;
+        })?;
     Ok(reconstructed)
 }
 

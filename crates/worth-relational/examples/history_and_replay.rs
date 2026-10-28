@@ -7,14 +7,15 @@ fn main() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let (seed, entity_id) = support::create_entity(execution, &runtime, "main-seed");
     let (_, fork_basis) = runtime
         .observe_fork_source(&BranchId("main".to_string()))
         .expect("observe main fork source");
     runtime
-        .fork_branch(BranchId("feature".to_string()), fork_basis)
+        .fork_branch(execution, BranchId("feature".to_string()), fork_basis)
         .expect("create branch");
 
     let feature_commit = support::update_entity_on_branch(
@@ -27,8 +28,9 @@ fn main() {
 
     let replay = runtime.replay();
     let envelope = replay
-        .canonical_commit_envelope(feature_commit.commit.commit_id)
-        .expect("replay envelope");
+        .canonical_commit_envelope(execution, feature_commit.commit.commit_id)
+        .expect("replay envelope storage remains available")
+        .expect("the performed commit has its replay envelope");
 
     println!("commits={}", runtime.history().immutable_commit_count());
     println!(

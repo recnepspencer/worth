@@ -48,19 +48,24 @@ impl RuntimeWorldOwnerUnavailable {
 /// observation carries the exact source identity, reference occurrence, and
 /// component basis. Creation never borrows a Signal transaction: forking a
 /// component branch is not a mutation of that branch.
-pub(crate) struct RuntimeWorldBranchCreationRequest<'a> {
+pub(crate) struct RuntimeWorldBranchCreationRequest<'a, 'request, 'authority> {
+    /// The caller's request: a component fork is a durable owner transition
+    /// that waits for, and is bounded by, the caller's request.
+    execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
     source: ProductBranchObservation,
     intent: ProductBranchCreationIntent,
     cancellation: &'a RuntimeWorldCancellationToken,
 }
 
-impl<'a> RuntimeWorldBranchCreationRequest<'a> {
+impl<'a, 'request, 'authority> RuntimeWorldBranchCreationRequest<'a, 'request, 'authority> {
     pub(crate) fn new(
+        execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
         source: ProductBranchObservation,
         intent: ProductBranchCreationIntent,
         cancellation: &'a RuntimeWorldCancellationToken,
     ) -> Self {
         Self {
+            execution,
             source,
             intent,
             cancellation,
@@ -70,11 +75,12 @@ impl<'a> RuntimeWorldBranchCreationRequest<'a> {
     pub(crate) fn into_parts(
         self,
     ) -> (
+        &'a worth_execution::ExecutionRequest<'request, 'authority>,
         ProductBranchObservation,
         ProductBranchCreationIntent,
         &'a RuntimeWorldCancellationToken,
     ) {
-        (self.source, self.intent, self.cancellation)
+        (self.execution, self.source, self.intent, self.cancellation)
     }
 }
 
@@ -175,7 +181,7 @@ pub(crate) trait RuntimeWorldBranchService:
 {
     fn create_product_branch(
         &self,
-        request: RuntimeWorldBranchCreationRequest<'_>,
+        request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
     ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial>;
 
     /// Retire the installed occurrence proved by this observation. Later head

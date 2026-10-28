@@ -33,7 +33,7 @@ pub(crate) fn materialize_current_authoritative_entity_record(
         created_at_version: partition
             .entity_arena
             .created_at_for_slot(slot)
-            .expect("visible entity slot has creation metadata"),
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "visible entity slot has creation metadata"),
         retired_at_version: entity_slot.retired_at(),
         authoritative_aspect_state: entity_slot.extra().authoritative_aspect_state.clone(),
     })

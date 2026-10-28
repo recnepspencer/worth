@@ -151,18 +151,18 @@ impl RecordPublicationDirector {
                 continue;
             }
             progress.scanned_entries = progress.scanned_entries.saturating_add(1);
-            if let CurrentPhysicalRecordPlacement::Extent(source) = route {
-                if source.arena_range().arena() == progress.arena {
-                    let touches = owner
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner())
-                        .release_touches_free(source.arena_range());
-                    let rank = (!touches, source.arena_range().offset());
-                    if progress.best.is_none_or(|(old_touches, old)| {
-                        rank < (!old_touches, old.arena_range().offset())
-                    }) {
-                        progress.best = Some((touches, source));
-                    }
+            if let CurrentPhysicalRecordPlacement::Extent(source) = route
+                && source.arena_range().arena() == progress.arena
+            {
+                let touches = owner
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .release_touches_free(source.arena_range());
+                let rank = (!touches, source.arena_range().offset());
+                if progress.best.is_none_or(|(old_touches, old)| {
+                    rank < (!old_touches, old.arena_range().offset())
+                }) {
+                    progress.best = Some((touches, source));
                 }
             }
             progress.after = Some(route.record());

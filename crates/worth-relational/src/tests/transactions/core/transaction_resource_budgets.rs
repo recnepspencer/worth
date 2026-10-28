@@ -43,4 +43,30 @@ fn runtime_with_savepoint_limit(maximum_savepoints: usize) -> crate::runtime::Re
             candidate_max_lifetime_millis: 30_000,
         })
         .build()
+        .expect("valid native runtime configuration")
+}
+
+#[test]
+fn materialization_transaction_savepoints_refuse_without_consuming_identity_or_staging() {
+    let runtime = runtime_with_test_schema();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let intent = crate::mvcc::RelationalTransactionIntent::materialization(
+        crate::mvcc::RelationalMaterializationTransactionMode::Suspend,
+    );
+    let mut transaction = runtime.begin_branch_transaction(&basis, intent).unwrap();
+    for _ in 0..2 {
+        assert_eq!(
+            transaction.create_savepoint(),
+            Err(
+                RelationalTransactionStagingDenial::SavepointCapacityExhausted {
+                    maximum_savepoints: 0
+                }
+            )
+        );
+    }
+    assert!(transaction.batches().is_empty());
+    assert_eq!(transaction.next_savepoint_ordinal, 1);
+    assert!(transaction.savepoints.is_empty());
 }

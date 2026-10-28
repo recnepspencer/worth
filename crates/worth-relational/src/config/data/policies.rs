@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::durability::data::{DurabilityMode, DurableStoreLayout};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum RelationalRuntimeProfile {
@@ -155,17 +154,11 @@ pub struct DurableLogPolicy {
     pub compact_after_checkpoint: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CheckpointPolicy {
-    pub compact_after_checkpoint: bool,
-}
-
+/// How the runtime keeps its in-memory canonical log. Durable storage, when
+/// a runtime has any, is the attached durable medium, not configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DurabilityPolicy {
-    pub mode: DurabilityMode,
     pub log: DurableLogPolicy,
-    pub checkpoints: CheckpointPolicy,
-    pub store_layout: Option<DurableStoreLayout>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

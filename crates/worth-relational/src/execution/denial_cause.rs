@@ -4,6 +4,11 @@ use serde::{Deserialize, Serialize};
 /// Memory refusals retain the refusing limit and its remaining room.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalExecutionDenialCause {
+    HistoricalVisibility(crate::visibility::snapshot_states::HistoricalVisibilityDenial),
+    ProjectionContract(
+        crate::visibility::materialization::read_records::RelationalProjectionContractDenial,
+    ),
+    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     WorkerLimitExceedsParent,
     MemoryLimitExceedsParent,
     WorkLimitExceedsParent,
@@ -37,4 +42,21 @@ pub enum RelationalExecutionDenialCause {
     UncheckedCustomKernel,
     ExpectedIdentitiesNotCanonical,
     MemoryOverflow,
+}
+
+impl RelationalExecutionDenialCause {
+    /// Project only execution-kernel stops; storage and admission refusals
+    /// retain their native payload rather than becoming synthetic map stops.
+    pub fn as_kernel_stop(self) -> Option<worth_execution::MapKernelStop> {
+        use worth_execution::MapKernelStop as Stop;
+        match self {
+            Self::Cancelled => Some(Stop::Cancelled),
+            Self::DeadlineElapsed => Some(Stop::DeadlineElapsed),
+            Self::WorkCounterOverflow => Some(Stop::WorkCounterOverflow),
+            Self::AccountingUnavailable => Some(Stop::AccountingUnavailable),
+            Self::WorkExhausted => Some(Stop::WorkCeiling),
+            Self::NestedStopped => Some(Stop::NestedStopped),
+            _ => None,
+        }
+    }
 }

@@ -223,3 +223,22 @@ fn dependencies(
     }
     Ok(dependencies)
 }
+
+impl std::fmt::Display for SourceCatalogDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Schema(cause) => write!(formatter, "schema admission: {cause:?}"),
+            Self::Derived(cause) => write!(formatter, "derived source admission: {cause:?}"),
+            Self::MissingPhysicalSource(kind) => {
+                write!(formatter, "missing physical source {kind:?}")
+            }
+            Self::MissingDerivedSource(identity) => {
+                write!(formatter, "missing derived source {identity:?}")
+            }
+            Self::DependencyCycle(nodes) => write!(formatter, "source dependency cycle {nodes:?}"),
+            Self::CompiledMeaningMismatch(identity) => {
+                write!(formatter, "compiled source meaning mismatch {identity:?}")
+            }
+        }
+    }
+}

@@ -6,8 +6,8 @@ use crate::facade::schema::{
     RelationKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 use crate::tests::support::{
-    create_branch_from_main, create_entity, create_entity_outcome_on_branch, entity_field_aspect,
-    persisted_runtime_with_test_schema, CascadeDeletePolicy, CrossContextPolicy,
+    create_branch_from_main, create_entity, create_entity_outcome_on_branch,
+    durable_runtime_with_test_schema, entity_field_aspect, CascadeDeletePolicy, CrossContextPolicy,
 };
 
 #[test]
@@ -15,7 +15,7 @@ fn verify_prepared_merge_execution_accepts_fresh_prepared_merge() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -47,7 +47,7 @@ fn verify_prepared_merge_execution_rejects_runtime_instance_mismatch() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -83,7 +83,7 @@ fn verify_prepared_merge_execution_rejects_target_head_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -122,7 +122,7 @@ fn verify_prepared_merge_execution_rejects_source_head_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -166,7 +166,7 @@ fn verify_prepared_merge_execution_rejects_schema_semantic_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -233,7 +233,7 @@ fn verify_prepared_merge_execution_rejects_merge_base_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

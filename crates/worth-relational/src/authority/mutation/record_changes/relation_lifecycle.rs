@@ -1,7 +1,8 @@
 use crate::identity::data::RelationId;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionState;
-use crate::storage::overlay::{PartitionAccess, WorkingState};
+use crate::storage::overlay::{CurrentPartitionAccess, WorkingState};
+use crate::transactions::data::{CommitConflict, ConflictClass};
 
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 
@@ -10,15 +11,23 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
     version_id: crate::identity::data::VersionId,
     relation_id: RelationId,
     outcome: &mut MutationOutcome,
-) {
+) -> Result<(), CommitConflict> {
     let slot = relation_id.slot_index();
     if !relation_is_visible_for_audit_retention(state, relation_id) {
-        return;
+        return Ok(());
     }
 
     state.mark_relation_slot_touched(relation_id.partition_id, slot);
     let partition = state.get_partition_mut(relation_id.partition_id);
-    partition.relation_arena.retire(slot, version_id);
+    partition
+        .relation_arena
+        .retire(slot, version_id)
+        .ok_or_else(|| {
+            CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
+                relation_id,
+                missing: crate::transactions::data::RelationEndpointUpdateMissingState::Slot,
+            })
+        })?;
     partition
         .relation_arena
         .set_lifecycle_for_slot(slot, RecordLifecycleState::RetainedDanglingForAudit);
@@ -26,7 +35,7 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
     partition.relation_arena.reclaimable_bitset.set(slot, false);
 
     let Some(snapshot) = relation_mutation_snapshot(state, relation_id) else {
-        return;
+        return Ok(());
     };
     outcome.record_change(RecordMutation::RelationRetainedForAudit {
         relation_id,
@@ -35,6 +44,7 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
         target: snapshot.target,
         authoritative_aspect_state: snapshot.authoritative_aspect_state,
     });
+    Ok(())
 }
 
 pub(in crate::authority::mutation) fn delete_relation(
@@ -42,23 +52,31 @@ pub(in crate::authority::mutation) fn delete_relation(
     version_id: crate::identity::data::VersionId,
     relation_id: RelationId,
     outcome: &mut MutationOutcome,
-) {
+) -> Result<(), CommitConflict> {
     let slot = relation_id.slot_index();
     if !relation_is_live(state, relation_id) {
-        return;
+        return Ok(());
     }
 
     state.mark_relation_slot_touched(relation_id.partition_id, slot);
     let snapshot = relation_mutation_snapshot(state, relation_id);
     let partition = state.get_partition_mut(relation_id.partition_id);
-    partition.relation_arena.retire(slot, version_id);
+    partition
+        .relation_arena
+        .retire(slot, version_id)
+        .ok_or_else(|| {
+            CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
+                relation_id,
+                missing: crate::transactions::data::RelationEndpointUpdateMissingState::Slot,
+            })
+        })?;
     let lifecycle = deletion_retention_lifecycle(partition, slot);
     partition
         .relation_arena
         .set_lifecycle_for_slot(slot, lifecycle);
 
     let Some(snapshot) = snapshot else {
-        return;
+        return Ok(());
     };
     outcome.record_change(RecordMutation::RelationDeleted {
         relation_id,
@@ -67,12 +85,13 @@ pub(in crate::authority::mutation) fn delete_relation(
         target: snapshot.target,
         authoritative_aspect_state: snapshot.authoritative_aspect_state,
     });
+    Ok(())
 }
 
 fn relation_is_visible_for_audit_retention(state: &WorkingState, relation_id: RelationId) -> bool {
     state
-        .get_partition(relation_id.partition_id)
-        .and_then(|partition| partition.relation_arena.get(&relation_id))
+        .get_current_partition(relation_id.partition_id)
+        .and_then(|partition| partition.relation_arena().get(&relation_id))
         .is_some_and(|relation_slot| {
             matches!(
                 relation_slot.lifecycle(),
@@ -83,8 +102,8 @@ fn relation_is_visible_for_audit_retention(state: &WorkingState, relation_id: Re
 
 fn relation_is_live(state: &WorkingState, relation_id: RelationId) -> bool {
     state
-        .get_partition(relation_id.partition_id)
-        .and_then(|partition| partition.relation_arena.get(&relation_id))
+        .get_current_partition(relation_id.partition_id)
+        .and_then(|partition| partition.relation_arena().get(&relation_id))
         .is_some_and(|relation_slot| relation_slot.lifecycle() == RecordLifecycleState::Live)
 }
 
@@ -101,8 +120,8 @@ fn relation_mutation_snapshot(
     relation_id: RelationId,
 ) -> Option<RelationMutationSnapshot> {
     let relation_slot = state
-        .get_partition(relation_id.partition_id)?
-        .relation_arena
+        .get_current_partition(relation_id.partition_id)?
+        .relation_arena()
         .get_slot(relation_id.slot_index())?;
     let endpoints = relation_slot.extra().endpoints.clone()?;
     Some(RelationMutationSnapshot {

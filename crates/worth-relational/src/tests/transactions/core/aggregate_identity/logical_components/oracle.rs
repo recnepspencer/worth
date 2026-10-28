@@ -131,10 +131,9 @@ impl Oracle {
             if let Some((_, next)) = current
                 .iter()
                 .find(|(members, _)| heir.as_ref().is_some_and(|heir| members.contains(heir)))
+                && old != next
             {
-                if old != next {
-                    expected_events.insert((AggregateLineageKind::MergedInto, *old, *next));
-                }
+                expected_events.insert((AggregateLineageKind::MergedInto, *old, *next));
             }
         }
         let actual_events = current

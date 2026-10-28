@@ -59,7 +59,11 @@ fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
         // The original validation boundary polls only three times. Visit eight
         // requires the scope collector's actual per-item safe points.
         let control = RelationalOperationControl::uninterrupted()
-            .with_injected_interruption_for_test(Boundary::ProposalValidation, interruption, 8);
+            .with_injected_interruption_for_test(
+                Boundary::ProposalValidation,
+                interruption,
+                std::num::NonZeroUsize::new(8).expect("positive fixture visit"),
+            );
         let mut transaction = runtime
             .begin_branch_transaction_with_control(
                 &basis,

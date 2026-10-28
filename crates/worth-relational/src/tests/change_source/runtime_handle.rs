@@ -23,9 +23,14 @@ fn owned_lock_observation_covers_clones_and_ends_with_its_guard() {
     let clone = handle.clone();
     let count = Arc::new(std::sync::atomic::AtomicU64::new(0));
     let acquired = count.clone();
-    let guard = handle.observe_locks_for_test(move || {
-        acquired.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-    });
+    let guard = handle
+        .observe_locks_for_test(move || {
+            acquired.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        })
+        .expect("first observer is admitted");
+    assert!(handle
+        .observe_locks_for_test(|| panic!("refused observer must never run"))
+        .is_none());
     clone.with_runtime(|_| ());
     assert_eq!(count.load(std::sync::atomic::Ordering::SeqCst), 1);
     drop(guard);

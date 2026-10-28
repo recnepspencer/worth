@@ -39,7 +39,12 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
         .schema_authority()
         .entity_aspect_plan(KindId(1))
         .unwrap();
-    let partition = basis.inner.root.partition_state(id.partition_id).unwrap();
+    let partition = basis
+        .inner
+        .root
+        .partition_state(id.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
     let payload = row.extra().authoritative_aspect_state.as_ref();
     assert!(payload.is_none());
@@ -116,7 +121,12 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
         .entity_aspect_plan(KindId(1))
         .unwrap();
     assert!(!plan.executable_bindings.is_empty());
-    let partition = basis.inner.root.partition_state(id.partition_id).unwrap();
+    let partition = basis
+        .inner
+        .root
+        .partition_state(id.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
     let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
     assert!(validate(execution, envelope, id, plan, Some(payload)).is_ok());

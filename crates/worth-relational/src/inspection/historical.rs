@@ -32,7 +32,7 @@ impl<'runtime> InspectionAccess<'runtime> {
             | HistoricalInspectionMode::AllowCanonicalReconstruction => {
                 let read_view = self
                     .read_view_for_scope(execution, &InspectionScope::Version(version_id))?
-                    .expect("version scope should always open a read view");
+                    .expect(/* Proof: Version scope dispatch always returns Some(read_view) on success; the optional None result belongs only to scopes that do not read records. */ "version scope should always open a read view");
                 let availability = if direct_available {
                     InspectionAvailability::Direct
                 } else {
@@ -105,19 +105,25 @@ impl<'runtime> InspectionAccess<'runtime> {
         };
         let lineage_resolution_context = match record_observation.target {
             RecordRef::Entity(entity_id) => {
-                self.resolve_lineage_record_history(branch_id, entity_id)
+                self.resolve_lineage_record_history(execution, branch_id, entity_id)?
             }
             RecordRef::Relation(_) => None,
         };
         let aspect_history_observation = match record_observation.target {
             RecordRef::Entity(entity_id) => Some(HistoricalAspectObservation {
-                query_result: self.entity_aspect_history_with_trace(branch_id, entity_id, None),
+                query_result: self
+                    .entity_aspect_history_with_trace(execution, branch_id, entity_id, None)?,
                 origin: InspectionOrigin::CanonicalCommitStorage,
                 access_path: InspectionAccessPath::CommitIndexRead,
                 availability: InspectionAvailability::Direct,
             }),
             RecordRef::Relation(relation_id) => Some(HistoricalAspectObservation {
-                query_result: self.relation_aspect_history_with_trace(branch_id, relation_id, None),
+                query_result: self.relation_aspect_history_with_trace(
+                    execution,
+                    branch_id,
+                    relation_id,
+                    None,
+                )?,
                 origin: InspectionOrigin::CanonicalCommitStorage,
                 access_path: InspectionAccessPath::CommitIndexRead,
                 availability: InspectionAvailability::Direct,

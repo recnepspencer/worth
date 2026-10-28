@@ -38,9 +38,9 @@ pub(crate) enum WorthQueryOrdinaryMergeExecutionError {
         kind: crate::effect_lifecycle::EffectExecutionControlStopKind,
         message: String,
     },
-    SettlementDeferred {
+    DurabilityUnresolved {
         message: String,
-        settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
+        unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
     },
 }
 
@@ -72,13 +72,13 @@ impl WorthQueryOrdinaryMergeExecutionError {
                 kind,
                 message,
             } => Self::ControlStopped { kind, message },
-            crate::effect_lifecycle::RelationalEffectExecutionFailure::SettlementDeferred(
-                deferred,
+            crate::effect_lifecycle::RelationalEffectExecutionFailure::DurabilityUnresolved(
+                unresolved,
             ) => {
-                let (message, settlement) = deferred.into_parts();
-                Self::SettlementDeferred {
+                let (message, unresolved) = unresolved.into_parts();
+                Self::DurabilityUnresolved {
                     message,
-                    settlement,
+                    unresolved,
                 }
             }
         }
@@ -186,15 +186,13 @@ impl WorthQueryRuntime {
             .backend
             .execute_query_merge(execution, merge_authority, &declaration)
             .map_err(WorthQueryOrdinaryMergeExecutionError::from_relational)?;
+        // The native merge result carries its required snapshot directly.
+        // Receipt assembly below reads only the owned performed artifact.
+        self.backend
+            .release_query_merge_snapshot(execution, &outcome.commit.snapshot);
         let executed =
             ExecutedEffectPlan::new(lowered, ExecutedEffectAuthorityArtifact::Merge(outcome), 1);
         let receipt = executed.receipt();
-        self.backend.release_query_merge_snapshot(
-            execution,
-            executed
-                .published_snapshot()
-                .expect("ordinary relational merge publishes one exact snapshot"),
-        );
         let diagnostics = materialize_inspection
             .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()));
         Ok(WorthQueryLowerRuntimeMergeExecution {

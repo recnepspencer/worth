@@ -33,7 +33,6 @@ pub(super) fn run_seeded_cdc_scenario(
             ),
             relation_pressure: false,
             durable_checkpoint_every: None,
-            durable_compact_every: None,
             retention_pass_every: None,
             branch_pressure: false,
             replacement_pressure: false,

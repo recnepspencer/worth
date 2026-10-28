@@ -21,6 +21,17 @@ impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptu
         match error {
             RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
             RelationalNativeCheckpointCaptureDenial::Allocation(error) => Self::Allocation(error),
+            RelationalNativeCheckpointCaptureDenial::Request(cause) => {
+                use super::super::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+                let kind = match super::super::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+                    Ok(kind) => Kind::ExecutionDenied { kind },
+                    Err(kind) => Kind::ExecutionControlStopped { kind },
+                };
+                Self::Execution(super::super::WorthQueryPrimaryGraphInstallationDenial::new(
+                    kind,
+                    "checkpoint history consolidation stopped",
+                ))
+            }
         }
     }
 }

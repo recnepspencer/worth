@@ -45,10 +45,6 @@ impl super::BranchBoundRelationalTransaction {
     pub fn create_savepoint(
         &mut self,
     ) -> Result<SavepointId, super::RelationalTransactionStagingDenial> {
-        assert!(
-            self.intent.allow_nested_savepoints(),
-            "nested savepoints are disabled for this transaction"
-        );
         if self.savepoints.len() >= self.maximum_savepoints {
             return Err(
                 super::RelationalTransactionStagingDenial::SavepointCapacityExhausted {

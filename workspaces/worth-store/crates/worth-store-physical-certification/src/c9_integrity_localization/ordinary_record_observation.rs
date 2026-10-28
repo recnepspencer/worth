@@ -74,7 +74,7 @@ pub(super) fn require(
                         if request.operator == Op::ScopeSubstitution {
                             worth_store::physical_runtime::RecordStreamFailureKind::StalePlacement
                         } else {
-                            worth_store::physical_runtime::RecordStreamFailureKind::ArtifactDamaged
+                            worth_store::physical_runtime::RecordStreamFailureKind::SelectedDataFrameChecksumDamaged
                         },
                         "{error:?}"
                     );

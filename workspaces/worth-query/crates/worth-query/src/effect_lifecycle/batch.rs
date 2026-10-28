@@ -10,8 +10,8 @@ use super::batch_artifact_metrics::{
     lowered_batch_artifact_width,
 };
 use super::batch_execution::{
-    EffectBatchExecutionDeferred, EffectBatchExecutionDenial, EffectBatchExecutionStop,
-    EffectBatchSettlementDeferred, ExecutedEffectBatchPlan,
+    EffectBatchDurabilityUnresolved, EffectBatchExecutionDeferred, EffectBatchExecutionDenial,
+    EffectBatchExecutionStop, ExecutedEffectBatchPlan,
 };
 use super::counters::EffectLifecycleCounters;
 use super::eligibility::AdmittedEffectIntent;
@@ -303,10 +303,12 @@ impl LoweredEffectBatchExecutionPlan {
                             super::EffectBatchExecutionControlStopped::new(&lowered, kind, message),
                         ));
                     }
-                    Err(super::RelationalEffectExecutionFailure::SettlementDeferred(deferred)) => {
-                        let (message, settlement) = deferred.into_parts();
-                        return Err(EffectBatchExecutionStop::SettlementDeferred(
-                            EffectBatchSettlementDeferred::new(&lowered, message, settlement),
+                    Err(super::RelationalEffectExecutionFailure::DurabilityUnresolved(
+                        unresolved,
+                    )) => {
+                        let (message, unresolved) = unresolved.into_parts();
+                        return Err(EffectBatchExecutionStop::DurabilityUnresolved(
+                            EffectBatchDurabilityUnresolved::new(&lowered, message, unresolved),
                         ));
                     }
                 };
@@ -346,6 +348,10 @@ impl LoweredEffectBatchExecutionPlan {
     }
 }
 
+// AdmittedEffectBatch has private fields; its sole constructor is reached via
+// admit_effect_batch_components, which checks every operation's Mutation family.
+// Mutation eligibility seals the original runtime binding before admission; both
+// discriminant and binding remain immutable through this borrowed lowering.
 fn lower_batch_mutation_component(
     admitted: &super::AdmittedEffectIntent,
 ) -> Result<LoweredMutationIntentDeclaration, EffectLoweringDenial> {

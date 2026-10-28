@@ -25,7 +25,7 @@ pub(crate) fn reject_cross_branch_target_substitution(
         .is_some_and(|provenance| provenance.target() == descriptor.reference().target());
     let target_belongs_to_other_branch = history
         .commit_artifact(CommitId(target.selected_commit_id()))
-        .is_some_and(|artifact| artifact.envelope().commit.branch_id != *descriptor.branch_id());
+        .is_some_and(|artifact| artifact.identity().authoring_branch() != descriptor.branch_id());
     if target_belongs_to_other_branch && !inherited_fork_target {
         return Err(RelationalBranchBasisDenial::WrongImmutableTarget);
     }

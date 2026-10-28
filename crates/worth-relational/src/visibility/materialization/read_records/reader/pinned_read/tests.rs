@@ -27,6 +27,7 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
             },
             branch_scoped: false,
         })
+        .expect("index fixture has identity capacity")
         .index_id;
     let (_, admitted) = runtime
         .observe_branch(&runtime.main_branch_identity())
@@ -41,7 +42,10 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
         &admitted,
     );
     assert!(built.failed_indexes.is_empty(), "{built:?}");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let read = runtime
         .read_truth()
         .pin_read_capability(&snapshot, &[index], &request)
@@ -63,7 +67,9 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
     ));
     let old_symbol = read.symbols().symbol("name");
     runtime.services.symbols.with_write(|symbols| {
-        symbols.intern("after-pin");
+        symbols
+            .intern("after-pin")
+            .expect("symbol fixture has identity capacity");
     });
     assert_eq!(read.symbols().symbol("after-pin"), None);
     drop(basis);

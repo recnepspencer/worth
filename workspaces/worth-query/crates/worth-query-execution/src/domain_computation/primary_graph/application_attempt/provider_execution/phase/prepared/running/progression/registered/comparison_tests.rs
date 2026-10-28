@@ -12,7 +12,6 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
         foreign: &AuthorizationWorld,
         request: &WorthQueryRequestScope,
         cancellation: &WorthQueryCancellationSource,
-        caller: &worth_execution::ExecutionResourceLease<'_>,
     ) {
         world
             .application
@@ -23,7 +22,6 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
                 request,
                 cancellation,
                 &foreign.application.primary_provider,
-                caller,
             );
         let _ = self.staged.abort();
         assert_eq!(

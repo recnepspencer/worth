@@ -1,12 +1,15 @@
 mod admitted;
 mod ceiling;
 #[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
+mod checkpoint_publication;
+#[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
 mod checkpoint_residue;
 #[cfg(feature = "store-runtime-owner")]
 mod cleanup;
 mod discovery;
 mod generation;
 mod grant;
+mod physical_work_residue;
 mod profile;
 #[cfg(feature = "recovery-runtime-owner")]
 mod publication;
@@ -17,6 +20,7 @@ mod refusal;
 mod reopen;
 #[cfg(feature = "recovery-runtime-owner")]
 mod staging;
+mod staging_residue;
 
 pub use admitted::{AdmittedRecoveryFilesystemMedia, RecoveryMediaHandleObservation};
 pub use ceiling::{ArtifactCeiling, FixedArtifact, PageAddress, StreamArtifact};
@@ -26,7 +30,8 @@ pub use checkpoint_residue::ObservedRecoveryCheckpointArtifact;
 pub use cleanup::{
     execute_recovery_cleanup_removal, BackendCompletedRecoveryCleanupRemoval,
     BackendDeniedRecoveryCleanupRemoval, BackendIndeterminateRecoveryCleanupRemoval,
-    BackendRecoveryArtifactExpectation, BackendRecoveryCleanupArtifactRevalidationDenial,
+    BackendRecoveryArtifactExpectation, BackendRecoveryCheckpointExpectation,
+    BackendRecoveryCleanupArtifactRevalidationDenial,
     BackendRecoveryCleanupArtifactRevalidationProgress, BackendRecoveryCleanupRemovalDenialCause,
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
 };
@@ -45,6 +50,7 @@ pub use generation::PhysicalRecoveryMediaGeneration;
 #[cfg(test)]
 pub(crate) use grant::for_test as grant_for_test;
 pub use grant::{GrantOverrun, ReadGrant, ReadGranted, Uncharged, UnchargedReadAuthority};
+pub use physical_work_residue::RecoveryPhysicalWorkRecord;
 pub use profile::QualifiedPhysicalBackendProfile;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use publication::{RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan};

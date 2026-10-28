@@ -10,12 +10,16 @@ impl MutatedCommitExecution {
         runtime: &crate::runtime::RelationalPreparationRuntime,
         occurrence: crate::history::data::CommitId,
     ) -> Result<(), TransactionCommitError> {
-        let selected = self
-            .validated
-            .prepared_mut()
-            .selected_branch_state()
-            .clone();
-        let (admitted, working, aggregate_source) = self.validated.prepared_mut().mutation_parts();
+        let selected = self.prepared.selected_branch_state().clone();
+        let version_id = self.prepared.version_id();
+        let admitted = &mut self.prepared.admitted;
+        let working = &mut self.working_state;
+        let aggregate_source = self.aggregate.as_ref().map(|owner| {
+            owner.borrow(
+                working,
+                crate::branch::SelectedRelationalBranchRead::in_round(&selected, &selected),
+            )
+        });
         let (_, validation, business, _, _, _) = admitted.phase_view().into_parts();
         let authority = validation.schema_authority();
         if validation.intent().materialization_mode().is_none() {
@@ -45,31 +49,49 @@ impl MutatedCommitExecution {
                     runtime.commit_work_budget.as_ref(),
                     &selected,
                     working,
+                    &runtime.services.symbols,
+                    validation.basis(),
                 )?;
                 let config = crate::config::data::MutationConfig {
                     cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
                     adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
                     cross_context_policy: runtime.config.storage.cross_context_policy,
                 };
-                let applied = runtime.services.symbols.with_write(|symbols| {
-                    apply_plan_to_working_state(
-                        working,
-                        &prepared.apply,
-                        &config,
-                        authority.registry(),
-                        authority.aspect_plans(),
-                        symbols,
-                        BranchLocalDeleteAllowance::default(),
-                        &mut self.record_allocations,
-                        crate::authority::commit::pipeline::request_lease(execution),
-                        runtime.commit_work_budget.clone(),
-                    )
+                let applied = apply_plan_to_working_state(
+                    working,
+                    &prepared.apply,
+                    &config,
+                    authority.registry(),
+                    authority.aspect_plans(),
+                    &mut self.mutation_identities.symbols,
+                    BranchLocalDeleteAllowance::default(),
+                    &mut self.mutation_identities.records,
+                    crate::authority::commit::pipeline::request_lease(execution),
+                    runtime.commit_work_budget.clone(),
+                )
+                .map_err(|denial| match denial {
+                    crate::authority::mutation::MutationApplyDenial::Commit(error) => error,
+                    crate::authority::mutation::MutationApplyDenial::Symbols(cause) => {
+                        crate::transactions::data::TransactionCommitError::publication(
+                            crate::publication::data::PublicationError::new(
+                                crate::publication::bundle::PublicationStage::BundleAssembly,
+                                format!("aggregate consequence symbol admission: {cause:?}"),
+                            ),
+                        )
+                    }
                 })?;
-                self.created_entities
+                crate::authority::mutation::apply_adjacency_deltas(
+                    working,
+                    &applied.effect.adjacency.deltas,
+                    version_id,
+                );
+                self.outcome
+                    .created_entities
                     .append_owned(applied.created_entities)?;
-                self.created_relations
+                self.outcome
+                    .created_relations
                     .append_owned(applied.created_relations)?;
-                self.effect.accumulate(applied.effect);
+                self.outcome.effect.accumulate(applied.effect);
                 self.aggregate_admission = Some(prepared.admission);
                 consequences_applied = true;
             }
@@ -82,8 +104,10 @@ impl MutatedCommitExecution {
                 authority,
                 &selected,
                 working,
-                &self.effect,
-                self.version_id,
+                &self.outcome.effect,
+                version_id,
+                &runtime.services.symbols,
+                validation.basis(),
             )?;
             performance.count_aggregate_maintenance_reads(final_reads);
             if consequences_applied {
@@ -91,10 +115,13 @@ impl MutatedCommitExecution {
                 admitted.take_prevalidated_snapshot_publication();
             }
         }
-        self.record_allocations.finish_mutation().map_err(|denial| {
-            TransactionCommitError::conflict(CommitConflict::new(
-                ConflictClass::RecordAllocationDenied { denial },
-            ))
-        })
+        self.mutation_identities
+            .records
+            .finish_mutation()
+            .map_err(|denial| {
+                TransactionCommitError::conflict(CommitConflict::new(
+                    ConflictClass::RecordAllocationDenied { denial },
+                ))
+            })
     }
 }

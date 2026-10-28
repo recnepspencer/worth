@@ -31,8 +31,10 @@ use planar_read::*;
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/region_output.rs"]
 mod region_output;
 use region_output::*;
-#[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer.rs"]
-mod output_producer;
+mod output_producer {
+    include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer/binding.rs");
+    include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer/readiness.rs");
+}
 use output_producer::*;
 mod facts {
     use super::*;
@@ -65,3 +67,5 @@ mod installation;
 mod journey;
 
 mod optional_aspects;
+
+mod commit_interruption;

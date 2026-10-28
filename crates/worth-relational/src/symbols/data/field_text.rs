@@ -5,6 +5,8 @@ use worth_foundational::facade::{AspectValue, InternedString};
 #[derive(Debug)]
 pub enum RelationalFieldTextAdmissionDenial {
     InvalidUtf8,
+    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
+    Request(crate::execution::RelationalExecutionDenialCause),
     InvalidSymbolDictionary,
     ForeignBasis,
     StaleBasis,
@@ -46,6 +48,10 @@ pub(crate) fn field_text_recovery_stop(
 ) -> crate::durability::data::RelationalRecoveryStop {
     use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
     match denial {
+        RelationalFieldTextAdmissionDenial::StorageUnavailable(failure) => failure.into(),
+        RelationalFieldTextAdmissionDenial::Request(cause) => {
+            RelationalRecoveryStop::Request(cause)
+        }
         RelationalFieldTextAdmissionDenial::Allocation(allocation) => match allocation.classify() {
             worth_execution::ExecutionAllocationDenialClass::Request(cause) => {
                 RelationalRecoveryStop::Request(cause.into())
@@ -68,6 +74,10 @@ pub(crate) fn field_text_recovery_stop(
 impl std::fmt::Display for RelationalFieldTextAdmissionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::StorageUnavailable(failure) => {
+                write!(formatter, "native text storage unavailable: {failure:?}")
+            }
+            Self::Request(cause) => write!(formatter, "native text request refused: {cause:?}"),
             Self::Allocation(cause) => write!(formatter, "native field text allocation: {cause}"),
             Self::Stopped(cause) => write!(formatter, "native field text request: {cause:?}"),
             Self::InvalidUtf8 => formatter.write_str("native field text requires UTF-8"),

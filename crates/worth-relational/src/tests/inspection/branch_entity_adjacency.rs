@@ -19,7 +19,7 @@ fn a_fork_view_reads_its_own_adjacency_after_its_parent_writes_again() {
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
-        .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
+        .fork_branch_from(execution, feature.clone(), &BranchId("main".to_owned()))
         .expect("the fork publishes");
     delete_relation_on_branch(execution, &runtime, kept, BranchId("main".to_owned()));
     let later = create_relation(execution, &runtime, source, other_target, "later");

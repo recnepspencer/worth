@@ -1,0 +1,358 @@
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
+use super::member_frame::{self, MemberKind};
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
+#[cfg(test)]
+use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
+#[cfg(test)]
+use crate::durability::checkpoints::images::partition_from_image;
+use crate::durability::data::*;
+use crate::durability::medium::RelationalDurableMemberLocator;
+#[cfg(test)]
+use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
+
+pub(crate) struct CapturedManifest {
+    pub(crate) manifest: RelationalCheckpointManifest,
+    pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
+    pub(crate) envelopes: Vec<Vec<u8>>,
+    pub(crate) envelope_cells: BTreeMap<
+        crate::publication::patch::data::PatchStreamPosition,
+        Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    >,
+    pub(crate) carried_envelopes: Vec<crate::history::RelationalCommitIndexEntry>,
+    pub(crate) publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
+    pub(crate) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+    pub(crate) guarded_members: BTreeMap<
+        RelationalDurableMemberLocator,
+        (
+            crate::storage::data::RelationalStorageSubject,
+            Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        ),
+    >,
+    pub(crate) history_members: Arc<RelationalHistoryMemberDirectory>,
+}
+
+impl CapturedManifest {
+    pub(crate) fn capture_metadata(
+        checkpoint: &DurableCheckpoint,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        prior: Option<&RelationalCheckpointManifest>,
+        placement: &RelationalCheckpointArtifactPolicy<'_>,
+        journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
+    ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
+        let mut members = BTreeMap::new();
+        let mut commits = BTreeMap::new();
+        for entry in prior
+            .into_iter()
+            .flat_map(|prior| prior.commits.iter().cloned())
+            .chain(journal_index)
+        {
+            if let Some(existing) = commits.insert(entry.position, entry.clone())
+                && existing != entry
+            {
+                return Err(
+                    corrupt("checkpoint commit index has competing placement facts").into(),
+                );
+            }
+        }
+        let mut envelopes = Vec::new();
+        let mut embedded_positions = std::collections::BTreeSet::new();
+        for positioned in &checkpoint.envelopes {
+            policy.check_live()?;
+            let envelope = positioned.envelope();
+            let root = checkpoint
+                .commit_descriptors
+                .get(&envelope.commit.commit_id)
+                .ok_or_else(|| corrupt("checkpoint commit lacks its catalog descriptor"))?;
+            if let Some(existing) = commits.get(&positioned.position()) {
+                if existing.commit != envelope.commit
+                    || &existing.root != root
+                    || existing.schema_version != envelope.schema_version
+                {
+                    return Err(
+                        corrupt("resident envelope disagrees with its admitted index").into(),
+                    );
+                }
+            } else {
+                let payload_digest =
+                    RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
+                        .map_err(|error| {
+                            corrupt(format!("canonical checkpoint digest: {error}"))
+                        })?;
+                commits.insert(
+                    positioned.position(),
+                    crate::history::RelationalCommitIndexEntry {
+                        commit: envelope.commit.clone(),
+                        position: positioned.position(),
+                        root: root.clone(),
+                        payload_digest,
+                        schema_version: envelope.schema_version,
+                    },
+                );
+            }
+            if placement.is_embedded() {
+                embedded_positions.insert(positioned.position());
+                envelopes.push(
+                    rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::new(
+                        positioned,
+                    ))
+                    .map_err(|error| corrupt(format!("embedded checkpoint envelope: {error}")))?,
+                );
+            }
+        }
+        let commits = commits.into_values().collect::<Vec<_>>();
+        let carried_envelopes = if placement.is_embedded() {
+            commits
+                .iter()
+                .filter(|entry| !embedded_positions.contains(&entry.position))
+                .cloned()
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let dictionary =
+            super::dictionary_capture::capture(&checkpoint.symbol_table, policy, &mut members)?;
+        let symbol_pages = dictionary.by_id;
+        let symbol_buckets = dictionary.by_text;
+        let mut lineage_pages = Vec::new();
+        for page in checkpoint.lineage.nodes().chunk_by(|a, b| {
+            RelationalCheckpointPage::range_of(a.lineage_id.0)
+                == RelationalCheckpointPage::range_of(b.lineage_id.0)
+        }) {
+            let member = add(
+                &mut members,
+                member_frame::encode(MemberKind::Lineage, &page)
+                    .map_err(|cause| corrupt(format!("lineage member: {cause:?}")))?,
+            );
+            lineage_pages.push(
+                RelationalCheckpointPage::from_ids(
+                    page.iter().map(|node| node.lineage_id.0),
+                    member,
+                )
+                .ok_or_else(|| corrupt("invalid captured lineage page membership"))?,
+            );
+        }
+        let derived_indexes = add(
+            &mut members,
+            member_frame::encode(
+                MemberKind::DerivedIndex,
+                &(
+                    &checkpoint.derived_index_artifacts,
+                    &checkpoint.derived_index_checkpoint,
+                    checkpoint.derived_index_checkpoint_format,
+                ),
+            )
+            .map_err(|cause| corrupt(format!("derived index member: {cause:?}")))?,
+        );
+        Ok(Self {
+            carried_envelopes,
+            envelope_cells: BTreeMap::new(),
+            manifest: RelationalCheckpointManifest {
+                coverage: checkpoint.coverage.clone(),
+                covered_position: commits.last().map_or(
+                    crate::publication::patch::data::PatchStreamPosition(0),
+                    |entry| entry.position,
+                ),
+                runtime_name: checkpoint.runtime_name.clone(),
+                branch_cells: checkpoint.branch_cells.clone(),
+                branch_lifecycle: checkpoint.branch_lifecycle.clone(),
+                retired_branch_names: checkpoint.retired_branch_names.clone(),
+                schemas: checkpoint.branch_root_schema_images.clone(),
+                record_identity: checkpoint.record_identity.clone(),
+                aspect_contracts: checkpoint.aspect_contracts.clone(),
+                index_definitions: checkpoint.index_definitions.clone(),
+                index_generation_frontier: checkpoint.index_generation_frontier,
+                roots: Vec::new(),
+                mirror_schema: checkpoint.mirror_schema_digest,
+                mirror: Vec::new(),
+                history_dependencies: Vec::new(),
+                commits,
+                symbols: symbol_pages,
+                symbol_identity_frontier: checkpoint.symbol_identity_frontier,
+                symbol_buckets,
+                lineage: lineage_pages,
+                lineage_events: Vec::new(),
+                lineage_basis: checkpoint.lineage.digest_basis().clone(),
+                derived_indexes,
+            },
+            members,
+            envelopes,
+            publications: Vec::new(),
+            cold_source: None,
+            guarded_members: BTreeMap::new(),
+            history_members: Arc::default(),
+        })
+    }
+    #[cfg(test)]
+    pub(super) fn capture(
+        checkpoint: &DurableCheckpoint,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
+        let mut captured = Self::capture_metadata(
+            checkpoint,
+            policy,
+            None,
+            &RelationalCheckpointArtifactPolicy::Embedded,
+            Vec::new(),
+        )?;
+        let rows = checkpoint
+            .envelopes
+            .iter()
+            .flat_map(|commit| {
+                commit
+                    .lineage_events()
+                    .iter()
+                    .map(|event| RelationalCheckpointLineageEventRow {
+                        event: Arc::new(event.clone()),
+                        publication_commit_id: commit.commit.commit_id,
+                    })
+            })
+            .collect();
+        captured.append_lineage_events(rows, policy)?;
+        let mut members = std::mem::take(&mut captured.members);
+        let mut symbols = crate::symbols::data::StringInterner::default();
+        symbols.restore_snapshot(checkpoint.symbol_table.clone());
+        let mut roots = Vec::new();
+        let mut schemas = BTreeMap::new();
+        for image in &checkpoint.branch_root_schema_images {
+            let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
+            let expected = registry.authority_snapshot();
+            let schema = crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
+                schemas.len() as u64 + 1,
+                registry,
+                contracts,
+                &expected,
+                image.descriptor_semantics_version(),
+            )
+            .ok_or_else(|| corrupt("schema carrier readmission failed"))?;
+            schemas.insert(image.carrier_digest(), schema);
+        }
+        for root in &checkpoint.branch_roots {
+            let schema = schemas
+                .get(&root.schema_carrier_digest)
+                .ok_or_else(|| corrupt("missing root schema carrier"))?;
+            let partitions = restore_images(
+                &root.partition_images,
+                schema,
+                checkpoint
+                    .root_kind_images
+                    .get(&root.commit_id)
+                    .ok_or_else(|| corrupt("missing root kind images"))?,
+            )?;
+            let regions = capture_partitions(
+                &partitions,
+                schema,
+                root.schema_carrier_digest,
+                &symbols,
+                &mut members,
+            )?;
+            roots.push(RelationalCheckpointRoot {
+                commit_id: root.commit_id,
+                schema_carrier_digest: root.schema_carrier_digest,
+                regions,
+            });
+        }
+        let mirror = if checkpoint.partition_images.is_empty() {
+            Vec::new()
+        } else {
+            let digest = checkpoint
+                .mirror_schema_digest
+                .ok_or_else(|| corrupt("nonempty mirror has no schema carrier"))?;
+            let schema = schemas
+                .get(&digest)
+                .ok_or_else(|| corrupt("missing mirror schema carrier"))?;
+            capture_partitions(
+                &restore_images(
+                    &checkpoint.partition_images,
+                    schema,
+                    &checkpoint.mirror_kind_images,
+                )?,
+                schema,
+                digest,
+                &symbols,
+                &mut members,
+            )?
+        };
+        captured.manifest.roots = roots;
+        captured.manifest.mirror = mirror;
+        captured.members = members;
+        Ok(captured)
+    }
+}
+
+#[cfg(test)]
+fn restore_images(
+    images: &[PartitionCheckpointImage],
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    kinds: &crate::storage::residency::CheckpointRegionKindImages,
+) -> Result<BTreeMap<crate::identity::data::PartitionId, PartitionState>, DurabilityError> {
+    let contracts =
+        CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())?;
+    let mut partitions = BTreeMap::new();
+    for image in images {
+        let partition = partition_from_image(image.clone(), schema.aspect_plans(), &contracts)?;
+        if partitions
+            .insert(partition.partition_id, partition)
+            .is_some()
+        {
+            return Err(corrupt("duplicate partition image"));
+        }
+    }
+    kinds
+        .restore(&mut partitions)
+        .map_err(|cause| corrupt(format!("kind reconstruction: {cause:?}")))?;
+    Ok(partitions)
+}
+
+#[cfg(test)]
+fn capture_partitions(
+    partitions: &BTreeMap<crate::identity::data::PartitionId, PartitionState>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema_digest: [u8; 32],
+    symbols: &crate::symbols::data::StringInterner,
+    members: &mut BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
+) -> Result<Vec<RelationalCheckpointRegion>, DurabilityError> {
+    partitions
+        .values()
+        .map(|partition| {
+            let (commitment, _) = PartitionContentCommitment::capture(partition, symbols, None)
+                .map_err(|error| corrupt(format!("region commitment: {error:?}")))?;
+            let captured = crate::storage::residency::capture_region_members(
+                partition,
+                &commitment,
+                schema,
+                schema_digest,
+            )
+            .map_err(|cause| corrupt(format!("region member: {cause:?}")))?;
+            Ok(RelationalCheckpointRegion {
+                kind_authority: captured.kind_authority,
+                partition_id: partition.partition_id,
+                content_digest: commitment.digest(partition.partition_id),
+                entity_slots: partition.entity_arena.slot_count(),
+                relation_slots: partition.relation_arena.slot_count(),
+                unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
+                    + partition.relation_arena.lifecycle_counts().unavailable,
+                head: add(members, captured.head),
+                history: add(members, captured.history),
+            })
+        })
+        .collect()
+}
+
+pub(super) fn add(
+    members: &mut BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
+    (locator, bytes): (RelationalDurableMemberLocator, Vec<u8>),
+) -> RelationalDurableMemberLocator {
+    members
+        .entry(locator)
+        .or_insert_with(|| RelationalCheckpointMember::New {
+            locator,
+            bytes: bytes.into(),
+        });
+    locator
+}
+
+pub(super) fn corrupt(detail: impl Into<String>) -> DurabilityError {
+    DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+}

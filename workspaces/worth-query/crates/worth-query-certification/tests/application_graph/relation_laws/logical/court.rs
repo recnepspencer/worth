@@ -124,7 +124,7 @@ fn logical_rules_decisions_orbits_and_entity_root_count_share_actual_source_owne
             .rule_readable_collection_lifecycle_for_test(),
         [State::Warm]
     );
-    let mut successors = vec![3, 0, 1, 2, 5, 4];
+    let mut successors = [3, 0, 1, 2, 5, 4];
     let mut seed = 0x9181_0062_u64;
     for step in 0..12_u64 {
         seed ^= seed << 13;

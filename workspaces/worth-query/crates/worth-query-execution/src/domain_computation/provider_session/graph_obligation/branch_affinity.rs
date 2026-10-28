@@ -83,7 +83,8 @@ mod tests {
                     })
                     .expect("branch-affinity fixture schema registers"),
             )
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let mut transaction = {
             let transaction_validation_input = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
@@ -121,7 +122,7 @@ mod tests {
             .observe_fork_source(&admitted_branch)
             .expect("main branch exposes an exact fork basis");
         runtime
-            .fork_branch(substitute_branch.clone(), fork_basis)
+            .fork_branch(execution, substitute_branch.clone(), fork_basis)
             .expect("main basis can fork a sibling branch");
         let admitted_identity = runtime.branch_identity(&admitted_branch).unwrap();
         let substitute_identity = runtime.branch_identity(&substitute_branch).unwrap();

@@ -2,7 +2,10 @@
 use super::*;
 use crate::mvcc::{RequiredOutputRolePosture as Posture, RequiredOutputRoleTarget};
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::storage::overlay::{entity_partition_source_for_slot, OverlayStateView, WorkingState};
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::storage::overlay::{
+    current_entity_partition_source_for_slot, OverlayStateView, WorkingState,
+};
 use crate::transactions::data::{CommitCreatedEntityBindings, EntityReference, RecordRef};
 use worth_execution::MapKernelContext;
 
@@ -61,19 +64,18 @@ pub(super) fn capture(
                 let partition = basis
                     .inner
                     .root
-                    .partition_state(id.partition_id)
+                    .get_current_partition(id.partition_id)
                     .ok_or_else(|| crate::mvcc::origin_denial("prior output partition absent"))?;
                 let row = partition
-                    .entity_arena
+                    .entity_arena()
                     .get(id)
                     .filter(|row| row.is_live())
                     .ok_or_else(|| {
                         crate::mvcc::origin_denial("prior output generation absent or retired")
                     })?;
                 let write = partition
-                    .entity_arena
-                    .metadata_history_at(id.slot_index())
-                    .and_then(|rows| rows.get(rows.len().checked_sub(1)?))
+                    .entity_arena()
+                    .current_metadata_at(id.slot_index())
                     .ok_or_else(|| {
                         crate::mvcc::origin_denial("prior output write position absent")
                     })?
@@ -106,11 +108,14 @@ pub(super) fn capture(
                 ))
             }
         };
-        let (_, partition) =
-            entity_partition_source_for_slot(&after_image, id.partition_id, id.slot_index())
-                .ok_or_else(|| crate::mvcc::origin_denial("output partition absent"))?;
+        let (_, partition) = current_entity_partition_source_for_slot(
+            &after_image,
+            id.partition_id,
+            id.slot_index(),
+        )
+        .ok_or_else(|| crate::mvcc::origin_denial("output partition absent"))?;
         let record = partition
-            .entity_arena
+            .entity_arena()
             .get(&id)
             .ok_or_else(|| crate::mvcc::origin_denial("output generation absent"))?;
         if record.kind_id() != Some(role.kind)
@@ -141,9 +146,8 @@ pub(super) fn capture(
             envelope.commit.version_id
         } else {
             partition
-                .entity_arena
-                .metadata_history_at(id.slot_index())
-                .and_then(|rows| rows.get(rows.len().checked_sub(1)?))
+                .entity_arena()
+                .current_metadata_at(id.slot_index())
                 .ok_or_else(|| crate::mvcc::origin_denial("output write position absent"))?
                 .effective_at
         };

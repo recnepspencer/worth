@@ -42,7 +42,7 @@ pub(in crate::domain_computation::primary_graph::provider::aftermath_causality) 
             view.exact_entity_state_read_work_bound()
                 .ok_or(Denial::Unavailable)?,
         )?;
-        view.with_exact_entity_state(*entity, |metadata, state| {
+        view.read_exact_entity_state(&execution, *entity, |metadata, state| {
             if metadata.entity_id != *entity
                 || metadata.kind_id != layout.entity_kind
                 || metadata.lifecycle != RecordLifecycleState::Live
@@ -70,7 +70,10 @@ pub(in crate::domain_computation::primary_graph::provider::aftermath_causality) 
                 && fields.selector(&layout.lineage.reversed_source, sealed.recorded_source())?
                 && fields.value(&layout.lineage.consumed_reversal)?.is_none())
         })
-        .map_err(|_| Denial::Unavailable)?
+        .map_err(|cause| match cause {
+            worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::Execution(cause),
+            worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Denial::Unavailable,
+        })?
         .ok_or(Denial::Unavailable)?
     })
 }

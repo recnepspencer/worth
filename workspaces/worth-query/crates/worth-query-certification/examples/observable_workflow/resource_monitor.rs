@@ -8,6 +8,10 @@ mod handler;
 #[path = "resource_monitor/journey.rs"]
 mod journey;
 #[path = "../../tests/application_graph/source_only/capability/resources/provider.rs"]
+#[expect(
+    dead_code,
+    reason = "The example shares the provider; clock mutation and counters are exercised by its certification tests."
+)]
 pub mod producer;
 #[path = "resource_monitor/resource.rs"]
 mod resource;

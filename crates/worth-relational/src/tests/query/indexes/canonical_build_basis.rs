@@ -11,20 +11,23 @@ fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
     let claimed_sibling = BranchId("feature".to_string());
     runtime
         .history_authority()
-        .fork_branch_from(claimed_sibling.clone(), &actual_branch)
+        .fork_branch_from(execution, claimed_sibling.clone(), &actual_branch)
         .expect("feature branch forks from the admitted main root");
     let main_identity = runtime.main_branch_identity();
     let (_, admitted_basis) = runtime
         .observe_branch(&main_identity)
         .expect("main branch observation admits one exact root");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "canonical.exact-basis-axis-guard".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "canonical.exact-basis-axis-guard".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let cases = [
         (
             crate::facade::history::CommitId(main.commit.commit_id.0 + 10_000),
@@ -57,11 +60,13 @@ fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
         );
         assert!(runtime
             .index_access()
-            .latest_generation(index.index_id, &actual_branch)
+            .read_latest_generation(execution, index.index_id, &actual_branch)
+            .unwrap()
             .is_none());
         assert!(runtime
             .index_access()
-            .latest_generation(index.index_id, &claimed_sibling)
+            .read_latest_generation(execution, index.index_id, &claimed_sibling)
+            .unwrap()
             .is_none());
     }
     release_test_commit_snapshot(&runtime, &main);
@@ -77,6 +82,7 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -87,14 +93,17 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
         "canonical-feature",
         BranchId("feature".to_string()),
     );
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "canonical.entity.name".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "canonical.entity.name".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
 
     let outcome = runtime.index_authority().build_for_commit(
         execution,
@@ -117,7 +126,8 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
     );
     assert!(runtime
         .index_access()
-        .latest_generation(index.index_id, &BranchId("feature".to_string()))
+        .read_latest_generation(execution, index.index_id, &BranchId("feature".to_string()))
+        .unwrap()
         .is_none());
     release_test_commit_snapshot(&runtime, &main);
     release_test_commit_snapshot(&runtime, &feature);
@@ -133,6 +143,7 @@ fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -143,14 +154,17 @@ fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
         "capacity-feature",
         BranchId("feature".to_string()),
     );
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "canonical.capacity.denial".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "canonical.capacity.denial".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     runtime.set_retention_capacity_for_test(2, 8);
 
     let outcome = runtime.index_authority().build_for_commit(

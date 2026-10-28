@@ -7,9 +7,8 @@ pub(super) fn same_physical_evidence(
     physical_evidence_key(expected) == physical_evidence_key(observed)
 }
 
-fn physical_evidence_key(
-    report: &RecoveryObserverReport,
-) -> (
+/// Every observer fact a fresh-process run must reproduce, grouped by artifact family.
+type PhysicalEvidenceKey = (
     (u64, u64, u64, [u8; 32], u64),
     (u64, u64, u64, Option<[u8; 16]>, Option<u64>, [u8; 32]),
     (
@@ -24,7 +23,9 @@ fn physical_evidence_key(
     (u64, u64, u64, u64, Option<u64>, Option<u64>, [u8; 32]),
     (u64, Option<u64>, Option<u64>, [u8; 32]),
     (u64, u64, [u8; 32], u64, u64, [u8; 32]),
-) {
+);
+
+fn physical_evidence_key(report: &RecoveryObserverReport) -> PhysicalEvidenceKey {
     (
         (
             report.artifact_count(),

@@ -8,7 +8,7 @@ use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance;
 
-use super::fixture::held_authentication_application;
+use super::fixture::{expiring_authentication_application, held_authentication_application};
 use super::{
     application, bind_application, continuation, controls_json, page_request, post_page,
     BankHttpAccountActivityPageOutcome, BankHttpDenialKind, BankHttpServerConfiguration,
@@ -148,12 +148,14 @@ async fn replay_revalidation_keeps_the_cache_on_retry_and_scrubs_it_on_drift() {
     use super::super::continuation_executor::replay_fault::fail_next_replay_read;
 
     let account = AccountId::new(100).unwrap();
-    let application = Arc::new(application(account));
-    let (server, _mutation_continuation) =
-        bind_application(application, BankHttpServerConfiguration::local_ephemeral())
-            .await
-            .expect("HTTP server should bind")
-            .into_parts();
+    let (application, expiry) = expiring_authentication_application(account);
+    let (server, _mutation_continuation) = bind_application(
+        Arc::new(application),
+        BankHttpServerConfiguration::local_ephemeral(),
+    )
+    .await
+    .expect("HTTP server should bind")
+    .into_parts();
     let server = server.activate();
     let client = reqwest::Client::new();
     let endpoint = format!(
@@ -172,6 +174,23 @@ async fn replay_revalidation_keeps_the_cache_on_retry_and_scrubs_it_on_drift() {
         }
     };
 
+    // Authentication admits the replay, then its deadline elapses, so the
+    // cached-access revalidation read is what fails, temporarily.
+    let mut expiring = request.clone();
+    expiring["controls"]["deadline_milliseconds"] = serde_json::json!(50);
+    expiry.arm(true);
+    let timed_out = post_page(&client, &endpoint, &expiring).await;
+    expiry.arm(false);
+    assert!(matches!(
+        timed_out,
+        BankHttpAccountActivityPageOutcome::Denied { denial, .. }
+            if denial.kind == BankHttpDenialKind::DeadlineExceeded
+    ));
+    assert_eq!(
+        post_page(&client, &endpoint, &request).await,
+        first,
+        "a temporary revalidation failure must not erase the cached publication"
+    );
     // A temporary revalidation failure refuses this replay and keeps the
     // cached publication for the next one.
     fail_next_replay_read(

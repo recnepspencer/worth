@@ -11,8 +11,6 @@ mod assessment_cleanup;
 mod host;
 #[path = "workflow_owning/keyed.rs"]
 mod keyed;
-#[path = "workflow_owning/unpublished.rs"]
-mod unpublished;
 
 #[path = "workflow_owning/proposal_wait.rs"]
 mod proposal_wait;

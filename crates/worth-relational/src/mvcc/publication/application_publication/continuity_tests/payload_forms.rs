@@ -214,7 +214,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
     release_test_commit_snapshot(&runtime, &clear);
     let saved = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let mut cold = schema::runtime();
     let receipt = cold
@@ -234,6 +234,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         .inner
         .root
         .partition_state(PartitionId::main())
+        .expect("fixture root has admitted Full custody")
         .unwrap();
     for (id, kind) in &members {
         let row = partition.entity_arena.get(id).unwrap();

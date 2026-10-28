@@ -25,7 +25,8 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
     let allowance = 4 * KEYS as u64 * levels;
     let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(crate::schema::data::RelationalSchemaRegistry::new())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let keys: Vec<_> = (0..KEYS)
         .rev()
         .map(|i| crate::symbols::data::ClientKey::raw(format!("key-{i}")))

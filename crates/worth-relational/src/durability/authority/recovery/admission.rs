@@ -97,8 +97,7 @@ pub(super) fn admit_recovery(
         entry: recovery_authority_continuity_diagnostic(&plan),
     };
     let result = validate_recovery_authority_continuity(runtime, &plan)
-        .and_then(|()| validate_reported_parity(runtime, &plan))
-        .and_then(|()| validate_integrity(&plan));
+        .and_then(|()| validate_reported_parity(runtime, &plan));
     match result {
         Ok(()) => Ok(AdmittedRecoveryPlan { plan, admission }),
         Err(error) => Err(RecoveryRejection {
@@ -155,18 +154,4 @@ fn validate_reported_parity(
         ));
     }
     Ok(())
-}
-
-fn validate_integrity(plan: &RecoveryPlan) -> Result<(), DurabilityError> {
-    if let Some(error) = plan.persisted_tail_error.as_ref() {
-        return Err(error.clone());
-    }
-    if plan.integrity_report.corrupt_segment_id.is_some() {
-        Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptSegment,
-            "required durable segment is corrupt",
-        ))
-    } else {
-        Ok(())
-    }
 }

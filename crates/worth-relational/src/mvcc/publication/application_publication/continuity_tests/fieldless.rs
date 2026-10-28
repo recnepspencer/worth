@@ -105,7 +105,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
     drop(warm);
     let saved = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let mut cold = fixture.build_runtime();
     let receipt = cold
@@ -125,6 +125,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
         .inner
         .root
         .partition_state(PartitionId::main())
+        .expect("fixture root has admitted Full custody")
         .unwrap();
     let plan = basis
         .inner

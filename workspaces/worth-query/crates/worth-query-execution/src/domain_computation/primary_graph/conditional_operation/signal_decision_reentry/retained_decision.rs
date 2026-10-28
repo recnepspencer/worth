@@ -29,14 +29,6 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
         BridgeConditionalDecisionEvidence,
         crate::domain_computation::WorthQueryProviderSessionControlStopKind,
     ),
-    OperationSettlementExecutionDenied(
-        BridgeConditionalDecisionEvidence,
-        crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
-        Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-    ),
     OperationBackpressured(
         BridgeConditionalDecisionEvidence,
         WorthQueryOperationBackpressureCause,
@@ -48,10 +40,6 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
     OperationTerminalFailure(
         BridgeConditionalDecisionEvidence,
         super::super::application_operation_reentry::WorthQueryTemporalTerminalFailure,
-    ),
-    OperationSettlementDeferred(
-        BridgeConditionalDecisionEvidence,
-        crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
     ),
     OperationProductUnpublished(
         BridgeConditionalDecisionEvidence,

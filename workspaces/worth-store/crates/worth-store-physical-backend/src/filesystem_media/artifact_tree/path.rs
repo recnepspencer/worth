@@ -107,33 +107,6 @@ impl ArtifactTreeFile {
     }
 }
 
-#[cfg(test)]
-mod owned_heap_tests {
-    use super::ArtifactTreeDirectory;
-
-    #[test]
-    fn nested_file_path_charge_includes_owned_component_and_name_backing() {
-        let root = ArtifactTreeDirectory::families();
-        assert_eq!(root.owned_heap_bytes(), Some(0));
-        let nested = root
-            .child("records")
-            .unwrap()
-            .child("segment-manifests")
-            .unwrap();
-        let file = nested.file("manifest-0000000000000001.frame").unwrap();
-        assert!(
-            nested.owned_heap_bytes().unwrap()
-                >= "records".len() as u64 + "segment-manifests".len() as u64
-        );
-        let content_lower_bound = 2 * std::mem::size_of::<String>()
-            + "records".len()
-            + "segment-manifests".len()
-            + "manifest-0000000000000001.frame".len();
-        assert!(file.owned_heap_bytes().unwrap() >= content_lower_bound as u64);
-        assert!(file.owned_heap_bytes().unwrap() > root.owned_heap_bytes().unwrap());
-    }
-}
-
 pub(in crate::filesystem_media) fn validate_component(
     component: &str,
 ) -> Result<(), ArtifactTreePathDenial> {
@@ -163,4 +136,31 @@ pub(in crate::filesystem_media) fn validate_component(
         return Err(ArtifactTreePathDenial::ReservedDeviceName);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod owned_heap_tests {
+    use super::ArtifactTreeDirectory;
+
+    #[test]
+    fn nested_file_path_charge_includes_owned_component_and_name_backing() {
+        let root = ArtifactTreeDirectory::families();
+        assert_eq!(root.owned_heap_bytes(), Some(0));
+        let nested = root
+            .child("records")
+            .unwrap()
+            .child("segment-manifests")
+            .unwrap();
+        let file = nested.file("manifest-0000000000000001.frame").unwrap();
+        assert!(
+            nested.owned_heap_bytes().unwrap()
+                >= "records".len() as u64 + "segment-manifests".len() as u64
+        );
+        let content_lower_bound = 2 * std::mem::size_of::<String>()
+            + "records".len()
+            + "segment-manifests".len()
+            + "manifest-0000000000000001.frame".len();
+        assert!(file.owned_heap_bytes().unwrap() >= content_lower_bound as u64);
+        assert!(file.owned_heap_bytes().unwrap() > root.owned_heap_bytes().unwrap());
+    }
 }

@@ -1,3 +1,6 @@
+mod abort_outcome;
+mod commit_outcome;
+mod commit_stop;
 mod control_stopped;
 mod counters;
 mod declared_closure;
@@ -12,10 +15,12 @@ mod readmission;
 mod session_affinity;
 mod session_binding;
 mod session_lease;
-mod settlement_deferred;
 mod terminal_binding;
 mod terminal_outcome;
 
+pub use abort_outcome::*;
+pub use commit_outcome::*;
+pub use commit_stop::*;
 pub use control_stopped::*;
 pub use counters::*;
 pub(crate) use declared_closure::{
@@ -42,7 +47,6 @@ pub(in crate::domain_computation) use session_affinity::{
 };
 pub(crate) use session_binding::WorthQuerySessionBinding;
 pub(crate) use session_lease::WorthQueryProviderSessionLease;
-pub use settlement_deferred::*;
 pub(in crate::domain_computation) use terminal_binding::WorthQueryProviderSessionTerminalBinding;
 pub use terminal_outcome::*;
 

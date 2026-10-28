@@ -34,15 +34,15 @@ impl<'runtime> StorageAccess<'runtime> {
 
     pub(crate) fn entity_slot_count(&self) -> usize {
         self.current_edition()
-            .partitions()
-            .map(|partition| partition.entity_arena.slot_count())
+            .cells()
+            .map(|(_, region)| region.cell().slot_counts().0)
             .sum()
     }
 
     pub(crate) fn relation_slot_count(&self) -> usize {
         self.current_edition()
-            .partitions()
-            .map(|partition| partition.relation_arena.slot_count())
+            .cells()
+            .map(|(_, region)| region.cell().slot_counts().1)
             .sum()
     }
 
@@ -59,45 +59,76 @@ impl<'runtime> StorageAccess<'runtime> {
             .max(1)
     }
 
-    pub(crate) fn record_slots<K: RecordKind>(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-    ) -> Vec<usize> {
-        record_slots_in::<K>(&self.current_edition(), partition_id)
-    }
-
-    pub(crate) fn record_slot_surface<K: RecordKind>(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-        slot: usize,
-    ) -> Option<RecordSlotSurface> {
-        record_slot_surface_in::<K>(&self.current_edition(), partition_id, slot)
-    }
-
     pub fn partition_ids(&self) -> Vec<crate::identity::data::PartitionId> {
         crate::storage::partition::storage_stats::partition_ids(self.runtime)
     }
 
-    pub fn partition_storage_stats(&self) -> Vec<PartitionStorageStats> {
-        crate::storage::partition::storage_stats::partition_storage_stats(self.runtime)
+    /// Demand the whole mirror before reporting partition statistics.
+    pub fn partition_storage_stats(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<PartitionStorageStats>, crate::execution::RelationalExecutionDenialCause> {
+        let edition = self
+            .current_edition()
+            .demand_all(execution, &self.runtime.services.symbols)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let answer = crate::storage::partition::storage_stats::partition_storage_stats(
+            self.runtime,
+            &edition,
+        );
+        crate::execution::check_request(execution)?;
+        Ok(answer)
     }
 
-    pub fn storage_stats(&self) -> StorageStats {
-        crate::storage::partition::storage_stats::storage_stats(self.runtime)
+    /// Demand the whole mirror before reporting its storage and visibility statistics.
+    pub fn storage_stats(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<StorageStats, crate::execution::RelationalExecutionDenialCause> {
+        let edition = self
+            .current_edition()
+            .demand_all(execution, &self.runtime.services.symbols)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let answer =
+            crate::storage::partition::storage_stats::storage_stats(self.runtime, &edition);
+        crate::execution::check_request(execution)?;
+        Ok(answer)
     }
 
     pub fn chunked_storage_summary(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> ChunkedStorageSummary {
-        crate::storage::partition::chunks::chunked_storage_summary(self.runtime, version_id)
+    ) -> Result<ChunkedStorageSummary, crate::execution::RelationalExecutionDenialCause> {
+        let edition = self
+            .current_edition()
+            .demand_all(execution, &self.runtime.services.symbols)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let answer = crate::storage::partition::chunks::chunked_storage_summary(
+            self.runtime,
+            &edition,
+            version_id,
+        );
+        crate::execution::check_request(execution)?;
+        Ok(answer)
     }
 
     pub fn chunk_diagnostics(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> ChunkDiagnostics {
-        crate::storage::partition::chunks::chunk_diagnostics(self.runtime, version_id)
+    ) -> Result<ChunkDiagnostics, crate::execution::RelationalExecutionDenialCause> {
+        let edition = self
+            .current_edition()
+            .demand_all(execution, &self.runtime.services.symbols)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let answer = crate::storage::partition::chunks::chunk_diagnostics(
+            self.runtime,
+            &edition,
+            version_id,
+        );
+        crate::execution::check_request(execution)?;
+        Ok(answer)
     }
 
     pub fn plan_read_explicit_query_packet(
@@ -114,11 +145,16 @@ impl<'runtime> StorageAccess<'runtime> {
 
     pub fn outgoing_relations_for_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<crate::identity::data::RelationId> {
+    ) -> Result<
+        Vec<crate::identity::data::RelationId>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         crate::storage::partition::adjacency_queries::outgoing_relations_for_entity(
             self.runtime,
+            execution,
             entity_id,
             version_id,
         )
@@ -126,11 +162,16 @@ impl<'runtime> StorageAccess<'runtime> {
 
     pub fn incoming_relations_for_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<crate::identity::data::RelationId> {
+    ) -> Result<
+        Vec<crate::identity::data::RelationId>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         crate::storage::partition::adjacency_queries::incoming_relations_for_entity(
             self.runtime,
+            execution,
             entity_id,
             version_id,
         )
@@ -138,11 +179,16 @@ impl<'runtime> StorageAccess<'runtime> {
 
     pub fn all_relations_for_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<crate::identity::data::RelationId> {
+    ) -> Result<
+        Vec<crate::identity::data::RelationId>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         crate::storage::partition::adjacency_queries::all_relations_for_entity(
             self.runtime,
+            execution,
             entity_id,
             version_id,
         )
@@ -154,30 +200,28 @@ impl<'runtime> StorageAccess<'runtime> {
 /// Slot-by-slot loops must go through this rather than the acquiring twin: a
 /// read-only sweep over S slots should acquire the substrate once, not S times.
 pub(crate) fn record_slots_in<K: RecordKind>(
-    edition: &PartitionEdition,
+    edition: &impl crate::storage::overlay::PartitionAccess,
     partition_id: crate::identity::data::PartitionId,
 ) -> Vec<usize> {
     edition
-        .partition(partition_id)
+        .get_partition(partition_id)
         .map(|partition| K::arena(partition).occupied_slots())
         .unwrap_or_default()
 }
 
 /// One slot's retention surface, read out of an edition the caller pinned.
 ///
-/// A read-modify-read pass must NOT pin one edition across its writes: holding
-/// an edition while writing forces the writer to copy the partition the pass is
-/// still observing. Such passes keep using the acquiring twin, once per step.
+/// Retention mutations use a resident writer entry instead; an inspection
+/// holds its immutable resident edition for the entire traversal.
 pub(crate) fn record_slot_surface_in<K: RecordKind>(
-    edition: &PartitionEdition,
+    edition: &impl crate::storage::overlay::PartitionAccess,
     partition_id: crate::identity::data::PartitionId,
     slot: usize,
 ) -> Option<RecordSlotSurface> {
-    let partition = edition.partition(partition_id)?;
+    let partition = edition.get_partition(partition_id)?;
     let arena = K::arena(partition);
     let slot_view = arena.get_slot(slot)?;
     Some(RecordSlotSurface {
-        retired_at: arena.retired_at_for_slot(slot),
         snapshot_pins: arena.snapshot_pin_count(slot).unwrap_or(0),
         branch_pins: arena.branch_pin_count(slot).unwrap_or(0),
         replay_pins: arena.replay_pin_count(slot).unwrap_or(0),
@@ -187,7 +231,6 @@ pub(crate) fn record_slot_surface_in<K: RecordKind>(
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct RecordSlotSurface {
-    pub(crate) retired_at: Option<crate::identity::data::VersionId>,
     pub(crate) snapshot_pins: u32,
     pub(crate) branch_pins: u32,
     pub(crate) replay_pins: u32,

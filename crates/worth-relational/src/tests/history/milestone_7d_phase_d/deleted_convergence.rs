@@ -5,7 +5,7 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     delete_entity(execution, &runtime, entity);
@@ -42,7 +42,9 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
 
     let live_envelope = runtime
         .replay()
-        .canonical_commit_envelope(merge.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("live merge envelope");
     let live_truth = capture_aspect_truth_bundle(execution, &runtime, &[entity], &[], &[]);
 
@@ -65,10 +67,12 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
     );
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_envelope = recovered
         .replay()
-        .canonical_commit_envelope(merge.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
     let recovered_truth = capture_aspect_truth_bundle(execution, &recovered, &[entity], &[], &[]);
 

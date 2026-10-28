@@ -36,7 +36,10 @@ fn perf_geometry_artifact_decomposition_matrix() {
             );
             let hot_update_micros = hot_update_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let explicit_targets = seeded
                 .mixed_query_targets
                 .iter()

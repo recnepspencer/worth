@@ -2,6 +2,7 @@
 mod aspect_history;
 #[cfg(test)]
 mod divergence;
+mod event_demand;
 #[cfg(test)]
 mod graph;
 mod records;

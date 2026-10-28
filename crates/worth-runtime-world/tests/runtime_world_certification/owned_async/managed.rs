@@ -1,8 +1,6 @@
 use super::fixture::{admit_managed, completion, selected_fork, source_commit, AsyncSourceCourt};
 use std::num::NonZeroU64;
-use worth_runtime_bridge::facade::{
-    BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission, TruthCommitIdentity,
-};
+use worth_runtime_bridge::facade::{BridgeOwnedAsyncManagedDenial, TruthCommitIdentity};
 use worth_signal::facade::{ResourceManagedQueueDenialClass, ResourceManagedQueueMutationReport};
 
 fn assert_queue_denial(

@@ -7,7 +7,6 @@ use crate::identity::data::EntityId;
 use crate::storage::data::{
     RecordLifecycleState, RelationalFieldPresence, RelationalFieldRevision,
 };
-use crate::storage::overlay::PartitionAccess;
 
 use super::super::VisibilityProjectionView;
 
@@ -25,6 +24,10 @@ impl VisibilityProjectionView {
         Result<Option<RelationalFieldRevision>, Stop>,
         crate::execution::RelationalExecutionDenialCause,
     > {
+        crate::execution::check_request(execution)?;
+        if self.is_exact_basis() {
+            self.demand_regions_head(execution, [entity.partition_id])?;
+        }
         super::super::super::read_request::checked(execution, || {
             Ok('read: {
                 if let Err(stop) = admit_work(1) {
@@ -45,13 +48,13 @@ impl VisibilityProjectionView {
                 if let Err(stop) = admit_work(33) {
                     break 'read Err(stop);
                 }
-                let Some(partition) = root.get_partition(entity.partition_id) else {
+                let Some(partition) = self.admitted_head_region(entity.partition_id) else {
                     break 'read Ok(None);
                 };
                 if let Err(stop) = admit_work(3) {
                     break 'read Err(stop);
                 }
-                let Some(slot) = partition.entity_arena.get(&entity) else {
+                let Some(slot) = partition.entity_arena().get(&entity) else {
                     break 'read Ok(None);
                 };
                 if slot.lifecycle() != RecordLifecycleState::Live {
@@ -109,7 +112,7 @@ impl VisibilityProjectionView {
                     break 'read Err(stop);
                 }
                 let Some(revisions) = partition
-                    .entity_arena
+                    .entity_arena()
                     .field_revisions_at(entity.slot_index())
                 else {
                     break 'read Ok(None);
@@ -126,8 +129,9 @@ impl VisibilityProjectionView {
                     break 'read Err(stop);
                 }
                 let (aspect_symbol, field_symbol) = (
-                    self.symbols.symbol(aspect_text),
-                    self.symbols.symbol(field_text),
+                    self.symbols
+                        .with_read(|symbols| symbols.symbol(aspect_text)),
+                    self.symbols.with_read(|symbols| symbols.symbol(field_text)),
                 );
                 let explicit = if let Some(key) = aspect_symbol.zip(field_symbol) {
                     if let Err(stop) = admit_work(btree_navigation_work(revisions.len())) {
@@ -141,7 +145,7 @@ impl VisibilityProjectionView {
                     break 'read Err(stop);
                 }
                 let Some(created) = partition
-                    .entity_arena
+                    .entity_arena()
                     .created_at_for_slot(entity.slot_index())
                 else {
                     break 'read Ok(None);

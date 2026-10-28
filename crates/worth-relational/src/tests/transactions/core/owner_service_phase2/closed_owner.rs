@@ -32,7 +32,13 @@ fn phase2_ports_deny_after_their_runtime_owner_closes() {
         }) if observed == runtime_instance_id
     ));
     assert!(matches!(
-        forking.fork_branch(BranchId("owner-closed-target".to_owned()), source),
-        Err(crate::branch::RelationalForkDenial::OwnerUnavailable)
+        forking.fork_branch(
+            execution,
+            BranchId("owner-closed-target".to_owned()),
+            source
+        ),
+        Err(crate::branch::RelationalBranchTransitionStop::Denied(
+            crate::branch::RelationalForkDenial::OwnerUnavailable
+        ))
     ));
 }

@@ -127,7 +127,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
     assert_eq!(
         services
             .materialization_port()
-            .retained_entity_kind(&unavailable, &suspended.custody, root)
+            .retained_entity_kind(execution, &unavailable, &suspended.custody, root)
             .unwrap(),
         KindId(1)
     );
@@ -296,7 +296,10 @@ fn runtime(custom: bool) -> (crate::runtime::RelationalRuntime, [Arc<AtomicUsize
             );
         }
     }
-    (builder.build(), evaluations)
+    (
+        builder.build().expect("valid native runtime configuration"),
+        evaluations,
+    )
 }
 
 fn valid_field_patch(value: bool) -> crate::transactions::data::AspectFieldPatch {

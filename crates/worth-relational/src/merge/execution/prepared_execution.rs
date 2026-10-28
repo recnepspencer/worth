@@ -1,4 +1,5 @@
 //! Consuming execution of one prepared merge.
+// Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 
 use crate::authority::commit::pipeline::{
     execute_authoritative_commit, AuthoritativeCommitContext,
@@ -101,7 +102,7 @@ fn current_complexity_counters(
         .instrumentation
         .complexity_counters
         .lock()
-        .expect("complexity counter lock poisoned")
+        .unwrap_or_else(|error| error.into_inner())
         .clone()
 }
 

@@ -32,22 +32,6 @@ struct Evaluation<'a, Port> {
     adjacency: BTreeSet<Adjacency>,
 }
 
-pub(super) fn evaluate(
-    registry: &RelationalSchemaRegistry,
-    handle: &Handle,
-    root: impl Into<Member>,
-    read: &mut impl SourceRead,
-) -> Result<Data, Denial> {
-    evaluate_position(
-        registry,
-        handle,
-        handle.parts().nodes.len() - 1,
-        false,
-        root.into(),
-        read,
-    )
-}
-
 /// The actual registry lookup is paid before any source acquisition.
 pub(super) fn admit_definition(
     registry: &RelationalSchemaRegistry,

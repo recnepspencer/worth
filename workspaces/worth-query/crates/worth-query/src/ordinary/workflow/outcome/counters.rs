@@ -4,7 +4,7 @@ pub struct WorthQueryWorkflowCounters {
     session_open_attempt_count: usize,
     lower_runtime_execution_attempt_count: usize,
     lower_runtime_execution_completed_count: usize,
-    settlement_deferred_count: usize,
+    durability_unresolved_count: usize,
     inspection_materialization_count: usize,
 }
 
@@ -25,8 +25,8 @@ impl WorthQueryWorkflowCounters {
         self.lower_runtime_execution_completed_count
     }
 
-    pub fn settlement_deferred_count(&self) -> usize {
-        self.settlement_deferred_count
+    pub fn durability_unresolved_count(&self) -> usize {
+        self.durability_unresolved_count
     }
 
     pub fn inspection_materialization_count(&self) -> usize {
@@ -57,9 +57,9 @@ impl WorthQueryWorkflowCounters {
         self
     }
 
-    pub(crate) fn settlement_deferred(mut self) -> Self {
+    pub(crate) fn durability_unresolved(mut self) -> Self {
         self.lower_runtime_execution_completed_count += 1;
-        self.settlement_deferred_count += 1;
+        self.durability_unresolved_count += 1;
         self
     }
 }

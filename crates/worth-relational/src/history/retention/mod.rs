@@ -12,7 +12,9 @@ mod terminal_accounting;
 pub use cost_counters::RelationalRetentionCostCounters;
 pub(crate) use head_cell::RelationalBranchHeadRetentionCell;
 pub(crate) use head_obligation::RelationalHeadRetentionObligation;
-pub(crate) use head_retirement::RelationalHeadRetirementReservation;
+pub(crate) use head_retirement::{
+    RelationalHeadRetirementCapacity, RelationalHeadRetirementReservation,
+};
 pub(crate) use lane::{
     RelationalBranchRetentionBinding, RelationalRetentionGuard,
     RelationalRetentionOwnerRelationship,

@@ -124,6 +124,6 @@ pub(crate) fn settle_clone(
 ) -> Result<(), Cause> {
     let unused = quoted
         .checked_sub(actual)
-        .expect("the clone payload does not exceed its owner-accounted source quote");
+        .expect(/* Proof: The original retained vector/record quote accounts this same backing and payload; cloning does not increase payload beyond that admitted source quote. */ "the clone payload does not exceed its owner-accounted source quote");
     release(memory, unused)
 }

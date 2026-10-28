@@ -256,14 +256,14 @@ fn require_monotonic_counter(
     contract: &PhysicalCounterContract,
     row: &PhysicalCounterEvidenceRow,
 ) -> Result<(), CounterMismatchEvidence> {
-    if let Some(previous) = row.previous_observed_count {
-        if row.observed_count < previous {
-            return Err(CounterMismatchEvidence::MonotonicCounterRegressed {
-                kind: contract.kind(),
-                previous,
-                actual: row.observed_count,
-            });
-        }
+    if let Some(previous) = row.previous_observed_count
+        && row.observed_count < previous
+    {
+        return Err(CounterMismatchEvidence::MonotonicCounterRegressed {
+            kind: contract.kind(),
+            previous,
+            actual: row.observed_count,
+        });
     }
     Ok(())
 }

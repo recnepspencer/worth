@@ -65,7 +65,8 @@ impl NativeHistoryCourt {
             .unwrap();
         let runtime = RelationalRuntimeApi::builder()
             .schema_registry(registry)
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let basis = runtime
             .observe_branch(&runtime.main_branch_identity())
             .unwrap()

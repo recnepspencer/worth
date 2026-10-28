@@ -45,17 +45,11 @@ Host provider integration:
 Provider traits belong in runtime assembly. Domain consumers should not invoke
 them directly.
 
-The higher application facade exposes a performed-publication terminal as:
-
-- `WorthQueryApplicationUncommitted::SettlementDeferred(...)`, returned as the
-  `Err` of `WorthQueryApplicationCommitOutcome::landed()` and carried by a
-  request lane's `WorthQueryApplicationMutationOutcome::Commit(...)`
-- `WorthQueryApplicationSettlementDeferred`
-- `WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement`
-- `WorthQueryPrimaryGraphApplicationRuntime::recover_deferred_application_settlement(...)`
-
-The provider-session settlement carrier and raw Relational settlement remain
-inside the owning execution boundary.
+The higher application facade exposes an unknown durable fate as
+`WorthQueryApplicationUncommitted::Indeterminate(...)`, returned as the `Err`
+of `WorthQueryApplicationCommitOutcome::landed()` and carried by a request
+lane's `WorthQueryApplicationMutationOutcome::Commit(...)`. The raw Relational
+unresolved-durability value remains inside the owning execution boundary.
 
 ## Core Mental Model
 
@@ -81,11 +75,12 @@ compare-and-commit. The lower managed run is the exact worker inside that
 application session, not a competing session authority.
 
 Compare-and-commit has a terminal that ordinary error handling must not erase:
-the Relational branch movement can perform before durability or Query index
-publication finishes. The provider then returns a typed settlement-deferred
-carrier. The application layer wraps it in
-`WorthQueryApplicationSettlementDeferred`; it does not turn the result into a
-denial and does not expose the raw lower-runtime repair capability.
+Relational publishes the commit to its durable medium before the live cutover,
+and that durable fate can be unknown. Nothing was installed live, but the
+commit may be durable. The application layer surfaces this as `Indeterminate`
+(commit recovery required); it does not turn the result into a pre-effect
+denial. The Relational owner refuses later publications until it is reopened,
+and reopening resolves the fate.
 
 The basis is branch-qualified. A version ordinal has meaning only with its
 typed branch and runtime identity; an equal ordinal from another branch cannot
@@ -127,13 +122,14 @@ running run admits installed graph participation
   -> Query compares every captured fact
   -> fresh continues; stale replans
   -> mutation progression prepares and compares one branch-bound candidate
-  -> committed, already committed, or performed-but-settlement-deferred
+  -> committed, already committed, or durability unresolved (Indeterminate)
 ```
 
 Provider rejection or panic is caught at the exact protocol stage. Abort and
 cleanup outcomes retain whether physical recovery is complete or required.
-Settlement-deferred is post-effect: the operation must be repaired, not
-aborted, discarded, or rerun.
+An unresolved durable fate is not a pre-effect denial: the commit may be
+durable, so the operation requires commit recovery and is not aborted,
+discarded, or rerun.
 
 ### Completed native application reads
 
@@ -209,13 +205,9 @@ caller supplies locators for that declared closure; it cannot omit a required
 family or add an undeclared one. `execution_request` and `request_scope` belong
 to the current admitted host call; retained data does not reconstruct them.
 
-If the later application commit returns `SettlementDeferred`, hand its opaque
-carrier to `recover_deferred_application_settlement(...)`. That serialized
-recovery boundary repairs durability, refreshes Query indexes, observes the
-current branch head, proves the performed commit remains in its ancestry,
-binds the current Bridge head, and validates the exact idempotency binding,
-readmitting it when required. It preserves a later legal head and is safe to
-call again.
+If the later application commit returns `Indeterminate`, do not retry the
+mutation. Recover in the direction its evidence names after the Relational
+owner is reopened and the commit's fate is resolved.
 
 ## How It Relates To Other Features
 
@@ -240,8 +232,8 @@ Inspect:
 - read-set identity and requested, provider-call, compared, stale, and
   false-conflict counters;
 - protocol failure stage and recovery posture.
-- settlement-deferred stage, detail, counters, and optional Query publication
-  failure without inspecting a raw settlement token.
+- the `Indeterminate` commit evidence when the durable fate is unknown,
+  without inspecting a raw Relational durability value.
 
 If capture fails for incompleteness, no provisional provider call should have
 occurred.
@@ -256,9 +248,9 @@ occurred.
 - Letting effect authority capture facts or read authority stage effects.
 - Treating a fresh read-set as mutation or commit authority.
 - Continuing after `Stale` without replanning.
-- Retrying, aborting, or discarding a mutation after its provider reports
-  performed-but-settlement-deferred.
-- Exposing the provider-session or Relational settlement carrier to application
+- Retrying, aborting, or discarding a mutation after its commit reports an
+  unresolved durable fate.
+- Exposing the raw Relational unresolved-durability value to application
   callers.
 
 ## Current Limits

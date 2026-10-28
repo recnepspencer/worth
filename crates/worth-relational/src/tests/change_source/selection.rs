@@ -82,7 +82,7 @@ fn fork_sees_inherited_ancestor_but_not_post_fork_sibling_at_equal_cost_class() 
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
-        .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
+        .fork_branch_from(execution, feature.clone(), &BranchId("main".to_owned()))
         .unwrap();
     let sibling = create_entity_outcome(execution, &runtime, "sibling")
         .commit

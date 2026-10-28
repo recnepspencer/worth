@@ -57,6 +57,8 @@ mod tests {
                 &receipts[..entries],
                 neighbors,
             );
+            let _published =
+                SupersededSettlements::new(registry.clone(), Arc::new(selected.clone()));
             let before = super::super::super::record_map::occurrence_rows_visited();
             assert!(after_publication(&state, &selected).is_empty());
             contacts.push(super::super::super::record_map::occurrence_rows_visited() - before);

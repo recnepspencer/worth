@@ -13,7 +13,6 @@ impl WorthQueryPrimaryGraphProvider {
         request: &WorthQueryRequestScope,
         cancellation: &WorthQueryCancellationSource,
         foreign: &WorthQueryPrimaryGraphProvider,
-        caller: &worth_execution::ExecutionResourceLease<'_>,
     ) {
         let control =
             StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, Some(request));
@@ -24,10 +23,10 @@ impl WorthQueryPrimaryGraphProvider {
             .shared_observed_facts(authority.session())
             .unwrap();
         let requests: Vec<_> = table.requests().collect();
-        funding::assert_full_capture_funding(self, execution, authority, request, &table, caller);
+        funding::assert_full_capture_funding(self, execution, authority, request, &table);
         let count = || {
             self.graph.with_runtime(execution, |runtime| {
-                runtime.retention().inspect_plan().active_snapshot_count
+                runtime.retention().active_snapshot_count()
             })
         };
         let baseline = count();
@@ -92,7 +91,7 @@ impl WorthQueryPrimaryGraphProvider {
         );
         let foreign_count = || {
             foreign.graph.with_runtime(execution, |runtime| {
-                runtime.retention().inspect_plan().active_snapshot_count
+                runtime.retention().active_snapshot_count()
             })
         };
         let foreign_baseline = foreign_count();

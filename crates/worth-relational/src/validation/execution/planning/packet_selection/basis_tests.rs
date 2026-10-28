@@ -109,6 +109,7 @@ fn runtime_with_native_rules(registrations: Vec<InvariantRegistration>) -> Relat
         .invariant_catalog(InvariantCatalog { registrations })
         .custom_invariant(CustomInvariantRegistration::new(ClosureRule).unwrap())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn lease() -> ExecutionResourceLease<'static> {

@@ -4,7 +4,7 @@ use crate::errors::data::{ErrorContext, ErrorOperation, RelationalSubsystem, Sug
 use crate::identity::data::KindId;
 use worth_foundational::facade::AspectKey;
 
-use super::{ContractId, SchemaVersionId};
+use super::ContractId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchemaRegistryErrorClass {
@@ -13,10 +13,6 @@ pub enum SchemaRegistryErrorClass {
     DuplicateEntityKind(KindId),
     DuplicateRelationKind(KindId),
     EntityRelationKindCollision(KindId),
-    SchemaVersionMismatch {
-        expected: SchemaVersionId,
-        actual: SchemaVersionId,
-    },
     DuplicateAspectKey {
         kind_id: KindId,
         aspect_key: AspectKey,
@@ -66,12 +62,7 @@ impl SchemaRegistryError {
                     kind_id
                 )
             }
-            SchemaRegistryErrorClass::SchemaVersionMismatch { expected, actual } => {
-                format!(
-                    "schema version mismatch: expected {:?}, actual {:?}",
-                    expected, actual
-                )
-            }
+
             SchemaRegistryErrorClass::DuplicateAspectKey {
                 kind_id,
                 aspect_key,

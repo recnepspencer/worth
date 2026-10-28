@@ -26,6 +26,8 @@ pub(crate) struct RelationalForkOwnerBinding {
     retention: RelationalBranchRetentionBinding,
     basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
     visibility: Option<RelationalForkVisibilityBinding>,
+    /// The publication routes whose transition stream records each fork.
+    routes: Arc<super::RelationalCanonicalPublicationRoutes>,
 }
 
 #[derive(Debug, Clone)]
@@ -42,6 +44,7 @@ impl RelationalForkOwnerBinding {
         head_versions: BranchHeadVersionIndexAuthority,
         retention: RelationalBranchRetentionBinding,
         basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
+        routes: Arc<super::RelationalCanonicalPublicationRoutes>,
     ) -> Self {
         Self {
             branches,
@@ -50,7 +53,13 @@ impl RelationalForkOwnerBinding {
             retention,
             basis_metrics,
             visibility: None,
+            routes,
         }
+    }
+
+    /// Admit a transition before taking branch coordination or publication state.
+    pub(crate) fn begin_branch_transition(&self) -> super::BranchTransitionPublication<'_> {
+        self.routes.begin_branch_transition()
     }
 
     pub(crate) fn with_visibility(
@@ -149,7 +158,7 @@ impl RelationalForkOwnerBinding {
         {
             let root = cell
                 .root()
-                .expect("installed fork cell retains its exact source root");
+                .expect(/* Proof: Only successful fork preparation constructs this private target; it installs the selected source root and immutable fork provenance before returning it. */ "installed fork cell retains its exact source root");
             let key = crate::visibility::snapshot_states::VisibilitySnapshotStateKey::for_root(
                 cell.identity().branch_id().clone(),
                 version_id,

@@ -17,9 +17,10 @@ impl ContinuityLineageSource for RuntimeBridgeRelationalSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         let admitted = admit_lineage_request(self, request)?;
-        let resolved = resolve_exact_lineage(self, admitted)?;
+        let resolved = resolve_exact_lineage(self, admitted, execution)?;
         project_lineage_authority(self, resolved)
     }
 }
@@ -81,6 +82,7 @@ fn admit_lineage_request(
 fn resolve_exact_lineage(
     source: &RuntimeBridgeRelationalSource,
     admitted: AdmittedLineageRequest,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ResolvedLineageRequest, BridgeLineageSourceError> {
     let entity_label = format!(
         "entity:{}:{}:{}",
@@ -91,16 +93,16 @@ fn resolve_exact_lineage(
     let (resolution, visible_entities) = source.runtime.with_runtime(|runtime| {
         let observation = admitted.observation.observation();
         let resolution = runtime
-            .record_history_at_observation(observation, admitted.entity_id)
-            .map_err(foreign_lineage_observation)?
+            .record_history_at_observation(&execution, observation, admitted.entity_id)
+            .map_err(lineage_observation_denial)?
             .ok_or_else(|| {
                 lineage_error(format!(
                     "bridge continuity lineage adapter could not resolve record history for `{entity_label}`"
                 ))
             })?;
         let visible_entities = runtime
-            .visible_entities_for_lineages_at_observation(observation, &resolution.resolved)
-            .map_err(foreign_lineage_observation)?;
+            .visible_entities_for_lineages_at_observation(&execution, observation, &resolution.resolved)
+            .map_err(lineage_observation_denial)?;
         Ok((resolution, visible_entities))
     })?;
     Ok(ResolvedLineageRequest {
@@ -110,12 +112,11 @@ fn resolve_exact_lineage(
     })
 }
 
-fn foreign_lineage_observation(
-    denial: RelationalObservationReadDenial,
-) -> BridgeLineageSourceError {
-    lineage_error(format!(
-        "bridge continuity lineage adapter read a retained observation from another runtime: {denial:?}"
-    ))
+fn lineage_observation_denial(denial: RelationalObservationReadDenial) -> BridgeLineageSourceError {
+    BridgeLineageSourceError::new(
+        BridgeLineageSourceErrorKind::ObservationRead(denial),
+        format!("bridge continuity lineage read refused: {denial:?}"),
+    )
 }
 
 fn project_lineage_authority(

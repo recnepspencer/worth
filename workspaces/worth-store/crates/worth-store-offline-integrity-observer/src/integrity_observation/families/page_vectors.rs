@@ -1,13 +1,9 @@
-#![allow(dead_code)]
-#[path = "../../../tests/phase_4_literal_vectors/oracle.rs"]
-mod oracle;
-#[path = "../../../tests/phase_4_literal_vectors/page_frames.rs"]
-mod page_frames;
 use super::page_frame::read_page_frame;
 use crate::integrity_observation::{
     child_expectation::{ChildExpectation, ChildScope},
     OfflineIntegrityObservationCounters, OfflineIntegrityOutcome,
 };
+use crate::literal_vectors::page_frames;
 use worth_foundational::PhysicalArtifactFamily;
 
 #[test]

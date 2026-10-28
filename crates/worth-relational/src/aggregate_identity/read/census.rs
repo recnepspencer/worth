@@ -88,17 +88,17 @@ fn visible_members(
             work.checkpoint(1)?;
             work.visit_entity_slots(state, partition, |slot, work| {
                 work.checkpoint(1)?;
-                if let Some(metadata) = state.entity_metadata_for_slot(partition, slot) {
-                    if metadata.kind_id == kind {
-                        work.retain(extent::vector_entry::<NativeMemberKey>())?;
-                        if members
-                            .last()
-                            .is_some_and(|previous| previous.carrier() >= metadata.entity_id)
-                        {
-                            return work.invalid(funding::PlanDenial::InvalidComponentGraph);
-                        }
-                        members.push(NativeMemberKey::Entity(metadata.entity_id));
+                if let Some(metadata) = state.entity_metadata_for_slot(partition, slot)
+                    && metadata.kind_id == kind
+                {
+                    work.retain(extent::vector_entry::<NativeMemberKey>())?;
+                    if members
+                        .last()
+                        .is_some_and(|previous| previous.carrier() >= metadata.entity_id)
+                    {
+                        return work.invalid(funding::PlanDenial::InvalidComponentGraph);
                     }
+                    members.push(NativeMemberKey::Entity(metadata.entity_id));
                 }
                 Ok(())
             })?;

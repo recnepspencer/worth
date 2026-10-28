@@ -19,7 +19,7 @@ struct OrderingFixture {
 
 impl OrderingFixture {
     fn new(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
-        let runtime = persisted_runtime_with_index_field_aspects();
+        let runtime = durable_runtime_with_index_field_aspects();
         let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
         let alpha_one = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
         let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];
@@ -27,20 +27,23 @@ impl OrderingFixture {
         for child in [beta, alpha_two, alpha_one] {
             create_relation_outcome(execution, &runtime, parent, child, "owns");
         }
-        let index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "discard.owns.child-name".into(),
-            kind: DerivedIndexKind::RelatedEntityOrdering {
-                relation_kind: KindId(2),
-                parent_endpoint: RelatedEntityEndpoint::SourceParent,
-                child_kind: KindId(1),
-                ordering: vec![RelatedEntityOrderingField::new(
-                    aspect_field_locator(aspect_key("name"), field_key("name")),
-                    RelatedEntityOrderingDirection::Ascending,
-                )],
-            },
-            branch_scoped: true,
-        });
+        let index = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "discard.owns.child-name".into(),
+                kind: DerivedIndexKind::RelatedEntityOrdering {
+                    relation_kind: KindId(2),
+                    parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                    child_kind: KindId(1),
+                    ordering: vec![RelatedEntityOrderingField::new(
+                        aspect_field_locator(aspect_key("name"), field_key("name")),
+                        RelatedEntityOrderingDirection::Ascending,
+                    )],
+                },
+                branch_scoped: true,
+            })
+            .expect("index fixture has identity capacity");
         let mut expected = vec![alpha_one, alpha_two];
         expected.sort();
         expected.push(beta);
@@ -117,7 +120,12 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     assert!(old.failed_indexes.is_empty());
     let retained = runtime
         .index_access()
-        .published_generation_for_observation(fixture.index.index_id, &historical.observation())
+        .read_published_generation_for_observation(
+            execution,
+            fixture.index.index_id,
+            &historical.observation(),
+        )
+        .unwrap()
         .unwrap();
     let weak = Arc::downgrade(&retained);
     let sibling = create_branch_from_main(runtime, "discard-sibling");
@@ -141,14 +149,17 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
             .index_authority()
             .build_for_basis(execution, fixture.request(&current), &current);
     assert!(built.failed_indexes.is_empty());
-    let unrelated = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "discard.unrelated.name".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let unrelated = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "discard.unrelated.name".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let mut unrelated_request = fixture.request(&current);
     unrelated_request.index_ids = vec![unrelated.index_id];
     let unrelated_build =
@@ -157,7 +168,8 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
             .build_for_basis(execution, unrelated_request, &current);
     let untouched = runtime
         .index_access()
-        .latest_generation(unrelated.index_id, &BranchId("main".into()))
+        .read_latest_generation(execution, unrelated.index_id, &BranchId("main".into()))
+        .unwrap()
         .unwrap();
     assert_eq!(unrelated_build.generations.len(), 1);
     let selected_count = runtime
@@ -193,13 +205,19 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     for basis in [&historical, &sibling_basis, &current] {
         assert!(runtime
             .index_access()
-            .published_generation_for_observation(fixture.index.index_id, &basis.observation())
+            .read_published_generation_for_observation(
+                execution,
+                fixture.index.index_id,
+                &basis.observation()
+            )
+            .unwrap()
             .is_none());
     }
     for branch in [BranchId("main".into()), sibling] {
         assert!(runtime
             .index_access()
-            .latest_generation(fixture.index.index_id, &branch)
+            .read_latest_generation(execution, fixture.index.index_id, &branch)
+            .unwrap()
             .is_none());
     }
     fixture.assert_cold(execution, &historical_snapshot);
@@ -213,7 +231,8 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
         &untouched,
         &runtime
             .index_access()
-            .latest_generation(unrelated.index_id, &BranchId("main".into()))
+            .read_latest_generation(execution, unrelated.index_id, &BranchId("main".into()))
+            .unwrap()
             .unwrap()
     ));
 

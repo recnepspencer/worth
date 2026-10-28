@@ -263,7 +263,7 @@ impl CustomInvariantWorkMeter {
     }
 
     pub(crate) fn consumed(&self) -> NonZeroU64 {
-        NonZeroU64::new(self.charged_work().max(1)).unwrap()
+        NonZeroU64::new(self.charged_work().max(1)).unwrap(/* Proof: max(1) guarantees a positive u64 before NonZeroU64 construction. */ )
     }
     pub(crate) fn exceeded(&self) -> bool {
         self.exhausted.load(Ordering::Relaxed)

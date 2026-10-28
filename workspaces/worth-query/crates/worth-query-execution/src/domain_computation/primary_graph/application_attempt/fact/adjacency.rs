@@ -187,7 +187,7 @@ fn observe_with_posture(
         .map_err(|stop| AdjacencyObservationDenial::Execution(stop.into()))?;
     let pin = runtime.read_truth().pin_read_capability(snapshot, &[], execution)
         .map_err(|refusal| match refusal {
-            worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop) => AdjacencyObservationDenial::Execution(stop.into()),
+            worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(cause) => AdjacencyObservationDenial::Execution(cause),
             worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::SnapshotUnavailable
             | worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::IndexNotInstalled(_) => AdjacencyObservationDenial::SnapshotUnavailable,
         })?;

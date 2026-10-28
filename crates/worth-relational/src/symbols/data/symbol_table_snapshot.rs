@@ -42,9 +42,9 @@ impl SymbolTableSnapshot {
 
         while let (Some(current), Some(next)) = (existing.peek(), incoming.peek()) {
             if current.1 <= next.1 {
-                merged.push(existing.next().expect("peeked existing entry"));
+                merged.push(existing.next().expect(/* Proof: The preceding Peekable::peek returned Some for this exact iterator and no intervening next occurs before consuming it. */ "peeked existing entry"));
             } else {
-                merged.push(incoming.next().expect("peeked incoming entry"));
+                merged.push(incoming.next().expect(/* Proof: The preceding Peekable::peek returned Some for this exact iterator and no intervening next occurs before consuming it. */ "peeked incoming entry"));
             }
         }
 

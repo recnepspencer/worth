@@ -70,6 +70,7 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
         .inner
         .root
         .partition_state(PartitionId::main())
+        .expect("fixture root has admitted Full custody")
         .unwrap();
     assert_eq!(
         before_partition
@@ -178,6 +179,7 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
         .inner
         .root
         .partition_state(PartitionId::main())
+        .expect("fixture root has admitted Full custody")
         .unwrap();
     assert_eq!(
         after_partition.entity_arena.occupied_slots(),

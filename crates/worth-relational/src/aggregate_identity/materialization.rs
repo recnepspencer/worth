@@ -21,7 +21,16 @@ impl PreparedConsequences {
         budget: Option<&crate::execution::RequestWorkBudget>,
         selected: &SelectedRelationalBranchState,
         working: &mut WorkingState,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
     ) -> Result<(), TransactionCommitError> {
+        selected
+            .state()
+            .root()
+            .demand_regions_head(execution, symbols, self.demands.partitions.iter().copied())
+            .map_err(|failure| {
+                crate::authority::commit::preparation::storage_read_denial(basis, failure)
+            })?;
         let (materialized, retention) = super::funding::run(execution, budget, |work| {
             let mut admitted = 0u64;
             let copied = working.materialize_consequence_records(

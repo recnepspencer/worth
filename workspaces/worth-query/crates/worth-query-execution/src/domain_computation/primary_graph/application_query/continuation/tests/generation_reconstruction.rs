@@ -59,7 +59,12 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
             graph.with_runtime(request_execution, |runtime| {
                 let original = runtime
                     .index_access()
-                    .published_generation_for_observation(index_id, &basis.observation())
+                    .read_published_generation_for_observation(
+                        request_execution,
+                        index_id,
+                        &basis.observation(),
+                    )
+                    .unwrap()
                     .unwrap();
                 assert_eq!(original.generation_id, old_cursor.index_generation);
                 let definitions = runtime
@@ -130,7 +135,12 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
     let generation = graph.with_runtime(request_execution, |runtime| {
         runtime
             .index_access()
-            .published_generation_for_observation(index_id, &basis.observation())
+            .read_published_generation_for_observation(
+                request_execution,
+                index_id,
+                &basis.observation(),
+            )
+            .unwrap()
             .expect("ordinary readmission rebuilt the discarded ordered generation")
     });
     assert_ne!(generation.generation_id, original.generation_id);
@@ -153,7 +163,12 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
         assert_eq!(
             runtime
                 .index_access()
-                .published_generation_for_observation(index_id, &basis.observation())
+                .read_published_generation_for_observation(
+                    request_execution,
+                    index_id,
+                    &basis.observation()
+                )
+                .unwrap()
                 .unwrap()
                 .generation_id,
             generation.generation_id,

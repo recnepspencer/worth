@@ -23,8 +23,8 @@ fn phase5_forked_topology_write_copies_only_touched_regions() {
 
     let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &baseline);
-    fork_from_main(&world.runtime, "rewire");
-    fork_from_main(&world.runtime, "maintenance");
+    fork_from_main(execution, &world.runtime, "rewire");
+    fork_from_main(execution, &world.runtime, "maintenance");
 
     let main = world.runtime.main_branch_identity();
     let rewire = branch_identity(&world.runtime, "rewire");
@@ -207,12 +207,16 @@ fn phase5_forked_topology_write_copies_only_touched_regions() {
     }
 }
 
-fn fork_from_main(runtime: &RelationalRuntime, branch: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains a fork source");
     runtime
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .expect("fork retains the immutable ancestor root");
 }
 

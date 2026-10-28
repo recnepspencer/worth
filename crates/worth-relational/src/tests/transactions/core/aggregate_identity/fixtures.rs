@@ -71,16 +71,13 @@ pub(super) fn runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry())
         .build()
+        .expect("valid native runtime configuration")
 }
 pub(super) fn persisted() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path: unique_test_store_path("aggregate-identity"),
-            segment_commit_capacity: 8,
-        })
-        .build()
+        .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration")
 }
 pub(super) fn created(key: usize) -> EntityReference {
     EntityReference::Created(CreatedEntityRef {

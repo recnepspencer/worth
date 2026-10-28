@@ -310,7 +310,10 @@ pub(super) fn rebuild_pseudorealistic_entity_order(
         .iter()
         .map(|(start, end, layout)| ((layout.section, layout.subsystem), (*start, *end)))
         .collect::<BTreeMap<_, _>>();
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)

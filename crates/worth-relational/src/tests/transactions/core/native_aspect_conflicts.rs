@@ -20,7 +20,10 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
             runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
         let entity = create_entity(execution, &runtime, "before");
         let contract = entity_name_contract(&runtime);
-        let before_snapshot = runtime.visibility_authority().snapshot();
+        let before_snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let before_patch = runtime.publication().latest_bundle().unwrap().patch.clone();
         let first = entity_patch_intent(entity, whole_set(&contract, "first"));
         let second_patch = if clear_second {
@@ -59,7 +62,10 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
                 ..
             }
         ));
-        let after_snapshot = runtime.visibility_authority().snapshot();
+        let after_snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let after_patch = runtime.publication().latest_bundle().unwrap().patch.clone();
         assert_eq!(after_snapshot.version_id, before_snapshot.version_id);
         assert_eq!(after_patch, before_patch);
@@ -122,9 +128,11 @@ fn native_create_merge_is_stable_across_batch_permutations() {
         )
         .expect("test staging stays within configured resource budgets");
     let intents_a = transaction_a
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime_a,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .merged_intents
@@ -156,9 +164,11 @@ fn native_create_merge_is_stable_across_batch_permutations() {
         )
         .expect("test staging stays within configured resource budgets");
     let intents_b = transaction_b
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime_b,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .merged_intents

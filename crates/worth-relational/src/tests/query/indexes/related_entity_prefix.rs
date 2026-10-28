@@ -42,7 +42,10 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
         },
     );
     assert!(built.failed_indexes.is_empty());
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let pin = runtime
         .read_truth()
         .pin_read_capability(&snapshot, &[index.index_id], &setup)

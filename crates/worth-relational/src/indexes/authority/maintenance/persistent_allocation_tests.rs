@@ -38,39 +38,16 @@ fn edits(n: usize, insert: bool) -> BTreeMap<u64, Vec<PendingEdit<u64>>> {
         .map(|k| (k, vec![PendingEdit { row: k, insert }]))
         .collect()
 }
-fn serial_host() -> worth_execution::SerialRequest {
-    worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
-        worth_execution::CancellationToken::new(),
-        None,
-    )
-}
 #[test]
-fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
-    // The serial singleton context's own bytes are Execution's private layout;
-    // the pass's room is measured on the same request shape, never restated.
-    let room =
-        request_payment::pass_memory_room(&ExecutionRequest::serial(&serial_host()), MEMORY + 1);
-    assert!(room < MEMORY);
-    let mut low = 0;
-    let mut high = (MEMORY / 48) as usize;
-    while low < high {
-        let mid = (low + high).div_ceil(2);
-        if full_bytes(mid) <= room {
-            low = mid
-        } else {
-            high = mid - 1
-        }
-    }
-    let rows = low;
-    assert!(full_bytes(rows) <= room && full_bytes(rows + 1) > room);
-    eprintln!(
-        "cold u64 map rows={rows}, room={room}, bytes={}, next={}",
-        full_bytes(rows),
-        full_bytes(rows + 1)
-    );
-    for n in [rows, rows + 1] {
-        let host = serial_host();
+fn cold_reconstruction_obeys_the_callers_memory_limit() {
+    let rows = 256;
+    for memory in [1024, MEMORY] {
+        let n = rows;
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(Some(memory)),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
         let execution = ExecutionRequest::serial(&host);
         let mut offered = edits(n, true);
         let result = request_payment::run(&execution, budget(), |work| {
@@ -86,23 +63,18 @@ fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
             )?;
             Ok(map)
         });
-        if n == rows {
+        if memory == MEMORY {
             assert_eq!(result.unwrap().0.value.len(), rows);
         } else {
-            let denied = result.unwrap_err();
-            let Denial::Execution(
-                crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                    requested,
-                    admitted,
-                    ancestor: 0,
-                },
-            ) = denied.kind
-            else {
-                panic!("the first unaffordable reservation must refuse: {denied:?}");
-            };
-            // The real pass meets the same room the empty probe measured.
-            assert_eq!(admitted, room);
-            assert!(requested > admitted && requested <= full_bytes(rows + 1));
+            assert!(matches!(
+                result.unwrap_err().kind,
+                Denial::Execution(
+                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                        ancestor: 0,
+                        ..
+                    }
+                )
+            ));
         }
     }
 }

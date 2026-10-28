@@ -14,7 +14,8 @@ fn unchecked_automatic_admission_retains_precedence_over_a_real_native_cycle() {
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let fixture = DagFixture::from_runtime(runtime, 2);
     let original = crate::test_execution_policy::serial_request();
     let seed = fixture

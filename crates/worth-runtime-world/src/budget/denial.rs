@@ -23,18 +23,12 @@ pub enum RuntimeWorldBudgetDenial {
         resource: RuntimeWorldBudgetResource,
         value: u64,
     },
-    CapacityExhausted {
-        resource: RuntimeWorldBudgetResource,
-        limit: usize,
-    },
 }
 
 impl RuntimeWorldBudgetDenial {
     pub const fn resource(self) -> RuntimeWorldBudgetResource {
         match self {
-            Self::ZeroLimit { resource }
-            | Self::SizeOverflow { resource, .. }
-            | Self::CapacityExhausted { resource, .. } => resource,
+            Self::ZeroLimit { resource } | Self::SizeOverflow { resource, .. } => resource,
         }
     }
 }

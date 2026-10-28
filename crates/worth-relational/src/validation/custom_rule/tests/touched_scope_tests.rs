@@ -350,12 +350,14 @@ fn proposed_relation_scope(
             extra.endpoints = Some(crate::storage::substrate::RelationEndpoints { source, target });
             partition
                 .relation_arena
-                .apply_extra_update(relation_slot, extra, proposed_version);
+                .apply_extra_update(relation_slot, extra, proposed_version)
+                .expect("fixture slot is materialized");
         }
         ProposedRelationState::Deleted => proposed
             .get_partition_mut(partition_id)
             .relation_arena
-            .retire(relation_slot, proposed_version),
+            .retire(relation_slot, proposed_version)
+            .expect("fixture slot is materialized"),
     }
     proposed.mark_relation_slot_touched(partition_id, relation_slot);
     let overlay = crate::storage::overlay::OverlayStateView::new(&committed, &proposed);

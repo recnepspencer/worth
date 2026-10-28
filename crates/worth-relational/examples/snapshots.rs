@@ -8,7 +8,8 @@ fn main() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let (created, entity_id) = support::create_entity(request_execution, &runtime, "first");
     let runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();

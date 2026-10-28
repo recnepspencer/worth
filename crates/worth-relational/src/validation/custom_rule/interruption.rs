@@ -13,6 +13,6 @@ pub(super) fn check_live(
         worth_execution::MapKernelStop::DeadlineElapsed => {
             CustomInvariantInterruption::DeadlineElapsed
         }
-        _ => unreachable!("the execution interruption observer never observes resource accounting"),
+        _ => unreachable!(/* Proof: This private observer adapts interruption checkpoints only; resource-accounting stops are returned by the separate work meter and never sent to it. */ "the execution interruption observer never observes resource accounting"),
     })
 }

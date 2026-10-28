@@ -1,6 +1,7 @@
 //! Native read causes retained at the application attempt boundary.
 use super::{
-    AttemptDenialCause, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    AttemptDenialCause, AttemptDenialMeaning, WorthQueryApplicationAttemptDenial,
+    WorthQueryApplicationAttemptDenialKind,
 };
 impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause>
     for WorthQueryApplicationAttemptDenial
@@ -10,23 +11,38 @@ impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause
     }
 }
 impl WorthQueryApplicationAttemptDenial {
+    pub(in crate::domain_computation::primary_graph) fn native_storage_unavailable(
+        cause: worth_relational::facade::storage::RelationalStorageUnavailable,
+        subject: &str,
+    ) -> Self {
+        Self {
+            subject: subject.to_owned(),
+            meaning: AttemptDenialMeaning::NativeStorage(cause),
+        }
+    }
+
+    pub fn storage_unavailable(
+        &self,
+    ) -> Option<&worth_relational::facade::storage::RelationalStorageUnavailable> {
+        match &self.meaning {
+            AttemptDenialMeaning::NativeStorage(cause)
+            | AttemptDenialMeaning::NativeExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause::StorageUnavailable(cause))
+            | AttemptDenialMeaning::Authored {
+                kind: WorthQueryApplicationAttemptDenialKind::ExecutionRequest(
+                    crate::domain_computation::WorthQueryProviderSessionDenialKind::StorageUnavailable(cause),
+                ), ..
+            } => Some(cause),
+            _ => None,
+        }
+    }
+
     pub(in crate::domain_computation) fn relational_read_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         subject: &str,
     ) -> Self {
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-        let kind =
-            match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(
-                cause, None,
-            ) {
-                Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),
-                Err(Control::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
-                Err(Control::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
-            };
         Self {
-            kind,
             subject: subject.to_owned(),
-            cause: AttemptDenialCause::RelationalExecution(cause),
+            meaning: AttemptDenialMeaning::NativeExecution(cause),
         }
     }
 
@@ -78,10 +94,21 @@ impl WorthQueryApplicationAttemptDenial {
                 Err(Control::Cancelled) => Kind::Cancelled,
                 Err(Control::TimedOut) => Kind::DeadlineExceeded,
             };
-        Self {
+        Self::from_cause(
             kind,
-            subject: subject.to_owned(),
-            cause: AttemptDenialCause::NativeQueryRead(Box::new(stop)),
-        }
+            subject.to_owned(),
+            AttemptDenialCause::NativeQueryRead(Box::new(stop)),
+        )
+    }
+}
+
+pub(super) fn relational_read_kind(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+) -> WorthQueryApplicationAttemptDenialKind {
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+        Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),
+        Err(Control::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
+        Err(Control::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
     }
 }

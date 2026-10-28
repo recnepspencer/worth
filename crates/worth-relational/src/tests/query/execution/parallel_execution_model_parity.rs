@@ -12,6 +12,7 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
                 CascadeDeletePolicy::CascadeDeleteRelations,
             ))
             .build()
+            .expect("valid native runtime configuration")
     }
 
     fn build_fixture(
@@ -42,7 +43,10 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
                 PartitionId(43 + index as u32),
             );
         }
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let context = runtime
             .read_truth()
             .query_plan_context(&snapshot)
@@ -128,6 +132,7 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
                 CascadeDeletePolicy::CascadeDeleteRelations,
             ))
             .build()
+            .expect("valid native runtime configuration")
     }
 
     fn build_fixture(
@@ -156,7 +161,10 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
                 PartitionId(41 + index as u32),
             );
         }
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let context = runtime
             .read_truth()
             .query_plan_context(&snapshot)
@@ -234,6 +242,7 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
                 CascadeDeletePolicy::CascadeDeleteRelations,
             ))
             .build()
+            .expect("valid native runtime configuration")
     }
 
     fn build_fixture(
@@ -268,7 +277,10 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
             "shared-tail",
             PartitionId(31),
         );
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let context = runtime
             .read_truth()
             .query_plan_context(&snapshot)

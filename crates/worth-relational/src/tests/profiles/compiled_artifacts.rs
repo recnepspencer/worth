@@ -49,13 +49,15 @@ fn chip_profile_preserves_relation_traversal_with_compressed_adjacency_backend()
     assert_eq!(
         runtime
             .storage_access()
-            .outgoing_relations_for_entity(source, version_id),
+            .outgoing_relations_for_entity(execution, source, version_id)
+            .expect("funded adjacency read succeeds"),
         vec![relation_a, relation_b]
     );
     assert_eq!(
         runtime
             .storage_access()
-            .incoming_relations_for_entity(target_b, version_id),
+            .incoming_relations_for_entity(execution, target_b, version_id)
+            .expect("funded adjacency read succeeds"),
         vec![relation_b]
     );
 }
@@ -75,6 +77,7 @@ fn chip_profile_compiled_artifacts_are_derived_from_committed_truth() {
     let artifact = runtime
         .compiled_artifacts_authority()
         .compile_execution_artifact(
+            execution,
             commit.commit_id,
             vec![PartitionId(7), PartitionId(11), PartitionId(29)],
         )
@@ -100,7 +103,11 @@ fn compiled_artifact_rejects_stale_topology_after_later_commit() {
     let original = create_entity_outcome(execution, &runtime, "seed");
     let artifact = runtime
         .compiled_artifacts_authority()
-        .compile_execution_artifact(original.commit.commit_id, vec![PartitionId::main()])
+        .compile_execution_artifact(
+            execution,
+            original.commit.commit_id,
+            vec![PartitionId::main()],
+        )
         .unwrap();
     let _later = create_entity_outcome(execution, &runtime, "later");
 
@@ -151,6 +158,7 @@ fn chip_profile_declared_aspect_fanout_preserves_endpoint_history_for_netlist_li
     let compiled = runtime
         .compiled_artifacts_authority()
         .compile_execution_artifact(
+            execution,
             live_commit_id,
             vec![
                 PartitionId(7),
@@ -165,7 +173,8 @@ fn chip_profile_declared_aspect_fanout_preserves_endpoint_history_for_netlist_li
     assert_eq!(
         runtime
             .storage_access()
-            .outgoing_relations_for_entity(source, live_version),
+            .outgoing_relations_for_entity(execution, source, live_version)
+            .expect("funded adjacency read succeeds"),
         relations
     );
     assert_eq!(
@@ -176,11 +185,10 @@ fn chip_profile_declared_aspect_fanout_preserves_endpoint_history_for_netlist_li
     );
     assert_eq!(deleted.changed_records.len(), 4);
     for relation in relations {
-        let history = runtime.history().relation_aspect_history(
-            &BranchId("main".to_string()),
-            relation,
-            None,
-        );
+        let history = runtime
+            .history()
+            .relation_aspect_history(execution, &BranchId("main".to_string()), relation, None)
+            .unwrap();
         assert_eq!(history.len(), 2);
         assert_direct_history_origin_invariants(&history, RecordRef::Relation(relation));
         assert_eq!(
@@ -222,6 +230,7 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
     let main_artifact = runtime
         .compiled_artifacts_authority()
         .compile_execution_artifact(
+            execution,
             main_commit.commit_id,
             vec![PartitionId(7), PartitionId(11), PartitionId(21)],
         )
@@ -229,6 +238,7 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -252,7 +262,8 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
     );
     let main_view = runtime
         .read_truth()
-        .project_historical_version(main_commit.version_id)
+        .try_project_historical_version(main_commit.version_id)
+        .unwrap()
         .all_authoritative_relation_records(execution)
         .expect("read request remains live");
     let feature_commit = runtime
@@ -262,12 +273,14 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
         .clone();
     let feature_view = runtime
         .read_truth()
-        .project_historical_version(feature_commit.version_id)
+        .try_project_historical_version(feature_commit.version_id)
+        .unwrap()
         .all_authoritative_relation_records(execution)
         .expect("read request remains live");
     let feature_artifact = runtime
         .compiled_artifacts_authority()
         .compile_execution_artifact(
+            execution,
             feature_commit.commit_id,
             vec![
                 PartitionId(7),
@@ -278,21 +291,23 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
             ],
         )
         .unwrap();
-    let main_history =
-        runtime
-            .history()
-            .relation_aspect_history(&BranchId("main".to_string()), relation, None);
-    let feature_history =
-        runtime
-            .history()
-            .relation_aspect_history(&BranchId("feature".to_string()), relation, None);
+    let main_history = runtime
+        .history()
+        .relation_aspect_history(execution, &BranchId("main".to_string()), relation, None)
+        .unwrap();
+    let feature_history = runtime
+        .history()
+        .relation_aspect_history(execution, &BranchId("feature".to_string()), relation, None)
+        .unwrap();
     let main_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         relation,
         None,
     );
     let feature_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("feature".to_string()),
         relation,

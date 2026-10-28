@@ -77,6 +77,9 @@ source currentness or publication authority.
   - `storage_setup(...)`
   - `durability_setup(...)`
   - `strategy_setup(...)`
+- `build_durable(medium)` to make every commit durable in a
+  `RelationalDurableMedium` before it is live; the medium moves into that one
+  runtime. `build()` builds a memory-only runtime
 
 ### Write truth
 
@@ -212,7 +215,8 @@ These are real public capabilities, but not the default first-contact story:
 - `runtime.retention()`
 - `runtime.index_access()`
 - `runtime.index_authority()`
-- `runtime.durability()`
+- `runtime.durability()` (including `recovery_plan_from_source(...)` for
+  reopening from a durable medium)
 - `runtime.durability_authority()`
 - `runtime.commit_strategies()`
 - `runtime.commit_strategies_authority()`

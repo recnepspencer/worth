@@ -193,8 +193,8 @@ fn checkpoint_tail_recovery_and_cert_replay_keep_component_memberships_and_split
     };
     assert_eq!(events(&actual), events(&expected));
     assert_eq!(
-        runtime.history().commit_envelopes_snapshot(),
-        recovered.history().commit_envelopes_snapshot()
+        demand_canonical_history_snapshot(execution, &runtime),
+        demand_canonical_history_snapshot(execution, &recovered)
     );
     let merged = commit(
         execution,

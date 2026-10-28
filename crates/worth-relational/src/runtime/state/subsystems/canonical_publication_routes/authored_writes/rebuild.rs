@@ -4,18 +4,10 @@ use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
 impl super::super::RelationalCanonicalPublicationRoutes {
     pub(crate) fn discard_authored_generation(&self, selected: CommitId) -> Result<(), Denial> {
-        let route = self
-            .by_commit
-            .get(&selected)
+        let owner = self
+            .authored_generation_owner(selected)
             .ok_or(Denial::CanonicalEvidenceUnavailable)?;
-        if !route.is_visible() {
-            return Err(Denial::CanonicalEvidenceUnavailable);
-        }
-        route
-            .authored_writes
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .take();
+        owner.replace_authored_write_generation(None);
         Ok(())
     }
 
@@ -38,7 +30,8 @@ impl super::super::RelationalCanonicalPublicationRoutes {
                     return Err(Denial::NotSelectedPrefix);
                 }
                 let envelope = self
-                    .by_commit(commit)
+                    .demand_envelope(&execution, commit)
+                    .map_err(|cause| Denial::Execution(cause.into()))?
                     .ok_or(Denial::CanonicalEvidenceUnavailable)?;
                 next = match envelope.commit.parents.as_slice() {
                     [] => None,
@@ -57,7 +50,8 @@ impl super::super::RelationalCanonicalPublicationRoutes {
                 crate::history::visit_authored_write_lookup(context, chain.len(), 8)?;
                 let (_, commit) = chain.entry_at(rank).expect("retained chain rank");
                 let envelope = self
-                    .by_commit(*commit)
+                    .demand_envelope(&execution, *commit)
+                    .map_err(|cause| Denial::Execution(cause.into()))?
                     .ok_or(Denial::CanonicalEvidenceUnavailable)?;
                 generation.extend(execution, context, &envelope)?;
             }
@@ -68,17 +62,10 @@ impl super::super::RelationalCanonicalPublicationRoutes {
         })?;
         // The original request's final handoff precedes the only mutation.
         // No control refusal after publication can hide an installed generation.
-        let route = self
-            .by_commit
-            .get(&selected)
+        let owner = self
+            .authored_generation_owner(selected)
             .ok_or(Denial::CanonicalEvidenceUnavailable)?;
-        if !route.is_visible() {
-            return Err(Denial::CanonicalEvidenceUnavailable);
-        }
-        *route
-            .authored_writes
-            .lock()
-            .unwrap_or_else(|p| p.into_inner()) = Some(generation);
+        owner.replace_authored_write_generation(Some(generation));
         Ok(count)
     }
 }

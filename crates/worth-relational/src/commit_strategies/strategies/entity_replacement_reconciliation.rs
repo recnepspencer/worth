@@ -279,7 +279,12 @@ impl CommitStrategyExecutor for EntityReplacementReconciliationStrategy {
         let existing = observation
             .visibility()
             .entity_whole_aspects(execution, input.entity_id, projected_aspect_keys)?
-            .expect("entity was visible during strategy basis read");
+            .ok_or_else(|| {
+                StrategyExecutorFailure::new(
+                    StrategyExecutorFailureClass::DomainRejection,
+                    "strategy target is unavailable in its selected basis",
+                )
+            })?;
         let unchanged = input.replacement_client_key.is_empty()
             && Self::authoritative_fields_match(&existing, &desired_aspect_fields);
 

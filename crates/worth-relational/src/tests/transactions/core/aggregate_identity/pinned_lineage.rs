@@ -222,7 +222,8 @@ fn definition_qualification_reads_legal_shared_source_and_split_history_does_not
     .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let born = commit(execution, &runtime, "main", birth(&[1, 2, 3, 0]));
     let ids = members(&born, 4);
     let split = commit(

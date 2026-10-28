@@ -166,4 +166,5 @@ pub use observed_source::retained_dependencies::{
     WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
 
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_execution::component_native_acquisitions_on_this_thread_for_test;

@@ -20,6 +20,7 @@ pub enum WorthQueryCorrectionRestoredSupportDenial {
     Storage(worth_execution::ExecutionOrderedMapDenial),
     Request(worth_execution::WorkCeilingDenial),
     Interrupted(worth_execution::MapKernelStop),
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     SizeOverflow,
 }
 

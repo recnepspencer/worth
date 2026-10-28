@@ -97,8 +97,8 @@ fn parity_denial_row(
     .unwrap()
     .publish()
     .unwrap();
-    let row = *matrix.rows_for_claim(profile, capability).next().unwrap();
-    row
+
+    *matrix.rows_for_claim(profile, capability).next().unwrap()
 }
 
 fn buffered_degraded_row(profile: BackendTargetProfile) -> BackendQualificationRow {
@@ -114,11 +114,11 @@ fn buffered_degraded_row(profile: BackendTargetProfile) -> BackendQualificationR
         .unwrap()
         .publish()
         .unwrap();
-    let row = *matrix
+
+    *matrix
         .rows_for_claim(profile, BackendCapabilityKind::BufferedFile)
         .next()
-        .unwrap();
-    row
+        .unwrap()
 }
 
 fn expected_parity_posture(capability: BackendCapabilityKind) -> PublishedQualificationPosture {

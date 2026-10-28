@@ -18,6 +18,7 @@ pub(in crate::domain_computation::primary_graph) enum CorrectionWitnessDenial {
     Request(WorkCeilingDenial),
     CopyAdmission(WorkCeilingDenial),
     Interrupted(MapKernelStop),
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     SizeOverflow,
     Unavailable,
     Basis(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),

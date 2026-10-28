@@ -29,7 +29,7 @@ struct PageCase {
     checksum: u32,
 }
 
-pub(super) fn verify() {
+pub(crate) fn verify() {
     assert_declaration(
         PAGE_FRAME_INTEGRITY_DECLARATION,
         PhysicalIntegrityArtifactFamily::PageFrame,
@@ -106,7 +106,7 @@ fn literal_page(case: &PageCase) -> Vec<u8> {
     bytes
 }
 
-pub(super) fn reader_vectors() -> Vec<([u8; 10], Vec<u8>)> {
+pub(crate) fn reader_vectors() -> Vec<([u8; 10], Vec<u8>)> {
     cases()
         .iter()
         .map(|case| (case.format_bytes, literal_page(case)))

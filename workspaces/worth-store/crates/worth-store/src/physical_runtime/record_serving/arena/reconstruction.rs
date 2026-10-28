@@ -17,15 +17,14 @@ pub(in crate::physical_runtime::record_serving) fn reconstruct(
     header: &DurableFreeSpaceManifestHeader,
 ) -> Result<SharedArenaAllocationOwner, RecordAppendError> {
     // Private, retained grant: this charge cannot simultaneously fund frame work.
-    // 4 KiB per entry conservatively covers node slack in three BTree indexes;
-    // it is reserved capacity, not an exact materialized-heap observation.
+    // It is reserved capacity, not an exact materialized-heap observation.
     let charge = residency
         .begin_foreground_write_operation(
             std::num::NonZeroU64::new(u64::from(placement.arena_index_bytes().get()))
                 .ok_or_else(pressure)?,
         )
         .map_err(|denial| RecordAppendError::Denied(RecordAppendDenial::from_residency(denial)))?;
-    let maximum_ranges = charge.bytes().saturating_sub(1024) as usize / 4096;
+    let maximum_ranges = arena_range_budget(charge.bytes());
     if maximum_ranges < 3 {
         return Err(pressure());
     }
@@ -72,4 +71,11 @@ fn damaged() -> RecordAppendError {
 
 fn pressure() -> RecordAppendError {
     RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure)
+}
+
+/// The free ranges plus in-flight reservations an arena index of
+/// `index_bytes` may hold. 4 KiB per entry conservatively covers node slack in
+/// three BTree indexes after a fixed 1 KiB of owner overhead.
+pub(in crate::physical_runtime) const fn arena_range_budget(index_bytes: u64) -> usize {
+    index_bytes.saturating_sub(1024) as usize / 4096
 }

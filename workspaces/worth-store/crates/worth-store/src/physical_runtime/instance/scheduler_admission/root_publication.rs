@@ -100,7 +100,7 @@ impl PhysicalSchedulerAdmissionOwner {
             ))
             .with_budget(super::write_budget(bytes.max(1), true, true));
         let reservation = self.reserve_selected_foreground(lane, &self.buffered_file, security)?;
-        Ok((reservation, self.buffered_file.clone()))
+        Ok((reservation, self.buffered_file))
     }
 
     fn reserve_root_lane(

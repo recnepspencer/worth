@@ -262,7 +262,7 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
     release_test_commit_snapshot(&runtime, &overwrite);
     let before = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let denied = publish(
         &runtime,
@@ -276,7 +276,7 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
     assert_eq!(
         runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .unwrap(),
         before
     );

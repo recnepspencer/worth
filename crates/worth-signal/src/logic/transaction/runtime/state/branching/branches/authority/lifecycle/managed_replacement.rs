@@ -33,15 +33,15 @@ where
             // retained lineage even when the retry itself was denied/deferred.
             retention.retry = schedule.report().scheduled_retry().cloned();
         }
-        if let SignalOwnedAsyncManagedReport::Retry(report) = &handoff.report {
-            if let Some(admitted) = report.admitted_retry() {
-                let retry = admitted.scheduled();
-                handoff.retention = Some(SignalOwnedAsyncRetentionObligation {
-                    previous: Some(handle),
-                    wakes: [previous_timeout, Some(retry.backoff_wake_id())],
-                    retry: Some(retry),
-                });
-            }
+        if let SignalOwnedAsyncManagedReport::Retry(report) = &handoff.report
+            && let Some(admitted) = report.admitted_retry()
+        {
+            let retry = admitted.scheduled();
+            handoff.retention = Some(SignalOwnedAsyncRetentionObligation {
+                previous: Some(handle),
+                wakes: [previous_timeout, Some(retry.backoff_wake_id())],
+                retry: Some(retry),
+            });
         }
         Ok(match queue {
             Some(queue) => self.bind_managed_replacement_queue(queue.queue_capacity(), handoff),
@@ -88,35 +88,34 @@ where
         let mut handoff = self
             .revalidate_owned_async_request_handoff(node, intent)
             .map_err(Denial::Service)?;
-        if process_local {
-            if let SignalOwnedAsyncManagedReport::Revalidation(report) = &handoff.report {
-                if let Some(admitted) = report.admitted_revalidation() {
-                    self.derived
-                        .resource
-                        .mark_process_local_request(admitted.admitted_request().handle());
-                    if let Some(coalesced) = admitted.coalescing() {
-                        self.derived
-                            .resource
-                            .mark_process_local_request(coalesced.coalesced_request().handle());
-                    }
-                    if let Some(current) = &mut handoff.in_flight {
-                        current.mark_process_local();
-                    }
-                }
+        if process_local
+            && let SignalOwnedAsyncManagedReport::Revalidation(report) = &handoff.report
+            && let Some(admitted) = report.admitted_revalidation()
+        {
+            self.derived
+                .resource
+                .mark_process_local_request(admitted.admitted_request().handle());
+            if let Some(coalesced) = admitted.coalescing() {
+                self.derived
+                    .resource
+                    .mark_process_local_request(coalesced.coalesced_request().handle());
+            }
+            if let Some(current) = &mut handoff.in_flight {
+                current.mark_process_local();
             }
         }
-        if let SignalOwnedAsyncManagedReport::Revalidation(report) = &handoff.report {
-            if let Some(admitted) = report.admitted_revalidation() {
-                let selected = admitted
-                    .coalescing()
-                    .map(|value| value.coalesced_request().handle())
-                    .or_else(|| (admitted.admitted_request().handle() != handle).then_some(handle));
-                handoff.retention = Some(SignalOwnedAsyncRetentionObligation {
-                    previous: selected,
-                    retry: None,
-                    wakes: [previous.timeout_wake_id(), None],
-                });
-            }
+        if let SignalOwnedAsyncManagedReport::Revalidation(report) = &handoff.report
+            && let Some(admitted) = report.admitted_revalidation()
+        {
+            let selected = admitted
+                .coalescing()
+                .map(|value| value.coalesced_request().handle())
+                .or_else(|| (admitted.admitted_request().handle() != handle).then_some(handle));
+            handoff.retention = Some(SignalOwnedAsyncRetentionObligation {
+                previous: selected,
+                retry: None,
+                wakes: [previous.timeout_wake_id(), None],
+            });
         }
         Ok(match queue {
             Some(queue) => self.bind_managed_replacement_queue(queue.queue_capacity(), handoff),

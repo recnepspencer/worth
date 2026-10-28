@@ -44,6 +44,8 @@ mod sibling_denial;
 mod source_token;
 #[path = "fork_creation/stale_head.rs"]
 mod stale_head;
+#[path = "fork_creation/unresolved.rs"]
+mod unresolved;
 
 fn fork_budgets(live_branches: u64, custody_records: u64) -> RuntimeWorldBudgets {
     RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
@@ -230,10 +232,17 @@ pub(super) fn create_forked_branch(
     source: &ProductBranchObservation,
     intent: ProductBranchCreationIntent,
 ) -> ProductBranchObservation {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let cancellation = RuntimeWorldCancellationSource::new();
     match RuntimeWorldBranchService::create_product_branch(
         owner,
-        RuntimeWorldBranchCreationRequest::new(source.clone(), intent, &cancellation.token()),
+        RuntimeWorldBranchCreationRequest::new(
+            execution,
+            source.clone(),
+            intent,
+            &cancellation.token(),
+        ),
     )
     .expect("owner-issued fork reaches a performed branch outcome")
     {

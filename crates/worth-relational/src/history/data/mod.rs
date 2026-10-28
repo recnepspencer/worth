@@ -1,4 +1,6 @@
 mod aspect_history;
+mod replay_retention_denial;
+pub use replay_retention_denial::RelationalReplayRetentionDenial;
 mod branch_creation;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
@@ -38,16 +40,19 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 #[cfg(test)]
 pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
 pub(crate) use canonical_commit_envelope::{
-    CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites, CanonicalCodecRetirementKind,
-    CanonicalRequiredOutputCodecRetirement, CanonicalRequiredOutputMaterialization,
-    CanonicalRequiredOutputMaterializationRecord, CanonicalRequiredOutputOrigin,
+    AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
+    CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
+};
+pub(crate) use canonical_commit_envelope::{
+    CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
+    CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
+    CanonicalRequiredOutputOrigin,
 };
 pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,
     RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision, RelationalReplayRecord,
     RelationalTouchAdjacencyDirection, ReplaySchemaVersion,
 };
-pub(crate) use canonical_commit_envelope::{CheckpointCanonicalEnvelopeRef, CommittedRecordChange};
 pub use canonical_record_allocation::RecordAllocationClass;
 pub(crate) use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};
 pub use committed_version::CommittedVersionSummary;

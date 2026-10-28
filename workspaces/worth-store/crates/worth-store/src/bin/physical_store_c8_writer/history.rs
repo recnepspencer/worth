@@ -1,6 +1,6 @@
 use super::{
-    checkpoint, initialization::InitializedWriter, operation_program::C8Operation,
-    CheckpointStageWithSeed,
+    checkpoint, initialization::InitializedWriter, markers, operation_program::C8Operation,
+    Invocation,
 };
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
@@ -11,30 +11,60 @@ use worth_store::physical_runtime::{
 
 pub(super) fn seed_initial_history(
     writer: &InitializedWriter,
-    stage: &CheckpointStageWithSeed,
+    invocation: &Invocation,
 ) -> Result<(), String> {
+    let stage = &invocation.stage;
+    let started = std::time::Instant::now();
     let scheduled_operations = writer
         .operation_program
         .scheduled_operations(stage.schedule_seed);
+    let mut completed = 0;
+    let total = scheduled_operations.len();
+    markers::write_setup_progress(&invocation.start_marker, "seeding", completed, total)?;
     let first_split = scheduled_operations.len() / 3;
     let second_split = scheduled_operations.len() * 2 / 3;
     seed_operations(
         &writer.serving,
         writer.placement,
         &scheduled_operations[..first_split],
+        invocation,
+        &mut completed,
+        total,
+    )?;
+    markers::write_setup_progress(
+        &invocation.start_marker,
+        "first checkpoint",
+        completed,
+        total,
     )?;
     checkpoint::complete(&writer.serving, stage.perturbation_seed)?;
     seed_operations(
         &writer.serving,
         writer.placement,
         &scheduled_operations[first_split..second_split],
+        invocation,
+        &mut completed,
+        total,
+    )?;
+    markers::write_setup_progress(
+        &invocation.start_marker,
+        "second checkpoint",
+        completed,
+        total,
     )?;
     checkpoint::complete(&writer.serving, stage.perturbation_seed ^ 0xC8_00_00_02)?;
     seed_operations(
         &writer.serving,
         writer.placement,
         &scheduled_operations[second_split..],
+        invocation,
+        &mut completed,
+        total,
     )?;
+    eprintln!(
+        "C8 writer seeded {total} operations and two checkpoints in {:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 
@@ -42,6 +72,9 @@ fn seed_operations(
     serving: &ServingPhysicalRuntime,
     placement: AdmittedRecordPlacementPolicy,
     operations: &[&C8Operation],
+    invocation: &Invocation,
+    completed_count: &mut usize,
+    total: usize,
 ) -> Result<(), String> {
     for operation in operations {
         let batch = RecordAppendBatch::try_from_iter([operation.payload().to_owned()])
@@ -91,6 +124,13 @@ fn seed_operations(
                 "ordinary C8 writer seed mutation completed with the wrong record count".to_owned(),
             );
         };
+        *completed_count += 1;
+        markers::write_setup_progress(
+            &invocation.start_marker,
+            "seeding",
+            *completed_count,
+            total,
+        )?;
         if record.allocation_epoch() == [0; 16] || record.ordinal() == 0 {
             return Err("ordinary C8 writer produced an invalid record identity".to_owned());
         }

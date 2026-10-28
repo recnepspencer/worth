@@ -22,8 +22,7 @@ pub(super) fn checkpoint_pin_scan_bound(
 ) -> Result<PinScanBound, SelectedBlobManifestPinDenial> {
     let scratch_bytes = usize::try_from(memory_budget / 4)
         .unwrap_or(usize::MAX)
-        .max(MINIMUM_MANIFEST_FRAME_BYTES)
-        .min(BLOB_CONTROL_FRAME_MAX_BYTES);
+        .clamp(MINIMUM_MANIFEST_FRAME_BYTES, BLOB_CONTROL_FRAME_MAX_BYTES);
     // The scan owns one page plus one row, and its payload or deferred
     // reader owns another page at the same time.
     let nested_read_headroom = page_bytes

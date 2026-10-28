@@ -16,41 +16,40 @@ pub(crate) fn validate_final_derived_laws(
     working: &WorkingState,
     effect: &MutationEffect,
     version: VersionId,
+    symbols: &crate::runtime::RuntimeSymbolTable,
+    basis: &crate::branch::AdmittedRelationalBranchBasis,
 ) -> Result<super::AggregateReadObservations, TransactionCommitError> {
     if authority.registry().derived_relations.is_empty()
         || authority.registry().aggregate_private_kinds.is_empty()
     {
         return Ok(super::AggregateReadObservations::default());
     }
-    funding::run_observed(execution, budget, |work| {
-        work.poll()?;
-        // Record application intentionally defers adjacency until publication.
-        // Match the genuine proposal view: detach, apply the ACTUAL accumulated
-        // deltas once, and leave publication's original working state untouched.
-        let mut coherent = working.clone();
-        for delta in &effect.adjacency.deltas {
-            work.checkpoint(1)?;
-            crate::authority::mutation::apply_adjacency_deltas(
-                &mut coherent,
-                std::slice::from_ref(delta),
-                version,
-            );
-        }
-        let before = InvariantStateView::new(selected, selected.version_id());
-        let overlay = OverlayStateView::new(selected, &coherent);
-        let after = InvariantStateView::new(&overlay, version);
-        validate(
-            authority.registry(),
-            &before,
-            &after,
-            &effect.adjacency.deltas,
-            &effect.publication.changed_records,
-            LawStage::FinalMetadata,
-            work,
-        )?;
-        Ok(LawsValidated)
-    })
-    .map(|(_, _, reads)| reads)
+    crate::storage::residency::probe_head(
+        execution,
+        &selected.with_symbol_admission(symbols),
+        |partitions| {
+            let selected =
+                crate::branch::SelectedRelationalBranchRead::in_round(selected, partitions);
+            funding::run_observed(execution, budget, |work| {
+                work.poll()?;
+                let before = InvariantStateView::new(&selected, selected.version_id());
+                let overlay = OverlayStateView::new(&selected, working);
+                let after = InvariantStateView::new(&overlay, version);
+                validate(
+                    authority.registry(),
+                    &before,
+                    &after,
+                    &effect.adjacency.deltas,
+                    &effect.publication.changed_records,
+                    LawStage::FinalMetadata,
+                    work,
+                )?;
+                Ok(LawsValidated)
+            })
+            .map(|(_, _, reads)| reads)
+        },
+    )
+    .map_err(|failure| crate::authority::commit::preparation::storage_read_denial(basis, failure))?
 }
 struct LawsValidated;
 impl worth_execution::ChargedBytes for LawsValidated {

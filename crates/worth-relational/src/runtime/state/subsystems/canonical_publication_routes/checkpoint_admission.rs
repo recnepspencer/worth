@@ -14,6 +14,8 @@ impl RelationalCanonicalPublicationRoutes {
     ) -> Option<R> {
         let _admission = self.enter_checkpoint_selection().ok()?;
         self.reject_unsettled().ok()?;
+        #[cfg(test)]
+        self.lifecycle_order.pause_exclusive();
         Some(reclaim())
     }
 
@@ -33,7 +35,9 @@ impl RelationalCanonicalPublicationRoutes {
     ) -> Result<PerformedCheckpointSelection, CanonicalCheckpointAdmissionError> {
         let _admission = self.enter_checkpoint_selection()?;
         self.reject_unsettled()?;
-        Ok(self.performed_stream.checkpoint_selection())
+        Ok(self
+            .performed_stream
+            .checkpoint_selection(self.branch_transition_head()))
     }
 
     pub(crate) fn validate_checkpoint_selection(
@@ -42,10 +46,27 @@ impl RelationalCanonicalPublicationRoutes {
     ) -> Result<(), CanonicalCheckpointAdmissionError> {
         let _admission = self.enter_checkpoint_selection()?;
         self.reject_unsettled()?;
-        self.performed_stream
-            .still_selects(selection)
-            .then_some(())
-            .ok_or(CanonicalCheckpointAdmissionError::PublicationInFlight)
+        (self.performed_stream.still_selects(selection)
+            && self.branch_transition_head() == selection.covered_transitions())
+        .then_some(())
+        .ok_or(CanonicalCheckpointAdmissionError::PublicationInFlight)
+    }
+
+    /// Exclude publication for a runtime fork's snapshot, as a checkpoint
+    /// selection does.
+    pub(crate) fn enter_fork(
+        &self,
+    ) -> Result<RwLockWriteGuard<'_, ()>, crate::runtime::RelationalRuntimeForkDenial> {
+        let guard = match self.lifecycle.try_write() {
+            Ok(guard) => Ok(guard),
+            Err(TryLockError::WouldBlock) => {
+                Err(crate::runtime::RelationalRuntimeForkDenial::PublicationInFlight)
+            }
+            Err(TryLockError::Poisoned(poisoned)) => Ok(poisoned.into_inner()),
+        }?;
+        #[cfg(test)]
+        self.lifecycle_order.pause_exclusive();
+        Ok(guard)
     }
 
     fn enter_checkpoint_selection(

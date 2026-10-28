@@ -9,7 +9,7 @@ impl PreparedRelationalBranchRootCapture {
     ) -> Self {
         // The capture has not escaped its preparation phase or been installed.
         Arc::get_mut(&mut self.root)
-            .expect("new root capture is exclusively owned")
+            .expect(/* Proof: This capture owns an Arc just created locally; no clone or reference has escaped before Arc::get_mut. */ "new root capture is exclusively owned")
             .output_publication_positions = positions;
         self
     }

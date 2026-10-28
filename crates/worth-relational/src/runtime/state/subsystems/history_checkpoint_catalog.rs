@@ -5,7 +5,6 @@ use worth_foundational::FoundationalBranchTarget;
 
 use crate::branch::{RelationalBranchCellCheckpoint, RelationalBranchRoot};
 use crate::history::data::CommitId;
-use crate::history::RelationalCommitCatalog;
 
 use super::HistorySubsystem;
 
@@ -60,8 +59,17 @@ impl HistorySubsystem {
             roots.entry(commit_id).or_insert(root);
         }
 
-        let mut catalog = RelationalCommitCatalog::default();
-        for envelope in self.recorded_commit_envelopes() {
+        let envelopes = self.recorded_commit_envelopes();
+        let replaced = envelopes
+            .iter()
+            .map(|envelope| envelope.commit.commit_id)
+            .collect();
+        let mut catalog = self
+            .ledger
+            .read()
+            .commit_catalog
+            .retained_entries_except(&replaced);
+        for envelope in envelopes {
             let commit_id = envelope.commit.commit_id;
             catalog
                 .append_checkpoint_recovery(

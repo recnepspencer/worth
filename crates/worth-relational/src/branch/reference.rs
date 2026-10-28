@@ -88,11 +88,8 @@ pub enum RelationalBranchCellDenial {
     RetentionOwnerUnavailable,
     RetentionRootSetTooLarge,
     RuntimeInstanceMismatch,
-    BranchIdentityMismatch,
-    CheckpointRuntimeMismatch,
     CheckpointObservationMismatch,
     CheckpointForkProvenanceMismatch,
-    CheckpointRootReadmissionRequired,
 }
 
 impl RelationalBranchReferenceCell {

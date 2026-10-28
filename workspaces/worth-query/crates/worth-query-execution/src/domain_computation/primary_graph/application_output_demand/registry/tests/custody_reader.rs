@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 use crate::equality_type_id::EqualityTypeId;
 
 #[test]
-fn registry_binding_reader_resolves_completed_custody_note() {
+fn registry_binding_reader_ignores_logically_absent_completed_custody() {
     let world = fixture::installed_authorization_world(true);
     let mut active = recoverable_commit_support::commit_on_world_with_output_demand_observation(
         &world,

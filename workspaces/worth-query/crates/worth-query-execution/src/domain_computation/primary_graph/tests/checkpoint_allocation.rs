@@ -1,12 +1,5 @@
 //! Actual Query capture, native-region custody and ordinary fresh readmission.
-use std::{num::NonZeroUsize, sync::OnceLock};
-use worth_execution::{
-    CancellationToken, ExecutionAllocationDenialKind, ExecutionAuthority, ExecutionAuthorityConfig,
-    LeaseDenial, LeaseRequest,
-};
-use worth_foundational::{
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-};
+use worth_execution::{ExecutionAllocationDenialKind, LeaseDenial};
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
 
 use super::{
@@ -16,22 +9,6 @@ use super::{
 use crate::domain_computation::primary_graph::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy as Policy,
 };
-
-static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
-const LIMIT: u64 = 8 * 1024 * 1024;
-
-/// A caller lease funds the whole host call it opens, including its work.
-fn request(bytes: u64) -> LeaseRequest {
-    LeaseRequest {
-        policy: ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(16_000_000)),
-        ),
-        deadline: None,
-        cancellation: CancellationToken::new(),
-    }
-}
 
 #[test]
 fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen() {
@@ -45,28 +22,19 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen(
 }
 
 fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_isolated() {
-    let authority = AUTHORITY.get_or_init(|| {
-        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-            max_workers: NonZeroUsize::new(1).unwrap(),
-            charged_memory_bytes: None,
-        })
-        .unwrap()
-    });
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
     let original_principal = world
         .application
         .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request(), &world, 1))
         .expect("fixture host admits the identity read");
-    let exhausted = authority.request_lease(request(LIMIT)).unwrap();
     let refusal = world
         .application
-        .with_funded_host_advancement(Policy::Execution(&exhausted), |phase| {
-            // The call is open; its lease has no room left for the frame.
-            let room = exhausted.available_memory_bytes().unwrap();
-            let _held = exhausted.reserve_memory(room).unwrap();
+        .with_host_advancement(|phase| {
+            let zero =
+                crate::test_request_policy::memory_child(phase.borrowed_request_for_test(), 0);
             world
                 .application
-                .capture_application_checkpoint(&phase, Policy::Execution(&exhausted))
+                .capture_application_checkpoint(&phase, Policy::Execution(&zero))
         })
         .expect("installed host call opens")
         .unwrap_err();
@@ -79,26 +47,26 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
             worth_execution::MemoryLimitDenial::Capacity {
                 requested: refusal.requested_payload_bytes().unwrap(),
                 admitted: 0,
-                // The capture charges the call's controlled child of the lease.
-                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 1 }
+                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
             }
         ))
     );
     assert!(refusal.requested_payload_bytes().unwrap() > 0);
-    assert_eq!(exhausted.charged_memory_bytes(), 0);
-    drop(exhausted);
 
-    let parent = authority.request_lease(request(LIMIT)).unwrap();
-    let lease = parent.child(request(LIMIT)).unwrap();
-    let (checkpoint, sections) = world
+    const LIMIT: u64 = 8 * 1024 * 1024;
+    let (checkpoint, sections, mut probe) = world
         .application
-        .with_funded_host_advancement(Policy::Execution(&lease), |phase| {
-            world
+        .with_host_advancement(|phase| {
+            let parent =
+                crate::test_request_policy::memory_child(phase.borrowed_request_for_test(), LIMIT);
+            let lease = parent.controlled_child(worth_execution::CancellationToken::new(), None);
+            let (checkpoint, sections) = world
                 .application
                 .capture_application_checkpoint_with_sections(&phase, Policy::Execution(&lease))
+                .unwrap();
+            (checkpoint, sections, parent.reserve_memory(0).unwrap())
         })
-        .expect("installed host call opens")
-        .unwrap();
+        .expect("installed host call opens");
     let charge = u64::try_from(checkpoint.bytes().len()).unwrap();
     assert_eq!(checkpoint.charged_payload_bytes(), Some(charge));
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
@@ -116,7 +84,7 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
     )
     .unwrap();
     // Both policies encode the SAME actual native payload and accepted rows.
-    // Policy changes physical custody, never the authenticated v10 grammar.
+    // Policy changes physical custody, never the authenticated current grammar.
     assert_eq!(system.bytes(), checkpoint.bytes());
     assert_eq!(system.charged_payload_bytes(), None);
     assert_eq!(system_sections.total_bytes(), sections.total_bytes());
@@ -129,7 +97,6 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
     assert_eq!(native.bytes().as_ptr(), pointer.wrapping_add(NATIVE_OFFSET));
     let native_clone = native.clone();
     assert_eq!(native_clone.bytes().as_ptr(), native.bytes().as_ptr());
-    drop(lease);
     drop(world);
 
     let restored = restored_world(checkpoint.clone()).unwrap();
@@ -150,13 +117,13 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
     // A native-region clone alone retains the ENTIRE enclosing frame charge,
     // after the originating lease, Query frame and original World have gone.
     assert!(matches!(
-        parent.reserve_memory(LIMIT - charge + 1),
+        probe.resize(LIMIT - charge + 1),
         Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: LIMIT - charge + 1, admitted: LIMIT - charge, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
     ));
-    assert_eq!(
-        parent.reserve_memory(LIMIT - charge).unwrap().bytes(),
-        LIMIT - charge
-    );
+    probe.resize(LIMIT - charge).unwrap();
+    assert_eq!(probe.bytes(), LIMIT - charge);
+    probe.resize(0).unwrap();
     drop(native_clone);
-    assert_eq!(parent.reserve_memory(LIMIT).unwrap().bytes(), LIMIT);
+    probe.resize(LIMIT).unwrap();
+    assert_eq!(probe.bytes(), LIMIT);
 }

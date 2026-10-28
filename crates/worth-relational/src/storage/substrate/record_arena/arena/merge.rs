@@ -41,15 +41,27 @@ impl<K: RecordKind> RecordArena<K> {
     fn move_slot_from_overlay(&mut self, overlay: &Self, slot: usize) -> u64 {
         let overlay_physical = overlay
             .physical_index(slot)
-            .expect("touched overlay slot must be materialized");
+            .expect(/* Proof: WorkingState::into_partition_commits emits this private journal only from the successful applied-mutation phase. Every touched slot has completed its native arena write; an errored mutation cannot issue PublicationArtifacts. Replay recomputes that journal through mutation rather than decoding one from media. */ "touched overlay slot must be materialized");
         let mut copied_bytes = 0_u64;
         let physical = if let Some(physical) = self.physical_index(slot) {
             // Pins belong to the live owner, not to the sparse transaction
             // overlay. A new generation may inherit no old obligations.
             if self.generations[physical] != overlay.generations[overlay_physical] {
-                debug_assert_eq!(self.branch_pins[physical], 0);
-                debug_assert_eq!(self.replay_pins[physical], 0);
-                debug_assert_eq!(self.snapshot_pins[physical], 0);
+                debug_assert_eq!(
+                    /* Proof: Native publication journals are emitted only after mutating an admitted overlay slot. Generation replacement requires the owner free-slot reservation, which excludes every pin class before reuse; the retained source and destination are exclusively borrowed here. */
+                    self.branch_pins[physical],
+                    0
+                );
+                debug_assert_eq!(
+                    /* Proof: Native publication journals are emitted only after mutating an admitted overlay slot. Generation replacement requires the owner free-slot reservation, which excludes every pin class before reuse; the retained source and destination are exclusively borrowed here. */
+                    self.replay_pins[physical],
+                    0
+                );
+                debug_assert_eq!(
+                    /* Proof: Native publication journals are emitted only after mutating an admitted overlay slot. Generation replacement requires the owner free-slot reservation, which excludes every pin class before reuse; the retained source and destination are exclusively borrowed here. */
+                    self.snapshot_pins[physical],
+                    0
+                );
                 self.branch_pins.set(physical, 0);
                 self.replay_pins.set(physical, 0);
                 self.snapshot_pins.set(physical, 0);
@@ -60,7 +72,7 @@ impl<K: RecordKind> RecordArena<K> {
             copied_bytes = self
                 .slots
                 .insert(slot as u64)
-                .expect("new publication slot must be unique");
+                .expect(/* Proof: The immediately preceding physical_index(slot) branch selected None from this same destination SlotDirectory under exclusive &mut self. SlotDirectory::insert rejects only an existing key; neither the directory nor slot changes between lookup and insert. */ "new publication slot must be unique");
             self.branch_pins.push(0);
             self.replay_pins.push(0);
             self.snapshot_pins.push(0);
@@ -82,6 +94,7 @@ impl<K: RecordKind> RecordArena<K> {
             lifecycle,
             kind_ids,
             metadata_history,
+            history_prefixes,
             created_at,
             retired_at,
             extra,

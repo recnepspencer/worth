@@ -2,14 +2,14 @@ use super::PerformanceAccess;
 
 impl PerformanceAccess<'_> {
     pub(crate) fn count_merge_history_ancestry_traversal(&self, nodes_visited: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_history_ancestry_traversals += 1;
             counters.merge_history_ancestry_nodes_visited += nodes_visited;
         });
     }
 
     pub(crate) fn count_merge_history_parent_comparisons(&self, comparisons: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_history_parent_comparisons += comparisons;
         });
     }
@@ -19,7 +19,7 @@ impl PerformanceAccess<'_> {
         nodes_visited: usize,
         parent_checks: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_history_replay_planning_nodes_visited += nodes_visited;
             counters.merge_history_replay_parent_checks += parent_checks;
         });
@@ -30,7 +30,7 @@ impl PerformanceAccess<'_> {
         nodes_visited: usize,
         parent_checks: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_history_durability_validation_nodes_visited += nodes_visited;
             counters.merge_history_durability_parent_checks += parent_checks;
         });
@@ -44,7 +44,7 @@ impl PerformanceAccess<'_> {
         target_records: usize,
         source_records: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_planning_requests += 1;
             counters.merge_planning_schema_kinds_snapshotted += schema_kinds;
             counters.merge_planning_target_commits_scoped += target_commits;
@@ -55,33 +55,33 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_merge_identity_discovery(&self, candidates: usize, declarations: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_identity_candidates_discovered += candidates;
             counters.merge_identity_effective_declarations += declarations;
         });
     }
 
     pub(crate) fn count_merge_identity_target_indexing(&self, scanned: usize, indexed: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_identity_target_records_scanned += scanned;
             counters.merge_identity_target_records_indexed += indexed;
         });
     }
 
     pub(crate) fn count_merge_conflict_classification(&self, records: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_conflict_records_classified += records;
         });
     }
 
     pub(crate) fn count_merge_causal_annotation(&self, records: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_causal_records_annotated += records;
         });
     }
 
     pub(crate) fn count_merge_policy_resolution(&self, records: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_policy_records_resolved += records;
         });
     }
@@ -97,7 +97,7 @@ impl PerformanceAccess<'_> {
         missing_visible_state: u64,
         invalid_shape: u64,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_policy_value_source_state_hits += source_state_hits as usize;
             counters.merge_policy_value_target_state_hits += target_state_hits as usize;
             counters.merge_policy_value_base_state_hits += base_state_hits as usize;
@@ -110,14 +110,14 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_merge_lowering(&self, lowered_records: usize, decision_log_width: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_lowered_records_emitted += lowered_records;
             counters.merge_decision_log_width += decision_log_width;
         });
     }
 
     pub(crate) fn count_merge_planning_elapsed(&self, elapsed_nanos: u128) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_planning_elapsed_nanos += elapsed_nanos;
         });
     }
@@ -129,7 +129,7 @@ impl PerformanceAccess<'_> {
         region_conflicts: usize,
         region_records_escalated: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_topology_relation_candidates_scoped += relation_candidates;
             counters.merge_topology_endpoint_incidences_scoped += endpoint_incidences;
             counters.merge_topology_region_conflicts_detected += region_conflicts;
@@ -138,37 +138,37 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_merge_execution_verification_request(&self) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_execution_verification_requests += 1;
         });
     }
 
     pub(crate) fn count_merge_execution_branch_head_checks(&self, checks: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_execution_branch_head_checks += checks;
         });
     }
 
     pub(crate) fn count_merge_execution_merge_base_checks(&self, checks: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_execution_merge_base_checks += checks;
         });
     }
 
     pub(crate) fn count_merge_execution_schema_snapshot_kinds(&self, kinds: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_execution_schema_kinds_snapshotted += kinds;
         });
     }
 
     pub(crate) fn count_merge_execution_compiled_plan_digest_checks(&self, checks: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_execution_compiled_plan_digest_checks += checks;
         });
     }
 
     pub(crate) fn count_merge_execution_attempt(&self) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_execution_attempts += 1;
         });
     }
@@ -178,7 +178,7 @@ impl PerformanceAccess<'_> {
         admitted_records: usize,
         emitted_mutation_intents: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.merge_execution_requests += 1;
             counters.merge_execution_records_admitted += admitted_records;
             counters.merge_execution_mutation_intents_emitted += emitted_mutation_intents;

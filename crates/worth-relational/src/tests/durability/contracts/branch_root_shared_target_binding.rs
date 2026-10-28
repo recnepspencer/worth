@@ -27,7 +27,7 @@ fn checkpoint_rejects_later_shared_root_cell_with_relabeled_schema_root() {
     assert_corrupt_recovery_leaves_no_recovered_state(
         execution,
         plan,
-        "durable branch-root image does not match target",
+        "durable branch-root directory does not match target",
     );
 }
 
@@ -52,7 +52,7 @@ fn checkpoint_rejects_later_shared_root_cell_with_relabeled_truth_root() {
     assert_corrupt_recovery_leaves_no_recovered_state(
         execution,
         plan,
-        "durable branch-root image does not match target",
+        "durable branch-root directory does not match target",
     );
 }
 
@@ -62,20 +62,16 @@ fn shared_root_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     label: &str,
 ) -> RecoveryPlan {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, label);
     create_branch_from_main(&runtime, "shared-root-sibling");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .expect("production checkpoint succeeds");
-    runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap()
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap()
 }
 
 /// The cell readmission reaches second, after the first cell has readmitted the

@@ -7,6 +7,8 @@ use worth_foundational::facade::ChargedBytes;
 #[charged_bytes(crate = "worth_foundational::facade")]
 struct Record {
     label: String,
+    // The boxed Vec is the subject: its box allocation is resident capacity.
+    #[allow(clippy::box_collection)]
     #[serde(skip)]
     // This adversarial shape must count the boxed Vec header and spare capacity.
     #[expect(

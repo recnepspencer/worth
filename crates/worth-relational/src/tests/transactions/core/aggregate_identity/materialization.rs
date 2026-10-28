@@ -67,6 +67,7 @@ fn generated_payload_suspends_and_restores_while_native_orbit_custody_stays_mate
             .root
             .partition_state(relation.partition_id)
             .unwrap()
+            .unwrap()
             .relation_arena
             .get(&relation)
             .unwrap();

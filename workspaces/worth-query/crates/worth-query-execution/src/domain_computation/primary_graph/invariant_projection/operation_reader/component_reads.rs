@@ -106,10 +106,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             .map_err(|stop| match stop {
                 worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(
                     stop,
-                ) => self.reader.walk_stop(
-                    worth_execution::WorkCeilingDenial::Stopped(stop).into(),
-                    subject,
-                ),
+                ) => self.reader.walk_stop(stop, subject),
                 _ => Denial::new(Kind::EndpointUnavailable, subject),
             })
     }

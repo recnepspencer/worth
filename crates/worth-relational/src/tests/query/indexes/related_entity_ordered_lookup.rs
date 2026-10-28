@@ -35,7 +35,10 @@ fn related_ordering_certification_rejects_a_missing_candidate() {
             };
             entries.get_mut(&parent).unwrap().remove(0);
         });
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = || {
         BoundedRelatedEntityOrderedLookupRequest::new(
             snapshot.clone(),
@@ -95,7 +98,10 @@ fn related_entity_pages_seek_exact_order_with_identity_ties() {
         },
     );
     assert!(build.failed_indexes.is_empty());
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let first = runtime
         .index_access()
@@ -172,7 +178,10 @@ fn related_entity_boundary_is_parent_and_generation_scoped() {
             index_ids: vec![index.index_id],
         },
     );
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let first = runtime
         .index_access()
         .execute_bounded_related_entity_ordered_lookup(
@@ -234,7 +243,10 @@ fn expected_generation_mismatch_denies_before_ordered_page_access() {
     );
     let actual = build.generations[0].generation_id;
     let foreign = crate::facade::indexes::DerivedIndexGenerationId(actual.0 + 1);
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let denial = runtime
         .index_access()
         .execute_bounded_related_entity_ordered_lookup(
@@ -302,18 +314,21 @@ fn related_ordering_rebuilds_retained_historical_child_values_after_update() {
 }
 
 pub(super) fn register_related_name_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
-    runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "relation.owns.child-name".to_string(),
-        kind: DerivedIndexKind::RelatedEntityOrdering {
-            relation_kind: KindId(2),
-            parent_endpoint: RelatedEntityEndpoint::SourceParent,
-            child_kind: KindId(1),
-            ordering: vec![RelatedEntityOrderingField::new(
-                aspect_field_locator(aspect_key("name"), field_key("name")),
-                RelatedEntityOrderingDirection::Ascending,
-            )],
-        },
-        branch_scoped: false,
-    })
+    runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "relation.owns.child-name".to_string(),
+            kind: DerivedIndexKind::RelatedEntityOrdering {
+                relation_kind: KindId(2),
+                parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                child_kind: KindId(1),
+                ordering: vec![RelatedEntityOrderingField::new(
+                    aspect_field_locator(aspect_key("name"), field_key("name")),
+                    RelatedEntityOrderingDirection::Ascending,
+                )],
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity")
 }

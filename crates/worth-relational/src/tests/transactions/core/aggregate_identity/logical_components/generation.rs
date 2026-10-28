@@ -8,7 +8,8 @@ fn isolated_carrier_birth_retirement_and_reused_generation_cover_both_cases() {
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::AiWorkflow)
         .schema_registry(registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let born = commit(
         execution,
         &runtime,
@@ -63,7 +64,7 @@ fn isolated_carrier_birth_retirement_and_reused_generation_cover_both_cases() {
         .visibility_authority()
         .release_snapshot(&removed.snapshot)
         .unwrap();
-    runtime.retention().run_pass();
+    runtime.retention().run_pass(execution).unwrap();
     let replacement = commit(
         execution,
         &runtime,

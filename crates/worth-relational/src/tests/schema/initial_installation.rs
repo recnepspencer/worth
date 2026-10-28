@@ -14,7 +14,9 @@ fn initial_schema_installation_moves_empty_exact_basis_without_revoking_retained
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = RelationalRuntimeApi::builder().build();
+    let mut runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let identity = runtime.main_branch_identity();
     let (old_descriptor, old_basis) = runtime.observe_branch(&identity).unwrap();
     let old_observation = old_basis.observation();
@@ -103,7 +105,8 @@ fn initial_schema_installation_retains_existing_kinds_and_rejects_duplicates() {
         .unwrap();
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(initial)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let identity = runtime.main_branch_identity();
     let before_duplicate = runtime.observe_branch(&identity).unwrap().0;
     let duplicate = runtime
@@ -172,7 +175,9 @@ fn held_preparation_port_observes_atomic_initial_schema_replacement() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = RelationalRuntimeApi::builder().build();
+    let mut runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let preparation = runtime.preparation_port();
     install_entity_kind(&mut runtime, KindId(7), "held-port-installed");
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -209,7 +214,8 @@ fn initial_schema_authority_closes_after_first_commit() {
                 .register_entity_kind(entity(KindId(1), "committed"))
                 .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(

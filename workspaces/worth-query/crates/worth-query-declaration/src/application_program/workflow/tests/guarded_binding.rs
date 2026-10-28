@@ -9,12 +9,32 @@ use crate::authentication::{
 #[derive(serde::Serialize)]
 pub(super) struct ProposalInput;
 
-crate::worth_query_entity!(pub(super) Principal for TestSchema);
-crate::worth_query_entity!(pub(super) ExternalMapping for TestSchema);
-crate::worth_query_aspect!(pub(super) PrincipalFacts for TestSchema, Principal;
-    identity = AspectIdentity(0x9500_0101), revision = AspectContractRevision(1),);
-crate::worth_query_aspect!(pub(super) MappingFacts for TestSchema, ExternalMapping;
-    identity = AspectIdentity(0x9500_0102), revision = AspectContractRevision(1),);
+// Authoring validates marker identities; this fixture never installs schema
+// references. Implement only the identity contracts it actually consumes.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct Principal;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct ExternalMapping;
+impl ApplicationEntityMarkerIdentity<TestSchema> for Principal {
+    const IDENTIFIER: &'static str = "Principal";
+}
+impl ApplicationEntityMarkerIdentity<TestSchema> for ExternalMapping {
+    const IDENTIFIER: &'static str = "ExternalMapping";
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct PrincipalFacts;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct MappingFacts;
+impl ApplicationAspectMarkerIdentity<TestSchema, Principal> for PrincipalFacts {
+    const IDENTIFIER: &'static str = "PrincipalFacts";
+    const ASPECT_IDENTITY: AspectIdentity = AspectIdentity(0x9500_0101);
+    const CONTRACT_REVISION: AspectContractRevision = AspectContractRevision(1);
+}
+impl ApplicationAspectMarkerIdentity<TestSchema, ExternalMapping> for MappingFacts {
+    const IDENTIFIER: &'static str = "MappingFacts";
+    const ASPECT_IDENTITY: AspectIdentity = AspectIdentity(0x9500_0102);
+    const CONTRACT_REVISION: AspectContractRevision = AspectContractRevision(1);
+}
 crate::worth_query_field!(pub(super) PrincipalId for TestSchema, Principal, PrincipalFacts:
     u64 => U64ApplicationValueBinding, read_only, equality);
 crate::worth_query_field!(pub(super) ExternalId for TestSchema, ExternalMapping, MappingFacts:
@@ -53,12 +73,18 @@ crate::worth_query_mutation_binding!(@binding
 
 #[test]
 fn guarded_binding_members_keep_their_declared_identities() {
-    assert_eq!(Principal::reference().name(), "Principal");
-    assert_eq!(ExternalMapping::reference().name(), "ExternalMapping");
-    let principal_facts = PrincipalFacts::reference();
-    assert_eq!(principal_facts.name(), "PrincipalFacts");
-    assert_eq!(principal_facts.identity(), AspectIdentity(0x9500_0101));
-    let mapping_facts = MappingFacts::reference();
-    assert_eq!(mapping_facts.name(), "MappingFacts");
-    assert_eq!(mapping_facts.identity(), AspectIdentity(0x9500_0102));
+    let principal = PrincipalId::reference();
+    let mapping = ExternalId::reference();
+    assert_eq!(principal.entity(), "Principal");
+    assert_eq!(mapping.entity(), "ExternalMapping");
+    assert_eq!(principal.aspect(), "PrincipalFacts");
+    assert_eq!(
+        <PrincipalFacts as ApplicationAspectMarkerIdentity<TestSchema, Principal>>::ASPECT_IDENTITY,
+        AspectIdentity(0x9500_0101)
+    );
+    assert_eq!(mapping.aspect(), "MappingFacts");
+    assert_eq!(
+        <MappingFacts as ApplicationAspectMarkerIdentity<TestSchema, ExternalMapping>>::ASPECT_IDENTITY,
+        AspectIdentity(0x9500_0102)
+    );
 }

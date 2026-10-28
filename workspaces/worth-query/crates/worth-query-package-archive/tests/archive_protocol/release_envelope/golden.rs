@@ -8,6 +8,7 @@ const RECORD_TEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v
 const RECORD_TWELVE_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v12.hex");
 const RECORD_THIRTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v13.hex");
 const RECORD_FOURTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v14.hex");
+const RECORD_FIFTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v15.hex");
 const RECORD_SIXTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v16.hex");
 const RECORD_SEVENTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v17.hex");
 const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v18.hex");
@@ -21,6 +22,7 @@ pub(super) fn assert_current_envelope_and_unsupported_records() {
         (12_u16, RECORD_TWELVE_ENVELOPE_HEX),
         (13_u16, RECORD_THIRTEEN_ENVELOPE_HEX),
         (14_u16, RECORD_FOURTEEN_ENVELOPE_HEX),
+        (15_u16, RECORD_FIFTEEN_ENVELOPE_HEX),
         (16_u16, RECORD_SIXTEEN_ENVELOPE_HEX),
         (17_u16, RECORD_SEVENTEEN_ENVELOPE_HEX),
     ] {

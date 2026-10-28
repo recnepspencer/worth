@@ -143,8 +143,9 @@ fn check(case: usize) {
                         .unwrap()
                 })
                 .unwrap();
-            let foreign =
-                worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
+            let foreign = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+                .build()
+                .expect("valid native runtime configuration");
             let unavailable = foreign
                 .snapshots()
                 .snapshot_for_observation(

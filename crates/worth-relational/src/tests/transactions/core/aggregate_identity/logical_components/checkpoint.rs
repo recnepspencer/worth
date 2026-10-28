@@ -5,12 +5,8 @@ use super::fixtures::*;
 pub(super) fn persisted(registry: RelationalSchemaRegistry) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path: unique_test_store_path("logical-catalog"),
-            segment_commit_capacity: 8,
-        })
-        .build()
+        .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration")
 }
 
 #[test]
@@ -110,10 +106,10 @@ fn physical_membership_recipe_and_alternating_derived_catalog_restore_from_real_
             .len(),
         2
     );
-    for side in 0..2 {
+    for (side, &name) in names.iter().enumerate() {
         assert_eq!(
             read(execution, &recovered, &snapshot, key(carrier, side)).identity(),
-            names[side]
+            name
         );
     }
     assert_eq!(
@@ -162,7 +158,10 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
     let foreign_domain = changed.projected_member_domain(&domain()).unwrap();
     let opaque = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let plan = runtime
         .durability()
@@ -182,8 +181,27 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
         crate::durability::data::RecoveryFailureClass::SchemaMismatch
     );
     assert_eq!(restored.history().commit_envelopes_snapshot(), before);
-    // Opaque checkpoint restore uses the receiver's genuine configuration and
-    // separately readmits each actual persisted root's schema carrier.
+    // A native restore must enforce the same declared-schema boundary as reopen.
+    let before = restored
+        .durability_authority()
+        .native_checkpoint(execution, execution.allocation_policy())
+        .unwrap();
+    let denied = restored
+        .durability_recovery()
+        .restore_native_checkpoint(execution, &opaque)
+        .unwrap_err();
+    assert_eq!(
+        expect_durability_failure(denied).class,
+        crate::durability::data::RecoveryFailureClass::DeclaredSchemaMismatch
+    );
+    assert_eq!(
+        restored
+            .durability_authority()
+            .native_checkpoint(execution, execution.allocation_policy())
+            .unwrap(),
+        before
+    );
+    let mut restored = persisted(source_registry());
     restored
         .durability_recovery()
         .restore_native_checkpoint(execution, &opaque)

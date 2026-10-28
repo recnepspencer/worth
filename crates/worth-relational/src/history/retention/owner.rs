@@ -18,6 +18,7 @@ pub(crate) enum RelationalRetentionAcquisitionDenial {
     CapacityExhausted,
     IdentityExhausted,
     RootSetTooLarge,
+    BindingMismatch,
 }
 
 #[derive(Debug, Clone)]
@@ -47,7 +48,7 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
 
 #[derive(Debug)]
 pub(super) struct RelationalRetiredBranchRoot {
-    pub(super) root: Option<Arc<RelationalBranchRoot>>,
+    pub(super) root: Arc<RelationalBranchRoot>,
     pub(super) branch_bindings: std::collections::BTreeMap<
         crate::history::data::BranchId,
         super::RelationalBranchRetentionBinding,
@@ -75,9 +76,7 @@ impl RelationalBranchRetentionOwner {
             if !entry.retired {
                 continue;
             }
-            let Some(root) = entry.root.as_ref() else {
-                continue;
-            };
+            let root = &entry.root;
             let Some(envelope) = root.canonical_envelope() else {
                 continue;
             };
@@ -211,11 +210,11 @@ impl RelationalBranchRetentionOwner {
                     .get(&root_key)
                     .filter(|retired| retired.generation == generation)
             })
-            .and_then(|retired| {
-                retired
-                    .root
-                    .as_ref()
-                    .map(|root| (Arc::clone(root), retired.historical_binding.clone()))
+            .map(|retired| {
+                (
+                    Arc::clone(&retired.root),
+                    retired.historical_binding.clone(),
+                )
             })
         else {
             return Ok(None);

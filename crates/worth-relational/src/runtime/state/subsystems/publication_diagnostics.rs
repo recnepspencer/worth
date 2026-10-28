@@ -6,7 +6,6 @@ use crate::diagnostics::data::RelationalDiagnosticArtifact;
 #[derive(Debug, Default)]
 struct DiagnosticArtifactState {
     artifacts: Vec<RelationalDiagnosticArtifact>,
-    next_capture_id: u64,
     active_by_thread: HashMap<std::thread::ThreadId, Vec<u64>>,
     captured: HashMap<u64, Vec<RelationalDiagnosticArtifact>>,
 }
@@ -20,6 +19,7 @@ pub(crate) struct RelationalDiagnosticArtifactStore {
 pub(crate) struct RelationalDiagnosticOperationCapture {
     store: RelationalDiagnosticArtifactStore,
     capture_id: u64,
+    _identity: Arc<()>,
     thread_id: std::thread::ThreadId,
     active: bool,
 }
@@ -38,11 +38,11 @@ impl RelationalDiagnosticArtifactStore {
     pub(crate) fn begin_operation_capture(&self) -> RelationalDiagnosticOperationCapture {
         let thread_id = std::thread::current().id();
         let mut state = self.lock();
-        state.next_capture_id = state
-            .next_capture_id
-            .checked_add(1)
-            .expect("diagnostic capture identity exhausted");
-        let capture_id = state.next_capture_id;
+        // Only live captures are looked up. Their guards retain distinct Arc
+        // headers until finish removes every directory entry, so reuse after
+        // release cannot collide with a live capture and no counter can exhaust.
+        let identity = Arc::new(());
+        let capture_id = Arc::as_ptr(&identity) as usize as u64;
         state
             .active_by_thread
             .entry(thread_id)
@@ -52,6 +52,7 @@ impl RelationalDiagnosticArtifactStore {
         RelationalDiagnosticOperationCapture {
             store: self.clone(),
             capture_id,
+            _identity: identity,
             thread_id,
             active: true,
         }

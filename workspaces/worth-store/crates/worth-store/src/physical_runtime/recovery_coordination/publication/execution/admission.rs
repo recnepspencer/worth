@@ -67,6 +67,12 @@ pub(super) fn admit(
             .scheduler
             .root_namespace_sync(&coordination.scheduler_security)
             .map(|admission| admission.into_parts()),
+        // A durable candidate removal is an unlink completed by the staging
+        // directory synchronization, the namespace lane's own effect class.
+        PhysicalRecoveryPublicationCommandStage::StagingResidueRemoval => coordination
+            .scheduler
+            .root_namespace_sync(&coordination.scheduler_security)
+            .map(|admission| admission.into_parts()),
     };
     let (reservation, backend) = match admitted {
         Ok(parts) => parts,

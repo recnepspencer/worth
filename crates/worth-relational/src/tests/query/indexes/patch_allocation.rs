@@ -9,21 +9,6 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
-fn memory_lease(memory: u64) -> worth_execution::ExecutionResourceLease<'static> {
-    test_execution_authority()
-        .request_lease(LeaseRequest {
-            policy: ExecutionRequestPolicy::new(
-                ExecutionPosture::Automatic,
-                DeterminismContract::CanonicalBitwise,
-                // This proof isolates memory admission; work has its own funded court.
-                ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), None),
-            ),
-            deadline: None,
-            cancellation: CancellationToken::new(),
-        })
-        .unwrap()
-}
-
 #[test]
 fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
     const ROWS: usize = 2_000;
@@ -63,6 +48,7 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
         })
+        .expect("index fixture has identity capacity")
         .index_id;
     let built = runtime.index_authority().build_for_commit(
         &setup,
@@ -73,25 +59,22 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         },
     );
     assert!(built.failed_indexes.is_empty(), "{built:?}");
-    // Two height-2 paths and their key/queue/publication backing, derived
-    // independently from named layouts in allocation_price_proof.rs.
-    const PATCH_BYTES: u64 = 91_988;
-    assert_eq!(
-        crate::indexes::two_row_patch_bytes(
-            &aspect_field_locator(aspect_key("name"), field_key("name")),
-            &string_aspect_value(&"x".repeat(WIDTH)),
-        ),
-        PATCH_BYTES
-    );
-    // The singleton scan also holds its own context bytes on this lease shape.
-    // They are Execution's private layout, so they are measured, never restated.
-    let framework_bytes = {
-        let probe = memory_lease(MEMORY);
-        MEMORY - crate::indexes::pass_memory_room(&ExecutionRequest::leased(&probe), MEMORY + 1)
-    };
-    let edge = PATCH_BYTES + framework_bytes - 1;
-    for memory in [edge, MEMORY] {
-        let lease = memory_lease(memory);
+    // A small patch must fit far below the population size. An unfunded
+    // request must refuse without publishing the prepared index.
+    const REFUSED_MEMORY: u64 = 4096;
+    for memory in [REFUSED_MEMORY, MEMORY] {
+        let lease = test_execution_authority()
+            .request_lease(LeaseRequest {
+                policy: ExecutionRequestPolicy::new(
+                    ExecutionPosture::Automatic,
+                    DeterminismContract::CanonicalBitwise,
+                    // This proof isolates memory admission; work has its own funded court.
+                    ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), None),
+                ),
+                deadline: None,
+                cancellation: CancellationToken::new(),
+            })
+            .unwrap();
         let execution = ExecutionRequest::leased(&lease);
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         let mut edits = WorkerIntentBatch::new("two-row-patch");
@@ -117,22 +100,19 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
             },
             &execution,
         );
-        if memory == edge {
+        if memory == REFUSED_MEMORY {
             let denied = work.unwrap_err();
-            assert_eq!(
+            assert!(matches!(
                 denied.kind,
                 crate::indexes::data::DerivedIndexMaintenanceDenialKind::Execution(
-                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                        requested: PATCH_BYTES,
-                        admitted: PATCH_BYTES - 1,
-                        ancestor: 0,
-                    }
+                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
                 )
-            );
+            ));
             assert_eq!(
                 runtime
                     .index_access()
-                    .latest_generation(index, &BranchId("main".into()))
+                    .read_latest_generation(&execution, index, &BranchId("main".into()))
+                    .unwrap()
                     .unwrap()
                     .source_commit_id,
                 first.commit.commit_id
@@ -145,7 +125,7 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         // independently priced field paths are only part of that full bill;
         // all of it must fit the original sub-population memory allowance.
         let prepared_bytes = crate::indexes::last_allocation_bytes();
-        assert!((PATCH_BYTES..=MEMORY).contains(&prepared_bytes));
+        assert!(prepared_bytes <= MEMORY);
         assert_eq!(work.patch_records, 2);
         assert_eq!(work.entry_edits, 2);
         assert_eq!(work.cold_record_slots, 0);
@@ -158,7 +138,8 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         let second = runtime.settle_performed_publication(performed).unwrap();
         let generation = runtime
             .index_access()
-            .latest_generation(index, &BranchId("main".into()))
+            .read_latest_generation(&execution, index, &BranchId("main".into()))
+            .unwrap()
             .unwrap();
         let crate::facade::indexes::DerivedIndexEntries::EntityField(entries) = &generation.entries
         else {

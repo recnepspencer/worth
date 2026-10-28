@@ -8,6 +8,7 @@ mod certification;
 mod counter_profiles;
 mod counters;
 mod diagnostics;
+mod durability_unresolved_subject;
 mod eligibility;
 mod envelope;
 mod exact_snapshot_closeout;
@@ -50,8 +51,9 @@ pub use batch_admission::{
     EffectBatchIntentDraft, EffectBatchIntentDraftWithBasis,
 };
 pub use batch_execution::{
-    EffectBatchExecutionControlStopped, EffectBatchExecutionDeferred, EffectBatchExecutionDenial,
-    EffectBatchExecutionDenialKind, EffectBatchExecutionStop, EffectBatchSettlementDeferred,
+    EffectBatchDurabilityUnresolved, EffectBatchExecutionControlStopped,
+    EffectBatchExecutionDeferred, EffectBatchExecutionDenial, EffectBatchExecutionDenialKind,
+    EffectBatchExecutionStop,
 };
 pub use certification::{
     certify_effect_execution_pipeline, EffectExecutionCertificationBundle,
@@ -60,6 +62,7 @@ pub use certification::{
 };
 pub use counters::EffectLifecycleCounters;
 pub use diagnostics::{EffectDiagnosticsMaterialization, EffectDiagnosticsRequest};
+pub(crate) use durability_unresolved_subject::unresolved_commit_id;
 pub use eligibility::{
     AdmittedEffectIntent, AdvisoryEffectEligibility, DeferredEffectEligibility,
     DeniedEffectEligibility, EffectEligibility, EffectEligibilityDecisionTrace,
@@ -70,7 +73,7 @@ pub use envelope::{
 };
 pub use execution::{
     EffectExecutionAuthority, EffectExecutionControlStopped, EffectExecutionDeferred,
-    EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionSettlementDeferred,
+    EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionDurabilityUnresolved,
     EffectExecutionStop, ExecutedEffectAuthorityArtifact, ExecutedEffectPlan,
 };
 pub use execution_control_stop::EffectExecutionControlStopKind;
@@ -114,7 +117,7 @@ pub use receipt_transitions::{
     EffectReceiptTransitionRules,
 };
 pub use relational_execution_failure::{
-    RelationalEffectExecutionFailure, RelationalEffectSettlementDeferred,
+    RelationalEffectDurabilityUnresolved, RelationalEffectExecutionFailure,
 };
 pub use settlement_repair::EffectSettlementRepairError;
 pub use support_contract::{

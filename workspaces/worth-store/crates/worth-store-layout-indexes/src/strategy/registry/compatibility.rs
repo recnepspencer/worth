@@ -140,27 +140,27 @@ pub(super) fn require_requested_key_law_compatibility(
     request: &LayoutAdmissionRequest,
 ) -> Result<(Option<HashCollisionLaw>, Option<CompositeKeyOrderingLaw>), LayoutAdmissionDenial> {
     let hash_equality_law = request.required_key_laws().hash_equality_law();
-    if let Some(law) = hash_equality_law {
-        if law.domain() != admitted.key_domain() {
-            return Err(
-                LayoutAdmissionDenial::HashEqualityLawDoesNotMatchKeyDomain {
-                    requested_domain: law.domain(),
-                    strategy_domain: admitted.key_domain(),
-                },
-            );
-        }
+    if let Some(law) = hash_equality_law
+        && law.domain() != admitted.key_domain()
+    {
+        return Err(
+            LayoutAdmissionDenial::HashEqualityLawDoesNotMatchKeyDomain {
+                requested_domain: law.domain(),
+                strategy_domain: admitted.key_domain(),
+            },
+        );
     }
 
     let composite_ordering_law = request.required_key_laws().composite_ordering_law();
-    if let Some(law) = composite_ordering_law {
-        if law.domain() != admitted.key_domain() {
-            return Err(
-                LayoutAdmissionDenial::CompositeOrderingLawDoesNotMatchKeyDomain {
-                    requested_domain: law.domain(),
-                    strategy_domain: admitted.key_domain(),
-                },
-            );
-        }
+    if let Some(law) = composite_ordering_law
+        && law.domain() != admitted.key_domain()
+    {
+        return Err(
+            LayoutAdmissionDenial::CompositeOrderingLawDoesNotMatchKeyDomain {
+                requested_domain: law.domain(),
+                strategy_domain: admitted.key_domain(),
+            },
+        );
     }
 
     Ok((hash_equality_law, composite_ordering_law))

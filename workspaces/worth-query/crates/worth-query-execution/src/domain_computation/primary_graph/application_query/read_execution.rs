@@ -18,6 +18,7 @@ use pinning::pin_runtime_read;
 mod root_selection;
 mod tree_materialization;
 mod work_observation;
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use entry_observation::component_native_acquisitions_on_this_thread_for_test;
 pub use entry_observation::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
@@ -169,13 +170,12 @@ pub(super) fn read_prepared_root_rows(
         .result_set_source
         .as_ref()
         .and_then(|source| source.components.as_ref())
+        && !components.matches_rows(tree.source_footprints.iter().map(|row| row.root))
     {
-        if !components.matches_rows(tree.source_footprints.iter().map(|row| row.root)) {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
-                plan.name,
-            ));
-        }
+        return Err(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
+            plan.name,
+        ));
     }
     let actual_work = selection.work_units.saturating_add(tree.work_units);
     Ok(RawNonLiveKernelOutcome {

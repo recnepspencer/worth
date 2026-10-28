@@ -207,7 +207,7 @@ fn resolve_projected_idempotency(
     let committed = context
         .runtime
         .history()
-        .historical_committed_version(record.created_at_version)
+        .immutable_commit_receipt_for_version(record.created_at_version)
         .ok_or("provider idempotency creation commit is unavailable")?;
     let Some(AspectValue::UInt64(outcome_identity)) = record.outcome_identity else {
         return Err("provider idempotency outcome identity is unavailable".into());
@@ -219,7 +219,7 @@ fn resolve_projected_idempotency(
     };
     let emitted = usize::try_from(emitted)
         .map_err(|_| "provider idempotency emitted-effect count exceeds host representation")?;
-    let commit = committed.commit().clone();
+    let commit = committed;
     // A durable idempotency row cannot authorize re-execution. A fresh owner
     // or retired product occurrence may no longer retain its performed receipt.
     let Some(committed) = context.provider.observe_completed_application(&commit) else {

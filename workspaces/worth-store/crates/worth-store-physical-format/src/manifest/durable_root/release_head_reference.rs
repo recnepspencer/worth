@@ -31,7 +31,7 @@ pub(super) fn decode(schema: u8, payload: &[u8]) -> Result<DecodedHeadBinding, R
     } else {
         None
     };
-    if schema != 10 {
+    if schema < 10 {
         return Ok((tier_anchor, None, 1, false));
     }
     if payload[562..568] != [0; 6] {
@@ -51,7 +51,8 @@ pub(super) fn decode(schema: u8, payload: &[u8]) -> Result<DecodedHeadBinding, R
         _ => return Err(RootManifestDenial::MalformedPrefix),
     };
     let frontier = u64::from_le_bytes(payload[568..576].try_into().unwrap());
-    if (root.is_none() && frontier == 1) || (tier_anchor.is_some() && !maintenance) {
+    if (schema == 10 && root.is_none() && frontier == 1) || (tier_anchor.is_some() && !maintenance)
+    {
         return Err(RootManifestDenial::MalformedPrefix);
     }
     Ok((tier_anchor, root, frontier, maintenance))

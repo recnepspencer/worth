@@ -48,10 +48,10 @@ impl WalVerifiedRecoveredCustodyEvidence {
         format: PhysicalRecordFormatDeclaration,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<FundedMediaVerifiedRecoveredCustodyEvidence, RecordBootstrapDenial> {
-        if let Some(checkpoint) = self.evidence.checkpoint_ownership.checkpoint() {
-            if !window.owns_checkpoint(checkpoint) {
-                return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
-            }
+        if let Some(checkpoint) = self.evidence.checkpoint_ownership.checkpoint()
+            && !window.owns_checkpoint(checkpoint)
+        {
+            return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
         }
         self.evidence
             .verify_funded_current_checkpoint(media, window)?;

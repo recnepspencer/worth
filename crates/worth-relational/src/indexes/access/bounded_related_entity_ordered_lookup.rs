@@ -49,7 +49,7 @@ impl RelationalPinnedRead {
         })?;
         let source =
             super::super::projected_field_values::IndexProjectionSource::exact(&projection)
-                .expect("resolved snapshot projection must carry an exact basis");
+                .expect(/* Proof: The owner-admitted snapshot/current projection is built from an exact retained root; speculative projections do not reach this index entry point. */ "resolved snapshot projection must carry an exact basis");
         let prepared = prepare_related_lookup(self, &request)?;
         let page = select_page(
             &prepared.parent_entries(),
@@ -221,7 +221,7 @@ fn select_page(
     let returned = available.min(request.page_width());
     Ok(SelectedPage {
         rows: (start..start + returned)
-            .map(|i| entries.get(i).expect("bounded page index").clone())
+            .map(|i| entries.get(i).expect(/* Proof: Page bounds and posting offsets were checked against these same immutable retained rows; no row mutation occurs during page extraction. */ "bounded page index").clone())
             .collect(),
         has_more: available > returned,
         seek_comparison_count,

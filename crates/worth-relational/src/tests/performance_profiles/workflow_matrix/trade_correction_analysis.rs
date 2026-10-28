@@ -6,7 +6,7 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
 ) {
     let trade_correction_samples =
         capture_perf_samples(suite, "trade_correction_analysis_round_trip", || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             let account = create_entity_in_partition(
                 execution,
                 &runtime,
@@ -147,7 +147,10 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
                 .expect("analysis merge execution");
             let merge_execute_micros = merge_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let packet = explicit_query_packet(
                 &runtime,
                 &snapshot,

@@ -60,7 +60,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
     ));
     let (_, source) = runtime.observe_fork_source(first.branch_id()).unwrap();
     let fork = runtime
-        .fork_branch(BranchId("history-fork".to_owned()), source)
+        .fork_branch(execution, BranchId("history-fork".to_owned()), source)
         .unwrap();
     let fork_basis = runtime.admit_branch_basis(fork.target_identity()).unwrap();
     let fork_snapshot = runtime
@@ -182,6 +182,7 @@ fn history_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn commit(

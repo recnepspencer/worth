@@ -140,12 +140,17 @@ impl<const FRESH: bool> WorthQueryApplicationContribution<CheckpointSchema>
                 } else {
                     installed.prepare(reader, set)
                 };
-                super::super::decision_plan::prepared(prepared, |_| {})
+                super::super::decision_plan::prepared(
+                    prepared.map(|prepared| prepared.with_compute_ceiling_for_test(WORK as u64)),
+                    |_| {},
+                )
             })
             .preserving_payload(),
         )?;
-        let unretained =
-            owner::running::<program::UnretainedTotals<WORK>, _>(setup, owner::RegionTotalsOwner)?;
+        let unretained = owner::running::<WORK, program::UnretainedTotals<WORK>, _>(
+            setup,
+            owner::RegionTotalsOwner,
+        )?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(unretained)?;
         setup.handler::<EntryEditBinding<CheckpointSchema>, _>(EntryEditHandler)?;
         super::super::super::entry_correction::configure(setup)?;

@@ -57,7 +57,11 @@ fn native_dependency_wire_and_deep_parse_keep_the_original_payer_through_clones(
         .source_revisions_match(
             &fixture.runtime,
             &execution,
-            &fixture.runtime.visibility_authority().snapshot()
+            &fixture
+                .runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted")
         )
         .unwrap());
     assert_eq!(payer.charged_memory_bytes(), parsed_charge);
@@ -74,7 +78,11 @@ fn native_dependency_deep_parse_refusal_preserves_original_wire_and_head_for_ret
     let wire = source.to_wire(&system).unwrap();
     assert_eq!(wire.charged_payload_bytes(), None); // Selected System, never a fake lease.
     let original = wire.clone();
-    let before = fixture.runtime.visibility_authority().snapshot();
+    let before = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     // Exact hex buffer fits. Refusal MUST be deep storage, before owned serde DTO.
     let tight = lease((wire.len() / 2) as u64);
     let execution = worth_execution::ExecutionRequest::leased(&tight);
@@ -89,7 +97,12 @@ fn native_dependency_deep_parse_refusal_preserves_original_wire_and_head_for_ret
     assert_eq!(tight.charged_memory_bytes(), 0);
     assert_eq!(wire, original);
     assert_eq!(
-        fixture.runtime.visibility_authority().snapshot().version_id,
+        fixture
+            .runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted")
+            .version_id,
         before.version_id
     );
     let retry = lease(64 * 1024);

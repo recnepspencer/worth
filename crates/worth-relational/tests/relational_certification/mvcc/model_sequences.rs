@@ -33,7 +33,7 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
     ];
     let scenarios = execution_order.map(|delta| (branch_id(delta), delta));
     for (branch, _) in &scenarios {
-        fork_from_main(&world.runtime, branch.clone());
+        fork_from_main(execution, &world.runtime, branch.clone());
     }
     let identities = all_identities(&world.runtime, &scenarios);
     let shared = world.runtime.observe_branch_sharing(&identities).unwrap();
@@ -283,13 +283,14 @@ fn all_identities(
 }
 
 fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     branch: BranchId,
 ) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
-    runtime.fork_branch(branch, source).unwrap();
+    runtime.fork_branch(execution, branch, source).unwrap();
 }
 
 fn branch_id(delta: DeltaId) -> BranchId {

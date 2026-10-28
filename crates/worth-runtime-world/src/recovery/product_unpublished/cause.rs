@@ -13,6 +13,10 @@ pub enum ProductUnpublishedCause {
     DestinationAdmissionDenied,
     RetentionAdmissionDenied,
     ProductPublicationLost,
+    /// The Relational owner could not establish whether its commit became
+    /// durable. It refuses every later publication until it is reopened, and
+    /// reopening is what resolves the commit's fate.
+    RelationalDurabilityUnresolved,
 }
 
 impl ProductUnpublishedCause {

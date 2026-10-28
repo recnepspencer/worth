@@ -13,6 +13,8 @@ fn truth_sequence_overflow_is_rejected_before_publication_effects() {
     let before_patch_index = runtime.history.recorded_patch_position_count();
     let before_slots: usize = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .partitions()
         .map(|partition| partition.entity_arena.slot_count())
         .sum();
@@ -51,6 +53,8 @@ fn truth_sequence_overflow_is_rejected_before_publication_effects() {
     );
     let after_slots: usize = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .partitions()
         .map(|partition| partition.entity_arena.slot_count())
         .sum();

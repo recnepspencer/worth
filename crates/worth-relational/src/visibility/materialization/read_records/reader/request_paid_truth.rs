@@ -204,7 +204,11 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                 20..=23 => super::super::read_work::metered_with_memory(
                     request,
                     |context, memory| {
-                        let state = runtime.storage_access().current_edition();
+                        let state = runtime
+                            .storage_access()
+                            .current_edition()
+                            .resident_full()
+                            .expect("memory fixture retains Full custody");
                         let mut charge = |units| context.checkpoint(units);
                         match seam {
                             20 => truth

@@ -112,7 +112,10 @@ fn execution_request_denial(
                 | Resource::ScratchCapacityExceeded,
             ..
         } => BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
-        kind @ (Session::ExecutionResource {
+        kind @ (Session::ProjectionContract { .. }
+        | Session::HistoricalVisibility { .. }
+        | Session::StorageUnavailable(_)
+        | Session::ExecutionResource {
             denial:
                 Resource::WorkCounterOverflow
                 | Resource::AccountingUnavailable

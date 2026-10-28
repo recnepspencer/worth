@@ -21,7 +21,7 @@ pub(super) fn pin(
         .pin_read_capability(snapshot, &[], execution)
         .map_err(|cause| match cause {
             Native::Request(stop) => {
-                Denial::relational_read_stopped(stop.into(), "workflow approval text pin")
+                Denial::relational_read_stopped(stop, "workflow approval text pin")
             }
             Native::SnapshotUnavailable | Native::IndexNotInstalled(_) => {
                 denial("workflow approval exact text basis is unavailable")

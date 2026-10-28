@@ -20,5 +20,5 @@ pub use authority::{
 };
 pub(crate) use canonical_history::{
     durable_canonical_envelopes, retained_canonical_envelope_at_position,
-    retained_canonical_envelopes_after, RetainedCanonicalEnvelopeGap,
+    retained_canonical_envelopes_after,
 };

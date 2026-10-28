@@ -28,6 +28,20 @@ pub(crate) fn capture_materialization_producers(
             "materialization capture requires exact current native source basis",
         ));
     }
+    let regions = manifest
+        .iter()
+        .map(|record| match record {
+            RelationalMaterializationRecord::Entity { entity_id, .. } => entity_id.partition_id,
+            RelationalMaterializationRecord::Relation { relation_id, .. } => {
+                relation_id.partition_id
+            }
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    basis
+        .inner
+        .root
+        .demand_regions_full(execution, &runtime.services.symbols, regions)
+        .map_err(|failure| stop(Stop::Request(failure.into())))?;
     execution
         .in_scope(|lease| {
             ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
@@ -60,7 +74,7 @@ pub(crate) fn capture_materialization_producers(
                                 let partition = basis
                                     .inner
                                     .root
-                                    .partition_state(member.id.partition_id)
+                                    .partition_state(member.id.partition_id)?
                                     .ok_or("producer member partition absent")?;
                                 let row = partition
                                     .entity_arena
@@ -126,6 +140,7 @@ pub(crate) fn capture_materialization_producers(
                                 .inner
                                 .root
                                 .partition_state(id.partition_id)
+                                .map_err(|failure| stop(Stop::from(failure)))?
                                 .and_then(|part| {
                                     part.entity_arena.metadata_history_at(id.slot_index())
                                 })
@@ -135,6 +150,7 @@ pub(crate) fn capture_materialization_producers(
                                 .inner
                                 .root
                                 .partition_state(id.partition_id)
+                                .map_err(|failure| stop(Stop::from(failure)))?
                                 .and_then(|part| {
                                     part.relation_arena.metadata_history_at(id.slot_index())
                                 })

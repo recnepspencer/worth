@@ -122,7 +122,6 @@ fn produce_pending_world(marker: &Path) {
         }
         Err(failure) => panic!("real blob publication before crash: {failure:?}"),
     };
-    drop(blobs);
     let publication = world
         .serving()
         .certification_selected_latest_blob_publication()

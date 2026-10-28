@@ -1,7 +1,7 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     CommitConflict, ConflictClass, EntityFieldUpdateMissingState, RecordAspectPatchTarget,
     UpdateEntityFieldsIntent,
@@ -21,14 +21,14 @@ pub(super) fn apply(
         ensure_entity_target_is_current(context.state, intent.entity_id)?;
         let partition = context
             .state
-            .get_partition(intent.entity_id.partition_id)
+            .get_current_partition(intent.entity_id.partition_id)
             .ok_or_else(|| {
                 CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
                     entity_id: intent.entity_id,
                     missing: EntityFieldUpdateMissingState::Partition,
                 })
             })?;
-        let slot_view = partition.entity_arena.get_slot(slot).ok_or_else(|| {
+        let slot_view = partition.entity_arena().get_slot(slot).ok_or_else(|| {
             CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
                 entity_id: intent.entity_id,
                 missing: EntityFieldUpdateMissingState::Slot,
@@ -68,12 +68,13 @@ pub(super) fn apply(
         let mut updated_extra = partition
             .entity_arena
             .extra_at(slot)
-            .expect("entity field update requires a materialized slot")
+            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?
             .clone();
         updated_extra.authoritative_aspect_state = new_authoritative_aspect_state.clone();
         partition
             .entity_arena
-            .apply_extra_update(slot, updated_extra, version_id);
+            .apply_extra_update(slot, updated_extra, version_id)
+            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
         Ok::<_, CommitConflict>(())
     })?;
     Ok(MutationOutcome::entity_updated_with_authoritative_patch(
@@ -83,4 +84,14 @@ pub(super) fn apply(
         new_authoritative_aspect_state,
         patch,
     ))
+}
+
+fn missing(
+    intent: &UpdateEntityFieldsIntent,
+    missing: EntityFieldUpdateMissingState,
+) -> CommitConflict {
+    CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
+        entity_id: intent.entity_id,
+        missing,
+    })
 }

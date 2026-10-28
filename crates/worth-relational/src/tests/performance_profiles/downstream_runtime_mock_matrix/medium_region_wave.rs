@@ -37,7 +37,10 @@ pub(super) fn certify_geometry_commit_downstream_medium_region_wave(
                 update_entity(execution, &relational, updated, "downstream-medium-updated");
             let relational_commit_micros = relational_commit_started_at.elapsed().as_micros();
 
-            let snapshot = relational.visibility_authority().snapshot();
+            let snapshot = relational
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let traversal_packet = PlannedQueryPacket {
                 label: "downstream-medium-traversal".to_string(),
                 context_id: relational

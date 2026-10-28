@@ -4,7 +4,7 @@ use crate::authority::mutation::stale_targets::{
 };
 use crate::authority::mutation::MutationWorkspace;
 use crate::authority::mutation::{apply_adjacency_deltas, AdjacencyDelta, AdjacencyDeltaKind};
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::{RelationEndpoints, RelationExtra};
 use crate::transactions::data::{
     CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
@@ -33,14 +33,14 @@ pub(super) fn apply(
             }
             let partition = context
                 .state
-                .get_partition(intent.relation_id.partition_id)
+                .get_current_partition(intent.relation_id.partition_id)
                 .ok_or_else(|| {
                     CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
                         relation_id: intent.relation_id,
                         missing: RelationEndpointUpdateMissingState::Partition,
                     })
                 })?;
-            let slot_view = partition.relation_arena.get_slot(slot).ok_or_else(|| {
+            let slot_view = partition.relation_arena().get_slot(slot).ok_or_else(|| {
                 CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
                     relation_id: intent.relation_id,
                     missing: RelationEndpointUpdateMissingState::Slot,
@@ -120,15 +120,19 @@ pub(super) fn apply(
         let partition = context
             .state
             .get_partition_mut(intent.relation_id.partition_id);
-        partition.relation_arena.apply_extra_update(
-            slot,
-            RelationExtra {
-                endpoints: Some(RelationEndpoints { source, target }),
-                authoritative_aspect_state: authoritative_aspect_state.clone(),
-            },
-            version_id,
-        );
-    });
+        partition
+            .relation_arena
+            .apply_extra_update(
+                slot,
+                RelationExtra {
+                    endpoints: Some(RelationEndpoints { source, target }),
+                    authoritative_aspect_state: authoritative_aspect_state.clone(),
+                },
+                version_id,
+            )
+            .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
+        Ok::<_, CommitConflict>(())
+    })?;
 
     Ok(MutationOutcome::relation_updated(
         intent.relation_id,
@@ -157,4 +161,14 @@ fn resolve_relation_endpoint(
                 ),
             })
         })
+}
+
+fn missing(
+    intent: &UpdateRelationEndpointsIntent,
+    missing: RelationEndpointUpdateMissingState,
+) -> CommitConflict {
+    CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
+        relation_id: intent.relation_id,
+        missing,
+    })
 }

@@ -81,19 +81,19 @@ impl WorthServerProductBasisPrecondition {
                     error,
                 )
             })?;
-        if let Some(expected_basis_digest) = requested_basis_digest {
-            if expected_basis_digest != observed_basis_digest {
-                return Err(WorthServerOperationReadinessDenial::new(
-                    WorthServerOperationReadinessDenialCode::PreconditionFailed,
-                    format!(
-                        "product basis precondition `{expected_basis_digest}` did not match the observed owner basis `{observed_basis_digest}`"
-                    ),
-                )
-                .with_facts(
-                    WorthServerOperationReadinessDenialFacts::default()
-                        .with_basis_mismatch(expected_basis_digest, observed_basis_digest),
-                ));
-            }
+        if let Some(expected_basis_digest) = requested_basis_digest
+            && expected_basis_digest != observed_basis_digest
+        {
+            return Err(WorthServerOperationReadinessDenial::new(
+                WorthServerOperationReadinessDenialCode::PreconditionFailed,
+                format!(
+                    "product basis precondition `{expected_basis_digest}` did not match the observed owner basis `{observed_basis_digest}`"
+                ),
+            )
+            .with_facts(
+                WorthServerOperationReadinessDenialFacts::default()
+                    .with_basis_mismatch(expected_basis_digest, observed_basis_digest),
+            ));
         }
         let canonical_digest = format!(
             "worth-server-product-basis-precondition-v1|operation={}|requested_basis={}|observed_basis={}",
@@ -163,33 +163,33 @@ impl WorthServerCompatibilityMutationPrecondition {
             requested_basis_digest.as_deref().unwrap_or("none"),
             if_match.as_deref().unwrap_or("none"),
         );
-        if let Some(expected_basis) = requested_basis_digest.as_deref() {
-            if expected_basis != observed_basis_digest {
-                return Err(WorthServerOperationReadinessDenial::new(
-                    WorthServerOperationReadinessDenialCode::PreconditionFailed,
-                    format!(
-                        "compatibility mutation basis precondition `{expected_basis}` did not match the admitted mutation basis `{observed_basis_digest}`"
-                    ),
-                )
-                .with_facts(
-                    WorthServerOperationReadinessDenialFacts::default()
-                        .with_basis_mismatch(expected_basis, observed_basis_digest),
-                ));
-            }
+        if let Some(expected_basis) = requested_basis_digest.as_deref()
+            && expected_basis != observed_basis_digest
+        {
+            return Err(WorthServerOperationReadinessDenial::new(
+                WorthServerOperationReadinessDenialCode::PreconditionFailed,
+                format!(
+                    "compatibility mutation basis precondition `{expected_basis}` did not match the admitted mutation basis `{observed_basis_digest}`"
+                ),
+            )
+            .with_facts(
+                WorthServerOperationReadinessDenialFacts::default()
+                    .with_basis_mismatch(expected_basis, observed_basis_digest),
+            ));
         }
-        if let Some(expected_validator) = if_match.as_deref() {
-            if expected_validator != validator {
-                return Err(WorthServerOperationReadinessDenial::new(
-                    WorthServerOperationReadinessDenialCode::PreconditionFailed,
-                    format!(
-                        "compatibility mutation validator precondition `{expected_validator}` did not match the canonical mutation validator `{validator}`"
-                    ),
-                )
-                .with_facts(
-                    WorthServerOperationReadinessDenialFacts::default()
-                        .with_validator_mismatch(expected_validator, &validator),
-                ));
-            }
+        if let Some(expected_validator) = if_match.as_deref()
+            && expected_validator != validator
+        {
+            return Err(WorthServerOperationReadinessDenial::new(
+                WorthServerOperationReadinessDenialCode::PreconditionFailed,
+                format!(
+                    "compatibility mutation validator precondition `{expected_validator}` did not match the canonical mutation validator `{validator}`"
+                ),
+            )
+            .with_facts(
+                WorthServerOperationReadinessDenialFacts::default()
+                    .with_validator_mismatch(expected_validator, &validator),
+            ));
         }
         if let Some(expected_product_session) = expected_product_session.as_deref() {
             let Some(observed_product_session_identity) = observed_product_session_identity else {

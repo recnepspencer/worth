@@ -1,6 +1,7 @@
-use crate::storage::overlay::PartitionAccess;
-use crate::storage::substrate::EntityArena;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::storage::residency::RelationalRecordHeadArenaView;
 use crate::storage::substrate::HistoricalMetadata;
+use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 use std::sync::Arc;
 
 mod aspect_state;
@@ -10,7 +11,7 @@ mod structural_adjacency;
 
 #[derive(Clone)]
 pub(crate) struct InvariantStateView<'state> {
-    state: &'state dyn PartitionAccess,
+    state: &'state dyn CurrentPartitionAccess,
     version_id: crate::identity::data::VersionId,
     candidate_inputs: Option<(
         std::sync::Arc<super::input_preparation::SharedCandidateInputs>,
@@ -20,7 +21,7 @@ pub(crate) struct InvariantStateView<'state> {
 
 impl<'state> InvariantStateView<'state> {
     pub(crate) fn new(
-        state: &'state dyn PartitionAccess,
+        state: &'state dyn CurrentPartitionAccess,
         version_id: crate::identity::data::VersionId,
     ) -> Self {
         Self {
@@ -48,7 +49,7 @@ impl<'state> InvariantStateView<'state> {
         self.candidate_inputs.as_ref()
     }
 
-    pub(crate) fn state(&self) -> &'state dyn PartitionAccess {
+    pub(crate) fn state(&self) -> &'state dyn CurrentPartitionAccess {
         self.state
     }
 
@@ -100,7 +101,7 @@ impl<'state> InvariantStateView<'state> {
         let mut sources = Vec::new();
         let partition_ids = self.touched_partitions()?;
         for partition_id in partition_ids.iter().copied() {
-            let partition = self.state.get_partition(partition_id)?;
+            let partition = self.state.get_current_partition(partition_id)?;
             let Some(slots) = self.touched_entity_slots(partition_id) else {
                 continue;
             };
@@ -115,9 +116,9 @@ impl<'state> InvariantStateView<'state> {
                 for (partition_id, partition, slots) in sources {
                     for slot in slots.iter().copied() {
                         let Some(metadata) = partition
-                            .entity_arena
-                            .metadata_history_at(slot)
-                            .and_then(|history| self.visible_entity_metadata(history))
+                            .entity_arena()
+                            .current_metadata_at(slot)
+                            .filter(|metadata| self.metadata_is_visible(*metadata))
                         else {
                             continue;
                         };
@@ -156,25 +157,25 @@ impl<'state> InvariantStateView<'state> {
         let slot = entity_id.slot_index();
         let partition = self.entity_partition_for_slot(entity_id.partition_id, slot)?;
         if partition
-            .entity_arena
+            .entity_arena()
             .get(&entity_id)
             .map(|slot_view| slot_view.generation())
             != Some(entity_id.generation_value())
         {
             return None;
         }
-        self.entity_metadata_at(&partition.entity_arena, entity_id.partition_id, slot)
+        self.entity_metadata_at(&partition.entity_arena(), entity_id.partition_id, slot)
     }
 
     pub(crate) fn entity_metadata_at(
         &self,
-        arena: &'state EntityArena,
+        arena: &RelationalRecordHeadArenaView<'state, EntityRecordKind>,
         partition_id: crate::identity::data::PartitionId,
         slot: usize,
     ) -> Option<VisibleEntityMetadata> {
         let metadata = arena
-            .metadata_history_at(slot)
-            .and_then(|history| self.visible_entity_metadata(history))?;
+            .current_metadata_at(slot)
+            .filter(|metadata| self.metadata_is_visible(*metadata))?;
         Some(VisibleEntityMetadata {
             entity_id: crate::identity::data::EntityId::new(
                 partition_id,
@@ -191,7 +192,7 @@ impl<'state> InvariantStateView<'state> {
         slot: usize,
     ) -> Option<VisibleEntityMetadata> {
         let partition = self.entity_partition_for_slot(partition_id, slot)?;
-        self.entity_metadata_at(&partition.entity_arena, partition_id, slot)
+        self.entity_metadata_at(&partition.entity_arena(), partition_id, slot)
     }
 
     pub(crate) fn relation_metadata(
@@ -213,25 +214,25 @@ impl<'state> InvariantStateView<'state> {
         let slot = relation_id.slot_index();
         let partition = self.relation_partition_for_slot(relation_id.partition_id, slot)?;
         if partition
-            .relation_arena
+            .relation_arena()
             .get(&relation_id)
             .map(|slot_view| slot_view.generation())
             != Some(relation_id.generation_value())
         {
             return None;
         }
-        self.relation_metadata_at(&partition.relation_arena, relation_id.partition_id, slot)
+        self.relation_metadata_at(&partition.relation_arena(), relation_id.partition_id, slot)
     }
 
     pub(crate) fn relation_metadata_at(
         &self,
-        arena: &'state crate::storage::substrate::RelationArena,
+        arena: &RelationalRecordHeadArenaView<'state, RelationRecordKind>,
         partition_id: crate::identity::data::PartitionId,
         slot: usize,
     ) -> Option<VisibleRelationMetadata> {
         let metadata = arena
-            .metadata_history_at(slot)
-            .and_then(|history| self.visible_relation_metadata(history))?;
+            .current_metadata_at(slot)
+            .filter(|metadata| self.metadata_is_visible(*metadata))?;
         Some(VisibleRelationMetadata {
             relation_id: crate::identity::data::RelationId::new(
                 partition_id,
@@ -250,7 +251,7 @@ impl<'state> InvariantStateView<'state> {
         slot: usize,
     ) -> Option<VisibleRelationMetadata> {
         let partition = self.relation_partition_for_slot(partition_id, slot)?;
-        self.relation_metadata_at(&partition.relation_arena, partition_id, slot)
+        self.relation_metadata_at(&partition.relation_arena(), partition_id, slot)
     }
 
     pub(crate) fn touched_visible_relation_ids_with_budget(
@@ -260,7 +261,7 @@ impl<'state> InvariantStateView<'state> {
         let mut sources = Vec::new();
         let partition_ids = self.touched_partitions()?;
         for partition_id in partition_ids.iter().copied() {
-            let partition = self.state.get_partition(partition_id)?;
+            let partition = self.state.get_current_partition(partition_id)?;
             let Some(slots) = self.touched_relation_slots(partition_id) else {
                 continue;
             };
@@ -275,7 +276,7 @@ impl<'state> InvariantStateView<'state> {
                 for (partition_id, partition, slots) in sources {
                     for slot in slots.iter().copied() {
                         let Some(metadata) = self.relation_metadata_at(
-                            &partition.relation_arena,
+                            &partition.relation_arena(),
                             partition_id,
                             slot,
                         ) else {
@@ -293,38 +294,11 @@ impl<'state> InvariantStateView<'state> {
         })
     }
 
-    fn visible_entity_metadata<'history>(
-        &self,
-        history: &'history crate::storage::substrate::SharedColumn<
-            crate::storage::substrate::VersionedEntityMetadata,
-        >,
-    ) -> Option<&'history crate::storage::substrate::VersionedEntityMetadata> {
-        self.visible_metadata_index(history)
-            .map(|index| &history[index])
-    }
-
-    fn visible_relation_metadata<'history>(
-        &self,
-        history: &'history crate::storage::substrate::SharedColumn<
-            crate::storage::substrate::VersionedRelationMetadata,
-        >,
-    ) -> Option<&'history crate::storage::substrate::VersionedRelationMetadata> {
-        self.visible_metadata_index(history)
-            .map(|index| &history[index])
-    }
-
-    fn visible_metadata_index<T: HistoricalMetadata + Clone>(
-        &self,
-        history: &crate::storage::substrate::SharedColumn<T>,
-    ) -> Option<usize> {
-        let end = history.partition_point(|entry| entry.effective_at() <= self.version_id);
-        (0..end).rev().find(|&index| {
-            let entry = &history[index];
-            entry.effective_at() <= self.version_id
-                && entry
-                    .retired_at()
-                    .is_none_or(|retired| self.version_id < retired)
-        })
+    pub(super) fn metadata_is_visible<T: HistoricalMetadata>(&self, metadata: &T) -> bool {
+        metadata.effective_at() <= self.version_id
+            && metadata
+                .retired_at()
+                .is_none_or(|retired| self.version_id < retired)
     }
 }
 

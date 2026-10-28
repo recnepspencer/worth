@@ -157,7 +157,7 @@ fn exact_observation_proof_refuses_a_narrow_audience_while_its_own_source_succee
             .unwrap(),
         );
     }
-    let runtime = builder.build();
+    let runtime = builder.build().expect("valid native fixture configuration");
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationSource::new().token(),

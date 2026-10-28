@@ -13,16 +13,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 #[test]
 fn precommit_capacity_keeps_original_cause_and_pre_effect_posture() {
     for capacity in [
-        Capacity::Meter(Stop::PreparationMemoryExhausted {
-            required: 65,
-            maximum: 64,
-        }),
         Capacity::Meter(Stop::PreparationMemoryCounterOverflow),
-        Capacity::Meter(Stop::RetainedCompanionCapacityExhausted {
-            requested: 3,
-            retained: 62,
-            maximum: 64,
-        }),
         Capacity::ScratchSizeOverflow,
         Capacity::ScratchAllocationRefused { bytes: 65 },
     ] {

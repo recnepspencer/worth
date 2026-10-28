@@ -143,7 +143,6 @@ fn borrowed_record_reads_preserve_actual_head_bytes_ranges_and_absence() {
         .unwrap(),
         input
     );
-    drop(observation);
     media.close();
 }
 

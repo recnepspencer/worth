@@ -38,15 +38,12 @@ use blob_scope_admission::admitted_blob_scope;
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/certified_release_serving.rs"]
 mod certified_release_serving;
-
-#[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/pending_wal_world.rs"]
-mod pending_wal_world;
-
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/pending_wal_fold.rs"]
 mod pending_wal_fold;
-
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/pending_wal_world.rs"]
+mod pending_wal_world;
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/selected_batch_multi_pending.rs"]
 mod selected_batch_multi_pending;
@@ -60,20 +57,38 @@ mod pending_successor_above_history;
 mod before_first_checkpoint;
 
 #[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/published_above_checkpoint.rs"]
-mod published_above_checkpoint;
-
+#[path = "production_entry/anchored_record_members.rs"]
+mod anchored_record_members;
 #[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/three_batch_fold.rs"]
-mod three_batch_fold;
-
+#[path = "production_entry/anchored_records.rs"]
+mod anchored_records;
 #[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/selected_tag7_pruned_wal.rs"]
-mod selected_tag7_pruned_wal;
+#[path = "production_entry/anchored_records_oracle.rs"]
+mod anchored_records_oracle;
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/ordered_journals.rs"]
+mod ordered_journals;
+#[cfg(feature = "certification-test-authority")]
+use ordered_journals::{canonical_journal, canonical_journal_oracle};
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/physical_checkpoint_oracle.rs"]
+mod physical_checkpoint_oracle;
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/staging_residue_recovery.rs"]
+mod staging_residue_recovery;
 
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/accumulator_only_pending_wal.rs"]
 mod accumulator_only_pending_wal;
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/published_above_checkpoint.rs"]
+mod published_above_checkpoint;
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/selected_tag7_pruned_wal.rs"]
+mod selected_tag7_pruned_wal;
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/three_batch_fold.rs"]
+mod three_batch_fold;
 
 #[path = "production_entry/historical_release_only.rs"]
 mod historical_release_only;

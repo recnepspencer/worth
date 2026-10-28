@@ -34,22 +34,20 @@ impl WorthQueryApplicationAttemptDenial {
         entity_id: EntityId,
         locator: &AspectFieldLocator,
     ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::UnobservedWrite,
-            subject: "existing entity field write".to_owned(),
-            cause: AttemptDenialCause::UnobservedWrite(Box::new(
-                WorthQueryApplicationUnobservedWrite {
-                    entity_id,
-                    locator: locator.clone(),
-                },
-            )),
-        }
+        Self::from_cause(
+            WorthQueryApplicationAttemptDenialKind::UnobservedWrite,
+            "existing entity field write".to_owned(),
+            AttemptDenialCause::UnobservedWrite(Box::new(WorthQueryApplicationUnobservedWrite {
+                entity_id,
+                locator: locator.clone(),
+            })),
+        )
     }
 
     /// Exact coordinates when this refusal is an unobserved existing-entity write.
     pub fn unobserved_write(&self) -> Option<&WorthQueryApplicationUnobservedWrite> {
-        match &self.cause {
-            AttemptDenialCause::UnobservedWrite(cause) => Some(cause),
+        match self.cause() {
+            Some(AttemptDenialCause::UnobservedWrite(cause)) => Some(cause),
             _ => None,
         }
     }

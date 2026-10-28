@@ -156,10 +156,7 @@ impl PreparedPhysicalMutation {
         self.selected_segment_rewrite = true;
         self.rewrite_pages = pages;
         self.source_root_generation = source_root_generation;
-        self.rewrite_anchor = match anchor {
-            Some(anchor) => Some(PreparedRewriteAnchor::Inline(anchor)),
-            None => None,
-        };
+        self.rewrite_anchor = anchor.map(PreparedRewriteAnchor::Inline);
         self
     }
 

@@ -37,6 +37,7 @@ pub enum RelationalAuthoredWriteDenial {
     Request(worth_execution::WorkCeilingDenial),
     Interrupted(worth_execution::MapKernelStop),
     Retention(crate::branch::RelationalBranchBasisDenial),
+    Execution(crate::execution::RelationalExecutionDenialCause),
 }
 
 impl From<worth_execution::WorkCeilingDenial> for RelationalAuthoredWriteDenial {

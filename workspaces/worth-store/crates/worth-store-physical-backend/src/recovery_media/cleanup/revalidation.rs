@@ -1,9 +1,9 @@
 use sha2::{Digest, Sha256};
 
-use crate::filesystem_media::{ArtifactTreeFailure, ArtifactTreeFile};
+use crate::filesystem_media::{ArtifactTreeFailure, ArtifactTreeFailureKind, ArtifactTreeFile};
 
 use super::super::AdmittedRecoveryFilesystemMedia;
-use super::BackendRecoveryCleanupRemovalRequest;
+use super::{BackendRecoveryCheckpointExpectation, BackendRecoveryCleanupRemovalRequest};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct BackendRecoveryCleanupArtifactRevalidationProgress {
@@ -15,6 +15,10 @@ pub struct BackendRecoveryCleanupArtifactRevalidationProgress {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackendRecoveryCleanupArtifactRevalidationDenial {
     CheckpointRead(ArtifactTreeFailure),
+    /// Recovery selected no checkpoint, but one is now published.
+    CheckpointPresent {
+        observed_bytes: u64,
+    },
     CheckpointLengthMismatch {
         expected_bytes: u64,
         observed_bytes: u64,
@@ -69,38 +73,91 @@ fn verify_checkpoint(
     BackendRecoveryCleanupArtifactRevalidationProgress,
     RecoveryCleanupArtifactRevalidationFailure,
 > {
+    match request.checkpoint_expectation() {
+        BackendRecoveryCheckpointExpectation::Selected(expected) => verify_selected_checkpoint(
+            media,
+            expected.artifact(),
+            expected.byte_count(),
+            expected.digest(),
+        ),
+        BackendRecoveryCheckpointExpectation::Absent(checkpoint) => {
+            verify_absent_checkpoint(media, checkpoint)
+        }
+    }
+}
+
+fn verify_selected_checkpoint(
+    media: &AdmittedRecoveryFilesystemMedia,
+    checkpoint: &ArtifactTreeFile,
+    expected_bytes: u64,
+    expected_digest: [u8; 32],
+) -> Result<
+    BackendRecoveryCleanupArtifactRevalidationProgress,
+    RecoveryCleanupArtifactRevalidationFailure,
+> {
     let attempted = BackendRecoveryCleanupArtifactRevalidationProgress::default().attempted();
     let observed = media
         .parts
         .artifact_tree()
-        .read_bounded(
-            request.checkpoint(),
-            request.checkpoint_bytes().saturating_add(1),
-        )
+        .read_bounded(checkpoint, expected_bytes.saturating_add(1))
         .map_err(|failure| {
             RecoveryCleanupArtifactRevalidationFailure::checkpoint_read(attempted, failure)
         })?;
     let progress = attempted.completed(observed.len() as u64);
-    if observed.len() as u64 != request.checkpoint_bytes() {
+    if observed.len() as u64 != expected_bytes {
         return Err(RecoveryCleanupArtifactRevalidationFailure {
             denial: BackendRecoveryCleanupArtifactRevalidationDenial::CheckpointLengthMismatch {
-                expected_bytes: request.checkpoint_bytes(),
+                expected_bytes,
                 observed_bytes: observed.len() as u64,
             },
             progress,
         });
     }
     let observed_digest = <[u8; 32]>::from(Sha256::digest(&observed));
-    if observed_digest != request.checkpoint_digest() {
+    if observed_digest != expected_digest {
         return Err(RecoveryCleanupArtifactRevalidationFailure {
             denial: BackendRecoveryCleanupArtifactRevalidationDenial::CheckpointDigestMismatch {
-                expected_digest: request.checkpoint_digest(),
+                expected_digest,
                 observed_digest,
             },
             progress,
         });
     }
     Ok(progress)
+}
+
+/// Absence is the only admissible observation; a one-byte bound is enough to
+/// refuse any published checkpoint.
+fn verify_absent_checkpoint(
+    media: &AdmittedRecoveryFilesystemMedia,
+    checkpoint: &ArtifactTreeFile,
+) -> Result<
+    BackendRecoveryCleanupArtifactRevalidationProgress,
+    RecoveryCleanupArtifactRevalidationFailure,
+> {
+    let attempted = BackendRecoveryCleanupArtifactRevalidationProgress::default().attempted();
+    match media.parts.artifact_tree().read_bounded(checkpoint, 1) {
+        Err(failure) if failure.kind() == ArtifactTreeFailureKind::Absent => {
+            Ok(attempted.completed(0))
+        }
+        Err(failure) if failure.kind() == ArtifactTreeFailureKind::AccessLimitExceeded => {
+            Err(RecoveryCleanupArtifactRevalidationFailure {
+                denial: BackendRecoveryCleanupArtifactRevalidationDenial::CheckpointPresent {
+                    observed_bytes: failure.access_limit().map_or(0, |limit| limit.observed),
+                },
+                progress: attempted,
+            })
+        }
+        Err(failure) => Err(RecoveryCleanupArtifactRevalidationFailure::checkpoint_read(
+            attempted, failure,
+        )),
+        Ok(observed) => Err(RecoveryCleanupArtifactRevalidationFailure {
+            denial: BackendRecoveryCleanupArtifactRevalidationDenial::CheckpointPresent {
+                observed_bytes: observed.len() as u64,
+            },
+            progress: attempted.completed(observed.len() as u64),
+        }),
+    }
 }
 
 fn verify_artifact(

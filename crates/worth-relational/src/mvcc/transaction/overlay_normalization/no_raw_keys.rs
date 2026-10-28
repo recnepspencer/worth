@@ -37,7 +37,12 @@ fn no_raw_client_keys_preserve_staged_backing_and_exact_rollback_effects() {
     assert_eq!(transaction.overlay.normalization_generation, 0);
     assert_eq!(
         transaction
-            .merged_plan(&runtime, Allocation::SystemAllocation,)
+            .prepare_merged_plan(
+                &worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request()
+                ),
+                &runtime
+            )
             .unwrap()
             .merged_intents,
         batch(first).intents
@@ -57,7 +62,12 @@ fn no_raw_client_keys_preserve_staged_backing_and_exact_rollback_effects() {
         .unwrap();
     assert_eq!(
         transaction
-            .merged_plan(&runtime, Allocation::SystemAllocation,)
+            .prepare_merged_plan(
+                &worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request()
+                ),
+                &runtime
+            )
             .unwrap()
             .merged_intents
             .len(),
@@ -82,7 +92,12 @@ fn no_raw_client_keys_preserve_staged_backing_and_exact_rollback_effects() {
     ));
     assert_eq!(
         transaction
-            .merged_plan(&runtime, Allocation::SystemAllocation,)
+            .prepare_merged_plan(
+                &worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request()
+                ),
+                &runtime
+            )
             .unwrap()
             .merged_intents,
         batch(first).intents

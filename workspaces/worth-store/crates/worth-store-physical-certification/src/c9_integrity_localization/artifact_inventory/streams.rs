@@ -1,7 +1,8 @@
 use super::{u32_at, u64_at, ArtifactGranule, ArtifactInventory, FrameGrammar};
 use std::num::NonZeroU64;
 use worth_store_physical_format::{
-    PhysicalArtifactReadTarget, PhysicalCheckpointIdentity, WalSegmentIdentity,
+    decode_checkpoint_certificate, PhysicalArtifactReadTarget, PhysicalCheckpointIdentity,
+    WalSegmentIdentity,
 };
 use worth_store_physical_integrity::{
     CheckpointStreamHeaderScopeIdentity, PhysicalArtifactScope, PhysicalByteRange,
@@ -45,8 +46,27 @@ pub(super) fn collect(inventory: &mut ArtifactInventory) {
                 NonZeroU64::new(u64_at(&bytes, 32)).unwrap(),
             );
             let mut offset = 0;
+            let mut certificates_start = None;
             while offset < bytes.len() {
                 let length = 20 + u32_at(&bytes, offset + 12) as usize;
+                if matches!(bytes[offset + 9], 6 | 7) {
+                    // Custody certificates are validated through the footer's
+                    // aggregate basis; they have no independently scrubbed scope.
+                    // Decode only this immutable lawful baseline, never damaged bytes.
+                    decode_checkpoint_certificate(&bytes[offset..offset + length])
+                        .expect("canonical production checkpoint certificate");
+                    certificates_start.get_or_insert(offset);
+                    offset += length;
+                    continue;
+                }
+                if bytes[offset + 9] == 5
+                    && let Some(start) = certificates_start
+                {
+                    inventory.checkpoint_certificates.insert(
+                        identity.sequence().get(),
+                        PhysicalByteRange::new(start as u64, (offset - start) as u64).unwrap(),
+                    );
+                }
                 let range = PhysicalByteRange::new(offset as u64, length as u64).unwrap();
                 let (family, scope) = match bytes[offset + 9] {
                     1 => (
@@ -83,6 +103,7 @@ pub(super) fn collect(inventory: &mut ArtifactInventory) {
                 });
                 offset += length;
             }
+            assert_eq!(offset, bytes.len());
         }
     }
 }

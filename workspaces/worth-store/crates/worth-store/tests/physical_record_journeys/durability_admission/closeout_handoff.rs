@@ -175,12 +175,20 @@ fn completed_but_unobserved_identity_survives_into_operation_fates() {
     };
     let identity = prepared.mutation_identity();
     let handle = prepared.start();
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-    while std::time::Instant::now() < deadline
-        && handle.progress().phase()
-            != worth_store::physical_runtime::PhysicalMutationProgressPhase::Terminal
-    {
-        std::thread::yield_now();
+    let started = std::time::Instant::now();
+    loop {
+        let phase = handle.progress().phase();
+        if phase == worth_store::physical_runtime::PhysicalMutationProgressPhase::Terminal {
+            break;
+        }
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(30),
+            "unobserved mutation stalled in {phase:?} after {:?}",
+            started.elapsed()
+        );
+        // Reading progress must not observe the terminal receipt: closeout
+        // below must still retain exactly one completed-unobserved identity.
+        std::thread::sleep(std::time::Duration::from_millis(1));
     }
     assert_eq!(
         handle.progress().phase(),

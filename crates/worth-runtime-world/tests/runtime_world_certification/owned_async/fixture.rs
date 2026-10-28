@@ -49,7 +49,11 @@ impl AsyncSourceCourt {
     }
 
     fn with_queue_capacity(capacity: Option<std::num::NonZeroU64>, process_local: bool) -> Self {
-        let relational = Arc::new(RelationalRuntimeApi::builder().build());
+        let relational = Arc::new(
+            RelationalRuntimeApi::builder()
+                .build()
+                .expect("valid native runtime configuration"),
+        );
         let source = RuntimeBridgeRelationalSource::for_graph_role(
             Arc::clone(&relational),
             "owned-async-source",
@@ -197,10 +201,13 @@ impl AsyncSourceCourt {
     }
 
     pub fn fork(&self, head: &ProductBranchObservation, name: &str) -> ProductBranchObservation {
+        let host = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
         let RuntimeWorldBranchCreationOutcome::Performed(fork) = self
             .world
             .branch_port()
             .create_product_branch(
+                &execution,
                 head.clone(),
                 ProductBranchCreationIntent::from_source(
                     name,

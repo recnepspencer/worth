@@ -197,9 +197,8 @@ pub(super) fn surface_basis_for_patch(
 }
 
 pub(super) fn surface_basis_for_diagnostics(
-    envelope: &CanonicalCommitEnvelope,
+    summary: &crate::diagnostics::data::RelationalDiagnosticArtifact,
 ) -> ReplaySurfaceComparisonBasis {
-    let summary = &envelope.diagnostics_summary;
     ReplaySurfaceComparisonBasis::new(
         ReplaySurfaceAuthorityKind::Diagnostics,
         Some(VerifiedReplaySurfaceDigest::from_digest(

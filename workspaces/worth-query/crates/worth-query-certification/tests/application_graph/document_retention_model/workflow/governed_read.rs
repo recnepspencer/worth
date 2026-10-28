@@ -199,12 +199,7 @@ pub(super) fn declare(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 512)
         .operation_read_field(op, DocumentIdentityField::reference())
-        .capability(
-            contract::read::<SubjectReadCapability, SubjectReadOperation>(
-                SubjectReadCapability::reference(),
-                op,
-            ),
-        );
+        .capability(subject_contract(SubjectReadCapability::reference(), op));
     let op = DefinitionReadOperation::reference();
     let schema = schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())

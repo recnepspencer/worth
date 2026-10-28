@@ -6,7 +6,8 @@ impl RuntimeBridgeRelationalSource {
     pub fn observe_runtime_locks_for_test(
         &self,
         acquired: impl Fn() + Send + Sync + 'static,
-    ) -> worth_relational::facade::change_source::RelationalRuntimeLockObservationForTest {
+    ) -> Option<worth_relational::facade::change_source::RelationalRuntimeLockObservationForTest>
+    {
         self.runtime.observe_locks_for_test(acquired)
     }
 }

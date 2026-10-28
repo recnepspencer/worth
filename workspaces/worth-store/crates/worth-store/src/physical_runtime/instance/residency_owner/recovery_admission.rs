@@ -34,10 +34,9 @@ impl PhysicalResidencyOwner {
             origin_generation: prior,
             ..
         } = self.recovery_allocation
+            && prior != origin_generation
         {
-            if prior != origin_generation {
-                return Err(PhysicalResidencyDenial::AllocationGrantMismatch);
-            }
+            return Err(PhysicalResidencyDenial::AllocationGrantMismatch);
         }
         let retained = match self.recovery_allocation {
             RecoveryAllocationBinding::RecoveryAdmission {

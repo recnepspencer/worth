@@ -9,14 +9,17 @@ fn retained_commit_reconstruction_uses_its_own_root_and_finite_cold_budget() {
     let first = create_entity_outcome(execution, &runtime, "historical");
     let entity = changed_entities(&first)[0];
     let second = update_entity(execution, &runtime, entity, "current");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "maintenance.retained".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "maintenance.retained".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {
         source_commit_id: first.commit.commit_id,
         branch_id: BranchId("main".into()),

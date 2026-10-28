@@ -42,9 +42,6 @@ pub(super) fn membership() -> u64 {
 pub(super) fn identity_target() -> u64 {
     tree_entry::<AggregateIdentity, EntityReference>() + 64
 }
-pub(super) fn assignment_member() -> u64 {
-    tree_entry::<Member, AggregateIdentity>()
-}
 pub(super) fn demand() -> u64 {
     tree_entry::<EntityId, ()>() + tree_entry::<RelationId, ()>() + tree_entry::<PartitionId, ()>()
 }

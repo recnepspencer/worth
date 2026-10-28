@@ -42,6 +42,11 @@ impl ScopePath {
         &self.0
     }
 
+    /// A useful scoped payload has at least one String slot and one UTF-8 byte.
+    pub(crate) const fn minimum_heap_bytes() -> usize {
+        std::mem::size_of::<String>() + std::mem::size_of::<u8>()
+    }
+
     pub(crate) fn retained_capacity_bytes(&self) -> usize {
         self.0
             .capacity()

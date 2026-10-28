@@ -12,7 +12,7 @@ fn perf_replay_recovery_matrix() {
         suite,
         "durable_replay_lineage_basis",
         || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             create_entity_outcome(execution, &runtime, "source");
             let second = create_entity_outcome(execution, &runtime, "target");
             let replay_commit_id = second.commit.commit_id;
@@ -79,20 +79,19 @@ fn perf_replay_recovery_matrix() {
 
     let checkpoint_recovery_samples =
         capture_perf_samples(suite, "checkpoint_recover_suffix_replay", || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             create_entity_outcome(execution, &runtime, "source");
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .expect("checkpoint");
+            crate::tests::support::checkpoint_durably(execution, &runtime).expect("checkpoint");
             let second = create_entity_outcome(execution, &runtime, "target");
             let tail_commit_id = second.commit.commit_id;
 
-            let recovery_plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema();
+            let recovery_plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered = durable_runtime_with_test_schema();
 
             recovered.performance_access().reset_counters();
             let recovery_started_at = Instant::now();
@@ -124,7 +123,7 @@ fn perf_replay_recovery_matrix() {
                     "recovered_commits": outcome.recovered_commits,
                     "checkpoint_commits": outcome.coverage.checkpoint_commits,
                     "replayed_tail_commits": outcome.coverage.replayed_tail_commits,
-                    "selected_checkpoint": outcome.cursor.checkpoint_id.is_some(),
+                    "selected_checkpoint": outcome.coverage.checkpoint_covered_position.is_some(),
                     "replay_failure": replay.failure.as_ref().map(|failure| format!("{failure:?}")),
                     "replay_mismatch_count": replay.mismatches.len(),
                     "phase_timing": {

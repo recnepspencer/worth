@@ -56,14 +56,14 @@ impl RelationalTransactionFootprint {
             self.reads
                 .iter()
                 .cloned()
-                .map(|read| normalize_read_locus(read, interner, policy)),
+                .map(|read| normalize_read_locus(read, interner, policy).map_err(Denial::from)),
             allocation_policy,
         )?;
         let writes = OrderedStore::default().with_inserted(
             self.writes
                 .iter()
                 .cloned()
-                .map(|write| normalize_write_locus(write, interner, policy)),
+                .map(|write| normalize_write_locus(write, interner, policy).map_err(Denial::from)),
             allocation_policy,
         )?;
         Ok(Self {

@@ -142,10 +142,9 @@ pub(super) fn restore(
             record,
             frame_digest,
         } = *claim
+            && !is_full_node(ordinal, chunks)
         {
-            if !is_full_node(ordinal, chunks) {
-                retained.retain(ordinal, record, frame_digest)?;
-            }
+            retained.retain(ordinal, record, frame_digest)?;
         }
     }
     Ok((tree, retained))

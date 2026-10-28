@@ -19,6 +19,7 @@ pub use selection::RelationalRecordHistorySubject;
 #[derive(Debug)]
 pub enum RelationalRecordHistoryDenial {
     ForeignOwner,
+    Storage(crate::execution::RelationalExecutionDenialCause),
     SubjectUnavailable,
     EmptySubjectSelection,
     EmptyAspectSelection,

@@ -27,8 +27,8 @@ where
         Relation: OperationLinks<Binding::Operation>,
     {
         self.execution.consult().map_err(|cause| {
-            WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::EffectExecution(cause),
+            WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                cause.into(),
                 relation.name(),
             )
         })?;

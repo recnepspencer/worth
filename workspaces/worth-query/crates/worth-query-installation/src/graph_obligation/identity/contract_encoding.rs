@@ -238,7 +238,7 @@ fn encode_read_scope(
             encode_binding(basis, prefix, scope.schema())?;
             basis.text(
                 format!("{prefix}.definition"),
-                &scope.meaning().canonical_record(),
+                scope.meaning().canonical_record(),
             )?;
         }
         WorthQueryOperationGraphReadScope::Entity(entity) => {

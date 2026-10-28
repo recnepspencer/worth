@@ -65,8 +65,8 @@ impl PhysicalWorkTerminalLedger {
         if entries.len() < self.capacity {
             entries.push(event);
         } else if event.must_retain() {
-            if let PhysicalWorkTerminalEvent::DerivedReconciliationDeferred(identity) = event {
-                if let Some(same_work) = entries.iter().position(|retained| {
+            if let PhysicalWorkTerminalEvent::DerivedReconciliationDeferred(identity) = event
+                && let Some(same_work) = entries.iter().position(|retained| {
                     matches!(
                         retained,
                         PhysicalWorkTerminalEvent::Settled {
@@ -74,10 +74,10 @@ impl PhysicalWorkTerminalLedger {
                             ..
                         } if *settled == identity
                     )
-                }) {
-                    entries[same_work] = event;
-                    return;
-                }
+                })
+            {
+                entries[same_work] = event;
+                return;
             }
             if let Some(safe) = entries.iter().position(|retained| !retained.must_retain()) {
                 entries.swap_remove(safe);

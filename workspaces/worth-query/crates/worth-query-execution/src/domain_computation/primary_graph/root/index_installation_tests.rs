@@ -8,18 +8,23 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_layout;
 fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows() {
     let mut query_definition_count = None;
     for unrelated in [1_000, 10_000] {
-        let runtime = RelationalRuntimeApi::builder().build();
+        let runtime = RelationalRuntimeApi::builder()
+            .build()
+            .expect("valid native runtime configuration");
         let mut source_layout = installed_layout();
         let unrelated_locator = source_layout.provider_idempotency().key_locator.clone();
         for ordinal in 0..unrelated {
-            runtime.index_authority().register(DerivedIndexDefinition {
-                index_id: DerivedIndexId(0),
-                name: format!("unrelated-index-{ordinal}"),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: unrelated_locator.clone(),
-                },
-                branch_scoped: false,
-            });
+            runtime
+                .index_authority()
+                .register(DerivedIndexDefinition {
+                    index_id: DerivedIndexId(0),
+                    name: format!("unrelated-index-{ordinal}"),
+                    kind: DerivedIndexKind::EntityField {
+                        field_locator: unrelated_locator.clone(),
+                    },
+                    branch_scoped: false,
+                })
+                .expect("index fixture has identity capacity");
         }
         register_primary_graph_indexes(
             &mut source_layout,
@@ -69,7 +74,9 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
 
 #[test]
 fn recovered_index_name_without_matching_kind_cannot_bind() {
-    let runtime = RelationalRuntimeApi::builder().build();
+    let runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let mut expected = installed_layout();
     let (binding, principal) = expected.principal_bindings().next().unwrap();
     let name = format!("application-principal.{binding}");
@@ -77,14 +84,17 @@ fn recovered_index_name_without_matching_kind_cannot_bind() {
         principal.identity_locator,
         expected.provider_idempotency().key_locator
     );
-    runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: name.clone(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: expected.provider_idempotency().key_locator.clone(),
-        },
-        branch_scoped: false,
-    });
+    runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: name.clone(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: expected.provider_idempotency().key_locator.clone(),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
 
     let denial = register_primary_graph_indexes(
         &mut expected,

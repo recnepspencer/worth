@@ -98,13 +98,22 @@ fn execution_draft(request: &CanonicalStrategyCommitRequest) -> StrategyExecutio
 fn lowered_bundle() -> StrategyCommitArtifactBundle {
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(crate::tests::support::test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let (transaction_validation_input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(&runtime, None);
     let lowered = authority
-        .lower_execution_with_input(&runtime, &request, &execution, transaction_validation_input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &request,
+            &execution,
+            transaction_validation_input,
+        )
         .expect("lowered strategy plan");
 
     StrategyCommitArtifactBundle::from_lowered(&lowered, &descriptor(), runtime.runtime_config())
@@ -114,13 +123,22 @@ fn lowered_bundle() -> StrategyCommitArtifactBundle {
 fn strategy_commit_artifact_bundle_carries_consistent_typed_artifacts() {
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(crate::tests::support::test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let (transaction_validation_input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(&runtime, None);
     let lowered = authority
-        .lower_execution_with_input(&runtime, &request, &execution, transaction_validation_input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &request,
+            &execution,
+            transaction_validation_input,
+        )
         .expect("lowered strategy plan");
     let bundle = StrategyCommitArtifactBundle::from_lowered(
         &lowered,

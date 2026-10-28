@@ -35,7 +35,9 @@ pub(crate) fn ensure_selected_field_indexes_admitted(
         }
         seen[seen_count] = Some(index);
         seen_count += 1;
-        if !selected_index_is_current(runtime, basis, index) {
+        if !selected_index_is_current(execution, runtime, basis, index)
+            .map_err(|cause| Stop::Admission(CompanionPreflightStop::Execution(cause)))?
+        {
             stale[stale_count] = Some(index);
             stale_count += 1;
         }
@@ -67,7 +69,12 @@ pub(crate) fn ensure_selected_field_indexes_admitted(
             super::super::index_maintenance_budget::ordinary_index_maintenance_budget(),
             execution,
         )
-        .map_err(|_| Stop::Native)?;
+        .map_err(|denial| match denial.kind {
+            worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Execution(
+                cause,
+            ) => Stop::Admission(CompanionPreflightStop::Execution(cause)),
+            _ => Stop::Native,
+        })?;
     if build.generations.len() != stale_count {
         return Err(Stop::Native);
     }

@@ -4,18 +4,18 @@ use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
 use crate::facade::transactions::{CreateIntent, MutationIntent, WorkerIntentBatch};
 use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
-    persisted_runtime_with_test_schema, read_entity_field, read_entity_name,
-    unique_test_store_path, update_entity, update_entity_on_branch,
+    durable_runtime_with_test_schema, read_entity_field, read_entity_name, update_entity,
+    update_entity_on_branch,
 };
 
 use super::artifacts::MergeExecutionCertificationArtifacts;
 use super::recovery_certification::certify_merge_execution_with_recovery;
-use super::schema_fixtures::{persisted_runtime_with_registry, prefer_richer_registry};
+use super::schema_fixtures::{durable_runtime_with_registry, prefer_richer_registry};
 
 pub(super) fn certify_exact_shared_merge_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> MergeExecutionCertificationArtifacts {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, shared, "same");
@@ -48,14 +48,14 @@ pub(super) fn certify_exact_shared_merge_execution(
         execution,
         &runtime,
         &merge,
-        persisted_runtime_with_test_schema,
+        durable_runtime_with_test_schema,
     )
 }
 
 pub(super) fn certify_source_only_addition_merge_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> MergeExecutionCertificationArtifacts {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -86,16 +86,16 @@ pub(super) fn certify_source_only_addition_merge_execution(
         execution,
         &runtime,
         &merge,
-        persisted_runtime_with_test_schema,
+        durable_runtime_with_test_schema,
     )
 }
 
 pub(super) fn certify_prefer_richer_merge_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> MergeExecutionCertificationArtifacts {
-    let store_path = unique_test_store_path("worth-relational-7c-phase-g");
+    let medium = crate::tests::support::TestDurableMedium::new();
     let registry = prefer_richer_registry();
-    let runtime = persisted_runtime_with_registry(registry.clone(), store_path.clone());
+    let runtime = durable_runtime_with_registry(registry.clone(), medium.clone());
 
     let main_entity = create_entity(execution, &runtime, "shared-name");
     create_branch_from_main(&runtime, "feature");
@@ -163,6 +163,6 @@ pub(super) fn certify_prefer_richer_merge_execution(
     );
 
     certify_merge_execution_with_recovery(execution, &runtime, &merge, move || {
-        persisted_runtime_with_registry(registry.clone(), store_path.clone())
+        durable_runtime_with_registry(registry.clone(), medium.clone())
     })
 }

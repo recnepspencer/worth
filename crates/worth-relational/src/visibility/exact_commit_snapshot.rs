@@ -169,14 +169,14 @@ pub(crate) fn open_retained_commit_snapshot(
 
     let Some(committed) = runtime
         .history()
-        .committed_version(requested_commit.version_id)
+        .immutable_commit_receipt_for_version(requested_commit.version_id)
     else {
         return Err(denial(
             RelationalRetainedCommitSnapshotDenialKind::VersionUnavailable,
             "requested version has no canonical commit in this runtime",
         ));
     };
-    let canonical_commit = committed.commit();
+    let canonical_commit = &committed;
     if canonical_commit.branch_id != requested_commit.branch_id {
         return Err(denial(
             RelationalRetainedCommitSnapshotDenialKind::BranchMismatch,

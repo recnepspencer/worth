@@ -21,7 +21,7 @@ pub(super) fn validate(
     // Kind is immutable for this exact native generation. Its value at the
     // retirement is reconstructed below, independently of today's program.
     let kind = root
-        .partition_state(id.partition_id)
+        .partition_state(id.partition_id)?
         .and_then(|partition| partition.entity_arena.get(&id))
         .and_then(|row| row.kind_id())
         .ok_or("codec program native generation absent")?;

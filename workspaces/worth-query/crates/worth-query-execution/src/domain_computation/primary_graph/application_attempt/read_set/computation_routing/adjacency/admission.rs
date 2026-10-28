@@ -35,94 +35,92 @@ impl ComputationFactAttribution {
                 readers = readers.checked_add(1).ok_or(Cause::ChargedBytesOverflow)?;
             }
         }
-        if fallback {
-            if let Some(native) = &self.native {
-                let clone_count = if self.range_progress.is_some() {
-                    self.fresh_calls.len()
-                } else {
-                    0
-                };
-                readers = readers
+        if fallback && let Some(native) = &self.native {
+            let clone_count = if self.range_progress.is_some() {
+                self.fresh_calls.len()
+            } else {
+                0
+            };
+            readers = readers
+                .checked_add(clone_count)
+                .ok_or(Cause::ChargedBytesOverflow)?;
+            let mut calls = self.carried.len();
+            if let Some(progress) = &self.range_progress {
+                for _ in progress.carried(&self.fresh_calls) {
+                    AggregateObservation::checkpoint(context)?;
+                    calls = calls.checked_add(1).ok_or(Cause::ChargedBytesOverflow)?;
+                }
+            }
+            readers = readers
+                .checked_add(calls)
+                .ok_or(Cause::ChargedBytesOverflow)?;
+            // Real call-index navigation, call-set insertion and the one
+            // fresh-call clone performed by the existing fallback owner.
+            let call_units = u64::try_from(
+                calls
                     .checked_add(clone_count)
-                    .ok_or(Cause::ChargedBytesOverflow)?;
-                let mut calls = self.carried.len();
-                if let Some(progress) = &self.range_progress {
-                    for _ in progress.carried(&self.fresh_calls) {
-                        AggregateObservation::checkpoint(context)?;
-                        calls = calls.checked_add(1).ok_or(Cause::ChargedBytesOverflow)?;
+                    .ok_or(Cause::WorkCounterOverflow)?,
+            )
+            .ok()
+            .and_then(|n| {
+                n.checked_mul(
+                    levels(native.facts().index.calls.len())
+                        .checked_mul(2)?
+                        .checked_add(
+                            levels(self.calls.len().checked_add(calls)?).checked_mul(11)?,
+                        )?,
+                )
+            })
+            .ok_or(Cause::WorkCounterOverflow)?;
+            checkpoint(context, call_units)?;
+            for (key, fact) in native.facts().metadata.iter() {
+                let mut count = 0usize;
+                for read in fact.readers.reads() {
+                    AggregateObservation::checkpoint(context)?;
+                    if self.is_carried(read) {
+                        count = count.checked_add(1).ok_or(Cause::ChargedBytesOverflow)?;
                     }
                 }
-                readers = readers
-                    .checked_add(calls)
-                    .ok_or(Cause::ChargedBytesOverflow)?;
-                // Real call-index navigation, call-set insertion and the one
-                // fresh-call clone performed by the existing fallback owner.
-                let call_units = u64::try_from(
-                    calls
-                        .checked_add(clone_count)
-                        .ok_or(Cause::WorkCounterOverflow)?,
-                )
-                .ok()
-                .and_then(|n| {
-                    n.checked_mul(
-                        levels(native.facts().index.calls.len())
-                            .checked_mul(2)?
-                            .checked_add(
-                                levels(self.calls.len().checked_add(calls)?).checked_mul(11)?,
-                            )?,
-                    )
-                })
-                .ok_or(Cause::WorkCounterOverflow)?;
-                checkpoint(context, call_units)?;
-                for (key, fact) in native.facts().metadata.iter() {
-                    let mut count = 0usize;
-                    for read in fact.readers.reads() {
-                        AggregateObservation::checkpoint(context)?;
-                        if self.is_carried(read) {
-                            count = count.checked_add(1).ok_or(Cause::ChargedBytesOverflow)?;
-                        }
-                    }
-                    if count != 0 {
-                        // The genuine fact's sole locator emitter covers shared
-                        // Native keys/addresses. Add owned key payload for names
-                        // (such as entity aliases) absent from the fact locator.
-                        let semantic = native
-                            .facts()
-                            .original
-                            .get(fact.ordinal)
-                            .expect("sealed original fact")
-                            .dependency_locator_byte_bound()
-                            .ok_or(Cause::WorkCounterOverflow)?
-                            .checked_add(key.additional_charged_bytes())
-                            .ok_or(Cause::WorkCounterOverflow)?;
-                        expansion_work = expansion_work
-                            .checked_add(
-                                semantic
-                                    .checked_add(1)
-                                    .and_then(|n| n.checked_mul(u64::try_from(count).ok()?))
-                                    .ok_or(Cause::WorkCounterOverflow)?,
-                            )
-                            .ok_or(Cause::WorkCounterOverflow)?;
-                        // Existing materialize_carried clones a key per actual
-                        // reader; quote even duplicate entry temporaries first.
-                        keys = keys.checked_add(count).ok_or(Cause::ChargedBytesOverflow)?;
-                        expansion_keys = expansion_keys
-                            .checked_add(count)
-                            .ok_or(Cause::ChargedBytesOverflow)?;
-                        payload = payload
-                            .checked_add(
-                                key.additional_charged_bytes()
-                                    .checked_mul(
-                                        u64::try_from(count)
-                                            .map_err(|_| Cause::ChargedBytesOverflow)?,
-                                    )
-                                    .ok_or(Cause::ChargedBytesOverflow)?,
-                            )
-                            .ok_or(Cause::ChargedBytesOverflow)?;
-                        readers = readers
-                            .checked_add(count)
-                            .ok_or(Cause::ChargedBytesOverflow)?;
-                    }
+                if count != 0 {
+                    // The genuine fact's sole locator emitter covers shared
+                    // Native keys/addresses. Add owned key payload for names
+                    // (such as entity aliases) absent from the fact locator.
+                    let semantic = native
+                        .facts()
+                        .original
+                        .get(fact.ordinal)
+                        .expect("sealed original fact")
+                        .dependency_locator_byte_bound()
+                        .ok_or(Cause::WorkCounterOverflow)?
+                        .checked_add(key.additional_charged_bytes())
+                        .ok_or(Cause::WorkCounterOverflow)?;
+                    expansion_work = expansion_work
+                        .checked_add(
+                            semantic
+                                .checked_add(1)
+                                .and_then(|n| n.checked_mul(u64::try_from(count).ok()?))
+                                .ok_or(Cause::WorkCounterOverflow)?,
+                        )
+                        .ok_or(Cause::WorkCounterOverflow)?;
+                    // Existing materialize_carried clones a key per actual
+                    // reader; quote even duplicate entry temporaries first.
+                    keys = keys.checked_add(count).ok_or(Cause::ChargedBytesOverflow)?;
+                    expansion_keys = expansion_keys
+                        .checked_add(count)
+                        .ok_or(Cause::ChargedBytesOverflow)?;
+                    payload = payload
+                        .checked_add(
+                            key.additional_charged_bytes()
+                                .checked_mul(
+                                    u64::try_from(count)
+                                        .map_err(|_| Cause::ChargedBytesOverflow)?,
+                                )
+                                .ok_or(Cause::ChargedBytesOverflow)?,
+                        )
+                        .ok_or(Cause::ChargedBytesOverflow)?;
+                    readers = readers
+                        .checked_add(count)
+                        .ok_or(Cause::ChargedBytesOverflow)?;
                 }
             }
         }

@@ -35,7 +35,7 @@ pub(super) fn scalar_mutation_row(
         &entity_name,
         BranchId("main".to_string()),
     );
-    fork_seed_branch_from_main(&mut runtime, &branch);
+    fork_seed_branch_from_main(execution, &mut runtime, &branch);
     let binding =
         runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
@@ -230,7 +230,7 @@ pub(super) fn batch_mutation_row(
         );
         seeded_entities.push((entity_id, desired));
     }
-    fork_seed_branch_from_main(&mut runtime, &branch);
+    fork_seed_branch_from_main(execution, &mut runtime, &branch);
     let binding =
         runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch);
     let mut draft = effect_batch();

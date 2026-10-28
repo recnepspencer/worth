@@ -125,7 +125,7 @@ where
         .into_iter()
         .map(|packet| {
             let super::PacketMemory::Declared { scratch, result } = packet.memory else {
-                unreachable!("tracked batches have their own owner carriage")
+                unreachable!(/* Proof: Tracked packet batches are dispatched through their own owner carriage before the untracked batch extraction path. */ "tracked batches have their own owner carriage")
             };
             (
                 packet.identity,

@@ -32,8 +32,12 @@ fn projection_contract_violation_is_typed_not_panic_bucket() {
     let runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration)
         .commit_strategy_executor(executor_binding)
-        .build();
-    let snapshot = runtime.visibility_authority().snapshot();
+        .build()
+        .expect("valid native runtime configuration");
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = canonical_request();
 
     let bound = bind_execution(&runtime, &request, &snapshot, execution).expect("bind strategy");
@@ -43,7 +47,14 @@ fn projection_contract_violation_is_typed_not_panic_bucket() {
         StrategyExecutionError::ExecutorFailed {
             strategy_id: CommitStrategyId(41),
             failure,
-        } if matches!(&failure, crate::commit_strategies::data::StrategyExecutorFailure::Domain { class, .. } if *class
-            == crate::commit_strategies::data::StrategyExecutorFailureClass::ProjectionContractViolation)
+        } if matches!(&failure, crate::commit_strategies::data::StrategyExecutorFailure::Domain {
+            class,
+            evidence: Some(crate::commit_strategies::data::StrategyExecutorFailureEvidence::ProjectionContract { denial }),
+            ..
+        } if *class == crate::commit_strategies::data::StrategyExecutorFailureClass::ProjectionContractViolation
+            && denial.domain == crate::facade::runtime::ProjectionRecordDomain::Entity
+            && denial.kind_id == KindId(100)
+            && denial.requirement.is_none()
+            && denial.refusal == crate::facade::runtime::ProjectionContractRefusal::MissingAspectPlan)
     ));
 }

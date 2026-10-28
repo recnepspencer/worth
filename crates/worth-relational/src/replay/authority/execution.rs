@@ -1,6 +1,7 @@
 use crate::durability::data::RelationalRecoveryStop;
 use std::ops::ControlFlow;
 mod comparison;
+mod diagnostic_comparison;
 mod envelope_self_audit;
 mod surface_audit;
 
@@ -14,8 +15,8 @@ use crate::runtime::RelationalRuntime;
 
 use super::super::diagnostics::record_replay_diagnostic;
 use super::super::planning::{
-    load_replay_envelope, promised_replay_surfaces, replay_commit_closure_by_commit_id_order,
-    replay_recovery_plan_for_chain,
+    demand_replay_envelopes, load_replay_envelope, promised_replay_surfaces,
+    replay_commit_closure_by_commit_id_order, replay_recovery_plan_for_chain,
 };
 use super::continuity::validated_replay_continuity_envelope;
 use super::strategy_replay::verify_strategy_reexecution_surface;
@@ -33,7 +34,7 @@ struct ReplayAdmission {
 
 struct ReplayReconstruction {
     runtime: RelationalRuntime,
-    envelope: CanonicalCommitEnvelope,
+    envelope: std::sync::Arc<CanonicalCommitEnvelope>,
 }
 
 impl<'runtime> ReplayAuthority<'runtime> {
@@ -60,6 +61,8 @@ impl<'runtime> ReplayAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        let _source_envelopes =
+            demand_replay_envelopes(self.runtime, execution, request.commit_id)?;
         let admission = match self.admit_replay_target(&request) {
             Ok(admission) => admission,
             Err(outcome) => return Ok(outcome),
@@ -154,10 +157,11 @@ impl<'runtime> ReplayAuthority<'runtime> {
     ) -> Result<ControlFlow<RelationalReplayOutcome, ReplayReconstruction>, RelationalRecoveryStop>
     {
         let replay_plan = replay_recovery_plan_for_chain(
+            execution,
             self.runtime,
             &admission.commit_closure,
             request.verification_mode,
-        );
+        )?;
         let runtime = match self
             .runtime
             .rebuild_runtime_from_plan(execution, replay_plan)
@@ -189,7 +193,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         };
         let Some(envelope) = runtime
             .replay()
-            .canonical_commit_envelope(request.commit_id)
+            .canonical_commit_envelope(execution, request.commit_id)?
         else {
             return Ok(ControlFlow::Break(self.fail_and_record(
                 request.clone(),
@@ -233,6 +237,8 @@ impl<'runtime> ReplayAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        let _reconstructed_envelopes =
+            demand_replay_envelopes(&reconstruction.runtime, execution, request.commit_id)?;
         let compared_surfaces = promised_replay_surfaces(
             self.runtime,
             &admission.envelope,
@@ -278,18 +284,36 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &admission.envelope,
             selected_lineage_authority.as_ref(),
         );
-        let validated_envelope = validated_replay_continuity_envelope(
+        let validated_envelope = match validated_replay_continuity_envelope(
             self.runtime,
             &admission.envelope,
             &admission.verification_plan,
-        )
-        .expect("admitted replay envelope continuity must remain valid");
-        let validated_replayed_envelope = validated_replay_continuity_envelope(
+        ) {
+            Ok(validated) => validated,
+            Err(mismatch) => {
+                return Ok(self.record_continuity_rejection(
+                    request,
+                    &admission.envelope,
+                    &admission.commit_closure,
+                    mismatch,
+                ))
+            }
+        };
+        let validated_replayed_envelope = match validated_replay_continuity_envelope(
             self.runtime,
             &reconstruction.envelope,
             &admission.verification_plan,
-        )
-        .expect("reconstructed replay envelope continuity must remain valid");
+        ) {
+            Ok(validated) => validated,
+            Err(mismatch) => {
+                return Ok(self.record_continuity_rejection(
+                    request,
+                    &admission.envelope,
+                    &admission.commit_closure,
+                    mismatch,
+                ))
+            }
+        };
         compare_replay_surfaces(
             execution,
             self.runtime,

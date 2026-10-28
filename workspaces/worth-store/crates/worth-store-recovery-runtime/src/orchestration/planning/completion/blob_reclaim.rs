@@ -221,7 +221,7 @@ pub(super) fn verify(
         };
         if !basis_valid(
             descriptor,
-            &manifest_record,
+            manifest_record,
             declaration_record,
             &declaration,
             abandoned_record,
@@ -253,7 +253,7 @@ pub(super) fn verify(
             let (next, dropped) = selected::verify_source(
                 context,
                 basis,
-                &manifest_record,
+                manifest_record,
                 declaration_record,
                 binding.record(),
                 reservation,
@@ -273,7 +273,7 @@ pub(super) fn verify(
                 context,
                 basis,
                 descriptor,
-                &manifest_record,
+                manifest_record,
                 binding.record(),
                 binding.record_payload_sha256(),
             )?;

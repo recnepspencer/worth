@@ -20,9 +20,7 @@ pub(super) use branching::{open_analysis_branch, open_audit_branch};
 pub(super) use corrections::correct_seeded_trade_candidate;
 pub(super) use merges::{diverge_case_trade_on_branch, merge_branch_into_main};
 pub(super) use metadata::{build_branch_scoped_case_index, register_case_book_index};
-pub(super) use recovery::{
-    checkpoint_world, compact_world_store, recover_persisted_world, recover_runtime_from_plan,
-};
+pub(super) use recovery::{checkpoint_world, recover_persisted_world};
 pub(super) use risk::{refresh_risk_views, shock_market_on_branch, stress_seeded_intraday_risk};
 pub(super) use savepoints::{
     commit_case_trade_after_savepoint, rollback_case_trade_after_savepoint,

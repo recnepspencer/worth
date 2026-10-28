@@ -302,7 +302,7 @@ fn topology_row_digest(
             readiness,
             blocked_reason,
         ))
-        .expect("strategy witness topology row must encode"),
+        .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "strategy witness topology row must encode"),
     );
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -323,7 +323,7 @@ fn deletion_row_digest(
             readiness,
             blocked_reason,
         ))
-        .expect("strategy witness deletion row must encode"),
+        .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "strategy witness deletion row must encode"),
     );
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }

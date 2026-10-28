@@ -10,7 +10,8 @@ pub(in crate::runtime::tests) struct TestProductRoot {
 pub(in crate::runtime::tests) fn test_product_root() -> TestProductRoot {
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .runtime_name("worth-query-high-level-test-product")
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     test_product_root_with_runtime(runtime)
 }
 
@@ -23,7 +24,8 @@ pub(in crate::runtime::tests) fn test_product_root_with_runtime(
 pub(in crate::runtime::tests) fn test_product_root_without_writeback() -> TestProductRoot {
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .runtime_name("worth-query-high-level-test-product-without-writeback")
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     test_product_root_with_runtime_and_writeback(runtime, false)
 }
 

@@ -16,11 +16,12 @@ pub(crate) use projection::{
 pub use projection::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
     EntityRecordProjection, ProjectionAspectFilter, ProjectionAspectFilterMode,
-    ProjectionAspectRequirement, ProjectionAspectScope, RelationProjectionRecord,
-    RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
-    RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
-    RelationalEntityMetadata, RelationalEntityRetirement, RelationalFieldSupportComparisonDenial,
-    RelationalProjectedFieldObservation, RelationalRelationMetadata, VisibilityProjectionView,
+    ProjectionAspectRequirement, ProjectionAspectScope, ProjectionContractRefusal,
+    ProjectionRecordDomain, RelationProjectionRecord, RelationRecordProjection,
+    RelationalAdjacencyDirection, RelationalAdjacencyVisit, RelationalAspectPresenceSupportDenial,
+    RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,
+    RelationalFieldSupportComparisonDenial, RelationalProjectedFieldObservation,
+    RelationalProjectionContractDenial, RelationalRelationMetadata, VisibilityProjectionView,
 };
 pub use reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,
@@ -31,8 +32,9 @@ pub use reader::{
     PinnedStructuralWalkReads, PinnedStructuralWalkScope, PinnedStructuralWalkVisit,
     PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
     QueryReadPacketDenial, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
-    RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
-    RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial, VisibilityReadContext,
+    RelationalEntityMetadataPinDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
+    RelationalPinnedReadAdmissionDenial, RelationalSnapshotPositionAdmissionStop,
+    SnapshotPositionDenial, VisibilityReadContext,
 };
 
 use crate::runtime::RelationalRuntime;

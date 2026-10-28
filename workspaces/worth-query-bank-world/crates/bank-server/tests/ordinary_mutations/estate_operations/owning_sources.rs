@@ -1,127 +1,17 @@
 //! Genuine source custody and post-cleanup evidence, distinct from published effect recovery.
-use super::freeze_account::fixture::{exact_freeze_world, revocable_freeze_world};
+use super::freeze_account::fixture::exact_freeze_world;
 use crate::support::request_scope;
 use bank_domain::{
     proposals::BankIdempotencyKey,
     schema::{AccountStatus, FreezeEstateAccount},
 };
-use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
+use bank_server::{mutations, BankMutationControls};
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_entry::{
-        WorthQueryApplicationRecoveryRequestDenial, WorthQueryApplicationRequestMutationDenial,
         WorthQuerySourceCompletion as Completion, WorthQuerySourceOnlyAdvance as Advance,
-        WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyPosture,
     },
 };
-#[test]
-fn owning_freeze_partial_fresh_permission_recovery_and_issuer_cleanup() {
-    let fixture = revocable_freeze_world("owning-freeze-partial");
-    let source = {
-        let specialist = fixture.authenticate_specialist();
-        let scope = request_scope();
-        let input = FreezeEstateAccount::try_from(fixture.action(fixture.estate_account)).unwrap();
-        let source = fixture
-            .world
-            .runtime
-            .mutate(mutations::freeze_estate_account(input))
-            .as_principal(&specialist)
-            .controls(BankMutationControls::new(
-                scope.clone(),
-                BankIdempotencyKey::new("owning-freeze-partial").unwrap(),
-            ))
-            .retain_operation()
-            .unwrap_or_else(|cause| panic!("exact native construction: {cause:?}"));
-        fixture.world.runtime.fail_next_durable_append_for_test();
-        let request = fixture.world.runtime.request(&specialist, &scope);
-        let Advance::Progress(source) = source.advance(&request) else {
-            panic!("actual append partial")
-        };
-        assert_eq!(
-            source.posture(),
-            WorthQuerySourceOnlyPosture::ProductUnpublished
-        );
-        source
-    };
-    let source = {
-        let foreign = fixture.authenticate_foreign_owner();
-        let scope = request_scope();
-        let request = fixture.world.runtime.request(&foreign, &scope);
-        let source = match source.advance(&request) {
-            Advance::Refused {
-                operation,
-                denial:
-                    WorthQuerySourceOnlyDenial::Recovery(
-                        WorthQueryApplicationRecoveryRequestDenial::Request(
-                            WorthQueryApplicationRequestMutationDenial::Authorization(_),
-                        ),
-                    ),
-            } => operation,
-            _ => panic!("fresh foreign actor retains the real partial owner"),
-        };
-        assert_eq!(
-            source.posture(),
-            WorthQuerySourceOnlyPosture::ProductUnpublished
-        );
-        source
-    };
-    let specialist = fixture.authenticate_specialist();
-    let scope = request_scope();
-    let request = fixture.world.runtime.request(&specialist, &scope);
-    let Advance::Progress(source) = source.advance(&request) else {
-        panic!("fresh capability recovers source")
-    };
-    let Advance::Completed(done) = source.advance(&request) else {
-        panic!("original keyed publication evidence")
-    };
-    assert!(matches!(
-        done.evidence(),
-        Completion::Recovered {
-            publication: Some(_),
-            ..
-        }
-    ));
-    let view = fixture
-        .world
-        .runtime
-        .query(queries::estate_case(fixture.estate))
-        .as_principal(&specialist)
-        .controls(BankReadControls::current(request_scope(), 1).unwrap())
-        .execute()
-        .unwrap();
-    assert_eq!(view.rows()[0].account().status(), AccountStatus::Frozen);
-    // Only after actual publication: no mutation is attempted against an unpublished held World.
-    fixture.revoke_freeze_permission();
-    let closed = done
-        .close_with_evidence(&request)
-        .unwrap_or_else(|(_, cause)| {
-            panic!("issuer cleanup does not reacquire revoked business permission: {cause:?}")
-        });
-    let bank_receipt = bank_server::BankCommitReceipt::from_closed_source(closed);
-    assert_eq!(bank_receipt.changed_record_count(), 2);
-    let input = FreezeEstateAccount::try_from(fixture.action(fixture.estate_account)).unwrap();
-    let retry = fixture
-        .world
-        .runtime
-        .mutate(mutations::freeze_estate_account(input))
-        .as_principal(&specialist)
-        .controls(BankMutationControls::new(
-            scope.clone(),
-            BankIdempotencyKey::new("owning-freeze-partial").unwrap(),
-        ))
-        .retain_operation()
-        .unwrap_or_else(|cause| panic!("description is not permission: {cause:?}"));
-    let Advance::Refused {
-        operation: _retry_custody,
-        denial:
-            WorthQuerySourceOnlyDenial::Mutation(
-                WorthQueryApplicationRequestMutationDenial::Authorization(_),
-            ),
-    } = retry.advance(&request)
-    else {
-        panic!("replay still requires the actual current capability")
-    };
-}
 #[test]
 fn completed_source_refused_close_preserves_original_performed_change_witness() {
     let fixture = exact_freeze_world("owning-freeze-witness", AccountStatus::Open);

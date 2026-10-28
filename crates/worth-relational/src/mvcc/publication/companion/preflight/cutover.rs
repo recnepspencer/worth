@@ -34,14 +34,11 @@ impl PreparedPublicationCompanionEffect {
         &mut self,
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<CompanionPublicationCompletionObserver, CompanionPreflightStop> {
-        assert!(
-            self.completion.is_none(),
-            "one observer per prepared cutover"
-        );
         context.checkpoint()?;
-        let observer = CompanionPublicationCompletionObserver::new();
-        self.completion = Some(observer.clone());
-        Ok(observer)
+        Ok(self
+            .completion
+            .get_or_insert_with(CompanionPublicationCompletionObserver::new)
+            .clone())
     }
 
     pub(crate) fn matches(

@@ -91,16 +91,15 @@ pub(super) fn membership_declarations(
     contract: &AggregateIdentityContractDeclaration,
 ) -> KindAspectContractDeclarations {
     if super::member_domain(registry, contract).is_some_and(|domain| domain.entity_kind().is_none())
+        && let Some(projected) = contract.storage.projected
     {
-        if let Some(projected) = contract.storage.projected {
-            return declaration(
-                MEMBERSHIP_ASPECT,
-                projected.membership_aspect,
-                MEMBERSHIP_FIELDS,
-                true,
-                false,
-            );
-        }
+        return declaration(
+            MEMBERSHIP_ASPECT,
+            projected.membership_aspect,
+            MEMBERSHIP_FIELDS,
+            true,
+            false,
+        );
     }
     Default::default()
 }

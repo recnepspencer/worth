@@ -5,18 +5,15 @@ use worth_store::physical_runtime::{
     AdmittedPhysicalDurabilityPolicy, CheckpointMemoryLimit, FilesystemMediaAdmission,
     GroupCommitDelay, GroupCommitLimit, IdempotencyRetentionGenerations,
     LiveIdempotencyBindingLimit, MediaOwnedPhysicalRuntime, PendingUnresolvedMutationLimit,
-    PhysicalCheckpointPolicy,
-    PhysicalDurabilityDeclaration, PhysicalIdempotencyPolicy, PhysicalRuntimeAdmission,
-    PhysicalStore, PhysicalWalPolicy, RetainedWalTailLimit, WalSegmentByteLimit,
-    WalSegmentInventoryLimit,
+    PhysicalCheckpointPolicy, PhysicalDurabilityDeclaration, PhysicalIdempotencyPolicy,
+    PhysicalRuntimeAdmission, PhysicalStore, PhysicalWalPolicy, RetainedWalTailLimit,
+    WalSegmentByteLimit, WalSegmentInventoryLimit,
 };
 use worth_store_physical_backend::FilesystemAccessPosture;
 
-pub fn media(label: &str) -> MediaOwnedPhysicalRuntime {
-    let runtime = PhysicalStore::admit(
-        PhysicalRuntimeAdmission::new(std::env::temp_dir().join(label)).unwrap(),
-    )
-    .unwrap();
+pub fn media(root: &std::path::Path) -> MediaOwnedPhysicalRuntime {
+    let runtime =
+        PhysicalStore::admit(PhysicalRuntimeAdmission::new(root.to_path_buf()).unwrap()).unwrap();
     match runtime
         .try_admit_filesystem_media(FilesystemMediaAdmission::production(
             FilesystemAccessPosture::CoordinatedServiceAccount,
@@ -24,7 +21,11 @@ pub fn media(label: &str) -> MediaOwnedPhysicalRuntime {
         .into_raw()
     {
         TransitionOutcome::Success(media) => media,
-        _ => panic!("positive authority specimen requires admitted filesystem media"),
+        TransitionOutcome::Denied(denial) => panic!("media denied: {:?}", denial.reason()),
+        TransitionOutcome::Deferred(deferred) => panic!("media deferred: {:?}", deferred.reason()),
+        TransitionOutcome::Stale(stale) => panic!("media stale: {:?}", stale.reason()),
+        TransitionOutcome::RebindRequired(rebind) => panic!("media rebind: {:?}", rebind.reason()),
+        TransitionOutcome::Failed(failure) => panic!("media failed: {:?}", failure.cause()),
     }
 }
 

@@ -6,7 +6,6 @@ use worth_query_installation::facade::{
 };
 
 pub(in crate::domain_computation::primary_graph::application_resource) struct ResourceClockReading {
-    pub(in crate::domain_computation::primary_graph::application_resource) sequence: u64,
     pub(in crate::domain_computation::primary_graph::application_resource) nanoseconds: u64,
 }
 
@@ -82,7 +81,6 @@ impl<Clock: WorthQueryNamedClock, Source: WorthQueryNamedClockSource<Clock>> Res
         }
         let reading = self.source.observe()?;
         Ok(ResourceClockReading {
-            sequence: reading.sequence(),
             nanoseconds: reading.observed_time().nanoseconds(),
         })
     }

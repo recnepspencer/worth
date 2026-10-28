@@ -30,8 +30,12 @@ mod terminal_projection_json_fixtures;
 
 pub mod compiler_boundary;
 pub mod harness;
+mod independent_executable;
 mod test_directory;
 
+pub use independent_executable::{
+    IndependentExecutable, FRESH_PROCESS_RECOVERY, OFFLINE_RECOVERY_OBSERVER, OFFLINE_ROOT_OBSERVER,
+};
 pub use test_directory::TemporaryDirectory;
 
 #[cfg(feature = "boundary-fixtures")]

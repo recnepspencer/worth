@@ -54,7 +54,7 @@ pub(super) use reinspection::InspectionStamp;
 pub(super) use reinspection::ReinspectionCredit;
 
 impl PerformedMembers {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn start(
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn start(
     ) -> Self {
         Self {
             entries: Vec::new(),

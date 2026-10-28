@@ -170,6 +170,16 @@ pub(super) enum SettlementCurrentness<'state> {
 }
 
 impl MarkState {
+    /// Reserve the next derived posting identity before any index installation.
+    pub(super) fn reserve_posting_projection(
+        &mut self,
+    ) -> Result<u64, worth_relational::facade::mvcc::CompanionPreflightStop> {
+        let id = self.next_posting_projection;
+        self.next_posting_projection = id.checked_add(1)
+            .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        Ok(id)
+    }
+
     pub(super) fn initial() -> Self {
         Self {
             source_publications: OrdMap::new(),
@@ -193,5 +203,18 @@ impl MarkState {
             downstream: OrdMap::new(),
             equal_links: OrdMap::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod projection_identity_tests {
+    use super::*;
+    #[test]
+    fn projection_identity_overflow_refuses_without_reissuing_an_identity() {
+        let mut state = MarkState::initial();
+        state.next_posting_projection = u64::MAX - 1;
+        assert_eq!(state.reserve_posting_projection(), Ok(u64::MAX - 1));
+        assert_eq!(state.reserve_posting_projection(), Err(worth_relational::facade::mvcc::CompanionPreflightStop::PreparationMemoryCounterOverflow));
+        assert_eq!(state.next_posting_projection, u64::MAX);
     }
 }

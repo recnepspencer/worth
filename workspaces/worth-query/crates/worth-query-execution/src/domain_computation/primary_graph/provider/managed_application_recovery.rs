@@ -56,7 +56,8 @@ pub enum WorthQueryManagedApplicationRecoveryDenial {
     ProviderAdmission(worth_relational::facade::mvcc::CompanionPreflightStop),
     World(RuntimeWorldRecoveryDenial),
     ProductUnavailable,
-    Adoption(RuntimeWorldSettledRelationalAdoptionDenial),
+    /// Rich World head-comparison evidence is retained only for this refusal.
+    Adoption(Box<RuntimeWorldSettledRelationalAdoptionDenial>),
     Demand(WorthQueryOutputDemandDenial),
 }
 

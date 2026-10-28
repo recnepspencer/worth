@@ -1,10 +1,8 @@
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:13:64
+  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:14:75
    |
-13 |     let _ = runtime.fork_branch(BranchId("forged".to_owned()), observation);
-   |                     -----------                                ^^^^^^^^^^^ expected `AdmittedRelationalForkSourceBasis`, found `RelationalBranchSharingObservation`
-   |                     |
-   |                     arguments to this method are incorrect
+14 |     let _ = runtime.fork_branch(execution, BranchId("forged".to_owned()), observation);
+   |                     ----------- arguments to this method are incorrect    ^^^^^^^^^^^ expected `AdmittedRelationalForkSourceBasis`, found `RelationalBranchSharingObservation`
    |
 note: method defined here
   --> src/branch/fork_runtime_adapters.rs
@@ -13,9 +11,9 @@ note: method defined here
    |            ^^^^^^^^^^^
 
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:20:46
+  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:21:46
    |
-20 |     let _ = runtime.begin_branch_transaction(&observation, RelationalTransactionIntent::ordinary());
+21 |     let _ = runtime.begin_branch_transaction(&observation, RelationalTransactionIntent::ordinary());
    |                     ------------------------ ^^^^^^^^^^^^ expected `&AdmittedRelationalBranchBasis`, found `&...`
    |                     |
    |                     arguments to this method are incorrect
@@ -29,9 +27,9 @@ note: method defined here
    |            ^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:30:47
+  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:31:47
    |
-30 |         .retain_version_for_replay(execution, observation);
+31 |         .retain_version_for_replay(execution, observation);
    |          -------------------------            ^^^^^^^^^^^ expected `VersionId`, found `RelationalVisibilityCommitmentObservation`
    |          |
    |          arguments to this method are incorrect

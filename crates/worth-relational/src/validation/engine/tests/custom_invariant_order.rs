@@ -176,7 +176,8 @@ fn run(workers: usize, wait: Duration) -> Run {
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let lease = crate::tests::support::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(

@@ -61,7 +61,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 .removed_generation_count()
         }))
     }
-    /// Observes exact selected generation presence without preparing or reading the index.
+    /// Observes resident generation presence without loading or reconstructing the index.
     #[doc(hidden)]
     pub fn has_equality_index_generation_for_test<
         E,
@@ -90,13 +90,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             let index = layout
                 .equality_selector_index(field.entity(), field.aspect(), field.field())
                 .expect("installed equality field");
-            runtime
-                .index_access()
-                .published_generation_for_observation(
-                    index,
-                    &selected.product().relational_basis().observation(),
-                )
-                .is_some()
+            runtime.index_access().generation_residency_for_observation(
+                index,
+                &selected.product().relational_basis().observation(),
+            ) == worth_relational::facade::indexes::DerivedIndexGenerationResidency::Published
         }))
     }
 }

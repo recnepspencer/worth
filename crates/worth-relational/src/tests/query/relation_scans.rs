@@ -65,7 +65,8 @@ fn relation_kind_scans_return_only_visible_relations_of_that_kind() {
     };
     let visible = runtime
         .read_truth()
-        .project_historical_version(deleted.version_id)
+        .try_project_historical_version(deleted.version_id)
+        .unwrap()
         .relations::<EdgeProjection>(execution)
         .expect("read request remains live");
 
@@ -87,7 +88,8 @@ fn relation_kind_scans_are_deterministic_across_equivalent_insert_order() {
     let _ = create_relation(execution, &runtime_a, a_right, a_third, "r2");
     let scan_a = runtime_a
         .read_truth()
-        .project_historical_version(runtime_a.current_version_id())
+        .try_project_historical_version(runtime_a.current_version_id())
+        .unwrap()
         .relations::<EdgeProjection>(execution)
         .expect("read request remains live");
 
@@ -100,7 +102,8 @@ fn relation_kind_scans_are_deterministic_across_equivalent_insert_order() {
     let _ = create_relation(execution, &runtime_b, b_left, b_right, "r1");
     let scan_b = runtime_b
         .read_truth()
-        .project_historical_version(runtime_b.current_version_id())
+        .try_project_historical_version(runtime_b.current_version_id())
+        .unwrap()
         .relations::<EdgeProjection>(execution)
         .expect("read request remains live");
 
@@ -133,12 +136,14 @@ fn all_authoritative_relation_records_use_canonical_relation_order_not_creation_
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .relations::<EdgeProjection>(execution)
         .expect("read request remains live");
     let all_records = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .all_authoritative_relation_records(execution)
         .expect("read request remains live");
 

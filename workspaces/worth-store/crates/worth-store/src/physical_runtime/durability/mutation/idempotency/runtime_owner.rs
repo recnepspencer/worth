@@ -166,12 +166,12 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
             .owner
             .upgrade()
             .ok_or(PhysicalMutationTerminalizationDenial::AuthorityReleased)?;
-        let outcome = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .record_completed(fact);
-        outcome
+            .record_completed(fact)
     }
 
     pub(in crate::physical_runtime) fn record_indeterminate(
@@ -182,12 +182,12 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
             .owner
             .upgrade()
             .ok_or(PhysicalMutationTerminalizationDenial::AuthorityReleased)?;
-        let outcome = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .record_indeterminate(fate);
-        outcome
+            .record_indeterminate(fate)
     }
 
     pub(in crate::physical_runtime) fn record_wal_binding(
@@ -198,12 +198,12 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
             .owner
             .upgrade()
             .ok_or(PhysicalMutationWalBindingDenial::AuthorityReleased)?;
-        let outcome = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .record_wal_binding(persisted);
-        outcome
+            .record_wal_binding(persisted)
     }
 
     pub(in crate::physical_runtime) fn issue_key(
@@ -241,12 +241,12 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
                 PhysicalMutationIdempotencyRegistryDenial::AuthorityReleased,
             ),
         )?;
-        let admission = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .admit_unallocated_with(key, fingerprint, reserve);
-        admission
+            .admit_unallocated_with(key, fingerprint, reserve)
     }
 
     pub(in crate::physical_runtime) fn cancel_before_group_seal(
@@ -261,12 +261,12 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
             .owner
             .upgrade()
             .ok_or(PhysicalMutationPreSealCancellationDenial::AuthorityReleased)?;
-        let outcome = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .cancel_before_group_seal(expected, cause);
-        outcome
+            .cancel_before_group_seal(expected, cause)
     }
 
     pub(in crate::physical_runtime) fn seal_group(
@@ -277,12 +277,12 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
             .owner
             .upgrade()
             .ok_or(PhysicalMutationIdempotencyGroupSealDenial::AuthorityReleased)?;
-        let outcome = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .seal_group(expected);
-        outcome
+            .seal_group(expected)
     }
 }
 

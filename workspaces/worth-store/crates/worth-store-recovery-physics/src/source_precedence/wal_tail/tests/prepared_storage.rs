@@ -84,10 +84,8 @@ fn insufficient_or_nonempty_prepared_rosters_are_typed_contract_denials() {
         }),
     );
     let prior = select_candidates(10, Some(10), vec![complete_candidate(1, 0, 10)]).unwrap();
-    let mut covered = Vec::with_capacity(1);
-    covered.push(prior.checkpoint_covered()[0].clone());
-    let mut retained = Vec::with_capacity(1);
-    retained.push(complete_candidate(2, 10, 20));
+    let covered = vec![prior.checkpoint_covered()[0].clone()];
+    let retained = vec![complete_candidate(2, 10, 20)];
     assert_eq!(
         super::super::admit_physical_wal_tail(
             10,

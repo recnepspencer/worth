@@ -6,7 +6,7 @@ use crate::facade::merge::{
 use crate::facade::transactions::RecordRef;
 use crate::tests::support::{
     create_branch_from_main, create_entity, delete_entity, delete_entity_on_branch,
-    persisted_runtime_with_test_schema, update_entity, update_entity_on_branch,
+    durable_runtime_with_test_schema, update_entity, update_entity_on_branch,
 };
 
 #[test]
@@ -14,7 +14,7 @@ fn lowered_plan_preserves_source_deleted_target_live_block_reason() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
@@ -34,7 +34,7 @@ fn lowered_plan_preserves_source_live_target_deleted_block_reason() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity_on_branch(
@@ -61,7 +61,7 @@ fn lowered_plan_preserves_deleted_vs_modified_block_reason() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, entity, "main-modified");

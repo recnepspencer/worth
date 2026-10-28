@@ -51,6 +51,7 @@ fn compiled_examples_match_consumer_documents() {
     assert_eq!(
         examples,
         BTreeSet::from([
+            "logical_relation_projection.rs".to_owned(),
             "relation_law_declaration.rs".to_owned(),
             "relation_law_request.rs".to_owned(),
             "relation_pair_declaration.rs".to_owned(),

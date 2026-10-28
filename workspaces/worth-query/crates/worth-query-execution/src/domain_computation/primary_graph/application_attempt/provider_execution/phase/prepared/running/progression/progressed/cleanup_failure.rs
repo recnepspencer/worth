@@ -15,12 +15,11 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
     match outcome {
         Progression::ProductUnpublished(unpublished) => Outcome::ProductUnpublished(unpublished),
         Progression::ProductStale(stale) => Outcome::ProductStale(stale),
-        Progression::NoEffect(no_effect) => Outcome::NoEffect(
-            crate::domain_computation::primary_graph::WorthQueryApplicationNoEffect::from_world(
-                no_effect,
-            ),
-        ),
+        Progression::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
         Progression::Denied(denial) => match denial.kind() {
+            Kind::StorageUnavailable(failure) => {
+                cleanup_execution_indeterminate(Ok(Session::StorageUnavailable(failure)))
+            }
             Kind::ExecutionResource {
                 denial,
                 partition_identity,
@@ -106,8 +105,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
         | Progression::AlreadyCommitted(_)
         | Progression::Stale(_)
         | Progression::Aborted
-        | Progression::Deferred(_)
-        | Progression::SettlementDeferred(_) => cleanup_indeterminate(),
+        | Progression::Deferred(_) => cleanup_indeterminate(),
     }
 }
 

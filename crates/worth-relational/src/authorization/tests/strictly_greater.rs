@@ -148,7 +148,10 @@ fn strictly_greater_observation_stales_when_the_governing_field_reaches_equality
     assert_eq!(admitted.counters(), predicate_counters(true));
 
     write_comparison_fields(execution, &runtime, principal, Some(4), None);
-    let current = runtime.visibility_authority().snapshot();
+    let current = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     assert_eq!(
         runtime.compare_authorization_observation(&admitted, current, execution),
@@ -282,7 +285,10 @@ fn observe_path(
     path: RelationalAuthorizationPathPlan,
 ) -> crate::authorization::RelationalAuthorizationObservationEvidence {
     let plan = RelationalAuthorizationObservationPlan::try_new(
-        runtime.visibility_authority().snapshot(),
+        runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted"),
         principal,
         scope,
         ENTITY_KIND,

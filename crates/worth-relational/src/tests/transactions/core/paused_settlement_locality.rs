@@ -69,8 +69,8 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
 
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3-settlement-independence-anchor");
-    fork_from_main(&runtime, "paused-settlement");
-    fork_from_main(&runtime, "progressing-settlement");
+    fork_from_main(execution, &runtime, "paused-settlement");
+    fork_from_main(execution, &runtime, "progressing-settlement");
 
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));

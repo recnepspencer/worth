@@ -17,8 +17,6 @@ pub(super) use crate::commit_strategies::strategies::{
     IntentReconciliationInput, IntentReconciliationStrategy, ReplicaConvergenceInput,
     ReplicaConvergenceStrategy,
 };
-pub(super) use crate::durability::data::DurableStoreLayout;
-pub(super) use crate::facade::durability::DurabilityMode;
 pub(super) use crate::facade::history::BranchId;
 pub(super) use crate::facade::merge::{MergeIntent, MergePlanningRequest};
 pub(super) use crate::facade::replay::{
@@ -34,7 +32,7 @@ pub(super) use crate::snapshots::data::SnapshotHandle;
 pub(super) use crate::symbols::data::ClientKey;
 pub(super) use crate::tests::support::{
     changed_entities, entity_field_aspect, entity_u64_field_aspect, lifecycle_aspect,
-    read_entity_name, unique_test_store_path, AspectSchemaFixture,
+    read_entity_name, AspectSchemaFixture,
 };
 pub(super) use crate::transactions::data::AspectFieldPatch;
 pub(super) use crate::transactions::data::{EntitySpec, TransactionCommitError};
@@ -162,17 +160,12 @@ impl CommitStrategyExecutor for DeterministicFailureExecutor {
 }
 
 pub(crate) fn persisted_intent_runtime(
-    root_path: std::path::PathBuf,
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
     include_executor: bool,
 ) -> crate::facade::runtime::RelationalRuntime {
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(161));
     let mut builder = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
         .commit_strategy(
             CommitStrategyRegistration::new(descriptor.clone())
                 .expect("intent strategy registration"),
@@ -182,20 +175,17 @@ pub(crate) fn persisted_intent_runtime(
             IntentReconciliationStrategy::execution_registration(&descriptor),
         );
     }
-    builder.build()
+    builder
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn persisted_intent_runtime_with_failing_executor(
-    root_path: std::path::PathBuf,
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> crate::facade::runtime::RelationalRuntime {
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(161));
     RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
         .commit_strategy(
             CommitStrategyRegistration::new(descriptor.clone())
                 .expect("intent strategy registration"),
@@ -204,7 +194,8 @@ pub(super) fn persisted_intent_runtime_with_failing_executor(
             &descriptor,
             DeterministicFailureExecutor,
         ))
-        .build()
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(crate) fn execute_persisted_intent_strategy_commit(
@@ -236,7 +227,10 @@ pub(crate) fn execute_persisted_intent_strategy_commit(
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -244,7 +238,13 @@ pub(crate) fn execute_persisted_intent_strategy_commit(
     let (transaction_validation_input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(runtime, None);
     let lowered = authority
-        .lower_execution_with_input(runtime, &request, &execution, transaction_validation_input)
+        .lower_execution_with_input(
+            request_execution,
+            runtime,
+            &request,
+            &execution,
+            transaction_validation_input,
+        )
         .expect("lowered strategy plan");
     let validated = authority
         .validate_lowered_plan(request_execution, runtime, lowered)
@@ -343,13 +343,22 @@ pub(crate) fn lowered_commit_fixture() -> (
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let draft = execution_draft(&request);
     let (input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(&runtime, None);
     let lowered = authority
-        .lower_execution_with_input(&runtime, &request, &draft, input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &request,
+            &draft,
+            input,
+        )
         .unwrap();
     (runtime, lowered)
 }

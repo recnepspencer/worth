@@ -1381,6 +1381,7 @@ dependencies = [
  "worth-store-physical-isolation",
  "worth-store-recovery-physics",
  "worth-store-security",
+ "worth-store-test-support",
  "worth-store-wal",
 ]
 
@@ -1852,8 +1853,10 @@ dependencies = [
  "sha2",
  "tempfile",
  "trybuild",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-relational",
  "worth-store",
  "worth-store-authority",
  "worth-store-blob-chunks",
@@ -1865,6 +1868,21 @@ dependencies = [
  "worth-store-recovery-physics",
  "worth-store-security",
  "worth-store-test-support",
+]
+
+[[package]]
+name = "worth-store-relational"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-physical-format",
+ "worth-store-recovery-runtime",
 ]
 
 [[package]]

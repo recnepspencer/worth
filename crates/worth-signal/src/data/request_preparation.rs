@@ -6,6 +6,7 @@ pub(crate) struct SignalPreparationBudget {
     capacity: Option<u64>,
     claimed: u64,
     retained: u64,
+    diagnostics: u64,
     memory: worth_execution::ExecutionMemoryReservation,
 }
 
@@ -13,6 +14,7 @@ pub(crate) struct SignalPreparationBudget {
 /// after this mark and consumed before release may be discharged.
 pub(crate) struct PreparationMark {
     transient: u64,
+    diagnostics: u64,
 }
 
 impl SignalPreparationBudget {
@@ -26,6 +28,7 @@ impl SignalPreparationBudget {
             capacity,
             claimed: 0,
             retained: 0,
+            diagnostics: 0,
             memory,
         })
     }
@@ -45,6 +48,7 @@ impl SignalPreparationBudget {
             capacity,
             claimed: 0,
             retained: 0,
+            diagnostics: 0,
             memory: worth_execution::SerialMemoryBudget::from_policy(&policy)
                 .reserve(0)
                 .unwrap(),
@@ -52,11 +56,15 @@ impl SignalPreparationBudget {
     }
 
     pub(crate) fn remaining(&self) -> Option<u64> {
-        self.capacity.map(|capacity| capacity - self.claimed)
+        self.capacity
+            .map(|capacity| capacity - self.claimed - self.diagnostics)
     }
 
     pub(crate) fn claim(&mut self, bytes: u64) -> Result<(), SignalError> {
-        let required = self.claimed.checked_add(bytes);
+        let required = self
+            .claimed
+            .checked_add(bytes)
+            .and_then(|next| next.checked_add(self.diagnostics));
         let next = required
             .filter(|next| self.capacity.is_none_or(|capacity| *next <= capacity))
             .ok_or(SignalError::PreparationMemoryExhausted {
@@ -68,8 +76,24 @@ impl SignalPreparationBudget {
                 denial,
             ))
         })?;
-        self.claimed = next;
+        self.claimed = next - self.diagnostics;
         Ok(())
+    }
+
+    /// Earmark the diagnostic structure separately, so unrelated preparation
+    /// cannot spend its pre-effect reservation.
+    pub(crate) fn reserve_diagnostics(&mut self, bytes: u64) -> Result<(), SignalError> {
+        self.claim(bytes)?;
+        self.claimed -= bytes;
+        self.diagnostics += bytes;
+        Ok(())
+    }
+
+    pub(crate) fn claim_diagnostics(&mut self, bytes: u64) -> Result<(), SignalError> {
+        let prepaid = bytes.min(self.diagnostics);
+        self.diagnostics -= prepaid;
+        self.claimed += prepaid;
+        self.claim(bytes - prepaid)
     }
 
     pub(crate) fn claim_vec<T>(&mut self, capacity: usize) -> Result<(), SignalError> {
@@ -103,6 +127,7 @@ impl SignalPreparationBudget {
     pub(crate) fn checkpoint(&self) -> PreparationMark {
         PreparationMark {
             transient: self.claimed - self.retained,
+            diagnostics: self.diagnostics,
         }
     }
 
@@ -112,8 +137,9 @@ impl SignalPreparationBudget {
             "Signal preparation frames must be released in owner order"
         );
         self.claimed = self.retained + mark.transient;
+        self.diagnostics = self.diagnostics.min(mark.diagnostics);
         self.memory
-            .resize(self.claimed)
+            .resize(self.claimed + self.diagnostics)
             .expect("releasing preparation cannot widen its reservation");
     }
 }

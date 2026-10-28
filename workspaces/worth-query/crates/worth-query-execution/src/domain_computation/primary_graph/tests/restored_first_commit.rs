@@ -272,7 +272,8 @@ fn assert_every_installed_index_current(
             assert!(
                 runtime
                     .index_access()
-                    .published_generation_for_commit(*index_id, commit)
+                    .read_published_generation_for_commit(request_execution, *index_id, commit)
+                    .unwrap()
                     .is_some(),
                 "installed index {index_id:?} is current at the new commit"
             );
@@ -281,7 +282,8 @@ fn assert_every_installed_index_current(
             assert!(
                 runtime
                     .index_access()
-                    .published_generation_for_commit(retired, commit)
+                    .read_published_generation_for_commit(request_execution, retired, commit)
+                    .unwrap()
                     .is_none(),
                 "nothing maintains the retired index"
             );

@@ -192,3 +192,84 @@ fn diagnostics_epoch_forked_overlay_remains_bounded_after_retirement_and_readmis
     drop(source);
     assert_epoch_fits_forecast(&graph, &mut fork, target, artifact);
 }
+
+#[test]
+fn diagnostics_epoch_batch_forecast_covers_full_publication_allocations() {
+    for (count, retained) in [1, 32, 300, 1_024]
+        .into_iter()
+        .flat_map(|count| [false, true].map(|retained| (count, retained)))
+    {
+        let (mut graph, mut state, _, _) = seed(0, 0, 64);
+        let mut records = Vec::new();
+        let mut payload = 0_u64;
+        let mut work = Work::new(None);
+        for _ in 0..count {
+            let node = graph.create_node();
+            let artifact = state.allocate_lineage_artifact_id();
+            let sequence = state.allocate_lineage_sequence();
+            let lineage = record(node, artifact, sequence);
+            let explanation = graph.observe().explain(node).unwrap();
+            let fact = ExplanationFact::from_explanation(&explanation);
+            let provenance = ProvenanceFact::from_explanation(&explanation);
+            payload += lineage
+                .retained_heap_charge(&mut work)
+                .unwrap()
+                .checked_add(arc_allocation_charge::<LineageRecord>().unwrap())
+                .unwrap()
+                .checked_mul(3)
+                .unwrap()
+                .bytes();
+            payload += state
+                .epoch_fact_replacement_capacity_bound(node, &mut work)
+                .unwrap();
+            payload += fact
+                .retained_heap_charge(&mut work)
+                .unwrap()
+                .checked_add(provenance.retained_heap_charge(&mut work).unwrap())
+                .unwrap()
+                .checked_mul(2)
+                .unwrap()
+                .bytes();
+            records.push((lineage, fact, provenance));
+        }
+        let forecast = state.epoch_preparation_capacity_bound(count).unwrap() + payload;
+        let ledger = retained.then(|| {
+            SignalConditionalRetentionLedger::new(
+                SignalConditionalEvaluationBudget {
+                    maximum_retained_slots: Some(2),
+                    maximum_retained_bytes: Some(512 * 1024 * 1024),
+                    maximum_attempt_visits: None,
+                },
+                SignalRuntimePolicy::development().conditional_temporal_budget,
+            )
+        });
+        let (_, peak) = measure(|| {
+            let mut request = SignalPreparationBudget::new(Some(forecast));
+            let mut draft = state
+                .prepare_epoch_diagnostics(&mut work, Some(&mut request), ledger.as_ref(), count)
+                .unwrap();
+            for (lineage, explanation, provenance) in records {
+                draft
+                    .push_lineage(lineage, &mut work, Some(&mut request))
+                    .unwrap();
+                draft
+                    .record_facts(
+                        Some(explanation),
+                        Some(provenance),
+                        &mut work,
+                        Some(&mut request),
+                    )
+                    .unwrap();
+            }
+            draft.publish(&mut state);
+        });
+        assert!(
+            peak.unwrap() as u64 <= forecast,
+            "{count} producers allocated {} against {forecast}",
+            peak.unwrap()
+        );
+        assert_eq!(state.lineage_records().len(), count);
+        assert_eq!(state.explanation_facts().len(), count);
+        assert_eq!(state.provenance_facts().len(), count);
+    }
+}

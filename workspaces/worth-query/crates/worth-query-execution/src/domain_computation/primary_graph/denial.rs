@@ -45,6 +45,10 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvalidSchemaMember,
     /// Relational rejected the installation commit.
     RelationalCommitRejected,
+    /// Relational could not establish whether the installation commit became
+    /// durable. It was not installed live and may already be durable; the
+    /// runtime refuses further publication until it is reopened.
+    RelationalDurabilityUnresolved,
     /// Relational deferred publication until its required derived companion can proceed.
     RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     /// No capacity remains to retain a basis.
@@ -314,3 +318,14 @@ impl std::fmt::Display for WorthQueryPrimaryGraphInstallationDenial {
 }
 
 impl std::error::Error for WorthQueryPrimaryGraphInstallationDenial {}
+
+impl From<worth_relational::facade::runtime::RelationalRuntimeConstructionDenial>
+    for WorthQueryPrimaryGraphInstallationDenial
+{
+    fn from(cause: worth_relational::facade::runtime::RelationalRuntimeConstructionDenial) -> Self {
+        Self::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
+            cause.to_string(),
+        )
+    }
+}

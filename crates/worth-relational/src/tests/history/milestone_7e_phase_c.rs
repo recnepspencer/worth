@@ -8,7 +8,7 @@ use crate::facade::merge::{
 use crate::facade::runtime::RelationalRuntime;
 use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
-    persisted_runtime_with_test_schema,
+    durable_runtime_with_test_schema,
 };
 
 #[test]
@@ -236,7 +236,7 @@ fn normalized_request_deserialization_revalidates_admitted_truth() {
 }
 
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

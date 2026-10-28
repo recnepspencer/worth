@@ -28,42 +28,10 @@ fn a_commit_a_companion_has_no_room_for_stops_for_that_budget() {
     use WorthQueryOutputDemandDenialKind as Kind;
     for (stop, expected_kind) in [
         (
-            Stop::RetainedCompanionCapacityExhausted {
-                requested: 2,
-                retained: 1,
-                maximum: 2,
-            },
-            Kind::RetentionBudgetExceeded,
-        ),
-        (
-            Stop::PreparationMemoryExhausted {
-                required: 2,
-                maximum: 1,
-            },
-            Kind::RetentionBudgetExceeded,
-        ),
-        (
             Stop::PreparationMemoryCounterOverflow,
             Kind::RetentionBudgetExceeded,
         ),
-        (
-            Stop::RetainedCompanionCounterOverflow {
-                requested: 1,
-                retained: u64::MAX,
-            },
-            Kind::RetentionBudgetExceeded,
-        ),
-        (
-            Stop::WorkExhausted {
-                required: 2,
-                maximum: 1,
-            },
-            Kind::WorkBudgetExceeded,
-        ),
-        (
-            Stop::WorkExhaustedWithoutRequirement { maximum: 1 },
-            Kind::WorkBudgetExceeded,
-        ),
+        /* ee07da2b0e retired preflight forecast-work exhaustion; actual request stops use Execution. */
         (Stop::WorkCounterOverflow, Kind::WorkBudgetExceeded),
     ] {
         let observed = stopped(stop);
@@ -90,7 +58,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
     use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     use WorthQueryApplicationCommitDenialKind as Application;
-    for (session, expected) in [
+    for (session, expected, expected_demand) in [
         (
             Session::ExecutionResource {
                 denial: Resource::WorkExhausted,
@@ -102,6 +70,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
                 partition_identity: Some(7),
                 policy_ancestor: Some(2),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
         (
             Session::ExecutionNestedPatternStopped {
@@ -110,6 +79,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionNestedPatternStopped {
                 partition_identity: Some(7),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
         (
             Session::ExecutionWorkerPanicked {
@@ -118,6 +88,18 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionWorkerPanicked {
                 partition_identity: Some(7),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+        ),
+        (
+            Session::ExecutionWorkerPanicked {
+                partition_identity: None,
+            },
+            Application::ExecutionWorkerPanicked {
+                partition_identity: None,
+            },
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                graph::WorthQueryAdvancementDenial::Panicked,
+            ),
         ),
         (
             Session::ExecutionUncheckedCustomKernel {
@@ -126,6 +108,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionUncheckedCustomKernel {
                 partition_identity: Some(7),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
         (
             Session::ExecutionIdentitiesNotCanonical {
@@ -134,6 +117,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionIdentitiesNotCanonical {
                 partition_identity: Some(7),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
     ] {
         let commit = crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(
@@ -146,10 +130,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             WorthQueryApplicationCommitOutcome::Denied(commit),
         )
         .unwrap_err();
-        assert_eq!(
-            observed.kind(),
-            WorthQueryOutputDemandDenialKind::ProducerUnavailable
-        );
+        assert_eq!(observed.kind(), expected_demand);
         assert_eq!(observed.commit_denial_kind(), Some(expected));
     }
 }
@@ -184,6 +165,76 @@ fn pending_execution_evidence_keeps_heads_producer_category() {
 }
 
 #[test]
+fn root_request_work_stop_is_distinct_from_attributed_producer_work() {
+    use crate::domain_computation::primary_graph::{
+        application_attempt::provider_compare_denial::provider_session_execution_denied,
+        WorthQueryAdvancementDenial as Request, WorthQueryApplicationCommitDenialStage as Stage,
+        WorthQueryManagedComputationResourceDenial as Resource,
+    };
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+    use WorthQueryOutputDemandDenialKind as Demand;
+    for (cause, expected) in [
+        (
+            Ok(Session::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: None,
+                policy_ancestor: None,
+            }),
+            Demand::ExecutionRequest(Request::Resource(Resource::WorkExhausted)),
+        ),
+        (
+            Ok(Session::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: Some(7),
+                policy_ancestor: None,
+            }),
+            Demand::ProducerUnavailable,
+        ),
+        (
+            Ok(Session::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: None,
+                policy_ancestor: Some(2),
+            }),
+            Demand::ProducerUnavailable,
+        ),
+        (Err(Control::Cancelled), Demand::Cancelled),
+        (Err(Control::TimedOut), Demand::TimedOut),
+    ] {
+        let commit = provider_session_execution_denied(
+            cause,
+            Stage::ProviderCommit,
+            "request stopped before publication",
+        );
+        let observed = commit_receipt(
+            "producer",
+            WorthQueryApplicationCommitOutcome::Denied(commit),
+        )
+        .unwrap_err();
+        assert_eq!(observed.kind(), expected);
+        assert_eq!(
+            observed.commit_execution_denial(),
+            Some((Stage::ProviderCommit, cause))
+        );
+        let expected_commit = match cause {
+            Ok(Session::ExecutionResource {
+                denial,
+                partition_identity,
+                policy_ancestor,
+            }) => WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                denial,
+                partition_identity,
+                policy_ancestor,
+            },
+            Err(_) => WorthQueryApplicationCommitDenialKind::ProviderRejected,
+            _ => unreachable!(),
+        };
+        assert_eq!(observed.commit_denial_kind(), Some(expected_commit));
+    }
+}
+
+#[test]
 fn consumed_verification_capacity_reaches_the_original_demand_denial() {
     use crate::domain_computation::primary_graph::{
         application_attempt::provider_compare_denial::provider_session_denied,
@@ -194,14 +245,7 @@ fn consumed_verification_capacity_reaches_the_original_demand_denial() {
         WorthQueryProviderSessionDenialKind as ProviderKind, WorthQueryProviderSessionFailure,
         WorthQueryProviderSessionProtocolStage,
     };
-    for capacity in [
-        Some(Capacity::Meter(Stop::PreparationMemoryExhausted {
-            required: 65,
-            maximum: 64,
-        })),
-        Some(Capacity::ScratchAllocationRefused { bytes: 65 }),
-        None,
-    ] {
+    for capacity in [Some(Capacity::ScratchAllocationRefused { bytes: 65 }), None] {
         let mut failure = WorthQueryProviderSessionFailure::new(
             ProviderKind::ProviderRejected,
             WorthQueryProviderSessionProtocolStage::Commit,

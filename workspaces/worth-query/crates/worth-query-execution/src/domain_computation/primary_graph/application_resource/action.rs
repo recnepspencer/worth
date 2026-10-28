@@ -122,10 +122,9 @@ pub(super) fn prefer_inner(
         admission::ResourceAdmissionDenial::Request(worth_execution::WorkCeilingDenial::Stopped(
             worth_execution::MapKernelStop::NestedStopped
         ))
-    ) {
-        if let Some(inner) = inner {
-            return inner;
-        }
+    ) && let Some(inner) = inner
+    {
+        return inner;
     }
     ResourceCause::Admission(outer)
 }

@@ -6,6 +6,7 @@ mod integrity_admission;
 mod journal_counters;
 mod locator;
 mod observation;
+mod recovered_admission;
 
 #[cfg(test)]
 mod effect_classification_tests;
@@ -27,3 +28,4 @@ pub use observation::{
     PhysicalWorkRecoveryAdmissionOutcome, PhysicalWorkRecoveryIngressRejection,
     PhysicalWorkRecoveryObservationSubject,
 };
+pub(in crate::physical_runtime) use recovered_admission::admit_recovered_obligation;

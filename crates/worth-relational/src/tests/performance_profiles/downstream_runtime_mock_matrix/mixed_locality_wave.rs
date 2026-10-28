@@ -26,7 +26,10 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(
             let update = update_entity(execution, &relational, updated, "downstream-mixed-updated");
             let relational_commit_micros = relational_commit_started_at.elapsed().as_micros();
 
-            let snapshot = relational.visibility_authority().snapshot();
+            let snapshot = relational
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let traversal_packet = PlannedQueryPacket {
                 label: "downstream-mixed-traversal".to_string(),
                 context_id: relational

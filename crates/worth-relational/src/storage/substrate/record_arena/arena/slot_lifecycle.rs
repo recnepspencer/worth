@@ -15,6 +15,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.extra
             .set(physical, K::unavailable_extra(&self.extra[physical]));
         self.metadata_history.set(physical, Default::default());
+        self.history_prefixes.set(physical, None);
         self.aspect_versions.set(physical, Default::default());
         self.field_revisions.set(physical, None);
         self.diagnostics_enrichment
@@ -44,12 +45,10 @@ impl<K: RecordKind> RecordArena<K> {
         {
             return Err("rematerialization identity or kind does not match retained metadata");
         }
-        self.metadata_history[physical].push(K::metadata_for_create(
-            kind_id,
-            self.generations[physical],
-            version_id,
-            &extra,
-        ));
+        let metadata =
+            K::metadata_for_create(kind_id, self.generations[physical], version_id, &extra)
+                .ok_or("record extra cannot construct its native metadata")?;
+        self.metadata_history[physical].push(metadata);
         self.extra.set(physical, extra);
         self.field_revisions.set(physical, Some(Default::default()));
         self.lifecycle[physical] = RecordLifecycleState::Live;
@@ -64,28 +63,21 @@ impl<K: RecordKind> RecordArena<K> {
         slot: usize,
         extra: K::Extra,
         version_id: VersionId,
-    ) {
-        let physical = self
-            .physical_index(slot)
-            .expect("record extra update requires a materialized slot");
+    ) -> Option<()> {
+        let physical = self.physical_index(slot)?;
+        let kind_id = self.kind_ids[physical]?;
+        let metadata =
+            K::metadata_for_create(kind_id, self.generations[physical], version_id, &extra)?;
         if let Some(current) = self.metadata_history[physical].last_mut() {
             K::retire_metadata(current, version_id);
         }
-        let kind_id =
-            self.kind_ids[physical].expect("record extra update requires retained kind id");
-        self.metadata_history[physical].push(K::metadata_for_create(
-            kind_id,
-            self.generations[physical],
-            version_id,
-            &extra,
-        ));
+        self.metadata_history[physical].push(metadata);
         self.extra.set(physical, extra);
+        Some(())
     }
 
-    pub(crate) fn retire(&mut self, slot: usize, version_id: VersionId) {
-        let physical = self
-            .physical_index(slot)
-            .expect("record retirement requires a materialized slot");
+    pub(crate) fn retire(&mut self, slot: usize, version_id: VersionId) -> Option<()> {
+        let physical = self.physical_index(slot)?;
         self.retired_at[physical] = Some(version_id);
         self.lifecycle[physical] = RecordLifecycleState::DeletedRetained;
         self.live_bitset.set(slot, false);
@@ -93,6 +85,7 @@ impl<K: RecordKind> RecordArena<K> {
         if let Some(current) = self.metadata_history[physical].last_mut() {
             K::retire_metadata(current, version_id);
         }
+        Some(())
     }
 
     #[cfg(test)]
@@ -135,20 +128,27 @@ impl<K: RecordKind> RecordArena<K> {
         generation: u32,
     ) -> Result<bool, &'static str> {
         if let Some(physical) = self.physical_index(slot) {
-            self.install_reused_slot(init, physical, generation);
+            self.install_reused_slot(init, physical, generation)?;
             return Ok(true);
         }
         self.append_reserved_slot(init, slot, generation)?;
         Ok(false)
     }
 
-    fn install_reused_slot(&mut self, init: SlotInit<K>, physical: usize, generation: u32) {
+    fn install_reused_slot(
+        &mut self,
+        init: SlotInit<K>,
+        physical: usize,
+        generation: u32,
+    ) -> Result<(), &'static str> {
         let SlotInit {
             partition_id,
             kind_id,
             version_id,
             extra,
         } = init;
+        let metadata = K::metadata_for_create(kind_id, generation, version_id, &extra)
+            .ok_or("record extra cannot construct its native metadata")?;
         if let Some(current) = self.metadata_history[physical].last_mut() {
             K::retire_metadata(current, version_id);
         }
@@ -156,9 +156,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.generations[physical] = generation;
         self.lifecycle[physical] = RecordLifecycleState::Live;
         self.kind_ids[physical] = Some(kind_id);
-        self.metadata_history[physical].push(K::metadata_for_create(
-            kind_id, generation, version_id, &extra,
-        ));
+        self.metadata_history[physical].push(metadata);
         self.created_at[physical] = version_id;
         self.retired_at[physical] = None;
         self.extra.set(physical, extra);
@@ -172,6 +170,7 @@ impl<K: RecordKind> RecordArena<K> {
         let logical = self.slots.slots()[physical] as usize;
         self.live_bitset.set(logical, true);
         self.reclaimable_bitset.set(logical, false);
+        Ok(())
     }
 
     fn append_reserved_slot(
@@ -186,17 +185,15 @@ impl<K: RecordKind> RecordArena<K> {
             version_id,
             extra,
         } = init;
+        let metadata = K::metadata_for_create(kind_id, generation, version_id, &extra)
+            .ok_or("record extra cannot construct its native metadata")?;
         self.slots.insert(logical_slot as u64)?;
         self.partition_ids.push(partition_id);
         self.generations.push(generation);
         self.lifecycle.push(RecordLifecycleState::Live);
         self.kind_ids.push(Some(kind_id));
-        self.metadata_history.push(
-            vec![K::metadata_for_create(
-                kind_id, generation, version_id, &extra,
-            )]
-            .into(),
-        );
+        self.metadata_history.push(vec![metadata].into());
+        self.history_prefixes.push(None);
         self.created_at.push(version_id);
         self.retired_at.push(None);
         self.extra.push(extra);
@@ -213,11 +210,9 @@ impl<K: RecordKind> RecordArena<K> {
         Ok(())
     }
 
-    pub(crate) fn reset_slot(&mut self, slot: usize) {
-        let physical = self
-            .physical_index(slot)
-            .expect("record reset requires a materialized slot");
-        self.kind_ids.set(physical, None);
+    pub(crate) fn reset_slot(&mut self, slot: usize) -> Option<()> {
+        let physical = self.physical_index(slot)?;
+        self.kind_ids[physical] = None;
         self.extra.set(physical, K::empty_extra());
         self.aspect_versions.set(physical, Default::default());
         self.field_revisions.set(physical, None);
@@ -226,7 +221,8 @@ impl<K: RecordKind> RecordArena<K> {
         self.branch_pins.set(physical, 0);
         self.replay_pins.set(physical, 0);
         self.snapshot_pins.set(physical, 0);
-        self.retired_at.set(physical, None);
+        self.retired_at[physical] = None;
+        Some(())
     }
 
     pub(crate) fn set_lifecycle_for_slot(

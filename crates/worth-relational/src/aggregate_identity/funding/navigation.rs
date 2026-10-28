@@ -1,12 +1,12 @@
 //! Scoped partition and occupied-slot navigation keeps original funding on every exit.
 use super::{AggregateWork, BuildResult, PlanDenial};
-use crate::{identity::data::PartitionId, storage::overlay::PartitionAccess};
+use crate::{identity::data::PartitionId, storage::overlay::CurrentPartitionAccess};
 use worth_execution::MapKernelFailure;
 
 impl AggregateWork<'_, '_, '_, '_> {
     pub(in crate::aggregate_identity) fn with_partition_ids<T>(
         &mut self,
-        state: &dyn PartitionAccess,
+        state: &dyn CurrentPartitionAccess,
         visit: impl FnOnce(&[PartitionId], &mut Self) -> BuildResult<T>,
     ) -> BuildResult<T> {
         self.checkpoint(1)?;

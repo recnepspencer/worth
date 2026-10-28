@@ -1,6 +1,7 @@
 //! Fresh processes preserve binding inputs; every row is accounted for.
 use super::cases::{self, Cell};
 use std::collections::BTreeMap;
+mod cell_process;
 mod execution;
 mod price;
 use price::cell;

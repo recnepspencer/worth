@@ -33,6 +33,8 @@ pub(super) use plain_serving::assert_plain_serving_denied;
 #[path = "certified_release_serving/empty_no_release.rs"]
 mod empty_no_release;
 pub(super) use empty_no_release::run_empty_no_release;
+#[path = "certified_release_serving/certificate_roster_scale.rs"]
+mod certificate_roster_scale;
 #[path = "certified_release_serving/head_diagnostics.rs"]
 mod head_diagnostics;
 #[path = "certified_release_serving/ledger_preparation.rs"]

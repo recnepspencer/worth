@@ -41,7 +41,7 @@ pub(super) fn capture(
                 crate::history::data::CodecRetirementClosureStop::Request(cause) => Denial::request(cause),
                 crate::history::data::CodecRetirementClosureStop::Payload(detail) => Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, detail),
             })?;
-            let activation_kind = source.inner.root.partition_state(activation.entity_id.partition_id)
+            let activation_kind = source.inner.root.partition_state(activation.entity_id.partition_id).map_err(|failure| Denial::request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure)))?
                 .and_then(|partition| partition.entity_arena.get(&activation.entity_id))
                 .filter(|row| row.is_live()).and_then(|row| row.kind_id())
                 .ok_or_else(|| Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec activation actual native kind is absent"))?;
@@ -97,6 +97,11 @@ impl RecoveredCodecPublicationCustody {
         use crate::publication::patch::data::RecordStructuralChange as Change;
         use crate::transactions::data::RecordRef;
         let denied = |detail| crate::mvcc::origin_denial(detail);
+        // The envelope records identity in the canonical frame (D11); compare
+        // the live source there, and record it there.
+        let recorded_source = source.descriptor().in_canonical_frame().map_err(|_| {
+            denied("codec retirement source cannot be recorded in the canonical frame")
+        })?;
         if self.source.descriptor() != source.descriptor()
             || envelope.schema_transition.is_none()
             || !envelope.is_unmerged_output_publication_step()
@@ -105,7 +110,7 @@ impl RecoveredCodecPublicationCustody {
                 .branch_cell_checkpoint
                 .as_ref()
                 .map(|cell| &cell.observation)
-                != Some(source.reference())
+                != Some(recorded_source.reference())
         {
             return Err(denied(
                 "codec retirement custody does not cover this exact native candidate",
@@ -172,7 +177,7 @@ impl RecoveredCodecPublicationCustody {
                             CanonicalRequiredOutputCodecRetirement {
                                 publication: origin.commit.commit_id,
                                 meaning: origin.meaning.clone(),
-                                source: source.descriptor().clone(),
+                                source: recorded_source.clone(),
                                 retiring: envelope.commit.clone(),
                                 kinds: Arc::clone(&prepared.kinds),
                                 activation: Arc::clone(&self.activation),

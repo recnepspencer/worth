@@ -22,6 +22,32 @@ impl Default for StringInterner {
 }
 
 impl StringInterner {
+    pub(crate) fn identity_frontier(&self) -> u32 {
+        self.next_symbol
+    }
+
+    /// Spend an identity without publishing any text meaning. The runtime owns
+    /// pending reservation lifetime and never restores this frontier on abort.
+    pub(crate) fn reserve_identity(
+        &mut self,
+    ) -> Result<Symbol, super::RelationalFieldTextAdmissionDenial> {
+        let next = self
+            .next_symbol
+            .checked_add(1)
+            .ok_or(super::RelationalFieldTextAdmissionDenial::SymbolExhausted)?;
+        let symbol = Symbol(self.next_symbol);
+        self.next_symbol = next;
+        Ok(symbol)
+    }
+
+    pub(crate) fn reserve_frontier(&mut self, frontier: u32) -> Result<(), &'static str> {
+        if frontier == 0 {
+            return Err("symbol frontier is empty");
+        }
+        self.next_symbol = self.next_symbol.max(frontier);
+        Ok(())
+    }
+
     pub fn symbol(&self, value: &str) -> Option<Symbol> {
         self.by_value.get(value).copied()
     }
@@ -30,15 +56,18 @@ impl StringInterner {
         self.by_value.contains_key(value)
     }
 
-    pub fn intern(&mut self, value: &str) -> Symbol {
+    pub fn intern(&mut self, value: &str) -> Result<Symbol, super::RelationalSymbolExhausted> {
         if let Some(symbol) = self.by_value.get(value) {
-            return *symbol;
+            return Ok(*symbol);
         }
         let symbol = Symbol(self.next_symbol);
-        self.next_symbol += 1;
+        self.next_symbol = self
+            .next_symbol
+            .checked_add(1)
+            .ok_or(super::RelationalSymbolExhausted)?;
         self.by_value.insert(value.to_string().into(), symbol);
         self.by_symbol.insert(symbol, value.to_string().into());
-        symbol
+        Ok(symbol)
     }
 
     pub fn resolve(&self, symbol: Symbol) -> Option<&str> {
@@ -124,10 +153,13 @@ impl StringInterner {
         }
         Ok(())
     }
-    pub fn normalize(&mut self, value: InternedString) -> InternedString {
+    pub fn normalize(
+        &mut self,
+        value: InternedString,
+    ) -> Result<InternedString, super::RelationalSymbolExhausted> {
         match value {
-            InternedString::Raw(raw) => InternedString::Symbol(self.intern(&raw)),
-            symbol => symbol,
+            InternedString::Raw(raw) => self.intern(&raw).map(InternedString::Symbol),
+            symbol => Ok(symbol),
         }
     }
 
@@ -170,12 +202,18 @@ mod tests {
     #[test]
     fn snapshot_entries_are_ordered_by_string_value() {
         let mut left = StringInterner::default();
-        left.intern("beta");
-        left.intern("alpha");
+        left.intern("beta")
+            .expect("symbol fixture has identity capacity");
+        left.intern("alpha")
+            .expect("symbol fixture has identity capacity");
 
         let mut right = StringInterner::default();
-        right.intern("alpha");
-        right.intern("beta");
+        right
+            .intern("alpha")
+            .expect("symbol fixture has identity capacity");
+        right
+            .intern("beta")
+            .expect("symbol fixture has identity capacity");
 
         let left_snapshot = left.snapshot();
         let right_snapshot = right.snapshot();
@@ -201,8 +239,12 @@ mod tests {
     #[test]
     fn restore_snapshot_preserves_symbol_ids_after_canonical_snapshot_sort() {
         let mut interner = StringInterner::default();
-        let beta = interner.intern("beta");
-        let alpha = interner.intern("alpha");
+        let beta = interner
+            .intern("beta")
+            .expect("symbol fixture has identity capacity");
+        let alpha = interner
+            .intern("alpha")
+            .expect("symbol fixture has identity capacity");
 
         let snapshot = interner.snapshot();
         let mut restored = StringInterner::default();
@@ -216,9 +258,13 @@ mod tests {
     #[test]
     fn detached_clone_shares_prior_meaning_without_publishing_new_symbols() {
         let mut owner = StringInterner::default();
-        let original = owner.intern("original");
+        let original = owner
+            .intern("original")
+            .expect("symbol fixture has identity capacity");
         let mut detached = owner.clone();
-        let candidate = detached.intern("candidate");
+        let candidate = detached
+            .intern("candidate")
+            .expect("symbol fixture has identity capacity");
 
         assert_eq!(owner.resolve(original), Some("original"));
         assert_eq!(owner.symbol("candidate"), None);
@@ -229,8 +275,12 @@ mod tests {
     #[test]
     fn persistent_maps_read_and_write_the_prior_symbol_wire_shape() {
         let mut interner = StringInterner::default();
-        let alpha = interner.intern("alpha");
-        let beta = interner.intern("beta");
+        let alpha = interner
+            .intern("alpha")
+            .expect("symbol fixture has identity capacity");
+        let beta = interner
+            .intern("beta")
+            .expect("symbol fixture has identity capacity");
         let bytes = rmp_serde::to_vec_named(&interner).expect("serialize persistent maps");
         let legacy: LegacyStringInterner =
             rmp_serde::from_slice(&bytes).expect("legacy reader accepts symbol mapping");
@@ -271,7 +321,9 @@ mod tests {
         let measured = |count: usize| {
             let mut interner = StringInterner::default();
             for index in 0..count {
-                interner.intern(&format!("key-{index:05}"));
+                interner
+                    .intern(&format!("key-{index:05}"))
+                    .expect("symbol fixture has identity capacity");
             }
             let last = format!("key-{:05}", count - 1);
             let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
@@ -284,5 +336,26 @@ mod tests {
         let large = measured(10_000);
         assert_eq!(small.allocations, large.allocations);
         assert_eq!(small.bytes_allocated, large.bytes_allocated);
+    }
+}
+
+#[cfg(test)]
+mod exhaustion_tests {
+    use super::*;
+    #[test]
+    fn exhausted_frontier_preserves_existing_meanings_and_never_wraps() {
+        let mut symbols = StringInterner::default();
+        let kept = symbols.intern("retained").unwrap();
+        symbols.next_symbol = u32::MAX;
+        let before = symbols.clone();
+        for _ in 0..2 {
+            assert_eq!(
+                symbols.intern("refused"),
+                Err(super::super::RelationalSymbolExhausted)
+            );
+            assert_eq!(symbols, before);
+        }
+        assert_eq!(symbols.intern("retained"), Ok(kept));
+        assert_eq!(symbols.resolve(kept), Some("retained"));
     }
 }

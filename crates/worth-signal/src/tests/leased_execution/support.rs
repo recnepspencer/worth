@@ -11,6 +11,7 @@ use worth_foundational::{
 };
 
 pub(crate) mod private_authority_process;
+pub(crate) mod result_grant_process;
 pub(crate) mod task_rendezvous;
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {

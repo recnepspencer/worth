@@ -102,7 +102,7 @@ impl BoundedMediaWalk {
     ) -> Result<PhysicalFileIdentity, OfflineIntegrityOutcome> {
         #[cfg(windows)]
         {
-            return self.identity_from_open_file(_file, path);
+            self.identity_from_open_file(_file, path)
         }
         #[cfg(not(windows))]
         {

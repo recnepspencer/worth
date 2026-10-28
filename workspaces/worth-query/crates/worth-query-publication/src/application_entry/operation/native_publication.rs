@@ -88,6 +88,30 @@ impl<Outcome, Completion, AdmissionDenial>
         }
     }
 
+    /// A committed receipt settles only performed or unresolved native custody.
+    /// On refusal the original state and every owned obligation stay in place.
+    pub(in crate::application_entry) fn complete_keyed(
+        &mut self,
+        receipt: WorthQueryApplicationCommitReceipt,
+    ) -> Result<NativeRecoveredPublication, WorthQueryOperationCloseDenial> {
+        let prior = std::mem::replace(self, Self::Initial);
+        let (publication, initial_posture, initial_advancement_failure) = match prior {
+            Self::Performed(performed) => (Some(performed), None, None),
+            Self::Keyed(posture) => (None, Some(posture), None),
+            Self::UnresolvedAdvancement(failure) => (None, None, Some(failure)),
+            retained => {
+                *self = retained;
+                return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
+            }
+        };
+        Ok(NativeRecoveredPublication {
+            receipt,
+            publication,
+            initial_posture,
+            initial_advancement_failure,
+        })
+    }
+
     /// Resolving a key transfers original publication evidence, never a synthetic result.
     pub(in crate::application_entry) fn accept_keyed(
         &mut self,
@@ -95,21 +119,9 @@ impl<Outcome, Completion, AdmissionDenial>
         cleanup: &WorthQueryOperationCleanup,
     ) -> Result<NativeKeyedProgress, WorthQueryOperationCloseDenial> {
         match resolution {
-            Resolution::AlreadyCommitted(receipt) => {
-                let prior = std::mem::replace(self, Self::Initial);
-                let (publication, initial_posture, initial_advancement_failure) = match prior {
-                    Self::Performed(performed) => (Some(performed), None, None),
-                    Self::Keyed(posture) => (None, Some(posture), None),
-                    Self::UnresolvedAdvancement(failure) => (None, None, Some(failure)),
-                    _ => unreachable!("only native performed or unresolved custody resolves a key"),
-                };
-                Ok(NativeKeyedProgress::Completed(NativeRecoveredPublication {
-                    receipt,
-                    publication,
-                    initial_posture,
-                    initial_advancement_failure,
-                }))
-            }
+            Resolution::AlreadyCommitted(receipt) => self
+                .complete_keyed(receipt)
+                .map(NativeKeyedProgress::Completed),
             Resolution::Unseen
                 if matches!(self, Self::Keyed(WorthQueryApplicationUncommitted::Aborted)) =>
             {
@@ -117,12 +129,17 @@ impl<Outcome, Completion, AdmissionDenial>
                     return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
                 }
                 // Native Aborted proves no effect. Unseen by itself never permits execution.
-                let Self::Keyed(posture) = std::mem::replace(self, Self::Initial) else {
-                    unreachable!("actual native abort guarded by state match")
-                };
-                Ok(NativeKeyedProgress::Progress {
-                    proved_abort: Some(posture),
-                })
+                match std::mem::replace(self, Self::Initial) {
+                    Self::Keyed(posture @ WorthQueryApplicationUncommitted::Aborted) => {
+                        Ok(NativeKeyedProgress::Progress {
+                            proved_abort: Some(posture),
+                        })
+                    }
+                    retained => {
+                        *self = retained;
+                        Err(WorthQueryOperationCloseDenial::NativeObligationRetained)
+                    }
+                }
             }
             Resolution::Unseen => Ok(NativeKeyedProgress::Progress { proved_abort: None }),
             resolution @ Resolution::IntentDrift => Ok(NativeKeyedProgress::Terminal(resolution)),

@@ -51,8 +51,15 @@ impl VisibilityProjectionView {
                             .ok_or(Denial::SourceUnavailable)?,
                     )?;
                     let metadata = view
-                        .with_exact_entity_state(entity, |metadata, _| metadata)
-                        .map_err(|_| Denial::SourceUnavailable)?
+                        .read_exact_entity_state(execution, entity, |metadata, _| metadata)
+                        .map_err(|cause| match cause {
+                            super::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                                Denial::Execution(cause)
+                            }
+                            super::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                                Denial::SourceUnavailable
+                            }
+                        })?
                         .ok_or(Denial::SourceUnavailable)?;
                     if metadata.entity_id != entity
                         || metadata.kind_id != kind

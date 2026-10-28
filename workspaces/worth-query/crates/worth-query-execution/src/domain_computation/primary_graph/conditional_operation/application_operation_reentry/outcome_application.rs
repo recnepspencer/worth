@@ -110,12 +110,6 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
                 WorthQueryRetainedConditionalDecision::OperationControlStopped(evidence, cause);
             counts.failed += 1;
         }
-        WorthQueryTemporalReentryOutcome::SettlementDeferred(deferred) => {
-            wake.decision = WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(
-                evidence, deferred,
-            );
-            counts.indeterminate += 1;
-        }
         WorthQueryTemporalReentryOutcome::Indeterminate(detail) => {
             wake.decision =
                 WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, detail);

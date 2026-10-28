@@ -14,9 +14,11 @@ fn binding_a_truth_partition_keeps_handle_custody_and_its_listener() {
     .unwrap();
     let acquisitions = Arc::new(AtomicUsize::new(0));
     let observed = Arc::clone(&acquisitions);
-    let _guard = source.observe_runtime_locks_for_test(move || {
-        observed.fetch_add(1, Ordering::SeqCst);
-    });
+    let _guard = source
+        .observe_runtime_locks_for_test(move || {
+            observed.fetch_add(1, Ordering::SeqCst);
+        })
+        .expect("the new source admits its first passive observer");
     let bound = source
         .with_graph_partition(
             "primary",

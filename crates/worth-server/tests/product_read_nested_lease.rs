@@ -159,7 +159,8 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     let runtime = Arc::new(
         RelationalRuntimeApi::builder()
             .schema_registry(relational_support::demo_schema_registry())
-            .build(),
+            .build()
+            .expect("valid native runtime configuration"),
     );
     let fixture_host_request = relational_support::serial_request();
     let fixture_execution = &worth_execution::ExecutionRequest::serial(&fixture_host_request);
@@ -261,18 +262,22 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
         WorthServerProductOperationPayload::json("nested.relational.payload.v1", json!({})),
     )
     .with_basis_digest("basis:r0");
-    assert!(matches!(
-        session
-            .product_operations()
-            .execute_shared_read_batch_with_lease(vec![large_registration], &small_lease),
-        Err(WorthServerProductReadBatchStop::PacketStopped {
-            reason: MapStop::Failure {
-                cause: worth_execution::MapKernelFailure::ResultCapacityExceeded,
+    // The declaration's retained support snapshot is charged to the caller's
+    // lease before the adapter runs, so the small lease refuses its memory.
+    let refused = session
+        .product_operations()
+        .execute_shared_read_batch_with_lease(vec![large_registration], &small_lease)
+        .unwrap_err();
+    assert!(
+        matches!(
+            refused,
+            WorthServerProductReadBatchStop::PacketStopped {
+                reason: MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(_)),
                 ..
-            },
-            ..
-        })
-    ));
+            }
+        ),
+        "{refused:?}"
+    );
     assert_eq!(
         adapter.seen_lease_address.load(Ordering::SeqCst),
         &wide as *const _ as usize

@@ -29,8 +29,16 @@ case "$SCOPE" in
   dirty)
     PATHS=()
     ;;
+  diff)
+    if [[ -z "${2:-}" ]]; then
+      echo "diff scope requires a base revision" >&2
+      exit 2
+    fi
+    DIFF_BASE="$(git rev-parse --verify "${2}^{commit}")"
+    PATHS=()
+    ;;
   *)
-    echo "usage: $0 [workspace|worth-ui|worth-ui-apps|dirty]" >&2
+    echo "usage: $0 [workspace|worth-ui|worth-ui-apps|dirty|diff BASE]" >&2
     exit 2
     ;;
 esac
@@ -38,9 +46,11 @@ esac
 echo "[workspace-rust-line-caps] enforcing ${CAP}-line cap for ${SCOPE} Rust files"
 
 violations=0
+checked=0
 while read -r line_count file; do
   [[ -n "$file" ]] || continue
   [[ "$file" != "total" ]] || continue
+  checked=$((checked + 1))
 
   if (( line_count > CAP )); then
     if [[ -f "$ALLOWLIST" ]] && grep -Fxq "$file" "$ALLOWLIST"; then
@@ -57,6 +67,9 @@ done < <(
       git diff --cached --name-only --diff-filter=ACMR -z -- '*.rs'
       git ls-files --others --exclude-standard -z -- '*.rs'
     }
+  elif [[ "$SCOPE" == diff ]]; then
+    git diff --name-only --diff-filter=ACMR -z "$DIFF_BASE" -- '*.rs'
+    git ls-files --others --exclude-standard -z -- '*.rs'
   else
     git ls-files -z -- "${PATHS[@]}"
   fi \
@@ -71,4 +84,4 @@ if (( violations != 0 )); then
   exit 1
 fi
 
-echo "[workspace-rust-line-caps] PASS"
+echo "[workspace-rust-line-caps] PASS: checked ${checked} Rust files"

@@ -322,6 +322,10 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
     Ok(RecordArena {
         slots,
         partition_ids: vec![partition_id; image.generations.len()].into(),
+        history_prefixes: crate::storage::substrate::SharedColumn::with_default(
+            image.generations.len(),
+            None,
+        ),
         generations: image.generations.into(),
         lifecycle: image.lifecycle.into(),
         kind_ids: image.kind_ids.into(),

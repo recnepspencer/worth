@@ -56,14 +56,14 @@ impl<'scope, 'authority, T: Ord> Author<'scope, 'authority, T> {
             }
             self.chunk = Some(slots.seal()?);
         }
-        let chunk = self.chunk.as_ref().expect("author chunk");
+        let chunk = self.chunk.as_ref().expect(/* Proof: The staging author initializes its pending chunk rows and occupied binary levels before exposing them; consuming extraction uses only the initialized row count. */ "author chunk");
         let mut index = 0;
         while index < self.used {
             self.policy.check_live()?;
             let order = chunk[index]
                 .borrow()
                 .as_ref()
-                .expect("initialized row")
+                .expect(/* Proof: The staging author initializes its pending chunk rows and occupied binary levels before exposing them; consuming extraction uses only the initialized row count. */ "initialized row")
                 .cmp(&value);
             match order {
                 std::cmp::Ordering::Equal => return Ok(()),
@@ -91,9 +91,9 @@ impl<'scope, 'authority, T: Ord> Author<'scope, 'authority, T> {
             return Ok(());
         }
         let mut rows = ExecutionArrayBuilder::allocate(self.used, self.policy)?;
-        let chunk = self.chunk.as_ref().expect("pending rows");
+        let chunk = self.chunk.as_ref().expect(/* Proof: The staging author initializes its pending chunk rows and occupied binary levels before exposing them; consuming extraction uses only the initialized row count. */ "pending rows");
         for row in chunk.iter().take(self.used) {
-            rows.push(row.borrow_mut().take().expect("initialized pending row"))?;
+            rows.push(row.borrow_mut().take().expect(/* Proof: The staging author initializes its pending chunk rows and occupied binary levels before exposing them; consuming extraction uses only the initialized row count. */ "initialized pending row"))?;
         }
         let values = Arc::new(rows.seal()?);
         let mut handles = ExecutionArrayBuilder::allocate(self.used, self.policy)?;
@@ -112,7 +112,7 @@ impl<'scope, 'authority, T: Ord> Author<'scope, 'authority, T> {
         while bits & 1 == 1 {
             self.policy.check_live()?;
             carry = merge(
-                self.levels[level].as_ref().expect("occupied binary level"),
+                self.levels[level].as_ref().expect(/* Proof: The staging author initializes its pending chunk rows and occupied binary levels before exposing them; consuming extraction uses only the initialized row count. */ "occupied binary level"),
                 &carry,
                 self.policy,
             )?;

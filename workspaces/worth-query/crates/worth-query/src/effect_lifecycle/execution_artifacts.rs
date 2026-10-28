@@ -8,16 +8,14 @@ use worth_runtime_bridge::facade::{
 mod authority_and_denial;
 #[path = "execution_artifacts/control_stopped.rs"]
 mod control_stopped;
-#[path = "execution_artifacts/settlement_deferred.rs"]
-mod settlement_deferred;
+#[path = "execution_artifacts/stop.rs"]
+mod stop;
 pub(crate) use authority_and_denial::EffectMergeAuthority;
 pub use authority_and_denial::{
     EffectExecutionAuthority, EffectExecutionDenial, EffectExecutionDenialKind,
 };
 pub use control_stopped::EffectExecutionControlStopped;
-pub use settlement_deferred::{
-    EffectExecutionDeferred, EffectExecutionSettlementDeferred, EffectExecutionStop,
-};
+pub use stop::{EffectExecutionDeferred, EffectExecutionDurabilityUnresolved, EffectExecutionStop};
 
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 

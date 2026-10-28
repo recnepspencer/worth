@@ -46,10 +46,10 @@ impl<'reader> ManifestRangeCursor<'reader> {
         let Some(mut reference) = root else {
             return Ok(first.is_none());
         };
-        if let Some(first) = first {
-            if first < reference.first() || first > reference.last() {
-                return Ok(false);
-            }
+        if let Some(first) = first
+            && (first < reference.first() || first > reference.last())
+        {
+            return Ok(false);
         }
         loop {
             match self

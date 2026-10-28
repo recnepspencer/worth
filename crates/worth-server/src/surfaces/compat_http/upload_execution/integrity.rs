@@ -77,16 +77,16 @@ fn ensure_declared_digest_matches(
     diagnostics_profile: worth_foundational::facade::DiagnosticRichnessProfile,
     label: &str,
 ) -> Result<(), WorthServerQueryHandoffDenial> {
-    if let Some(declared) = declared_digest {
-        if declared != observed_digest {
-            return Err(WorthServerQueryHandoffDenial::new(
-                WorthServerQueryHandoffDenialCode::CompatibilityUploadRequestInvalid,
-                diagnostics_profile,
-                format!(
-                    "{label} integrity digest mismatch: declared `{declared}` but observed `{observed_digest}`"
-                ),
-            ));
-        }
+    if let Some(declared) = declared_digest
+        && declared != observed_digest
+    {
+        return Err(WorthServerQueryHandoffDenial::new(
+            WorthServerQueryHandoffDenialCode::CompatibilityUploadRequestInvalid,
+            diagnostics_profile,
+            format!(
+                "{label} integrity digest mismatch: declared `{declared}` but observed `{observed_digest}`"
+            ),
+        ));
     }
     Ok(())
 }

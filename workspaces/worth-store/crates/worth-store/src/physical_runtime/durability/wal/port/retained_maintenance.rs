@@ -31,10 +31,11 @@ impl PhysicalWalAppendPort {
                     let (segment, generation, start, end, offset, bytes) = intent.interval();
                     intent.digest() == digest
                         && intent.record() == record
-                        && state
-                            .unresolved_retirement_spans
-                            .iter()
-                            .any(|hold| *hold == (record.artifact, start, end))
+                        && state.unresolved_retirement_spans.contains(&(
+                            record.artifact,
+                            start,
+                            end,
+                        ))
                         && state.segments.entries().iter().any(|entry| {
                             entry.identity().segment().get() == segment
                                 && entry.identity().generation().get() == generation

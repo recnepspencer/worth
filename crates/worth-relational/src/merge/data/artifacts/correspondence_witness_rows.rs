@@ -154,7 +154,7 @@ pub(crate) fn identity_match_candidate_digest(candidate: &IdentityMatchCandidate
     let mut bytes = Vec::new();
     bytes.extend_from_slice(b"worth.relational.merge.identity_match_candidate.v1");
     bytes.extend_from_slice(
-        &rmp_serde::to_vec_named(candidate).expect("identity match candidate must encode"),
+        &rmp_serde::to_vec_named(candidate).expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "identity match candidate must encode"),
     );
     let digest = Sha256::digest(bytes);
     digest.iter().map(|byte| format!("{byte:02x}")).collect()

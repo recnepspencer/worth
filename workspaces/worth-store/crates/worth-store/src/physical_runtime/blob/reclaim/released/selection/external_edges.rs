@@ -146,10 +146,11 @@ impl<'a> ExternalEdgeAudit<'a> {
         if target == publication_record {
             self.publication_referenced = true;
         }
-        if protects && (target_reachable || same_session) {
-            if let Some(fact) = self.inventory.fact_mut(target) {
-                fact.protected = true;
-            }
+        if protects
+            && (target_reachable || same_session)
+            && let Some(fact) = self.inventory.fact_mut(target)
+        {
+            fact.protected = true;
         }
         Ok(())
     }

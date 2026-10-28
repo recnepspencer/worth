@@ -212,10 +212,9 @@ impl PhysicalExtentCopyResolution {
             root_generation,
             publication_lsn,
         } = kind
+            && (root_generation == 0 || publication_lsn <= intent_lsn)
         {
-            if root_generation == 0 || publication_lsn <= intent_lsn {
-                return None;
-            }
+            return None;
         }
         Some(Self {
             operation,

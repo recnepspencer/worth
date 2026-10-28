@@ -198,7 +198,7 @@ fn assert_retained_equal_update(
     let before_basis = court.basis();
     let before = court
         .runtime
-        .entity_record_at_observation(&before_basis.observation(), court.entities[0])
+        .entity_record_at_observation(&execution, &before_basis.observation(), court.entities[0])
         .unwrap()
         .unwrap();
     court.equal_scalar_edit(execution);
@@ -206,7 +206,7 @@ fn assert_retained_equal_update(
     let observation = basis.observation();
     let after = court
         .runtime
-        .entity_record_at_observation(&observation, court.entities[0])
+        .entity_record_at_observation(&execution, &observation, court.entities[0])
         .unwrap()
         .unwrap();
     assert_eq!(

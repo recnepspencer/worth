@@ -4,13 +4,17 @@ use super::{DerivedIndexDefinitionLookup, PreparedEntityFieldLookup};
 use crate::runtime::RelationalRuntime;
 #[path = "../admitted_generation.rs"]
 mod admitted_generation;
+mod definition_inventory;
 mod field_preparation;
-mod inspection;
+mod generation_observation;
+mod generation_reads;
 #[cfg(test)]
 #[path = "../query_index_parity.rs"]
 mod query_index_parity;
 mod related_ordering;
 mod relation_join;
+#[cfg(test)]
+mod resident_index_inspection;
 mod snapshot_field;
 #[cfg(test)]
 use super::execution::execute_index_backed_query_from_generation;

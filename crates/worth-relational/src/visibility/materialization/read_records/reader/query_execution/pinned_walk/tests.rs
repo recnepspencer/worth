@@ -36,7 +36,14 @@ fn complete_walk_is_global_canonical_and_keeps_physical_cycle_edges() {
         .collect();
     let pin = runtime
         .read_truth()
-        .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &request)
+        .pin_read_capability(
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("the live fixture admits its current snapshot"),
+            &[],
+            &request,
+        )
         .unwrap();
     let walk = pin
         .complete_relation_walk(&request, scope(&ids[..1], RelationDirection::Forward))
@@ -113,13 +120,27 @@ fn pinned_walk_survives_owner_drop_and_excludes_later_entities() {
     create_relation_in_partition(&request, &runtime, a, b, "ab", PartitionId(7));
     let before = runtime
         .read_truth()
-        .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &request)
+        .pin_read_capability(
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("the live fixture admits its current snapshot"),
+            &[],
+            &request,
+        )
         .unwrap();
     let c = create_entity_in_partition(&request, &runtime, "c", PartitionId(7));
     create_relation_in_partition(&request, &runtime, b, c, "bc", PartitionId(7));
     let after = runtime
         .read_truth()
-        .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &request)
+        .pin_read_capability(
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("the live fixture admits its current snapshot"),
+            &[],
+            &request,
+        )
         .unwrap();
     drop(runtime);
     let old = before
@@ -142,7 +163,14 @@ fn original_work_cancellation_and_retained_memory_survive_handoff() {
     create_relation_in_partition(&request, &runtime, a, b, "ab", PartitionId(7));
     let pin = runtime
         .read_truth()
-        .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &request)
+        .pin_read_capability(
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("the live fixture admits its current snapshot"),
+            &[],
+            &request,
+        )
         .unwrap();
     let roots = vec![a; 4096];
     let refused = request
@@ -230,7 +258,10 @@ fn optional_and_ancestral_memory_custody_uses_the_original_backing() {
     let pin = runtime
         .read_truth()
         .pin_read_capability(
-            &runtime.visibility_authority().snapshot(),
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("the live fixture admits its current snapshot"),
             &[],
             &setup_request,
         )
@@ -295,7 +326,10 @@ fn leased_walk_preserves_original_stop_partial_reads_and_output_payer() {
     let pin = runtime
         .read_truth()
         .pin_read_capability(
-            &runtime.visibility_authority().snapshot(),
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("the live fixture admits its current snapshot"),
             &[],
             &setup_request,
         )

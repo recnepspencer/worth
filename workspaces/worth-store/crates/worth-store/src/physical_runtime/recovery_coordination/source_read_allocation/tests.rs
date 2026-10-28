@@ -15,12 +15,12 @@ use crate::physical_runtime::record_serving::{
 
 #[test]
 fn zero_source_window_funds_growth_and_releases_exact_native_charge() {
-    let mut owner = owner();
+    let owner = owner();
     let ports = owner.ports().clone();
     let observer = ports.allocation_events();
     let original = owner.recovery_allocation_admission();
     let before = observer.snapshot();
-    let mut window = PhysicalRecoveryReadAllocation::new(&mut owner, original, generation());
+    let mut window = PhysicalRecoveryReadAllocation::new(&owner, original, generation());
     assert_eq!(window.charged_bytes(), 0);
     window.reserve_total(0).unwrap();
     assert_eq!(observer.snapshot(), before);
@@ -60,7 +60,7 @@ fn original_ceiling_includes_other_live_recovery_before_native_growth() {
         .restrict_recovery_allocation(original, generation())
         .unwrap();
     let other = ports.begin_operation(Scope::Recovery, nonzero(40)).unwrap();
-    let mut window = PhysicalRecoveryReadAllocation::new(&mut owner, original, generation());
+    let mut window = PhysicalRecoveryReadAllocation::new(&owner, original, generation());
     window.reserve_total(24).unwrap();
     let before = ports.allocation_events().snapshot();
     assert_eq!(
@@ -110,14 +110,14 @@ fn original_ceiling_includes_other_live_recovery_before_native_growth() {
 
 #[test]
 fn native_aggregate_pressure_preserves_zero_and_existing_source_charge() {
-    let mut owner = owner();
+    let owner = owner();
     let ports = owner.ports().clone();
     let original = owner.recovery_allocation_admission();
     let limit = owner.admitted_policy().operation_bytes();
     let mut other = ports
         .begin_operation(Scope::Maintenance, nonzero(limit - 1))
         .unwrap();
-    let mut window = PhysicalRecoveryReadAllocation::new(&mut owner, original, generation());
+    let mut window = PhysicalRecoveryReadAllocation::new(&owner, original, generation());
     let before_first_denial = ports.allocation_events().snapshot();
     assert_pressure(window.reserve_total(2).unwrap_err(), 2, limit - 1, limit);
     let after_first_denial = ports.allocation_events().snapshot();

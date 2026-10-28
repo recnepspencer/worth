@@ -40,7 +40,7 @@ fn project_in_scope<'p>(
         .map_err(|stop| collection::execution(stop.into()))?;
     let backing = extent.allocate(memory)?;
     let (_, backing, mut work) = run(proposal, request, Some(backing))?;
-    let mut backing = backing.expect("build pass owns the admitted backing");
+    let mut backing = backing.expect(/* Proof: Only the build pass reaches this branch and it owns Some(admitted backing); the sizing pass exits through its separate branch. */ "build pass owns the admitted backing");
     let comparisons = backing
         .touches
         .len()

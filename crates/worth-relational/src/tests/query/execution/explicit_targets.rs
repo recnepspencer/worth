@@ -112,7 +112,10 @@ fn unleased_query_execution_keeps_multi_packet_reads_serial() {
             PartitionId(11),
         )),
     ];
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     runtime.performance_access().reset_counters();
 
     let outcome = execute_explicit_query(execution, &runtime, &snapshot, "parallel-query", targets);
@@ -138,7 +141,10 @@ fn planned_query_execution_explicit_targets_do_not_claim_fragment_scratch_reuse(
     let runtime = runtime_with_test_schema();
     let left = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
     let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     runtime.performance_access().reset_counters();
     let outcome = execute_explicit_query(

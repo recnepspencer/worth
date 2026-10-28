@@ -59,14 +59,13 @@ impl StoreCandidateFramePublicationSession<'_> {
             Err(failure) => {
                 if failure.effect_fate()
                     == crate::physical_runtime::PhysicalWorkEffectFate::ProvenNoEffect
+                    && let Err(denial) = resident.discard()
                 {
-                    if let Err(denial) = resident.discard() {
-                        return Err(residency(
-                            denial,
-                            CandidateFrameFailurePosture::UnsettledBeforeEffect,
-                            frame,
-                        ));
-                    }
+                    return Err(residency(
+                        denial,
+                        CandidateFrameFailurePosture::UnsettledBeforeEffect,
+                        frame,
+                    ));
                 }
                 return Err(RecoverableCandidateFrameWriteFailure::new(
                     CandidateFrameWriteFailure::Effect(failure),

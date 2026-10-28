@@ -179,7 +179,7 @@ impl MergeWorld {
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("main exposes a fork source");
             runtime
-                .fork_branch(BranchId(FEATURE.to_owned()), source)
+                .fork_branch(execution, BranchId(FEATURE.to_owned()), source)
                 .expect("the feature branch forks");
         });
     }

@@ -65,6 +65,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::RetentionBudgetExceeded
             | Self::PublicationCapacityExceeded
             | Self::ForeignDemand
+            | Self::RequiredSuccessorStateUnavailable
             | Self::ForeignSettlement
             | Self::IncompleteDependencyCoverage
             | Self::RetainedBasisUnavailable

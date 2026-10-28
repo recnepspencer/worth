@@ -191,6 +191,7 @@ fn runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn create_entity(

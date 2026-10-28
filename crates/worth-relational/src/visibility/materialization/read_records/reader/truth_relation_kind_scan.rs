@@ -38,10 +38,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
+        let edition = self.runtime.storage_access().current_edition();
+        let state = edition
+            .demand_all(execution, &self.runtime.services.symbols)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
             |context, memory| {
-                let state = self.runtime.storage_access().current_edition();
                 ProjectionRecordReader::new(
                     self.runtime.current_version_id(),
                     &self.runtime.services.instrumentation,
@@ -265,7 +268,7 @@ impl ProjectionRecordReader<'_> {
             state,
             scan.memory
                 .as_mut()
-                .expect("native scan keeps its original loan"),
+                .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native scan keeps its original loan"),
         )
         .map_err(NativeScanStop::Request)?;
         for partition_id in partitions {
@@ -281,7 +284,7 @@ impl ProjectionRecordReader<'_> {
         super::super::read_work::record_memory::release(
             scan.memory
                 .as_mut()
-                .expect("native scan keeps its original loan"),
+                .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native scan keeps its original loan"),
             partition_bytes,
         )
         .map_err(NativeScanStop::Request)?;
@@ -298,54 +301,48 @@ impl ProjectionRecordReader<'_> {
         scan: &mut RelationKindScan<'_, '_>,
     ) -> Result<(), NativeScanStop<RelationKindTruthReadDenial>> {
         let current_version = self.current_version;
+        if matches!(visibility, KindScanVisibility::Live) {
+            let Some(head) = state.get_current_partition(partition_id) else {
+                return Ok(());
+            };
+            for slot in head.relation_arena().live_slots() {
+                scan.examine_slot()?;
+                if head
+                    .relation_arena()
+                    .get_slot(slot)
+                    .is_none_or(|record| record.kind_id() != Some(kind_id))
+                {
+                    continue;
+                }
+                scan.reserve_with(
+                    partition_id,
+                    slot,
+                    super::super::read_work::record_quote::relation_head(registry, head, slot)
+                        .map_err(NativeScanStop::Request)?,
+                    || {
+                        head.relation_record(
+                            registry,
+                            crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
+                        )
+                    },
+                )?;
+            }
+            return Ok(());
+        }
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(());
         };
         match visibility {
-            KindScanVisibility::Live => {
-                let (slots, held) = super::super::read_work::record_memory::slots(
-                    &partition.relation_arena.live_bitset,
-                    scan.memory
-                        .as_mut()
-                        .expect("native bounded scans carry the initiating result loan"),
-                )
-                .map_err(NativeScanStop::Request)?;
-                for slot in slots {
-                    scan.examine_slot()?;
-                    if !slot_kind_matches_current(&partition.relation_arena, slot, kind_id) {
-                        continue;
-                    }
-                    scan.reserve_with(
-                        partition_id,
-                        slot,
-                        super::super::read_work::record_quote::relation(
-                            registry, partition, slot, visibility,
-                        )
-                        .map_err(NativeScanStop::Request)?,
-                        || {
-                            materialize_current_authoritative_relation_record(
-                                registry,
-                                partition,
-                                partition_id,
-                                slot,
-                            )
-                        },
-                    )?;
-                }
-                super::super::read_work::record_memory::release(
-                    scan.memory
-                        .as_mut()
-                        .expect("the original loan remains present"),
-                    held,
-                )
-                .map_err(NativeScanStop::Request)?;
-            }
+            KindScanVisibility::Live => unreachable!(
+                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
+                "current scans returned through Head"
+            ),
             KindScanVisibility::AtVersion(version_id) => {
                 let (slots, held) = super::super::read_work::record_memory::occupied_slots(
                     &partition.relation_arena,
                     scan.memory
                         .as_mut()
-                        .expect("native bounded scans carry the initiating result loan"),
+                        .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native bounded scans carry the initiating result loan"),
                 )
                 .map_err(NativeScanStop::Request)?;
                 for slot in slots {
@@ -383,7 +380,7 @@ impl ProjectionRecordReader<'_> {
                 super::super::read_work::record_memory::release(
                     scan.memory
                         .as_mut()
-                        .expect("the original loan remains present"),
+                        .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "the original loan remains present"),
                     held,
                 )
                 .map_err(NativeScanStop::Request)?;

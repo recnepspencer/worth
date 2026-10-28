@@ -68,4 +68,5 @@ pub(super) fn runtime() -> crate::runtime::RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }

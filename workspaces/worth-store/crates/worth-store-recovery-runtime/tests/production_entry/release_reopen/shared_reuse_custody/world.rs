@@ -12,6 +12,15 @@ use worth_store_test_support::harness::physical_residency::PhysicalResidencyStor
 
 use super::CHUNK;
 
+pub(super) fn release_operation_budget() -> NonZeroU64 {
+    // Preserve the KiB64 world's 32 MiB mutation envelope and fund the two
+    // maximum framed checkpoint commands added by residency phase 1 separately.
+    // These release/reopen journeys make no narrow-memory admission claim.
+    let command = worth_store_physical_format::MAX_CHECKPOINT_BINDING_RECORD_BYTES
+        + worth_store_physical_format::CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES;
+    NonZeroU64::new((32 << 20) + 2 * command as u64).unwrap()
+}
+
 pub(super) fn shared_placement(
     format: AdmittedPhysicalRecordFormat,
 ) -> AdmittedRecordPlacementPolicy {

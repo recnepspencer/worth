@@ -37,7 +37,8 @@ fn relation_integrity_commit_boundary_rejects_duplicate_normalized_symmetric_edg
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
 

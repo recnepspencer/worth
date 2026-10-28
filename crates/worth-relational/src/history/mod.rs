@@ -32,3 +32,5 @@ pub use commit::{
     RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,
     RelationalCommitParentageDenial, RelationalCommitRootDescriptor,
 };
+
+pub(crate) use commit::{RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry};

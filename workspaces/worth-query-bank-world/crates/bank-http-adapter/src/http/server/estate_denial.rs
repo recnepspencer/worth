@@ -35,6 +35,7 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         D::Projection(bank_server::BankEstateOperationProjectionDenial::InvariantAdmission(
             worth_query_host::facade::primary_graph::WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause),
         )) => super::relational_execution_denial::denial(cause),
+        D::Attempt(bank_server::BankCommitPreparationDenial::StorageUnavailable(failure)) => super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
         D::Attempt(bank_server::BankCommitPreparationDenial::Application {
             kind: bank_server::BankApplicationAttemptDenialKind::Cancelled,
             ..
@@ -50,12 +51,6 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         D::CommandInput(_)
         | D::Projection(_)
         | D::DecisionProjection(_)
-        | D::FreezeProjection(_)
-        | D::DeathNotificationProjection(_)
-        | D::CaseOpeningProjection(_)
-        | D::ExecutorRecognitionProjection(_)
-        | D::EstateReleaseProjection(_)
-        | D::EstateDisbursementProjection(_)
         | D::Proposal(_)
         | D::CapabilityDelegationProjection(_)
         | D::CapabilityRevocationProjection(_) => BankHttpDenial::new(
@@ -73,7 +68,6 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         }
         D::CapabilityInstallation(_)
         | D::OperationInstallation(_)
-        | D::CommitPreparation(_)
         | D::Attempt(_) => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }

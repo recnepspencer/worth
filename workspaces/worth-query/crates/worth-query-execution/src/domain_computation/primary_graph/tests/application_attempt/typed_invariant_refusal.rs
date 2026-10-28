@@ -37,6 +37,10 @@ impl Case {
         let before = RelationalNativeCheckpoint::inspect_bytes(&execution, &self.before).unwrap();
         let after = RelationalNativeCheckpoint::inspect_bytes(&execution, &self.after).unwrap();
         assert_eq!(before.model, after.model);
+        assert!(
+            after.symbol_identity_frontier >= before.symbol_identity_frontier,
+            "abandoned symbol reservations are monotonic; published meanings remain exact"
+        );
         assert_eq!(before.live_records, after.live_records);
         CheckpointAllocatorInspection {
             frontiers: &before.frontiers,
@@ -63,11 +67,24 @@ impl Drop for RestorePlacement {
 }
 
 fn checkpoint(world: &world::World) -> Vec<u8> {
-    world.application.with_host_advancement(|phase| {
-        world.application.capture_application_checkpoint(
-            &phase, crate::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-        ).unwrap()
-    }).unwrap().decode().unwrap().native.bytes().to_vec()
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let execution = phase.borrowed_request_for_test();
+            world
+                .application
+                .primary_provider
+                .graph
+                .with_runtime(&execution, |runtime| {
+                    runtime
+                        .durability_authority()
+                        .native_checkpoint(&execution, execution.allocation_policy())
+                        .unwrap()
+                        .bytes()
+                        .to_vec()
+                })
+        })
+        .unwrap()
 }
 
 fn run(status: String, cancel: bool) -> Case {

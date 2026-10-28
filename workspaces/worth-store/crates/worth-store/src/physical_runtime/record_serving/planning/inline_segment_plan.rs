@@ -219,10 +219,10 @@ pub(in crate::physical_runtime::record_serving) fn plan_inline_segments(
             placements,
         )?;
     }
-    if let Some(active) = active {
-        if !active.data_pages.is_empty() {
-            plans.push(finish_segment(active)?);
-        }
+    if let Some(active) = active
+        && !active.data_pages.is_empty()
+    {
+        plans.push(finish_segment(active)?);
     }
     Ok(PlannedInlineSegments {
         segments: plans,

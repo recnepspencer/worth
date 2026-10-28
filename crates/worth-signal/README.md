@@ -267,6 +267,16 @@ assert_eq!(version.get(TOTAL), 5);
 
 ## Start here
 
+Checked graph evaluation admits diagnostic structure and callback-result custody
+before dispatch. `CheckedEvaluationContext::result_capacity_bytes()` reports the
+admitted result bound; exceeding it is a typed callback-contract violation.
+`NodeContract::with_max_checked_result_heap_bytes` declares a node's result heap
+maximum. Output converters can also declare `maximum_result_heap_bytes()`;
+`AspectVersion` supplies its exact zero-heap bound. Rich outputs without a type
+bound receive an adaptive grant under finite memory authority. Results are still
+measured after evaluation, and their original tickets shrink to the bytes kept
+through publication.
+
 - [Docs index](./docs/README.md)
 - [Getting started](./docs/GETTING_STARTED.md)
 - [API overview](./docs/API_OVERVIEW.md)
