@@ -7,20 +7,6 @@ use crate::publication::patch::data::PatchStreamPosition;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
-    /// Resolve a retained canonical body through the current residency owner.
-    /// A cold refusal preserves its original storage/request cause.
-    pub(crate) fn demand_canonical_envelope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        commit: CommitId,
-    ) -> Result<
-        Option<Arc<CanonicalCommitEnvelope>>,
-        crate::storage::residency::RelationalResidencyDemandFailure,
-    > {
-        self.canonical_publication_routes
-            .demand_envelope(execution, commit)
-    }
-
     pub(crate) fn discard_authored_write_generation(
         &self,
         commit: CommitId,
@@ -43,7 +29,6 @@ impl HistorySubsystem {
         self.canonical_publication_routes
             .authored_generation(commit)
     }
-
     pub(crate) fn performed_envelope_residency(
         &self,
         id: CommitId,

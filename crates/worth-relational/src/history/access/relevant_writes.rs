@@ -36,8 +36,9 @@ pub enum RelationalAuthoredWriteDenial {
     OrderedStorage(worth_execution::ExecutionOrderedMapDenial),
     Request(worth_execution::WorkCeilingDenial),
     Interrupted(worth_execution::MapKernelStop),
-    NativeRead(crate::execution::RelationalExecutionDenialCause),
     Retention(crate::branch::RelationalBranchBasisDenial),
+    /// The original request or selected durable body could not be admitted.
+    Execution(crate::execution::RelationalExecutionDenialCause),
 }
 
 impl From<worth_execution::WorkCeilingDenial> for RelationalAuthoredWriteDenial {

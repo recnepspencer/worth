@@ -40,12 +40,13 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 #[cfg(test)]
 pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
 pub(crate) use canonical_commit_envelope::{
-    AuthoritativeArtifactEnvelopeRef, CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
+    AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
+    CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
 };
 pub(crate) use canonical_commit_envelope::{
-    CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites, CanonicalCodecRetirementKind,
-    CanonicalRequiredOutputCodecRetirement, CanonicalRequiredOutputMaterialization,
-    CanonicalRequiredOutputMaterializationRecord, CanonicalRequiredOutputOrigin,
+    CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
+    CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
+    CanonicalRequiredOutputOrigin,
 };
 pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,

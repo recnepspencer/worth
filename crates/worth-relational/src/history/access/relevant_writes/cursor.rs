@@ -69,9 +69,8 @@ impl RelationalRuntime {
                 .commit_id()
                 .ok_or(Denial::NoSelectedCommit)?;
             if self
-                .history
-                .demand_canonical_envelope(&execution, original_commit)
-                .map_err(|cause| Denial::NativeRead(cause.into()))?
+                .history_access()
+                .immutable_commit_receipt(original_commit)
                 .is_none()
             {
                 return Err(Denial::SourceUnavailable);
@@ -260,9 +259,9 @@ impl RelationalAuthoredWriteCursor {
                 break;
             };
             let canonical = runtime
-                .history
-                .demand_canonical_envelope(&execution, commit)
-                .map_err(|cause| Denial::NativeRead(cause.into()))?
+                .history_access()
+                .demand_commit_envelope(&execution, commit)
+                .map_err(Denial::Execution)?
                 .ok_or(Denial::CanonicalEvidenceUnavailable)?;
             super::ordered_visit(context, self.source.generation.prefix.len(), 8)?;
             if self

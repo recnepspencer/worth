@@ -39,7 +39,13 @@ pub(super) fn prepare(
             context,
             output,
         };
-        builder.project(plan, allocations)?;
+        match builder.project(plan, allocations) {
+            Ok(()) => {}
+            // An unavailable authoritative image cannot issue complete index
+            // evidence. Keep the existing unavailable packet, not guessed keys.
+            Err(Denial::SourceUnavailable) => return Ok(Evidence::default()),
+            Err(cause) => return Err(cause),
+        }
         if builder.unavailable {
             Ok(Evidence::default())
         } else {

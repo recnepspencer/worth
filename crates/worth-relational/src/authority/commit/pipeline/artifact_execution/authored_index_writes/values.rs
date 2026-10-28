@@ -15,7 +15,7 @@ pub(super) fn live<'a>(
 ) -> Result<Option<(KindId, SlotView<'a, EntityRecordKind>)>, Denial> {
     access
         .demand_head_partition(execution, entity.partition_id)
-        .map_err(|cause| Denial::NativeRead(cause.into()))?;
+        .map_err(|cause| Denial::Execution(cause.into()))?;
     let Some(partition) = access.get_current_partition(entity.partition_id) else {
         return Ok(None);
     };
