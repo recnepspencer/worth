@@ -52,8 +52,9 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
     open(&location, &execution).unwrap().close();
     let (counted, counters) =
         faulted_open(&location, &media_faults::counters(), &execution).unwrap();
-    counted.unwrap().close();
+    let counted = counted.unwrap();
     let counts = media_faults::counts(&counters);
+    counted.certification_abort();
     assert!(counts.iter().any(|(role, _)| matches!(
         *role,
         MediaOperationRole::SynchronizeFileData | MediaOperationRole::SynchronizeFileState
@@ -78,18 +79,35 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
                     activations[0].is_consumed(),
                     "{role:?} {ordinal} {directive:?}"
                 );
-                if let Ok(home) = outcome {
-                    assert_eq!(home.incarnation(), 2);
-                    assert_eq!(home.home_identity(), identity);
-                    home.certification_abort();
-                }
+                use worth_store::physical_runtime::AnchoredRecordPublicationFailure as Publication;
+                use worth_store_relational::RelationalStoreHomeDescriptorRefusal as Descriptor;
+                let expected_next = match outcome {
+                    Ok(home) => {
+                        assert_eq!(home.incarnation(), 2);
+                        assert_eq!(home.home_identity(), identity);
+                        home.certification_abort();
+                        Some(3)
+                    }
+                    Err(Refusal::Descriptor(Descriptor::Publication(
+                        Publication::Indeterminate(_) | Publication::CompletedWithoutRecord,
+                    ))) => None,
+                    Err(Refusal::Readmission(_)) => Some(3),
+                    Err(_) => Some(2),
+                };
                 let reopened = open(&location, &execution)
                     .unwrap_or_else(|r| panic!("{role:?} {ordinal} {directive:?}: {r:?}"));
                 assert_eq!(reopened.home_identity(), identity);
-                assert!(
-                    matches!(reopened.incarnation(), 2 | 3),
-                    "in-flight advance selected at most once"
-                );
+                match expected_next {
+                    Some(expected) => assert_eq!(
+                        reopened.incarnation(),
+                        expected,
+                        "{role:?} {ordinal} {directive:?}: typed fate"
+                    ),
+                    None => assert!(
+                        matches!(reopened.incarnation(), 2 | 3),
+                        "only an indeterminate advance may select either fate"
+                    ),
+                }
                 let selected = reopened.incarnation();
                 reopened.close();
                 let again = open(&location, &execution).unwrap();
