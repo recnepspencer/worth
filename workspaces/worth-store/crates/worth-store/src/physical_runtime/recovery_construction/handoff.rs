@@ -234,9 +234,9 @@ impl RecoveredPhysicalRuntimeCore {
 
     /// Release media for certification that deliberately changes selected
     /// bytes before independently qualifying another owner. Ordinary homes
-    /// must use the continuous `into_serving_parts` handoff.
+    /// must use the continuous `into_serving_handoff` transfer.
     #[cfg(feature = "certification-test-authority")]
-    pub fn into_checkpoint_custody(
+    pub fn certification_release_media_into_checkpoint_custody(
         self,
     ) -> Option<crate::physical_runtime::RecoveredPhysicalCheckpointCustody> {
         self.into_serving_parts()
@@ -245,7 +245,7 @@ impl RecoveredPhysicalRuntimeCore {
 
     /// Move the continuously held media owner and its one-shot selected custody
     /// together. Neither can be reconstructed from checkpoint bytes.
-    pub fn into_serving_parts(
+    pub(super) fn into_serving_parts(
         self,
     ) -> Option<(
         AdmittedRecoveryFilesystemMedia,

@@ -46,7 +46,7 @@ fn sealed_serving_wal_payload_native_pressure_denies_and_fresh_recovery_retries(
                 .unwrap();
             assert_eq!(peer.observation().pool(), observer.snapshot().pool());
             let seal = core
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("genuine one-shot release seal");
             let outcome = open_with_policy(root, seal, format, policy).into_raw();
             let TransitionOutcome::Denied(denial) = outcome else {
@@ -127,7 +127,7 @@ fn sealed_serving_wal_payload_native_pressure_denies_and_fresh_recovery_retries(
             assert_eq!(fresh.residency_policy(), policy);
             let fresh_observer = fresh.certification_residency_allocations();
             let seal = fresh
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("fresh genuine release seal");
             let TransitionOutcome::Success(serving) =
                 open_with_policy(root, seal, format, policy).into_raw()
@@ -161,7 +161,7 @@ fn deny_changed_wal_shape(
         let core = recover_core(root);
         let observer = core.certification_residency_allocations();
         let seal = core
-            .into_checkpoint_custody()
+            .certification_release_media_into_checkpoint_custody()
             .expect("fresh genuine seal before external mutation");
         let (name, _) = wal_payload_sizes(root).into_iter().next().unwrap();
         let path = root.join("families/wal").join(name);

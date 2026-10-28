@@ -15,7 +15,7 @@ use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, MediaOwnedPhysicalRuntime,
     PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalRecoveryProcessYieldpoint,
-    PhysicalRuntimeAdmission, PhysicalStore, RecoveredPhysicalCheckpointCustody,
+    PhysicalRuntimeAdmission, PhysicalStore, RecoveredPhysicalServingHandoff,
     ServingPhysicalRuntime,
 };
 use worth_store_recovery_runtime::{
@@ -120,7 +120,7 @@ pub(crate) fn initialize(
     opening: PhysicalOpening,
 ) -> Result<ServingPhysicalRuntime, Refusal> {
     let media = admit_media(root, opening.media)?;
-    let durability = admit_durability(&media)?;
+    let durability = admit_durability(media.physical_durability_admission_basis())?;
     let request = PhysicalRecordInitialization::new(
         profile::record_format(),
         profile::placement(),
@@ -148,7 +148,7 @@ pub(crate) fn recover(
     root: &Path,
     opening: PhysicalOpening,
 ) -> Result<ServingPhysicalRuntime, Refusal> {
-    let (held_media, custody) = recover_custody(root, opening.recovery_yieldpoint.clone())?;
+    let handoff = recover_custody(root, opening.recovery_yieldpoint.clone())?;
     if let Some(yieldpoint) = &opening.recovery_yieldpoint {
         if yieldpoint
             .pause_after(
@@ -163,10 +163,7 @@ pub(crate) fn recover(
         .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
     let runtime = PhysicalStore::admit(admission)
         .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
-    let media = match runtime
-        .try_admit_recovered_filesystem_media(held_media, opening.media)
-        .into_raw()
-    {
+    let media = match handoff.admit_serving(runtime, opening.media).into_raw() {
         TransitionOutcome::Success(media) => media,
         other => {
             return Err(Refusal::new(
@@ -175,13 +172,9 @@ pub(crate) fn recover(
             ))
         }
     };
-    let durability = admit_durability(&media)?;
+    let durability = admit_durability(media.physical_durability_admission_basis())?;
     let open = PhysicalRecordOpen::new(profile::record_format(), profile::access(), durability)
         .with_journal_registry(crate::journal_registry::registry());
-    let open = match custody {
-        Some(custody) => open.with_recovered_checkpoint_custody(custody),
-        None => open,
-    };
     match media.open_record_store(open).into_raw() {
         TransitionOutcome::Success(serving) => Ok(serving),
         TransitionOutcome::Denied(denial) => {
@@ -199,13 +192,7 @@ pub(crate) fn recover(
 fn recover_custody(
     root: &Path,
     yieldpoint: Option<PhysicalRecoveryProcessYieldpoint>,
-) -> Result<
-    (
-        worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia,
-        Option<RecoveredPhysicalCheckpointCustody>,
-    ),
-    Refusal,
-> {
+) -> Result<RecoveredPhysicalServingHandoff, Refusal> {
     let limits = PhysicalRecoveryLimits::admit(profile::recovery_limits())
         .map_err(|denial| Refusal::new(Stage::RecoveryAdmission, format!("{denial:?}")))?;
     let configuration = profile::recovery_configuration();
@@ -229,8 +216,7 @@ fn recover_custody(
     match outcome {
         PhysicalRecoveryOutcome::Recovered(handoff) => handoff
             .into_core()
-            .into_serving_parts()
-            .map(|(media, custody)| (media, Some(custody)))
+            .into_serving_handoff()
             .ok_or_else(|| Refusal::new(Stage::Recovery, "selected custody missing")),
         other => Err(recovery_refusal::classify(other)),
     }
@@ -281,11 +267,13 @@ pub(crate) fn unfinished_outcome<S, D, Def, St, Reb, F>(
 }
 
 fn admit_durability(
-    media: &MediaOwnedPhysicalRuntime,
+    basis: Result<
+        worth_store::physical_runtime::PhysicalDurabilityAdmissionBasis,
+        worth_store::physical_runtime::BackendCapabilityAdmissionDenial,
+    >,
 ) -> Result<worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy, Refusal> {
-    let basis = media
-        .physical_durability_admission_basis()
-        .map_err(|error| Refusal::new(Stage::DurabilityAdmission, format!("{error:?}")))?;
+    let basis =
+        basis.map_err(|error| Refusal::new(Stage::DurabilityAdmission, format!("{error:?}")))?;
     match profile::durability().admit(basis).into_raw() {
         TransitionOutcome::Success(policy) => Ok(policy),
         other => Err(Refusal::new(

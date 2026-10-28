@@ -158,7 +158,10 @@ pub(crate) fn serve(root: &Path, stage: &str) -> ServingPhysicalRuntime {
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("{stage} did not recover: {outcome:?}");
     };
-    let seal = handoff.into_core().into_checkpoint_custody().unwrap();
+    let seal = handoff
+        .into_core()
+        .certification_release_media_into_checkpoint_custody()
+        .unwrap();
     certified_release_serving::admit_serving_with_seal(root, seal)
 }
 

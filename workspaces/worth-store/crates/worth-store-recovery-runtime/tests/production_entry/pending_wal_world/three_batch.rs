@@ -39,7 +39,7 @@ fn three_distinct_v3_batches_recover_and_open_serving() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("third V3 ordered custody seal");
     super::super::certified_release_serving::open_serving_with_seal_without_checkpoint(
         world.root(),

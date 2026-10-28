@@ -28,7 +28,7 @@ fn two_released_batches_then_ordinary_append_reopen_with_historical_seal() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("two-batch release must produce a Store seal");
     let serving = certified_release_serving::admit_serving_with_seal(world.root(), seal);
     let checkpoint_before = fs::read(world.root().join("families/checkpoint.current")).unwrap();
@@ -89,7 +89,7 @@ fn two_released_batches_then_ordinary_append_reopen_with_historical_seal() {
     );
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("ordinary selected tip must preserve the historical release seal");
     certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 }

@@ -12,12 +12,23 @@ pub(super) fn validate(payload: &[u8]) -> Result<(), OfflineIntegrityOutcome> {
     if payload[561] == 0 && payload[576..680] != [0; 104] {
         return Err(pointer_damage(624, 104));
     }
-    if payload[528..560] != [0; 32] && payload[560] != 1 { return Err(malformed_manifest()); }
+    if payload[528..560] != [0; 32] && payload[560] != 1 {
+        return Err(malformed_manifest());
+    }
     if payload[561] == 1 {
         let head = &payload[576..680];
-        if read_u64(head, 0) == 0 || read_u64(head, 0) > read_u64(payload, 0) || read_u64(head, 8) == 0 || read_u64(head, 8) >= read_u64(payload, 568)
-            || head[18..24] != [0; 6] || !valid_record_identity(&head[24..48]) || !valid_record_identity(&head[48..72])
-            || !record_identity_le(&head[24..48], &head[48..72]) || head[72..104] == [0; 32] { return Err(pointer_damage(624, 104)); }
+        if read_u64(head, 0) == 0
+            || read_u64(head, 0) > read_u64(payload, 0)
+            || read_u64(head, 8) == 0
+            || read_u64(head, 8) >= read_u64(payload, 568)
+            || head[18..24] != [0; 6]
+            || !valid_record_identity(&head[24..48])
+            || !valid_record_identity(&head[48..72])
+            || !record_identity_le(&head[24..48], &head[48..72])
+            || head[72..104] == [0; 32]
+        {
+            return Err(pointer_damage(624, 104));
+        }
     }
     let table = &payload[680..];
     let count = usize::from(table[0]);

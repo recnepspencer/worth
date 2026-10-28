@@ -28,7 +28,7 @@ fn rejoined_release_custody_checkpoints_under_a_foreign_hold() {
             };
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("selected release grants a one-shot custody seal");
             let serving = super::admit_serving_with_seal(&root, seal);
             assert!(

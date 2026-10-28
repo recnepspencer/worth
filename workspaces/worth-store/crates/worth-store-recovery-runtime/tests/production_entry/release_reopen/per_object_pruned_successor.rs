@@ -264,7 +264,7 @@ fn recover_serving(
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("Store seal");
     super::super::certified_release_serving::admit_serving_with_seal_and_wal_segment_bytes(
         root, seal, wal_bytes,

@@ -235,8 +235,9 @@ pub use recovery_construction::{
     ExceededSelectedWalInventoryBound, PhysicalRecoveryConstructionAuthority,
     PhysicalRecoveryConstructionPort, PhysicalRecoveryRejoinResidentBoundary,
     PhysicalRecoverySelectedRejoinMismatch, PhysicalRecoveryWalResidentStage,
+    RecoveredMediaAdmissionOutcome, RecoveredMediaOwnedPhysicalRuntime,
     RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
-    SelectedWalInventoryBound,
+    RecoveredPhysicalServingHandoff, SelectedWalInventoryBound,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_coordination::{
@@ -398,3 +399,7 @@ pub mod production {
         PhysicalMutationPauseGate,
     };
 }
+
+pub use worth_store_physical_backend::{
+    BackendCapabilityAdmissionDenial, PhysicalDurabilityAdmissionBasis,
+};

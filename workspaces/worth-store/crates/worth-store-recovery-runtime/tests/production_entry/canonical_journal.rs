@@ -246,7 +246,7 @@ fn serve(root: &Path, stage: &str) -> ServingPhysicalRuntime {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("journal custody seal");
     certified_release_serving::admit_serving_with_seal(root, seal)
 }

@@ -30,7 +30,7 @@ pub(super) fn child(root: &Path, marker: &Path) {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("first C8 custody seal");
     let serving = super::super::certified_release_serving::admit_serving_with_seal(root, seal);
     let before_retirement = serving.certification_charged_growth_bytes();
@@ -64,7 +64,7 @@ pub(super) fn distinct_child(root: &Path, marker: &Path) {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("first C8 seal");
     let serving = super::super::certified_release_serving::admit_serving_with_seal(root, seal);
     let first_v3_result = super::selected_media::read(root);

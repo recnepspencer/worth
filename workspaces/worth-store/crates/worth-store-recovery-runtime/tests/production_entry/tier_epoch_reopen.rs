@@ -97,7 +97,7 @@ fn selected_tier_epoch_opens_serving_with_genuine_no_release_custody() {
             };
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("selected tier custody seal");
             super::certified_release_serving::open_serving_with_seal(&root, seal);
         })

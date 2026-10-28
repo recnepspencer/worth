@@ -46,7 +46,7 @@ pub(crate) fn run_empty_no_release() {
             };
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("selected empty NoRelease seal");
             open_serving_with_seal(&root, seal);
         })

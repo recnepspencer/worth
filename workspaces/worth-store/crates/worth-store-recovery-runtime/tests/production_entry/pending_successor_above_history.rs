@@ -93,7 +93,9 @@ fn checkpoint_heads(
     key: [u8; 32],
 ) -> Vec<worth_store_physical_format::ReleaseCustodyHeadEntryV1> {
     let root = world.root();
-    let seal = recover(world, stage).into_core().into_checkpoint_custody();
+    let seal = recover(world, stage)
+        .into_core()
+        .certification_release_media_into_checkpoint_custody();
     let serving = certified_release_serving::admit_serving_with_seal(
         root,
         seal.expect("recovered batch custody seal"),
@@ -124,7 +126,7 @@ fn assert_pending_then_completed(world: &PendingWalWorld, stage: &str) {
     assert!(pending.core().recovery_effect_count() > 0);
     let seal = pending
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("Store must seal the pending successor");
     certified_release_serving::admit_serving_with_seal(root, seal).close();
     assert_eq!(
@@ -136,7 +138,7 @@ fn assert_pending_then_completed(world: &PendingWalWorld, stage: &str) {
     assert_eq!(completed.core().recovery_effect_count(), 0);
     let seal = completed
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("Store must seal the completed successor");
     certified_release_serving::open_serving_with_seal_without_checkpoint(root, seal);
 }
