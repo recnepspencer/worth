@@ -19,6 +19,7 @@ pub enum WorthQueryApplicationInspectionResourceRefusal<'a> {
     Kernel(&'a MapKernelStop),
     Lease(&'a LeaseDenial),
     Memory(&'a MemoryLimitDenial),
+    Allocation(&'a std::collections::TryReserveError),
 }
 type Refusal<'a> = WorthQueryApplicationInspectionResourceRefusal<'a>;
 
@@ -40,6 +41,22 @@ fn admission(cause: &InspectionAdmissionDenial) -> Option<Refusal<'_>> {
         Cause::Storage(stop) | Cause::Target(InspectionTargetDenial::Storage(stop)) => {
             capture(stop, storage)
         }
+        Cause::DiagnosticContract(stop) => capture(stop, |cause| {
+            match cause {
+            crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial::Storage(cause) => storage(cause),
+            _ => None,
+        }
+        }),
+        Cause::DiagnosticPreparation(stop) => capture(stop, |_| None),
+        Cause::DiagnosticAdmission(stop) => capture(stop, |_| None),
+        Cause::ComparisonParameters(stop) => capture(stop, |_| None),
+        Cause::Comparison(stop) => capture(stop, |cause| {
+            match cause {
+            crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial::Storage(cause) => storage(cause),
+            crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial::Allocation(cause) => Some(Refusal::Allocation(cause)),
+            _ => None,
+        }
+        }),
         Cause::Plan(stop) => capture(stop, |cause| match cause {
             InspectionPlanDenial::Storage(cause) => storage(cause),
             _ => None,
@@ -87,6 +104,7 @@ fn storage(cause: &RetainedStorageDenial) -> Option<Refusal<'_>> {
 
 fn report(cause: &InspectionReportDenial) -> Option<Refusal<'_>> {
     match cause {
+        InspectionReportDenial::Storage(cause) => storage(cause),
         InspectionReportDenial::Identity(cause) => match cause {
             InspectionIdentityStop::Resource(cause)
             | InspectionIdentityStop::Basis(CanonicalBasisPreparationStop::Resource {

@@ -67,6 +67,8 @@ pub(in crate::domain_computation::primary_graph) use capability_status_mutation:
 mod application_queries;
 #[path = "fixture/current_output_source.rs"]
 mod current_output_source;
+#[path = "fixture/diagnostic_comparison.rs"]
+pub(in crate::domain_computation::primary_graph) mod diagnostic_comparison;
 #[path = "fixture/filtered_activity_query.rs"]
 mod filtered_activity_query;
 #[path = "fixture/inspection_disclosure.rs"]

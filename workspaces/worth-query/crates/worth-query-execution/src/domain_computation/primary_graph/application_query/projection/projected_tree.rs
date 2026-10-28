@@ -14,6 +14,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::{EntityId, RelationId};
 
+pub(in crate::domain_computation::primary_graph::application_query::projection) mod comparison;
 mod disclosure_boundary;
 
 pub(in crate::domain_computation::primary_graph::application_query) use disclosure_boundary::{

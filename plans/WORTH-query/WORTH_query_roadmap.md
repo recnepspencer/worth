@@ -5789,8 +5789,13 @@ sibling publications against the actual Native source. Phase 9 now has a compile
 ordinary Host query→receipt observation→fresh `why_observed().reference_only()`
 journey, independent metadata admission, actual Inspection terminal and original
 caller funding/refusal custody. Governed capability revocation and the legacy
-generic admission fences are qualified. Phase 9 remains unfinished for genuine
-producer-chain connection, Changed and optional richer materialization; see its
+generic admission fences are qualified. Paired genuine originals now also support
+`why_changed(before)` with independent actual diagnostic admission: complete
+Native one-shot trees distinguish semantic Changed/Unchanged, including optional
+presence and nested order, without exposing cells or retaining readers. The real
+Host receipt-pair journey and focused Native policy/payer controls pass. Phase 9
+remains unfinished for performed-source and genuine producer-chain connection
+and optional richer materialization; see its
 [qualified partial slice](./milestone-9.18.1.md#phase-9-causal-inspection-from-ordinary-application-receipts).
 These additions do not reopen the original phases. The 2026-10-27 Proprietary
 report against SDK `ba86433627` adds compiler and unobserved-write refusals,

@@ -6,10 +6,13 @@ mod request;
 mod result;
 mod stop;
 pub use request::{
-    WorthQueryApplicationInspectionRequest, WorthQueryObservedInspectionRequest,
+    WorthQueryApplicationInspectionRequest, WorthQueryChangedInspectionRequest,
+    WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryObservedInspectionRequest,
     WorthQueryReferenceOnlyInspectionRequest,
 };
-pub use result::WorthQueryObservedApplicationInspection;
+pub use result::{
+    WorthQueryComparedApplicationInspection, WorthQueryObservedApplicationInspection,
+};
 pub use stop::{
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
     WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStopKind,
@@ -21,3 +24,7 @@ mod target;
 #[cfg(test)]
 mod tests;
 pub(in crate::domain_computation) use target::WorthQueryApplicationInspectionTarget;
+
+#[cfg(test)]
+#[path = "application_inspection/tests/comparison.rs"]
+mod comparison_tests;

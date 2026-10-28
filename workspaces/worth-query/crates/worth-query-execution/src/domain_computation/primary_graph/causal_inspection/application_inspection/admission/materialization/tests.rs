@@ -80,6 +80,7 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                         &request,
                         &original,
                         None,
+                        None,
                         &mut memory,
                     )
                     .unwrap_or_else(|_| panic!("genuine fresh preparation must succeed"));
@@ -102,10 +103,15 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                         .unwrap();
                     // This is the actual production report owner immediately after
                     // its real currentness check, with its real target and session.
-                    let refusal =
-                        report::materialize(&execution, &read.target, &read.session, read.memory)
-                            .err()
-                            .expect("report backing must refuse after its real frame admits");
+                    let refusal = report::materialize(
+                        &execution,
+                        &read.target,
+                        &read.session,
+                        super::super::super::identity::InspectionOriginalReference::After,
+                        read.memory,
+                    )
+                    .err()
+                    .expect("report backing must refuse after its real frame admits");
                     drop(filled);
                     Err::<(), _>(FreshQueryPermissionStop::Inspect(
                         InspectionAdmissionDenial::Report(refusal),

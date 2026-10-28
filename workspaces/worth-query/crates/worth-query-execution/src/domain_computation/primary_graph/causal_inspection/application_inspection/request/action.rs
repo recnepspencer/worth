@@ -1,4 +1,12 @@
 //! Fresh guards end before the actual Product and consuming basis terminal.
+use super::super::{
+    admission::InspectionComparisonPreparation,
+    report::{FundedComparisonReport, FundedInspectionReport},
+    result::{
+        PreparedComparedInspection, PreparedObservedInspection,
+        WorthQueryComparedApplicationInspection,
+    },
+};
 use super::*;
 use crate::domain_computation::{
     authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
@@ -8,6 +16,15 @@ use crate::domain_computation::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
+
+enum MaterializedInspection {
+    Observed(FundedInspectionReport),
+    Compared(FundedComparisonReport),
+}
+enum PreparedInspection<'o> {
+    Observed(PreparedObservedInspection<'o>),
+    Compared(PreparedComparedInspection<'o>),
+}
 
 impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
     WorthQueryApplicationInspectionRequest<'_, '_, '_, 'o, Schema, Binding>
@@ -26,6 +43,77 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
         >,
     ) -> Result<WorthQueryObservedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
     {
+        let (prepared, memory) =
+            self.execute_inner(None, |execution, query, principal, scope, memory| {
+                pending(execution, query, principal, scope, memory).map(|pending| (pending, None))
+            })?;
+        match prepared {
+            PreparedInspection::Observed(prepared) => Ok(prepared.fund(memory)),
+            _ => Err(WorthQueryApplicationInspectionDenial::new(
+                InspectionCause::Admission(
+                    super::super::admission::InspectionAdmissionDenial::ForeignIssuedAccess,
+                ),
+                memory,
+            )),
+        }
+    }
+
+    pub(super) fn execute_comparison_with(
+        self,
+        before: &'o WorthQueryApplicationQueryObservation,
+        pending: impl FnOnce(
+            &ExecutionRequest<'_, '_>,
+            &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+            EntityId,
+            EntityId,
+            &mut Option<ExecutionMemoryReservation>,
+        ) -> Result<
+            (
+                Option<WorthQueryPendingApplicationQueryGovernance>,
+                WorthQueryPendingApplicationQueryGovernance,
+            ),
+            InspectionCause,
+        >,
+    ) -> Result<WorthQueryComparedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
+    {
+        let (prepared, memory) = self.execute_inner(
+            Some(before),
+            |execution, query, principal, scope, memory| {
+                pending(execution, query, principal, scope, memory)
+                    .map(|(metadata, diagnostic)| (metadata, Some(diagnostic)))
+            },
+        )?;
+        match prepared {
+            PreparedInspection::Compared(prepared) => Ok(prepared.fund(memory)),
+            _ => Err(WorthQueryApplicationInspectionDenial::new(
+                InspectionCause::Admission(
+                    super::super::admission::InspectionAdmissionDenial::ForeignIssuedAccess,
+                ),
+                memory,
+            )),
+        }
+    }
+
+    fn execute_inner(
+        self,
+        before: Option<&'o WorthQueryApplicationQueryObservation>,
+        pending: impl FnOnce(
+            &ExecutionRequest<'_, '_>,
+            &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+            EntityId,
+            EntityId,
+            &mut Option<ExecutionMemoryReservation>,
+        ) -> Result<
+            (
+                Option<WorthQueryPendingApplicationQueryGovernance>,
+                Option<WorthQueryPendingApplicationQueryGovernance>,
+            ),
+            InspectionCause,
+        >,
+    ) -> Result<
+        (PreparedInspection<'o>, Option<ExecutionMemoryReservation>),
+        WorthQueryApplicationInspectionDenial,
+    > {
         // This sole owner outlives callback temporaries, every inner error, and
         // the advancement handoff. Success and denial move exactly this ticket.
         let mut memory = None;
@@ -39,6 +127,10 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                 self.original,
             )
             .map_err(InspectionCause::Admission)?;
+            if let Some(before) = before {
+                super::super::admission::validate_original_affinity(self.runtime, &installed, before)
+                    .map_err(InspectionCause::Admission)?;
+            }
             let branch = match &self.original.source.selection {
                 WorthQueryApplicationBasisSelectionIdentity::Product(original) => {
                     original.product_branch()
@@ -64,7 +156,7 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                     &selected,
                     self.request,
                     |_, principal, scope| {
-                        let pending = pending(
+                        let (pending, diagnostic) = pending(
                             execution,
                             &installed,
                             principal.principal().principal_entity_id(),
@@ -72,6 +164,12 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                             storage,
                         )
                         .map_err(FreshQueryPermissionStop::Inspect)?;
+                        let comparison = match (before, diagnostic) {
+                            (Some(before), Some(pending)) => Some(InspectionComparisonPreparation { before, pending }),
+                            (None, None) => None,
+                            _ => return Err(FreshQueryPermissionStop::Inspect(InspectionCause::Admission(
+                                super::super::admission::InspectionAdmissionDenial::ForeignIssuedAccess))),
+                        };
                         let mut read = super::super::admission::prepare(
                             self.runtime,
                             execution,
@@ -82,14 +180,16 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                             self.request,
                             self.original,
                             pending,
+                            comparison,
                             storage,
                         )
                         .map_err(|cause| {
                             FreshQueryPermissionStop::Inspect(InspectionCause::Admission(cause))
                         })?;
-                        let report = read.materialize(execution).map_err(|cause| {
-                            FreshQueryPermissionStop::Inspect(InspectionCause::Admission(cause))
-                        })?;
+                        let report = if before.is_some() {
+                            read.materialize_comparison(execution, installed.query()).map(MaterializedInspection::Compared)
+                        } else { read.materialize(execution).map(MaterializedInspection::Observed) }
+                        .map_err(|cause| FreshQueryPermissionStop::Inspect(InspectionCause::Admission(cause)))?;
                         let terminal = read.terminal(execution).map_err(|cause| {
                             FreshQueryPermissionStop::Inspect(InspectionCause::Admission(cause))
                         })?;
@@ -108,10 +208,19 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
             let completed = terminal
                 .complete(execution, basis.release())
                 .map_err(InspectionCause::Admission)?;
-            completed
-                .publish(execution, self.original, report, &mut memory)
-                .map_err(InspectionCause::Admission)
+            match (before, report) {
+                (None, MaterializedInspection::Observed(report)) => completed
+                    .publish(execution, self.original, report, &mut memory)
+                    .map(PreparedInspection::Observed),
+                (Some(before), MaterializedInspection::Compared(report)) => completed
+                    .publish_comparison(execution, before, self.original, report, &mut memory)
+                    .map(PreparedInspection::Compared),
+                _ => Err(super::super::admission::InspectionAdmissionDenial::ForeignIssuedAccess),
+            }.map_err(InspectionCause::Admission)
         });
-        Self::finish(result, memory)
+        match result {
+            Ok(prepared) => Ok((prepared, memory)),
+            Err(cause) => Err(WorthQueryApplicationInspectionDenial::new(cause, memory)),
+        }
     }
 }

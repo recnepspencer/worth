@@ -87,6 +87,7 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                                 &request,
                                 &original,
                                 None,
+                                None,
                                 &mut memory,
                             )
                             .unwrap_or_else(|_| {

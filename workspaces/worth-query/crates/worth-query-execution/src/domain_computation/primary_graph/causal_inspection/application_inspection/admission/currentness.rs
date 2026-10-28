@@ -13,28 +13,32 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), InspectionAdmissionDenial> {
         require_request(execution, self.request)?;
-        if let Some(authorization) = self.governance.authorization_mut() {
-            self.runtime
-                .refresh_capability_authorization_for_graph_work(
-                    execution,
-                    authorization,
+        for governance in std::iter::once(&mut self.governance).chain(self.diagnostic.iter_mut()) {
+            if let Some(authorization) = governance.authorization_mut() {
+                self.runtime
+                    .refresh_capability_authorization_for_graph_work(
+                        execution,
+                        authorization,
+                        &self.session,
+                    )
+                    .map_err(InspectionAdmissionDenial::Capability)?;
+            }
+            if !governance.authorization_belongs_to_session(self.session.identity())
+                || !governance.inspection_matches(
                     &self.session,
+                    &self.target,
+                    &self.target.original().source.parameter_binding_identity,
+                    self.principal,
+                    self.scope.entity_id(),
                 )
-                .map_err(InspectionAdmissionDenial::Capability)?;
+            {
+                return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
+            }
         }
         if !self
             .authorization
             .belongs_to_session(self.session.identity())
-            || !self
-                .governance
-                .authorization_belongs_to_session(self.session.identity())
-            || !self.governance.inspection_matches(
-                &self.session,
-                &self.target,
-                &self.target.original().source.parameter_binding_identity,
-                self.principal,
-                self.scope.entity_id(),
-            )
+            || self.target.before().is_some() != self.diagnostic.is_some()
         {
             return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
         }
@@ -76,15 +80,19 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                             self.runtime.authorization.bridge(),
                         )
                         .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
-                    if let Some(authorization) = self.governance.authorization() {
-                        authorization
-                            .validate_currentness_in(
-                                execution,
-                                relational,
-                                snapshot,
-                                self.runtime.authorization.bridge(),
-                            )
-                            .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
+                    for governance in
+                        std::iter::once(&self.governance).chain(self.diagnostic.iter())
+                    {
+                        if let Some(authorization) = governance.authorization() {
+                            authorization
+                                .validate_currentness_in(
+                                    execution,
+                                    relational,
+                                    snapshot,
+                                    self.runtime.authorization.bridge(),
+                                )
+                                .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
+                        }
                     }
                     resolution
                         .at_snapshot(

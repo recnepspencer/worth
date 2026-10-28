@@ -1466,9 +1466,38 @@ by reuse of the same partition and slot at a higher generation. The recreated
 subject passes a fresh query and inspection; the original observation refuses
 before replacement READ authorization. Public qualification uses actual Rust
 1.94.0 and does not satisfy Phase 18. This is a reviewed slice, not Phase 9
-acceptance: performed-source and exact producer-chain connection, Changed,
-optional richer materialization and their disclosure/availability evidence remain
+acceptance: performed-source and exact producer-chain connection, optional richer
+materialization and their disclosure/availability evidence remain
 required below.
+
+**Qualified paired slice, 2026-10-27.** Two genuine ordinary bound query
+observations with explicitly retained complete disclosed trees now enter
+`request.inspect::<Binding>(after).why_changed(before).reference_only()`.
+With public metadata, callers supply a separate actual diagnostic capability to
+`execute_with_diagnostic`; governed metadata supplies both actual metadata and
+diagnostic capabilities to `execute_governed`. Fresh READ, all six metadata facets,
+and actual current DiagnosticMask/Explanation admission precede cross-original
+parameter checks, body availability and comparison. Public payload visibility
+cannot grant diagnostic access. Exact original binding/branch/full-generation
+subject affinity remains mandatory.
+
+Four focused Native courts qualify semantic changed/equal rewrites with original
+payer release, optional-field clear and nested order, current policy for empty
+rows, actual diagnostic-capability revocation before missing-body lookup, and
+unavailable/foreign parameter/binding gate order. The genuine
+[Host pair](../../workspaces/worth-query/crates/worth-query-host/tests/application_runtime_surface/comparison.rs)
+qualifies ordinary governed query→published receipts→separately admitted diagnostic
+capability→`UnchangedResult`; affected ordinary Observed/cancellation and runtime
+publication checks also pass. Actual Native cells and ordered nesting determine
+Changed/Unchanged, excluding source identities, revisions and application DTOs.
+Two real Query-reference reports and their descriptive parent share one actual
+Inspection terminal and original payer. No cells, reader or producer cause escape.
+
+This lane requires a complete one-shot tree, matching original parameters and
+complete current slot interpretation. Withheld originals and unsupported shapes
+refuse. Root paths, orbit/components, continuation/live, performed-source and exact
+producer-chain connection, and richer materialization remain unfinished. Phase 9
+stays open; this slice changes neither the private SDK pin nor Phase 18's Rust gate.
 
 ### Requirements
 
@@ -1536,10 +1565,14 @@ explanation.close();
 This syntax is exercised by the linked Host court; the binding and error are
 application-defined. Governed metadata supplies its actual newly admitted
 capability to `execute_governed`. The receipt loan carries no current permission.
-Changed comparison and richer evidence syntax remain unimplemented; no planned
-comparison builder is presented as an available entrance. The
+Paired comparison uses `inspect::<Binding>(after).why_changed(before)` and a
+separate actual diagnostic capability through `execute_with_diagnostic`, or both
+metadata and diagnostic capabilities through `execute_governed`. Both ordinary
+executions must have requested `retain_projection_for_inspection()`. Richer
+materialization and source/producer-chain explanations remain unfinished. The
 [capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#fresh-application-inspection)
-describes custody, refusal views and the supported fixed report.
+describes custody, refusal views, the fixed Observed report and the supported
+[paired comparison](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#paired-original-comparison).
 
 ### How We Know It's Done
 

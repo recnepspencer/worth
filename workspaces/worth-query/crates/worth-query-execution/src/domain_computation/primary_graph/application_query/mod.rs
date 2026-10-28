@@ -58,6 +58,9 @@ pub(in crate::domain_computation::primary_graph) use output_source_observation::
     SourceQueryReaderAccess,
 };
 mod projection;
+pub(in crate::domain_computation::primary_graph) use projection::retained_projection::{
+    compare_original_projections, ProjectionComparisonDenial,
+};
 mod read_execution;
 pub use read_execution::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,

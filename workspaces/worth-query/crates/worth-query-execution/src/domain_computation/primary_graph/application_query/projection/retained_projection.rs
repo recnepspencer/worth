@@ -13,7 +13,11 @@ use super::super::{
     read_execution::RawOneShotRows,
 };
 mod body;
+mod comparison;
 pub(in crate::domain_computation::primary_graph) use body::OriginalProjection;
+pub(in crate::domain_computation::primary_graph) use comparison::{
+    compare_original_projections, ProjectionComparisonDenial,
+};
 pub(in crate::domain_computation::primary_graph::application_query) mod storage;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn retain(

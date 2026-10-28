@@ -2,8 +2,12 @@
 mod plan;
 pub(super) use plan::InspectionPlanDenial;
 mod preparation;
-pub(super) use preparation::{prepare, validate_original_affinity};
+pub(super) use preparation::prepare;
+mod affinity;
+pub(super) use affinity::validate_original_affinity;
+mod comparison;
 mod currentness;
+mod governance_binding;
 mod materialization;
 #[cfg(test)]
 mod publication_tests;
@@ -22,7 +26,6 @@ use crate::domain_computation::{
     provider_session::{WorthQueryManagedGraphWorkSession, WorthQuerySessionInspectionReadProof},
 };
 use std::sync::Arc;
-pub(super) use terminal::InspectionTerminal;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
@@ -39,6 +42,12 @@ pub(super) enum InspectionAdmissionDenial {
     Security(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Governance(crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationQueryGovernanceDenialKind),
     FacetDenied,
+    DiagnosticAdmission(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonDenial>),
+    ComparisonParameters(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<()>),
+    MissingOriginalProjection,
+    Comparison(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial>),
+    DiagnosticContract(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial>),
+    DiagnosticPreparation(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticPreparationDenial>),
     Target(InspectionTargetDenial),
     Storage(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::admitted_capture::RetainedStorageDenial>),
     Plan(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<plan::InspectionPlanDenial>),
@@ -59,7 +68,13 @@ pub(super) struct InspectionRead<'a, 'storage, Schema, Scope> {
     proof: Option<WorthQuerySessionInspectionReadProof>,
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
+    diagnostic: Option<WorthQueryApplicationQueryGovernance>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
+}
+
+pub(super) struct InspectionComparisonPreparation<'original> {
+    pub(super) before: &'original super::super::application_observation::WorthQueryApplicationQueryObservation,
+    pub(super) pending: crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
 }
 
 pub(super) fn require_request(

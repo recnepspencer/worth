@@ -50,7 +50,14 @@ impl WorthQueryApplicationInspectionDenial {
             return Kind::Request;
         }
         match &self.cause {
-            InspectionCause::Unavailable => Kind::Unavailable,
+            InspectionCause::Unavailable
+            | InspectionCause::Admission(InspectionAdmissionDenial::MissingOriginalProjection)
+            | InspectionCause::Admission(InspectionAdmissionDenial::DiagnosticContract(
+                CaptureStop::Kernel(worth_execution::ScopeStop::Failure(worth_execution::MapKernelFailure::Domain(
+                    crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial::NotDeclared
+                    | crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial::UnsupportedShape,
+                ))),
+            )) => Kind::Unavailable,
             InspectionCause::Advancement(_)
             | InspectionCause::Binding(CaptureStop::Request(_))
             | InspectionCause::Admission(

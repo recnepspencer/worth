@@ -15,9 +15,10 @@ An ordinary completed bound query can supply its actual opaque observation throu
 report for that exact installed binding with
 `request.inspect::<Binding>(original).why_observed().reference_only().execute()`.
 Governed metadata additionally requires `execute_governed(actual_capability)`.
-The report establishes one original Query reference. Producer-chain explanations,
-Changed comparisons, diagnostic fields and richer materialization are unavailable
-through this Host entrance.
+The fixed Observed report establishes one original Query reference. A paired
+original request separately admits diagnostic comparison of complete retained
+output trees, as described [below](#paired-original-comparison). Producer-chain
+explanations and richer field materialization remain unavailable.
 
 Output-readiness delivery also privately retains the actual Native conditional
 observation. Its immutable Bridge backing preserves the real Signal decision,
@@ -288,6 +289,73 @@ its actual `resource_refusal()`, `execution_stop()`, `request_interruption()` or
 `canonical_refusal()` when present. These preserve their original typed causes
 without formatting protected diagnostics or cloning owner evidence. The denial
 keeps its original reservation until it drops.
+
+## Paired Original Comparison
+
+Retain the complete original disclosed trees when executing both ordinary queries
+with `retain_projection_for_inspection()`. The governed and approved one-shot
+wrappers preserve their ordinary capability admission. Comparison cannot recover
+an uncaptured body by rerunning the query.
+
+```rust,ignore
+// Both results came from ordinary executions with retained original projections.
+let before = before_result.receipt().inspect().observation()
+    .ok_or(ApplicationError::ObservationUnavailable)?;
+let after = after_result.receipt().inspect().observation()
+    .ok_or(ApplicationError::ObservationUnavailable)?;
+let comparison = request.inspect::<InstalledQueryBinding>(after)
+    .why_changed(before)
+    .reference_only()
+    .execute_with_diagnostic(current_diagnostic_capability)?;
+let reason = comparison.reason(); // ChangedResult or UnchangedResult
+let before_report = comparison.before_report_identity();
+let after_report = comparison.after_report_identity();
+let paired_report = comparison.report_identity();
+comparison.close();
+```
+
+The binding, error, results and actual capability above belong to the application.
+The [complete Host journey](../../../worth-query-host/tests/application_runtime_surface/comparison.rs)
+executes two genuine governed queries, borrows their published receipt observations,
+and independently admits the current diagnostic capability through Decl/Host.
+Its [declaration](../../../worth-query-host/tests/application_runtime_surface/comparison_model.rs)
+and [ordinary grant](../../../worth-query-host/tests/application_runtime_surface/inspection_capability.rs)
+install the real query, metadata and capability meanings together.
+
+Public inspection metadata uses `execute_with_diagnostic`. Governed metadata uses
+`execute_governed(current_metadata_capability, current_diagnostic_capability)`;
+these are separate actual admissions. The fresh Inspection session checks current
+READ and all six metadata facets, including `DiagnosticFields`, then admits the
+current subject's actual DiagnosticMask and `Explanation` influence for every
+relevant result field and internal predicate/ordering field. Relation presence
+requires its own declared slot rule and `Explanation`. Public payload visibility
+has no diagnostic contract and refuses this entrance.
+
+Runtime, schema, actual installed binding, branch occurrence and full subject
+generation can reject foreign originals before protected lookup. Cross-original
+parameter comparison, body availability, disclosure decisions and cell traversal
+occur only after current READ, metadata and diagnostic admission. Both original
+parameters and complete effective slot decisions must agree with the current
+interpretation. A withheld original cannot establish complete output equality.
+
+The supported shape is a complete one-shot Native field/relation tree. Comparison
+uses actual Native cell meaning, optional absence/presence and ordered nested
+rows. Equal authored rewrites remain `UnchangedResult`; revisions, source IDs,
+predicate provenance and producer contact do not enter output equality.
+Root-path, orbit, component, continuation and live shapes return a typed
+unsupported refusal.
+Missing capture, changed disclosure interpretation or a partial original refuses
+rather than publishing a partial `UnchangedResult`.
+
+The result borrows both originals and owns two genuine Query-reference reports
+plus a descriptive Query parent bound to those originals, report identities and
+reason. One actual Inspection terminal releases current readers before publication;
+the original request payer funds preparation, comparison stack, reports and owned
+refusals. Close or drop releases that custody. No Native cells or producer-to-row
+cause are exposed. The [Native courts](../../../worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/tests/comparison.rs)
+exercise changed/equal writes, optional clears, nested order, policy-gated empty
+results, actual diagnostic-capability revocation before missing-body lookup, and
+foreign parameter/binding inputs.
 
 ## Retained Workspace Diagnostics
 

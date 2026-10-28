@@ -11,6 +11,7 @@ use worth_relational::facade::schema::RelationalSchemaRegistry;
 use super::WorthQueryPrimaryGraphInstallationDenial;
 
 mod aggregate_identity;
+mod aspect_contract;
 pub(in crate::domain_computation::primary_graph) use aggregate_identity::ComponentSetLayout;
 mod application_layout_lowering;
 mod authorization_selectors;
@@ -339,14 +340,6 @@ impl WorthQueryPrimaryGraphLayout {
         self.fields
             .get(&(entity.to_string(), aspect.to_string(), field.to_string()))
             .map(|layout| &layout.locator)
-    }
-
-    pub(in crate::domain_computation) fn aspect_contract(
-        &self,
-        entity: &str,
-        aspect: &AspectKey,
-    ) -> Option<&AspectContract> {
-        self.aspect_contracts.get(entity)?.get(aspect)
     }
 
     pub(super) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {

@@ -41,9 +41,16 @@ enum Part<'a> {
     Number(u64),
 }
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(super) enum InspectionOriginalReference {
+    Before,
+    After,
+}
+
 pub(super) fn identities<Stop>(
     target: &Arc<WorthQueryApplicationInspectionTarget>,
     session: &WorthQueryManagedGraphWorkSession,
+    reference: InspectionOriginalReference,
     admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
 ) -> Result<InspectionReferenceIdentities, InspectionIdentityStop<Stop>> {
     let (actual, current) = session
@@ -52,7 +59,12 @@ pub(super) fn identities<Stop>(
     if !Arc::ptr_eq(actual, target) {
         return Err(InspectionIdentityStop::ForeignSession);
     }
-    let original = target.original();
+    let original = match reference {
+        InspectionOriginalReference::After => target.original(),
+        InspectionOriginalReference::Before => target
+            .before()
+            .ok_or(InspectionIdentityStop::ForeignSession)?,
+    };
     let source = &original.source;
     let source_product = product(&source.selection)?;
     let receipt_product = product(original.basis.selection())?;
@@ -128,6 +140,26 @@ pub(super) fn identities<Stop>(
         admission,
         anchor,
     })
+}
+
+pub(super) fn comparison_identity<Stop>(
+    before: &super::report::InspectionReportPayload,
+    after: &super::report::InspectionReportPayload,
+    reason: super::super::CausalInspectionReason,
+    admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
+) -> Result<BridgeIdentityEvidence, InspectionIdentityStop<Stop>> {
+    compose(
+        "query.application-inspection.original-comparison.v1",
+        &[
+            Part::Text(before.observation_identity()),
+            Part::Text(before.report_identity()),
+            Part::Text(after.observation_identity()),
+            Part::Text(after.report_identity()),
+            Part::Text(reason.as_str()),
+            Part::Text("reference-only"),
+        ],
+        admit,
+    )
 }
 
 fn product<Stop>(

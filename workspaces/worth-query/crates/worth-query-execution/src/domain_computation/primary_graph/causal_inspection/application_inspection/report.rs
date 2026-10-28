@@ -1,6 +1,9 @@
 //! The same original ticket admits and retains the actual descriptive report.
 use super::{
-    identity::{identities, InspectionIdentityStop, InspectionReferenceIdentities},
+    identity::{
+        identities, InspectionIdentityStop, InspectionOriginalReference,
+        InspectionReferenceIdentities,
+    },
     WorthQueryApplicationInspectionTarget,
 };
 use crate::domain_computation::{
@@ -18,11 +21,18 @@ use worth_runtime_bridge::facade::{
     BridgeQueryObservationReportingStop,
 };
 
+mod comparison;
+pub(super) use comparison::{
+    materialize_comparison, ComparisonReportPayload, FundedComparisonReport,
+};
+
 type ResourceStop = MapKernelFailure<RetainedStorageDenial>;
 pub(super) enum InspectionReportDenial {
     Identity(InspectionIdentityStop<ResourceStop>),
     Input(BridgeQueryObservationReportingInputDenial),
     Bridge(BridgeQueryObservationReportingStop<ResourceStop>),
+    ForeignComparison,
+    Storage(RetainedStorageDenial),
 }
 
 pub(super) struct InspectionReportPayload {
@@ -36,12 +46,14 @@ pub(super) struct FundedInspectionReport {
     plan: WorthQueryGraphWorkPlanIdentity,
     target: Arc<WorthQueryApplicationInspectionTarget>,
     retained_bytes: u64,
+    reference: InspectionOriginalReference,
 }
 
 pub(super) fn materialize(
     execution: &ExecutionRequest<'_, '_>,
     target: &Arc<WorthQueryApplicationInspectionTarget>,
     session: &WorthQueryManagedGraphWorkSession,
+    reference: InspectionOriginalReference,
     memory: &mut Option<ExecutionMemoryReservation>,
 ) -> Result<FundedInspectionReport, CaptureStop<InspectionReportDenial>> {
     run_retained_stage(execution, memory, |context, mut memory| {
@@ -61,7 +73,7 @@ pub(super) fn materialize(
             }
             Ok(())
         };
-        let identities = identities(target, session, &mut admit)
+        let identities = identities(target, session, reference, &mut admit)
             .map_err(|cause| MapKernelFailure::Domain(InspectionReportDenial::Identity(cause)))?;
         let request = BridgeQueryObservationReportingRequest::new(
             BridgeCausalInspectionAdmissionSummaryKind::Admitted,
@@ -87,11 +99,16 @@ pub(super) fn materialize(
             plan: session.plan_identity(),
             target: Arc::clone(target),
             retained_bytes,
+            reference,
         })
     })
 }
 
 impl FundedInspectionReport {
+    pub(super) fn reference(&self) -> InspectionOriginalReference {
+        self.reference
+    }
+
     pub(super) fn session(&self) -> WorthQueryGraphWorkSessionIdentity {
         self.session
     }

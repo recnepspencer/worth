@@ -1,10 +1,13 @@
 //! A fresh ordinary request retains the original funding through every outcome.
 mod action;
+mod changed;
+pub use changed::{
+    WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,
+};
 pub(super) mod binding;
 mod governed;
 use super::super::WorthQueryApplicationQueryObservation;
 use super::{
-    result::PreparedObservedInspection,
     stop::{InspectionCause, WorthQueryApplicationInspectionDenial},
     WorthQueryObservedApplicationInspection,
 };
@@ -139,17 +142,6 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
             (Err(WorthQueryAdvancementDenial::NestedStopped), Some(Err(cause))) => Err(cause),
             (Err(cause), _) => Err(InspectionCause::Advancement(cause)),
             (Ok(()), None) => unreachable!("successful original advancement invokes inspection"),
-        }
-    }
-
-    fn finish(
-        result: Result<PreparedObservedInspection<'o>, InspectionCause>,
-        memory: Option<ExecutionMemoryReservation>,
-    ) -> Result<WorthQueryObservedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
-    {
-        match result {
-            Ok(prepared) => Ok(prepared.fund(memory)),
-            Err(cause) => Err(WorthQueryApplicationInspectionDenial::new(cause, memory)),
         }
     }
 }

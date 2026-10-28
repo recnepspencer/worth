@@ -66,6 +66,8 @@ impl CausalObservationOutcome {
 pub enum CausalInspectionReason {
     ObservedResult,
     ChangedResult,
+    /// Equal complete original outputs, established by a fresh paired inspection.
+    UnchangedResult,
     SuppressedResult,
     DeniedResult,
     BranchPreviewResult,
@@ -77,6 +79,7 @@ impl CausalInspectionReason {
         match self {
             Self::ObservedResult => "observed_result",
             Self::ChangedResult => "changed_result",
+            Self::UnchangedResult => "unchanged_result",
             Self::SuppressedResult => "suppressed_result",
             Self::DeniedResult => "denied_result",
             Self::BranchPreviewResult => "branch_preview_result",

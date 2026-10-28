@@ -16,9 +16,17 @@ use crate::domain_computation::provider_session::{
 
 use super::super::WorthQueryRetainedCapabilityAuthorization;
 
+mod diagnostic;
+mod diagnostic_preparation;
+pub(in crate::domain_computation) use diagnostic_preparation::{
+    prepare_application_diagnostic_governance, DiagnosticPreparationDenial,
+};
 mod field_admission;
 mod governance;
 mod inspection;
+pub(in crate::domain_computation) use diagnostic::{
+    DiagnosticComparisonAdmission, DiagnosticComparisonDenial,
+};
 mod preparation;
 pub(in crate::domain_computation) use preparation::WorthQueryPreparedApplicationGovernance;
 mod resource;

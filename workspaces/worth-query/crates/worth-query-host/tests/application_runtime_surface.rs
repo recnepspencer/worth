@@ -28,7 +28,7 @@ worth_query_application_schema! {
         owner: host_identity_test,
         version: (1, 0),
         members: |schema| {
-            schema
+            inspection_capability::install(schema)
                 .entity(ExternalMapping::reference())
                 .entity(Principal::reference())
                 .entity(Account::reference())
@@ -48,6 +48,9 @@ worth_query_application_schema! {
                 .application_query(inspection_model::definition())
                 .application_query_binding::<inspection_model::AccountReadBinding>()
                 .application_query_inspection(inspection_model::inspection_definition())
+                .application_query(comparison_model::definition())
+                .application_query_binding::<comparison_model::GovernedAccountReadBinding>()
+                .application_query_inspection(comparison_model::inspection_definition())
         }
     }
 }
@@ -159,6 +162,7 @@ fn installed_application(
                     )
                     .unwrap();
 
+                inspection_capability::bind(&mut graph);
                 graph
         .publish_application_runtime(
             &phase,
@@ -183,7 +187,7 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
     assert_eq!(application.publication().identity_index_count(), 1);
     assert_eq!(
         application.publication().application_equality_index_count(),
-        4
+        5
     );
     assert_eq!(
         application.installed_schema().schema_name(),
@@ -224,3 +228,10 @@ mod inspection;
 mod inspection_authentication;
 #[path = "application_runtime_surface/inspection_model.rs"]
 mod inspection_model;
+
+#[path = "application_runtime_surface/comparison.rs"]
+mod comparison;
+#[path = "application_runtime_surface/comparison_model.rs"]
+mod comparison_model;
+#[path = "application_runtime_surface/inspection_capability.rs"]
+mod inspection_capability;

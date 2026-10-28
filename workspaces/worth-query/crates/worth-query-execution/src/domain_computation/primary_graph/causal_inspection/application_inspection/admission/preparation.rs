@@ -2,8 +2,9 @@
 use super::*;
 use crate::domain_computation::{
     authorization::application_disclosure::{
-        compile_inspection_disclosure_contract, prepare_application_inspection_governance,
-        WorthQueryApplicationGovernanceBinding, WorthQueryPendingApplicationQueryGovernance,
+        compile_diagnostic_disclosure_contract, compile_inspection_disclosure_contract,
+        prepare_application_diagnostic_governance, prepare_application_inspection_governance,
+        WorthQueryPendingApplicationQueryGovernance,
     },
     primary_graph::{
         admitted_capture::{checkpoint, run_retained_stage, RetainedStorageDenial},
@@ -29,37 +30,6 @@ type Scope<Schema, Binding> =
         Schema,
     >>::Scope;
 
-/// Structural custody is checked before selecting or resolving protected state.
-/// This shares only the actual installed Arc; it sizes or traverses no metadata.
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn validate_original_affinity<
-    Schema,
-    Binding,
->(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    installed: &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
-    original: &super::super::super::application_observation::WorthQueryApplicationQueryObservation,
-) -> Result<
-    worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract,
-    InspectionAdmissionDenial,
->
-where
-    Schema: ApplicationSchema,
-    Binding: ApplicationQueryBinding<Schema>,
-{
-    let contract = installed
-        .query()
-        .binding_observation()
-        .and_then(|binding| binding.inspection_contract())
-        .ok_or(InspectionAdmissionDenial::MissingInspection)?;
-    if original.source.runtime_authority != runtime.runtime.authority_identity().as_u64()
-        || &original.source.schema_binding != contract.graph_obligations().binding_identity()
-        || original.source.original_binding() != Some(contract.binding_observation())
-    {
-        return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
-    }
-    Ok(contract)
-}
-
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn prepare<
     'a,
@@ -82,6 +52,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     request: &'a WorthQueryRequestScope,
     original: &super::super::super::application_observation::WorthQueryApplicationQueryObservation,
     pending: Option<WorthQueryPendingApplicationQueryGovernance>,
+    comparison: Option<InspectionComparisonPreparation<'_>>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 ) -> Result<InspectionRead<'a, 'storage, Schema, Scope<Schema, Binding>>, InspectionAdmissionDenial>
 where
@@ -103,6 +74,16 @@ where
         || original.source.retained_scope_selector().subject() != scope.scope().entity_id()
     {
         return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
+    }
+    if let Some(comparison) = &comparison {
+        validate_original_affinity(runtime, installed, comparison.before)?;
+        if !original_branch(&comparison.before.source.selection)
+            || !original_branch(comparison.before.basis.selection())
+            || comparison.before.source.retained_scope_selector().subject()
+                != scope.scope().entity_id()
+        {
+            return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
+        }
     }
     let access = WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
     let root = SelectedIssuedAccessRoot::from_issued(
@@ -170,9 +151,9 @@ where
                 .and_then(|truth| truth.validate_entity_freshness(execution, scope.scope()))
                 .map_err(InspectionAdmissionDenial::Scope)
         })?;
-    // This fixed reference-only mode admits identity, links, counts, availability
-    // and explanation before retaining the original capsule or sizing its basis.
-    // Diagnostic fields, projection, supplier and lower-family contents stay opaque.
+    // Observed requires its five fixed metadata facets. A paired comparison
+    // additionally requires DiagnosticFields before retaining either original;
+    // the separate diagnostic capability still owns payload comparison.
     for (facet, slot) in Facet::ALL.iter().zip(contract.metadata_slots()) {
         if matches!(
             facet,
@@ -181,15 +162,59 @@ where
                 | Facet::EvidenceCounts
                 | Facet::EvidenceAvailability
                 | Facet::Explanation
-        ) && !metadata.is_disclosed(slot)
+        ) || comparison.is_some()
         {
-            return Err(InspectionAdmissionDenial::FacetDenied);
+            if !metadata.is_disclosed(slot) {
+                return Err(InspectionAdmissionDenial::FacetDenied);
+            }
         }
     }
     require_request(execution, request)?;
-    let target =
-        WorthQueryApplicationInspectionTarget::capture(execution, original, contract, memory)
-            .map_err(InspectionAdmissionDenial::Target)?;
+    let before = comparison.as_ref().map(|comparison| comparison.before);
+    let mut diagnostic = match comparison {
+        Some(comparison) => {
+            let contract = compile_diagnostic_disclosure_contract(
+                installed.query(),
+                &graph.layout,
+                execution,
+                memory,
+            )
+            .map_err(InspectionAdmissionDenial::DiagnosticContract)?;
+            let mut diagnostic = prepare_application_diagnostic_governance(
+                installed.query(),
+                contract,
+                comparison.pending,
+                execution,
+                memory,
+            )
+            .map_err(InspectionAdmissionDenial::DiagnosticPreparation)?;
+            if let Some(capability) = diagnostic.authorization_mut() {
+                runtime
+                    .refresh_capability_authorization_for_prepared_read(
+                        execution, capability, &reserved, &product,
+                    )
+                    .map_err(InspectionAdmissionDenial::Capability)?;
+                graph
+                    .integration_handle()
+                    .with_runtime_mut(execution, |relational| {
+                        capability
+                            .validate_currentness_in(
+                                execution,
+                                relational,
+                                security.snapshot_handle(),
+                                runtime.authorization.bridge(),
+                            )
+                            .map_err(InspectionAdmissionDenial::CurrentAuthorization)
+                    })?;
+            }
+            Some(diagnostic)
+        }
+        None => None,
+    };
+    let target = WorthQueryApplicationInspectionTarget::capture(
+        execution, original, before, contract, memory,
+    )
+    .map_err(InspectionAdmissionDenial::Target)?;
     let plan = plan::admit(runtime, execution, target.contract(), memory)
         .map_err(InspectionAdmissionDenial::Plan)?;
     let basis_ref = selected.application_basis().identity();
@@ -229,33 +254,43 @@ where
     })
     .map_err(InspectionAdmissionDenial::Storage)?;
     let mut session = session.map_err(InspectionAdmissionDenial::Session)?;
-    let binding = run_retained_stage(execution, memory, |context, memory| {
-        checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
-        let bytes = WorthQueryApplicationGovernanceBinding::inspection_backing_bytes(&session)
-            .ok_or(MapKernelFailure::Domain(RetainedStorageDenial::Overflow))?;
-        checkpoint(context, bytes).map_err(MapKernelFailure::Stop)?;
-        if let Some(memory) = memory {
-            memory.resize(bytes).map_err(MapKernelFailure::Domain)?;
-        }
-        Ok(
-            WorthQueryApplicationGovernanceBinding::from_inspection_session(
+    let binding = governance_binding::capture(
+        execution,
+        memory,
+        &session,
+        &target,
+        original.source.parameter_binding_identity,
+        principal.principal().principal_entity_id(),
+        scope.scope().entity_id(),
+    )?;
+    let governance = metadata
+        .bind_inspection(binding)
+        .map_err(InspectionAdmissionDenial::Governance)?;
+    let diagnostic = diagnostic
+        .take()
+        .map(|diagnostic| {
+            let binding = governance_binding::capture(
+                execution,
+                memory,
                 &session,
                 &target,
                 original.source.parameter_binding_identity,
                 principal.principal().principal_entity_id(),
                 scope.scope().entity_id(),
-            ),
-        )
-    })
-    .map_err(InspectionAdmissionDenial::Storage)?
-    .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
-    let governance = metadata
-        .bind_inspection(binding)
-        .map_err(InspectionAdmissionDenial::Governance)?;
+            )?;
+            diagnostic
+                .bind_inspection(binding)
+                .map_err(InspectionAdmissionDenial::Governance)
+        })
+        .transpose()?;
     session.set_retained_decision_facts(
         authorization.exact_fact_count()
             + governance
                 .authorization()
+                .map_or(0, |capability| capability.exact_fact_count())
+            + diagnostic
+                .as_ref()
+                .and_then(|governance| governance.authorization())
                 .map_or(0, |capability| capability.exact_fact_count()),
     );
     let mut admitted = InspectionRead {
@@ -269,6 +304,7 @@ where
         proof: None,
         authorization,
         governance,
+        diagnostic,
         memory,
     };
     admitted.check(execution)?;

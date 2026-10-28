@@ -1,4 +1,5 @@
-//! A descriptive Observed result borrows its original and retains no fresh reader.
+//! Descriptive results borrow originals and release the same actual session.
+mod comparison;
 use super::super::{
     CausalInspectionReason, CausalObservationMissingReferencePosture,
     WorthQueryApplicationQueryObservation,
@@ -9,6 +10,8 @@ use crate::domain_computation::{
     primary_graph::admitted_capture::{CaptureStop, RetainedStorageDenial},
     provider_session::WorthQueryInspectionReadCompletion,
 };
+pub(super) use comparison::PreparedComparedInspection;
+pub use comparison::WorthQueryComparedApplicationInspection;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure, ScopeStop};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
@@ -80,22 +83,43 @@ impl CompletedInspection {
         report: FundedInspectionReport,
         memory: &mut Option<ExecutionMemoryReservation>,
     ) -> Result<PreparedObservedInspection<'original>, InspectionAdmissionDenial> {
-        require_request(execution, &self.request)?;
-        if !self
-            .completion
-            .matches_report(report.session(), report.plan(), report.target())
-            || !report.target().matches_original(original)
+        self.validate_report(execution, &report)?;
+        if !report.target().matches_original(original)
+            || report.target().before().is_some()
+            || report.reference() != super::identity::InspectionOriginalReference::After
         {
             return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
         }
         let (payload, retained_bytes) = report.release_target();
-        drop(self.completion);
         let result = PreparedObservedInspection {
             original,
             report: payload,
         };
-        // All transient target/session/auth/governance owners have ended. The
-        // caller keeps the original ticket through every error and publication.
+        self.finish_publication(execution, retained_bytes, memory)?;
+        Ok(result)
+    }
+
+    fn validate_report(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        report: &FundedInspectionReport,
+    ) -> Result<(), InspectionAdmissionDenial> {
+        require_request(execution, &self.request)?;
+        self.completion
+            .matches_report(report.session(), report.plan(), report.target())
+            .then_some(())
+            .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)
+    }
+
+    fn finish_publication(
+        self,
+        execution: &ExecutionRequest<'_, '_>,
+        retained_bytes: u64,
+        memory: &mut Option<ExecutionMemoryReservation>,
+    ) -> Result<(), InspectionAdmissionDenial> {
+        drop(self.completion);
+        // Every transient target/session/auth/governance owner has ended. The
+        // caller retains the original ticket through refusal and publication.
         if let Some(memory) = memory.as_mut() {
             if memory.bytes() < retained_bytes {
                 return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
@@ -106,8 +130,7 @@ impl CompletedInspection {
                 )))
             })?;
         }
-        require_request(execution, &self.request)?;
-        Ok(result)
+        require_request(execution, &self.request)
     }
 }
 

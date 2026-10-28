@@ -28,8 +28,9 @@ pub mod application_inspection {
         WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
         WorthQueryApplicationInspectionRequest, WorthQueryApplicationInspectionResourceRefusal,
         WorthQueryApplicationInspectionStopKind, WorthQueryApplicationQueryObservation,
-        WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest,
-        WorthQueryReferenceOnlyInspectionRequest,
+        WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,
+        WorthQueryComparedApplicationInspection, WorthQueryObservedApplicationInspection,
+        WorthQueryObservedInspectionRequest, WorthQueryReferenceOnlyInspectionRequest,
     };
 }
 

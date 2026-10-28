@@ -40,8 +40,8 @@ worth_query_application_query!(
     name "host_inspection_account_query"
 );
 
-fn number_result() -> ApplicationQueryResultFieldRef<
-    AccountQuery,
+pub(super) fn number_result<Q>() -> ApplicationQueryResultFieldRef<
+    Q,
     NumberSlot,
     HostIdentitySchema,
     Account,

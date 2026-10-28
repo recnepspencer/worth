@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     request: WorthQueryRequestScope,
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
+    diagnostic: Option<WorthQueryApplicationQueryGovernance>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 }
 
@@ -35,6 +36,7 @@ impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Sc
             request: self.request.clone(),
             authorization: self.authorization,
             governance: self.governance,
+            diagnostic: self.diagnostic,
             memory: self.memory,
         })
     }
@@ -66,6 +68,7 @@ impl InspectionTerminal<'_> {
         // No session/Product/basis/proof is returned to the descriptive artifact.
         drop(self.authorization);
         drop(self.governance);
+        drop(self.diagnostic);
         drop(self.basis);
         require_request(execution, &self.request)?;
         Ok(CompletedInspection::from_terminal(completed, self.request))
