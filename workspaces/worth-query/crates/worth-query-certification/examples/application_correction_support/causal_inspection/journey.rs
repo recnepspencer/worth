@@ -12,17 +12,20 @@ use worth_query_host::facade::{
         WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
     },
     application_entry::*,
-    application_inspection::*,
+    application_installation::WorthQueryProgramApplicationRuntime,
+    causal_inspection::*,
+    declaration::application_program::ApplicationProgramDefinition,
     primary_graph::{
         WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryApplicationCommitReceipt,
         WorthQueryConditionalSignalDecision, WorthQueryPrincipalResolutionMode,
     },
     runtime::ExecutionAllocationPolicy,
 };
+mod retained_query;
 type Access = WorthQueryAdmittedApplicationCapabilityAccess<
     NumericSchema,
     capability::Inspect,
-    capability::Operation,
+    capability::InspectCausalEvidence,
     capability::Input,
 >;
 
@@ -49,7 +52,14 @@ pub fn connected_source_and_output() {
         .caused_by(&source)
         .reference_only()
         .execute_with_diagnostic(access(&application, &principal, &scope))
-        .unwrap();
+        .unwrap_or_else(|denial| {
+            panic!(
+                "fresh connected inspection must admit: {denial:?}; source={expected_source:?}; producer={expected_producer:?}; connection={:?}; resource={:?}; canonical={:?}",
+                denial.producer_connection_refusal(),
+                denial.resource_refusal(),
+                denial.canonical_refusal(),
+            )
+        });
     assert_eq!(report.reason(), CausalInspectionReason::ChangedResult);
     let connection = report
         .producer_connection()
@@ -155,7 +165,7 @@ pub fn current_admission_precedes_source_lookup() {
         .mutate(super::super::principal_status::DisablePrincipal { identity: 1 })
         .without_source()
         .idempotency(&"causal-disable-principal".to_owned())
-        .execute()
+        .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     let refusal = request
         .inspect::<query::Binding>(&after)
@@ -177,30 +187,22 @@ fn read(
     scope: &WorthQueryRequestScope,
     observation: Option<&WorthQueryApplicationReadObservation>,
 ) -> (WorthQueryApplicationQueryObservation, query::Row) {
+    if let Some(observation) = observation {
+        return retained_query::read(application, principal, scope, observation);
+    }
     let request = application.runtime().request(principal, scope);
     let intent = query::Read {
         key: "numeric".to_owned(),
     };
-    let result = match observation {
-        Some(observation) => request
-            .at(observation)
-            .query(intent)
-            .retain_projection_for_inspection()
-            .execute_governed(
-                capability::Inspect::reference(),
-                capability::Operation::reference(),
-                capability::Input,
-            ),
-        None => request
-            .query(intent)
-            .retain_projection_for_inspection()
-            .execute_governed(
-                capability::Inspect::reference(),
-                capability::Operation::reference(),
-                capability::Input,
-            ),
-    }
-    .unwrap();
+    let result = request
+        .query(intent)
+        .retain_projection_for_inspection()
+        .execute_governed(
+            capability::Inspect::reference(),
+            capability::InspectCausalEvidence::reference(),
+            capability::Input,
+        )
+        .unwrap();
     assert_eq!(result.rows().len(), 1);
     (
         result.receipt().inspect().observation().unwrap().clone(),
@@ -260,8 +262,8 @@ fn perform(
     )
 }
 
-fn access(
-    application: &host::OutputHost,
+pub(super) fn access<P: ApplicationProgramDefinition<NumericSchema>>(
+    application: &WorthQueryProgramApplicationRuntime<NumericSchema, P>,
     external: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
     scope: &WorthQueryRequestScope,
 ) -> Access {
@@ -289,7 +291,7 @@ fn access(
                 .installed_schema()
                 .capability(
                     capability::Inspect::reference(),
-                    capability::Operation::reference(),
+                    capability::InspectCausalEvidence::reference(),
                 )
                 .unwrap();
             selected

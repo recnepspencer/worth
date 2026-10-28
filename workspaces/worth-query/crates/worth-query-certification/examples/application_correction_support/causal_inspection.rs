@@ -6,6 +6,22 @@ use worth_query_host::facade::declaration::{
 pub mod capability;
 pub mod journey;
 pub mod query;
+pub mod source_only;
+pub struct SourceOnlyDisclosure;
+impl ApplicationSourceDisclosureBinding<NumericSchema> for SourceOnlyDisclosure {
+    const IDENTITY: &'static str = "numeric-correction.source-only-disclosure.v1";
+    type Source = super::other_edit::OtherBinding;
+    type Disclosure = super::calculation_query::Binding;
+    fn disclosure_parameters(
+        _: &super::other_edit::OtherEdit,
+    ) -> Result<
+        ApplicationQueryParameterSet<super::calculation_query::Query>,
+        ApplicationSourceDisclosureParameterDenial,
+    > {
+        Ok(ApplicationQueryParameterSet::new())
+    }
+}
+
 pub struct SourceDisclosure;
 impl ApplicationSourceDisclosureBinding<NumericSchema> for SourceDisclosure {
     const IDENTITY: &'static str = "numeric-correction.causal-source.v1";
@@ -24,6 +40,7 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
     capability::declare(schema)
+        .application_query_inspection(source_only::metadata())
         .application_query(query::definition())
         .application_query_binding::<query::Binding>()
         .application_query_inspection(

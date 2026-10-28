@@ -73,7 +73,10 @@ impl WorthQueryApplicationProducerConnection {
     }
 }
 
-pub(super) fn connect(
+pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchema>(
+    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+        Schema,
+    >,
     execution: &ExecutionRequest<'_, '_>,
     target: &WorthQueryApplicationInspectionTarget,
     source: &WorthQueryApplicationCommitReceipt,
@@ -84,7 +87,9 @@ pub(super) fn connect(
     use WorthQueryProducerConnectionDenial as Denial;
     run_retained_stage(execution, memory, |context, _| {
         let disclosure = source::validate(context, target, source)?;
-        let original = target.original();
+        let original = target
+            .original()
+            .ok_or(MapKernelFailure::Domain(Denial::ForeignSource))?;
         let supplier = original
             .source
             .original_settled_producer()
@@ -109,6 +114,8 @@ pub(super) fn connect(
         let observed = overlap::ObservationConnection {
             original,
             diagnostic,
+            layout: &runtime.primary_provider.graph.layout,
+            contracts: runtime.installed_schema().native_contracts(),
         };
         observed.require_input(context, execution, source.committed_changes(), inputs)?;
         let role = observed.output_role(context, execution, changes, supplier.correspondence())?;

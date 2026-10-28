@@ -16,14 +16,16 @@ pub struct WorthQueryOutputReadinessDeliveryEvidence {
     semantic_observation_reads: usize,
     // The native owner issued this handle during the actual readiness evaluation.
     // Counters and test fixtures cannot construct it or grant inspection access.
-    #[expect(
-        dead_code,
-        reason = "native-issued evidence stays retained; inspection requires separate native access"
-    )]
     causal_observation: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
 }
 
 impl WorthQueryOutputReadinessDeliveryEvidence {
+    pub(in crate::domain_computation::primary_graph) fn causal_observation(
+        &self,
+    ) -> Option<&worth_runtime_bridge::facade::BridgeConditionalCausalObservation> {
+        self.causal_observation.as_ref()
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn without_execution() -> Self {
         Self {
             producer_contacts: 0,

@@ -75,12 +75,21 @@ pub(super) fn materialize(
         };
         let identities = identities(target, session, reference, &mut admit)
             .map_err(|cause| MapKernelFailure::Domain(InspectionReportDenial::Identity(cause)))?;
-        let request = BridgeQueryObservationReportingRequest::new(
-            BridgeCausalInspectionAdmissionSummaryKind::Admitted,
-            &identities.admission,
-            &identities.anchor,
-            &identities.observation,
-        )
+        let request = if reference == InspectionOriginalReference::Source {
+            BridgeQueryObservationReportingRequest::from_performed_source(
+                BridgeCausalInspectionAdmissionSummaryKind::Admitted,
+                &identities.admission,
+                &identities.anchor,
+                &identities.observation,
+            )
+        } else {
+            BridgeQueryObservationReportingRequest::new(
+                BridgeCausalInspectionAdmissionSummaryKind::Admitted,
+                &identities.admission,
+                &identities.anchor,
+                &identities.observation,
+            )
+        }
         .map_err(|cause| MapKernelFailure::Domain(InspectionReportDenial::Input(cause)))?;
         let envelope = request
             .assemble_with_admission(&mut admit)

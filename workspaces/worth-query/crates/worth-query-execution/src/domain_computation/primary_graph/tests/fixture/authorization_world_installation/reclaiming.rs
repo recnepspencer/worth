@@ -8,7 +8,8 @@ pub(in crate::domain_computation::primary_graph::tests::fixture) fn install_recl
     crate::domain_computation::primary_graph::with_test_advancement(|phase| {
         let native = RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::AiWorkflow)
-            .build();
+            .build()
+            .expect("the reclaiming authorization fixture admits its Native runtime");
         let mut prepared = prepare_authorization_world(
             &phase, spec.resources, Some(native),
             crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),

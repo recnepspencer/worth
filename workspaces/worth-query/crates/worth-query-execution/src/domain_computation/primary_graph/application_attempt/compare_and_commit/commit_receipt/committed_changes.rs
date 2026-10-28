@@ -21,6 +21,13 @@ pub struct WorthQueryApplicationCommittedChanges {
 }
 
 impl WorthQueryApplicationCommittedChanges {
+    pub(in crate::domain_computation::primary_graph) fn shares_original(
+        &self,
+        other: &Self,
+    ) -> bool {
+        Arc::ptr_eq(&self.envelope, &other.envelope)
+    }
+
     /// Verify one present field occurrence against this original canonical patch.
     pub(in crate::domain_computation::primary_graph) fn contains_present_field(
         &self,

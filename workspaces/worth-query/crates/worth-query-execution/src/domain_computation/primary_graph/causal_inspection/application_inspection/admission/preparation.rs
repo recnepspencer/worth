@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     >,
     scope: &'a WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope<Schema, Binding>>,
     request: &'a WorthQueryRequestScope,
-    original: &super::super::super::application_observation::WorthQueryApplicationQueryObservation,
+    original: InspectionSubject<'_>,
     pending: Option<WorthQueryPendingApplicationQueryGovernance>,
     comparison: Option<InspectionComparisonPreparation<'_>>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
@@ -60,30 +60,14 @@ where
     Binding: ApplicationQueryBinding<Schema>,
 {
     require_request(execution, request)?;
-    let contract = validate_original_affinity(runtime, installed, original)?;
-    let original_branch = |selection: &crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity| {
-        matches!(selection,
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(original)
-                if original.same_branch_occurrence_observation(selected.product().observation()))
-    };
-    if !original_branch(&original.source.selection) || !original_branch(original.basis.selection())
-    {
-        return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
-    }
-    if !std::ptr::eq(runtime, selected.application())
-        || original.source.retained_scope_selector().subject() != scope.scope().entity_id()
-    {
-        return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
-    }
+    let contract = original.validate(runtime, installed, selected, scope.scope().entity_id())?;
     if let Some(comparison) = &comparison {
-        validate_original_affinity(runtime, installed, comparison.before)?;
-        if !original_branch(&comparison.before.source.selection)
-            || !original_branch(comparison.before.basis.selection())
-            || comparison.before.source.retained_scope_selector().subject()
-                != scope.scope().entity_id()
-        {
-            return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
-        }
+        InspectionSubject::Query(comparison.before).validate(
+            runtime,
+            installed,
+            selected,
+            scope.scope().entity_id(),
+        )?;
     }
     let access = WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
     let root = SelectedIssuedAccessRoot::from_issued(
@@ -211,10 +195,7 @@ where
         }
         None => None,
     };
-    let target = WorthQueryApplicationInspectionTarget::capture(
-        execution, original, before, contract, memory,
-    )
-    .map_err(InspectionAdmissionDenial::Target)?;
+    let target = original.capture(execution, before, contract, memory)?;
     let plan = plan::admit(runtime, execution, target.contract(), memory)
         .map_err(InspectionAdmissionDenial::Plan)?;
     let basis_ref = selected.application_basis().identity();
@@ -259,7 +240,7 @@ where
         memory,
         &session,
         &target,
-        original.source.parameter_binding_identity,
+        target.parameters(),
         principal.principal().principal_entity_id(),
         scope.scope().entity_id(),
     )?;
@@ -274,7 +255,7 @@ where
                 memory,
                 &session,
                 &target,
-                original.source.parameter_binding_identity,
+                target.parameters(),
                 principal.principal().principal_entity_id(),
                 scope.scope().entity_id(),
             )?;

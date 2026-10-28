@@ -15,6 +15,7 @@ use super::identity::{
 use crate::identity::BridgeIdentityEvidence;
 
 pub(super) struct QueryObservationReportingSource<'a, Admit> {
+    pub(super) subject: &'static str,
     pub(super) observation: &'a BridgeIdentityEvidence,
     pub(super) admit: &'a mut Admit,
 }
@@ -57,7 +58,7 @@ impl<Stop, Admit: FnMut(usize, usize) -> Result<(), Stop>> CausalEnvelopeAssembl
         let identity = compose(
             Kind::EvidenceBinding,
             &[
-                Part::Shape("query-observation-reporting"),
+                Part::Shape(self.subject),
                 Part::Shape(Owner::Query.as_str()),
                 Part::Shape(Family::QueryObservation.as_str()),
                 Part::Evidence(self.observation),

@@ -85,7 +85,7 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                                 principal,
                                 scope,
                                 &request,
-                                &original,
+                                InspectionSubject::Query(&original),
                                 None,
                                 None,
                                 &mut memory,

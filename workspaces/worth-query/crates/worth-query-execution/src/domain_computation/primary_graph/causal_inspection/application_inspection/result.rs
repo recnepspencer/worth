@@ -1,5 +1,6 @@
 //! Descriptive results borrow originals and release the same actual session.
 mod comparison;
+mod source;
 use super::super::{
     CausalInspectionReason, CausalObservationMissingReferencePosture,
     WorthQueryApplicationQueryObservation,
@@ -12,6 +13,7 @@ use crate::domain_computation::{
 };
 pub(super) use comparison::PreparedComparedInspection;
 pub use comparison::WorthQueryComparedApplicationInspection;
+pub use source::WorthQueryPerformedSourceInspection;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure, ScopeStop};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

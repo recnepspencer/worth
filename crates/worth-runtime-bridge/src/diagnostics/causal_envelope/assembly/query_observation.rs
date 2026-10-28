@@ -19,6 +19,7 @@ pub enum BridgeQueryObservationReportingInputDenial {
 /// Allocation-free borrowed input to the reporting assembler. These labels
 /// confer no READ, metadata, historical or materialization permission.
 pub struct BridgeQueryObservationReportingRequest<'a> {
+    subject: &'static str,
     kind: BridgeCausalInspectionAdmissionSummaryKind,
     admission: &'a BridgeIdentityEvidence,
     anchor: &'a BridgeIdentityEvidence,
@@ -43,11 +44,26 @@ impl<'a> BridgeQueryObservationReportingRequest<'a> {
             return Err(Failure::MissingQueryObservation);
         }
         Ok(Self {
+            subject: "query-observation-reporting",
             kind,
             admission,
             anchor,
             observation,
         })
+    }
+
+    /// A Query-owned observation of a canonical performed source, not a read
+    /// result. Descriptive reporting only; the real Inspection terminal remains
+    /// responsible for READ, metadata and publication authority.
+    pub fn from_performed_source(
+        kind: BridgeCausalInspectionAdmissionSummaryKind,
+        admission: &'a BridgeIdentityEvidence,
+        anchor: &'a BridgeIdentityEvidence,
+        source: &'a BridgeIdentityEvidence,
+    ) -> Result<Self, BridgeQueryObservationReportingInputDenial> {
+        let mut request = Self::new(kind, admission, anchor, source)?;
+        request.subject = "query-performed-source-reporting";
+        Ok(request)
     }
 
     /// The same original owner admits work and storage before construction;

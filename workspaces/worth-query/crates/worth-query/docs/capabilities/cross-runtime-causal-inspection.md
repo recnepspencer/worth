@@ -19,8 +19,68 @@ The fixed Observed report establishes one original Query reference. A paired
 original request separately admits diagnostic comparison of complete retained
 output trees, as described [below](#paired-original-comparison). Producer-chain
 assembly and richer field materialization remain unfinished. The bounded
-[source/producer connection](#sourceproducer-connection) below is implemented
-for source review; its new runtime qualification is pending.
+[source/producer connection](#sourceproducer-connection) below passes its focused
+ordinary source-to-producer-to-query journey. Final evidence review and broader
+Phase9 qualification remain open.
+
+### Source-only inspection
+
+The four focused source-only runtime cases pass; final review and whole-Phase9
+qualification remain open. A fresh
+Host request can select an actual committed source independently of a completed
+query, paired comparison or projected input field:
+
+```rust,ignore
+let report = fresh.inspect_source::<DeclaredSourceDisclosure>(&source_receipt)
+    .why_performed()
+    .reference_only()
+    .execute_governed(current_source_metadata)?;
+let actual_source = report.source_commit();
+report.close();
+```
+
+`DeclaredSourceDisclosure` implements the existing
+`ApplicationSourceDisclosureBinding<Schema>`. Its original source, scope and
+captured disclosure parameters resolve against the actual installed declaration
+and original schema/package binding. The request selects the current occurrence
+of that source's original branch and freshly resolves the full subject and
+principal. Missing original disclosure or foreign structural affinity refuses;
+no fallback reads a journal, business input or another query observation.
+
+The source's declared disclosure query supplies current READ and its independent
+five reference-metadata facets. It need not project the source's authored field,
+and it is not executed to reconstruct the source. Public business payload or a
+different binding's metadata cannot admit this report. Public source metadata
+uses `execute()`; governed metadata requires its own actual current capability.
+Diagnostic fields are never examined or returned by this mode, so no
+DiagnosticMask permission is borrowed or implied.
+
+The distinct source target enters the same Inspection session, final currentness
+checks and consuming terminal as query inspection. Query-owned source reporting
+uses the common funded Bridge assembler with a distinct performed-source shape;
+it claims no retained Native evaluation or producer. Its report retains the
+actual immutable canonical source/disclosure backing and original funding,
+without the original receipt, business input, Native reader or parent fact body.
+The source receipt can drop after execution. `close()` releases the fresh report's
+reservation; cancellation or request expiry preserves the actual owned refusal.
+A strongly retained immutable source is not labelled expired merely because its
+request expires. Optional evidence retirement/expiry remains a later obligation.
+
+Source-only inspection does not widen the paired source/producer join below.
+
+The earlier connected candidate failed with `SourceInputUnconnected`; that
+receipt remains historical evidence. The qualified coordinate repair resolves
+both the original Planned handler descriptor and Authoritative source-revision
+descriptor through the same installed entity-kind layout and Native contract
+binding. Their original authority and paths remain unchanged. Matching that
+physical field does not establish a cause without the actual performed read,
+full entity generation, exact source-created revision, query-observed revision
+and canonical source/output writes. The complete positive journey and extended
+internal genuine-producer test now pass. Review033's guaranteed whole-locator
+mismatch was repaired; the first predicate of the earlier failure was never
+observed, so that finding alone does not establish its sole cause.
+Independently bound source-plus-query connection, absent-field joins, actual
+suppression and rich materialization remain unfinished.
 
 ### Source/producer connection
 
@@ -79,11 +139,23 @@ terminal and request ticket.
 unconnected causes. A plain head query cannot infer a supplier. Stable reuse and
 restoration do not manufacture a performed producer. `UnchangedResult` remains
 an output comparison; the actual readiness decision does not by itself establish
-equivalent-output suppression. General source-only admission, missing/absent
-field connections, richer materialization and full Phase9 qualification remain
-open. The [ordinary source court](../../../worth-query-certification/tests/application_graph/correction/causal_inspection.rs)
+equivalent-output suppression. Source-only admission has the separately exercised
+path above; it does not widen the connected journey's same-binding contract.
+Independently bound source/query connections, missing/absent field connections,
+richer materialization and full Phase9 qualification remain open. The [ordinary source court](../../../worth-query-certification/tests/application_graph/correction/causal_inspection.rs)
 uses an installed arithmetic producer and a declared Calculated query through
-the two facades.
+the two facades. Retained governed reads use the existing Host selected-query
+admission and one-shot execution owners; ordinary `execute_governed` rejects a
+retained request. The source-only court uses the declared source-completion
+program, without a fixed-output delivery obligation. Coordinate qualification
+passes all six selected retry cases: three causal application cases and three
+Execution field-copy/custody/supplier/reuse cases. The positive performs Primary
+5-to-11, one producer contact and query `(11, 23)`, and asserts the actual source,
+producer and declared output role. Together with 25 unaffected prior runtime
+passes, the selected union is 31/31. The 316 unchanged doctest passes carry from
+the prior candidate; they were not rerun. Guidance/context generation and normal
+boundary/context checks pass in the isolated Phase9 target with six Cargo jobs.
+Final review remains required; these results do not establish Phase9 closure.
 
 Output-readiness delivery also privately retains the actual Native conditional
 observation. Its immutable Bridge backing preserves the real Signal decision,
@@ -432,7 +504,6 @@ remain available to that audience. Both generic legacy Native-envelope and new
 Query-observation report admission stay closed: an old diagnostic basis cannot
 bypass the fresh application issuer, even with reference-only policy.
 
-Use the ordinary Host receipt entrance above for application queries. Optional
-Native materialization and performed-source/producer-chain inspection are
-unavailable through this Host entrance. The existing Native backing alone cannot
+Use the ordinary Host receipt entrance above for application queries. Optional Native materialization remains unavailable through this Host entrance.
+The source-only path and paired connection candidate above retain their stated limits. The existing Native backing alone cannot
 open those reads.

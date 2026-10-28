@@ -4,7 +4,7 @@ use super::*;
 use worth_execution::{MapKernelFailure, ScopeStop};
 use worth_foundational::facade::{
     CanonicalBasisConstructionDenial, CanonicalBasisPreparationStop, CanonicalDigestAdmissionStop,
-    CanonicalDigestDerivationDenial,
+    CanonicalDigestDerivationDenial, CanonicalSortImplementationDenial,
 };
 use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop;
 
@@ -13,7 +13,7 @@ use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop;
 pub enum WorthQueryApplicationInspectionCanonicalRefusal<'a> {
     Basis(&'a CanonicalBasisConstructionDenial),
     Digest(&'a CanonicalDigestDerivationDenial),
-    UnsupportedSortImplementation,
+    UnsupportedSortImplementation(&'a CanonicalSortImplementationDenial),
     AccountingOverflow,
     AllocationUnavailable,
 }
@@ -42,8 +42,8 @@ pub(super) fn cause(cause: &InspectionCause) -> Option<Refusal<'_>> {
 fn basis<S>(cause: &CanonicalBasisPreparationStop<S>) -> Option<Refusal<'_>> {
     match cause {
         CanonicalBasisPreparationStop::Construction(cause) => Some(Refusal::Basis(cause)),
-        CanonicalBasisPreparationStop::UnsupportedSortImplementation => {
-            Some(Refusal::UnsupportedSortImplementation)
+        CanonicalBasisPreparationStop::UnsupportedSortImplementation(cause) => {
+            Some(Refusal::UnsupportedSortImplementation(cause))
         }
         CanonicalBasisPreparationStop::AccountingOverflow => Some(Refusal::AccountingOverflow),
         CanonicalBasisPreparationStop::Resource { .. } => None,

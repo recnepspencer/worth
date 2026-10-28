@@ -5,6 +5,7 @@ use std::sync::Arc;
 use worth_query_installation::facade::InstalledSourceDisclosureBinding;
 
 pub(in crate::domain_computation) struct OriginalSourceInspectionDisclosure {
+    schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     association: Arc<InstalledSourceDisclosureBinding>,
     scope: Arc<WorthQueryObservedScopeSelector>,
     disclosure: OriginalSourceDisclosure,
@@ -12,15 +13,22 @@ pub(in crate::domain_computation) struct OriginalSourceInspectionDisclosure {
 
 impl OriginalSourceInspectionDisclosure {
     pub(super) fn captured(
+        schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         association: Arc<InstalledSourceDisclosureBinding>,
         scope: Arc<WorthQueryObservedScopeSelector>,
         disclosure: OriginalSourceDisclosure,
     ) -> Self {
         Self {
+            schema,
             association,
             scope,
             disclosure,
         }
+    }
+    pub(in crate::domain_computation) fn schema(
+        &self,
+    ) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {
+        &self.schema
     }
     pub(in crate::domain_computation) fn association(&self) -> &InstalledSourceDisclosureBinding {
         &self.association
@@ -34,7 +42,8 @@ impl OriginalSourceInspectionDisclosure {
 }
 impl PartialEq for OriginalSourceInspectionDisclosure {
     fn eq(&self, other: &Self) -> bool {
-        self.association == other.association
+        self.schema == other.schema
+            && self.association == other.association
             && Arc::ptr_eq(&self.scope, &other.scope)
             && self.disclosure.same_capture(&other.disclosure)
     }

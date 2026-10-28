@@ -78,7 +78,7 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                         principal,
                         scope,
                         &request,
-                        &original,
+                        InspectionSubject::Query(&original),
                         None,
                         None,
                         &mut memory,

@@ -18,6 +18,8 @@ use worth_foundational::facade::{
 };
 use worth_runtime_bridge::facade::{bridge_truth_external_identity_token, BridgeIdentityEvidence};
 
+mod source;
+
 const SCHEME: &str = "worth.query.application-inspection.v1";
 
 pub(super) struct InspectionReferenceIdentities {
@@ -45,6 +47,7 @@ enum Part<'a> {
 pub(super) enum InspectionOriginalReference {
     Before,
     After,
+    Source,
 }
 
 pub(super) fn identities<Stop>(
@@ -59,8 +62,14 @@ pub(super) fn identities<Stop>(
     if !Arc::ptr_eq(actual, target) {
         return Err(InspectionIdentityStop::ForeignSession);
     }
+    if reference == InspectionOriginalReference::Source {
+        return source::identities(target, session, current, admit);
+    }
     let original = match reference {
-        InspectionOriginalReference::After => target.original(),
+        InspectionOriginalReference::After => target
+            .original()
+            .ok_or(InspectionIdentityStop::ForeignSession)?,
+        InspectionOriginalReference::Source => return Err(InspectionIdentityStop::ForeignSession),
         InspectionOriginalReference::Before => target
             .before()
             .ok_or(InspectionIdentityStop::ForeignSession)?,

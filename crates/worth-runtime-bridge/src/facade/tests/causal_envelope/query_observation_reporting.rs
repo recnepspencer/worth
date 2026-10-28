@@ -76,3 +76,47 @@ fn query_observation_reporting_preserves_the_first_allocation_refusal() {
         "no later canonical or envelope work follows refusal"
     );
 }
+
+#[test]
+fn performed_source_reporting_stays_query_owned_and_distinct_from_a_query_result() {
+    let admission = Identity::from_bridge_owner_external_authority("reporting:source-admission");
+    let anchor = Identity::from_bridge_owner_external_authority("reporting:source-anchor");
+    let original = Identity::from_bridge_owner_external_authority("reporting:source-original");
+    let source = Request::from_performed_source(Kind::Admitted, &admission, &anchor, &original)
+        .unwrap()
+        .assemble_with_admission(&mut |_, _| Ok::<_, ()>(()))
+        .unwrap();
+    let read = Request::new(Kind::Admitted, &admission, &anchor, &original)
+        .unwrap()
+        .assemble_with_admission(&mut |_, _| Ok::<_, ()>(()))
+        .unwrap();
+    assert_ne!(
+        source.envelope_for_reporting(),
+        read.envelope_for_reporting()
+    );
+    assert_eq!(source.bindings().len(), 1);
+    assert_eq!(
+        source.bindings()[0].owner(),
+        BridgeCausalEvidenceOwner::Query
+    );
+    assert_eq!(
+        source.bindings()[0].binding_class(),
+        BridgeCausalEvidenceBindingClass::QueryObservationReport
+    );
+    assert_eq!(source.bindings()[0].reference_evidence_identity(), original);
+    assert_eq!(source.counters().lower_runtime_family_count(), 0);
+    assert_eq!(
+        source
+            .counters()
+            .retained_native_observation_binding_count(),
+        0
+    );
+    let stopped = Request::from_performed_source(Kind::Admitted, &admission, &anchor, &original)
+        .unwrap()
+        .assemble_with_admission(&mut |_, _| Err("source report allocation stopped"))
+        .unwrap_err();
+    assert!(matches!(
+        stopped,
+        Failure::Resource("source report allocation stopped")
+    ));
+}

@@ -16,7 +16,7 @@ where
     let summary_identity = compose(
         Kind::AdmissionSummary,
         &[
-            Part::Shape("query-observation-reporting"),
+            Part::Shape(input.subject),
             Part::Shape(input.kind.as_str()),
             Part::Evidence(input.admission),
             Part::Evidence(input.anchor),
@@ -60,6 +60,7 @@ where
     super::super::assemble(
         request,
         source::QueryObservationReportingSource {
+            subject: input.subject,
             observation: input.observation,
             admit,
         },

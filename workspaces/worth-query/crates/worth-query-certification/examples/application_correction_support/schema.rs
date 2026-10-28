@@ -33,7 +33,6 @@ worth_query_application_contribution! {
                 .principal_binding(ActorBinding::reference())
                 .application_query(query::definition())
                 .application_query(super::calculation_query::definition())
-                .application_query_binding::<super::calculation_query::Binding>()
                 .operation(other_edit::EditOther::reference().definition().no_external_effect().no_aftermath().finish())
                 .operation_projection_work_budget(other_edit::EditOther::reference(), 8)
                 .operation_read_field(other_edit::EditOther::reference(), Key::reference())

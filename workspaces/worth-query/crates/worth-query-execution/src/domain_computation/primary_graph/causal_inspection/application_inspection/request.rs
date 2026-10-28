@@ -1,5 +1,11 @@
 //! A fresh ordinary request retains the original funding through every outcome.
 mod action;
+mod funding;
+mod source;
+pub use source::{
+    WorthQueryPerformedSourceInspectionRequest, WorthQuerySourceInspectionRequest,
+    WorthQuerySourceReferenceOnlyInspectionRequest,
+};
 mod changed;
 pub use changed::{
     WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,
@@ -11,9 +17,7 @@ use super::{
     stop::{InspectionCause, WorthQueryApplicationInspectionDenial},
     WorthQueryObservedApplicationInspection,
 };
-use crate::domain_computation::primary_graph::{
-    application_contribution::WorthQueryAdvancementDenial, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use std::marker::PhantomData;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation, ExecutionRequest};
 use worth_query_admission::facade::authenticated_principal::{
@@ -124,24 +128,6 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
         &self,
         body: impl FnOnce(&ExecutionRequest<'_, '_>) -> Result<T, InspectionCause>,
     ) -> Result<T, InspectionCause> {
-        let mut completed = None;
-        let handoff = self.runtime.with_funded_application_advancement(
-            self.request,
-            self.allocation_policy,
-            |phase| {
-                completed = Some(
-                    match phase.checked_execution_request_for(&self.runtime.product_runtime) {
-                        Ok(execution) => body(&execution),
-                        Err(cause) => Err(InspectionCause::Advancement(cause)),
-                    },
-                );
-            },
-        );
-        match (handoff, completed) {
-            (Ok(()), Some(result)) => result,
-            (Err(WorthQueryAdvancementDenial::NestedStopped), Some(Err(cause))) => Err(cause),
-            (Err(cause), _) => Err(InspectionCause::Advancement(cause)),
-            (Ok(()), None) => unreachable!("successful original advancement invokes inspection"),
-        }
+        funding::open(self.runtime, self.request, self.allocation_policy, body)
     }
 }

@@ -92,6 +92,7 @@ impl<Schema: ApplicationSchema, Source: ApplicationMutationBinding<Schema>>
             },
         )?;
         Ok(OriginalSourceInspectionDisclosure::captured(
+            self.runtime.installed_schema().binding_identity(),
             self.association,
             Arc::clone(self.scope),
             disclosure,

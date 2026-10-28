@@ -45,7 +45,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                 query,
                 &self.session,
                 &self.target,
-                &self.target.original().source.parameter_binding_identity,
+                &self.target.parameters(),
                 self.principal,
                 self.scope.entity_id(),
             )
@@ -57,7 +57,10 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             .target
             .before()
             .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
-        let after = self.target.original();
+        let after = self
+            .target
+            .original()
+            .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
         run_retained_stage(execution, self.memory, |context, _| {
             let work = u64::try_from(std::mem::size_of::<
                 [worth_foundational::facade::CanonicalDigestId; 2],
@@ -89,6 +92,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         let connection = source
             .map(|source| {
                 super::super::connection::connect(
+                    self.runtime,
                     execution,
                     &self.target,
                     source,

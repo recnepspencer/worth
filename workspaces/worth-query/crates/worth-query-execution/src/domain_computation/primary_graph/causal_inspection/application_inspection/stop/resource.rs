@@ -10,6 +10,7 @@ use crate::domain_computation::{
 };
 use worth_execution::{LeaseDenial, MapKernelFailure, MapKernelStop, MemoryLimitDenial, ScopeStop};
 use worth_foundational::facade::{CanonicalBasisPreparationStop, CanonicalDigestAdmissionStop};
+use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop;
 
 /// A borrowed original stop; reading it creates no replacement work or authority.
@@ -17,6 +18,7 @@ use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop;
 pub enum WorthQueryApplicationInspectionResourceRefusal<'a> {
     Request(&'a WorkCeilingDenial),
     Kernel(&'a MapKernelStop),
+    Native(&'a RelationalExecutionDenialCause),
     Lease(&'a LeaseDenial),
     Memory(&'a MemoryLimitDenial),
     Allocation(&'a std::collections::TryReserveError),
@@ -66,7 +68,7 @@ fn admission(cause: &InspectionAdmissionDenial) -> Option<Refusal<'_>> {
         Cause::Read(WorthQueryManagedGraphReadDenial::RequestStop(cause))
         | Cause::Terminal(WorthQueryInspectionReadTerminalDenial::Read(
             WorthQueryManagedGraphReadDenial::RequestStop(cause),
-        )) => Some(Refusal::Kernel(cause)),
+        )) => Some(Refusal::Native(cause)),
         Cause::Terminal(WorthQueryInspectionReadTerminalDenial::Request(cause)) => {
             Some(Refusal::Request(cause))
         }

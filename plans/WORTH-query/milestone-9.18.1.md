@@ -1523,12 +1523,78 @@ calling an unchanged output suppression.
 
 The existing grouped application graph target contains the ordinary arithmetic
 journey plus equal-rewrite, foreign-source, plain-head and fresh-revocation
-controls. Runtime/docs, final source review and normal tools remain required.
-General source-only inspection, absent-field joins, optional rich materialization,
-real equivalent-output suppression, expiry and broader hostile/lifetime evidence
-remain open. Those obligations govern a concrete successor slice; this bounded
+controls. The coordinate retry passes all six selected cases: three causal
+application cases and three Execution field-copy/custody/supplier/reuse cases.
+The genuine positive performs Primary5-to-11, one producer contact and query
+`(11, 23)`, then checks the actual source/producer commits and declared output
+role. With 25 unaffected prior passes, the selected runtime union is 31/31;
+316 unchanged prior doctest passes carry without rerun. The earlier
+`SourceInputUnconnected` receipt remains preserved. Final evidence review
+remains required. The separate source-only path below addresses selection without
+paired queries.
+Independent source/query connection, absent-field joins, optional rich materialization,
+real equivalent-output suppression, evidence expiry and broader hostile/lifetime
+evidence remain open. Those obligations govern a concrete successor slice; this bounded
 connection is not Phase9 closure. Phases12/15 remain transferred to 9.19, and this
 candidate imports no unfinished provider or Phase16 ancestry.
+
+**Source-only reviewed slice, 2026-10-28; focused runtime passed.** Ordinary Host requests now
+have `inspect_source::<DeclaredSourceDisclosure>(&receipt).why_performed()` and
+reference-only execution. The original installed `ApplicationSourceDisclosureBinding`
+supplies its actual source, scope and captured parameters. Its own current READ
+and metadata are admitted through the same Inspection session/terminal; no query
+result, paired comparison or projected authored field substitutes for that admission.
+The Query-owned Bridge report names the actual canonical source only and retains
+no receipt, Native reader, parent fact body or new business input. Governed source
+metadata is independent of business payload and other query metadata. The existing
+numeric court adds a Calculated-only disclosure query, foreign/mismatched source,
+metadata, current-principal revocation, request cancellation/expiry and actual
+funded report release cases. All four focused source-only cases pass. They use
+the existing source-completion program; a fixed-output action cannot use immediate
+source-only execution. The connected court's retained governed query uses the
+existing selected Host admission/execution owners, with genuine current capability
+access and the original retained observation. No approval or source revision is
+synthesized. Their Source is reviewer037-cleared; the final runtime/evidence packet still requires review.
+
+The coordinate-qualified field repair follows the earlier failed candidate. The
+receiving owner is `schema_layout/field_coordinate.rs`, beside the existing
+installed graph layout and Native contract catalog. It resolves the genuine
+Planned handler and Authoritative source descriptors separately into borrowed
+installed field/contract coordinates; no descriptor is relabelled and locator
+equality is unchanged. Resolution is diagnostic, bounded by installed fields,
+and allocates no replacement lookup keys or retained registry. The connection
+still requires the actual handler read, full-GEN entity, exact source-created
+Native revision, original observed revision, diagnostic projection and canonical
+writes; output-role matching also resolves its actual installed field.
+
+The existing genuine producer/custody unit fixture now inspects original retained
+handler/source descriptors, source Native revisions, producer commit version and
+query revisions, with distinct-field and hostile-authority controls. It authors
+no replacement facts or revisions. The extended test passes in both existing read
+modes, with genuine Planned handler and Authoritative source descriptors, actual
+source-created revisions preceding the producer and the original query revision.
+The unchanged positive connected journey now passes completely. The guaranteed
+whole-locator mismatch was Source evidence; its position among the earlier
+failed `require_input` predicates remains unobserved. Capture-before-normalization,
+original funding, severed-parent and no-Native-pin custody remain unchanged.
+
+The application artifact was acquired from index `f87a0bf679b70f15400a8f1a084a9ab96fe64086`.
+The Execution unit acquisition first ended101 because the private fixture used
+`unwrap()` on a non-Debug `CaptureStop`; matching both original typed stop causes
+and panicking preserves the assertion. Execution retry index
+`4e3812da9f5123cbcbd47e262280d24147ad5684` passed its three cases. No production
+Source changed after reviewer037. Both acquisitions used Rust1.99.1, the isolated
+`C:/worth-build-cache/targets/9181-phase9` target, six Cargo jobs and 64MiB stack;
+actual source/Fresh=false/executable hashes and exact lists were verified.
+Guidance/context regeneration and boundary/context checks passed with independently
+built, hashed tools; generation produced no content change. Every failed receipt
+is retained. The small fixture join and evidence wording require final persistent
+review before commit; this is not phase acceptance.
+
+This does not widen the first connection's same-binding/present-field semantics.
+Independent source-plus-query connection, absent shapes, actual suppression, rich
+materialization, optional evidence expiry and whole-Phase9 qualification remain open.
+Request expiry is distinct from expiry of strongly retained immutable evidence.
 
 ### Requirements
 

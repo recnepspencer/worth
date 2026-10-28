@@ -4,6 +4,7 @@ use installation::{Application, OwnerSchema, ANCHOR};
 use primary_graph::application_output_demand::OriginalSettledProducerSource;
 use std::{sync::Arc, time::Duration};
 use worth_query_decl::facade::application_query::ApplicationQueryParameterSet;
+mod field_coordinates;
 
 #[test]
 fn real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_read_custody() {
@@ -194,6 +195,22 @@ fn observe(
             );
             assert!(conditional.as_ref().unwrap().same_observation(native));
             assert!(seed.correspondence().native_witness_roles().len() > 0);
+            primary_graph::admitted_capture::run_retained_stage(
+                &execution,
+                &mut None,
+                |context, _| {
+                    field_coordinates::inspect(context, runtime, source);
+                    Ok::<_, worth_execution::MapKernelFailure<()>>(())
+                },
+            )
+            .unwrap_or_else(|cause| match cause {
+                primary_graph::admitted_capture::CaptureStop::Request(cause) => {
+                    panic!("genuine field inspection request stopped: {cause:?}")
+                }
+                primary_graph::admitted_capture::CaptureStop::Kernel(cause) => {
+                    panic!("genuine field inspection kernel stopped: {cause:?}")
+                }
+            });
             assert!(std::ptr::eq(
                 seed,
                 result.observed_sources()[0]

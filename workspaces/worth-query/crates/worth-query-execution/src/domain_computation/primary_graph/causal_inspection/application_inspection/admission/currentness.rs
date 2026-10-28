@@ -27,7 +27,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                 || !governance.inspection_matches(
                     &self.session,
                     &self.target,
-                    &self.target.original().source.parameter_binding_identity,
+                    &self.target.parameters(),
                     self.principal,
                     self.scope.entity_id(),
                 )

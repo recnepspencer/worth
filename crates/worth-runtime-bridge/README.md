@@ -255,3 +255,17 @@ Advanced integration:
 - [`MERGE_AND_STRUCTURAL_COMPARISON.md`](./MERGE_AND_STRUCTURAL_COMPARISON.md)
 - [`CAUSAL_BUNDLES_AND_GUARANTEES.md`](./CAUSAL_BUNDLES_AND_GUARANTEES.md)
 - [`HOST_ADAPTERS.md`](./HOST_ADAPTERS.md)
+
+### Query-owned performed-source reporting
+
+`BridgeQueryObservationReportingRequest::from_performed_source` extends the
+existing descriptive, funded reporting strategy for a Query-owned observation
+of a canonical source operation. Its performed-source shape differs from the
+completed-query-result shape, even for otherwise equal reporting associations.
+`QueryObservation` identifies the Query evidence owner/family; this source form
+does not claim that a SELECT query ran. Neither form admits READ, metadata,
+DiagnosticMask or rich Native materialization. Query's actual fresh Inspection
+session and consuming terminal retain those responsibilities. The common Bridge
+assembler reports no Native binding, evaluation or invalidation for a source-only
+reference. The performed-source reporting case and three affected Bridge controls
+pass. This does not qualify connected producer assembly or rich Native materialization.

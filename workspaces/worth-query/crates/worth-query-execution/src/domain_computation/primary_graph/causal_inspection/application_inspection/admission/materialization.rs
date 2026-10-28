@@ -18,7 +18,11 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             execution,
             &self.target,
             &self.session,
-            super::super::identity::InspectionOriginalReference::After,
+            if self.target.source().is_some() {
+                InspectionOriginalReference::Source
+            } else {
+                InspectionOriginalReference::After
+            },
             self.memory,
         )
         .map_err(InspectionAdmissionDenial::Report)?;

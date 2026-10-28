@@ -1,14 +1,14 @@
 //! The existing grant graph admits one current diagnostic classification.
 use super::*;
-pub(super) fn definition() -> ApplicationCapabilityContract<NumericSchema, Inspect, Operation, Input>
-{
+pub(super) fn definition(
+) -> ApplicationCapabilityContract<NumericSchema, Inspect, InspectCausalEvidence, Input> {
     let allow = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(GrantGrantor::reference())
         .forward(GrantResource::reference())
         .allow(Number::reference());
     ApplicationCapabilityContractBuilder::new(
         Inspect::reference(),
-        Operation::reference(),
+        InspectCausalEvidence::reference(),
         Grant::reference(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(

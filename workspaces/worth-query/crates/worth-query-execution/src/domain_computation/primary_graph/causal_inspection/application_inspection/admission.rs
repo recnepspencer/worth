@@ -1,6 +1,8 @@
 //! Original READ and metadata are admitted before any protected target traversal.
 mod plan;
 pub(super) use plan::InspectionPlanDenial;
+mod subject;
+pub(super) use subject::InspectionSubject;
 mod preparation;
 pub(super) use preparation::prepare;
 mod affinity;

@@ -11,7 +11,9 @@ pub(super) fn validate(
 > {
     use WorthQueryProducerConnectionDenial as Denial;
     checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
-    let original = target.original();
+    let original = target
+        .original()
+        .ok_or(MapKernelFailure::Domain(Denial::ForeignSource))?;
     let WorthQueryApplicationBasisSelectionIdentity::Product(read) = &original.source.selection
     else {
         return Err(MapKernelFailure::Domain(Denial::ForeignSource));

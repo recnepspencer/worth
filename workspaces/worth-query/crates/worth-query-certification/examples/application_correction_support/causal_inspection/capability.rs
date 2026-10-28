@@ -13,8 +13,8 @@ worth_query_capability!(pub Inspect in NumericSchema);
 pub struct Input;
 worth_query_portable_type!(Input => "numeric-correction.inspect-input.v1");
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "numeric-correction.inspect-input.v1" });
-worth_query_operation!(pub Operation for NumericSchema, input InputBinding);
-worth_query_operation_reads!(Operation => [Key]);
+worth_query_operation!(pub InspectCausalEvidence for NumericSchema, input InputBinding);
+worth_query_operation_reads!(InspectCausalEvidence => [Key]);
 impl ApplicationCapabilityRequest<NumericSchema, Inspect> for Input {
     type Scope = Number;
     type Context = AdoptContext;
@@ -42,14 +42,14 @@ pub fn declare(
     schema
         .field(Grant::reference(), Disclosure::reference())
         .operation(
-            Operation::reference()
+            InspectCausalEvidence::reference()
                 .definition()
                 .no_external_effect()
                 .no_aftermath()
                 .finish(),
         )
-        .operation_projection_work_budget(Operation::reference(), 512)
-        .operation_read_field(Operation::reference(), Key::reference())
+        .operation_projection_work_budget(InspectCausalEvidence::reference(), 512)
+        .operation_read_field(InspectCausalEvidence::reference(), Key::reference())
         .capability(contract::definition())
 }
 pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>) {

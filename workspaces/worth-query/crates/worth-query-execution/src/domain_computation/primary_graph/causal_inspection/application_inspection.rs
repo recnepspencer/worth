@@ -1,6 +1,7 @@
 //! Fresh application inspection owns admission, original target and its terminal.
 mod admission;
 mod connection;
+mod source_original;
 pub use connection::{WorthQueryApplicationProducerConnection, WorthQueryProducerConnectionDenial};
 mod identity;
 mod report;
@@ -10,10 +11,12 @@ mod stop;
 pub use request::{
     WorthQueryApplicationInspectionRequest, WorthQueryChangedInspectionRequest,
     WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryObservedInspectionRequest,
-    WorthQueryReferenceOnlyInspectionRequest,
+    WorthQueryPerformedSourceInspectionRequest, WorthQueryReferenceOnlyInspectionRequest,
+    WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
 };
 pub use result::{
     WorthQueryComparedApplicationInspection, WorthQueryObservedApplicationInspection,
+    WorthQueryPerformedSourceInspection,
 };
 pub use stop::{
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,

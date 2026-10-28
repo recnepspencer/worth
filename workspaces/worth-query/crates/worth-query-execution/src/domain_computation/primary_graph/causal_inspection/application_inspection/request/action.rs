@@ -185,7 +185,7 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                             principal,
                             scope,
                             self.request,
-                            self.original,
+                            super::super::admission::InspectionSubject::Query(self.original),
                             pending,
                             comparison,
                             storage,
