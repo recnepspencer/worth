@@ -271,7 +271,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             relation: relation.name().to_string(),
             from: from.name().to_string(),
             to: to.name().to_string(),
-            integrity: relation.integrity(),
+            integrity: relation.integrity().into(),
         });
         self
     }

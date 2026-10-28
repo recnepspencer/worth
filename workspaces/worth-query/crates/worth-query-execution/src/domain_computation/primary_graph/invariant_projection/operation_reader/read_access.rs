@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "read_access/walk.rs"]
+mod walk;
+
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
 where

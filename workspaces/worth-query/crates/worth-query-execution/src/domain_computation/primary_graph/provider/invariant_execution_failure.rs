@@ -93,6 +93,12 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
             };
             return map_invariant_failure(fields, detail);
         }
+        Error::Publication { error, .. } => {
+            return match error.into_invariant_violation() {
+                Some(violation) => map_invariant_failure(violation.fields, violation.detail),
+                None => owner_failure(),
+            };
+        }
         Error::PublicationDeferred { deferred, .. } => match deferred {
             Deferred::CompanionRegistrationPending
             | Deferred::CompanionRebindRequired
@@ -133,7 +139,6 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
             WorthQueryInvariantExecutionDenialKind::ProposalIdentityExhausted
         }
         Error::Preparation { .. }
-        | Error::Publication { .. }
         | Error::PublicationDenied { .. }
         // Candidate validation stops before publication.
         | Error::DurabilityUnresolved { .. } => return owner_failure(),
@@ -168,6 +173,9 @@ fn map_invariant_failure(
     fields: worth_relational::facade::transactions::InvariantViolationFields,
     detail: String,
 ) -> WorthQueryInvariantExecutionFailure {
+    if crate::domain_computation::WorthQueryRelationLawDenial::from_fields(&fields).is_some() {
+        return WorthQueryInvariantExecutionFailure::relation_law_denied(fields, detail);
+    }
     map_custom_invariant_failure(fields, detail.clone()).unwrap_or_else(|| {
         WorthQueryInvariantExecutionFailure::new(
             WorthQueryInvariantExecutionDenialKind::ProviderRejected,
@@ -184,8 +192,8 @@ fn map_custom_invariant_failure(
     use worth_relational::facade::transactions::InvariantViolationFields;
 
     let denial = match fields {
-        InvariantViolationFields::CustomInvariantViolation { identity } => {
-            WorthQueryCustomInvariantDenial::Violation { identity }
+        InvariantViolationFields::CustomInvariantViolation { identity, refusal } => {
+            WorthQueryCustomInvariantDenial::Violation { identity, refusal }
         }
         InvariantViolationFields::CustomInvariantFailure {
             identity,

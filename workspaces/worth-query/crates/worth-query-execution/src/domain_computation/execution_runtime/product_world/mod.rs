@@ -27,11 +27,13 @@ pub use branch_close::{WorthQueryProductBranchCloseDenial, WorthQueryProductBran
 pub use clock::WorthQueryProductWorldClock;
 pub use creation::WorthQueryProductBranchCreationDenial;
 pub use installation_denial::WorthQueryProductRuntimeInstallationDenial;
-pub(crate) use owner_cleanup::WorthQueryRetiredProductOccurrence;
 pub use owner_cleanup::{
     WorthQueryProductBranchOwnerCleanup, WorthQueryProductBranchOwnerCleanupDenial,
     WorthQueryProductBranchOwnerCleanupFailure, WorthQueryProductBranchOwnerCleanupReceipt,
     WorthQueryProductBranchOwnerCleanupWork,
+};
+pub(crate) use owner_cleanup::{
+    WorthQueryReleasedHistoryFollower, WorthQueryRetiredProductOccurrence,
 };
 pub(crate) use publication_binding::WorthQueryProductPublicationBinding;
 pub(crate) use receipt::{

@@ -44,7 +44,7 @@ pub(super) fn project<Schema, Operation, Input, Scope, Output>(
         reader,
         source_query: source_access.source_query,
         source_context_use: source_access.source_context_use,
-        admitted_contracts: Some(admission.allowed_graph_contract()),
+        admitted_contracts: Some(admission.retain_graph_contract()),
         runtime_authority: authority.runtime_authority,
         binding_identity: &authority.binding_identity,
         admission_identity: Some(admission.admission_identity()),

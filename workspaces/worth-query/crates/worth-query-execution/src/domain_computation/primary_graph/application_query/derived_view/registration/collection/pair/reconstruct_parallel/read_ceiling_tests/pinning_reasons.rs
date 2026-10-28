@@ -246,6 +246,12 @@ fn missing_door_index(live: bool, predicate_missing: bool) {
                     Ok(_) => panic!("uninstalled index was read"),
                 }
             });
+            if predicate_missing {
+                // A scoped predicate reads its one root's guard field, not an
+                // equality index, so the page reads without that index.
+                assert_eq!(actual, None, "the scoped predicate needs no index");
+                return;
+            }
             assert_eq!(
                 actual,
                 if predicate_missing {

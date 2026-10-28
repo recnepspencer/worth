@@ -263,7 +263,7 @@ where
             .map_err(|denial| {
                 WorthQueryConditionalRuntimeInstallationDenial::new(
                     WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
-                        denial.kind(),
+                        Box::new(denial.kind()),
                     ),
                     format!("{:?}: {}", denial.kind(), denial.detail()),
                 )

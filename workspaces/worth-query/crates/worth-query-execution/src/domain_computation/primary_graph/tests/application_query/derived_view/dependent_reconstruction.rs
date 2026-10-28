@@ -124,7 +124,6 @@ fn journey(case: Case) {
         let cancellation = CancellationSource::new();
         let second_calls = Cell::new(0);
         let projections = Cell::new(0);
-        let read_work = Cell::new(0);
         let run = |failure: bool| {
             let issue_batch = || world.application.application_query_batch_from_installed_reads(&[
                 world.application.plan_installed_query_batch_reads(&entry_query, 2, std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()
@@ -158,7 +157,6 @@ fn journey(case: Case) {
                         &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
                     ).unwrap();
                     let result = read.execute(plan)?;
-                    read_work.set(result.receipt().work().total_work_units());
                     assert_eq!(result.rows()[0].label(), "unrelated");
                     if failure && case == Case::RepeatedRead {
                         let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
@@ -183,7 +181,10 @@ fn journey(case: Case) {
                         let mut retained = selected.retain_selection(&issued).unwrap();
                         selected.admit_retained_application_query_from_selection(
                             &phase, &mut retained, &entry_query, &access,
-                            ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).unwrap(), local_scope), &foreign_batch,
+                            ApplicationQueryParameterSet::new(),
+                            // The batch slot was planned at the installed result contract.
+                            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), local_scope),
+                            &foreign_batch,
                         ).unwrap()
                     } else {
 
@@ -192,8 +193,7 @@ fn journey(case: Case) {
                     ).unwrap()
                     };
                     if failure && case == Case::Cancelled { cancellation.cancel(); }
-                    let result = read.execute(plan)?;
-                    read_work.set(read_work.get() + result.receipt().work().total_work_units());
+                    read.execute(plan)?;
                     Ok(())
                 },
                 |row| row.label().to_owned(),
@@ -233,7 +233,6 @@ fn journey(case: Case) {
             if failure && matches!(case, Case::Deadline | Case::Memory | Case::Work) {
                 assert_eq!(second_calls.get(), second_before);
             }
-
             result
         };
         let keys = run(false).unwrap();

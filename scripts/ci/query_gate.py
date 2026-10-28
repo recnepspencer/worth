@@ -41,6 +41,7 @@ import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from check_trybuild_test_group import session_tests
 from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment
@@ -128,6 +129,24 @@ PROCESS_WIDE_PROBES = (
     # key also used by other document-retention scenarios.
     "producer_predicate_checkpoint::ordinary_source::terminal_unavailable::",
 )
+
+# Tests that open a trybuild session. trybuild builds every crate's cases in
+# one shared project under target/tests/trybuild, and its cross-process lock
+# does not hold on Windows: two chunks running sessions at once overwrite each
+# other's generated manifest, so a should-fail case builds from another case's
+# source and passes. They run in the serial lane, as nextest's trybuild-project
+# group runs them; check_trybuild_test_group.py owns which tests those are.
+TRYBUILD_SESSIONS = session_tests()[0]
+
+# Binaries whose every case gets its own process, as nextest gives it. Topology
+# cases touch process-global providers, counters or ledgers. Execution's unit
+# cases construct the process-unique ExecutionAuthority, several with their own
+# configuration ("runs in its own process"), so two in one process race to
+# AlreadyConstructed and poison the shared test lock.
+PROCESS_PER_CASE = {
+    ("fixture", "worth-query-topology-entry"),
+    ("execution", "worth-execution"),
+}
 
 FIXTURE_CPU_EXCLUSIVE = (
     "checkpoint_recovery::parallel_history::matrix::table::required_wave_full_declared_matrix"
@@ -218,6 +237,15 @@ COMMAND_SUITES = {
     ],
 }
 
+# Environment one command adds over the gate's own.
+COMMAND_ENV = {
+    # sccache 0.18.0 inserts `/WX-` between cc 1.9.0's `-Tp` and its file, so
+    # cl reads it as the source and libmimalloc-sys (via apps/platform-pulse)
+    # fails to build. The empty wrapper also overrides `rustc-wrapper = sccache` in
+    # ~/.cargo/config.toml; every other command keeps sccache.
+    "check-ui-workspace": {"RUSTC_WRAPPER": ""},
+}
+
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "query-execution", "query-rest",
          "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
@@ -234,7 +262,8 @@ class Gate:
         started = time.time()
         with open(log, "w", encoding="utf-8", errors="replace") as sink:
             code = subprocess.run(
-                argv, cwd=ROOT, env=self.env, stdout=sink, stderr=subprocess.STDOUT
+                argv, cwd=ROOT, env=dict(self.env, **COMMAND_ENV.get(label, {})),
+                stdout=sink, stderr=subprocess.STDOUT,
             ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
         if code != 0:
@@ -309,14 +338,15 @@ class Gate:
                            if line.endswith(": test"))
             listing.append((binary["package"], binary["target"], len(names)))
             total += len(names)
-            if suite == "fixture" and binary["package"] == "worth-query-topology-entry":
-                # Every case can touch process-global providers, counters or ledgers.
+            if (suite, binary["package"]) in PROCESS_PER_CASE:
                 shared += [(binary, [name], ()) for name in names
                            if name != FIXTURE_CPU_EXCLUSIVE]
                 if FIXTURE_CPU_EXCLUSIVE in names:
                     exclusive.append((binary, [FIXTURE_CPU_EXCLUSIVE], ()))
                 continue
-            probes = [n for n in names if any(mark in n for mark in PROCESS_WIDE_PROBES)]
+            probes = [n for n in names
+                      if any(mark in n for mark in PROCESS_WIDE_PROBES)
+                      or n.rsplit("::", 1)[-1] in TRYBUILD_SESSIONS]
             rest = [n for n in names if n not in set(probes)]
             shared += [(binary, rest[at:at + size], ()) for at in range(0, len(rest), size)]
             if probes:

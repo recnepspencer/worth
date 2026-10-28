@@ -47,6 +47,7 @@ use support::{authenticate, install, length};
 
 mod observation_scope;
 mod output_availability;
+mod provider_contact_custody;
 use observation_scope::checkpoint_recovery_test_guard;
 
 worth_query_application! {
@@ -127,7 +128,8 @@ mod checkpoint_reopens_ready_output_without_producer_contact_and_rec;
 #[test]
 fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
@@ -142,7 +144,7 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
         .expect("installed host call opens");
     drop(application);
 
-    let restored = install(Some(checkpoint));
+    let restored = support::observed::install(Some(checkpoint), &provider_observation);
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     drop(settle(&request, &restored));
@@ -166,16 +168,17 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
         )
         .expect("the unrelated edit settles");
 
-    super::producer::reset_provider_contacts();
+    provider_observation.reset();
     let redemanded = settle(&request, &restored);
     assert_eq!(redemanded.work().producer_contact_count(), 0);
-    assert_eq!(super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
 }
 
 #[test]
 fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
@@ -190,7 +193,7 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
         .expect("installed host call opens");
     drop(application);
 
-    let restored = install(Some(checkpoint));
+    let restored = support::observed::install(Some(checkpoint), &provider_observation);
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     let unrelated = request
@@ -213,16 +216,17 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
         )
         .expect("the unrelated edit settles before adoption");
 
-    super::producer::reset_provider_contacts();
+    provider_observation.reset();
     let first_demand = settle(&request, &restored);
     assert_eq!(first_demand.work().producer_contact_count(), 0);
-    assert_eq!(super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
 }
 
 #[test]
 fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle_for(&request, &application, "anchor-a"));
@@ -238,8 +242,8 @@ fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
         .expect("installed host call opens");
     drop(application);
 
-    super::producer::reset_provider_contacts();
-    let restored = install(Some(checkpoint));
+    provider_observation.reset();
+    let restored = support::observed::install(Some(checkpoint), &provider_observation);
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     let first = settle_for(&request, &restored, "anchor-a");
@@ -247,7 +251,7 @@ fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
     drop(first);
     let sibling = settle_for(&request, &restored, "anchor-b");
     assert_eq!(sibling.work().producer_contact_count(), 0);
-    assert_eq!(super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
 }
 
 fn settle<'application, 'principal, 'scope>(

@@ -53,10 +53,13 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
             );
         });
     assert_eq!(opened, Ok(()));
-    assert!(matches!(
-        outcome.unwrap(),
-        WorthQueryApplicationCommitOutcome::Cancelled
-    ));
+    // The decision read set already identified the original request's first
+    // stop; the commit door reports that control outcome, not a producer denial.
+    let outcome = outcome.unwrap();
+    assert!(
+        matches!(outcome, WorthQueryApplicationCommitOutcome::Cancelled),
+        "the read must stop before publication as the request's cancellation: {outcome:?}"
+    );
     assert_eq!(
         world
             .application

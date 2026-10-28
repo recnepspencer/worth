@@ -57,6 +57,9 @@ pub fn resolve_second_rule(
 }
 
 impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRetentionV1Rule {
+    type Refusal = ();
+    type RefusalBinding =
+        worth_query_host::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
     type Scope = TouchedDocuments;
 
     fn supports_checked_preparation(&self) -> bool {
@@ -79,7 +82,10 @@ impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRet
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         Some(evaluate_retention(
             context,
@@ -105,11 +111,13 @@ impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRet
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, DocumentRetentionSchema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         for retention_days in proposed_retentions(context, &self.retention_days, scope)? {
             if !matches!(retention_days, Some(value) if value <= V1_CEILING) {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
@@ -117,6 +125,9 @@ impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRet
 }
 
 impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRetentionV2Rule {
+    type Refusal = ();
+    type RefusalBinding =
+        worth_query_host::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
     type Scope = TouchedDocuments;
 
     fn supports_checked_preparation(&self) -> bool {
@@ -139,7 +150,10 @@ impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRet
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         Some(evaluate_retention(
             context,
@@ -165,11 +179,13 @@ impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRet
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, DocumentRetentionSchema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         for retention_days in proposed_retentions(context, &self.retention_days, scope)? {
             if !matches!(retention_days, Some(value) if (V2_FLOOR..=V2_CEILING).contains(&value)) {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
@@ -250,7 +266,8 @@ fn evaluate_retention(
     scope: &TouchedDocuments,
     budget: &dyn CustomInvariantLeaseBudget,
     admits: impl Fn(u64) -> bool,
-) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError> {
+) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantExecutionError>
+{
     if !budget.checkpoint(0) {
         return Err(WorthQueryApplicationInvariantExecutionError::new(
             "caller stopped",
@@ -269,7 +286,7 @@ fn evaluate_retention(
                 WorthQueryApplicationInvariantExecutionError::new(error.to_string())
             })?;
         if !value.is_some_and(&admits) {
-            return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+            return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
         }
     }
     Ok(WorthQueryApplicationInvariantVerdict::Pass)

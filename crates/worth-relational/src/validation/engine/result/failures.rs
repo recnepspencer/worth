@@ -13,6 +13,11 @@ pub struct InvariantFailure {
 }
 
 impl InvariantFailure {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        (self.violation.detail.capacity() as u64)
+            .saturating_add(self.violation.fields.owned_allocation_capacity_bytes())
+    }
+
     pub(crate) fn new(
         execution_point: crate::validation::data::InvariantExecutionPoint,
         effect: InvariantFailureEffect,
@@ -58,6 +63,6 @@ impl InvariantFailure {
     }
 
     pub fn into_publication_error(self, stage: PublicationStage) -> PublicationError {
-        PublicationError::new(stage, self.violation.detail)
+        PublicationError::from_invariant_violation(stage, self.violation)
     }
 }

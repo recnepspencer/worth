@@ -75,6 +75,17 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
             self.performance.count_relation_uniqueness_candidates(1);
             let source_deleted = self.deleted_entities.contains(&source);
             let target_deleted = self.deleted_entities.contains(&target);
+            if source_deleted
+                || target_deleted
+                || self.revalidated_entities.as_ref().is_some_and(|entities| {
+                    entities.contains(&source) || entities.contains(&target)
+                })
+            {
+                scope.record_affected_pair(
+                    &EntityReference::Existing(source),
+                    &EntityReference::Existing(target),
+                );
+            }
             if source_deleted {
                 scope.deleted_entities.insert(source);
             }
@@ -114,11 +125,7 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
             return Ok(());
         }
         for partition_id in self.state_view.state().partition_ids() {
-            let slot_count = self
-                .state_view
-                .relation_slot_scan_count(partition_id)
-                .unwrap_or_default();
-            for slot in 0..slot_count {
+            for slot in self.state_view.relation_slots(partition_id) {
                 self.check_live()?;
                 let Some(metadata) = self
                     .state_view

@@ -35,7 +35,6 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph.layout();
     let handle = graph.integration_handle();
-    let _owner = &handle.source_owner.invalidation_owner;
     let correspondence = mixed_correspondence(request_execution, live, retired);
     let foreign = installed_authorization_world(true);
     let foreign_selected = foreign
@@ -46,7 +45,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            let execution = &host_custody.borrowed_request_for_test();
+            let request_execution = &host_custody.borrowed_request_for_test();
             handle.with_runtime_mut(request_execution, |runtime| {
                 let before = snapshot(runtime);
                 let prepare = || {
@@ -89,9 +88,10 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     "matching entity and revisions cannot erase a retirement posture"
                 );
                 changed.roles[1].posture = WorthQueryApplicationOutputPosture::Retire;
-                let metadata = retirement::native_metadata(runtime, &committed, retired, execution)
-                    .unwrap()
-                    .unwrap();
+                let metadata =
+                    retirement::native_metadata(runtime, &committed, retired, request_execution)
+                        .unwrap()
+                        .unwrap();
                 assert_ne!(metadata.created_at, metadata.deleted_at);
                 changed.roles[1].retirement.as_mut().unwrap().created_at = metadata.deleted_at;
                 assert!(
@@ -101,25 +101,27 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 assert_eq!(metadata.deleted_at, committed.version_id());
                 assert!(runtime
                     .read_truth()
-                    .read_exact_snapshot_live_entity_kind(execution, &committed, retired)
+                    .read_exact_snapshot_live_entity_kind(request_execution, &committed, retired)
                     .unwrap()
                     .is_none());
                 assert_eq!(
                     runtime
                         .read_truth()
-                        .read_exact_snapshot_live_entity_kind(execution, &committed, live)
+                        .read_exact_snapshot_live_entity_kind(request_execution, &committed, live)
                         .unwrap(),
                     Some(metadata.kind)
                 );
                 assert!(witness
-                    .unchanged_in(runtime, &committed, execution)
+                    .unchanged_in(runtime, &committed, request_execution)
                     .unwrap());
-                assert!(!witness.unchanged_in(runtime, &before, execution).unwrap());
+                assert!(!witness
+                    .unchanged_in(runtime, &before, request_execution)
+                    .unwrap());
                 assert!(!witness
                     .unchanged_in(
                         runtime,
                         foreign_selected.application_basis().snapshot_handle(),
-                        execution
+                        request_execution
                     )
                     .unwrap());
 
@@ -200,7 +202,8 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 change_label(request_execution, runtime, live, label.clone());
                 let later = snapshot(runtime);
                 assert_eq!(
-                    retirement::native_metadata(runtime, &later, retired, execution).unwrap(),
+                    retirement::native_metadata(runtime, &later, retired, request_execution)
+                        .unwrap(),
                     Some(metadata),
                     "original tuple persists at later observations"
                 );
@@ -209,7 +212,9 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     "later version cannot issue an old retirement anew"
                 );
                 assert!(
-                    !witness.unchanged_in(runtime, &later, execution).unwrap(),
+                    !witness
+                        .unchanged_in(runtime, &later, request_execution)
+                        .unwrap(),
                     "live aspects still invalidate the mixed proof"
                 );
                 publish(
@@ -227,18 +232,22 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 );
                 let aba = snapshot(runtime);
                 assert!(
-                    !witness.unchanged_in(runtime, &aba, execution).unwrap(),
+                    !witness
+                        .unchanged_in(runtime, &aba, request_execution)
+                        .unwrap(),
                     "same-value ABA keeps its changed revision"
                 );
                 assert!(
                     witness
-                        .unchanged_in(runtime, &committed, execution)
+                        .unchanged_in(runtime, &committed, request_execution)
                         .unwrap(),
                     "the original held native observation remains exact after ABA"
                 );
                 runtime.snapshots().release_snapshot(&aba).unwrap();
                 assert!(
-                    !witness.unchanged_in(runtime, &aba, execution).unwrap(),
+                    !witness
+                        .unchanged_in(runtime, &aba, request_execution)
+                        .unwrap(),
                     "released basis cannot authorize a witness"
                 );
                 for snapshot in [&before, &committed, &later] {
@@ -250,7 +259,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
 }
 
 fn mixed_correspondence(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     live: EntityId,
     retired: EntityId,
 ) -> WorthQueryApplicationOutputCorrespondence {
@@ -275,13 +284,13 @@ fn mixed_correspondence(
         })
         .collect::<Vec<_>>(),
         |_| Some(TypeId::of::<()>()),
-        execution,
+        request_execution,
     )
     .unwrap()
 }
 
 fn publish(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     batch: WorkerIntentBatch,
 ) {
@@ -298,11 +307,11 @@ fn publish(
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction)
+        .prepare_branch_transaction(request_execution, transaction)
         .unwrap();
     let RelationalPublicationOutcome::Performed(performed) = runtime
         .publication_port()
-        .compare_and_publish(execution, candidate)
+        .compare_and_publish(request_execution, candidate)
     else {
         panic!("actual native mutation performs")
     };

@@ -19,9 +19,6 @@ use worth_relational::facade::transactions::RelationSpec;
 
 #[test]
 fn native_reverification_clears_only_the_verified_live_image() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_authorization_world(true);
     let selected = world
         .application
@@ -86,6 +83,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
+            let request_execution = &host_custody.borrowed_request_for_test();
             handle.with_runtime_mut(request_execution, |runtime| {
                 write_field(request_execution, runtime, account, label.clone(), "prime");
                 let (basis_handle, basis) = snapshot(runtime);

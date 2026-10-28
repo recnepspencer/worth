@@ -29,6 +29,19 @@ use super::schema::{
 
 pub struct TemporalContributionConfiguration {
     pub clock_source: ClockSource,
+    /// The lifecycle a completed re-entry writes. `TemporalIntegrity` admits
+    /// only `active` and `completed`, so any other value is refused at the
+    /// commit boundary with the rule's typed refusal.
+    pub completed_lifecycle: String,
+}
+
+impl TemporalContributionConfiguration {
+    pub fn new(clock_source: ClockSource) -> Self {
+        Self {
+            clock_source,
+            completed_lifecycle: "completed".to_owned(),
+        }
+    }
 }
 
 pub struct InstalledTemporalConditional {
@@ -111,7 +124,7 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
             IntentRevisionField::reference(),
             IntentLifecycleField::reference(),
             "active".to_owned(),
-            "completed".to_owned(),
+            configuration.completed_lifecycle,
             primary_graph::WorthQueryPublicTemporalOperationAuthorization,
         )
         .expect("the temporal invocation is installed");

@@ -22,7 +22,6 @@ impl Model {
             | Kind::BlindWrite
             | Kind::Evict
             | Kind::Unretained
-            | Kind::ObservationOverBudget
             | Kind::Several => {
                 let value = rng.value();
                 self.entries[entry].as_mut().unwrap().value = value;
@@ -124,23 +123,6 @@ impl Model {
                 let other = held[(held.binary_search(&entry).unwrap() + 1) % held.len()];
                 self.entries.swap(entry, other);
                 vec![Change::Entry(EntryEdit::swap(number(entry), number(other)))]
-            }
-            Kind::Ceiling => {
-                let heavy = self.held(false).into_iter();
-                let heavy = heavy.filter(|&e| self.entries[e].unwrap().work == self.heavy);
-                let taken = heavy.map(|e| self.entries[e].unwrap().region);
-                let taken = taken.collect::<BTreeSet<_>>();
-                let free = (0..REGIONS)
-                    .filter(|r| !taken.contains(r))
-                    .collect::<Vec<_>>();
-                let region = if free.is_empty() { 0 } else { rng.pick(&free) };
-                let made = rng.pick(&self.free());
-                self.ceiling = Some(made);
-                vec![self.created(made, region, rng.value(), self.heavy)]
-            }
-            Kind::Relief => {
-                let made = self.ceiling.take().expect("a relief follows its ceiling");
-                vec![self.deleted(made)]
             }
         };
         Step { changes, own_write }

@@ -170,7 +170,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .admit_exact_conditional_signal_basis(&lowering_anchor, truth.signal_basis())
             .map_err(|denial| {
                 super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(denial.kind()),
+                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(denial.kind())),
                     format!("{:?}: {}", denial.kind(), denial.detail()),
                 )
             })?;

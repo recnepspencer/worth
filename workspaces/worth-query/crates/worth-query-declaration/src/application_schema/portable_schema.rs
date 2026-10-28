@@ -162,6 +162,7 @@ pub fn validate_portable_application_schema_freshly_with_work(
     .map_err(map_work_denial)?;
     validate_schema_header(&record.owner, &record.name)?;
     validate_member_identifiers(&record.members)?;
+    super::relation_integrity::validate_relation_integrity(&record.members)?;
     validate_portable_application_queries(&record.members)?;
     super::member_identity_uniqueness::validate_member_identity_uniqueness(&record.members)?;
     validate_operation_contract_cardinality(&record.members)?;

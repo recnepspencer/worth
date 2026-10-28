@@ -21,7 +21,8 @@ mod operation_outcome;
 #[cfg(feature = "recovery-runtime-owner")]
 mod resident_read;
 mod root_qualification;
-// The build script is the only caller of the compiler-cache observation half;
-// these unit tests load the module for its qualification predicates.
+// Included to run the build script's own unit tests; the entry points only
+// the build script calls are unused in this target.
+#[allow(dead_code)]
 #[path = "../../../build_support/storage_profile.rs"]
 mod storage_profile;

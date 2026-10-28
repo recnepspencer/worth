@@ -23,3 +23,6 @@
 //! ```
 
 pub mod facade;
+
+#[cfg(test)]
+mod canonical_refusal_tests;

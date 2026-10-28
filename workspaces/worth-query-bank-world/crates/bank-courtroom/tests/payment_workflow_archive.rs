@@ -28,11 +28,8 @@ fn approved_payment_wait_round_trips_through_v7_and_binds_to_live_bank_vocabular
     let bytes =
         encode_workflow_definition_draft(&original, WorthQueryPackageArchiveLimits::DEFAULT)
             .expect("the payment definition fits the archive budget");
-    assert_eq!(
-        &bytes[..6],
-        b"WQWD\0\x07",
-        "a wait without captured-input edges writes v7"
-    );
+    // The wait has no captured operation inputs, so it keeps the v7 layout.
+    assert_eq!(&bytes[..6], b"WQWD\0\x07", "the authored wait writes v7");
 
     let rebuilt = decode_workflow_definition_draft(&bytes, WorthQueryPackageArchiveLimits::DEFAULT)
         .expect("the bounded v7 draft decodes")

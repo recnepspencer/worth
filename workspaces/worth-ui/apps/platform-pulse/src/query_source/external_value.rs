@@ -22,7 +22,7 @@ pub(crate) enum PlatformPulseExternalValueEvent {
 pub(crate) struct PlatformPulseExternalValueWatch {
     receiver: mpsc::Receiver<PlatformPulseExternalValueEvent>,
     stop: Arc<AtomicBool>,
-    worker: Option<JoinHandle<Result<(), PlatformPulseExternalValueWatchDenial>>>,
+    worker: Option<JoinHandle<()>>,
     readiness: Arc<Mutex<Option<worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal>>>,
 }
 
@@ -71,15 +71,32 @@ impl PlatformPulseExternalValueWatch {
         if !metadata.is_dir() {
             return Err(PlatformPulseExternalValueWatchDenial::RootNotDirectory);
         }
-        let root = root.to_owned();
+        let target = root.join(VALUE_FILE);
+        // The watch is registered before the initial read, so a successor
+        // written after that read always reaches the worker. The initial read
+        // runs here rather than on the worker: the value present at launch is
+        // queued before the application starts, so the host presents it on its
+        // own startup turns instead of whenever the worker is next scheduled.
+        let registered = register_watch(root)?;
+        let (sender, receiver) = mpsc::channel();
+        let mut admitted_revision = None;
+        publish_exact_target(&target, &mut admitted_revision, &sender, settlement_pause);
         let stop = Arc::new(AtomicBool::new(false));
         let worker_stop = Arc::clone(&stop);
         let readiness = Arc::new(Mutex::new(None));
         let worker_readiness = Arc::clone(&readiness);
-        let (sender, receiver) = mpsc::channel();
         let worker = thread::Builder::new()
             .name("worth-ui-platform-pulse-query-source".to_owned())
-            .spawn(move || run_watch(root, worker_stop, sender, worker_readiness))
+            .spawn(move || {
+                run_watch(
+                    target,
+                    registered,
+                    admitted_revision,
+                    worker_stop,
+                    sender,
+                    worker_readiness,
+                )
+            })
             .map_err(|error| PlatformPulseExternalValueWatchDenial::Watcher(error.to_string()))?;
         Ok(Self {
             receiver,
@@ -109,18 +126,11 @@ impl PlatformPulseExternalValueWatch {
     {
         self.stop.store(true, Ordering::Release);
         match self.worker.take().map(JoinHandle::join) {
-            Some(Ok(result)) => {
-                result?;
-                Ok(PlatformPulseExternalValueWatchShutdownReceipt {
-                    worker_joined: true,
-                    pending_event_count: self.receiver.try_iter().count(),
-                })
-            }
-            Some(Err(_)) => Err(PlatformPulseExternalValueWatchDenial::WorkerPanicked),
-            None => Ok(PlatformPulseExternalValueWatchShutdownReceipt {
+            Some(Ok(())) | None => Ok(PlatformPulseExternalValueWatchShutdownReceipt {
                 worker_joined: true,
                 pending_event_count: self.receiver.try_iter().count(),
             }),
+            Some(Err(_)) => Err(PlatformPulseExternalValueWatchDenial::WorkerPanicked),
         }
     }
 }
@@ -135,14 +145,17 @@ impl PlatformPulseExternalValueWatchShutdownReceipt {
     }
 }
 
-fn run_watch(
-    root: PathBuf,
-    stop: Arc<AtomicBool>,
-    sender: mpsc::Sender<PlatformPulseExternalValueEvent>,
-    readiness: Arc<Mutex<Option<worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal>>>,
-) -> Result<(), PlatformPulseExternalValueWatchDenial> {
-    let target = root.join(VALUE_FILE);
-    let (notification_sender, notification_receiver) = mpsc::channel();
+/// A live watch on the value file's root and the notifications it has queued
+/// since registration.
+struct RegisteredValueWatch {
+    _watcher: notify::RecommendedWatcher,
+    notifications: mpsc::Receiver<notify::Result<notify::Event>>,
+}
+
+fn register_watch(
+    root: &Path,
+) -> Result<RegisteredValueWatch, PlatformPulseExternalValueWatchDenial> {
+    let (notification_sender, notifications) = mpsc::channel();
     let mut watcher = notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
         if bears_on_watched_file(&event, VALUE_FILE) {
             let _ = notification_sender.send(event);
@@ -150,11 +163,23 @@ fn run_watch(
     })
     .map_err(|error| PlatformPulseExternalValueWatchDenial::Watcher(error.to_string()))?;
     watcher
-        .watch(&root, notify::RecursiveMode::NonRecursive)
+        .watch(root, notify::RecursiveMode::NonRecursive)
         .map_err(|error| PlatformPulseExternalValueWatchDenial::Watcher(error.to_string()))?;
-    let mut admitted_revision = None;
-    publish_exact_target(&target, &mut admitted_revision, &sender, settlement_pause);
-    signal_readiness(&readiness);
+    Ok(RegisteredValueWatch {
+        _watcher: watcher,
+        notifications,
+    })
+}
+
+fn run_watch(
+    target: PathBuf,
+    registered: RegisteredValueWatch,
+    mut admitted_revision: Option<u64>,
+    stop: Arc<AtomicBool>,
+    sender: mpsc::Sender<PlatformPulseExternalValueEvent>,
+    readiness: Arc<Mutex<Option<worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal>>>,
+) {
+    let notification_receiver = &registered.notifications;
     while !stop.load(Ordering::Acquire) {
         match notification_receiver.recv_timeout(WORKER_SETTLE_INTERVAL) {
             Ok(Ok(_)) => {
@@ -165,13 +190,12 @@ fn run_watch(
                 let denial = PlatformPulseExternalValueWatchDenial::Watcher(error.to_string());
                 let _ = sender.send(PlatformPulseExternalValueEvent::Failed(denial));
                 signal_readiness(&readiness);
-                return Ok(());
+                return;
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {}
-            Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(()),
+            Err(mpsc::RecvTimeoutError::Disconnected) => return,
         }
     }
-    Ok(())
 }
 
 fn signal_readiness(

@@ -272,6 +272,8 @@ impl CustomInvariantRule for SelectionRule {
         _context: &CustomInvariantExecutionContext<'_>,
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
-        Ok(CustomInvariantVerdict::Violation)
+        Ok(CustomInvariantVerdict::Violation(
+            crate::validation::data::CustomInvariantRefusal::Empty,
+        ))
     }
 }

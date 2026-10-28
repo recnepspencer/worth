@@ -54,7 +54,11 @@ pub(super) fn relations<Stop>(
                     }
                 },
                 relation.depth,
-                vec![WorthQueryGraphReadTraversalOperator::DirectEdge],
+                vec![if relation.complete_closure {
+                    WorthQueryGraphReadTraversalOperator::CompleteClosure
+                } else {
+                    WorthQueryGraphReadTraversalOperator::DirectEdge
+                }],
             ),
         );
     }

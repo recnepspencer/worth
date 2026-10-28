@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 mod aspect_state;
 pub(crate) mod slot_resolution;
+mod slot_traversal;
 mod structural_adjacency;
 
 #[derive(Clone)]
@@ -177,20 +178,6 @@ impl<'state> InvariantStateView<'state> {
             .is_some()
     }
 
-    pub(crate) fn entity_slot_scan_count(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-    ) -> Option<usize> {
-        let visible_partition = self.state.get_current_partition(partition_id)?;
-        let staged_slots = visible_partition.entity_arena().slot_count();
-        let base_slots = self
-            .state
-            .base_current_partition(partition_id)
-            .map(|partition| partition.entity_arena().slot_count())
-            .unwrap_or(0);
-        Some(staged_slots.max(base_slots))
-    }
-
     pub(crate) fn entity_metadata_at(
         &self,
         arena: &RelationalRecordHeadArenaView<'state, EntityRecordKind>,
@@ -267,20 +254,6 @@ impl<'state> InvariantStateView<'state> {
             source: metadata.endpoints.source,
             target: metadata.endpoints.target,
         })
-    }
-
-    pub(crate) fn relation_slot_scan_count(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-    ) -> Option<usize> {
-        let visible_partition = self.state.get_current_partition(partition_id)?;
-        let staged_slots = visible_partition.relation_arena().slot_count();
-        let base_slots = self
-            .state
-            .base_current_partition(partition_id)
-            .map(|partition| partition.relation_arena().slot_count())
-            .unwrap_or(0);
-        Some(staged_slots.max(base_slots))
     }
 
     pub(crate) fn relation_metadata_for_slot(

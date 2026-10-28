@@ -40,7 +40,7 @@ fn graph_index_inventory_digest_is_stable_for_the_same_runtime_assembly() {
     assert_eq!(first_report.digest(), default_report.digest());
     assert_eq!(
         first_report.rows().len(),
-        WorthQueryGraphReadAccessRequirementKind::all().len()
+        WorthQueryGraphReadAccessRequirementKind::all().len() + 2
     );
     for requirement_kind in WorthQueryGraphReadAccessRequirementKind::all() {
         assert!(

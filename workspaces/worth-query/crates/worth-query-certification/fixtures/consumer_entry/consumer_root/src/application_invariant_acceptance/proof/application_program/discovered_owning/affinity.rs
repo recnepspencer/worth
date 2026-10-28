@@ -9,10 +9,12 @@ use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_delivery_preserves_history(
 ) {
     let original = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let successor =
         ApplicationProgramAuthoring::<ConsumerSchema, Program<NoProjectionDelivery>>::begin()
+            .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
             .validated_program()
             .unwrap();
     let roster=worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new().support(successor);

@@ -131,7 +131,6 @@ impl BankCommitPreparationDenial {
                 Some(BankApplicationAttemptDenialKind::StorageUnavailable)
             }
             Self::Application { kind, .. } => Some(*kind),
-            Self::InvalidProposalShape | Self::AccountingRevisionOverflow => None,
         }
     }
     pub const fn storage_unavailable(&self) -> Option<&RelationalStorageUnavailable> {

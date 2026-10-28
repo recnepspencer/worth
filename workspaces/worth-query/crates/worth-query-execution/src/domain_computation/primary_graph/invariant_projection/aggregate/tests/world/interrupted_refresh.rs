@@ -70,7 +70,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                 .unwrap();
                 let refresh_runtime = std::sync::Mutex::new(&mut *runtime);
                 let refreshed = std::sync::atomic::AtomicBool::new(false);
-                let (outcome, _report) = healthy
+                let (outcome, report) = healthy
                     .run(ExecutionWorkCeiling::new(Some(0)), |lease| {
                         map.run(
                             lease,
@@ -108,7 +108,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                     }
                 ));
                 assert!(refreshed.load(std::sync::atomic::Ordering::SeqCst));
-
+                assert_eq!(report.charged_work(), 0);
                 runtime.snapshots().release_snapshot(&before).unwrap();
                 crate::relational_snapshot_release::release_query_snapshot(
                     runtime,

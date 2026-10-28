@@ -1,5 +1,8 @@
 pub(super) mod cleanup_custody;
+mod diagnostic_copy;
+mod invariant_refusal;
 mod kind;
+mod producer_value;
 mod publication_stale;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
 pub(in crate::domain_computation::primary_graph) use publication_stale::ProducerPublicationStale;
@@ -17,7 +20,7 @@ pub struct WorthQueryOutputDemandDenial {
     evidence: Option<Box<DemandDenialEvidence>>,
     cleanup: Option<cleanup_custody::DemandCleanupCustody>,
     pub(super) subject: std::borrow::Cow<'static, str>,
-    pub(super) domain_reason: Option<&'static str>,
+    domain: Option<Box<producer_value::ProducerDomainDenial>>,
     pub(in crate::domain_computation::primary_graph) readmission_failure: Option<&'static str>,
     pub(in crate::domain_computation::primary_graph) recovery_posture:
         WorthQueryOutputDemandRecoveryPosture,
@@ -25,6 +28,10 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
+    producer_requirement: Option<
+        crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    >,
     publication_stale: Option<ProducerPublicationStale>,
     publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     producer_admission_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
@@ -271,8 +278,8 @@ impl WorthQueryOutputDemandDenial {
 
     /// Domain-owned diagnostic words, when the rejected producer supplies them.
     /// These words do not replace the typed denial kind or confer authority.
-    pub const fn domain_reason(&self) -> Option<&'static str> {
-        self.domain_reason
+    pub fn domain_reason(&self) -> Option<&'static str> {
+        self.domain.as_ref().and_then(|domain| domain.reason)
     }
 
     /// Why an exact failed native read could not join retained required work.
@@ -294,7 +301,7 @@ impl WorthQueryOutputDemandDenial {
             kind: Box::new(kind),
             evidence: None,
             cleanup: None,
-            domain_reason: None,
+            domain: None,
             readmission_failure: None,
             subject: subject.into(),
             recovery_posture,
@@ -304,12 +311,16 @@ impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn producer_domain_denied(
         subject: impl Into<std::borrow::Cow<'static, str>>,
         reason: Option<&'static str>,
+        value: super::super::WorthQueryProducerDenialValue,
     ) -> Self {
         let mut denial = Self::new(
             WorthQueryOutputDemandDenialKind::ProducerDomainDenied,
             subject,
         );
-        denial.domain_reason = reason;
+        denial.domain = Some(Box::new(producer_value::ProducerDomainDenial {
+            reason,
+            value,
+        }));
         denial
     }
 
@@ -350,32 +361,6 @@ impl WorthQueryOutputDemandDenial {
     }
 }
 
-// Cloning is diagnostic only. The original refusal remains the unique owner.
-impl Clone for WorthQueryOutputDemandDenial {
-    fn clone(&self) -> Self {
-        Self {
-            kind: self.kind.clone(),
-            evidence: self.evidence.clone(),
-            cleanup: None,
-            subject: self.subject.clone(),
-            domain_reason: self.domain_reason,
-            readmission_failure: self.readmission_failure,
-            recovery_posture: self.recovery_posture,
-        }
-    }
-}
-impl PartialEq for WorthQueryOutputDemandDenial {
-    fn eq(&self, other: &Self) -> bool {
-        self.kind == other.kind
-            && self.evidence == other.evidence
-            && self.subject == other.subject
-            && self.domain_reason == other.domain_reason
-            && self.readmission_failure == other.readmission_failure
-            && self.recovery_posture == other.recovery_posture
-    }
-}
-impl Eq for WorthQueryOutputDemandDenial {}
-
 impl worth_execution::ChargedBytes for WorthQueryOutputDemandDenial {
     fn additional_charged_bytes(&self) -> u64 {
         use WorthQueryOutputDemandDenialKind as Kind;
@@ -395,6 +380,8 @@ impl worth_execution::ChargedBytes for WorthQueryOutputDemandDenial {
             std::borrow::Cow::Borrowed(_) => 0,
             std::borrow::Cow::Owned(text) => text.capacity() as u64,
         };
-        (std::mem::size_of_val(self.kind.as_ref()) as u64).saturating_add(text)
+        (std::mem::size_of_val(self.kind.as_ref()) as u64)
+            .saturating_add(text)
+            .saturating_add(self.producer_denial_value_charged_bytes())
     }
 }

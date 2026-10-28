@@ -45,11 +45,17 @@ fn journey(
     steps: Option<std::num::NonZeroUsize>,
 ) {
     let _guard = checkpoint_recovery_test_guard();
+    let provider_observation = crate::producer::ProviderContacts::default();
     take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application =
-        support::install_program_with_seed::<program::ChainProgram>(None, profile, 4096, seed);
+    let application = support::observed::install_program_with_seed::<program::ChainProgram>(
+        None,
+        profile,
+        4096,
+        seed,
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request
@@ -76,7 +82,7 @@ fn journey(
     if both_changed {
         change_root!(request, application, "diamond-right", 55, 0x9176_3592_u64);
     }
-    crate::producer::reset_provider_contacts();
+    provider_observation.reset();
     if close_dependencies {
         drop((left, right));
     }
@@ -88,7 +94,7 @@ fn journey(
         ));
         assert!(take_decisions("diamond-join").is_empty());
         assert_eq!(output_lengths!(request, ["diamond-left"]), [6]);
-        crate::producer::reset_provider_contacts();
+        provider_observation.reset();
         // A distinct authentic caller delivers the already performed child.
         // The initial consumer's temporary claim must survive its Pending.
         let mut delivered = request
@@ -96,7 +102,7 @@ fn journey(
             .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
             .unwrap();
         settle!(delivered, request);
-        assert_eq!(crate::producer::provider_contacts(), 0);
+        assert_eq!(provider_observation.count(), 0);
         drop(delivered);
     }
     if cancel_decision {
@@ -115,7 +121,7 @@ fn journey(
         );
         assert_eq!(take_decisions("diamond-join"), [[6, 51]]);
         assert_eq!(output_lengths!(request, ["diamond-left"]), [6]);
-        crate::producer::reset_provider_contacts();
+        provider_observation.reset();
     }
     let first = join.settle(&request).unwrap();
     let initial = match (steps, first) {
@@ -148,12 +154,12 @@ fn journey(
     );
     if cancel_decision {
         assert_eq!(
-            crate::producer::provider_contacts(),
+            provider_observation.count(),
             0,
             "the completed child is reused after cancellation"
         );
     } else if !delay_child {
-        assert!(crate::producer::provider_contacts() > 0);
+        assert!(provider_observation.count() > 0);
     }
     let repeated = settle!(join, request);
     assert_eq!(

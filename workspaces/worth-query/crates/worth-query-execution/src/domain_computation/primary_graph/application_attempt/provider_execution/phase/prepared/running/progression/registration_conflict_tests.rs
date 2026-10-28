@@ -54,6 +54,7 @@ fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_p
             let (victim, peer) = equivalent_programs(
                 &host_custody.phase_for_application(&world.application),
                 &world,
+                &live_scope(),
                 "occupied-registration",
             );
             let victim = start(phase, &world, victim, idempotency(181, 182));
@@ -311,23 +312,18 @@ fn start(
 fn equivalent_programs(
     phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     replacement: &str,
 ) -> (RetainedProgram, RetainedProgram) {
-    let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
-    let account = resolved_account(
-        &(phase_custody).test_host_request(),
-        world,
-        "open",
-        &request,
-    );
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
     (
         retained_status_program(
             &(phase_custody).test_host_request(),
             world,
             &principal,
             &account,
-            &request,
+            request,
             replacement,
             RetentionMutationBreadth::Narrow,
         ),
@@ -336,7 +332,7 @@ fn equivalent_programs(
             world,
             &principal,
             &account,
-            &request,
+            request,
             replacement,
             RetentionMutationBreadth::Narrow,
         ),

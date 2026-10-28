@@ -30,16 +30,9 @@ pub(crate) fn prepare_checked_invariant_packets<'state>(
     work_budget: Option<&RequestWorkBudget>,
     retained_plan_bytes: u64,
 ) -> Result<CheckedPacketPlan<'state>, PacketExecutionStop> {
-    let memory = lease.policy().charged_memory_bytes().map_or(
-        crate::execution::PacketMemory::Tracked,
-        |limit| {
-            let ceiling = limit / (planned.packets.len().max(1) as u64).saturating_mul(8);
-            crate::execution::PacketMemory::Declared {
-                scratch: ceiling,
-                result: ceiling,
-            }
-        },
-    );
+    // Each packet charges the lease what it actually holds; the lease's own
+    // memory policy is the bound, not a per-packet share of it.
+    let memory = crate::execution::PacketMemory::Tracked;
     let preparation_bytes =
         crate::execution::packet_preparation_bytes::<
             crate::authority::commit::preparation::InvariantWorkPacket<'_>,

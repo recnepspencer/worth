@@ -62,7 +62,9 @@ impl<'lease, K: RecordKind> RelationalRecordHeadArenaView<'lease, K> {
         self.arena.live_bitset.count_ones()
     }
 
-    pub(crate) fn occupied_slots_iter(&self) -> impl Iterator<Item = usize> + 'lease {
+    pub(crate) fn occupied_slots_iter(
+        &self,
+    ) -> impl Iterator<Item = usize> + 'lease + use<'lease, K> {
         self.arena.occupied_slots_iter()
     }
 

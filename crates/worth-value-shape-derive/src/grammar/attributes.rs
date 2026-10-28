@@ -54,3 +54,21 @@ impl Attributes {
         })
     }
 }
+/// Select the same canonical implementation through an audience facade.
+pub(super) fn facade_path(attributes: &[syn::Attribute]) -> syn::Result<syn::Path> {
+    let mut facade = None;
+    for attribute in attributes
+        .iter()
+        .filter(|attr| attr.path().is_ident("worth_value"))
+    {
+        attribute.parse_nested_meta(|meta| {
+            if !meta.path.is_ident("crate") || facade.is_some() {
+                return Err(meta.error("WorthValue containers accept one `crate = \"facade::path\"`; delegates belong on named fields"));
+            }
+            let literal: syn::LitStr = meta.value()?.parse()?;
+            facade = Some(literal.parse::<syn::Path>()?);
+            Ok(())
+        })?;
+    }
+    Ok(facade.unwrap_or_else(|| syn::parse_quote!(::worth_foundational::facade)))
+}

@@ -39,5 +39,7 @@ pub enum PlanarOperation {
     VerifyFinalCurrentOutputs(Vec<PlanarCurrentOutputExpectation>),
 }
 
+mod denial;
 mod outcome;
-pub use outcome::{PlanarAdjustmentResult, PlanarMutationDenial};
+pub use denial::PlanarMutationDenial;
+pub use outcome::PlanarAdjustmentResult;

@@ -87,7 +87,9 @@ impl CustomInvariantRule for StrictnessRule {
         }) {
             Ok(CustomInvariantVerdict::Pass)
         } else {
-            Ok(CustomInvariantVerdict::Violation)
+            Ok(CustomInvariantVerdict::Violation(
+                crate::validation::data::CustomInvariantRefusal::Empty,
+            ))
         }
     }
 }

@@ -26,6 +26,7 @@ pub(super) fn require_encoding_contract(
         ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
             | ApplicationSchemaMember::OperationBody { .. }
+            | ApplicationSchemaMember::Relation { integrity: worth_query_declaration::facade::application_schema::ApplicationRelationIntegrityRecord { reaches_at_least: Some(_), .. }, .. }
     ) && maximum_depth < 2
     {
         return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
@@ -92,7 +93,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
-        tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input),
+        tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input, budget),
         tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
         tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30 | 35) => {
             operation::decode(tag, input, budget)
@@ -120,7 +121,7 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::Field { .. } => 3,
         ApplicationSchemaMember::Relation { integrity, .. }
             if *integrity
-                != worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling() =>
+                != worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into() =>
         {
             26
         }

@@ -141,6 +141,10 @@ Query makes no island claim. Deferred:
 Bring it back when a Query declaration needs connectivity-shaped partitions,
 such as islands of a topology.
 
+Planned: [milestone-9.18.1.md](WORTH-query/milestone-9.18.1.md), Phase 5. It
+also gives islands a persistent identity with lineage, so this entry is removed
+when Phase 5 ships.
+
 ## Worth Store
 
 The [Database Foundation Roadmap](database-foundation/roadmap.md) governs the

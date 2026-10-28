@@ -24,6 +24,7 @@ macro_rules! producer {
             const REUSE_POLICY: &'static str = "exact-source";
         }
         impl WorthQueryApplicationProducerProvider<CheckpointSchema, $producer> for Provider {
+            type DenialValue = WorthQueryUndeclaredProducerDenial;
             const SEMANTIC_IDENTITY: &'static str = concat!("checked-collection-provider-", $id);
             fn operation_input(&self, source: &PlanarReadResult) -> RegionOutputInput {
                 RegionOutputInput {

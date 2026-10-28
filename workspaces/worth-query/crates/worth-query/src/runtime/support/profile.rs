@@ -12,8 +12,8 @@ use super::{
     WorthQueryRuntimeFamilySupport, WorthQueryRuntimeFamilySupportStatus,
     WorthQueryRuntimeInspectionEvidence, WorthQueryRuntimeSupportDenial,
 };
+use crate::runtime::WorthQueryGraphIndexSupportRow;
 use crate::runtime::{WorthQueryAuthorityLane, WorthQueryEffectPolicy};
-use crate::runtime::{WorthQueryGraphIndexSupportRow, WorthQueryGraphReadAccessRequirementKind};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRuntimeSupportProfile {
@@ -376,11 +376,7 @@ impl WorthQueryRuntimeSupportProfile {
 }
 
 pub(super) fn default_graph_index_support_rows() -> Vec<WorthQueryGraphIndexSupportRow> {
-    WorthQueryGraphReadAccessRequirementKind::all()
-        .iter()
-        .cloned()
-        .map(WorthQueryGraphIndexSupportRow::for_requirement_kind)
-        .collect()
+    crate::runtime::WorthQueryGraphIndexInventory::current_runtime_support_rows()
 }
 
 fn _keep_types_visible(

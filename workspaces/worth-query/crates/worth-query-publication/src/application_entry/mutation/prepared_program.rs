@@ -14,7 +14,6 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::{
     commit_binding::WorthQueryMutationCommitBinding,
     preparation::{CandidatePreparation, PreparedCandidate},
-    selected_program::map_selected_program_owner_denial,
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
@@ -111,7 +110,7 @@ where
         let runtime = self.application.runtime();
         let work = self.candidate.decision_work;
         runtime
-            .with_application_advancement(&scope, |phase| {
+            .with_funded_application_advancement(&scope, allocation_policy, |phase| {
                 self.commit_report_in_advancement(&phase, allocation_policy)
             })
             .unwrap_or_else(|cause| {

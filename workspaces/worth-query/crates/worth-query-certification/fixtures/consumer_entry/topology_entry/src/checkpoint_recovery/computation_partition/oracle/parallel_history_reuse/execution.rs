@@ -16,8 +16,10 @@ impl Default for HistoryConfiguration {
                 setup_calls: Default::default(),
                 invariant_calls: Default::default(),
                 invariant_probe: Default::default(),
+                invariant_read_observer: None,
                 producer_authorization_denials: Default::default(),
                 producer_domain_denial: Default::default(),
+                producer_contacts: None,
             },
             code: Default::default(),
             reuse: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(REUSE_ON.get())),
@@ -170,10 +172,11 @@ fn install_configured(
     const RETAINED_COMMITS: u64 = 32;
     let invalidation = support::invalidation();
     let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation);
+    let declaration = CheckpointSchema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<CheckpointSchema, HistoryProgram>::begin()
+        .with_schema(&declaration)
         .validated_program()
         .unwrap();
-    let declaration = CheckpointSchema::declaration().unwrap();
     application_installation::in_memory_program(
         program, declaration, (configuration,), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits,
         |_phase, graph, installed| {

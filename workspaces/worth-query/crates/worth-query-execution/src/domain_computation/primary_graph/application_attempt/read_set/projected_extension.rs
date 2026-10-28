@@ -57,6 +57,19 @@ impl<Schema, Operation, Input, Scope>
         );
         let mut facts = Vec::new();
         for key in keys.iter() {
+            if let super::super::WorthQueryApplicationFactKey::StructuralWalk(key) = key {
+                let (_, fact) = super::structural_walk::observe(
+                    execution,
+                    &self.admission,
+                    &self.lease,
+                    &scope,
+                    &keys,
+                    key,
+                    None,
+                )?;
+                facts.push(fact);
+                continue;
+            }
             let (_installed_position, fact) =
                 super::projected_completion::observe_projection_dependency(
                     execution,

@@ -1,5 +1,6 @@
 //! Certification of the application graph: what a branch's own program means
 //! for the rules it actually enforces.
+#![recursion_limit = "256"]
 
 #[path = "application_graph/document_retention_model/host/world_resources.rs"]
 #[allow(
@@ -40,8 +41,14 @@ mod fork_decision_reads;
 mod history_retirement;
 #[path = "application_graph/mutation_binding_guard.rs"]
 mod mutation_binding_guard;
+#[path = "application_graph/native_staging_allocation.rs"]
+mod native_staging_allocation;
 #[path = "application_graph/producer_predicate_checkpoint.rs"]
 mod producer_predicate_checkpoint;
+#[path = "application_graph/recorded_replay_ordering.rs"]
+mod recorded_replay_ordering;
+#[path = "application_graph/relation_laws.rs"]
+mod relation_laws;
 #[path = "application_graph/restored_primary_backend.rs"]
 mod restored_primary_backend;
 #[path = "application_graph/restored_replay.rs"]
@@ -113,9 +120,6 @@ mod workflow_vocabulary;
 
 #[path = "application_graph/source_bound_replay.rs"]
 mod source_bound_replay;
-
-#[path = "application_graph/native_staging_allocation.rs"]
-mod native_staging_allocation;
 
 #[path = "support/process_deadline.rs"]
 mod process_deadline;

@@ -1,3 +1,5 @@
+pub use worth_foundational::facade::RelationDirection;
+
 mod application_capability_authoring;
 mod application_correction_authoring;
 mod application_mutation_authoring;
@@ -52,6 +54,7 @@ mod query_member_closure;
 mod read_authoring;
 mod references;
 mod relation_integrity;
+pub(crate) use relation_integrity::ApplicationRelationLawMeaning;
 mod schema_identity;
 mod schema_member;
 mod shape;
@@ -225,6 +228,8 @@ pub use references::{
 pub use relation_integrity::{
     ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
     ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
+    ApplicationRelationIntegrityRecord, ApplicationRelationMinimumReachability,
+    ApplicationRelationMinimumReachabilityRecord, ApplicationRelationUniquenessScope,
 };
 pub use schema_identity::ApplicationSchemaIdentity;
 pub use schema_member::{
@@ -238,23 +243,28 @@ pub use shape::{
 pub use value_binding::{
     decode_application_canonical_value, decode_application_canonical_value_with_admission,
     decode_application_document, decode_canonical_value, decode_canonical_value_with_admission,
-    encode_application_document, encode_canonical_value, ApplicationCanonicalValueContract,
-    ApplicationEncodedScalarValue, ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe,
-    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
-    ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
-    ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
-    ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,
-    ApplicationStructuredValueBinding, ApplicationUnitIdentity, ApplicationValueDecodeAvailable,
-    ApplicationValueDecodeDenial, ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable,
-    ApplicationValueEncodeDenial, ApplicationValueIdentityPosture, ApplicationValueIsIdentity,
-    ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
-    ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
-    ApplicationValueValidationDenial, BoolApplicationValueBinding, CanonicalDocumentCodec,
-    CanonicalValue, ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
-    ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
-    I64ApplicationValueBinding, InternedStringApplicationValueBinding,
-    StringApplicationValueBinding, U64ApplicationValueBinding, ValueCodecDenial,
-    ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+    decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
+    encode_application_document, encode_canonical_value, encode_delegated_canonical_value,
+    value_decode_error, ApplicationCanonicalValueContract, ApplicationEncodedScalarValue,
+    ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe, ApplicationFrameIdentity,
+    ApplicationIdentityScalarValueBinding, ApplicationNativeInputAdmissionDenial,
+    ApplicationNativeInputDecodeProfile, ApplicationNativeInputDecodeResources,
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationSignedAggregateValueBinding, ApplicationStructuredValueBinding,
+    ApplicationUnitIdentity, ApplicationValueDecodeAvailable, ApplicationValueDecodeDenial,
+    ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable, ApplicationValueEncodeDenial,
+    ApplicationValueIdentityPosture, ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregatePosture,
+    ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial, ArrayDelegate,
+    BoolApplicationValueBinding, BoxDelegate, CanonicalDocumentCodec, CanonicalValue,
+    CanonicalValueSeed, DelegatedValueSeed, ErasedApplicationSignedAggregateDecode,
+    ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
+    ErasedApplicationValueEncode, ErasedApplicationValueValidation, I64ApplicationValueBinding,
+    InternedStringApplicationValueBinding, OptionalDelegate, PairDelegate, SequenceDelegate,
+    StringApplicationValueBinding, U64ApplicationValueBinding, UsizeDelegate, ValueCodecDenial,
+    ValueDecodeAdmission, ValueDecodeBounds, ValueDelegate, ValueFieldDefinition, ValuePrimitive,
+    ValueSeedDelegate, ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeEdge,
+    ValueTaggedVariantDefinition, ValueVariantDefinition, WorthValue,
 };
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,

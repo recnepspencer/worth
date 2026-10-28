@@ -129,6 +129,7 @@ fn prepare_symbol_round(
             let publication = invariants.enforce_snapshot_publication_for_working_state(
                 &selected,
                 mutation.state(),
+                &mutation.outcome.created_entities,
                 identity.proposed_version_id(),
                 admitted.merged_plan(),
                 Some(&identity),

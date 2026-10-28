@@ -37,7 +37,12 @@ impl ReservedHistorySlots {
     ) {
         let identity = entry.identity().clone();
         let root = matches!(entry.commit().parent(), CompositeCommitParent::Root);
-        lock_index(&state.reachability).install_reserved_slot(&self.reachability);
+        let mut reachability = lock_index(&state.reachability);
+        reachability.install_reserved_slot(&self.reachability);
+        if let CompositeCommitParent::Ordinary(parent) = entry.commit().parent() {
+            reachability.install_forming_child(parent.commit());
+        }
+        drop(reachability);
         self.entry
             .set(entry)
             .expect("one reservation populates one immutable occurrence");

@@ -31,8 +31,18 @@ const INVOICE_WITH_DIAGNOSTIC_WORK: u64 = 116;
 const VALIDATION_POINTS: u64 = 3;
 const FORMER_DIAGNOSTIC_PRICE: u64 = 1;
 const DIAGNOSTIC_PRICE: u64 = 0;
-const COMMIT_WORK: u64 =
-    INVOICE_WITH_DIAGNOSTIC_WORK - VALIDATION_POINTS * (FORMER_DIAGNOSTIC_PRICE - DIAGNOSTIC_PRICE);
+// Empty CommitBoundary and SnapshotPublication stages no longer construct a
+// partition scope: one intent visit, one partition visit and the final slice
+// admission per point. The two real sidecar checks now each charge their final
+// result move separately from summary observation and decision projection.
+const EMPTY_VALIDATION_POINTS: u64 = 2;
+const EMPTY_PARTITION_SCOPE_WORK: u64 = 1 + 1 + 1;
+const SIDECAR_CHECK_RESULTS: u64 = 2;
+const RESULT_MOVE_PRICE: u64 = 1;
+const COMMIT_WORK: u64 = INVOICE_WITH_DIAGNOSTIC_WORK
+    - VALIDATION_POINTS * (FORMER_DIAGNOSTIC_PRICE - DIAGNOSTIC_PRICE)
+    - EMPTY_VALIDATION_POINTS * EMPTY_PARTITION_SCOPE_WORK
+    + SIDECAR_CHECK_RESULTS * RESULT_MOVE_PRICE;
 
 fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommitError>, u64) {
     // All entries receive the same lowered mutation: one entity, two fields,

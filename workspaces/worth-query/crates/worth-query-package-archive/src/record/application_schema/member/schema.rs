@@ -1,8 +1,6 @@
 use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
-    ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
-    ApplicationSchemaMember,
+    ApplicationRelationIntegrity, ApplicationSchemaMember,
 };
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -12,6 +10,8 @@ use crate::denial::{
 };
 
 use super::super::super::{foundational_aspect, foundational_value};
+use crate::record::decode_budget::RecordDecodeAttempt;
+mod relation_integrity;
 
 pub(super) fn require_supported_field_codec(
     member: &ApplicationSchemaMember,
@@ -138,16 +138,17 @@ fn write_relation(
     output.text(relation)?;
     output.text(from)?;
     output.text(to)?;
-    if *integrity == ApplicationRelationIntegrity::same_context_unbounded_retain_dangling() {
+    if integrity == &ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into() {
         Ok(())
     } else {
-        write_relation_integrity(output, *integrity)
+        relation_integrity::write(output, integrity)
     }
 }
 
 pub(super) fn decode(
     tag: u16,
     input: &mut BinaryInput<'_>,
+    budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     Ok(match tag {
         1 => ApplicationSchemaMember::Entity {
@@ -183,9 +184,9 @@ pub(super) fn decode(
             from: input.text()?.to_owned(),
             to: input.text()?.to_owned(),
             integrity: if tag == 26 {
-                decode_relation_integrity(input)?
+                relation_integrity::decode(input, budget)?
             } else {
-                ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
+                ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into()
             },
         },
         5 => ApplicationSchemaMember::PrincipalBinding {
@@ -204,72 +205,6 @@ pub(super) fn decode(
         },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
-}
-
-fn write_relation_integrity(
-    output: &mut dyn BinaryEncodingSink,
-    integrity: ApplicationRelationIntegrity,
-) -> Result<(), Denial> {
-    output.u16(match integrity.endpoints.cross_context_policy {
-        ApplicationRelationCrossContextPolicy::AllowExplicit => 1,
-        ApplicationRelationCrossContextPolicy::SchemaControlled => 2,
-        ApplicationRelationCrossContextPolicy::Forbid => 3,
-    })?;
-    foundational_value::write_bool(output, integrity.endpoints.self_edges_allowed)?;
-    for value in [
-        integrity.cardinality.source_min,
-        integrity.cardinality.source_max,
-        integrity.cardinality.target_min,
-        integrity.cardinality.target_max,
-        integrity.cardinality.pair_min,
-        integrity.cardinality.pair_max,
-    ] {
-        super::super::wire_vocabulary::write_optional(output, value.as_ref(), |output, value| {
-            output.u64(*value)
-        })?;
-    }
-    output.u16(match integrity.deletion {
-        ApplicationRelationDeletionPolicy::RetainDanglingForAudit => 1,
-        ApplicationRelationDeletionPolicy::CascadeDeleteRelations => 2,
-        ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations => 3,
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit => 4,
-        ApplicationRelationDeletionPolicy::RequireRelationRetirement => 5,
-    })
-}
-
-fn decode_relation_integrity(
-    input: &mut BinaryInput<'_>,
-) -> Result<ApplicationRelationIntegrity, Denial> {
-    let cross_context_policy = match input.u16()? {
-        1 => ApplicationRelationCrossContextPolicy::AllowExplicit,
-        2 => ApplicationRelationCrossContextPolicy::SchemaControlled,
-        3 => ApplicationRelationCrossContextPolicy::Forbid,
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
-    let self_edges_allowed = foundational_value::decode_bool(input)?;
-    let mut next_bound =
-        || super::super::wire_vocabulary::decode_optional(input, |input| input.u64());
-    let cardinality = ApplicationRelationCardinality::new(
-        next_bound()?,
-        next_bound()?,
-        next_bound()?,
-        next_bound()?,
-        next_bound()?,
-        next_bound()?,
-    );
-    let deletion = match input.u16()? {
-        1 => ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
-        2 => ApplicationRelationDeletionPolicy::CascadeDeleteRelations,
-        3 => ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations,
-        4 => ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-        5 => ApplicationRelationDeletionPolicy::RequireRelationRetirement,
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
-    Ok(ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(self_edges_allowed, cross_context_policy),
-        cardinality,
-        deletion,
-    ))
 }
 
 pub(super) use super::super::wire_vocabulary::{decode_presence, write_presence};

@@ -256,7 +256,7 @@ fn assert_ceiling_width_invariant(input: &ExecutionMap<u64, u64>, count: u64, ce
             let accounting = left
                 .metrics
                 .accounted_metrics()
-                .expect("a ceilinged lease records reduction accounting");
+                .expect("a serial reduction stop carries accounting");
             assert_eq!(
                 accounting.charged_work + count,
                 ceiling,

@@ -116,7 +116,7 @@ pub(super) fn restore(
         authorities.insert(image.commit_id, schema);
         work.root_images_verified += 1;
     }
-    super::recovered_codec_meaning::check_current_codec_meaning(
+    super::recovered_schema_meaning::check_current_schema_meaning(
         execution,
         checkpoint,
         &super::branch_root_images::RestoredBranchRootImages {

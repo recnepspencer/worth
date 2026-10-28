@@ -1,19 +1,28 @@
 //! History retirement behind a settled application publication.
 
+use std::sync::Arc;
+
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldLifecyclePort};
+use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 
 impl WorthQueryPrimaryGraphProvider {
+    /// The provider reads one product World's history and follows every
+    /// history release that product's branch and recovery cleanups make.
     pub(in crate::domain_computation::primary_graph) fn install_world_history(
-        &self,
-        world: RuntimeWorldLifecyclePort,
+        self: &Arc<Self>,
+        product: &WorthQueryProductRuntime,
     ) {
         assert!(
-            self.world_history.set(world).is_ok(),
+            self.world_history
+                .set(product.owner.lifecycle_port())
+                .is_ok(),
             "one product World owns the provider's history"
         );
+        let follower: std::sync::Weak<Self> = Arc::downgrade(self);
+        product.owner_cleanup.follow_history_releases(follower);
     }
 
     /// World retires every commit behind `settled` that nothing protects,

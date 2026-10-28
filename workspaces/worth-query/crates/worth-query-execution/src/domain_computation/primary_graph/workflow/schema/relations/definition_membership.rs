@@ -68,7 +68,8 @@ pub(in crate::domain_computation::primary_graph::workflow::schema) fn register(
             kinds[5 + offset],
             from,
             to,
-            integrity,
+            &integrity.into(),
+            None,
         )?;
     }
     Ok(registry)

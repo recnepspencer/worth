@@ -46,6 +46,12 @@ worth-relational.opt-level = 0
 worth-signal.opt-level = 0
 worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
+# The topology-entry lib-test binary links the whole primary-graph owner; its
+# line tables pass the 4 GiB PDB limit, so rust-lld cannot link it on Windows.
+# Query builds worth-query-execution without debug info for the same reason.
+# Panic locations stay exact.
+worth-query-execution.debug = false
+worth-query-topology-entry.debug = false
 
 [profile.test]
 opt-level = 0
@@ -66,3 +72,6 @@ worth-relational.opt-level = 0
 worth-signal.opt-level = 0
 worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
+# Topology-entry symbols exceed the PDB limit; see [profile.dev.package].
+worth-query-execution.debug = false
+worth-query-topology-entry.debug = false

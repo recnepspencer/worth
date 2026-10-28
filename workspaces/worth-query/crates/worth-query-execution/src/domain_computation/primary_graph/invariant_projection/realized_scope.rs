@@ -2,6 +2,8 @@ use std::collections::BTreeSet;
 
 use worth_relational::facade::identity::EntityId;
 
+mod retention_extent;
+
 /// Exact entity identities reached while one pinned invariant projection ran.
 ///
 /// This is carried proof, not a caller-authored touch assertion. Only the
@@ -19,6 +21,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRealizedProjec
     carried_memory: Option<
         crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
     >,
+    walk_scope_bytes: u64,
+    // Both physical sets drop before their original retained payment.
+    walk_scope_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl WorthQueryRealizedProjectionScope {

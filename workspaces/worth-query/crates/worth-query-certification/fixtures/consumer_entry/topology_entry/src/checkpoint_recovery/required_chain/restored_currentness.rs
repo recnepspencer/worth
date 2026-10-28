@@ -7,7 +7,12 @@ use worth_query_host::facade::application_installation::WorthQueryCheckpointCapt
 #[test]
 fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = support::install_program::<program::ChainProgram>(None, Default::default());
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install_program::<program::ChainProgram>(
+        None,
+        Default::default(),
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut demand = request
@@ -103,9 +108,12 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         .expect("installed host call opens");
     drop(application);
 
-    super::super::producer::reset_provider_contacts();
-    let restored =
-        support::install_program::<program::ChainProgram>(Some(checkpoint), Default::default());
+    provider_observation.reset();
+    let restored = support::observed::install_program::<program::ChainProgram>(
+        Some(checkpoint),
+        Default::default(),
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     let before = crate::checkpoint_recovery::support::retain_read(&restored, &request).unwrap();
@@ -126,7 +134,7 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         1,
         "stale retained output facts require actual fresh execution"
     );
-    assert!(super::super::producer::provider_contacts() > 0);
+    assert!(provider_observation.count() > 0);
     assert!(settlement.application_commit_receipt().is_some());
     let after = crate::checkpoint_recovery::support::retain_read(&restored, &request).unwrap();
     assert_ne!(before.selected_commit(), after.selected_commit());

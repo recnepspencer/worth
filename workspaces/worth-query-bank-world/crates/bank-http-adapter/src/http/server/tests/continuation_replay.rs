@@ -143,7 +143,10 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
 }
 
 #[tokio::test]
-async fn temporary_replay_read_failure_keeps_the_original_response() {
+async fn replay_revalidation_keeps_the_cache_on_retry_and_scrubs_it_on_drift() {
+    use super::super::super::protocol::{BankHttpDenial, BankHttpNextAction};
+    use super::super::continuation_executor::replay_fault::fail_next_replay_read;
+
     let account = AccountId::new(100).unwrap();
     let (application, expiry) = expiring_authentication_application(account);
     let (server, _mutation_continuation) = bind_application(
@@ -159,19 +162,27 @@ async fn temporary_replay_read_failure_keeps_the_original_response() {
         "http://{}/v1/queries/account-activity/page",
         server.local_address()
     );
-    let request = page_request(account, "temporary-replay-deadline");
+    let request = page_request(account, "replay-revalidation-fault");
     let first = post_page(&client, &endpoint, &request).await;
     let _token = continuation(&first);
+    let denied = |kind| {
+        move |outcome: &BankHttpAccountActivityPageOutcome| {
+            matches!(
+                outcome,
+                BankHttpAccountActivityPageOutcome::Denied { denial, .. } if denial.kind == kind
+            )
+        }
+    };
 
     // Authentication admits the replay, then its deadline elapses, so the
     // cached-access revalidation read is what fails, temporarily.
     let mut expiring = request.clone();
     expiring["controls"]["deadline_milliseconds"] = serde_json::json!(50);
     expiry.arm(true);
-    let denied = post_page(&client, &endpoint, &expiring).await;
+    let timed_out = post_page(&client, &endpoint, &expiring).await;
     expiry.arm(false);
     assert!(matches!(
-        denied,
+        timed_out,
         BankHttpAccountActivityPageOutcome::Denied { denial, .. }
             if denial.kind == BankHttpDenialKind::DeadlineExceeded
     ));
@@ -180,6 +191,31 @@ async fn temporary_replay_read_failure_keeps_the_original_response() {
         first,
         "a temporary revalidation failure must not erase the cached publication"
     );
+    // A temporary revalidation failure refuses this replay and keeps the
+    // cached publication for the next one.
+    fail_next_replay_read(
+        "replay-revalidation-fault",
+        BankHttpDenial::new(
+            BankHttpDenialKind::ResourceExhausted,
+            BankHttpNextAction::Retry,
+        ),
+    );
+    let refused = post_page(&client, &endpoint, &request).await;
+    assert!(
+        denied(BankHttpDenialKind::ResourceExhausted)(&refused),
+        "{refused:?}"
+    );
+    assert_eq!(post_page(&client, &endpoint, &request).await, first);
+
+    // A drifted basis refuses the replay and retires the cached response.
+    fail_next_replay_read(
+        "replay-revalidation-fault",
+        BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+    );
+    for _ in 0..2 {
+        let replay = post_page(&client, &endpoint, &request).await;
+        assert!(denied(BankHttpDenialKind::Stale)(&replay), "{replay:?}");
+    }
     server.shutdown().await.expect("server should shut down");
     assert!(_mutation_continuation.finish().await.is_ok());
 }

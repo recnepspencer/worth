@@ -66,7 +66,8 @@ fn installed_parent_produces_required_child_artifact() {
 #[test]
 fn omitted_controls_produce_and_reuse_real_output_under_installed_defaults() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut initial = request
@@ -83,7 +84,7 @@ fn omitted_controls_produce_and_reuse_real_output_under_installed_defaults() {
     assert_eq!(first.producer_contacts_in_this_demand(), 1);
     drop(first);
     drop(initial);
-    super::super::producer::reset_provider_contacts();
+    provider_observation.reset();
     let mut demand = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .start()
@@ -96,7 +97,7 @@ fn omitted_controls_produce_and_reuse_real_output_under_installed_defaults() {
         })
         .expect("default demand settles");
     assert_eq!(settled.producer_contacts_in_this_demand(), 0);
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
 }
 
 pub(super) fn feature_specs<Artifact>() -> Vec<ApplicationFeatureSpec>

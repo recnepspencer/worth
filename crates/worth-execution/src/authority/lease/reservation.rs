@@ -8,6 +8,9 @@ use std::sync::Arc;
 
 use super::{room, ExecutionResourceLease, LeaseDenial, ReservedMemory, ResourceReservation};
 
+#[cfg(test)]
+mod tests;
+
 /// What a reservation does when the workers it claims are taken.
 pub(in crate::authority) trait OnBusy {
     type Refusal: From<LeaseDenial>;
@@ -157,6 +160,3 @@ impl ExecutionResourceLease<'_> {
         })
     }
 }
-
-#[cfg(test)]
-mod tests;

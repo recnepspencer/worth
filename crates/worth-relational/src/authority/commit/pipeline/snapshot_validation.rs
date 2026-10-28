@@ -95,6 +95,7 @@ fn enforce_snapshot_invariant(
         phase_timing,
         &selected_branch_state,
         working_state,
+        &mutated.outcome.created_entities,
         version_id,
         merged_plan,
         Some(&proposal_identity),

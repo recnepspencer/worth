@@ -77,6 +77,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
             source.clone(),
             predecessor.clone(),
             Resources::bounded(512, 32, 4096).unwrap().with_capture_memory_limit(0),
+            phase.execution_request().allocation_policy(),
             |writer, _| {
                 calls += 1;
                 author_record(writer, "allocation-repaired-record", 127)

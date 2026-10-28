@@ -10,7 +10,7 @@ pub(super) fn keys(scope: &str, total: u64) -> [String; 3] {
     ]
 }
 
-pub(super) fn create<Schema: TopologySchemaBinding>(
+pub(super) fn create<Schema: TopologyModelBinding>(
     writer: &mut CandidateWriter<'_, Schema, RegionOutputBinding<Schema>>,
     scope: &str,
     total: u64,

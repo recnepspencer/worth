@@ -126,6 +126,7 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
             assert!(first && returned);
             assert_eq!(
                 cancelled.err().unwrap().kind(),
+                // The final handoff reports the original request's own stop.
                 WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
                     worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
                 )

@@ -49,7 +49,9 @@ impl CustomInvariantRule for AlwaysViolatesCustomRule {
         _context: &CustomInvariantExecutionContext<'_>,
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
-        Ok(CustomInvariantVerdict::Violation)
+        Ok(CustomInvariantVerdict::Violation(
+            crate::validation::data::CustomInvariantRefusal::Empty,
+        ))
     }
 }
 
@@ -77,7 +79,9 @@ impl CustomInvariantRule for RejectsPlannedRelationRule {
         Ok(if context.touched().planned_relation_creates().len() < 2 {
             CustomInvariantVerdict::Pass
         } else {
-            CustomInvariantVerdict::Violation
+            CustomInvariantVerdict::Violation(
+                crate::validation::data::CustomInvariantRefusal::Empty,
+            )
         })
     }
 }
@@ -174,7 +178,9 @@ impl CustomInvariantRule for GraphCompositionViolatesCustomRule {
         _context: &CustomInvariantExecutionContext<'_>,
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
-        Ok(CustomInvariantVerdict::Violation)
+        Ok(CustomInvariantVerdict::Violation(
+            crate::validation::data::CustomInvariantRefusal::Empty,
+        ))
     }
 }
 
@@ -238,7 +244,9 @@ impl CustomInvariantRule for StructuralSurfaceRule {
         {
             Ok(CustomInvariantVerdict::Pass)
         } else {
-            Ok(CustomInvariantVerdict::Violation)
+            Ok(CustomInvariantVerdict::Violation(
+                crate::validation::data::CustomInvariantRefusal::Empty,
+            ))
         }
     }
 }

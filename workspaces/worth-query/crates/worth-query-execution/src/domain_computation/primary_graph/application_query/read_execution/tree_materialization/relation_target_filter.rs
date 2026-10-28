@@ -66,6 +66,7 @@ pub(super) fn retain_matching_targets(
                 (record.kind_id() == layout.entity_kind
                     && record.lifecycle() == RecordLifecycleState::Live)
                     .then(|| {
+                        work.reads.record_fields(1);
                         record.aspect_field_value(predicate.aspect_key(), predicate.field_key())
                             == Some(expected)
                     })

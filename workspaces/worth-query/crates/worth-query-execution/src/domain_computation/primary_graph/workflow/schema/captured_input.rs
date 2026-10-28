@@ -73,7 +73,8 @@ pub(super) fn lower(
         membership,
         proposal,
         entity_kind,
-        owned_fact_integrity(),
+        &owned_fact_integrity().into(),
+        None,
     )?;
     let registry = register_relation_to_kinds(
         registry,
@@ -83,14 +84,16 @@ pub(super) fn lower(
         resource,
         entity_kind,
         subjects,
-        ApplicationRelationIntegrity::new(
+        &ApplicationRelationIntegrity::new(
             ApplicationRelationEndpoints::new(
                 false,
                 ApplicationRelationCrossContextPolicy::AllowExplicit,
             ),
             ApplicationRelationCardinality::new(None, Some(1), None, None, None, Some(1)),
             ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
-        ),
+        )
+        .into(),
+        None,
     )?;
     Ok((
         registry,

@@ -1,4 +1,6 @@
-use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryAccessReceipt;
+use worth_query_execution::facade::primary_graph::{
+    WorthQueryApplicationQueryAccessReceipt, WorthQueryInvariantProjectionWork,
+};
 
 /// Closed descriptive projection of a completed query's actual read work.
 ///
@@ -30,11 +32,8 @@ pub struct WorthQueryPublishedApplicationReadWork {
     examined_candidate_count: usize,
     projected_record_count: usize,
     projected_field_count: usize,
-    adjacency_list_read_count: usize,
-    edge_scan_count: usize,
+    reads: WorthQueryInvariantProjectionWork,
     ordering_comparison_count: usize,
-    ordered_index_entry_count: usize,
-    target_identity_index_entry_count: usize,
     per_result_neighbor_lookup_count: usize,
     fallback_count: usize,
     truncation_count: usize,
@@ -53,11 +52,8 @@ impl WorthQueryPublishedApplicationReadWork {
             examined_candidate_count: terminal.examined_candidate_count(),
             projected_record_count: terminal.projected_record_count(),
             projected_field_count: terminal.projected_field_count(),
-            adjacency_list_read_count: terminal.adjacency_list_read_count(),
-            edge_scan_count: terminal.edge_scan_count(),
+            reads: terminal.reads(),
             ordering_comparison_count: terminal.ordering_comparison_count(),
-            ordered_index_entry_count: terminal.ordered_index_entry_count(),
-            target_identity_index_entry_count: terminal.target_identity_index_entry_count(),
             per_result_neighbor_lookup_count: terminal.per_result_neighbor_lookup_count(),
             fallback_count: terminal.fallback_count(),
             truncation_count: terminal.truncation_count(),
@@ -91,20 +87,11 @@ impl WorthQueryPublishedApplicationReadWork {
     pub const fn projected_field_count(self) -> usize {
         self.projected_field_count
     }
-    pub const fn adjacency_list_read_count(self) -> usize {
-        self.adjacency_list_read_count
-    }
-    pub const fn edge_scan_count(self) -> usize {
-        self.edge_scan_count
+    pub const fn reads(self) -> WorthQueryInvariantProjectionWork {
+        self.reads
     }
     pub const fn ordering_comparison_count(self) -> usize {
         self.ordering_comparison_count
-    }
-    pub const fn ordered_index_entry_count(self) -> usize {
-        self.ordered_index_entry_count
-    }
-    pub const fn target_identity_index_entry_count(self) -> usize {
-        self.target_identity_index_entry_count
     }
     pub const fn per_result_neighbor_lookup_count(self) -> usize {
         self.per_result_neighbor_lookup_count

@@ -225,7 +225,7 @@ fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationS
             relation: "AccountAllActivity".to_owned(),
             from: "Account".to_owned(),
             to: "Activity".to_owned(),
-            integrity: crate::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            integrity: crate::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
         },
     ]);
     members

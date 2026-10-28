@@ -72,25 +72,21 @@ fn cold_retiring_replacement_cannot_drop_delete_unlink_or_exclusivity() {
                     && matches!(defect, "source-bound" | "target-bound") =>
                 {
                     let old = integrity.cardinality;
-                    *integrity = ApplicationRelationIntegrity::new(
-                        integrity.endpoints,
-                        ApplicationRelationCardinality::new(
-                            None,
-                            if defect == "source-bound" {
-                                None
-                            } else {
-                                old.source_max
-                            },
-                            None,
-                            if defect == "target-bound" {
-                                None
-                            } else {
-                                old.target_max
-                            },
-                            None,
-                            None,
-                        ),
-                        integrity.deletion,
+                    integrity.cardinality = ApplicationRelationCardinality::new(
+                        None,
+                        if defect == "source-bound" {
+                            None
+                        } else {
+                            old.source_max
+                        },
+                        None,
+                        if defect == "target-bound" {
+                            None
+                        } else {
+                            old.target_max
+                        },
+                        None,
+                        None,
                     );
                     changed = true;
                 }
@@ -195,7 +191,7 @@ fn inert_retiring_profile_refuses_preserved_predecessor_signed_and_overlapping_t
         vec![]
     )
     .has_supported_retiring_replacement());
-    let path=worth_query_decl::facade::application_query::ApplicationQueryRootPathMeaning::from_untrusted_parts(worth_query_decl::facade::application_query::WorthQueryPortableApplicationQueryRootPathParts {start_entity:"Row".into(),terminal_entity:"Snapshot".into(),steps:vec![worth_query_decl::facade::application_query::ApplicationQueryRootPathStep::from_untrusted_fields("CurrentSnapshot".into(),"Row".into(),"Snapshot".into(),worth_query_decl::facade::application_query::ApplicationQueryRootPathDirection::Forward)],guards:vec![]});
+    let path=worth_query_decl::facade::application_query::ApplicationQueryRootPathMeaning::from_untrusted_parts(worth_query_decl::facade::application_query::WorthQueryPortableApplicationQueryRootPathParts {start_entity:"Row".into(),terminal_entity:"Snapshot".into(),steps:vec![worth_query_decl::facade::application_query::ApplicationQueryRootPathStep::from_untrusted_fields("CurrentSnapshot".into(),"Row".into(),"Snapshot".into(),worth_query_decl::facade::application_query::RelationDirection::Forward, worth_query_decl::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)],guards:vec![]});
     assert!(!body
         .with_untrusted_path_value_assignments(vec![ApplicationOperationBodyPathValueAssignment {
             target: ApplicationOperationBodyPathFieldSource {

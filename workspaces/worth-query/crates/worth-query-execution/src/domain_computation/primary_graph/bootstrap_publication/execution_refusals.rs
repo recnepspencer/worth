@@ -1,6 +1,8 @@
 //! Bootstrap's seams consume real execution refusals; production has no lease injector.
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+use crate::domain_computation::primary_graph::{
+    WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel,
+};
 use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as QueryKind,
@@ -63,11 +65,17 @@ pub(in crate::domain_computation::primary_graph) fn authority() -> &'static Exec
 }
 
 pub(in crate::domain_computation::primary_graph) fn request() -> LeaseRequest {
+    request_with_memory(None)
+}
+
+/// `None` has no request-memory ceiling; only an explicitly finite caller
+/// policy has memory that a build can exceed.
+fn request_with_memory(charged_memory_bytes: Option<u64>) -> LeaseRequest {
     LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1_000_000)),
+            ExecutionBudget::new(NonZeroUsize::MIN, charged_memory_bytes, Some(1_000_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -93,37 +101,40 @@ fn refused_index_build(
     )
 }
 #[test]
-fn index_memory_refusal_keeps_native_cause() {
+fn request_memory_refusal_is_typed_with_its_quote() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     {
         isolated(
-            concat!(module_path!(), "::index_memory_refusal_keeps_native_cause"),
+            concat!(
+                module_path!(),
+                "::request_memory_refusal_is_typed_with_its_quote"
+            ),
             || {
-                let mut limited = request();
-                limited.policy = ExecutionRequestPolicy::new(
-                    ExecutionPosture::Automatic,
-                    DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, Some(0), Some(1_000_000)),
-                );
-                let build = refused_index_build(execution, limited);
+                const POLICY: u64 = 64 * 1024;
+                let build = refused_index_build(execution, request_with_memory(Some(POLICY)));
                 let refusal = build.execution_denial.expect("real execution refusal");
+                // The caller's own 64 KiB policy refuses the build, quoting
+                // more than it holds; no stage keeps a share of its own.
                 let DerivedIndexExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
                     requested,
                     admitted,
                     ancestor,
                 }) = refusal.kind
                 else {
-                    panic!("index backing must refuse its policy memory: {refusal:?}");
+                    panic!("the request policy must refuse: {refusal:?}");
                 };
-                assert!(requested > 0);
-                assert_eq!(admitted, 0);
+                assert!(admitted <= POLICY && requested > admitted);
                 let denied = identity_indexes_built(build, 1).unwrap_err();
                 assert_eq!(
                     denied.kind(),
                     WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
                         kind: QueryKind::ExecutionResource {
-                            denial: Resource::MemoryLimit { requested, admitted: 0, level: crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Policy },
+                            denial: Resource::MemoryLimit {
+                                requested,
+                                admitted,
+                                level: WorthQueryMemoryLimitLevel::Policy,
+                            },
                             partition_identity: refusal.partition_identity,
                             policy_ancestor: Some(ancestor),
                         },

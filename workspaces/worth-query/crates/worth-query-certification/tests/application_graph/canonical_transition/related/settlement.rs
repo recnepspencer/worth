@@ -37,6 +37,7 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
             installation::WorthQueryCheckpointTransitionResources::bounded(8192, 32, 65_536)
                 .unwrap()
                 .with_capture_memory_limit(0),
+            phase.execution_request().allocation_policy(),
             |_, _| {
                 callbacks += 1;
                 Ok(())

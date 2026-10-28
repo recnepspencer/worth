@@ -109,7 +109,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
             .bind_prepared_output_source(&current_commit, selected.clone())
             .unwrap();
         let a = eager.state.lock().unwrap();
-        let b = deferred.state.lock().unwrap();
+        let mut b = deferred.state.lock().unwrap();
         assert!(a.source_custody[&current_commit]
             .source_denial(&selected.identity)
             .is_none());
@@ -118,15 +118,26 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
             a.source_custody[&current_commit].retired_sources,
             "seed {seed}"
         );
-        assert!(b.source_custody.contains_key(&completed_commit));
-        assert!(!super::super::post_commit::custody_reader::visible(
-            &b,
-            &completed_commit
-        ));
-        assert!(
-            b.pending_custody_prune(),
-            "binding leaves unrelated cleanup queued"
-        );
+        // The admission-free reader drains only its own named custody; the
+        // completed note stays queued for its cleanup owner, but no reader
+        // sees it: both registries expose the same visible custody.
+        let visible = |state: &super::super::DemandRegistryState| {
+            state
+                .source_custody
+                .keys()
+                .filter(|commit| !state.custody_prunable(commit))
+                .cloned()
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(visible(&b), visible(&a), "seed {seed}");
+        assert!(b.custody_prunable(&completed_commit));
+        assert!(b.pending_custody_prune());
+        // Its production owner, the foreign-cleanup drain admission runs,
+        // then reclaims it without the binding's help.
+        b.drain_next_foreign_custody();
+        assert!(!b.source_custody.contains_key(&completed_commit));
+        assert!(!b.pending_custody_prune());
+        assert_eq!(b.source_custody.len(), a.source_custody.len());
 
         assert!(b.records.is_empty());
     }

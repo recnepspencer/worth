@@ -21,7 +21,7 @@ pub fn run() {
         let application = &application;
         let source = &source;
         let first_ready = ready.clone();
-        let first = threads.spawn(move || {
+        let first = spawn(threads, move || {
             let scope = request_scope();
             let principal = authenticate_operator(application.installed_schema(), &scope);
             let request = application.runtime().request(&principal, &scope);
@@ -63,44 +63,74 @@ pub fn run() {
             );
             publication.composite_commit().clone()
         });
-        let second = threads.spawn(move || {
+        let second = spawn(threads, move || {
             let scope = request_scope();
             let principal = authenticate_operator(application.installed_schema(), &scope);
             let request = application.runtime().request(&principal, &scope);
             let limits = super::required_output_courts::limits();
             let selected = request.corrections().select(source, limits).unwrap();
-            let preparation = request.corrections().reverse(&selected)
-                .idempotency("race-second-correction").limits(limits).prepare().unwrap();
-            let WorthQueryApplicationCorrectionPreparation::Prepared(candidate) = preparation else { panic!("second correction must prepare before first publication") };
+            let preparation = request
+                .corrections()
+                .reverse(&selected)
+                .idempotency("race-second-correction")
+                .limits(limits)
+                .prepare()
+                .unwrap();
+            let WorthQueryApplicationCorrectionPreparation::Prepared(candidate) = preparation
+            else {
+                panic!("second correction must prepare before first publication")
+            };
             ready.send(()).unwrap();
             second_run.recv_timeout(Duration::from_secs(10)).unwrap();
             let outcome = candidate.publish().unwrap();
             // Keep any native recovery on this worker until the winner settles.
             let recovery = match outcome {
-                WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Stale(stale)) => {
+                WorthQueryApplicationMutationOutcome::Commit(
+                    WorthQueryApplicationUncommitted::Stale(stale),
+                ) => {
                     assert!(stale.stale_fact_count() > 0);
                     None
                 }
-                WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::ProductStale(_)) => None,
-                WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) if denial.kind() == WorthQueryApplicationCommitDenialKind::ProductBasisStale => None,
-                WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::NoEffect(no_effect)) => {
+                WorthQueryApplicationMutationOutcome::Commit(
+                    WorthQueryApplicationUncommitted::ProductStale(_),
+                ) => None,
+                WorthQueryApplicationMutationOutcome::Commit(
+                    WorthQueryApplicationUncommitted::Denied(denial),
+                ) if denial.kind() == WorthQueryApplicationCommitDenialKind::ProductBasisStale => {
+                    None
+                }
+                WorthQueryApplicationMutationOutcome::Commit(
+                    WorthQueryApplicationUncommitted::NoEffect(no_effect),
+                ) => {
                     assert!(matches!(no_effect.cause(), WorthQueryApplicationNoEffectCause::OwnerDeniedBeforeEffect | WorthQueryApplicationNoEffectCause::RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred::PatchPositionReservationContended)), "unrelated no-effect reason: {no_effect:?}");
                     None
                 }
-                WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Deferred(deferred)) => {
+                WorthQueryApplicationMutationOutcome::Commit(
+                    WorthQueryApplicationUncommitted::Deferred(deferred),
+                ) => {
                     assert!(matches!(deferred.kind(), WorthQueryApplicationCommitDeferredKind::PatchPositionReservationContended | WorthQueryApplicationCommitDeferredKind::SourceCurrentnessRaced(_)), "unrelated deferral: {deferred:?}");
                     None
                 }
-                WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::ProductUnpublished(unpublished)) => {
-                    assert_eq!(unpublished.cause(), runtime::ProductUnpublishedCause::ProductPublicationLost);
+                WorthQueryApplicationMutationOutcome::Commit(
+                    WorthQueryApplicationUncommitted::ProductUnpublished(unpublished),
+                ) => {
+                    assert_eq!(
+                        unpublished.cause(),
+                        runtime::ProductUnpublishedCause::ProductPublicationLost
+                    );
                     assert!(unpublished.owner_effect_count() > 0);
                     Some(unpublished.into_recovery())
                 }
-                other => panic!("same-head loser must retain its precise native race outcome: {other:?}"),
+                other => {
+                    panic!("same-head loser must retain its precise native race outcome: {other:?}")
+                }
             };
             cleanup_run.recv_timeout(Duration::from_secs(10)).unwrap();
             if let Some(recovery) = recovery {
-                application.runtime().release_product_publication_recovery(recovery, 0).unwrap();
+                application
+                    .runtime()
+                    .release_product_publication_recovery(recovery, 0)
+                    .unwrap();
             }
         });
         prepared.recv_timeout(Duration::from_secs(10)).unwrap();
@@ -146,4 +176,16 @@ pub fn run() {
         }]
     );
     println!("same-head corrective publishers serialize at the native branch lane and retain one coherent performed World");
+}
+
+/// Each racing request gets the court thread's stack: an ordinary correction
+/// runs deeper than a default thread allows in an unoptimized build.
+fn spawn<'scope, T: Send + 'scope>(
+    threads: &'scope std::thread::Scope<'scope, '_>,
+    run: impl FnOnce() -> T + Send + 'scope,
+) -> std::thread::ScopedJoinHandle<'scope, T> {
+    std::thread::Builder::new()
+        .stack_size(64 * 1024 * 1024)
+        .spawn_scoped(threads, run)
+        .expect("start a racing request")
 }

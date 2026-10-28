@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -42,8 +43,7 @@ pub(super) struct MaterializedApplicationResultTree {
         Vec<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint>,
     pub(super) projected_records: usize,
     pub(super) projected_fields: usize,
-    pub(super) adjacency_lists_read: usize,
-    pub(super) relation_records_examined: usize,
+    pub(super) reads: WorthQueryInvariantProjectionWork,
     pub(super) ordering_comparisons: usize,
     pub(super) ordered_index_entries_examined: usize,
     pub(super) relation_predicate_work_units: usize,
@@ -110,8 +110,7 @@ pub(super) fn materialize_result_tree(
         source_footprints,
         projected_records: work.projected_records,
         projected_fields: work.projected_fields,
-        adjacency_lists_read: work.adjacency_lists_read,
-        relation_records_examined: work.relation_records_examined,
+        reads: work.reads,
         ordering_comparisons: work.ordering_comparisons,
         ordered_index_entries_examined: work.ordered_index_entries_examined,
         relation_predicate_work_units: work.relation_predicate_work_units,
@@ -159,12 +158,13 @@ fn project_nodes(
         work.checkpoint(result_path)?;
         let projected_fields = projection
             .entity_record_with_projection_scope(execution, *entity_id, scope.clone(), |record| {
+                work.reads.record_endpoint();
                 (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(
                     || {
                         let projected = allocate_result_vector::<
                             WorthQueryApplicationProjectedField,
                         >(fields.len(), result_path)?;
-                        project_fields(record, &fields, projected)
+                        project_fields(record, &fields, projected, work)
                     },
                 )
             }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, result_path))?
@@ -216,8 +216,10 @@ fn project_fields(
     record: worth_relational::facade::runtime::EntityProjectionRecord<'_>,
     fields: &[&WorthQueryInstalledGraphProjection],
     mut projected: Vec<WorthQueryApplicationProjectedField>,
+    work: &mut ResultTreeWork,
 ) -> Result<Vec<WorthQueryApplicationProjectedField>, WorthQueryApplicationReadExecutionDenial> {
     for projection in fields {
+        work.reads.record_fields(1);
         let Some(value) =
             record.aspect_field_value(projection.aspect_key(), projection.field_key())
         else {

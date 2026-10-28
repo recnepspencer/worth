@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 impl WorthQueryApplicationCommitDenial {
     /// Carries a lowering refusal to the commit outcome. Unique-value kinds
     /// keep their meaning and name the field; every other lowering refusal
-    /// stays a binding rejection.
+    /// stays a binding rejection that names its kind and subject.
     pub(in crate::domain_computation::primary_graph::application_attempt) fn effect_lowering_denied(
         denial: &WorthQueryApplicationAttemptDenial,
     ) -> Self {
@@ -23,8 +23,9 @@ impl WorthQueryApplicationCommitDenial {
                 WorthQueryApplicationCommitDenialKind::UniqueIndexUnavailable
             }
             _ => {
-                return Self::provider_rejected(
+                return Self::provider_rejected_with_detail(
                     WorthQueryApplicationCommitDenialStage::ProposalBinding,
+                    format!("{:?}: {}", denial.kind(), denial.subject()),
                 )
             }
         };

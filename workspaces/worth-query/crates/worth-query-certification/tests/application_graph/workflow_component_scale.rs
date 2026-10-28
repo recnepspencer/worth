@@ -117,7 +117,9 @@ fn component_limits(occurrences: u16) -> ApplicationWorkflowComponentLimits {
     .expect("independent occurrence and provenance budgets")
 }
 
-fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
+/// Publishes one repeated-component definition and returns its expanded
+/// node count and the publication's new authoritative bytes.
+fn qualify(occurrences: u16, key: u64) -> (u64, u64) {
     let nodes = occurrences * FRAGMENT_NODES + 1;
     let connections = nodes - 1;
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
@@ -243,12 +245,32 @@ fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
         sharing.copied_truth_bytes,
         sharing.publication_new_authoritative_bytes,
     );
-    (nodes, sharing.publication_new_authoritative_bytes)
+    (
+        u64::from(nodes),
+        sharing.publication_new_authoritative_bytes,
+    )
+}
+
+/// Each publication carries one fixed term (the touched region's arena and
+/// root granularity) beside its per-node truth, so growth is the marginal
+/// bytes per added node against a one-occurrence publication: doubling the
+/// occurrences keeps that marginal within a quarter of the smaller run's.
+fn assert_marginal_bytes_per_node_stay_flat(occurrences: u16, key: u64) {
+    let (base_nodes, base_bytes) = qualify(1, key + 100);
+    let (nodes, bytes) = qualify(occurrences, key);
+    let (doubled, doubled_bytes) = qualify(occurrences * 2, key + 200);
+    let (added, added_bytes) = (nodes - base_nodes, bytes - base_bytes);
+    let (doubled_added, doubled_added_bytes) = (doubled - base_nodes, doubled_bytes - base_bytes);
+    assert!(
+        u128::from(doubled_added_bytes) * u128::from(added) * 4
+            <= u128::from(added_bytes) * u128::from(doubled_added) * 5,
+        "marginal bytes per node grew: {base_bytes} at {base_nodes} nodes, {bytes} at {nodes} nodes, {doubled_bytes} at {doubled} nodes"
+    );
 }
 
 #[test]
-fn repeated_component_100_nodes_publishes_and_starts() {
-    qualify(11, 918_500);
+fn repeated_component_100_nodes_publishes_and_starts_with_flat_bytes_per_node() {
+    assert_marginal_bytes_per_node_stay_flat(11, 918_500);
 }
 
 #[test]
@@ -257,7 +279,7 @@ fn repeated_component_1000_nodes_publishes_and_starts() {
     let (large_nodes, large_bytes) = qualify(111, 918_510);
     assert!(large_bytes > small_bytes);
     assert!(
-        large_bytes * u64::from(small_nodes) <= small_bytes * u64::from(large_nodes) * 2,
+        large_bytes * small_nodes <= small_bytes * large_nodes * 2,
         "publication bytes must grow linearly with expanded nodes: {small_nodes}/{small_bytes} -> {large_nodes}/{large_bytes}"
     );
 }

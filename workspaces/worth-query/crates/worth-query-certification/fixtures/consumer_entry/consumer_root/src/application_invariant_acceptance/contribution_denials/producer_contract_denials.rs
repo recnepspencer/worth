@@ -17,7 +17,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationContributionSetup, WorthQueryApplicationProducerBinding,
         WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
         WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-        WorthQueryProducerOutputFamily,
+        WorthQueryProducerOutputFamily, WorthQueryUndeclaredProducerDenial,
     },
     application_installation,
     primary_graph::{
@@ -115,6 +115,7 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, MissingInvariantProducer<Schema>>
     for ContractProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.contract-provider.v1";
 
     fn operation_input(&self, source: &PlanarReadResult) -> PlanarMutation {
@@ -130,6 +131,7 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, ForeignOperationProducer<Schema>>
     for ContractProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.contract-provider.v1";
 
     fn operation_input(&self, source: &PlanarReadResult) -> VertexReplacement {
@@ -292,6 +294,7 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         setup_calls: counter(),
         invariant_calls: counter(),
         invariant_probe: counter(),
+        invariant_read_observer: None,
         producer_authorization_denials: counter(),
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
     };

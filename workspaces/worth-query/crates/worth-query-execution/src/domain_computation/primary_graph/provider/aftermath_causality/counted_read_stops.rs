@@ -2,8 +2,9 @@
 use super::*;
 use crate::domain_computation::primary_graph::tests::fixture::correction_source;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+
 #[test]
-fn aftermath_resolution_door_preserves_stops_at_every_consult() {
+fn aftermath_resolution_preserves_stops_at_every_consult() {
     let world = correction_source::install();
     let source = correction_source::edit(&world, "counted-source", "edited-label");
     let prepared = correction_source::prepare(&world, &source, "counted-correction");

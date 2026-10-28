@@ -1,10 +1,19 @@
 mod canonical;
+// The canonical implementation is shared with pure owners. These are the
+// complete seed vocabulary used by WorthValue's explicit audience-facade path.
 pub use canonical::{
     decode_application_canonical_value, decode_application_canonical_value_with_admission,
     decode_application_document, decode_canonical_value, decode_canonical_value_with_admission,
-    encode_application_document, encode_canonical_value, ApplicationCanonicalValueContract,
-    CanonicalDocumentCodec, CanonicalValue, ValueCodecDenial, ValueDecodeAdmission,
-    ValueDecodeBounds, ValueShape,
+    decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
+    encode_application_document, encode_canonical_value, encode_delegated_canonical_value,
+    ApplicationCanonicalValueContract, CanonicalDocumentCodec, CanonicalValue, ValueCodecDenial,
+    ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+};
+pub use worth_foundational::facade::{
+    value_decode_error, ArrayDelegate, BoxDelegate, CanonicalValueSeed, DelegatedValueSeed,
+    OptionalDelegate, PairDelegate, SequenceDelegate, UsizeDelegate, ValueDelegate,
+    ValueFieldDefinition, ValuePrimitive, ValueSeedDelegate, ValueShapeBody, ValueShapeDefinition,
+    ValueShapeEdge, ValueTaggedVariantDefinition, ValueVariantDefinition, WorthValue,
 };
 mod admitted;
 #[cfg(test)]

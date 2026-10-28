@@ -1863,15 +1863,25 @@ When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
 and pass the resulting phase to
 `host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`.
-This variant takes the existing transition arguments with the phase first and no
-independent capture policy. It borrows the original cancellation/deadline and
+This variant takes the existing transition arguments with the phase first and a
+required capture policy. It borrows the original cancellation/deadline and
 remaining cumulative work through construction, roster admission, native transition,
 final assembly and capture. Native nested scopes charge the original parent; they
-do not renew its allowance. Capture derives allocation from that same leased backing.
-A bare serial backing has no admitted capture allocation policy and refuses before
+do not renew its allowance. Capture is capped by the caller-named policy, which must
+be `Execution(&lease)` for the funding lease itself or a lease descending from it,
+for example a child with its own smaller memory limit; there is no default and no
+silent inheritance. Entry checks that descent before any work or charge: a sibling,
+a parent or another lineage's lease refuses with
+`ExecutionDenied(ExecutionResource { NestedLeaseMisuse })`. A capture child that runs
+out after the native ACK returns the acknowledged capsule with the child's own
+refusal (`Policy { ancestor: 0 }`) for repair.
+`SystemAllocation` and bare serial backing have no admitted capture allocation policy and refuse before
 effects with `ExecutionDenied(ResourceEnvelopeMismatch)`, rather than falling back
 to SystemAllocation. The ordinary convenience constructor retains its explicit
-owned-request/policy contract.
+owned-request/policy contract. Its `Execution(&lease)` policy funds the whole
+transition: the bootstrap runs on that lease, as if borrowed through
+`with_bootstrap_advancement_from_request`, so the lease carries the transition's
+work as well as the captured frame.
 
 The bootstrap phase cannot escape its callback or stand in for an installed-runtime
 phase. `OpeningCustody` still refuses a second Query opening from a host advancement
@@ -1885,10 +1895,12 @@ the same capsule, including on entry cancellation or exhausted work. Its typed
 `capture_denial()` may contain `Execution` with the original Query execution cause;
 the original `finalization_denial()` remains distinct. Fresh-request retry repairs
 the same successor without reauthoring. The existing phase/policy repair method
-remains available for its explicit contract. The runnable
+remains available for its explicit contract; its `Execution(&lease)` must be the
+caller lease that funds the call or one of its ancestors, and any other lease
+refuses `UnrelatedNestedLease`. The runnable
 [original request fixture](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
 uses the real nonempty native transition; its
-[deferred repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
+[capture repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
 retains the native capsule across stopped attempts.
 
 Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
@@ -1931,9 +1943,9 @@ subsequently overwritten payload, affected custom invariants, changed ordering
 keys, join consequences and multiple current branch heads remain refused.
 Codec cutover cannot append authored rows. Unaffected surviving relations are
 rejudged by the target program's actual installed rules before publication.
-Normal transition capture and the existing deferred/acknowledged recovery capsule
+Transition capture and the acknowledged recovery capsule
 retain the same funded historical output roster. Capture refusal returns that
-same unpublished capsule for funded repair; repair does not reauthor or copy
+same acknowledged capsule for funded repair; repair does not reauthor or copy
 predecessor currentness.
 
 Historical roots and the original checkpoint keep their old meaning. Demand
@@ -2985,6 +2997,41 @@ prepares and writes the actual effects through the same typed mutation path.
 Source admission, output contracts, currentness and atomic publication remain
 enforced without a producer resource forecast.
 
+#### Typed producer domain denial
+
+Every provider declares `type DenialValue` in one of three forms:
+
+- a canonical readable scalar binding whose `Value` is exactly the operation's
+  `Denial`;
+- `WorthQueryProjectedProducerDenial<P>`, where `P` implements
+  `WorthQueryProducerDenialProjection<Denial>` with a binding and a `project`
+  from each denial onto that binding's value, for a denial wider than the value
+  its callers read. `project` returns `None` for a denial without such a value;
+- the explicit `WorthQueryUndeclaredProducerDenial`.
+
+A declared binding needs a finite wire maximum. Installation refuses one
+without it as `ProducerDenialValueUnbounded`.
+A foreign denial type declares its binding through the entry's delegated
+canonical contract, like a foreign invariant refusal.
+
+When the handler returns `HandlerResult::DomainDenied(denial)`, the
+`ProducerDomainDenied` demand denial carries the declared binding's canonical
+bytes next to `domain_reason()`. The caller decodes them with
+`decode_producer_denial::<Binding>()`. `producer_denial_bytes()` returns the
+exact bytes, and diagnostic clones keep them. Decoding never returns an empty or
+guessed value:
+
+- another binding returns `TypeMismatch` before its decoder runs;
+- an undeclared producer returns `Undeclared`;
+- a projection that gives this denial no value returns `Absent`;
+- other demand denials return `NotDomainDenied`;
+- if the declared binding could not encode this denial, for example because it
+  exceeds the wire maximum, the denial stays `ProducerDomainDenied` and decoding
+  returns `EncodingRefused` with the cause.
+
+The binding is the authority for the value. `domain_reason()` is diagnostic text
+only.
+
 Declare an artifact's output, locality, retention, succession, required posture,
 producer family, dependencies, reuse rule and stopped outcome through
 `ApplicationDerivedArtifact`. Current and restored output reuse checks original
@@ -3214,18 +3261,13 @@ The following fixture deliberately coordinates native output custody through
 
 ---
 
-#### Invalidation byte ceilings
+#### Invalidation retention
 
-Pass `None` for preparation and retained bytes to
-`host::runtime::WorthQueryInvalidationResourceInstallation::new(None, None, positions)`
-when the host imposes no logical byte ceiling. `Some(bytes)` supplies a deliberate
-finite ceiling at either boundary; `Some(0)` remains an invalid installation.
-The existing `bounded(work, preparation, retained, positions)` constructor chooses
-finite work and byte ceilings. Ordinary Memory Workspace and Consumer Kit
-installations select no marking-work, preparation-byte or retained-byte ceiling.
-Other application hosts supply their own policies; this does not claim that every
-platform or application profile is uncapped. The retained-position window remains
-independent.
+`host::runtime::WorthQueryInvalidationResources::new()` (also `Default`) takes no
+policy: no marking-work, preparation-byte, retained-byte or retained-position
+ceiling. The subscription retains every delivered position, so no reader falls
+outside a window or reconstructs to catch up. The value carries only the
+receiver's differential verification controls.
 
 Absence does not disable admission accounting or authorize memory allocation.
 Preparation still checked-adds every original byte quote; retained tickets share
@@ -3525,6 +3567,66 @@ that does not claim pre-allocation admission. The result/error remains charged o
 the caller's original reservation until released or transferred. The returned
 `ScopeOutcome` keeps the genuine admission/callback stop and original report.
 Known finite Scan/Map result declarations retain their existing checks.
+
+### Typed refusal from installed invariants
+
+For proposed/committed access, prepared scope, retained snapshot readers and the
+shared diagnostic counts, see [Invariants and read observations](../workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md).
+
+An installed `WorthQueryApplicationInvariantRule` declares `type Refusal` and
+`type RefusalBinding`. The binding is the application's existing readable scalar
+value declaration for that type, with the canonical JSON contract and a finite
+`ValueDecodeBounds` wire maximum. Installation refuses a missing canonical
+contract or an unbounded wire representation. There is no separate refusal codec.
+A cause-free rule explicitly declares `Refusal = ()` and uses
+`WorthQueryEmptyInvariantRefusal` as its binding.
+
+Entry-local value declarations can derive
+`worth_query_decl::facade::application_schema::WorthValue` with
+`#[worth_value(crate = "worth_query_decl::facade::application_schema")]`.
+That facade exports the existing canonical shape and bounded seed vocabulary,
+including delegates for values constructed by a separate domain owner; the
+entry needs no lower platform dependency.
+
+For a foreign domain type, an entry-owned `ValueSeedDelegate<Value = DomainType>`
+can be the root grammar as well as a field grammar. Its binding declares
+`ApplicationCanonicalValueContract::delegated::<Delegate>(bounds)` and uses
+`encode_delegated_canonical_value` and `decode_delegated_canonical_value` (or the
+admitted decoder). These call the same canonical writer, bounded seeds and
+canonical comparison as ordinary values. They borrow the original value for
+encoding; no domain-value clone, alternate codec or platform trait on the pure
+domain type is needed.
+
+Evaluation returns `WorthQueryApplicationInvariantVerdict::Pass` or
+`Violation(refusal)`. `WorthQueryApplicationInvariantExecutionError` means that
+the rule could not evaluate, including a refusal that exceeds its declared wire
+maximum; it is not a domain violation. Cancellation and deadlines retain the
+original request's control outcome. The adapter admits the maximum retained refusal bytes against the original
+evaluation meter before encoding, including ordinary serial rule hooks.
+
+Under a multiworker policy, rules at the same execution point may evaluate
+concurrently and finish in any order. The original publication result carries
+the first violation in installation binding order, whatever the worker count or
+completion order. Its `WorthQueryApplicationCommitDenial` exposes
+`decode_invariant_refusal::<YourRefusalBinding>()`; a mismatched binding returns
+`WorthQueryInvariantRefusalDecodeDenial::TypeMismatch` before decoding. The
+unchanged canonical bytes are also available through `invariant_refusal_bytes()`.
+Relational retains that same payload in the transaction conflict and diagnostic
+history. Neither reading the denial nor decoding it reruns the rejected candidate.
+
+Native recovery checkpoints retain symbol meanings from installation configuration,
+published canonical envelopes, retained roots and the historical mirror, including
+aspect/field revision keys and structural fingerprint families. Capture and
+readmission use the storage owner's same symbol-closure traversal. Client
+keys interned only while preparing an unpublished attempt do not change the
+checkpoint. The runtime's live symbol interner can still resolve those pending
+keys; recovery persists the selected retained truth.
+
+The [temporal integrity rule](../workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/integrity.rs)
+returns `TemporalIntegrityRefusal::InvalidState` with the candidate revision and
+lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/typed_invariant_refusal.rs)
+exercise original-caller decoding, unchanged native checkpoints, cancellation,
+installed order, size refusal, decode mismatch, and reproducible payload bytes.
 
 ### Optional invariant work and original interruption
 
@@ -5147,13 +5249,12 @@ obligations until final drop, including after owner close.
 
 `WorthQueryProductWorldResources::install` accepts nonzero finite installation
 values. `RuntimeWorldBudgetLimit::get()` returns `Some(maximum)` for a finite
-policy and `None` otherwise. Configure marking and retained positions with
-`WorthQueryInvalidationResourceInstallation::new(preparation, retained, positions)`.
-For `positions`, `None` keeps available history and `Some(positions)` selects a
-retention window.
-A reader outside that window reconstructs its state. Match the invalidation
-window to World commit history: installation rejects an unlimited window beside
-finite commit history. Output-lineage retention uses the same position policy.
+policy and `None` otherwise. `host::runtime::WorthQueryInvalidationResources::new()`
+takes no retention policy: the invalidation subscription retains every delivered
+position, so a reader never falls outside a window and never reconstructs its
+state to catch up. A long run of commits between two observations is delivered
+in order, and replacing a conditional runtime remains the explicit
+reinstallation path. Output-lineage retention reads the same subscription.
 
 Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots
@@ -5204,3 +5305,8 @@ work. A subsequent advancement uses a fresh authorized request; explicit finite
 step controls preserve their limit. Keep original unpublished-idempotency and
 branch-commit owners through recovery and cleanup, then release their backing
 when their obligations are complete.
+
+Declared query roots can traverse complete endorelation reachability with
+`ApplicationQueryRootPath::forward_closure` and `reverse_closure`, composed with
+ordinary hops and guards. See [declared query closure](../workspaces/worth-query/crates/worth-query/docs/foundations/declared-query-closure.md)
+for reflexive selection, source currentness and per-step receipt observations.

@@ -9,6 +9,8 @@ pub struct ResidentValue {
     // The boxed Vec is the subject: its box allocation is resident capacity.
     #[allow(clippy::box_collection)]
     #[serde(skip)]
+    // The box is the subject: the court charges the boxed Vec header too.
+    #[allow(clippy::box_collection)]
     pub resident_notes: Option<Box<Vec<String>>>,
 }
 

@@ -145,3 +145,6 @@ pub(crate) fn btree_structure_charge<K, V>(entries: usize) -> Result<Charge, Den
                 .ok_or(Denial::ChargeOverflow)?,
         )
 }
+
+#[cfg(test)]
+mod tests;

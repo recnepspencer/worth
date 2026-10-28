@@ -12,7 +12,9 @@ pub(super) fn visible_entities_of_kinds(
     if !context.checkpoint(0) {
         return Vec::new();
     }
-    collect_planned_entities(context, kind_ids, &mut entities);
+    if context.applied_created_entities().is_none() {
+        collect_planned_entities(context, kind_ids, &mut entities);
+    }
     entities
 }
 

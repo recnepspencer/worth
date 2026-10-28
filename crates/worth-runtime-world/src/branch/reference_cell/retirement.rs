@@ -26,7 +26,10 @@ impl ProductBranchReferenceCell {
     pub(crate) fn retire(&self) -> ProductBranchReferenceRetirement {
         let mut current = self.state.write();
         let retired_head = current.snapshot.selected_commit().clone();
-        let released_protection = current.protection.take();
+        let mut released_protection = current.protection.take();
+        if let Some(protection) = released_protection.as_mut() {
+            protection.seat_history(false);
+        }
         ProductBranchReferenceRetirement {
             retired_head,
             released_protection,

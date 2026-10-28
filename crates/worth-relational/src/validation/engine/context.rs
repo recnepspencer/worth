@@ -50,6 +50,12 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
         }
     }
 
+    pub(crate) fn applied_created_entities(
+        &self,
+    ) -> Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings> {
+        self.observation.applied_created_entities()
+    }
+
     pub(crate) fn with_created_endpoint_scope(mut self, kind: KindId) -> Self {
         if let (Some(scopes), Some(plan)) = (&self.relation_integrity_scopes, self.merged_plan)
             && let Some(scope) = scopes.scope_for(kind)

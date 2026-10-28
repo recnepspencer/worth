@@ -9,6 +9,7 @@ use worth_query_host::facade::primary_graph::{
 #[test]
 fn source_only_pinned_commit_time_staleness_retains_terminal_original_loan() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, PinnedSourceProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let world = installation::install_selected_program(
