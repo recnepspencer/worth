@@ -8,6 +8,11 @@ use worth_query_host::facade::{
     application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
 };
 
+// One million-unit producer checkpoint fits with half its work in headroom;
+// a second cannot fit. This is the delivery court's original caller bound,
+// distinct from the retry court's two-checkpoint-minus-one bound.
+const CALLER_WORK: u64 = ENTRY_WORK as u64 + ENTRY_WORK as u64 / 2;
+
 #[test]
 fn producer_completes_but_delivery_cannot_reset_its_remaining_budget() {
     let _guard = checkpoint_recovery_test_guard();
