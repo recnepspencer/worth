@@ -86,12 +86,44 @@ pub(in crate::physical_runtime) fn admit_recovered(
     finish_admission(core, qualified)
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
+pub(in crate::physical_runtime) fn admit_home(
+    runtime: AdmittedPhysicalRuntime,
+    admission: FilesystemMediaAdmission,
+    home: worth_store_physical_backend::QualifiedRecoveryFilesystemMedia,
+) -> MediaAdmissionOutcome {
+    let core = runtime.into_core();
+    let request = admission.into_request(&core);
+    finish_admission(core, home.qualify_serving(request))
+}
+
 impl FilesystemMediaAdmission {
     fn into_request(
         self,
         core: &crate::physical_runtime::runtime::PhysicalRuntimeCore,
     ) -> FilesystemQualificationRequest {
-        let root = core.declared_store_root().as_path().to_owned();
+        self.into_request_at(
+            core.declared_store_root().as_path().to_owned(),
+            Some(core.runtime_identity().get()),
+        )
+    }
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub fn qualify_home(
+        &self,
+        root: impl Into<std::path::PathBuf>,
+    ) -> Result<
+        worth_store_physical_backend::QualifiedRecoveryFilesystemMedia,
+        worth_store_physical_backend::RecoveryFilesystemQualificationError,
+    > {
+        worth_store_physical_backend::QualifiedRecoveryFilesystemMedia::qualify_home(
+            self.clone().into_request_at(root.into(), None),
+        )
+    }
+    fn into_request_at(
+        self,
+        root: std::path::PathBuf,
+        runtime: Option<u64>,
+    ) -> FilesystemQualificationRequest {
         let request = match self.mode {
             FilesystemQualificationMode::Production => {
                 FilesystemQualificationRequest::production(root, self.access)
@@ -104,8 +136,11 @@ impl FilesystemMediaAdmission {
             FilesystemQualificationMode::Certification => {
                 unreachable!("no certification constructor")
             }
-        }
-        .for_runtime_incarnation(core.runtime_identity().get());
+        };
+        let request = match runtime {
+            Some(runtime) => request.for_runtime_incarnation(runtime),
+            None => request,
+        };
         #[cfg(feature = "certification-test-authority")]
         let request = request.with_fault_schedule(self.fault_schedule);
         match self.expected_profile {

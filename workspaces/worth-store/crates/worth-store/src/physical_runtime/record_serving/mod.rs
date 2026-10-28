@@ -282,5 +282,3 @@ mod tests {
         assert_eq!(fixed_limits.current_root_entries(), 185);
     }
 }
-
-pub use residency::artifact_tree::RecordFamilyInventory;

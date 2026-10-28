@@ -55,7 +55,7 @@ pub use profile::QualifiedPhysicalBackendProfile;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use publication::{RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan};
 pub use qualification::RecoveryFilesystemQualificationError;
-pub use qualified::QualifiedRecoveryFilesystemMedia;
+pub use qualified::{QualifiedRecoveryFilesystemMedia, RecoveryStorePresence};
 pub use refusal::{
     AllocatedReadFailure, AllocatedReadOutcome, ArtifactDamage, ArtifactReadOutcome, GrantedRead,
     GrantedReadStop, ReadRefusal, UnchargedRead,

@@ -9,7 +9,35 @@ pub struct QualifiedRecoveryFilesystemMedia {
     parts: crate::filesystem_media::recovery_qualification::QualifiedRecoveryParts,
 }
 
+/// Store artifacts observed under a still-held home mutation lease.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecoveryStorePresence {
+    ProvenAbsent,
+    ExistingArtifacts,
+}
+
 impl QualifiedRecoveryFilesystemMedia {
+    /// Acquire the home lease before deciding whether any Store artifacts exist.
+    /// Existing identity is admitted later through recovery, without a write here.
+    pub fn qualify_home(
+        request: crate::FilesystemQualificationRequest,
+    ) -> Result<Self, RecoveryFilesystemQualificationError> {
+        crate::filesystem_media::recovery_qualification::qualify_home_recovery(request)
+            .map(Self::from_parts)
+    }
+    pub fn store_presence(
+        &self,
+    ) -> Result<RecoveryStorePresence, RecoveryFilesystemQualificationError> {
+        self.parts.store_presence()
+    }
+    /// Complete normal qualification under this same lease for initialization.
+    pub fn qualify_serving(
+        self,
+        request: crate::FilesystemQualificationRequest,
+    ) -> crate::AdmittedFilesystemMedia {
+        self.parts.qualify_serving(request)
+    }
+
     /// Verify the caller's location against the still-held root directory.
     /// This reads identity only and never reacquires or mutates the lease.
     pub fn verify_root(&self, root: &Path) -> Result<(), RecoveryFilesystemQualificationError> {

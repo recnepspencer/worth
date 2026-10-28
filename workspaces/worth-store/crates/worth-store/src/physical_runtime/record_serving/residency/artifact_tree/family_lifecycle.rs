@@ -4,7 +4,7 @@ use worth_store_physical_format::RecordArtifactFile;
 use super::{PhysicalRecordArtifactTree, RecordFamilyCreationFailure, RecordFamilyInventory};
 
 impl PhysicalRecordArtifactTree<'_> {
-    pub(in crate::physical_runtime) fn inventory(
+    pub(in crate::physical_runtime::record_serving) fn inventory(
         &self,
     ) -> Result<RecordFamilyInventory, ArtifactTreeFailure> {
         let family = self.tree.directory_exists(&self.record_family)?;

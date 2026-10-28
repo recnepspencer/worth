@@ -86,7 +86,7 @@ fn schema_eleven_refuses_before_any_media_effect() {
     let before: Vec<_> = files.iter().map(|f| fs::read(f).unwrap()).collect();
     let refused = open(&location, &execution);
     assert!(
-        matches!(&refused, Err(Refusal::Physical(refusal)) if refusal.kind() == Kind::UnsupportedRootSchema { observed: 11 }),
+        matches!(&refused, Err(Refusal::Physical(refusal)) if refusal.kind() == Kind::UnsupportedRootSchema { observed: 11 } && refusal.recovery_effects() == Some(0)),
         "{:?}",
         refused.map(|_| ())
     );

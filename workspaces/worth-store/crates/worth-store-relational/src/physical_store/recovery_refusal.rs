@@ -7,6 +7,14 @@ use worth_store_recovery_runtime::{
 };
 pub(super) fn classify(outcome: PhysicalRecoveryOutcome) -> Refusal {
     let mut refusal = Refusal::new(Stage::Recovery, format!("{outcome:?}"));
+    refusal.recovery_effects = match &outcome {
+        PhysicalRecoveryOutcome::Blocked(block) => Some(block.recovery_effects()),
+        PhysicalRecoveryOutcome::Refused(refused) => Some(refused.recovery_effects()),
+        PhysicalRecoveryOutcome::PublicationIndeterminate(failure) => {
+            Some(failure.recovery_effects())
+        }
+        PhysicalRecoveryOutcome::Recovered(_) => None,
+    };
     let observations = match &outcome {
         PhysicalRecoveryOutcome::Blocked(block) => block.evidence().integrity_observations(),
         PhysicalRecoveryOutcome::Refused(refused) => refused.integrity_observations(),

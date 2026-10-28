@@ -362,8 +362,8 @@ pub use worth_store_physical_backend::{
     RecoveryFilesystemQualificationError, RecoveryReopenReadOutcome,
     RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
     RecoveryStagingIndeterminatePhysical, RecoveryStagingWriteDisposition,
-    RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity, StreamArtifact, Uncharged,
-    UnchargedRead, WalInventoryOutcome,
+    RecoveryStagingWriteOutcome, RecoveryStorePresence, RecoveryWalObservationIdentity,
+    StreamArtifact, Uncharged, UnchargedRead, WalInventoryOutcome,
 };
 
 pub use work::PhysicalEffectRecoveryObligation;
