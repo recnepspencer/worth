@@ -5905,6 +5905,23 @@ in one final cutover, rather than a private SDK refactor after each phase.
 The governing milestone spec is
 [milestone-9.19.md](./milestone-9.19.md).
 
+### Provider Lifecycle Progress
+
+Phase 1 product/evidence is complete for the committed Public provider lifecycle:
+pure numerical closed-box/BVH and versioned-prefix adapters use the same
+Decl/Host contract. Eleven focused consumer cases prove typed original-request
+stop, partial backing release, fresh-request rebuild/reference parity, cache and
+final-owner/runtime lifetime, plus version/runtime/branch/basis/full-generation
+refusals. Earlier 28 baseline cases carry, including independent capability/READ
+controls. The owning 27-example compiled-documentation case and mandatory
+boundary/context checks pass; independent Source/evidence review and Root
+acceptance close the bounded product/evidence obligations. See
+[Phase 1 evidence and fixture links](./milestone-9.19.md#phase-1-declared-providers-and-managed-index-ownership)
+and the [application guide](../../docs/build-an-application.md#construct-committed-provider-indexes).
+Default integration remains pending. Phases 2–6 and whole-milestone/private adoption remain unfinished.
+Complete conservative Source dependencies remain; incremental candidate roots,
+advanced membership routing and verified narrowed footprints are later work.
+
 ### Must Ship
 
 - one general declared/installed provider extension with honest memory/work

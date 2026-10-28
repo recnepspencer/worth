@@ -5353,11 +5353,11 @@ managed expansion. The
 [managed expectation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/expectations/membership.rs)
 exercise the public API, stale nonmatches, empty results and recorded retry.
 Focused managed-fact, prefix and governed-box regressions pass on the current
-implementation at the reviewed qualification baseline. The new
+implementation. The
 [lifecycle fixtures](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle.rs)
-add cancellation after the first real node write, fresh-request reconstruction
-and physical final-owner release checks. The original prefix lifecycle packet
-has passed focused runtime qualification. The added
+prove cancellation after the first real node write, fresh-request reconstruction,
+cache survival after the last application handle drops and physical final-owner
+release. The
 [box journeys](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/lifecycle.rs)
 exercise the actual BVH adapter's mid-build stop, partial backing release,
 fresh-request reference parity and final runtime disposal. Their
@@ -5369,16 +5369,20 @@ and [box basis anchors](../workspaces/worth-query/crates/worth-query-certificati
 cover the actual incompatible executable version, foreign runtime/branch and
 retained historical basis before callbacks. All eleven focused consumer cases
 pass on the current fixture source, including exact typed original-request
-cancellation and physical release through both adapters. Narrow fixture joins
-use the installed mutation's genuine result-set Source and preserve the
-provider control owner's exact cancellation cause. Final independent review
-and Phase1 acceptance remain pending. Allocation observations use the same
-consumer executable, one exact case per process and one test thread; they do
-not measure another process's allocations or establish concurrent build cost.
+cancellation and physical release through both adapters. Allocation observations
+use one consumer executable, one exact case per process and one test thread;
+they do not measure another process's allocations or establish concurrent build
+cost.
 Existing box geometry, version and independent capability/READ controls remain
-carried. The affected compiled-example inventory test and mandatory
-boundary/context checks remain requirements before Phase1 acceptance.
-Local membership routing, narrowed footprints and full Phase1 remain unfinished.
+carried. Both the pure numerical closed-box and versioned-prefix providers use
+the same Decl/Host contract and independent scan references. The owning
+[compiled-example inventory test](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/compiled_example_drift.rs)
+passes for all 27 examples, including both provider declarations; mandatory
+boundary and context checks pass. Independent review and Root acceptance establish
+[Phase 1 product/evidence completion](../plans/WORTH-query/milestone-9.19.md#phase-1-declared-providers-and-managed-index-ownership).
+Default integration remains pending. Phases 2–6 remain unfinished: incremental candidate roots, advanced
+membership routing, narrowed footprints and final Proprietary adoption are not
+provided by this committed-provider lifecycle qualification.
 The
 [public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
 shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and
