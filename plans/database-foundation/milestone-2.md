@@ -260,6 +260,8 @@ parity proofs remain binding, with their configured ceilings unchanged.
 **Checkpoint layout.** `relational.checkpoint` holds a manifest. Its member
 records are published with it in one root decision and are carried forward,
 not rewritten, while their content is unchanged.
+The current native checkpoint magic is `WORTH-REL-CHK13`; region members use
+`WORTH-REL-REG6` (`REG6`). Both frames terminate the magic with a newline.
 
 - **Manifest (eager).** The manifest holds:
   - coverage and runtime name;
