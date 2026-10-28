@@ -12,7 +12,11 @@ mod reference_snapshot;
 #[cfg(test)]
 pub(crate) mod reference_test_fixture;
 pub(crate) mod registry;
+mod replacement;
 mod retirement;
+pub use replacement::{
+    FundedOwnerRetirementWork, RuntimeWorldBranchReplacementDenial, RuntimeWorldRetiredReplacement,
+};
 
 pub use bootstrap::{
     NoEffectRuntimeWorldBootstrap, PerformedRuntimeWorldBootstrap,

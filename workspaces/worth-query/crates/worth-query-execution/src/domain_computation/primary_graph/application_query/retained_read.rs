@@ -20,6 +20,25 @@ pub struct WorthQueryApplicationReadObservation {
 }
 
 impl WorthQueryApplicationReadObservation {
+    pub(in crate::domain_computation::primary_graph) fn lifecycle_observation<
+        Schema: ApplicationSchema,
+    >(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<
+        &worth_runtime_world::facade::ProductBranchObservation,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        if self.runtime_authority != runtime.runtime.authority_identity().as_u64()
+            || self.schema_binding != runtime.installed_schema.binding_identity()
+        {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
+        }
+        Ok(self.product.observation())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_product<Schema>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         product: WorthQueryProductObservationLease,

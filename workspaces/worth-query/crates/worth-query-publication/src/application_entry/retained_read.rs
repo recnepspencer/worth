@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation as RetainedRead;
+mod replacement;
+pub use replacement::WorthQueryRetiredApplicationHead;
+pub use worth_query_execution::facade::product::WorthQueryApplicationHeadReplacementDenial;
 
 /// Public read-only handle for one exact World product occurrence.
 pub struct WorthQueryApplicationReadObservation {
@@ -8,6 +11,25 @@ pub struct WorthQueryApplicationReadObservation {
 }
 
 impl WorthQueryApplicationReadObservation {
+    /// Configure a fork of this exact retained source. This read grants no
+    /// write permission: creation still admits the application's original
+    /// phase and the World checks source currentness. A moved source may leave
+    /// typed owner recovery if component forks already took effect.
+    pub fn fork_product_branch<'a, Schema, Program>(
+        &self,
+        application: &'a worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> worth_query_execution::facade::product::WorthQueryProductBranchFork<'a>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<
+            Schema,
+        >,
+    {
+        application
+            .branches()
+            .fork_from_read(Arc::clone(&self.retained))
+    }
+
     pub(super) const fn new(retained: Arc<RetainedRead>) -> Self {
         Self { retained }
     }
@@ -81,7 +103,7 @@ phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvan
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<
             Schema,
         >,
-    {
+{
         application.begin_preview(phase, &self.retained, request)
     }
 

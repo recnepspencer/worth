@@ -10,6 +10,7 @@ mod history;
 mod installation_denial;
 mod owned_async;
 mod owner_cleanup;
+pub(crate) use owner_cleanup::WorthQueryCleanupReservationDenial;
 mod publication_binding;
 mod receipt;
 mod relational_publication;

@@ -27,9 +27,9 @@ pub use crate::domain_computation::execution_runtime::product_world::{
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedChange, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationNoEffect,
-    WorthQueryApplicationNoEffectCause, WorthQueryApplicationProductBranchCleanup,
-    WorthQueryApplicationProductBranchCleanupDenial,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationHeadReplacementDenial,
+    WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
+    WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
     WorthQueryApplicationProductBranchCleanupFailure,
     WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
     WorthQueryApplicationQueryAccessContext, WorthQueryAppliedProductTransaction,
@@ -39,7 +39,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
     WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
     WorthQueryProductQueryControls, WorthQueryProductTransaction,
-    WorthQueryProductTransactionCommitError, WorthQuerySelectedProductOperation,
+    WorthQueryProductTransactionCommitError, WorthQueryRetiredApplicationHead,
+    WorthQuerySelectedProductOperation,
 };
 pub use worth_runtime_world::facade::{
     CompositeComponentChangePosture, RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,

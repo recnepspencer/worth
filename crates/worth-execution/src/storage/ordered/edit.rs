@@ -1,7 +1,7 @@
 //! AVL path replacement. Child and entry cells retain their original funding.
 use super::funding::Funding;
 use super::{
-    node::{build, height, Entry, Link, Node},
+    node::{build, rotation, Entry, Link, Node, Rotation},
     ExecutionOrderedMapDenial as Denial,
 };
 use std::{cmp::Ordering, sync::Arc};
@@ -75,9 +75,12 @@ fn balanced<K, V>(
     right: Link<K, V>,
     policy: Funding<'_, '_>,
 ) -> Result<Arc<Node<K, V>>, Denial> {
-    if height(&left) > height(&right) + 1 {
+    if matches!(
+        rotation(&left, &right),
+        Rotation::Right | Rotation::LeftRight
+    ) {
         let child = left.as_ref().expect("left-heavy node has a left child");
-        if height(&child.left) >= height(&child.right) {
+        if matches!(rotation(&left, &right), Rotation::Right) {
             let right = build(entry, child.right.clone(), right, policy)?;
             build(
                 Arc::clone(&child.entry),
@@ -96,9 +99,12 @@ fn balanced<K, V>(
             let right = build(entry, pivot.right.clone(), right, policy)?;
             build(Arc::clone(&pivot.entry), Some(left), Some(right), policy)
         }
-    } else if height(&right) > height(&left) + 1 {
+    } else if matches!(
+        rotation(&left, &right),
+        Rotation::Left | Rotation::RightLeft
+    ) {
         let child = right.as_ref().expect("right-heavy node has a right child");
-        if height(&child.right) >= height(&child.left) {
+        if matches!(rotation(&left, &right), Rotation::Left) {
             let left = build(entry, left, child.left.clone(), policy)?;
             build(
                 Arc::clone(&child.entry),

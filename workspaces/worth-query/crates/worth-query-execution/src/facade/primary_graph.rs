@@ -338,9 +338,9 @@ pub use worth_runtime_world::facade::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, NoEffectCause,
     ProductBranchAncestorSelectionDenial, ProductExactHistoryDenial, ProductUnpublishedNextAction,
     ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
-    RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
-    RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
-    RuntimeWorldSettledRelationalAdoptionDenial,
+    RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchReplacementDenial,
+    RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPage,
+    RuntimeWorldServiceDenial, RuntimeWorldSettledRelationalAdoptionDenial,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 

@@ -377,3 +377,6 @@ mod creation_cancellation;
 
 #[path = "retirement_tests/observation_budget.rs"]
 mod observation_budget;
+
+#[path = "retirement_tests/replacement.rs"]
+mod replacement;

@@ -18,6 +18,7 @@ mod history;
 #[cfg(test)]
 mod install_control;
 mod observation;
+mod replacement;
 mod retirement;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -240,6 +241,18 @@ where
         observed: &ProductBranchObservation,
     ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial> {
         self.retire_observed_branch(observed)
+    }
+
+    fn retire_replaced_head(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        old: &ProductBranchObservation,
+        candidate: &ProductBranchObservation,
+    ) -> Result<
+        crate::branch::RuntimeWorldRetiredReplacement,
+        crate::branch::RuntimeWorldBranchReplacementDenial,
+    > {
+        replacement::retire(self, execution, old, candidate)
     }
 }
 

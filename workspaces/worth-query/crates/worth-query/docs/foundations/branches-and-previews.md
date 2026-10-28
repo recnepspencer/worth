@@ -77,14 +77,11 @@ reads can defer cleanup; the returned pending cleanup retains the only retry
 authority. A retired occurrence cannot be selected again, even if an
 application later reuses the same display name.
 
-A transaction can therefore run on a fork of the current head and adopt it by
-closing the head it replaces. The adopted fork reads its parent's history as its
-own, so a correction selects a source made on either branch, and retained history
-grows by the same amount for each adoption rather than replaying the journal.
-A refused step on the fork leaves the parent's head and history unchanged; close
-the fork to discard it. The
-[fork-head adoption court](../../../worth-query-certification/examples/application_correction_support/fork_head_adoption.rs)
-runs 100 such cycles.
+A transaction can run on a fork and retain its parent's history. A refused step
+leaves the parent's head unchanged; close the fork to discard it. Ordinary
+`on_branch(branch).close(&phase)` retires that occurrence's current head even if
+it advanced after selection. Use saved-head replacement below when retirement
+must refuse such movement.
 History pages are branch-occurrence scoped and bounded by the caller's nonzero
 limit. Their entries are descriptive until `select` asks World to issue an
 exact historical observation; copied commit identities cannot perform that
@@ -92,6 +89,53 @@ admission. Drop history pages and historical reads before closing the branch
 whose ancestry they protect.
 See the executable
 [advanced product branching example](../../../worth-query-certification/examples/advanced_product_branching.rs).
+
+### Replace an exactly observed head
+
+Retain an application read through `worth_query_host::facade::application_entry`.
+The installed program runtime and a fresh advancement phase still supply
+lifecycle authority; a read alone grants no mutation permission.
+
+```rust,ignore
+let old_read = WorthQueryApplicationReadObservation::retain_on_branch(
+    &phase, application.runtime(), head,
+)?;
+let candidate = old_read
+    .fork_product_branch(application)
+    .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+    .create(&phase)?;
+// Execute ordinary requests on candidate, then retain its final image.
+let candidate_read = WorthQueryApplicationReadObservation::retain_on_branch(
+    &phase, application.runtime(), candidate,
+)?;
+let retired = old_read.retire_replaced_head(&phase, application, candidate_read)?;
+let candidate_read = retired.into_candidate();
+```
+
+Expected-source fork refuses a source already displaced. A source that moves
+after a component fork can instead leave genuine `ProductUnpublished` recovery.
+Replacement tries both application lanes once, then World checks both exact
+saved reference images while retiring only the old head. Busy, foreign, moved,
+retired, pending-publication or outstanding-dispatch references refuse before
+retirement. It does not settle a pending command or publish/adopt the candidate.
+The returned candidate read preserves its original snapshot; another publication
+can move the candidate after the paired transition.
+
+Success has an effect even when the original request stops at final handoff.
+Inspect `handoff_stop()` and preserve the returned terminal artifact. If an outer
+`with_application_advancement` callback can stop after the lifecycle call,
+save its terminal result outside that callback before inspecting the outer
+advancement result. An outer stop does not prove the old reference survived.
+
+Cleanup remains owned by the installed runtime. Discover it through
+`application.branches().pending_cleanup()`; that existing path releases the old
+application retention before yielding retry owners. Retained reads can defer
+history cleanup. Dropping the retirement artifact or moving its candidate out
+does not discharge cleanup. No allocation-heavy retention sweep or component
+cleanup is hidden inside the paired transition. The
+[public lifecycle court](../../../worth-query-certification/tests/application_graph/correction/head_replacement.rs)
+shows moved-old/moved-candidate refusal and saved terminal custody across an
+actual outer cancellation.
 
 ### Branch-local application programs
 

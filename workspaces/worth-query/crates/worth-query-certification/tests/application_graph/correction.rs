@@ -10,6 +10,8 @@ use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenia
 
 #[path = "correction/consecutive_undo.rs"]
 mod consecutive_undo;
+#[path = "correction/head_replacement.rs"]
+mod head_replacement;
 
 #[test]
 fn retained_reapplication_uses_explicit_alternatives_and_active_consumption() {

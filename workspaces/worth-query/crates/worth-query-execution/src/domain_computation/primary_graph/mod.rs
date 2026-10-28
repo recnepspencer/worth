@@ -76,6 +76,7 @@ mod program_occurrence;
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 mod provider;
 pub(in crate::domain_computation) use application_attempt::retained_decision_facts::StorageControl;
+pub(crate) use provider::BranchCoordinationDenial;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;

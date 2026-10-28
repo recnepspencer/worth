@@ -6,6 +6,8 @@ use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation};
 
 use super::{CustodyComponent, OwnerCreatedComponentCustodyRecord, OwnerRetirementWork};
 
+mod retirement;
+
 #[derive(Debug)]
 struct CustodyRegistryState {
     maximum: Option<usize>,

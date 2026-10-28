@@ -4,8 +4,10 @@ mod funding;
 mod iteration;
 pub(crate) mod node;
 mod request;
+mod unique;
 use crate::{ChargedBytes, ExecutionAllocationDenial, ExecutionAllocationPolicy};
 use node::{Entry, Link};
+pub use unique::ExecutionUniqueOrderedMap;
 
 /// A refused edit leaves the original root and every grant intact.
 #[derive(Clone, Debug, PartialEq, Eq)]

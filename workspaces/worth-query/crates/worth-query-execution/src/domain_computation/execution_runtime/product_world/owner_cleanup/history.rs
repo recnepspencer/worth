@@ -18,7 +18,8 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         &mut self,
         runtime: &WorthQueryProductRuntime,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
-        let Some(WorthQueryProductBranchHistoryCleanup { resume }) = self.history.as_mut() else {
+        let Some(WorthQueryProductBranchHistoryCleanup { resume, .. }) = self.history.as_mut()
+        else {
             return Ok(());
         };
         let walked = walk(runtime, resume);

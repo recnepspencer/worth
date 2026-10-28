@@ -76,6 +76,68 @@ impl<K: Clone, V: Clone> Entry<K, V> {
 pub(super) fn height<K, V>(link: &Link<K, V>) -> u8 {
     link.as_ref().map_or(0, |n| n.height)
 }
+
+#[derive(Clone, Copy)]
+pub(super) enum Rotation {
+    None,
+    Right,
+    LeftRight,
+    Left,
+    RightLeft,
+}
+
+/// Both persistent and uniquely-owned edits use this one AVL decision.
+pub(super) fn rotation<K, V>(left: &Link<K, V>, right: &Link<K, V>) -> Rotation {
+    if height(left) > height(right) + 1 {
+        let child = left.as_ref().expect("left-heavy node");
+        if height(&child.left) >= height(&child.right) {
+            Rotation::Right
+        } else {
+            Rotation::LeftRight
+        }
+    } else if height(right) > height(left) + 1 {
+        let child = right.as_ref().expect("right-heavy node");
+        if height(&child.right) >= height(&child.left) {
+            Rotation::Left
+        } else {
+            Rotation::RightLeft
+        }
+    } else {
+        Rotation::None
+    }
+}
+
+/// Removal only rearranges existing cells or removes them. Every new subtree
+/// is a subset of the already-representable tree; no new byte quote is made.
+pub(super) fn refresh_owned<K, V>(node: &mut Node<K, V>) {
+    node.height = height(&node.left)
+        .max(height(&node.right))
+        .checked_add(1)
+        .expect("an existing representable AVL height");
+    node.count = node
+        .left
+        .as_ref()
+        .map_or(0, |n| n.count)
+        .checked_add(node.right.as_ref().map_or(0, |n| n.count))
+        .and_then(|n| n.checked_add(1))
+        .expect("a subset of the admitted tree");
+    node.bytes = match (
+        node.bytes,
+        node.entry.bytes,
+        node.left.as_ref().map_or(Some(0), |n| n.bytes),
+        node.right.as_ref().map_or(Some(0), |n| n.bytes),
+    ) {
+        (Some(_), Some(entry), Some(left), Some(right)) => Some(
+            arc_bytes::<Node<K, V>>()
+                .expect("existing node layout")
+                .checked_add(entry)
+                .and_then(|n| n.checked_add(left))
+                .and_then(|n| n.checked_add(right))
+                .expect("a subset of the admitted backing"),
+        ),
+        _ => None,
+    };
+}
 pub(super) fn build<K, V>(
     entry: Arc<Entry<K, V>>,
     left: Link<K, V>,

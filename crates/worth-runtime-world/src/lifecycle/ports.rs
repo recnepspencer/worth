@@ -184,6 +184,16 @@ pub(crate) trait RuntimeWorldBranchService:
         &self,
         observed: &ProductBranchObservation,
     ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial>;
+
+    fn retire_replaced_head(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        old: &ProductBranchObservation,
+        candidate: &ProductBranchObservation,
+    ) -> Result<
+        crate::branch::RuntimeWorldRetiredReplacement,
+        crate::branch::RuntimeWorldBranchReplacementDenial,
+    >;
 }
 
 /// Shared internal seam for the serial owner execution pipeline. Preparation

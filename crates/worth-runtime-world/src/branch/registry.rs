@@ -3,6 +3,7 @@ mod installation;
 #[cfg(test)]
 pub(crate) mod installation_unwind;
 mod installed_entries;
+mod replacement;
 mod reservation;
 pub(crate) use installation::ProductBranchInstallationWitness;
 

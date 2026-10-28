@@ -5,6 +5,10 @@ pub(in crate::domain_computation) use shared_query_basis::SharedSelectedProductO
 mod branches;
 mod cleanup;
 mod close;
+mod replacement;
+pub use replacement::{
+    WorthQueryApplicationHeadReplacementDenial, WorthQueryRetiredApplicationHead,
+};
 mod conditional_definition;
 mod context;
 pub(in crate::domain_computation::primary_graph) mod correction_source;

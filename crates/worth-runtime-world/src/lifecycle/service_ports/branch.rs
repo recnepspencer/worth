@@ -54,4 +54,22 @@ impl RuntimeWorldBranchPort {
             .retire_product_branch(observed)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
+
+    /// Retire only the saved old head while the saved replacement head is
+    /// simultaneously current. Refusal changes neither reference. Success
+    /// owns actual retirement work even when the original request stops at
+    /// its final handoff; it does not adopt or publish the candidate.
+    pub fn retire_replaced_head(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        old: &crate::branch::ProductBranchObservation,
+        candidate: &crate::branch::ProductBranchObservation,
+    ) -> Result<
+        crate::branch::RuntimeWorldRetiredReplacement,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchReplacementDenial>,
+    > {
+        self.service()?
+            .retire_replaced_head(execution, old, candidate)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
 }

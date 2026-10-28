@@ -19,6 +19,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 pub struct WorthQueryProductBranchFork<'runtime> {
     runtime: &'runtime WorthQueryProductRuntime,
     source: WorthQueryProductBranch,
+    expected: Option<std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>,
     intent: Option<WorthQueryProductBranchForkIntent>,
     output_lineage: Option<std::sync::Arc<std::sync::Mutex<
         crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
@@ -28,6 +29,12 @@ pub struct WorthQueryProductBranchFork<'runtime> {
 }
 
 pub(crate) trait WorthQuerySourceProgramResolver {
+    fn retained_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+    ) -> Result<super::WorthQueryProductBranchLease, super::WorthQueryProductBranchAdmissionDenial>;
+
     fn source_program(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -37,6 +44,16 @@ pub(crate) trait WorthQuerySourceProgramResolver {
 
 #[derive(Debug)]
 pub enum WorthQueryProductBranchCreateError {
+    /// The expected source's application lane is currently owned elsewhere.
+    CoordinationBusy,
+    /// The original request refused the expected-source operation.
+    Request(worth_execution::WorkCeilingDenial),
+    /// Actual occurrence-lane storage admission refused before owner effects.
+    CoordinationStorage(worth_execution::ExecutionOrderedMapDenial),
+    /// The new lane's physical backing cannot be represented.
+    CoordinationSizeOverflow,
+    /// The new lane's lookup work cannot be represented.
+    CoordinationWorkCounterOverflow,
     ComponentsIncomplete,
     IdentityExhausted,
     SourceAdmission(super::WorthQueryProductBranchAdmissionDenial),
@@ -50,6 +67,7 @@ impl<'runtime> WorthQueryProductBranches<'runtime> {
         WorthQueryProductBranchFork {
             runtime: self.runtime,
             source,
+            expected: None,
             intent: None,
             output_lineage: None,
             application_provider: None,
@@ -59,6 +77,16 @@ impl<'runtime> WorthQueryProductBranches<'runtime> {
 }
 
 impl<'runtime> WorthQueryProductBranchFork<'runtime> {
+    pub(crate) fn with_expected_read(
+        mut self,
+        expected: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        >,
+    ) -> Self {
+        self.expected = Some(expected);
+        self
+    }
+
     pub(crate) fn with_application_lifecycle(
         mut self,
         output_lineage: std::sync::Arc<std::sync::Mutex<
@@ -98,15 +126,54 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         let Self {
             runtime,
             source,
+            expected,
             intent,
             output_lineage,
             application_provider,
             source_program_resolver,
         } = self;
-        let application_commit_lane = application_provider.map(|provider| {
-            provider.application_branch_commit_lane_for_occurrence(source.occurrence())
-        });
-        let _coordination = application_commit_lane.as_ref().map(|lane| lane.enter());
+        let retained_source = expected
+            .as_ref()
+            .map(|expected| {
+                source_program_resolver
+                    .ok_or(WorthQueryProductBranchCreateError::SourceAdmission(
+                        super::WorthQueryProductBranchAdmissionDenial::Refused(
+                            AdmissionRefusal::ForeignOwner,
+                        ),
+                    ))?
+                    .retained_source(execution, expected)
+                    .map_err(WorthQueryProductBranchCreateError::SourceAdmission)
+            })
+            .transpose()?;
+        if expected.is_some() {
+            execution
+                .consult()
+                .map_err(WorthQueryProductBranchCreateError::Request)?;
+        }
+        let application_commit_lane = application_provider
+            .map(|provider| {
+                if expected.is_some() {
+                    provider
+                        .application_branch_commit_lane_for_request(source.occurrence(), *execution)
+                        .map_err(coordination_denial)
+                } else {
+                    Ok(provider.application_branch_commit_lane_for_occurrence(source.occurrence()))
+                }
+            })
+            .transpose()?;
+        let _coordination = match application_commit_lane.as_ref() {
+            Some(lane) if expected.is_some() => Some(
+                lane.try_enter()
+                    .ok_or(WorthQueryProductBranchCreateError::CoordinationBusy)?,
+            ),
+            Some(lane) => Some(lane.enter()),
+            None => None,
+        };
+        if expected.is_some() {
+            execution
+                .consult()
+                .map_err(WorthQueryProductBranchCreateError::Request)?;
+        }
         let components = intent
             .ok_or(WorthQueryProductBranchCreateError::ComponentsIncomplete)?
             .components();
@@ -144,9 +211,12 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             ProductBranchCreationPlans::new(relational, signal),
         )
         .expect("generated Query product branch names satisfy World limits");
-        let source = runtime
-            .admit_product_occurrence(source.occurrence())
-            .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
+        let source = match retained_source {
+            Some(source) => source,
+            None => runtime
+                .admit_product_occurrence(source.occurrence())
+                .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?,
+        };
         let source_program = source_program_resolver
              .map(|resolver| {
                 let _read = runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::SourceProgramResolution);
@@ -193,4 +263,19 @@ fn component_plan(
     posture: Option<WorthQueryProductBranchComponentPosture>,
 ) -> Result<WorthQueryProductBranchComponentPosture, WorthQueryProductBranchCreateError> {
     posture.ok_or(WorthQueryProductBranchCreateError::ComponentsIncomplete)
+}
+
+fn coordination_denial(
+    cause: crate::domain_computation::primary_graph::BranchCoordinationDenial,
+) -> WorthQueryProductBranchCreateError {
+    use crate::domain_computation::primary_graph::BranchCoordinationDenial as Cause;
+    match cause {
+        Cause::Busy => WorthQueryProductBranchCreateError::CoordinationBusy,
+        Cause::SizeOverflow => WorthQueryProductBranchCreateError::CoordinationSizeOverflow,
+        Cause::WorkCounterOverflow => {
+            WorthQueryProductBranchCreateError::CoordinationWorkCounterOverflow
+        }
+        Cause::Request(cause) => WorthQueryProductBranchCreateError::Request(cause),
+        Cause::Storage(cause) => WorthQueryProductBranchCreateError::CoordinationStorage(cause),
+    }
 }

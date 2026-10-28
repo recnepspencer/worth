@@ -132,6 +132,7 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
 
 pub use branch_commit_coordination::WorthQueryApplicationBranchCommitContentionForTest;
 
+pub(crate) use branch_commit_coordination::BranchCoordinationDenial;
 pub(crate) use branch_commit_coordination::WorthQueryApplicationBranchCommitCoordination;
 pub(crate) use branch_commit_coordination::WorthQueryApplicationBranchCommitLane;
 
@@ -257,6 +258,15 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Arc<WorthQueryApplicationBranchCommitLane> {
         self.branch_commit_coordination
             .lane_for_occurrence(occurrence)
+    }
+
+    pub(crate) fn application_branch_commit_lane_for_request(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        request: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<WorthQueryApplicationBranchCommitLane>, BranchCoordinationDenial> {
+        self.branch_commit_coordination
+            .lane_for_request(occurrence, request)
     }
 
     pub(in crate::domain_computation::primary_graph) fn retire_application_branch_commit_lane(

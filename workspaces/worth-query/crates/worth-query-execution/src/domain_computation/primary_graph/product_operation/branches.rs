@@ -46,6 +46,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
     for WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
+    fn retained_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: &super::super::WorthQueryApplicationReadObservation,
+    ) -> Result<
+        crate::basis::WorthQueryProductBranchLease,
+        crate::basis::WorthQueryProductBranchAdmissionDenial,
+    > {
+        self.select_application_read_observation_with_request(execution, expected)
+            .map(|selected| selected.into_parts().1)
+    }
+
     fn source_program(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -63,6 +75,17 @@ impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'runtime, Schema> {
+    /// Fork from this genuine retained source, refusing a displaced head rather
+    /// than silently selecting its successor. Creation may retain real owner
+    /// recovery when the source moves after a component fork.
+    pub fn fork_from_read(
+        self,
+        expected: std::sync::Arc<super::super::WorthQueryApplicationReadObservation>,
+    ) -> WorthQueryProductBranchFork<'runtime> {
+        let branch = WorthQueryProductBranch::from_occurrence(expected.branch_incarnation());
+        self.fork(branch).with_expected_read(expected)
+    }
+
     /// Admits an exact bounded set of currently live branch occurrences for
     /// explicit non-atomic program adoption. Later-created branches are not
     /// silently added to the issued coverage.
@@ -140,6 +163,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .product_runtime
             .pending_application_retired_product_occurrences()
         {
+            self.application
+                .product_runtime
+                .activations
+                .release(occurrence.branch(), occurrence.incarnation());
             self.application
                 .output_demands
                 .release_product_occurrence(occurrence.incarnation());

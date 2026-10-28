@@ -171,7 +171,10 @@ pub use request::{
     WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
     WorthQueryOutputCurrentnessDenial, WorthQueryWorkflowObservationDenial,
 };
-pub use retained_read::WorthQueryApplicationReadObservation;
+pub use retained_read::{
+    WorthQueryApplicationHeadReplacementDenial, WorthQueryApplicationReadObservation,
+    WorthQueryRetiredApplicationHead,
+};
 pub use workflow::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
     PerformedWorkflowDefinitionPublication, PerformedWorkflowDefinitionRetirement,

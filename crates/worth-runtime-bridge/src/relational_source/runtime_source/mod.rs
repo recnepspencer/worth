@@ -54,6 +54,15 @@ pub enum RelationalBridgeSourceConfigurationError {
 }
 
 impl RuntimeBridgeRelationalSource {
+    /// Bytes copied into newly owned backing by `Clone`. Runtime handles,
+    /// bindings and graph-role backing are shared; only a bound partition's
+    /// UTF-8 truth role is copied. This describes storage, not source authority.
+    pub fn cloned_backing_bytes(&self) -> usize {
+        self.partition
+            .as_ref()
+            .map_or(0, |partition| partition.truth.as_str().len())
+    }
+
     pub fn for_graph_role(
         runtime: Arc<RelationalRuntime>,
         graph_role: impl Into<Arc<str>>,

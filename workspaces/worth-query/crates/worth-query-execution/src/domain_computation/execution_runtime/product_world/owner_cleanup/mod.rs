@@ -3,7 +3,12 @@
 mod admitted;
 mod component;
 mod history;
+mod pending;
 mod registry;
+mod replacement;
+use pending::PendingOwnerWork;
+pub(crate) use registry::WorthQueryCleanupReservationDenial;
+pub(crate) use replacement::WorthQueryPreparedReplacementCleanup;
 
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, OwnerRetirementWork, ProductBranchRetirementReport,
@@ -163,7 +168,7 @@ impl WorthQueryProductBranchOwnerCleanupFailure {
 
 pub(super) struct WorthQueryProductBranchOwnerCleanupRecord {
     history: Option<WorthQueryProductBranchHistoryCleanup>,
-    pending: Vec<OwnerRetirementWork>,
+    pending: PendingOwnerWork,
     retired_component_count: usize,
 }
 
@@ -173,6 +178,7 @@ pub(super) struct WorthQueryProductBranchOwnerCleanupRecord {
 /// the closed branch it alone kept.
 pub(super) struct WorthQueryProductBranchHistoryCleanup {
     resume: Vec<CompositeCommitIdentity>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl WorthQueryProductBranchOwnerCleanupRecord {
@@ -182,8 +188,9 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
             // The root branch has no boundary; its history outlives it.
             history: retirement_boundary.map(|_| WorthQueryProductBranchHistoryCleanup {
                 resume: vec![retired_head],
+                _memory: None,
             }),
-            pending,
+            pending: PendingOwnerWork::Legacy(pending),
             retired_component_count: 0,
         }
     }
@@ -194,9 +201,10 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
             history: (!unpublished_history_candidates.is_empty()).then_some(
                 WorthQueryProductBranchHistoryCleanup {
                     resume: unpublished_history_candidates,
+                    _memory: None,
                 },
             ),
-            pending,
+            pending: PendingOwnerWork::Legacy(pending),
             retired_component_count: 0,
         }
     }
@@ -224,10 +232,10 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
                 .ok_or(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?,
         )?;
         self.release_retired_history(runtime)?;
-        while let Some(work) = self.pending.first() {
-            checkpoint(1)?;
+        while let Some(work) = self.pending.as_slice().first() {
+            checkpoint(self.pending.removal_work())?;
             runtime.retire_owner_component(work)?;
-            self.pending.remove(0);
+            self.pending.remove_first();
             self.retired_component_count += 1;
             after_component_progress();
         }
@@ -237,7 +245,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
     }
 
     fn described_work(&self) -> Vec<WorthQueryProductBranchOwnerCleanupWork> {
-        self.pending.iter().map(describe_work).collect()
+        self.pending.as_slice().iter().map(describe_work).collect()
     }
 }
 
