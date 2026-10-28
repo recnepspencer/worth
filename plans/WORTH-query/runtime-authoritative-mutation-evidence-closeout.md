@@ -1,5 +1,7 @@
 # Runtime Authoritative Mutation Evidence Closeout
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 This closeout freezes what downstream runtimes may rely on from the
 cross-runtime authority-evidence lane right now.
 
@@ -118,5 +120,5 @@ cross-runtime authority-evidence lane right now.
 - `cargo fmt -p worth-runtime-bridge`
 - `cargo check -p worth-runtime-bridge --tests`
 - `cargo test -p worth-runtime-bridge`
-- `cargo test --manifest-path crates/worth-runtime-bridge/Cargo.toml --test phase_boundaries_compile_fail`
+- `cargo test --manifest-path crates/worth-runtime-bridge/Cargo.toml --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail::`
 - `git diff --check`

@@ -1,5 +1,7 @@
 # WORTH Runtime Bridge Aspect-Native Refactor Spec
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > Status: Active implementation spec
 >
 > Roadmap parent: [worth_runtime_bridge_roadmap.md](worth_runtime_bridge_roadmap.md)
@@ -741,7 +743,7 @@ Default proof commands after a source-changing row:
 cargo fmt -p worth-runtime-bridge
 cargo check -p worth-runtime-bridge --tests
 cargo test -p worth-runtime-bridge <focused-row-filter> -- --nocapture
-cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture
 ```
 
 Skip the compile-fail test only if the row does not touch public/sealed type
@@ -805,7 +807,7 @@ Phase 1 row:
 - Focused proof: `cargo fmt -p worth-runtime-bridge -p worth-query`,
   `cargo check -p worth-runtime-bridge --tests`,
   `cargo check -p worth-query --tests`,
-  `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+  `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture`, plus focused diagnostics/speculation/writeback/causal-envelope
   tests affected by the row.
 ```
@@ -816,7 +818,7 @@ Closeout proof commands, after R1 and any exact adjacent row are closed:
 cargo fmt -p worth-runtime-bridge -p worth-query
 cargo check -p worth-runtime-bridge --tests
 cargo check -p worth-query --tests
-cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture
 cargo test -p worth-runtime-bridge speculation -- --nocapture
 cargo test -p worth-runtime-bridge diagnostics_explanations -- --nocapture
 cargo test -p worth-runtime-bridge writeback -- --nocapture
@@ -856,7 +858,7 @@ Lockback evidence for `P1-R1`:
   `cargo fmt -p worth-runtime-bridge -p worth-query`,
   `cargo check -p worth-runtime-bridge --tests`,
   `cargo check -p worth-query --tests`,
-  `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+  `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture`, `cargo test -p worth-runtime-bridge speculation --
   --nocapture`, `cargo test -p worth-runtime-bridge diagnostics_explanations
   -- --nocapture`, `cargo test -p worth-runtime-bridge writeback --
@@ -1058,7 +1060,7 @@ Phase 1 closeout report. Use a 10 minute timeout per cargo command:
 ```text
 cargo fmt -p worth-runtime-bridge
 cargo check -p worth-runtime-bridge --tests
-cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture
 ```
 
 Also run the row's focused test family, row-local residue scan, runtime-bridge
@@ -1105,17 +1107,17 @@ only create the queue; row-local reads and edits consume the queue.
 | Order | Row | Files | Classification | Native replacement | Coupled proof |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Bulk canonical workload request members | `src/routing/planning/bulk/types/request_surfaces.rs`, `src/routing/planning/bulk/planner/workload_pipeline.rs`, `src/harness/tests/planning/bulk_workload/canonical_summary.rs` | Closed `authority-blocker` | Replaced `Arc<str>` member collections and `workload_segment_digests` with typed member identities. Existing route, subscription-slice, commit, snapshot, and branch identities now flow through the canonical request directly; bulk-scoped continuity member, truth-view member, and workload segment identities cover derived member categories. Segment identity is digest-shaped from private native basis and no longer exposes `segment|commit=...` text. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge bulk_workload -- --nocapture` (10 passed); `cargo check -p worth-runtime-bridge --tests`; targeted scan has no old public member/accessor shape, with only the private `bulk-workload-segment` digest-basis row and a negative assertion for `segment|commit=`. |
-| 2 | Historical continuity lineage resolved keys | `src/adapter/continuity_lineage.rs`, `src/continuity/resolution.rs`, `src/harness/tests/planning/continuity/planning_requests.rs`, plus direct constructor callers in builder/facade/harness fixtures | Closed `authority-blocker` | Replaced `canonical_resolved_lineage_keys` and `canonical_resolved_record_keys` raw string sets with `BridgeHistoricalResolvedLineageIdentity` and `BridgeHistoricalResolvedRecordIdentity`. Historical lineage authority now accepts typed identity vectors, stores typed identity slices, enforces canonical ordering/duplicate denial on typed carriers, and renders `as_str()` only for digest-basis preparation. The old resolved-key accessors and resolved-key error variants are gone. Coupled tests construct typed identities directly; no resolved-key conversion helper remains. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge continuity -- --nocapture` (48 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`; targeted old-key/raw-vector scan clean; touched line-cap scan clean; scoped `git diff --check` had only existing LF/CRLF warnings. |
-| 3 | Phase 1 closeout proof | Whole `worth-runtime-bridge` crate | Closed proof gate | No cleanup edits were made after Row 2. The exact gate scans classify remaining hits as terminal I/O, canonical mechanics, sealed compile-fail proof, counter construction mechanics, or presentation-only. JSON hits are under terminal report/capture/export topology; authority import-wall scan has no hits; no unresolved resolved-key/string-collection authority row remains. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge continuity -- --nocapture` (48 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`; whole runtime-bridge Rust line-cap scan clean; targeted resolved-key/raw-vector residue scan clean; import-wall scan clean; broad no-shim scan classified as terminal JSON/export, canonical digest mechanics, foundational `payload()`/`bytes()` accessors, `digest_input_bytes` counter proof, `from_values` counter constructors, or presentation-only assertions; scoped `git diff --check` had only existing LF/CRLF warnings. |
+| 2 | Historical continuity lineage resolved keys | `src/adapter/continuity_lineage.rs`, `src/continuity/resolution.rs`, `src/harness/tests/planning/continuity/planning_requests.rs`, plus direct constructor callers in builder/facade/harness fixtures | Closed `authority-blocker` | Replaced `canonical_resolved_lineage_keys` and `canonical_resolved_record_keys` raw string sets with `BridgeHistoricalResolvedLineageIdentity` and `BridgeHistoricalResolvedRecordIdentity`. Historical lineage authority now accepts typed identity vectors, stores typed identity slices, enforces canonical ordering/duplicate denial on typed carriers, and renders `as_str()` only for digest-basis preparation. The old resolved-key accessors and resolved-key error variants are gone. Coupled tests construct typed identities directly; no resolved-key conversion helper remains. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge continuity -- --nocapture` (48 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`; targeted old-key/raw-vector scan clean; touched line-cap scan clean; scoped `git diff --check` had only existing LF/CRLF warnings. |
+| 3 | Phase 1 closeout proof | Whole `worth-runtime-bridge` crate | Closed proof gate | No cleanup edits were made after Row 2. The exact gate scans classify remaining hits as terminal I/O, canonical mechanics, sealed compile-fail proof, counter construction mechanics, or presentation-only. JSON hits are under terminal report/capture/export topology; authority import-wall scan has no hits; no unresolved resolved-key/string-collection authority row remains. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge continuity -- --nocapture` (48 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`; whole runtime-bridge Rust line-cap scan clean; targeted resolved-key/raw-vector residue scan clean; import-wall scan clean; broad no-shim scan classified as terminal JSON/export, canonical digest mechanics, foundational `payload()`/`bytes()` accessors, `digest_input_bytes` counter proof, `from_values` counter constructors, or presentation-only assertions; scoped `git diff --check` had only existing LF/CRLF warnings. |
 
 Strict reopen rows, recorded 2026-06-02:
 
 | Order | Row | Files | Classification | Native replacement | Coupled proof |
 | --- | --- | --- | --- | --- | --- |
-| 4 | Bulk packet source and continuity identities | `src/routing/planning/bulk/types/packet_families.rs`, `src/routing/planning/bulk/types/reductions.rs`, `src/routing/planning/bulk/types/route_packets.rs`, `src/routing/planning/bulk/planner/member_identities.rs`, `src/routing/planning/bulk/planner/packet_reduction.rs`, `src/routing/planning/bulk/planner/admission.rs`, `src/routing/planning/bulk/planner/support.rs`, direct bulk workload/packet-reduction tests | Closed `authority-blocker` | Deleted raw `Arc<str>` packet fields, raw tuple grouping, raw source locality sets, and raw continuity-output grouping for branch/commit/snapshot/continuity authority. Routing, truth-view, continuity, and reduced artifacts now carry `TruthBranchIdentity`, `TruthCommitIdentity`, `TruthSnapshotIdentity`, `BulkTruthViewMemberIdentity`, `BulkContinuityMemberIdentity`, route identities, and subscription-slice identities as authority carriers. String accessors remain projection only. The shared bulk member identity derivation lives in `planner/member_identities.rs`; no cleanup-only split was performed. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge packet_reduction -- --nocapture` (11 passed); `cargo test -p worth-runtime-bridge bulk_workload -- --nocapture` (11 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`; row scan found no raw packet source fields, raw continuity fields, raw tuple maps, or raw source `BTreeSet::<Arc<str>>` groupings under `routing/planning/bulk`; line-cap scan clean; scoped `git diff --check` had only existing LF/CRLF warnings. |
-| 5 | Structural fingerprint snapshot carrier | `src/structural/fingerprints.rs`, direct structural tests | Closed `authority-blocker` | Replaced stored `snapshot_identity: Arc<str>` and the arbitrary string constructor argument with `TruthSnapshotIdentity`. `StructuralFingerprint::snapshot_identity()` now returns the typed identity; snapshot text is explicit projection through `snapshot_identity_text()` and canonical-basis rendering only. Direct structural/facade tests construct and assert typed snapshot identities; no compatibility alias, string constructor, or test shim remains. No topology split was required because touched files stayed under the line cap. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge structural -- --nocapture` (54 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`; row scan found no `snapshot_identity: Arc<str>` or weak `snapshot_identity_proof` accessor under structural/facade structural tests; touched line-cap scan clean; scoped `git diff --check` had only existing LF/CRLF warnings. |
-| 6 | Speculation promotion/reuse branch bindings | `src/speculation/contracts.rs`, direct speculation tests | Closed `authority-blocker` | Replaced `truth_branch_identity: Arc<str>` and `signal_branch_identity: Arc<str>` in promotion admissibility and preview reuse equivalence proofs with `TruthBranchIdentity` and `BridgeSignalBranchIdentity` cloned from the declaration branch binding. Matching now compares typed branch carriers; canonical basis renders `as_str()` only for digest preparation. Added direct proof tests for promotion and reuse retained typed branch identities. The pricing-shock speculation proof now compares delivered fanout targets as a set because delivery order is not the contract under that standard-path assertion. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge speculation -- --nocapture` (29 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`; row scan found no raw truth/signal branch identity fields in `speculation/contracts.rs`; touched line-cap scan clean; scoped `git diff --check` had only existing LF/CRLF warnings. |
-| 7 | Strict Phase 1 closeout proof | Whole `worth-runtime-bridge` crate | Closed proof gate | No cleanup edits were made during closeout. Remaining broad no-shim hits are classified as foundational accessor (`payload()`/`bytes()` on validated/foundational carriers), canonical digest mechanics (`as_bytes()` and digest prefixes derived from named native canonical bases), digest-input counter proof, terminal report/export/capture JSON, or presentation-only test assertions. Import-wall scan proved terminal JSON/export/capture modules are not imported by source/routing/writeback/diagnostics/subscription/facade authority paths. No new executable authority blocker row remains. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge structural -- --nocapture` (54 passed); `cargo test -p worth-runtime-bridge speculation -- --nocapture` (29 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`; import-wall scan clean; whole runtime-bridge line-cap scan clean; broad no-shim scan classified with no blocker rows; scoped `git diff --check` had only existing LF/CRLF warnings. |
+| 4 | Bulk packet source and continuity identities | `src/routing/planning/bulk/types/packet_families.rs`, `src/routing/planning/bulk/types/reductions.rs`, `src/routing/planning/bulk/types/route_packets.rs`, `src/routing/planning/bulk/planner/member_identities.rs`, `src/routing/planning/bulk/planner/packet_reduction.rs`, `src/routing/planning/bulk/planner/admission.rs`, `src/routing/planning/bulk/planner/support.rs`, direct bulk workload/packet-reduction tests | Closed `authority-blocker` | Deleted raw `Arc<str>` packet fields, raw tuple grouping, raw source locality sets, and raw continuity-output grouping for branch/commit/snapshot/continuity authority. Routing, truth-view, continuity, and reduced artifacts now carry `TruthBranchIdentity`, `TruthCommitIdentity`, `TruthSnapshotIdentity`, `BulkTruthViewMemberIdentity`, `BulkContinuityMemberIdentity`, route identities, and subscription-slice identities as authority carriers. String accessors remain projection only. The shared bulk member identity derivation lives in `planner/member_identities.rs`; no cleanup-only split was performed. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge packet_reduction -- --nocapture` (11 passed); `cargo test -p worth-runtime-bridge bulk_workload -- --nocapture` (11 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`; row scan found no raw packet source fields, raw continuity fields, raw tuple maps, or raw source `BTreeSet::<Arc<str>>` groupings under `routing/planning/bulk`; line-cap scan clean; scoped `git diff --check` had only existing LF/CRLF warnings. |
+| 5 | Structural fingerprint snapshot carrier | `src/structural/fingerprints.rs`, direct structural tests | Closed `authority-blocker` | Replaced stored `snapshot_identity: Arc<str>` and the arbitrary string constructor argument with `TruthSnapshotIdentity`. `StructuralFingerprint::snapshot_identity()` now returns the typed identity; snapshot text is explicit projection through `snapshot_identity_text()` and canonical-basis rendering only. Direct structural/facade tests construct and assert typed snapshot identities; no compatibility alias, string constructor, or test shim remains. No topology split was required because touched files stayed under the line cap. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge structural -- --nocapture` (54 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`; row scan found no `snapshot_identity: Arc<str>` or weak `snapshot_identity_proof` accessor under structural/facade structural tests; touched line-cap scan clean; scoped `git diff --check` had only existing LF/CRLF warnings. |
+| 6 | Speculation promotion/reuse branch bindings | `src/speculation/contracts.rs`, direct speculation tests | Closed `authority-blocker` | Replaced `truth_branch_identity: Arc<str>` and `signal_branch_identity: Arc<str>` in promotion admissibility and preview reuse equivalence proofs with `TruthBranchIdentity` and `BridgeSignalBranchIdentity` cloned from the declaration branch binding. Matching now compares typed branch carriers; canonical basis renders `as_str()` only for digest preparation. Added direct proof tests for promotion and reuse retained typed branch identities. The pricing-shock speculation proof now compares delivered fanout targets as a set because delivery order is not the contract under that standard-path assertion. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge speculation -- --nocapture` (29 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`; row scan found no raw truth/signal branch identity fields in `speculation/contracts.rs`; touched line-cap scan clean; scoped `git diff --check` had only existing LF/CRLF warnings. |
+| 7 | Strict Phase 1 closeout proof | Whole `worth-runtime-bridge` crate | Closed proof gate | No cleanup edits were made during closeout. Remaining broad no-shim hits are classified as foundational accessor (`payload()`/`bytes()` on validated/foundational carriers), canonical digest mechanics (`as_bytes()` and digest prefixes derived from named native canonical bases), digest-input counter proof, terminal report/export/capture JSON, or presentation-only test assertions. Import-wall scan proved terminal JSON/export/capture modules are not imported by source/routing/writeback/diagnostics/subscription/facade authority paths. No new executable authority blocker row remains. | `cargo fmt -p worth-runtime-bridge`; `cargo test -p worth-runtime-bridge structural -- --nocapture` (54 passed); `cargo test -p worth-runtime-bridge speculation -- --nocapture` (29 passed); `cargo check -p worth-runtime-bridge --tests`; `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`; import-wall scan clean; whole runtime-bridge line-cap scan clean; broad no-shim scan classified with no blocker rows; scoped `git diff --check` had only existing LF/CRLF warnings. |
 
 Do the rows in order. Do not split unrelated god files while executing the
 workboard. If a touched file is over 400 lines, split by the new native
@@ -1175,7 +1177,7 @@ Batch target:
   `cargo fmt -p worth-runtime-bridge`;
   `cargo test -p worth-runtime-bridge continuity -- --nocapture` (48 passed);
   `cargo check -p worth-runtime-bridge --tests`;
-  `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`
+  `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`
   (1 passed);
   targeted residue scan clean;
   touched-file line-cap scan clean;
@@ -1213,7 +1215,7 @@ End-of-gate verification, only after a code-changing blocker rewrite:
 ```powershell
 cargo fmt -p worth-runtime-bridge
 cargo check -p worth-runtime-bridge --tests
-cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture
 git diff --check -- crates/worth-runtime-bridge plans/worth-runtime-bridge/aspect_native_refactor.md
 ```
 
@@ -1510,7 +1512,7 @@ Closeout proof, recorded 2026-06-02:
 | --- | --- |
 | `cargo fmt -p worth-runtime-bridge` | Passed. |
 | `cargo check -p worth-runtime-bridge --tests` | Passed. |
-| `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture` | Passed. |
+| `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture` | Passed. |
 | JSON/API scan | Terminal report export/capture modules plus `subscription/counters::from_values` false positives only. |
 | Import-wall scan | No hits across source, routing, writeback, diagnostics, subscription, and facade authority trees. |
 | No-shim vocabulary scan | Canonical digest mechanics, foundational `payload()`/`bytes()` accessors, native digest-family prefixes, and digest-input counters only. |
@@ -1631,7 +1633,7 @@ Run only after Gates 1-4 have no blocker rows:
 ```powershell
 cargo fmt -p worth-runtime-bridge
 cargo check -p worth-runtime-bridge --tests
-cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture
 ```
 
 Also run focused tests for any proof family changed during Gate 2 or Gate 4,
@@ -1702,7 +1704,7 @@ Gate 5 verification commands, each cargo command with a 10 minute timeout:
 ```powershell
 cargo fmt -p worth-runtime-bridge
 cargo check -p worth-runtime-bridge --tests
-cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture
 ```
 
 Gate 5 also runs the focused test families touched by Gates 2-4, the
@@ -1727,7 +1729,7 @@ Active Phase 1 closeout classification:
 - Runtime-bridge source line-cap scan is clean.
 - Verification evidence: `cargo fmt -p worth-runtime-bridge`,
   `cargo check -p worth-runtime-bridge --tests`, `cargo test -p
-  worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`,
+  worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`,
   Gate 3 JSON/API scan, Gate 3 import-wall scan, Gate 4 current-test no-shim
   scan, broad no-shim classification scan, runtime-bridge line-cap scan, and
   scoped `git diff --check` with only the existing CRLF warning on retained
@@ -1822,7 +1824,7 @@ Batch 1 progress:
   --nocapture`, `cargo test -p worth-runtime-bridge
   subscription::certification -- --nocapture`, `cargo test -p
   worth-runtime-bridge source -- --nocapture`, and `cargo test -p
-  worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`.
+  worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`.
   Line-cap scan is clean; the source-artifact-index authority-collection
   residue scan is clean; touched no-shim scan reports only canonical
   `as_bytes()` digest mechanics and the already-classified foundational
@@ -1886,7 +1888,7 @@ Batch 5: closeout proof.
 ```powershell
 cargo fmt -p worth-runtime-bridge
 cargo check -p worth-runtime-bridge --tests
-cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture
 ```
 
 - Also run focused tests for every proof family touched by Batches 1-4.
@@ -2115,7 +2117,7 @@ Strict restart Gate 4 progress:
   `tests/ui` found no executable old-authority examples. Remaining matches are
   canonical digest mechanics in test mirror basis helpers and the
   `digest_input_bytes` counter proof.
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture` passed, proving current sealed/private boundary fixtures still
   compile-fail as expected without legacy construction examples.
 
@@ -2135,7 +2137,7 @@ Run only after Gates 1-4 are closed:
 ```powershell
 cargo fmt -p worth-runtime-bridge
 cargo check -p worth-runtime-bridge --tests
-cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture
 ```
 
 Also run focused tests for every proof family touched by Gates 2-4, each with a
@@ -2324,7 +2326,7 @@ Closeout proof for Phase 1:
 - `cargo check -p worth-runtime-bridge --tests`
 - focused tests for every touched proof family, with a 10 minute timeout per
   command
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture` when public/type/privacy boundaries change
 - crate-wide line-cap scan for `crates/worth-runtime-bridge/src` and
   `crates/worth-runtime-bridge/tests`
@@ -2363,7 +2365,7 @@ Phase 1 verified with:
 - `cargo check -p worth-runtime-bridge --tests`
 - `cargo test -p worth-runtime-bridge harness -- --nocapture`
 - `cargo test -p worth-runtime-bridge snapshot -- --nocapture`
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture`
 - Gate 3 import-wall scan
 - Gate 4 no-test-shim scan
@@ -2548,7 +2550,7 @@ Phase 3 verified so far with:
 - `cargo test -p worth-runtime-bridge routing::eligibility -- --nocapture`
 - `cargo test -p worth-runtime-bridge routing::planning::plan -- --nocapture`
 - `cargo test -p worth-runtime-bridge routing::surfaces -- --nocapture`
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`
 - target-selector prefix residue scan over mapping/routing
 - residue scan proving `BridgePatchCoordinate` and `patch_coordinate()` are
   absent from current source/tests
@@ -2570,7 +2572,7 @@ Phase 3 closeout proof, recorded 2026-06-02:
   (2 passed)
 - `cargo test -p worth-runtime-bridge routing::surfaces -- --nocapture`
   (5 passed)
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture`
 - `cargo check -p worth-runtime-bridge --tests`
 - target residue scan over `routing`, `input`, and `mapping` found only
@@ -2763,7 +2765,7 @@ Phase 4 lowered invalidation target proof, recorded 2026-06-02:
 
 - `cargo fmt -p worth-runtime-bridge`
 - `cargo test -p worth-runtime-bridge routing -- --nocapture` (37 passed)
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture` (1 passed)
 - `cargo check -p worth-runtime-bridge --tests`
 - targeted residue scan found no `canonical_target_order`,
@@ -2782,7 +2784,7 @@ Phase 4 frozen mapping registration identity proof, recorded 2026-06-02:
   --nocapture` (1 passed)
 - `cargo test -p worth-runtime-bridge bulk_workload -- --nocapture`
   (11 passed)
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture` (1 passed)
 - QA found and fixed the initial line-cap violation by moving the new frozen
   registration proof into `mapping/freezing/tests/registration_identity.rs`,
@@ -2832,7 +2834,7 @@ Phase 4 bulk packet reduction identity proof, recorded 2026-06-02:
   (11 passed)
 - `cargo test -p worth-runtime-bridge bulk_workload -- --nocapture`
   (10 passed)
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture`
 - targeted packet-reduction residue scan over `routing/planning/bulk` and
   `harness/tests/planning/packet_reduction` found no
@@ -3014,7 +3016,7 @@ Phase 4 snapshot read coordinate proof consumption, recorded 2026-06-02:
   (9 passed)
 - `cargo test -p worth-runtime-bridge snapshot -- --nocapture` (50 passed)
 - `cargo check -p worth-runtime-bridge --tests`
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture`
 - QA found and fixed a public construction seam: `BridgeSnapshotReadCoordinate`
   exposed public constructors, and the subscription-slice constructor accepted
@@ -3044,7 +3046,7 @@ Phase 4 patch/routing error-coordinate target proof consumption, recorded
   (8 passed)
 - `cargo test -p worth-runtime-bridge routing::eligibility -- --nocapture`
   (2 passed)
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail --
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: --
   --nocapture`
 - `cargo check -p worth-runtime-bridge --tests`
 - QA found and fixed one duplicate-evidence issue: the first coordinate rewrite

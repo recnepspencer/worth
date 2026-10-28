@@ -1,5 +1,7 @@
 # Milestone 6.5 Closeout: Invariant Authority Completion
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 ## Status
 
 Milestone 6.5 is closed as of 2026-03-23.
@@ -194,7 +196,7 @@ Milestone 6.5 closeout was verified with the following passing lanes:
 - `cargo test -p worth-relational validation::data:: --quiet`
 - `cargo test -p worth-relational validation::engine:: --quiet`
 - `cargo test -p worth-relational validation::logic::invariant_access:: --quiet`
-- `cargo test -p worth-relational --test ui --quiet`
+- `cargo test -p worth-relational --test worth_relational compile_fail::ui:: --quiet`
 
 The implementation also added direct milestone-specific proof tests for:
 
