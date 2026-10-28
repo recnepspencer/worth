@@ -482,8 +482,9 @@ the product gaps. External limits are distinguished from WORTH defects.
 The source link on each row is Part C's exact caller-file list (including
 imports and first reference lines); it is incorporated here as the caller
 inventory, rather than duplicating those long lists. Empty scoped searches
-remain explicitly empty, not proof of repository-wide absence. Phase 3's
-allowlist must union execution-internal callers as Part B requests.
+remain explicitly empty, not proof of repository-wide absence. The next
+table completes the execution-internal caller union requested by Part B;
+Phase 3 builds its frozen allowlist from both inventories.
 
 | Retired path / authority | Callers (exact files at linked source row) | Cutover | Source part and row |
 |---|---|---|---|
@@ -494,7 +495,7 @@ allowlist must union execution-internal callers as Part B requests.
 | `in_memory_rostered_program_with_authorization_time_source` | certification tests/examples/fixtures, bank server; exact caller files in source row | 3: single open call (MemoryOnly or eligible directory) | [C:path row 160](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L160) |
 | `in_memory_program_from_checkpoint` | certification tests/examples/fixtures, host tests; exact caller files in source row | 3: WorthQueryInterimCheckpointRestore with new limits, frozen callers; 10: delete, move to open | [C:path row 161](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L161) |
 | `in_memory_rostered_program_from_checkpoint` | certification tests/examples/fixtures; exact caller files in source row | 3: WorthQueryInterimCheckpointRestore with new limits, frozen callers; 10: delete, move to open | [C:path row 162](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L162) |
-| `in_memory_program_from_checkpoint_with_projection` | No scoped Rust caller found; public export still retires.; exact caller files in source row | 3: WorthQueryInterimCheckpointRestore with new limits, frozen callers; 10: delete, move to open | [C:path row 163](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L163) |
+| `in_memory_program_from_checkpoint_with_projection` | No Part C scoped caller; execution-internal ownership-oracle caller is listed below | 3: WorthQueryInterimCheckpointRestore with new limits, frozen callers; 10: delete, move to open | [C:path row 163](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L163) |
 | `in_memory_rostered_program_from_checkpoint_with_transition` | certification tests/examples/fixtures, host tests; exact caller files in source row | 3: WorthQueryInterimCheckpointRestore with new limits, frozen callers; 10: delete, move to open | [C:path row 164](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L164) |
 | `in_memory_rostered_program_from_checkpoint_with_transition_in_advancement` | certification tests/examples/fixtures, host tests; exact caller files in source row | 3: WorthQueryInterimCheckpointRestore with new limits, frozen callers; 10: delete, move to open | [C:path row 165](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L165) |
 | `capture_application_checkpoint` | certification tests/examples/fixtures, host tests; exact caller files in source row | 10: delete caller-owned capture/byte/repair path; use home open/checkpoint/transition | [C:path row 166](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L166) |
@@ -507,7 +508,51 @@ allowlist must union execution-internal callers as Part B requests.
 | `WorthQueryCompletedCommitEvidenceStore as receipt authority` | No scoped consumer caller exists: this is private implementation state. Its internal receipt-authority role retires in Phase 4; the structure becomes a derived index under D9. Execution-internal owners are `E/.../primary_graph/provider.rs:116`, `provider/installation.rs:24`, `provider/session_commit.rs:11`; resolution uses `provider/idempotency/snapshot_resolution.rs:225`. This is not a public export.; exact caller files in source row | 4: Query durable original-result resolution; delete refusal/cache authority | [C:path row 173](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L173) |
 | `Server product retry cache` | Server; exact caller files in source row | 4: Query durable original-result resolution; delete refusal/cache authority | [C:path row 174](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L174) |
 | `Server compatibility retry cache` | Server; exact caller files in source row | 4: Query durable original-result resolution; delete refusal/cache authority | [C:path row 175](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L175) |
-| Relational embedded-checkpoint placement | Query interim checkpoint capture/restore consumers above; native checkpoint and recovery ports are the carrier boundary, not extra application durability | 3–9 interim only; 10 delete embedded placement with D13 transport | [A:native ports and caller handoff](milestone-3-survival-audit/part-a-runtime-owners.md?plain=1#L349); [B:InterimApplicationCheckpoint](milestone-3-survival-audit/part-b-query-execution.md?plain=1#L113) |
+| Relational embedded-checkpoint placement | Query interim checkpoint capture/restore consumers above; native checkpoint and recovery ports are the carrier boundary, not extra application durability | 3–9 interim only; 10 delete embedded placement with D13 transport | [A:native ports and caller handoff](milestone-3-survival-audit/part-a-runtime-owners.md?plain=1#L339); [B:InterimApplicationCheckpoint](milestone-3-survival-audit/part-b-query-execution.md?plain=1#L113) |
+
+### Execution-internal callers completing the inventory
+
+These additional references were inspected at the index's source HEAD.
+**EP** = `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/`;
+**EF** = `workspaces/worth-query/crates/worth-query-execution/src/facade/`.
+Each `path:line` below is an exact caller or reference, not a definition-only
+match. Repeated uses in one file are consolidated at its first reference.
+The part link identifies the corresponding retired-path row; the additional
+code citations close that part's explicit scoped-search limitation.
+
+Locations apply in order to **3–4 / 5 / 6 / 7 / 8 / 9**. M and I have the
+same meanings as the caller-location table below. Codec-only unit courts
+use local interim bytes without opening a directory; their I designation
+does not create a host restore caller. At Phase 10 these courts follow the
+retired contract's replacement, preserving any still-applicable claim.
+
+| Retired path / reference | Additional exact execution callers | Interim locations and retirement | Corresponding part row |
+|---|---|---|---|
+| Constructor re-exports (all ten `in_memory*` doors) | `EF/application_installation.rs:3`; `EP/application_installation/mod.rs:21`; the nine program doors also `EP/application_installation/program.rs:4` | No independent host/location: facade references follow their callers; remove old exports in 3, with checkpoint doors replaced by the frozen interim door | [C:constructor doors](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L156) |
+| `in_memory_program` | `EP/application_installation/program/speculation/counted_read_stops.rs:11`; `EP/output_lineage/ownership_oracle/installation.rs:5`; `EP/output_lineage/ownership_oracle/optional_aspects/installation.rs:4` | M / M / M / M / M / M; fresh construction cases move to single open in 3 | [C:path row 157](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L157) |
+| `in_memory_program_from_checkpoint` | `EP/application_installation/program/checkpoint.rs:113` (projection wrapper) | Inherits I / I / I / I / I / I from restore caller; collapse wrapper into interim door in 3; delete transport in 10 | [C:path row 161](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L161) |
+| `in_memory_rostered_program_from_checkpoint` | `EP/application_installation/program/checkpoint.rs:39` (non-rostered wrapper) | Inherits I / I / I / I / I / I from restore caller; same 3/10 cutover | [C:path row 162](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L162) |
+| `in_memory_program_from_checkpoint_with_projection` | `EP/output_lineage/ownership_oracle/optional_aspects/installation.rs:174` | I / I / I / I / I / I; existing ownership-oracle restores use frozen interim door in 3, home open in 10 | [C:path row 163](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L163) |
+| Other constructor doors | No additional invocation beyond declarations/re-exports in Execution for `in_memory`, either authorization-time-source door, `in_memory_rostered_program`, or either transition restore door | Their actual Part C callers use the locations below; no additional internal host to freeze | [C:constructor inventory](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L156) |
+| `capture_application_checkpoint` | `EP/tests/checkpoint_allocation.rs:37`; `EP/tests/retirement_checkpoint_gate.rs:72`; `EP/tests/retired_index_checkpoint.rs:71`; `EP/tests/restored_first_commit.rs:208`; `EP/tests/application_attempt/optional_output_role/indexed_selection.rs:156`; `EP/output_lineage/ownership_oracle/optional_aspects/retained_recovery.rs:73` | I / I / I / I / I / I; capture/byte cases remain explicit interim evidence through 9, move to owner/home checkpoint contracts in 10 | [C:path row 166](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L166) |
+| `capture_application_checkpoint_with_sections` | `EP/application_checkpoint/capture.rs:72` (capture wrapper); `EP/tests/checkpoint_allocation.rs:65` | I / I / I / I / I / I, including wrapper's inherited location; retire in 10 | [C:path row 167](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L167) |
+| `repair_to_checkpoint` | `EP/bootstrap/checkpoint_transition/repair/request.rs:24` (request-owned repair wrapper); no additional internal `repair_to_checkpoint_with_request` caller | Inherits I / I / I / I / I / I from request caller; retire in 10 | [C:path row 168](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L168) |
+| `WorthQueryApplicationCheckpoint::from_untrusted_bytes` | `EP/application_checkpoint.rs:104` (authenticated-body certification rewrite); `EP/application_checkpoint/tests.rs:318`; `EP/application_checkpoint/tests/compatibility.rs:62`; `EP/application_checkpoint/tests/backing.rs:14`; `EP/tests/retirement_checkpoint_gate.rs:83` | I / I / I / I / I / I; local codec courts and existing capture/readmission cases, retire application byte transport in 10 | [C:path row 171](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L171) |
+| `WorthQueryApplicationCheckpoint::bytes` | `EP/application_checkpoint/tests/readmission_resources.rs:37`; `EP/application_checkpoint/tests/fact_versions.rs:140`; `EP/application_checkpoint/tests/compatibility.rs:8`; `EP/application_checkpoint/tests/backing.rs:18`; `EP/application_checkpoint/encode/tests.rs:92`; `EP/tests/checkpoint_allocation.rs:70`; `EP/tests/retirement_checkpoint_gate.rs:77`; `EP/output_lineage/ownership_oracle/optional_aspects/retained_recovery.rs:185` | I / I / I / I / I / I; local byte/ownership courts, no directory durability claim; retire application transport in 10 | [C:path row 172](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L172) |
+| Checkpoint type re-exports | `EP/facade.rs:63`; `EF/application_installation.rs:27` | No independent location; expose the interim type only while its frozen users exist, remove application-owned byte transport in 10 | [C:checkpoint transport](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L171) |
+| `capture_native_truth_checkpoint_for_test` (`EP/application_checkpoint/capture.rs:42`) | `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/differential/reference.rs:119` | I / I / I / I / I / I; existing differential reference capture, replaced by home/owner derived-discard evidence in 10; not another production durable path | [B:native-truth capture handoff](milestone-3-survival-audit/part-b-query-execution.md?plain=1#L342) |
+| `rewrite_authenticated_checkpoint_body_for_test` (`EP/application_checkpoint.rs:95`) | `EP/output_lineage/ownership_oracle/optional_aspects/retained_recovery.rs:221`; `workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint.rs:223` | I / I / I / I / I / I; corruption/readmission courts over interim bytes, replaced by owner/home artifact corruption evidence in 10 | [C:checkpoint-byte callers](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L172) |
+| `CommittedReceiptNotRetained` (internal production/translation references) | `EP/provider/idempotency/snapshot_resolution.rs:227`; `EP/application_attempt/idempotency_resolution/denial.rs:67`, `:140`; `EP/application_attempt/provider_execution/phase/prepared/retained_idempotency.rs:95`; `EP/application_attempt/provider_execution/phase/prepared/running/progression/fresh.rs:261`, `authorized.rs:233` in the same directory | Before 4, the old path; from combined 3–4 landing onward, deleted in every location and replaced by durable original-result resolution. No surviving refusal lane | [C:path row 170](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L170) |
+| `CommittedReceiptNotRetained` (internal observation court) | `EP/provider/idempotency/snapshot_resolution/counted_read_stops.rs:46` | M / M / M / M / M / M after claim is rewritten at 4 to test recovered receipt resolution; do not preserve the retired refusal assertion | [C:path row 170](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L170) |
+
+The evidence-store owner references remain the exact private owner list in
+Part C's row 173; Server retry-cache consumers are its rows 174–175. A scoped
+search across the other Query crates found no extra retired-door caller:
+`worth-query-publication/src/application_entry/denial.rs:316` is already in
+Part C, while `in_memory` variables in Query's test-backend equivalence
+reports are ordinary parameter names, not constructor calls. Native
+Relational checkpoint tests that do not use the Query application transport
+are owner-level courts, not additional D13 public entry paths.
 
 ### Caller locations at each interim landing
 
@@ -587,8 +632,8 @@ implementation deliverables, not unresolved Phase 1 product choices.
 | R18 | C upload staging is neither retry cache nor specified durable ingress. Process-local; UploadSessionExpired at reopen (3). Durable ingress is outside roadmap. | [C:conflict/handoff R18](milestone-3-survival-audit/part-c-surface-and-consumers.md?plain=1#L136) |
 
 No unresolved Phase 1 policy conflict remains. The approval provenance
-handoff is closed in §4; the execution-internal caller union remains a named
-Phase 3 allowlist construction duty, not permission to add callers. Every
+handoff is closed in §4; §6 completes the execution-internal caller union
+that Phase 3 freezes into its allowlist, without permission to add callers. Every
 inventory family appears as a variant, a local/derived crosswalk row, an
 external product, or an explicitly retired authority. The new R5 extracted
 resource-custody family links back to its mixed source structure.
