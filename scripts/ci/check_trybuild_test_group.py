@@ -53,6 +53,12 @@ def session_tests() -> tuple[set[str], list[str]]:
                 names.update(functions)
             elif functions and SESSION.search(text):
                 misplaced.append(str(path.relative_to(ROOT)))
+        # Unit tests are fast by definition. A compiler session left in src
+        # would escape the compile_fail path group during nextest execution.
+        for path in sorted((crate / "src").rglob("*.rs")):
+            text = path.read_text(encoding="utf-8")
+            if SESSION.search(text):
+                misplaced.append(str(path.relative_to(ROOT)))
     return names, misplaced
 
 

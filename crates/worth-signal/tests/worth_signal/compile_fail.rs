@@ -22,3 +22,6 @@ pub(crate) mod phase_5_policy_boundaries;
 
 #[path = "compile_fail/signal_owner_services.rs"]
 pub(crate) mod signal_owner_services;
+
+#[path = "compile_fail/tests/mod.rs"]
+mod tests;
