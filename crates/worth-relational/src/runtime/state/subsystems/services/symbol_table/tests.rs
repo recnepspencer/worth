@@ -23,8 +23,8 @@ fn cancellation_after_backing_admission_refuses_configuration_publication() {
         let request = &request;
         let source = &source;
         let worker = scope.spawn(move || {
-            let execution = ExecutionRequest::serial(&request);
-            let text = StoredSymbolText::admit(&execution, &source).unwrap();
+            let execution = ExecutionRequest::serial(request);
+            let text = StoredSymbolText::admit(&execution, source).unwrap();
             // Cancel after backing admission and before dictionary publication.
             admitted.send(()).unwrap();
             proceed.recv().unwrap();

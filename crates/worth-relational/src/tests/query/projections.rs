@@ -276,8 +276,7 @@ fn projection_rejects_undeclared_required_aspects() {
         .try_project_historical_version(runtime.current_version_id())
         .unwrap()
         .entities::<UndeclaredAspectProjection>(execution)
-        .err()
-        .expect("projection contract must refuse");
+        .expect_err("projection contract must refuse");
 
     use crate::facade::runtime::{
         ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,

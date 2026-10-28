@@ -45,17 +45,17 @@ fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints()
     assert_eq!(updated.target, new_target);
     assert!(runtime
         .storage_access()
-        .all_relations_for_entity(&execution, source, outcome.version_id)
+        .all_relations_for_entity(execution, source, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
     assert!(!runtime
         .storage_access()
-        .all_relations_for_entity(&execution, original_target, outcome.version_id)
+        .all_relations_for_entity(execution, original_target, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
     assert!(runtime
         .storage_access()
-        .all_relations_for_entity(&execution, new_target, outcome.version_id)
+        .all_relations_for_entity(execution, new_target, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
 }
@@ -155,7 +155,7 @@ fn relation_endpoint_update_accepts_same_batch_created_target() {
     assert_eq!(updated.target, created_target_id);
     assert!(runtime
         .storage_access()
-        .all_relations_for_entity(&execution, created_target_id, outcome.version_id)
+        .all_relations_for_entity(execution, created_target_id, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
 }
@@ -219,17 +219,17 @@ fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_ret
     assert_ne!(updated.target, old_target);
     assert!(runtime
         .storage_access()
-        .all_relations_for_entity(&execution, source, outcome.version_id)
+        .all_relations_for_entity(execution, source, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
     assert!(runtime
         .storage_access()
-        .all_relations_for_entity(&execution, created_target_id, outcome.version_id)
+        .all_relations_for_entity(execution, created_target_id, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
     assert!(!runtime
         .storage_access()
-        .all_relations_for_entity(&execution, old_target, outcome.version_id)
+        .all_relations_for_entity(execution, old_target, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
     assert!(read
@@ -297,17 +297,17 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
     assert_ne!(updated.source, old_source);
     assert!(runtime
         .storage_access()
-        .all_relations_for_entity(&execution, created_source_id, outcome.version_id)
+        .all_relations_for_entity(execution, created_source_id, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
     assert!(runtime
         .storage_access()
-        .all_relations_for_entity(&execution, target, outcome.version_id)
+        .all_relations_for_entity(execution, target, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
     assert!(!runtime
         .storage_access()
-        .all_relations_for_entity(&execution, old_source, outcome.version_id)
+        .all_relations_for_entity(execution, old_source, outcome.version_id)
         .expect("funded adjacency read succeeds")
         .contains(&relation));
     assert!(read

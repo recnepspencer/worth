@@ -177,7 +177,7 @@ fn residency_load_free_sharing_and_ledger_refuse_cold_payloads_without_inventing
     let identity = fixture.runtime.main_branch_identity();
     let before = fixture.source.reads.load(Ordering::Relaxed);
     assert!(matches!(
-        fixture.runtime.observe_branch_sharing(&[identity.clone()]),
+        fixture.runtime.observe_branch_sharing(std::slice::from_ref(&identity)),
         Err(
             crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable(_)
         )

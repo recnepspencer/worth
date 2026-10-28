@@ -49,14 +49,14 @@ fn chip_profile_preserves_relation_traversal_with_compressed_adjacency_backend()
     assert_eq!(
         runtime
             .storage_access()
-            .outgoing_relations_for_entity(&execution, source, version_id)
+            .outgoing_relations_for_entity(execution, source, version_id)
             .expect("funded adjacency read succeeds"),
         vec![relation_a, relation_b]
     );
     assert_eq!(
         runtime
             .storage_access()
-            .incoming_relations_for_entity(&execution, target_b, version_id)
+            .incoming_relations_for_entity(execution, target_b, version_id)
             .expect("funded adjacency read succeeds"),
         vec![relation_b]
     );
@@ -173,7 +173,7 @@ fn chip_profile_declared_aspect_fanout_preserves_endpoint_history_for_netlist_li
     assert_eq!(
         runtime
             .storage_access()
-            .outgoing_relations_for_entity(&execution, source, live_version)
+            .outgoing_relations_for_entity(execution, source, live_version)
             .expect("funded adjacency read succeeds"),
         relations
     );

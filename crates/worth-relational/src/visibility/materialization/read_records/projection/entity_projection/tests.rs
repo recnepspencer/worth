@@ -206,8 +206,7 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
             ProjectionAspectScope::fields(aspect_key("name"), [field_key("name")]),
             |_| Some(()),
         )
-        .err()
-        .expect("projection contract must refuse");
+        .expect_err("projection contract must refuse");
 
     use crate::facade::runtime::{
         ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,

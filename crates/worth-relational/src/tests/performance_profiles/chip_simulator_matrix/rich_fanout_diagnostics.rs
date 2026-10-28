@@ -90,7 +90,7 @@ pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(
             let adjacency_started_at = Instant::now();
             let outgoing_relations = runtime
                 .storage_access()
-                .outgoing_relations_for_entity(&execution, source, commit.version_id)
+                .outgoing_relations_for_entity(execution, source, commit.version_id)
                 .expect("funded adjacency read succeeds");
             let adjacency_micros = adjacency_started_at.elapsed().as_micros();
 

@@ -84,7 +84,7 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
             let adjacency_started_at = Instant::now();
             let outgoing_relations = recovered
                 .storage_access()
-                .outgoing_relations_for_entity(&execution, source, recovered_commit.version_id)
+                .outgoing_relations_for_entity(execution, source, recovered_commit.version_id)
                 .expect("funded adjacency read succeeds");
             let adjacency_micros = adjacency_started_at.elapsed().as_micros();
 
