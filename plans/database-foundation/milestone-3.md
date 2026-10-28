@@ -393,7 +393,7 @@ Until the phase that supports a family lands, on a directory home:
 
 Memory-only homes are never refused. Each phase's "Interim refusals" lists
 exactly which operation kinds refuse until it lands. It also states, for each
-existing caller (bank world, Server, UI binding, examples, fixtures), which
+existing caller (bank world, Server, examples, fixtures), which
 location that caller uses meanwhile. Phase 10 deletes every variant.
 
 **D16. Program transitions are durable and resumable.**
@@ -631,12 +631,7 @@ include every resolution tagged with it.
     records and in `mutation_custody`. Phase 9 makes that record durable.
   - Until then, actions that retain original-owner custody refuse on
     directory homes under D15.
-- **R16 (Phases 3 and 9).** Recovery of UI and HTTP state:
-  - UI physical presentation frames and pending presentations are
-    process-local. At reopen they end with a typed `PresentationRestarted`
-    posture, and they are re-derived from durable state when the UI
-    reattaches.
-  - Logical Query admissions recover as Query custody.
+- **R16 (Phases 3 and 9).** Recovery of HTTP state:
   - HTTP recovery and continuation tokens carry authority, so they are fenced
     by incarnation (D7). After reopen they answer `StaleIncarnation`. A fresh
     authentication then reaches the recovered durable custody by its
@@ -778,7 +773,7 @@ home.
 - corrections;
 - program adoption.
 
-Meanwhile, the bank world, Server, UI binding and Signal-dependent examples
+Meanwhile, the bank world, Server and Signal-dependent examples
 use memory-only homes or the interim checkpoint path, as the audit lists.
 
 **Required tests**
@@ -992,7 +987,7 @@ re-executing anything.
 
 - **One full lane run on the combined head, every lane green.** That covers
   Relational, World, Signal (including wasm), Bridge, Server, Query (library,
-  integration, examples, doc and fixture gates), the bank world, UI, and Store
+  integration, examples, doc and fixture gates), the bank world, and Store
   (owner, scenario, process-scenario, formal, structural). It also covers
   boundary-check, agent-context, clippy, formatting and line caps.
 - **Oracles.** The cumulative oracle passes once.
@@ -1497,11 +1492,20 @@ certification of the whole milestone.
 5. **Every lane is green.**
    - Not merely free of new failures. The lanes are Relational, World, Signal
      (including wasm), Bridge, Server, Query (library, integration, examples,
-     doc and fixture gates), bank world, UI and Store, plus boundary-check,
+     doc and fixture gates), bank world and Store, plus boundary-check,
      agent-context, clippy, formatting and line caps.
    - Failures that existed before the milestone are fixed honestly.
 6. **Certified.** An independent reviewer certifies the milestone against this
    specification and the roadmap.
+
+## Out of scope: worth-ui
+
+`workspaces/worth-ui` is not ready, so it is left out of this milestone
+entirely. No phase migrates `worth-ui-query-binding`, and no landing gate
+includes the UI lanes: the `ui`, `check-ui-workspace` and `clippy-ui-binding`
+steps of `query_gate.py`. The binding stops compiling against the host once
+Phase 3 replaces the `in_memory*` constructors. When worth-ui is picked up,
+its own work adopts the open call; this milestone adds no shim for it.
 
 ## Verification discipline (every phase)
 
