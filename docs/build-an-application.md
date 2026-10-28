@@ -414,7 +414,7 @@ The executable [nested-value model](../workspaces/worth-query/crates/worth-query
 and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)
 exercise nondefault values through the entry binding, installed catalog,
 authenticated read and current-format native recovery. The
-[compiler fixtures](../crates/worth-foundational/tests/value_shape/compiler.rs)
+[compiler fixtures](../crates/worth-foundational/tests/worth_foundational/compile_fail/value_shape/compiler.rs)
 cover supported and refused grammar.
 
 Read canonical fields with `reader.field(...)` or the installed query's row
