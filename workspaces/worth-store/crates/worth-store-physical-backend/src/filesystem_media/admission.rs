@@ -240,6 +240,17 @@ impl FilesystemMediaOwner {
                 .into()
             }
         };
+        Self::qualify_held(request, owner)
+    }
+
+    pub(crate) fn qualify_held(
+        request: FilesystemQualificationRequest,
+        owner: Self,
+    ) -> AdmittedFilesystemMedia {
+        let access_contract = request
+            .access
+            .admitted_contract()
+            .expect("held coordinated owner");
         let profile = match super::profile_observation::observe_profile(
             owner.root_directory_handle(),
             owner.boundary(),

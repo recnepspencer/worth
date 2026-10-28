@@ -29,6 +29,17 @@ pub(crate) fn run_and_kill(
     announced: &Path,
     finished: &Path,
 ) -> ChildEnd {
+    run_and_kill_observing(test, environment, announced, finished, || {})
+}
+
+pub(crate) fn run_and_kill_observing(
+    test: &str,
+    environment: &[(&str, &Path)],
+    announced: &Path,
+    finished: &Path,
+    on_park: impl FnOnce(),
+) -> ChildEnd {
+    let mut on_park = Some(on_park);
     let mut command = Command::new(std::env::current_exe().unwrap());
     command
         .args(["--exact", test, "--nocapture", "--test-threads=1"])
@@ -41,6 +52,7 @@ pub(crate) fn run_and_kill(
     let deadline = Instant::now() + PARK_DEADLINE;
     loop {
         if announced.is_file() {
+            on_park.take().unwrap()();
             child.kill().unwrap();
             child.wait().unwrap();
             return ChildEnd::KilledAtPark;

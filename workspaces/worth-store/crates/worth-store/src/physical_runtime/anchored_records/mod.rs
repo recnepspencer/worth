@@ -39,7 +39,6 @@ use std::collections::BTreeSet;
 
 use worth_store_physical_format::RecordAnchorName;
 
-use crate::physical_runtime::ordered_journal::is_ordered_journal_name;
 use crate::physical_runtime::ServingPhysicalRuntime;
 
 mod failure;
@@ -75,16 +74,11 @@ pub struct AnchoredRecordName(RecordAnchorName);
 pub enum AnchoredRecordNameDenial {
     /// Not 1 to 32 bytes of `[a-z0-9.-]`.
     Malformed,
-    /// The name belongs to an ordered journal.
-    ReservedForOrderedJournal,
 }
 
 impl AnchoredRecordName {
     pub fn new(name: &str) -> Result<Self, AnchoredRecordNameDenial> {
         let anchor = RecordAnchorName::new(name).ok_or(AnchoredRecordNameDenial::Malformed)?;
-        if is_ordered_journal_name(anchor) {
-            return Err(AnchoredRecordNameDenial::ReservedForOrderedJournal);
-        }
         Ok(Self(anchor))
     }
 

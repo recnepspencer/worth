@@ -211,10 +211,12 @@ fn two_journals_keep_independent_sequences_reads_and_resolutions() {
         assert_eq!(by_name.name().as_str(), text);
         assert_eq!(by_name.head().unwrap(), journal.of(serving).head().unwrap());
     }
-    assert_eq!(
-        OrderedJournalName::new("relational.home"),
-        Err(OrderedJournalNameDenial::Unregistered)
-    );
+    let quiet = serving.physical_mutation_observation();
+    assert!(matches!(
+        serving.ordered_journal(OrderedJournalName::new("unregistered.journal").unwrap()),
+        Err(worth_store::physical_runtime::OrderedJournalDenial::Unregistered)
+    ));
+    assert_eq!(serving.physical_mutation_observation(), quiet);
     assert_eq!(
         OrderedJournalName::new("Relational Commits"),
         Err(OrderedJournalNameDenial::Malformed)

@@ -11,6 +11,7 @@ use crate::physical_runtime::{
 /// only `Indeterminate` and `CompletedWithoutRecord` may have moved the anchor.
 #[non_exhaustive]
 pub enum AnchoredRecordPublicationFailure {
+    ReservedForOrderedJournal,
     EmptyPayload,
     /// More members than `MAXIMUM_ANCHORED_RECORD_MEMBERS`. No effect.
     TooManyMembers {
@@ -76,6 +77,7 @@ pub enum AnchoredRecordMemberWriteFailure {
 impl std::fmt::Debug for AnchoredRecordPublicationFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ReservedForOrderedJournal => f.write_str("ReservedForOrderedJournal"),
             Self::EmptyPayload => f.write_str("EmptyPayload"),
             Self::TooManyMembers { members } => f
                 .debug_struct("TooManyMembers")

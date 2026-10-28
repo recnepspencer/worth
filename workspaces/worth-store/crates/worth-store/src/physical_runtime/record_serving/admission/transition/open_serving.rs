@@ -11,6 +11,7 @@ use crate::physical_runtime::{
 };
 
 pub(super) fn initialize_serving(
+    journal_registry: crate::physical_runtime::OrderedJournalRegistry,
     runtime: MediaOwnedPhysicalRuntime,
     state: super::super::super::RecordServingState,
     residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
@@ -29,24 +30,28 @@ pub(super) fn initialize_serving(
     residency
         .ports()
         .invalidate_integrity_validation_for_runtime_transition();
-    match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
-        checkpoint_custody,
-        read_protection,
-        termination,
-        media,
-        core,
-        bootstrap: state,
-        allocation_frontier: frontier,
-        residency,
-        work_profile,
-        durability,
-    }) {
+    match ServingPhysicalRuntime::from_admission(
+        PhysicalStoreInstanceFoundation {
+            checkpoint_custody,
+            read_protection,
+            termination,
+            media,
+            core,
+            bootstrap: state,
+            allocation_frontier: frontier,
+            residency,
+            work_profile,
+            durability,
+        },
+        journal_registry,
+    ) {
         Ok(serving) => TransitionOutcome::success(serving).into(),
         Err(failure) => TransitionOutcome::failed(failure).into(),
     }
 }
 
 pub(super) fn open_serving(
+    journal_registry: crate::physical_runtime::OrderedJournalRegistry,
     runtime: MediaOwnedPhysicalRuntime,
     state: super::super::super::RecordServingState,
     residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
@@ -61,18 +66,21 @@ pub(super) fn open_serving(
     residency
         .ports()
         .invalidate_integrity_validation_for_runtime_transition();
-    match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
-        checkpoint_custody,
-        read_protection,
-        termination,
-        media,
-        core,
-        bootstrap: state,
-        allocation_frontier: frontier,
-        residency,
-        work_profile,
-        durability,
-    }) {
+    match ServingPhysicalRuntime::from_admission(
+        PhysicalStoreInstanceFoundation {
+            checkpoint_custody,
+            read_protection,
+            termination,
+            media,
+            core,
+            bootstrap: state,
+            allocation_frontier: frontier,
+            residency,
+            work_profile,
+            durability,
+        },
+        journal_registry,
+    ) {
         Ok(serving) => TransitionOutcome::success(serving).into(),
         Err(failure) => TransitionOutcome::failed(failure).into(),
     }

@@ -69,29 +69,58 @@ pub(in crate::physical_runtime) fn try_admit(
     admission: FilesystemMediaAdmission,
 ) -> MediaAdmissionOutcome {
     let core = runtime.into_core();
-    let runtime_identity = core.runtime_identity();
-    let root = core.declared_store_root().as_path().to_owned();
-    let request = match admission.mode {
-        FilesystemQualificationMode::Production => {
-            FilesystemQualificationRequest::production(root, admission.access)
+    let request = admission.into_request(&core);
+    let qualified = worth_store_physical_backend::qualify_filesystem_media(request);
+    finish_admission(core, qualified)
+}
+
+#[cfg(feature = "recovery-runtime-owner")]
+pub(in crate::physical_runtime) fn admit_recovered(
+    runtime: AdmittedPhysicalRuntime,
+    admission: FilesystemMediaAdmission,
+    media: worth_store_physical_backend::AdmittedRecoveryFilesystemMedia,
+) -> MediaAdmissionOutcome {
+    let core = runtime.into_core();
+    let request = admission.into_request(&core);
+    let qualified = media.qualify_serving(request);
+    finish_admission(core, qualified)
+}
+
+impl FilesystemMediaAdmission {
+    fn into_request(
+        self,
+        core: &crate::physical_runtime::runtime::PhysicalRuntimeCore,
+    ) -> FilesystemQualificationRequest {
+        let root = core.declared_store_root().as_path().to_owned();
+        let request = match self.mode {
+            FilesystemQualificationMode::Production => {
+                FilesystemQualificationRequest::production(root, self.access)
+            }
+            #[cfg(feature = "certification-test-authority")]
+            FilesystemQualificationMode::Certification => {
+                FilesystemQualificationRequest::certification(root, self.access)
+            }
+            #[cfg(not(feature = "certification-test-authority"))]
+            FilesystemQualificationMode::Certification => {
+                unreachable!("no certification constructor")
+            }
         }
+        .for_runtime_incarnation(core.runtime_identity().get());
         #[cfg(feature = "certification-test-authority")]
-        FilesystemQualificationMode::Certification => {
-            FilesystemQualificationRequest::certification(root, admission.access)
+        let request = request.with_fault_schedule(self.fault_schedule);
+        match self.expected_profile {
+            Some(report) => request.require_current_profile(report),
+            None => request,
         }
-        #[cfg(not(feature = "certification-test-authority"))]
-        FilesystemQualificationMode::Certification => {
-            unreachable!("certification media admission has no ordinary constructor")
-        }
-    };
-    let request = request.for_runtime_incarnation(runtime_identity.get());
-    #[cfg(feature = "certification-test-authority")]
-    let request = request.with_fault_schedule(admission.fault_schedule);
-    let request = match admission.expected_profile {
-        Some(report) => request.require_current_profile(report),
-        None => request,
-    };
-    match worth_store_physical_backend::qualify_filesystem_media(request).into_raw() {
+    }
+}
+
+fn finish_admission(
+    core: crate::physical_runtime::runtime::PhysicalRuntimeCore,
+    qualified: worth_store_physical_backend::AdmittedFilesystemMedia,
+) -> MediaAdmissionOutcome {
+    let runtime_identity = core.runtime_identity();
+    match qualified.into_raw() {
         TransitionOutcome::Success(media) => {
             core.progress_to_media_owned();
             TransitionOutcome::success(MediaOwnedPhysicalRuntime::new(core, media)).into()

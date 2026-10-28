@@ -8,11 +8,20 @@ use crate::physical_runtime::ordered_journal::OrderedJournalState;
 use crate::physical_runtime::{OrderedJournal, OrderedJournalDenial, OrderedJournalName};
 
 impl ServingPhysicalRuntime {
+    pub(in crate::physical_runtime) fn journal_registry(
+        &self,
+    ) -> &crate::physical_runtime::OrderedJournalRegistry {
+        &self.journal_registry
+    }
+
     /// Borrows one of the home's ordered journals.
     pub fn ordered_journal(
         &self,
         name: OrderedJournalName,
     ) -> Result<OrderedJournal<'_>, OrderedJournalDenial> {
+        if !self.journal_registry.contains(name) {
+            return Err(OrderedJournalDenial::Unregistered);
+        }
         if self.parts.work_runtime.health.requires_inspection() {
             return Err(OrderedJournalDenial::ServingRequiresInspection);
         }

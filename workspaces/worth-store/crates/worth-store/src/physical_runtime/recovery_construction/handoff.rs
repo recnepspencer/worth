@@ -232,12 +232,25 @@ impl RecoveredPhysicalRuntimeCore {
         self.media.media_generation()
     }
 
-    /// Consumes the recovered media owner before an ordinary serving media
-    /// owner may be qualified. The returned capability cannot be minted from
-    /// checkpoint bytes or used twice.
+    /// Release media for certification that deliberately changes selected
+    /// bytes before independently qualifying another owner. Ordinary homes
+    /// must use the continuous `into_serving_parts` handoff.
+    #[cfg(feature = "certification-test-authority")]
     pub fn into_checkpoint_custody(
         self,
     ) -> Option<crate::physical_runtime::RecoveredPhysicalCheckpointCustody> {
+        self.into_serving_parts()
+            .map(|(_released_media, custody)| custody)
+    }
+
+    /// Move the continuously held media owner and its one-shot selected custody
+    /// together. Neither can be reconstructed from checkpoint bytes.
+    pub fn into_serving_parts(
+        self,
+    ) -> Option<(
+        AdmittedRecoveryFilesystemMedia,
+        crate::physical_runtime::RecoveredPhysicalCheckpointCustody,
+    )> {
         let Self {
             residency,
             checkpoint_ownership,
@@ -256,12 +269,11 @@ impl RecoveredPhysicalRuntimeCore {
             selected_controls,
             ..
         } = self;
-        drop(media);
         drop(reopen);
         // Ownership agrees with custody by construction: the generation-zero
         // custody is minted only under this coordination's absence witness,
         // and every other custody requires the selected checkpoint.
-        match (head_v2_custody, no_release_custody, pending_wal_release_custody, historical_release_custody, tier_custody, effective_release_heads) {
+        let custody = match (head_v2_custody, no_release_custody, pending_wal_release_custody, historical_release_custody, tier_custody, effective_release_heads) {
             (None, Some(no_release), None, None, tier, None) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_no_release(
                     residency, checkpoint_ownership, store, recovery_allocation, root, no_release, tier, selected_wal?, selected_controls?,
@@ -283,6 +295,7 @@ impl RecoveredPhysicalRuntimeCore {
                 ),
             ),
             _ => None,
-        }
+        }?;
+        Some((media, custody))
     }
 }

@@ -225,7 +225,8 @@ pub use ordered_journal::{
     OrderedJournal, OrderedJournalDenial, OrderedJournalEntry, OrderedJournalName,
     OrderedJournalNameDenial, OrderedJournalPayload, OrderedJournalPublication,
     OrderedJournalPublicationFailure, OrderedJournalPublished, OrderedJournalReadFailure,
-    OrderedJournalResolution, RELATIONAL_BRANCH_TRANSITIONS, RELATIONAL_CANONICAL_COMMITS,
+    OrderedJournalRegistry, OrderedJournalRegistryDenial, OrderedJournalResolution,
+    RELATIONAL_BRANCH_TRANSITIONS, RELATIONAL_CANONICAL_COMMITS,
 };
 pub use record_serving::PhysicalIntegrityScrubReadDeferral;
 pub use record_serving::*;

@@ -22,6 +22,7 @@ pub(in crate::physical_runtime) fn initialize(
     request: PhysicalRecordInitialization,
 ) -> RecordStoreInitializationOutcome {
     let PhysicalRecordInitialization {
+        journal_registry,
         read_protection,
         format,
         placement,
@@ -132,6 +133,7 @@ pub(in crate::physical_runtime) fn initialize(
         Ok(state) => {
             drop(bootstrap_allocation);
             initialize_serving(
+                journal_registry,
                 runtime,
                 state,
                 residency,
@@ -161,6 +163,7 @@ pub(in crate::physical_runtime) fn open(
 ) -> RecordStoreOpenOutcome {
     let PhysicalRecordOpen {
         recovered_checkpoint_custody,
+        journal_registry,
         read_protection,
         format,
         access,
@@ -278,6 +281,7 @@ pub(in crate::physical_runtime) fn open(
             };
             drop(bootstrap_allocation);
             open_serving(
+                journal_registry,
                 runtime,
                 state,
                 residency,

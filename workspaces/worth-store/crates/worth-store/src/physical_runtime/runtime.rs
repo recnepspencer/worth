@@ -81,6 +81,16 @@ impl AdmittedPhysicalRuntime {
         super::media_ownership::try_admit(self, admission)
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
+    /// Qualify serving while retaining recovery's already-held OS lease.
+    pub fn try_admit_recovered_filesystem_media(
+        self,
+        media: worth_store_physical_backend::AdmittedRecoveryFilesystemMedia,
+        admission: super::FilesystemMediaAdmission,
+    ) -> super::MediaAdmissionOutcome {
+        super::media_ownership::admit_recovered(self, admission, media)
+    }
+
     pub(super) fn into_core(self) -> PhysicalRuntimeCore {
         self.core
     }

@@ -27,3 +27,6 @@ pub use runtime::MediaOwnedPhysicalRuntime;
 pub use shutdown::MediaShutdownOutcome;
 
 pub(super) use admission::try_admit;
+
+#[cfg(feature = "recovery-runtime-owner")]
+pub(in crate::physical_runtime) use admission::admit_recovered;

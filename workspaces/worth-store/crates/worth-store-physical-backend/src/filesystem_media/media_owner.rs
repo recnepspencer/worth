@@ -67,6 +67,19 @@ impl ObservedMediaOwnerAdmissionFailure {
 }
 
 impl FilesystemMediaOwner {
+    pub(crate) fn enter_serving_boundary(
+        &mut self,
+        request: &super::FilesystemQualificationRequest,
+    ) {
+        self.boundary = super::fault_interposition::MediaFaultInterposer::new(
+            request.fault_schedule.clone(),
+            Arc::new(super::operation_counters::MediaCounterCells::default()),
+        );
+        if let Some(runtime) = request.runtime_incarnation {
+            self.boundary.bind_runtime_incarnation(runtime);
+        }
+    }
+
     pub const fn identity(&self) -> MediaOwnerIdentity {
         self.namespace.owner_identity()
     }

@@ -14,9 +14,6 @@ pub const RELATIONAL_CANONICAL_COMMITS: &str = "relational.canonical-commits";
 /// The journal holding Relational's branch transition artifacts.
 pub const RELATIONAL_BRANCH_TRANSITIONS: &str = "relational.branch-transitions";
 
-/// Every ordered journal a Store home may hold.
-const REGISTERED: [&str; 2] = [RELATIONAL_CANONICAL_COMMITS, RELATIONAL_BRANCH_TRANSITIONS];
-
 /// The name of one ordered journal: a valid anchor name registered as an
 /// ordered journal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -27,16 +24,11 @@ pub struct OrderedJournalName(RecordAnchorName);
 pub enum OrderedJournalNameDenial {
     /// Not 1 to 32 bytes of `[a-z0-9.-]`.
     Malformed,
-    /// A valid anchor name that names no ordered journal.
-    Unregistered,
 }
 
 impl OrderedJournalName {
     pub fn new(name: &str) -> Result<Self, OrderedJournalNameDenial> {
         let anchor = RecordAnchorName::new(name).ok_or(OrderedJournalNameDenial::Malformed)?;
-        if !is_ordered_journal_name(anchor) {
-            return Err(OrderedJournalNameDenial::Unregistered);
-        }
         Ok(Self(anchor))
     }
 
@@ -61,10 +53,4 @@ impl OrderedJournalName {
     fn registered(name: &'static str) -> Self {
         Self::new(name).expect("a registered journal name is a valid ordered-journal name")
     }
-}
-
-/// Whether `anchor` belongs to an ordered journal. Other Store doors refuse
-/// such a name.
-pub(in crate::physical_runtime) fn is_ordered_journal_name(anchor: RecordAnchorName) -> bool {
-    REGISTERED.contains(&anchor.as_str())
 }

@@ -149,7 +149,7 @@ impl DurablePhysicalRootManifest {
         let payload_bytes =
             self.encoded_frame_bytes() - crate::record_framing::DURABLE_FRAME_HEADER_BYTES;
         let schema = if payload_bytes == ANCHORED_ROOT_PAYLOAD_BYTES {
-            11
+            12
         } else if payload_bytes == HEAD_BOUND_ROOT_PAYLOAD_BYTES {
             10
         } else if self.tier_epoch_anchor.is_some() {
@@ -267,7 +267,7 @@ impl DurablePhysicalRootManifest {
         let next_segment_block = u64::from_le_bytes(frame.payload[224..232].try_into().unwrap());
         let (tier_epoch_anchor, head_root, next_head_block, head_maintenance) =
             release_head_reference::decode(frame.schema, frame.payload)?;
-        let record_anchors = if frame.schema == 11 {
+        let record_anchors = if frame.schema == 12 {
             RecordAnchorTable::decode(&frame.payload[HEAD_BOUND_ROOT_PAYLOAD_BYTES..])
                 .ok_or(RootManifestDenial::InvalidRecordIdentity)?
         } else {
