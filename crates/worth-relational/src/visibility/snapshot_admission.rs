@@ -10,66 +10,23 @@ pub enum RelationalSnapshotAdmissionDenial {
     SnapshotIdentityExhausted,
 }
 
-#[derive(Debug)]
-enum CurrentBranchSnapshotAdmissionDenial {
+pub(crate) enum CurrentBranchSnapshotAdmissionDenial {
     Basis(crate::branch::RelationalBranchBasisDenial),
     Snapshot(RelationalSnapshotAdmissionDenial),
+    CurrentVersionUnavailable,
 }
 
-impl From<crate::branch::RelationalBranchBasisDenial> for CurrentBranchSnapshotAdmissionDenial {
-    fn from(denial: crate::branch::RelationalBranchBasisDenial) -> Self {
-        Self::Basis(denial)
-    }
-}
-
-impl From<RelationalSnapshotAdmissionDenial> for CurrentBranchSnapshotAdmissionDenial {
-    fn from(denial: RelationalSnapshotAdmissionDenial) -> Self {
-        Self::Snapshot(denial)
+impl std::fmt::Debug for CurrentBranchSnapshotAdmissionDenial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Basis(cause) => f.debug_tuple("Basis").field(cause).finish(),
+            Self::Snapshot(cause) => f.debug_tuple("Snapshot").field(cause).finish(),
+            Self::CurrentVersionUnavailable => f.write_str("CurrentVersionUnavailable"),
+        }
     }
 }
 
 impl super::authority::VisibilityAuthority<'_> {
-    fn open_active_snapshot(
-        &self,
-        version_id: crate::identity::data::VersionId,
-        read_policy: crate::snapshots::data::SnapshotReadPolicy,
-    ) -> crate::snapshots::data::SnapshotHandle {
-        let branch_id = crate::visibility::branch_scope::authoritative_branch_for_version(
-            self.runtime,
-            version_id,
-        );
-        match self.open_active_snapshot_for_branch(version_id, branch_id, read_policy) {
-            Ok(Some(handle)) => handle,
-            Ok(None) => {
-                panic!("authoritative visible version has an owner-retained immutable root")
-            }
-            Err(CurrentBranchSnapshotAdmissionDenial::Basis(denial)) => {
-                panic!("authoritative current basis admission failed: {denial:?}")
-            }
-            Err(CurrentBranchSnapshotAdmissionDenial::Snapshot(denial)) => {
-                panic!("authoritative current snapshot admission failed: {denial:?}")
-            }
-        }
-    }
-
-    fn open_active_snapshot_for_branch(
-        &self,
-        version_id: crate::identity::data::VersionId,
-        branch_id: crate::history::data::BranchId,
-        read_policy: crate::snapshots::data::SnapshotReadPolicy,
-    ) -> Result<Option<crate::snapshots::data::SnapshotHandle>, CurrentBranchSnapshotAdmissionDenial>
-    {
-        let basis = super::snapshot_states::VisibilitySnapshotBasis::capture_current(
-            self.runtime,
-            &branch_id,
-            version_id,
-        )?;
-        basis
-            .map(|basis| self.open_active_snapshot_for_basis(basis, read_policy))
-            .transpose()
-            .map_err(Into::into)
-    }
-
     pub(super) fn open_active_snapshot_for_basis(
         &self,
         basis: super::snapshot_states::VisibilitySnapshotBasis,
@@ -134,10 +91,24 @@ impl super::authority::VisibilityAuthority<'_> {
         Ok(handle)
     }
 
-    pub(crate) fn snapshot(&self) -> crate::snapshots::data::SnapshotHandle {
-        self.open_active_snapshot(
-            self.runtime.current_version_id(),
+    pub(crate) fn snapshot(
+        &self,
+    ) -> Result<crate::snapshots::data::SnapshotHandle, CurrentBranchSnapshotAdmissionDenial> {
+        use CurrentBranchSnapshotAdmissionDenial as Denial;
+        let version = self.runtime.current_version_id();
+        let branch = super::branch_scope::branch_for_version(self.runtime, version)
+            .ok_or(Denial::CurrentVersionUnavailable)?;
+        let basis = super::snapshot_states::VisibilitySnapshotBasis::capture_current(
+            self.runtime,
+            &branch,
+            version,
+        )
+        .map_err(Denial::Basis)?
+        .ok_or(Denial::CurrentVersionUnavailable)?;
+        self.open_active_snapshot_for_basis(
+            basis,
             crate::snapshots::data::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
         )
+        .map_err(Denial::Snapshot)
     }
 }

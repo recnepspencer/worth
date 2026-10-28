@@ -70,14 +70,17 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
     use worth_foundational::facade::AspectValue;
 
     let runtime = durable_runtime_with_test_schema();
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "touch-index".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "touch-index".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let committed = create_entity_outcome(execution, &runtime, "indexed-value");
     let envelope = runtime
         .replay()
@@ -134,8 +137,12 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
     assert_eq!(relinked.parentage(), legacy.parentage());
     assert_eq!(relinked.roots(), legacy.roots());
     assert_eq!(
-        relinked.canonical_payload_digest(),
-        legacy.canonical_payload_digest()
+        relinked
+            .canonical_payload_digest()
+            .expect("resident fixture has a canonical digest"),
+        legacy
+            .canonical_payload_digest()
+            .expect("resident fixture has a canonical digest")
     );
 
     let equal_but_unsealed = Arc::new((*envelope).clone());

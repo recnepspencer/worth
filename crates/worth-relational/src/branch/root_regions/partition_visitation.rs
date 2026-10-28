@@ -18,7 +18,7 @@ impl RelationalPersistentRegionSet {
                 return None;
             }
             length -= 1;
-            let (node, depth, prefix) = stack[length].take().expect("occupied radix stack entry");
+            let (node, depth, prefix) = stack[length].take().expect(/* Proof: The radix walker increments length only after storing Some(entry) in that stack position; each pop decrements length before taking it. */ "occupied radix stack entry");
             if depth == PARTITION_KEY_BITS {
                 if matches!(node.leaf, Some(RelationalPersistentRegionLeaf::Present(_))) {
                     return Some(PartitionId(prefix));

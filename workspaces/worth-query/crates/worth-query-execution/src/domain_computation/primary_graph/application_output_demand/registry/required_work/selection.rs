@@ -198,13 +198,10 @@ fn native_denial(
 ) -> WorthQueryOutputDemandDenial {
     use worth_relational::facade::mvcc::CompanionPreflightStop;
     let kind = match stop {
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-        | CompanionPreflightStop::WorkCounterOverflow => {
+        CompanionPreflightStop::WorkCounterOverflow => {
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         }
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
+        CompanionPreflightStop::PreparationMemoryCounterOverflow => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
         _ => WorthQueryOutputDemandDenialKind::PublicationStale,

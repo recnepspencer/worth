@@ -49,15 +49,11 @@ fn companion(cause: CompanionPreflightStop) -> BankHttpDenial {
                 BankHttpDenial::new(Kind::DeadlineExceeded, Next::Retry)
             }
         },
-        D::TopologyPending | D::RetainedCompanionCapacityExhausted { .. } => unavailable(),
+        D::TopologyPending => unavailable(),
         D::SelectedSourceMismatch
         | D::SelectedPositionUnavailable { .. }
         | D::RegistrationChanged => BankHttpDenial::new(Kind::Stale, Next::Refresh),
-        D::WorkExhausted { .. }
-        | D::WorkExhaustedWithoutRequirement { .. }
-        | D::PreparationMemoryExhausted { .. } => {
-            BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest)
-        }
+
         D::ForeignCell | D::WorkCounterOverflow | D::PreparationMemoryCounterOverflow => operator(),
     }
 }

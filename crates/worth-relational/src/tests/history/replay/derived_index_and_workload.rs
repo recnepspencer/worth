@@ -8,14 +8,17 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
 
     let runtime = runtime_with_test_schema();
     let commit = create_entity_outcome(execution, &runtime, "indexed");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity-name".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity-name".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -318,7 +321,8 @@ fn hostile_commit_replay_equivalence_test() {
             }
             .build_registry(),
         )
-        .build_durable(crate::tests::support::attached_test_medium(&runtime).attachment());
+        .build_durable(crate::tests::support::attached_test_medium(&runtime).attachment())
+        .expect("valid native runtime configuration");
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)

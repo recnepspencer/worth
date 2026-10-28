@@ -24,7 +24,12 @@ pub(super) fn entity(
     work.prepare(1, 0)?;
     let root = view.selected_root().ok_or(Denial::SnapshotUnavailable)?;
     work.prepare(33, 0)?;
-    let Some(partition) = root.partition_state(id.partition_id) else {
+    let Some(partition) = root.partition_state(id.partition_id).map_err(|failure| {
+        Denial::Execution(
+            crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure),
+        )
+    })?
+    else {
         return Ok(None);
     };
     let Some(slot) = partition.entity_arena.get_slot(id.slot_index()) else {
@@ -68,7 +73,12 @@ pub(super) fn relation(
     work.prepare(1, 0)?;
     let root = view.selected_root().ok_or(Denial::SnapshotUnavailable)?;
     work.prepare(33, 0)?;
-    let Some(partition) = root.partition_state(id.partition_id) else {
+    let Some(partition) = root.partition_state(id.partition_id).map_err(|failure| {
+        Denial::Execution(
+            crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure),
+        )
+    })?
+    else {
         return Ok(None);
     };
     let Some(slot) = partition.relation_arena.get_slot(id.slot_index()) else {

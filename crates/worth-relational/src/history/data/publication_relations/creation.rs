@@ -138,8 +138,7 @@ fn classify(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
     let mut producer_owned = false;
-    if envelope.required_output_origin.is_some() {
-        let origin = envelope.required_output_origin.as_deref().unwrap();
+    if let Some(origin) = envelope.required_output_origin.as_deref() {
         charge(
             context,
             origin.relations.len()

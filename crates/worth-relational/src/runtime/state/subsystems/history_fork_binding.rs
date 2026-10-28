@@ -158,7 +158,7 @@ impl RelationalForkOwnerBinding {
         {
             let root = cell
                 .root()
-                .expect("installed fork cell retains its exact source root");
+                .expect(/* Proof: Only successful fork preparation constructs this private target; it installs the selected source root and immutable fork provenance before returning it. */ "installed fork cell retains its exact source root");
             let key = crate::visibility::snapshot_states::VisibilitySnapshotStateKey::for_root(
                 cell.identity().branch_id().clone(),
                 version_id,

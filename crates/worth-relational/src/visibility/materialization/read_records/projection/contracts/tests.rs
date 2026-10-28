@@ -10,8 +10,7 @@ use worth_foundational::facade::{
 };
 
 #[test]
-#[should_panic(expected = "projection mask rejected by aspect contract")]
-fn projection_contract_assertion_rejects_field_mask_denied_by_scalar_contract() {
+fn projection_contract_admission_rejects_field_mask_denied_by_scalar_contract() {
     let aspect_key = AspectKey::new("counter").unwrap();
     let field_key = FieldKey::new("value").unwrap();
     let projection_scope = ProjectionAspectScope::fields(aspect_key.clone(), [field_key.clone()]);
@@ -29,7 +28,22 @@ fn projection_contract_assertion_rejects_field_mask_denied_by_scalar_contract() 
         }],
     };
 
-    assert_declared_projection_aspects(&projection_scope, Some(&plan), "entity", KindId(1));
+    let denial = admit_declared_projection_aspects(
+        &projection_scope,
+        Some(&plan),
+        ProjectionRecordDomain::Entity,
+        KindId(1),
+    )
+    .unwrap_err();
+    assert_eq!(
+        denial,
+        RelationalProjectionContractDenial {
+            domain: ProjectionRecordDomain::Entity,
+            kind_id: KindId(1),
+            requirement: Some(0),
+            refusal: ProjectionContractRefusal::MaskRejected,
+        }
+    );
 }
 
 #[test]

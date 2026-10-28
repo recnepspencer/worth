@@ -46,7 +46,14 @@ impl LineageAccess<'_> {
                     .runtime
                     .lineage
                     .event(position)
-                    .expect("admitted event index has its immutable row");
+                    .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Lineage {
+                        first: seed,
+                        last: seed,
+                    },
+                    cause:
+                        crate::storage::data::RelationalStorageUnavailableCause::IntegrityMismatch,
+                }).map_err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable)?;
                 if matches!(
                     event.kind(),
                     LineageEventKind::Replace | LineageEventKind::Split | LineageEventKind::Merge

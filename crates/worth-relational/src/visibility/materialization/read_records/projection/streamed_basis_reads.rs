@@ -59,10 +59,11 @@ pub(crate) trait ProjectionRecordSource {
             .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
             .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
             .map_err(ReadStop::Request)?;
-        assert!(
-            actual <= bytes,
-            "the owner-accounted payload quote bounds the clone payload"
-        );
+        if actual > bytes {
+            return Err(ReadStop::Request(
+                crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+            ));
+        }
         before_candidate(0, actual).map_err(ReadStop::Admission)?;
         let result = record.as_ref().map(inspect);
         drop(record);
@@ -140,10 +141,11 @@ pub(crate) trait ProjectionRecordSource {
                 .and_then(|row| row.checked_add(iterator_bytes))
                 .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
                 .map_err(ReadStop::Request)?;
-            assert!(
-                actual <= bytes,
-                "the owner-accounted payload quote bounds the clone payload"
-            );
+            if actual > bytes {
+                return Err(ReadStop::Request(
+                    crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+                ));
+            }
             before_candidate(0, actual).map_err(ReadStop::Admission)?;
             if let Some(record) = record
                 && kind_id.is_none_or(|kind| record.kind.kind_id == kind)
@@ -225,10 +227,11 @@ pub(crate) trait ProjectionRecordSource {
                 .and_then(|row| row.checked_add(iterator_bytes))
                 .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
                 .map_err(ReadStop::Request)?;
-            assert!(
-                actual <= bytes,
-                "the owner-accounted payload quote bounds the clone payload"
-            );
+            if actual > bytes {
+                return Err(ReadStop::Request(
+                    crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+                ));
+            }
             before_candidate(0, actual).map_err(ReadStop::Admission)?;
             if let Some(record) = record
                 && kind_id.is_none_or(|kind| record.kind.kind_id == kind)

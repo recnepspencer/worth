@@ -25,7 +25,7 @@ impl Clone for RegionLeaseCustody {
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
                 count.checked_add(1)
             })
-            .expect("a resident lease count fits the address space");
+            .expect(/* Proof: Every live lease owns a strong Arc to this cell; lease count is bounded by Arc strong count, whose maximum is below usize::MAX. */ "a resident lease count fits the address space");
         Self::accepted(self.cell.clone())
     }
 }
@@ -33,6 +33,9 @@ impl Clone for RegionLeaseCustody {
 impl Drop for RegionLeaseCustody {
     fn drop(&mut self) {
         let previous = self.cell.leases.fetch_sub(1, Ordering::AcqRel);
-        debug_assert!(previous > 0);
+        debug_assert!(
+            /* Proof: RegionLeaseCustody::accepted is private to lease admission after its count increment; Clone increments separately before constructing the copy. Each custody owns a strong Arc and Drop decrements its one issued count once. */
+            previous > 0
+        );
     }
 }

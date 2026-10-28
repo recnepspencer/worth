@@ -27,12 +27,15 @@ impl RelationalBranchReferenceCell {
     pub(crate) fn replace_truth_target(
         &self,
         target: FoundationalBranchTarget<super::RelationalBranchTarget>,
-    ) {
-        if let FoundationalBranchTarget::Basis(target) = &target {
-            assert_eq!(
-                target.runtime_instance_id(),
-                self.identity.runtime_instance_id(),
-                "owner-produced content target remains runtime-affine"
+    ) -> Result<(), RelationalBranchObservationConstructionDenial> {
+        if let FoundationalBranchTarget::Basis(target) = &target
+            && target.runtime_instance_id() != self.identity.runtime_instance_id()
+        {
+            return Err(
+                RelationalBranchObservationConstructionDenial::RuntimeInstanceMismatch {
+                    observation_runtime_instance_id: self.identity.runtime_instance_id(),
+                    target_runtime_instance_id: target.runtime_instance_id(),
+                },
             );
         }
         let mut state = self.state();
@@ -41,6 +44,7 @@ impl RelationalBranchReferenceCell {
             target,
             state.observation.generation(),
         );
+        Ok(())
     }
 
     pub(crate) fn from_checkpoint_with_root(

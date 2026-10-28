@@ -84,10 +84,13 @@ impl InvariantMetrics<'_> {
             touched.len()
         };
         self.record_preparation_shape(counters.packet_count, scope_units, planned.strategy);
-        debug_assert!(planned
-            .packets
-            .iter()
-            .all(|packet| packet.planning_context == planned.context));
+        debug_assert!(
+            /* Proof: The owned planned evaluation is built with one context; each private packet constructor copies that context before exposing the immutable collection. */
+            planned
+                .packets
+                .iter()
+                .all(|packet| packet.planning_context == planned.context)
+        );
     }
 
     pub(crate) fn record_preparation_shape(

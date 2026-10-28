@@ -20,7 +20,8 @@ pub(crate) fn recover_persisted_world(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &FintechWorld,
 ) -> Result<(RelationalRuntime, RecoveryOutcome), String> {
-    let mut recovered = RelationalRuntime::new(world.runtime.config().clone());
+    let mut recovered = RelationalRuntime::new(world.runtime.config().clone())
+        .expect("valid native runtime configuration");
     let plan = crate::tests::support::medium_recovery_plan(
         execution,
         &world.runtime,

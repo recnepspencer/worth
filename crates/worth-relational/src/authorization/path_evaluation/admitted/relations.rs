@@ -51,7 +51,7 @@ pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
                 let id = match visit {
                     RelationalAdjacencyVisit::Prepare { .. }
                     | RelationalAdjacencyVisit::Acquired => {
-                        unreachable!("preparation is handled above")
+                        unreachable!(/* Proof: Both Acquired and Prepare return in the immediately preceding branches, before this match over the same immutable visit. */ "preparation is handled above")
                     }
                     RelationalAdjacencyVisit::List => {
                         state.counters.adjacency_lists_read += 1;

@@ -92,7 +92,10 @@ impl PreparedEntityFieldLookup {
         };
         self.performance_access().count_query_index_attempt();
         let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
-            unreachable!("prepared entity-field generation")
+            unreachable!(
+                /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
+                "prepared entity-field generation"
+            )
         };
         let rows = entries.get(&key);
         let length = rows.map_or(0, |rows| rows.len());
@@ -111,7 +114,7 @@ impl PreparedEntityFieldLookup {
             self.page_admission(execution, check_live)?;
             let entity = *rows
                 .and_then(|rows| rows.get(offset))
-                .expect("bounded posting offset");
+                .expect(/* Proof: Page bounds and posting offsets were checked against these same immutable retained rows; no row mutation occurs during page extraction. */ "bounded posting offset");
             let observed = crate::indexes::projected_field_values::exact_entity_field_matches(
                 self.basis.root(),
                 entity,
@@ -136,7 +139,7 @@ impl PreparedEntityFieldLookup {
             self.page_admission(execution, check_live)?;
             let entity = *rows
                 .and_then(|rows| rows.get(offset))
-                .expect("validated posting offset");
+                .expect(/* Proof: Page bounds and posting offsets were checked against these same immutable retained rows; no row mutation occurs during page extraction. */ "validated posting offset");
             if crate::indexes::projected_field_values::exact_entity_field_matches(
                 self.basis.root(),
                 entity,

@@ -8,14 +8,17 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
 
     let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "global-duplicate-first");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "global-duplicate-name".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "global-duplicate-name".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let built = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -32,7 +35,12 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
     // inventory to exercise duplicate retention independently of that fast path.
     for _ in 0..16 {
         let mut generation = template.as_ref().clone();
-        generation.generation_id = DerivedIndexGenerationId(runtime.indexes.next_generation_id());
+        generation.generation_id = DerivedIndexGenerationId(
+            runtime
+                .indexes
+                .next_generation_id()
+                .expect("fixture generation capacity"),
+        );
         duplicates.push(generation.generation_id);
         runtime.indexes.restore_generation(generation);
     }

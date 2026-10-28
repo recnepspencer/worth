@@ -132,14 +132,14 @@ impl CapturedCheckpointBasis {
                     capture.history_dependencies,
                     capture.leaf.partition_id,
                 )
-                .map_err(storage_failure)?;
+                .map_err(DurabilityError::from)?;
                 leaves.push(capture.leaf);
                 captured.publications.push(capture.publication);
                 captured.guarded_members.extend(
                     region
                         .cell
                         .checkpoint_export_sources(&capture.members, captured.cold_source.clone())
-                        .map_err(storage_failure)?,
+                        .map_err(DurabilityError::from)?,
                 );
                 for member in capture.members {
                     insert_member(&mut captured, member);
@@ -170,14 +170,14 @@ impl CapturedCheckpointBasis {
                     capture.history_dependencies,
                     capture.leaf.partition_id,
                 )
-                .map_err(storage_failure)?;
+                .map_err(DurabilityError::from)?;
                 captured.manifest.mirror.push(capture.leaf);
                 captured.publications.push(capture.publication);
                 captured.guarded_members.extend(
                     region
                         .cell()
                         .checkpoint_export_sources(&capture.members, captured.cold_source.clone())
-                        .map_err(storage_failure)?,
+                        .map_err(DurabilityError::from)?,
                 );
                 for member in capture.members {
                     insert_member(&mut captured, member);
@@ -308,13 +308,6 @@ fn insert_member(captured: &mut CapturedManifest, member: RelationalCheckpointMe
     } else {
         captured.members.entry(key).or_insert(member);
     }
-}
-
-fn storage_failure(failure: crate::storage::data::RelationalStorageUnavailable) -> DurabilityError {
-    let RelationalRecoveryStop::Durability(error) = RelationalRecoveryStop::from(failure) else {
-        unreachable!("storage unavailability is a durable-store refusal")
-    };
-    error
 }
 
 fn corrupt(detail: impl Into<String>) -> DurabilityError {

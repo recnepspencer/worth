@@ -38,7 +38,8 @@ pub(in crate::domain_computation::primary_graph) fn refused_commit(
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

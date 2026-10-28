@@ -152,7 +152,7 @@ impl RecordIdentitySubsystem {
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, RecordIdentityState> {
-        self.state.lock().expect("record identity lock poisoned")
+        self.state.lock().expect(/* Proof: The identity mutex protects only native checked reservations and container updates, with no user code or fallible I/O under its guard; overflow returns before mutation. */ "record identity lock poisoned")
     }
 }
 

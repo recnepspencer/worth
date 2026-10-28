@@ -98,7 +98,9 @@ impl PreparedResidentRegion {
             Some((prior_commitment, &previous.partition, journal)),
         )
         .map_err(RegionContentFailure::Content)?;
-        let inventory = partition.allocation_inventory_since(&previous.partition, basis.inventory);
+        let inventory = partition
+            .allocation_inventory_since(&previous.partition, basis.inventory)
+            .map_err(RegionContentFailure::Content)?;
         let new_payload_bytes =
             partition.new_authoritative_allocation_bytes_since(&previous.partition);
         let delta = unavailable_delta(
@@ -110,10 +112,12 @@ impl PreparedResidentRegion {
             &previous.partition.relation_arena,
             &journal.relation_slots,
         );
-        let unavailable_records = basis
-            .unavailable_records
-            .checked_add_signed(delta)
-            .expect("journal lifecycle delta must fit its previous region");
+        let unavailable_records = basis.unavailable_records.checked_add_signed(delta).ok_or(
+            RegionContentFailure::Storage(RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Region(partition.partition_id),
+                cause: RelationalStorageUnavailableCause::IntegrityMismatch,
+            }),
+        )?;
         let kind_commitment = RelationalRegionKindCommitment::capture(&partition)
             .map_err(|_| RegionContentFailure::Adjacency)?;
         let entity_slots = partition.entity_arena.slot_count();

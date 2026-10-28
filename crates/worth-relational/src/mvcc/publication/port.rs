@@ -40,7 +40,7 @@ struct PreparedBranchPublicationPreflight {
     next_state: crate::branch::RelationalBranchReferenceMutableState,
     next_basis: crate::branch::AdmittedRelationalBranchBasis,
     settlement_reservation: crate::runtime::RelationalPendingSettlementReservation,
-    head_retirement: crate::history::retention::RelationalHeadRetirementReservation,
+    head_retirement: crate::history::retention::RelationalHeadRetirementCapacity,
     candidate_retention: crate::history::retention::RelationalCandidateRetentionObligation,
     control: crate::mvcc::RelationalOperationControl,
     expires_at: std::time::Instant,
@@ -218,20 +218,16 @@ impl RelationalPublicationPort {
 
 impl PreparedCanonicalBranchMovement {
     pub(crate) fn new(
-        identities: crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
+        record_allocations: crate::runtime::PendingRecordAllocations,
+        symbol_meanings: crate::runtime::PreparedSymbolPublication,
         mut next_cell: RelationalBranchReferenceCell,
         root: Arc<RelationalBranchRoot>,
         canonical_publication_route: crate::runtime::PreparedCanonicalPublicationRoute,
     ) -> Self {
         next_cell.install_root(Arc::clone(&root));
         Self {
-            record_allocations: identities.records,
-            symbol_meanings: identities.symbols.seal_for_publication(
-                &root
-                    .canonical_envelope()
-                    .expect("prepared root has its canonical envelope")
-                    .symbol_texts,
-            ),
+            record_allocations,
+            symbol_meanings,
             next_cell,
             root,
             canonical_publication_route,

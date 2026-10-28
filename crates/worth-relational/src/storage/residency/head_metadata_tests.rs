@@ -58,7 +58,8 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
     let version = crate::identity::data::VersionId(1_000);
     written_head
         .entity_arena
-        .apply_extra_update(slot, extra.clone(), version);
+        .apply_extra_update(slot, extra.clone(), version)
+        .expect("fixture slot is materialized");
     let physical = written_head.entity_arena.physical_index(slot).unwrap();
     let baseline = &head.partition.entity_arena.history_prefixes[physical]
         .as_ref()
@@ -112,7 +113,8 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
     let mut written_full = full.partition.clone();
     written_full
         .entity_arena
-        .apply_extra_update(slot, extra, version);
+        .apply_extra_update(slot, extra, version)
+        .expect("fixture slot is materialized");
     let (oracle, _) = PartitionContentCommitment::capture(&written_full, &symbols, None).unwrap();
     assert_eq!(
         appended.digest(fixture.entity.partition_id),

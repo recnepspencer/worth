@@ -25,7 +25,8 @@ fn durability_contract_failure_schema_mismatch_is_explicit() {
         .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)

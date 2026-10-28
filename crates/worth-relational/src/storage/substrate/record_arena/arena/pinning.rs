@@ -34,9 +34,9 @@ impl<K: RecordKind> RecordArena<K> {
     }
 
     pub(crate) fn clear_all_pins(&mut self) {
-        self.snapshot_pins.fill(0);
-        self.branch_pins.fill(0);
-        self.replay_pins.fill(0);
+        self.snapshot_pins.clear();
+        self.branch_pins.clear();
+        self.replay_pins.clear();
     }
 
     pub(crate) fn preserve_runtime_pins_from(&mut self, current: &Self) {
@@ -46,7 +46,11 @@ impl<K: RecordKind> RecordArena<K> {
             let logical = current.slots.logical_slot(source)?;
             let physical = slots.physical_index(logical)?;
             let same_generation = generations[physical] == current.generations[source];
-            debug_assert!(same_generation, "a pinned generation cannot be reused");
+            debug_assert!(
+                /* Proof: Generation reuse requires the owner free-slot reservation to exclude all pin classes; adjust_named_pin validates the exact existing generation before changing its private counters. */
+                same_generation,
+                "a pinned generation cannot be reused"
+            );
             same_generation.then_some(physical)
         };
         self.snapshot_pins.remap_from(&current.snapshot_pins, remap);
@@ -57,8 +61,8 @@ impl<K: RecordKind> RecordArena<K> {
     #[cfg(test)]
     pub(crate) fn clear_named_pins(&mut self, class: PinClass) {
         match class {
-            PinClass::Branch => self.branch_pins.fill(0),
-            PinClass::Replay => self.replay_pins.fill(0),
+            PinClass::Branch => self.branch_pins.clear(),
+            PinClass::Replay => self.replay_pins.clear(),
         }
     }
 }

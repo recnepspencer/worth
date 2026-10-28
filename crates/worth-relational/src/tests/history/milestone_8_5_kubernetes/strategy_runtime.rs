@@ -49,6 +49,7 @@ pub(super) fn persisted_strategy_runtime(
             &replica_descriptor,
         ))
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn execute_strategy_commit(
@@ -73,7 +74,10 @@ pub(super) fn execute_strategy_commit(
             .snapshot_for_observation(&basis.observation())
             .expect("open target branch strategy snapshot")
     } else {
-        runtime.visibility_authority().snapshot()
+        runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted")
     };
     let execution = runtime
         .commit_strategies()

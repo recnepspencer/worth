@@ -40,7 +40,7 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
     let control = RelationalOperationControl::uninterrupted().with_injected_interruption_for_test(
         RelationalInterruptionBoundary::BeforeCriticalSection,
         RelationalOperationInterruption::Cancelled,
-        1,
+        std::num::NonZeroUsize::MIN,
     );
     let mut transaction = world
         .runtime

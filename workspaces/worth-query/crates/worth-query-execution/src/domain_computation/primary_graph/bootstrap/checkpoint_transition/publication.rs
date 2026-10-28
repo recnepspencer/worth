@@ -203,6 +203,7 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
         Ok(acknowledged) => Ok((acknowledged.into_parts().1, preserved_outputs)),
         Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::Refused(refusal)) => Err(WorthQueryInMemoryApplicationDenial::Graph(super::codec::map_refusal(refusal.denial()))),
         Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SettlementFailed(error)) => Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionSettlementFailed(error)),
+        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SnapshotCloseoutFailed { commit_id, denial }) => Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionSnapshotCloseoutFailed { commit_id, denial }),
     }
 }
 

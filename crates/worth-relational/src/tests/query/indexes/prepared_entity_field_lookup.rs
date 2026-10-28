@@ -15,14 +15,17 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
     let created = create_entity_outcome(execution, &runtime, "pinned-name");
     let entity = changed_entities(&created)[0];
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.prepared".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.prepared".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -169,14 +172,17 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
     release_test_commit_snapshot(&runtime, &first);
     let created = create_entity_outcome(execution, &runtime, "cancellation-order");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.cancellation-order".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.cancellation-order".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {

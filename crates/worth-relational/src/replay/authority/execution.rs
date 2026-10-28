@@ -284,18 +284,36 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &admission.envelope,
             selected_lineage_authority.as_ref(),
         );
-        let validated_envelope = validated_replay_continuity_envelope(
+        let validated_envelope = match validated_replay_continuity_envelope(
             self.runtime,
             &admission.envelope,
             &admission.verification_plan,
-        )
-        .expect("admitted replay envelope continuity must remain valid");
-        let validated_replayed_envelope = validated_replay_continuity_envelope(
+        ) {
+            Ok(validated) => validated,
+            Err(mismatch) => {
+                return Ok(self.record_continuity_rejection(
+                    request,
+                    &admission.envelope,
+                    &admission.commit_closure,
+                    mismatch,
+                ))
+            }
+        };
+        let validated_replayed_envelope = match validated_replay_continuity_envelope(
             self.runtime,
             &reconstruction.envelope,
             &admission.verification_plan,
-        )
-        .expect("reconstructed replay envelope continuity must remain valid");
+        ) {
+            Ok(validated) => validated,
+            Err(mismatch) => {
+                return Ok(self.record_continuity_rejection(
+                    request,
+                    &admission.envelope,
+                    &admission.commit_closure,
+                    mismatch,
+                ))
+            }
+        };
         compare_replay_surfaces(
             execution,
             self.runtime,

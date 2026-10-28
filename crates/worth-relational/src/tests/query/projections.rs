@@ -265,17 +265,32 @@ fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
 }
 
 #[test]
-#[should_panic(expected = "requires undeclared aspect")]
 fn projection_rejects_undeclared_required_aspects() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "visible");
-    let _ = runtime
+    let refusal = runtime
         .read_truth()
         .try_project_historical_version(runtime.current_version_id())
         .unwrap()
         .entities::<UndeclaredAspectProjection>(execution)
-        .expect("read request remains live");
+        .err()
+        .expect("projection contract must refuse");
+
+    use crate::facade::runtime::{
+        ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,
+    };
+    assert_eq!(
+        refusal,
+        crate::execution::RelationalExecutionDenialCause::ProjectionContract(
+            RelationalProjectionContractDenial {
+                domain: ProjectionRecordDomain::Entity,
+                kind_id: KindId(1),
+                requirement: Some(0),
+                refusal: ProjectionContractRefusal::UndeclaredAspect,
+            }
+        )
+    );
 }

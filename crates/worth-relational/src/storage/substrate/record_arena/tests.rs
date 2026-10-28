@@ -36,9 +36,13 @@ mod tests {
             lineage_id: Some(crate::identity::data::LineageId(12)),
             authoritative_aspect_state: None,
         };
-        arena.retire(slot, version_two);
+        arena
+            .retire(slot, version_two)
+            .expect("fixture slot is materialized");
         arena.lifecycle[slot] = RecordLifecycleState::Reusable;
-        arena.reset_slot(slot);
+        arena
+            .reset_slot(slot)
+            .expect("fixture slot is materialized");
 
         let (_, reused_generation, reused) = arena.push_slot(super::super::SlotInit {
             partition_id,
@@ -76,9 +80,13 @@ mod tests {
             },
         });
         assert_eq!(generation, 1);
-        arena.retire(slot, VersionId(2));
+        arena
+            .retire(slot, VersionId(2))
+            .expect("fixture slot is materialized");
         arena.lifecycle[slot] = RecordLifecycleState::Reusable;
-        arena.reset_slot(slot);
+        arena
+            .reset_slot(slot)
+            .expect("fixture slot is materialized");
 
         let (_, reused_generation, reused) = arena.push_slot(super::super::SlotInit {
             partition_id,
@@ -232,4 +240,29 @@ mod tests {
             .at_revision(AspectContractRevision(1))
             .struct_aspect(shape)
     }
+}
+
+#[test]
+fn missing_slot_mutations_and_missing_relation_endpoints_refuse_without_partial_writes() {
+    use crate::identity::data::{KindId, PartitionId, VersionId};
+    use crate::storage::substrate::{
+        EntityArena, EntityExtra, RelationArena, RelationExtra, SlotInit,
+    };
+    let mut entities = EntityArena::with_capacity(0);
+    assert_eq!(
+        entities.apply_extra_update(7, EntityExtra::default(), VersionId(2)),
+        None
+    );
+    assert_eq!(entities.retire(7, VersionId(2)), None);
+    assert_eq!(entities.reset_slot(7), None);
+    let mut relations = RelationArena::with_capacity(0);
+    let invalid = SlotInit {
+        partition_id: PartitionId(0),
+        kind_id: KindId(1),
+        version_id: VersionId(1),
+        extra: RelationExtra::default(),
+    };
+    assert!(relations.write_reserved_slot(invalid, 7, 1).is_err());
+    assert_eq!(relations.slot_count(), 0);
+    assert!(relations.get_slot(7).is_none());
 }

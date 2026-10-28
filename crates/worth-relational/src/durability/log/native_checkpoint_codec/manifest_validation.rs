@@ -19,6 +19,9 @@ pub(super) struct ManifestDirectoryFacts {
 pub(super) fn validate(
     manifest: &RelationalCheckpointManifest,
 ) -> Result<ManifestDirectoryFacts, DurabilityError> {
+    if manifest.index_generation_frontier == 0 {
+        return Err(corrupt("checkpoint index generation frontier is zero"));
+    }
     let mut commits = BTreeSet::new();
     for (ordinal, entry) in manifest.commits.iter().enumerate() {
         if entry.position.0 != ordinal as u64 + 1

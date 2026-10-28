@@ -98,7 +98,8 @@ fn execution_draft(request: &CanonicalStrategyCommitRequest) -> StrategyExecutio
 fn lowered_bundle() -> StrategyCommitArtifactBundle {
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(crate::tests::support::test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let (transaction_validation_input, mut authority) =
@@ -122,7 +123,8 @@ fn lowered_bundle() -> StrategyCommitArtifactBundle {
 fn strategy_commit_artifact_bundle_carries_consistent_typed_artifacts() {
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(crate::tests::support::test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let (transaction_validation_input, mut authority) =

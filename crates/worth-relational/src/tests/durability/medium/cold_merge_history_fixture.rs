@@ -50,7 +50,8 @@ impl Fixture {
         let mut runtime = RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(test_schema_registry())
-            .build_durable(medium);
+            .build_durable(medium)
+            .expect("valid native runtime configuration");
         let plan = runtime
             .durability()
             .recovery_plan_from_source(

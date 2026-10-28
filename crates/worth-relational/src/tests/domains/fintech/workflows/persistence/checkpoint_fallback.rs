@@ -16,7 +16,8 @@ fn fintech_recovery_refuses_a_damaged_checkpoint_instead_of_losing_truth() {
     assert!(damage_filed_checkpoint(&world.runtime));
 
     let mut recovering =
-        crate::facade::runtime::RelationalRuntime::new(world.runtime.config().clone());
+        crate::facade::runtime::RelationalRuntime::new(world.runtime.config().clone())
+            .expect("valid native runtime configuration");
     let refused = medium_recovery_plan(
         execution,
         &world.runtime,

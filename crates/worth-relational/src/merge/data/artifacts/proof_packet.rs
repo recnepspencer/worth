@@ -239,7 +239,7 @@ fn merge_admitted_surface_digest(
     bytes.extend_from_slice(b"worth.relational.merge.admitted_surface.v1");
     for row in admitted_merge_surface {
         bytes.extend_from_slice(
-            &rmp_serde::to_vec_named(row).expect("merge admitted surface row must encode"),
+            &rmp_serde::to_vec_named(row).expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "merge admitted surface row must encode"),
         );
     }
     let digest = Sha256::digest(bytes);

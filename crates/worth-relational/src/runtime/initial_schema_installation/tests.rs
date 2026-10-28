@@ -23,7 +23,8 @@ fn recovered_initial_schema_readmission_requires_full_schema_identity() {
         .kind_name = "foreign-kind-with-same-cardinality".to_owned();
     let mut source = crate::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(source_registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source_receipt = source
         .prepare_initial_schema_installation()
         .unwrap()
@@ -31,7 +32,8 @@ fn recovered_initial_schema_readmission_requires_full_schema_identity() {
         .unwrap();
     let mut foreign = crate::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(foreign_registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     foreign
         .prepare_initial_schema_installation()
         .unwrap()

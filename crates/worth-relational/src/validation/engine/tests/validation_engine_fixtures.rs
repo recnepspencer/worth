@@ -39,6 +39,7 @@ pub(super) fn runtime_with_invariants(invariant_catalog: InvariantCatalog) -> Re
         .schema_registry(RelationalSchemaRegistry::new())
         .invariant_catalog(invariant_catalog)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn runtime_with_partition_isolation() -> RelationalRuntime {
@@ -73,6 +74,7 @@ pub(super) fn runtime_with_partition_isolation() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn runtime_with_cardinality_minimum() -> RelationalRuntime {
@@ -127,6 +129,7 @@ pub(super) fn runtime_with_cardinality_minimum() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn acyclicity_and_connectivity_registry() -> RelationalSchemaRegistry {
@@ -181,6 +184,7 @@ pub(super) fn runtime_with_acyclicity_and_connectivity() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(acyclicity_and_connectivity_registry())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn create_entity_of_kind(
@@ -272,6 +276,7 @@ pub(super) fn runtime_with_summary_title_uniqueness() -> RelationalRuntime {
             )],
         })
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn runtime_with_summary_title_commit_boundary_uniqueness() -> RelationalRuntime {
@@ -295,6 +300,7 @@ pub(super) fn runtime_with_summary_title_commit_boundary_uniqueness() -> Relatio
             )],
         })
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn commit_entity_with_summary(

@@ -45,6 +45,7 @@ fn reopened_shape(
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
         })
+        .expect("index fixture has identity capacity")
         .index_id;
     let (entity, history_symbol, _retained_history) = if historical {
         use super::cold_symbols::view_levels::{admit_population, publish_text, TextMutation};

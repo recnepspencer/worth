@@ -250,7 +250,8 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
     drop((handle, world, original_payer));
     let receiving_payer = payer();
     let receiving = ExecutionRequest::leased(&receiving_payer);
-    let mut restored = RelationalRuntime::new(recovery_config);
+    let mut restored =
+        RelationalRuntime::new(recovery_config).expect("valid native runtime configuration");
     restored
         .durability_recovery()
         .restore_native_checkpoint(&receiving, &checkpoint)

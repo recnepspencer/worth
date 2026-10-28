@@ -43,4 +43,6 @@ fn preparation_failure(stop: CustomPreparationStop) -> MapKernelFailure<PacketBu
     }
 }
 
+#[cfg(test)]
+mod memory_tests;
 mod tracked;

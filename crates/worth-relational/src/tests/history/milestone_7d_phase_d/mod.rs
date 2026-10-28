@@ -125,6 +125,7 @@ fn durable_runtime_with_topology_identity_registry(
         .profile(crate::tests::support::RelationalRuntimeProfile::CertificationCore)
         .schema_registry(topology_identity_registry())
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 use crate::{
     config::data::{CascadeDeletePolicy, CrossContextPolicy},
@@ -149,6 +150,7 @@ fn runtime_with_aspect_field_merge_policy(
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn register_aspect_field_merge_policy(

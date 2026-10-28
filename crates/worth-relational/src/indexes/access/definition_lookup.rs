@@ -119,12 +119,18 @@ mod tests {
             },
             branch_scoped: false,
         };
-        let installed = runtime.index_authority().register(expected.clone());
+        let installed = runtime
+            .index_authority()
+            .register(expected.clone())
+            .expect("index fixture has identity capacity");
         let snapshot = runtime.index_access().definition_lookup_snapshot();
-        runtime.index_authority().register(DerivedIndexDefinition {
-            name: "later-index".to_owned(),
-            ..expected.clone()
-        });
+        runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                name: "later-index".to_owned(),
+                ..expected.clone()
+            })
+            .expect("index fixture has identity capacity");
 
         assert_eq!(snapshot.definition_count(), 1);
         assert_eq!(snapshot.candidate_count_for_name("snapshot-index"), 1);

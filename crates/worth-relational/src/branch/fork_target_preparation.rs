@@ -41,7 +41,7 @@ impl RelationalForkPort {
         let target_observation = target_cell.observation().clone();
         let fork_provenance = target_cell
             .fork_provenance()
-            .expect("forked branch must retain exact source provenance");
+            .expect(/* Proof: Only successful fork preparation constructs this private target; it installs the selected source root and immutable fork provenance before returning it. */ "forked branch must retain exact source provenance");
         let target_truth_version = target_cell.truth_version();
         let shared_commit_id = match target_observation.target() {
             FoundationalBranchTarget::Empty => None,

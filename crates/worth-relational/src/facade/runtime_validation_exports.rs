@@ -14,3 +14,5 @@ pub use crate::validation::data::{
     StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
 };
 pub use crate::validation::engine::InvariantExecutionResult;
+
+pub use crate::validation::DuplicateCustomInvariantRegistration;

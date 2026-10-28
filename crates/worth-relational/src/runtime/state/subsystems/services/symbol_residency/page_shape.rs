@@ -48,7 +48,7 @@ impl SymbolPageShape {
         Ok(Self {
             id_digest: Self::digest_ids(snapshot.entries.iter().map(|(id, _)| u64::from(id.0))),
             first: first.0,
-            last: snapshot.entries.last().unwrap().0,
+            last: snapshot.entries.last().ok_or(Cause::Damaged)?.0,
             homogeneous_bucket: snapshot
                 .entries
                 .iter()

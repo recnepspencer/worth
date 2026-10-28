@@ -15,7 +15,8 @@ fn active_snapshot_capacity_denies_before_handle_or_pin_admission() {
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let first = runtime

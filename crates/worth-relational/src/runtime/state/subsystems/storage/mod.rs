@@ -94,6 +94,7 @@ impl StorageSubsystem {
             .read()
             .edition
             .shared_partition(partition_id)
+            .expect("test fixture admits a resident partition")
     }
 
     pub(crate) fn install_owned(

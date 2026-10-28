@@ -103,6 +103,7 @@ pub(crate) fn runtime_with_declared_aspect_schema_profile(
         .profile(profile)
         .schema_registry(declared_aspect_schema_registry(cascade_delete_policy))
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(crate) fn runtime_with_test_schema_profile(
@@ -112,6 +113,7 @@ pub(crate) fn runtime_with_test_schema_profile(
         .profile(profile)
         .schema_registry(test_schema_registry())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(crate) fn runtime_with_test_schema_profile_and_chunks(
@@ -128,6 +130,7 @@ pub(crate) fn runtime_with_test_schema_profile_and_chunks(
             scan_packet_size: 256,
         })
         .build()
+        .expect("valid native runtime configuration")
 }
 
 /// A runtime that publishes every commit to a fresh in-crate test medium.
@@ -142,6 +145,7 @@ pub(crate) fn durable_runtime_with_test_schema_profile(
         .profile(profile)
         .schema_registry(test_schema_registry())
         .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(crate) fn durable_runtime_with_declared_aspect_schema(
@@ -151,6 +155,7 @@ pub(crate) fn durable_runtime_with_declared_aspect_schema(
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(declared_aspect_schema_registry(cascade_delete_policy))
         .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(crate) fn runtime_with_test_schema_and_chunks(
@@ -166,6 +171,7 @@ pub(crate) fn runtime_with_test_schema_and_chunks(
             scan_packet_size: 64,
         })
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(crate) fn runtime_with_test_schema_and_invariants(
@@ -175,6 +181,7 @@ pub(crate) fn runtime_with_test_schema_and_invariants(
         .schema_registry(test_schema_registry())
         .invariant_catalog(invariant_catalog)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(crate) fn runtime_with_declared_aspect_schema_and_invariants(
@@ -186,4 +193,5 @@ pub(crate) fn runtime_with_declared_aspect_schema_and_invariants(
         ))
         .invariant_catalog(invariant_catalog)
         .build()
+        .expect("valid native runtime configuration")
 }

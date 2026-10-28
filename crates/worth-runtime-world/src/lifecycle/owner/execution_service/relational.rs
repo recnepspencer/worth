@@ -174,10 +174,9 @@ mod tests {
 
     #[test]
     fn native_companion_stops_keep_their_recovery_reason() {
-        let stop = worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-            required: 9,
-            maximum: 8,
-        };
+        let stop = worth_relational::facade::mvcc::CompanionPreflightStop::Execution(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted,
+        );
         for deferred in [
             RelationalPublicationDeferred::CompanionRegistrationPending,
             RelationalPublicationDeferred::CompanionRebindRequired,

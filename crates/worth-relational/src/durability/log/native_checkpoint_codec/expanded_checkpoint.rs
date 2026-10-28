@@ -218,6 +218,7 @@ pub(super) fn expand(
             manifest.lineage_basis,
             lineage_nodes,
         ),
+        index_generation_frontier: manifest.index_generation_frontier,
         index_definitions: manifest.index_definitions,
         derived_index_artifacts,
         derived_index_checkpoint,

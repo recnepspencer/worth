@@ -16,7 +16,7 @@ impl RelationalCanonicalCommitArtifact {
         Self::envelope_payload_digest(commit.position(), commit.envelope())
     }
 
-    fn envelope_payload_digest(
+    pub(crate) fn envelope_payload_digest(
         position: crate::publication::patch::data::PatchStreamPosition,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
     ) -> Result<[u8; 32], rmp_serde::encode::Error> {

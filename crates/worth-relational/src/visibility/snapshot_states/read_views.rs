@@ -15,14 +15,25 @@ pub(crate) fn read_view_from_snapshot_state(
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
 ) -> Result<RelationalReadView, crate::execution::RelationalExecutionDenialCause> {
-    debug_assert_eq!(state.basis.branch_id(), &handle.branch_id);
-    debug_assert_eq!(state.basis.version_id(), handle.version_id);
+    debug_assert_eq!(
+        /* Proof: The handle binding and state key originate from one admitted snapshot observation. The private cache lookup requires that exact key before this read view is constructed; neither field has a facade mutation door. */
+        state.basis.branch_id(),
+        &handle.branch_id
+    );
+    debug_assert_eq!(
+        /* Proof: The handle binding and state key originate from one admitted snapshot observation. The private cache lookup requires that exact key before this read view is constructed; neither field has a facade mutation door. */
+        state.basis.version_id(),
+        handle.version_id
+    );
     let (entities, relations) = match &state.basis {
         SnapshotStateBasis::Exact(basis) => {
-            debug_assert!(match state.basis.root_version() {
-                Some(root_version) => root_version == state.handle.version_id,
-                None => state.handle.version_id.is_zero(),
-            });
+            debug_assert!(
+                /* Proof: The handle binding and state key originate from one admitted snapshot observation. The private cache lookup requires that exact key before this read view is constructed; neither field has a facade mutation door. */
+                match state.basis.root_version() {
+                    Some(root_version) => root_version == state.handle.version_id,
+                    None => state.handle.version_id.is_zero(),
+                }
+            );
             materialize_exact(runtime, state, basis.root().as_ref(), charge, memory)?
         }
         SnapshotStateBasis::Historical(basis) => materialize_historical(

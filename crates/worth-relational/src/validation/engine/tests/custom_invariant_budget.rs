@@ -6,7 +6,8 @@ fn unrelated_custom_rule_returns_owner_proven_non_applicability() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(900),
         merged_intents: Vec::new(),
@@ -52,7 +53,8 @@ fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .custom_invariant(CustomInvariantRegistration::new(TinyBudgetUnrelatedRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(901),
         merged_intents: ["first", "second"]
@@ -99,7 +101,8 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .custom_invariant(CustomInvariantRegistration::new(BoundedBudgetUnrelatedRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(902),
         merged_intents: (0..32)
@@ -155,7 +158,8 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .custom_invariant(CustomInvariantRegistration::new(BoundedBudgetUnrelatedRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = crate::tests::support::create_entity(execution, &runtime, "bulk-source");
     let target = crate::tests::support::create_entity(execution, &runtime, "bulk-target");
     let endpoints = (0..40)
@@ -251,7 +255,8 @@ fn rule_overrunning_its_installed_work_is_an_execution_error_not_a_violation() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(CustomInvariantRegistration::new(SwallowsWorkExhaustionRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,

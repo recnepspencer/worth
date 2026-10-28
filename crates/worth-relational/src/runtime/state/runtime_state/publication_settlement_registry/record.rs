@@ -12,6 +12,7 @@ pub(crate) struct ReservedRelationalSettlement {
     pub(crate) published_snapshot_basis:
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     pub(crate) control: crate::runtime::RelationalOperationControl,
+    pub(crate) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
 }
 
 /// The same input after the branch reference moved, authorized against the
@@ -22,6 +23,7 @@ pub(crate) struct PerformedRelationalSettlement {
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     pub(crate) control: crate::runtime::RelationalOperationControl,
     pub(crate) positioned: Arc<PositionedCanonicalCommit>,
+    pub(crate) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
     pub(crate) settlement_retention:
         crate::history::retention::RelationalPerformedSettlementObligation,
     pub(crate) late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
@@ -135,7 +137,10 @@ impl PendingRelationalPublicationSettlement {
         let PendingRelationalSettlementState::Reserved(reserved) =
             std::mem::replace(&mut *state, PendingRelationalSettlementState::Executing)
         else {
-            unreachable!("reserved settlement was observed immediately above");
+            unreachable!(
+                /* Proof: The immediately preceding match observes Reserved under this same exclusive record guard; no other writer can change the record before this match. */
+                "reserved settlement was observed immediately above"
+            );
         };
         *state =
             PendingRelationalSettlementState::Performed(Box::new(PerformedRelationalSettlement {
@@ -143,6 +148,7 @@ impl PendingRelationalPublicationSettlement {
                 published_snapshot_basis: reserved.published_snapshot_basis,
                 control: reserved.control,
                 positioned,
+                envelope_cell: reserved.envelope_cell,
                 settlement_retention,
                 late_interruption,
             }));
@@ -176,7 +182,10 @@ impl PendingRelationalPublicationSettlement {
                 RelationalSettlementClaim::AlreadySettled(Box::new(claimed))
             }
             PendingRelationalSettlementState::Executing => {
-                unreachable!("the executor gate excludes a second in-flight claim")
+                unreachable!(
+                    /* Proof: The exclusive settlement executor gate permits one in-flight claim; this branch runs under that gate after checking the same record. */
+                    "the executor gate excludes a second in-flight claim"
+                )
             }
         }
     }

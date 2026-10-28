@@ -38,7 +38,8 @@ pub fn public_relational_merge_runtime() -> RelationalRuntime {
         .commit_strategy_executor(IntentReconciliationStrategy::execution_registration(
             &descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     create_empty_entity(execution, &mut runtime, "main", "main-seed");
     let (_, basis) = runtime
         .observe_fork_source(&BranchId("main".to_string()))

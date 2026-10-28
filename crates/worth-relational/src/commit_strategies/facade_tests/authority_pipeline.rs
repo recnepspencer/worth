@@ -8,7 +8,8 @@ fn validate_lowered_plan_preserves_strategy_provenance_and_commit_boundary_summa
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let lowered = {
@@ -64,7 +65,8 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let mut seed = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     seed.push_batch(
@@ -154,7 +156,8 @@ fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritat
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let validated = {
@@ -218,7 +221,8 @@ fn validate_lowered_plan_rejects_stale_basis_with_zero_residue() {
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let lowered = {
@@ -298,7 +302,8 @@ fn execute_validated_commit_rejects_stale_validation_basis_after_intervening_com
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let validated = {

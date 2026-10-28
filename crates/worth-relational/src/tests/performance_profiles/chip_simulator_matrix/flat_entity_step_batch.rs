@@ -103,7 +103,10 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
                 .flat_map(|targets| targets.iter().take(1).copied())
                 .map(RecordRef::Entity)
                 .collect::<Vec<_>>();
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let explicit_packet = explicit_query_packet(
                 &runtime,
                 &snapshot,

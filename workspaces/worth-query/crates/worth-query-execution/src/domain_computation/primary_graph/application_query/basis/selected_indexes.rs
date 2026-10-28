@@ -76,9 +76,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
             ensure_selected_field_indexes_admitted(execution, runtime, basis, [root, target])
         })
         .map_err(|stop| match stop {
-            SelectedFieldIndexAdmissionStop::Admission(
-                CompanionPreflightStop::PreparationMemoryExhausted { .. }
-                | CompanionPreflightStop::PreparationMemoryCounterOverflow,
+            SelectedFieldIndexAdmissionStop::Admission( CompanionPreflightStop::PreparationMemoryCounterOverflow,
             ) => WorthQueryApplicationQueryAdmissionDenial::new(
                 WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
                 query.name(),

@@ -1,11 +1,12 @@
-use worth_foundational::facade::{
-    AspectFieldLocator, AspectValueLocator, BoundarySourceLocator, LocatorAuthority,
-};
+use worth_foundational::facade::{AspectFieldLocator, AspectValueLocator, LocatorAuthority};
 
 use crate::aspect_wire::{encode_string, encode_u32};
 
+#[cfg(test)]
 use super::error::AspectValueLocatorCanonicalCodecError;
 use super::tags;
+#[cfg(test)]
+use worth_foundational::facade::BoundarySourceLocator;
 
 pub(crate) fn encode_aspect_value_locator(locator: &AspectValueLocator) -> Vec<u8> {
     let mut bytes = Vec::new();
@@ -32,6 +33,7 @@ pub(crate) fn encode_aspect_field_locator(locator: &AspectFieldLocator) -> Vec<u
     encode_aspect_value_locator(&AspectValueLocator::struct_field(locator.clone()))
 }
 
+#[cfg(test)]
 pub(crate) fn encode_boundary_source_locator(
     locator: &BoundarySourceLocator,
 ) -> Result<Vec<u8>, AspectValueLocatorCanonicalCodecError> {

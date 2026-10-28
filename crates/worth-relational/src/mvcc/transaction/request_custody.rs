@@ -31,7 +31,7 @@
 //! #     body(&request)
 //! # }
 //! # fn prepare(request: &ExecutionRequest<'_, '_>) -> PreparedRelationalCommitCandidate {
-//! #     let runtime = RelationalRuntimeApi::builder().schema_registry(RelationalSchemaRegistry::new()).build();
+//! #     let runtime = RelationalRuntimeApi::builder().schema_registry(RelationalSchemaRegistry::new()).build().expect("valid documented runtime configuration");
 //! #     let identity = runtime.main_branch_identity();
 //! #     let (_, basis) = runtime.observe_branch(&identity).unwrap();
 //! #     let transaction = runtime.begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()).unwrap();
@@ -60,7 +60,7 @@
 //! #     body(&request)
 //! # }
 //! # fn prepare(request: &ExecutionRequest<'_, '_>) -> PreparedRelationalCommitCandidate {
-//! #     let runtime = RelationalRuntimeApi::builder().schema_registry(RelationalSchemaRegistry::new()).build();
+//! #     let runtime = RelationalRuntimeApi::builder().schema_registry(RelationalSchemaRegistry::new()).build().expect("valid documented runtime configuration");
 //! #     let identity = runtime.main_branch_identity();
 //! #     let (_, basis) = runtime.observe_branch(&identity).unwrap();
 //! #     let transaction = runtime.begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()).unwrap();

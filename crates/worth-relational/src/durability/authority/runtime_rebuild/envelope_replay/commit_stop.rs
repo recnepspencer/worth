@@ -26,12 +26,11 @@ pub(crate) fn replay_commit_stop(
             ),
             None => DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into(),
         },
-        TransactionCommitError::Preparation { error, .. } if matches!(error.reason(), crate::transactions::data::CommitPreparationReason::StorageUnavailable(_)) => {
-            let crate::transactions::data::CommitPreparationReason::StorageUnavailable(failure) = error.reason() else { unreachable!() };
-            failure.into()
-        }
+        TransactionCommitError::Preparation { error, .. } => match error.reason() {
+            crate::transactions::data::CommitPreparationReason::StorageUnavailable(failure) => failure.into(),
+            _ => DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into(),
+        },
         TransactionCommitError::Publication { .. }
-        | TransactionCommitError::Preparation { .. }
         | TransactionCommitError::PublicationDenied { .. }
         | TransactionCommitError::PublicationDeferred { .. }
         | TransactionCommitError::PublicationFailed { .. }
@@ -79,7 +78,11 @@ mod tests {
         ] {
             let boundary = RelationalInterruptionBoundary::ProposalValidation;
             let event = RelationalOperationControl::uninterrupted()
-                .with_injected_interruption_for_test(boundary, interruption, 1)
+                .with_injected_interruption_for_test(
+                    boundary,
+                    interruption,
+                    std::num::NonZeroUsize::MIN,
+                )
                 .observe(boundary)
                 .unwrap();
             let stop = replay_commit_stop(

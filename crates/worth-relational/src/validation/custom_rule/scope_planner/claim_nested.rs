@@ -69,7 +69,7 @@ fn array_bytes<T>(rows: &[T]) -> u64 {
 }
 
 pub(super) fn retain_rows<T>(rows: impl Iterator<Item = T>) -> std::sync::Arc<[T]> {
-    let mut retained = Vec::with_capacity(rows.size_hint().1.expect("bounded scope rows"));
+    let mut retained = Vec::with_capacity(rows.size_hint().1.expect(/* Proof: rows is an iterator over the retained bounded scope slice and its adapters preserve a finite upper size hint. */ "bounded scope rows"));
     retained.extend(rows);
     retained.into()
 }

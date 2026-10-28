@@ -126,7 +126,8 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let first = create_entity_outcome(execution, &runtime, "first");
     let version_before = runtime.current_version_id();
     let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();

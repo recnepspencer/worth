@@ -188,7 +188,7 @@ impl PreparedCanonicalBranchMovement {
                 ));
             }
         };
-        let head_retirement = match retention_binding.reserve_head_retirement(
+        let head_retirement = match retention_binding.reserve_head_retirement_capacity(
             movement.next_cell.identity(),
             &expected_root,
             publication_cell.head_retention(),
@@ -244,6 +244,7 @@ impl PreparedCanonicalBranchMovement {
                 completion,
                 published_snapshot_basis,
                 control: control.clone(),
+                envelope_cell: movement.canonical_publication_route.envelope_residency(),
             },
         ) {
             Ok(reservation) => reservation,
@@ -325,12 +326,8 @@ const fn follows_concurrent_publication(stop: &super::super::CompanionPreflightS
         | Stop::SelectedPositionUnavailable { .. }
         | Stop::ForeignCell
         | Stop::RegistrationChanged
-        | Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
         | Stop::WorkCounterOverflow
-        | Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
-        | Stop::RetainedCompanionCapacityExhausted { .. }
         | Stop::Interrupted(_) => false,
     }
 }

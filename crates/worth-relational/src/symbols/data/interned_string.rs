@@ -29,10 +29,13 @@ impl InternedString {
         }
     }
 
-    pub fn intern_with(&self, interner: &mut StringInterner) -> Symbol {
+    pub fn intern_with(
+        &self,
+        interner: &mut StringInterner,
+    ) -> Result<Symbol, super::RelationalSymbolExhausted> {
         match self {
             Self::Raw(raw) => interner.intern(raw),
-            Self::Symbol(symbol) => *symbol,
+            Self::Symbol(symbol) => Ok(*symbol),
         }
     }
 
@@ -102,7 +105,9 @@ mod tests {
     #[test]
     fn symbolic_helpers_resolve_or_fall_back_through_symbol_identity() {
         let mut interner = StringInterner::default();
-        let symbol = interner.intern("name");
+        let symbol = interner
+            .intern("name")
+            .expect("symbol fixture has identity capacity");
         let value = InternedString::Symbol(symbol);
 
         assert_eq!(value.as_raw_str(), None);
@@ -115,7 +120,7 @@ mod tests {
                 .as_deref(),
             Some("name")
         );
-        assert_eq!(value.intern_with(&mut interner), symbol);
+        assert_eq!(value.intern_with(&mut interner), Ok(symbol));
     }
 
     #[test]
@@ -129,7 +134,9 @@ mod tests {
         let mut interner = StringInterner::default();
         let value = InternedString::raw("name");
 
-        let symbol = value.intern_with(&mut interner);
+        let symbol = value
+            .intern_with(&mut interner)
+            .expect("symbol fixture has identity capacity");
 
         assert_eq!(interner.resolve(symbol), Some("name"));
     }

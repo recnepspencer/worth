@@ -9,7 +9,8 @@ fn main() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let (_created, entity_id) = support::create_entity(execution, &runtime, "durable");
     let _updated = support::update_entity(execution, &runtime, entity_id, "durable-updated");

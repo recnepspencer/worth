@@ -43,8 +43,8 @@ pub(super) fn restore_checkpoint_state(
     checkpoint: DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
-    if checkpoint.directory.is_some() {
-        cold_directory::restore(execution, restored, &checkpoint, work)?;
+    if let Some(directory) = checkpoint.directory.clone() {
+        cold_directory::restore(execution, restored, &checkpoint, directory, work)?;
         super::unshared_state(restored)?
             .durability
             .push_checkpoint(checkpoint);
@@ -172,6 +172,7 @@ fn prepare_indexes(
         ));
     }
     let mut indexes = IndexingState::default();
+    indexes.restore_generation_frontier(checkpoint.index_generation_frontier);
     for definition in &checkpoint.index_definitions {
         indexes.insert_definition(definition.clone());
         work.index_definitions_readmitted += 1;
@@ -181,6 +182,7 @@ fn prepare_indexes(
         history,
         &checkpoint.derived_index_artifacts,
         checkpoint.derived_index_checkpoint.as_ref(),
+        checkpoint.index_generation_frontier,
         work,
     )?;
     Ok(indexes)

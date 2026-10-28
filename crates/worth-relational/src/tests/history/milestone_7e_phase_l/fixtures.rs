@@ -62,9 +62,11 @@ pub(super) fn runtime_with_schema_declared_entity_policy(persisted: bool) -> Rel
         .expect("schema registry");
     let builder = RelationalRuntimeApi::builder().schema_registry(registry);
     if persisted {
-        builder.build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+        builder
+            .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+            .expect("valid native runtime configuration")
     } else {
-        builder.build()
+        builder.build().expect("valid native runtime configuration")
     }
 }
 

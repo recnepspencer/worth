@@ -218,7 +218,10 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
     for (index, leaf) in leaves.iter().enumerate() {
         let _ = update_entity(execution, &runtime, *leaf, &format!("leaf-{index}-updated"));
     }
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let planned_packet = runtime
         .storage_access()
         .plan_read_explicit_query_packet(
@@ -283,7 +286,10 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
         .durability_recovery()
         .recover(execution, recovery_plan)
         .unwrap();
-    let recovered_snapshot = recovered.visibility_authority().snapshot();
+    let recovered_snapshot = recovered
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let recovered_reads = execute_explicit_query(
         execution,
         &recovered,

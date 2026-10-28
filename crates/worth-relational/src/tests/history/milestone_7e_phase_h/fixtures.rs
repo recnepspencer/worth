@@ -172,6 +172,7 @@ pub(super) fn runtime_with_relation_identity_registry(
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn create_named_entity_on_branch(
@@ -313,7 +314,9 @@ fn runtime_with_schema_declared_entity_policy_builder(
         .expect("schema-declared merge policy registry");
     let builder = RelationalRuntimeApi::builder().schema_registry(registry);
     match medium {
-        Some(medium) => builder.build_durable(medium.attachment()),
-        None => builder.build(),
+        Some(medium) => builder
+            .build_durable(medium.attachment())
+            .expect("valid native runtime configuration"),
+        None => builder.build().expect("valid native runtime configuration"),
     }
 }

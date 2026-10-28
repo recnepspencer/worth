@@ -14,7 +14,15 @@ pub(super) fn apply_authoritative_commit_artifacts(
     advance_branch_currentness: bool,
 ) -> Result<(), DurabilityError> {
     let envelope = positioned.envelope();
-    let history_before = runtime.history.detached_owner_snapshot();
+    let history_before = runtime
+        .history
+        .detached_owner_snapshot()
+        .map_err(|denial| {
+            DurabilityError::new(
+                RecoveryFailureClass::CorruptCheckpoint,
+                format!("history snapshot denied: {denial:?}"),
+            )
+        })?;
     if runtime
         .history
         .recorded_commit_envelope(envelope.commit.commit_id)
@@ -29,12 +37,18 @@ pub(super) fn apply_authoritative_commit_artifacts(
             ),
         ));
     }
-    if runtime
+    let catalog_matches = runtime
         .history
         .commit_artifact(envelope.commit.commit_id)
-        .is_some_and(|existing| existing.envelope().as_ref() != envelope)
-        && !allow_reconstructed_replacement
-    {
+        .map(|existing| existing.matches_envelope(envelope))
+        .transpose()
+        .map_err(|denial| {
+            DurabilityError::new(
+                RecoveryFailureClass::CorruptCheckpoint,
+                format!("recovered catalog comparison denied: {denial:?}"),
+            )
+        })?;
+    if catalog_matches == Some(false) && !allow_reconstructed_replacement {
         return Err(DurabilityError::new(
             RecoveryFailureClass::CorruptCheckpoint,
             format!(

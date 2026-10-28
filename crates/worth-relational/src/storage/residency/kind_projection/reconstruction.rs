@@ -222,7 +222,10 @@ fn project_prefix(
     slot: usize,
     expected: &mut BTreeMap<RelationId, RegionRelationProjection>,
 ) -> Result<(), Cause> {
-    let physical = partition.relation_arena.physical_index(slot).unwrap();
+    let physical = partition
+        .relation_arena
+        .physical_index(slot)
+        .ok_or(Cause::IntegrityMismatch)?;
     let Some(prefix) = &partition.relation_arena.history_prefixes[physical] else {
         return Ok(());
     };

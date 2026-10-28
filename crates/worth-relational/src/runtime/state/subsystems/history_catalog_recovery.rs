@@ -143,7 +143,7 @@ impl HistorySubsystem {
             .map(|(branch_id, previous_root, next_root)| {
                 let cell = cells
                     .get(&branch_id)
-                    .expect("planned recovery branch remains in detached registry");
+                    .expect(/* Proof: rebuild_catalog_with_live_roots_and_descriptors/readmit_replayed_root_descriptor selects these branch ids directly from cells.values(), then retains the detached BTreeMap in this local variable. No key insertion or removal occurs before this lookup; installing roots changes only the selected cell values. */ "planned recovery branch remains in detached registry");
                 self.reserve_branch_head_retirement(
                     cell.identity(),
                     &previous_root,
@@ -160,13 +160,12 @@ impl HistorySubsystem {
                 return Err(error);
             }
         };
-        for (branch_id, mut reservation, previous_root, next_root) in reservations {
+        for (branch_id, reservation, _previous_head_custody, next_root) in reservations {
             cells
                 .get_mut(&branch_id)
-                .expect("reserved recovery branch remains in detached registry")
+                .expect(/* Proof: rebuild_catalog_with_live_roots_and_descriptors/readmit_replayed_root_descriptor selects these branch ids directly from cells.values(), then retains the detached BTreeMap in this local variable. No key insertion or removal occurs before this lookup; installing roots changes only the selected cell values. */ "reserved recovery branch remains in detached registry")
                 .install_root(Arc::clone(&next_root));
-            reservation.transfer_head(&previous_root, &next_root);
-            reservation.replace_head(previous_root);
+            reservation.transfer_head(&next_root).replace_head();
         }
         self.branch_cells.restore_all(cells);
         let envelopes = self.recorded_commit_envelopes();
@@ -254,13 +253,12 @@ impl HistorySubsystem {
                 return Err(error);
             }
         };
-        for (branch_id, mut reservation, previous_root) in reservations {
+        for (branch_id, reservation, _previous_head_custody) in reservations {
             cells
                 .get_mut(&branch_id)
-                .expect("reserved recovery branch remains in detached registry")
+                .expect(/* Proof: rebuild_catalog_with_live_roots_and_descriptors/readmit_replayed_root_descriptor selects these branch ids directly from cells.values(), then retains the detached BTreeMap in this local variable. No key insertion or removal occurs before this lookup; installing roots changes only the selected cell values. */ "reserved recovery branch remains in detached registry")
                 .install_root(Arc::clone(&canonical_root));
-            reservation.transfer_head(&previous_root, &canonical_root);
-            reservation.replace_head(previous_root);
+            reservation.transfer_head(&canonical_root).replace_head();
         }
         self.branch_cells.restore_all(cells);
         let descriptors = self
@@ -287,10 +285,13 @@ impl HistorySubsystem {
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
         let catalog_artifact = self.commit_artifact(envelope.commit.commit_id);
-        if catalog_artifact
+        let conflicts = catalog_artifact
             .as_ref()
-            .is_some_and(|artifact| artifact.envelope().as_ref() != envelope)
-        {
+            .map(|artifact| artifact.matches_envelope(envelope))
+            .transpose()
+            .map_err(|denial| format!("recovered catalog comparison denied: {denial:?}"))?
+            .is_some_and(|matches| !matches);
+        if conflicts {
             if !allow_reconstructed_replacement {
                 return Err(format!(
                     "recovery commit artifact conflicts for commit {}",

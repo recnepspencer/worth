@@ -55,10 +55,10 @@ fn validate_metered(
     for partition_id in before.partition_ids_iter() {
         charge(context, 1)?;
         let old = before
-            .partition_state(partition_id)
+            .partition_state(partition_id)?
             .ok_or("codec retirement introduced a partition")?;
         let new = after
-            .partition_state(partition_id)
+            .partition_state(partition_id)?
             .ok_or("codec retirement removed a partition")?;
         if old.entity_arena.occupied_slots_iter().count()
             != new.entity_arena.occupied_slots_iter().count()

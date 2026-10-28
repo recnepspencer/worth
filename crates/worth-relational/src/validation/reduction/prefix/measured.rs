@@ -45,7 +45,7 @@ impl ReducedInvariantPrefix {
                 });
         }
         let mut auxiliary = reservation(execution, lease, 0)?
-            .expect("the same request has an active memory lineage");
+            .ok_or_else(|| admission(LeaseDenial::NoActiveExecutionScope))?;
         let mut build = Some((self, input));
         let absorbed = run(
             execution,
@@ -53,7 +53,7 @@ impl ReducedInvariantPrefix {
             budget,
             &mut auxiliary,
             |context, memory| {
-                let (prefix, input) = build.take().expect("one selected stage reduction");
+                let (prefix, input) = build.take().expect(/* Proof: The local build is Some and run accepts a FnOnce kernel; no other path takes build before this kernel. */ "one selected stage reduction");
                 let mut claimed = 0_u64;
                 let prefix = prefix
                     .absorb(input, |work, bytes| {
@@ -68,7 +68,7 @@ impl ReducedInvariantPrefix {
                 let owned_bytes = prefix
                     .completed()
                     .next_back()
-                    .expect("the completed stage is retained")
+                    .expect(/* Proof: ReducedInvariantPrefix::absorb rejects an empty stage and a full stage array, installs Some at stage_count, and increments stage_count before returning Ok. It never removes a stage. */ "the completed stage is retained")
                     .auxiliary_bytes();
                 Ok(AbsorbedStage {
                     prefix,
@@ -79,7 +79,7 @@ impl ReducedInvariantPrefix {
         let mut prefix = absorbed.prefix;
         prefix.stages[prefix.stage_count - 1]
             .as_mut()
-            .expect("completed selected stage")
+            .expect(/* Proof: The successful absorb installed Some at the previous stage_count and incremented it. This owned prefix has no intervening mutation or other owner before borrowing that exact slot. */ "completed selected stage")
             .auxiliary_memory = Some(auxiliary);
         Ok(prefix)
     }
@@ -99,7 +99,7 @@ impl ReducedInvariantPrefix {
             let mut claimed = 0_u64;
             input
                 .take()
-                .expect("one final result projection")
+                .expect(/* Proof: The local input is Some and run accepts a FnOnce kernel; no other path takes input before this kernel. */ "one final result projection")
                 .project(request, |work, bytes| {
                     claim(context, backing, &mut claimed, work, bytes)
                 })
@@ -163,7 +163,7 @@ fn run<R: ChargedBytes>(
             memory,
             |context, backing| {
                 context.checkpoint(0).map_err(MapKernelFailure::Stop)?;
-                kernel.take().expect("one measured reduction stage")(context, backing)
+                kernel.take().expect(/* Proof: Only one branch below invokes run, and run_measured_result invokes its FnOnce callback at most once. The local kernel starts Some and has no other take. */ "one measured reduction stage")(context, backing)
             },
         )
     };

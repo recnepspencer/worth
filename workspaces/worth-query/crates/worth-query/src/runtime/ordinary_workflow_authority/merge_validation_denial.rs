@@ -9,6 +9,7 @@ pub(crate) fn classify_merge_validation_kind(kind: Kind) -> Denial {
         Kind::ExecutionControlStopped(kind) => Denial::ExecutionControlStopped(kind),
         Kind::TransactionAllocationDenied { kind, requested_payload_bytes } => Denial::TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind::TransactionAllocationDenied { kind, requested_payload_bytes }),
         Kind::TransactionStagingCardinalityOverflow => Denial::TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind::TransactionStagingCardinalityOverflow),
+        Kind::TransactionSymbolIdentityExhausted => Denial::TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind::TransactionSymbolIdentityExhausted),
         Kind::TransactionInputDirectoryAllocationDenied { requested_batches } => Denial::TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind::TransactionInputDirectoryAllocationDenied { requested_batches }),
         Kind::RetentionCapacityExhausted => Denial::RetentionBackpressure,
         Kind::RetentionIdentityExhausted => Denial::RetentionIdentityExhausted,

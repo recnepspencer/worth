@@ -124,6 +124,7 @@ pub(super) fn strictness_runtime() -> RelationalRuntime {
         ))
         .custom_invariant(CustomInvariantRegistration::new(StrictnessRule).unwrap())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 /// One batch carrying a revalidation demand per record, in the order given.

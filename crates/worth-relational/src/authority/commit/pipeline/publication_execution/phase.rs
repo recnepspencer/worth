@@ -30,6 +30,7 @@ pub(super) struct CanonicalLogPhaseInput<'a> {
     pub(super) phase_timing: &'a mut CommitPhaseTiming,
     pub(super) positioned_commit: &'a crate::history::data::PositionedCanonicalCommit,
     pub(super) commit_id: CommitId,
+    pub(super) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
 }
 
 /// Record the settled commit in the runtime's own canonical log. A durable
@@ -43,6 +44,7 @@ pub(super) fn record_canonical_log_phase(
         phase_timing,
         positioned_commit,
         commit_id,
+        envelope_cell,
     } = input;
     let branch_id = &positioned_commit.envelope().commit.branch_id;
     commit_log.begin_phase(CommitPhase::DurableAppend);
@@ -54,7 +56,7 @@ pub(super) fn record_canonical_log_phase(
     );
     runtime
         .durability_authority()
-        .append_commit(positioned_commit);
+        .append_commit(positioned_commit, envelope_cell);
     commit_log.complete_phase(CommitPhase::DurableAppend);
     phase_timing.durable_append_micros = elapsed_micros(phase_started);
 }
@@ -66,6 +68,8 @@ pub(super) fn finalize_publication_phase(
     prepared: PreparedPublicationCompletion,
     published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+    positioned_commit: Arc<crate::history::data::PositionedCanonicalCommit>,
+    envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
 ) -> FinalizedPublicationPhase {
     let PreparedPublicationCompletion {
         mirror_publication,
@@ -83,10 +87,6 @@ pub(super) fn finalize_publication_phase(
         merge_parent_branches,
         deferred_diagnostic_artifacts,
     } = prepared;
-    let positioned_commit = runtime
-        .history
-        .positioned_canonical_commit(commit_id)
-        .expect("performed publication must expose its positioned canonical commit");
     commit_log.record_publication_position(positioned_commit.position());
     record_canonical_log_phase(
         runtime,
@@ -95,6 +95,7 @@ pub(super) fn finalize_publication_phase(
             phase_timing,
             positioned_commit: positioned_commit.as_ref(),
             commit_id,
+            envelope_cell,
         },
     );
     runtime.lineage_authority().install_published_lineage(

@@ -11,14 +11,17 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         scope: &ProjectionAspectScope,
-        mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
+        mut project: impl FnMut(
+            EntityProjectionRecord<'_>,
+        )
+            -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause>,
     ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
         let SnapshotStateBasis::Exact(_) = &self.basis else {
             // Historical reconstruction retains its own version-selection rules.
             let Some(record) = self.authoritative_entity_record(execution, entity)? else {
                 return Ok(None);
             };
-            return Ok(project(EntityProjectionRecord::new(&record, scope)));
+            return project(EntityProjectionRecord::new(&record, scope));
         };
         self.demand_regions_head(execution, [entity.partition_id])?;
         let resolved = super::super::read_work::point(
@@ -26,7 +29,10 @@ impl VisibilityProjectionView {
             || self.selected_entity_projection(entity),
             |_| 0,
         )?;
-        Ok(resolved.and_then(|selected| selected.project(scope, &mut project)))
+        let Some(selected) = resolved else {
+            return Ok(None);
+        };
+        selected.project(scope, &mut project)
     }
 
     /// Borrow one exact-root entity after its caller has admitted the keyed
@@ -50,12 +56,13 @@ impl VisibilityProjectionView {
         if let Err(stop) = admit_work(super::super::read_prices::KEYED_RECORD) {
             return Ok(Err(stop));
         }
-        Ok(Ok(self.selected_entity_projection(entity).and_then(
-            |selected| {
-                self.assert_entity_projection_scope(selected.kind.kind_id, &scope);
-                selected.project(&scope, &mut project)
-            },
-        )))
+        let Some(selected) = self.selected_entity_projection(entity) else {
+            return Ok(Ok(None));
+        };
+        self.admit_entity_projection_scope(selected.kind.kind_id, &scope)?;
+        Ok(Ok(
+            selected.project(&scope, &mut |record| Ok(project(record)))?
+        ))
     }
 
     fn selected_entity_projection(&self, entity: EntityId) -> Option<SelectedEntityProjection<'_>> {
@@ -80,7 +87,7 @@ impl VisibilityProjectionView {
         let created = partition
             .entity_arena()
             .created_at_for_slot(entity.slot_index())
-            .expect("visible entity slot has creation metadata");
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "visible entity slot has creation metadata");
         Some(SelectedEntityProjection {
             actual,
             slot,
@@ -101,8 +108,11 @@ impl SelectedEntityProjection<'_> {
     fn project<T>(
         self,
         scope: &ProjectionAspectScope,
-        project: &mut impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Option<T> {
+        project: &mut impl FnMut(
+            EntityProjectionRecord<'_>,
+        )
+            -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
         project(EntityProjectionRecord::from_slot(
             self.actual,
             &self.slot,

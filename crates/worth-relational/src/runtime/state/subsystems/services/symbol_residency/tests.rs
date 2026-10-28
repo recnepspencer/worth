@@ -26,7 +26,11 @@ fn pending_symbols_refuse_a_cold_bucket_before_issuing_an_identity() {
     table.demand_text(&execution, value.as_str()).unwrap();
     assert_eq!(candidate.reserve(value.as_str()).unwrap(), *existing);
     let meanings = candidate.interner().snapshot();
-    candidate.seal_for_publication(&meanings).publish().unwrap();
+    candidate
+        .seal_for_publication(&meanings)
+        .expect("fixture meanings agree with the candidate")
+        .publish()
+        .unwrap();
 }
 mod region_admission_tests;
 
@@ -201,13 +205,17 @@ fn id_and_value_demands_load_pages_and_preserve_interning_identity_and_frontier(
     table.demand_text(&execution, last.1.as_str()).unwrap();
     assert_eq!(
         table.with_write(|symbols| symbols.intern(last.1.as_str())),
-        last.0
+        Ok(last.0)
     );
     assert!(source.reads.load(Ordering::SeqCst) - before < 3);
     table
         .demand_text(&execution, "new-after-cold-directory")
         .unwrap();
-    let issued = table.with_write(|symbols| symbols.intern("new-after-cold-directory"));
+    let issued = table.with_write(|symbols| {
+        symbols
+            .intern("new-after-cold-directory")
+            .expect("symbol fixture has identity capacity")
+    });
     assert!(
         issued.0 > last.0 .0,
         "partial dictionary admission must not reissue an old id"

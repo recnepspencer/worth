@@ -223,7 +223,8 @@ where
             | WorthQueryInMemoryApplicationDenial::CheckpointTransitionAcknowledged {
                 ..
             }
-            | WorthQueryInMemoryApplicationDenial::CheckpointTransitionSettlementFailed(_)),
+            | WorthQueryInMemoryApplicationDenial::CheckpointTransitionSettlementFailed(_)
+            | WorthQueryInMemoryApplicationDenial::CheckpointTransitionSnapshotCloseoutFailed { .. }),
         ) => Err(cause),
         ordinary => match phase.execution_request().consult() {
             Ok(()) => ordinary,

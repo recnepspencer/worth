@@ -78,7 +78,9 @@ fn missing_owner_binding_is_typed_and_cannot_fall_back_to_a_raw_id() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program = court_program();
-    let owner = RelationalRuntimeApi::builder().build();
+    let owner = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let owner_identity = owner.main_branch_identity();
     let owner_options = owner
         .admit_branch_basis(&owner_identity)
@@ -112,7 +114,9 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
     let program = court_program();
     let mut world =
         compile_supply_chain_baseline(execution, program).expect("Court world compiles");
-    let foreign_runtime = RelationalRuntimeApi::builder().build();
+    let foreign_runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let foreign_snapshot = {
         let identity = foreign_runtime.main_branch_identity();
         let options = foreign_runtime
@@ -160,7 +164,9 @@ fn relation_binding_rejects_a_snapshot_from_another_runtime() {
     let program = court_program();
     let world =
         compile_supply_chain_baseline(execution, program.clone()).expect("Court world compiles");
-    let foreign_runtime = RelationalRuntimeApi::builder().build();
+    let foreign_runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let foreign_snapshot = {
         let identity = foreign_runtime.main_branch_identity();
         let options = foreign_runtime
@@ -318,83 +324,8 @@ fn semantic_relation_binding_rejects_wrong_kind_and_endpoint_intent() {
     ));
 }
 
-#[test]
-fn semantic_relation_binding_rejects_incomplete_correspondence() {
-    let host_request =
-        crate::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let original = court_program();
-    let world =
-        compile_supply_chain_baseline(execution, original.clone()).expect("Court world compiles");
-    let first_key = *original
-        .definition()
-        .relations
-        .keys()
-        .find(|key| key.kind == RelationKind::SharesPilotageZone)
-        .expect("Court has the repeated pilotage relation");
-
-    let mut incomplete = original.clone();
-    incomplete.relation_specs_mut_for_test().retain(|spec| {
-        spec.client_key != super::world::supply_chain::relation_client_key(first_key)
-    });
-    let incomplete_error = SupplyChainSemanticHandles::bind(
-        &incomplete,
-        &world.commit_result,
-        world.handles.snapshot.clone(),
-    )
-    .expect_err("missing semantic relation spec must be typed");
-    assert!(matches!(
-        incomplete_error,
-        HandleBindingError::MissingRelationSpec(_)
-    ));
-}
-
-#[test]
-fn semantic_relation_binding_rejects_duplicate_correspondence() {
-    let host_request =
-        crate::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let original = court_program();
-    let world =
-        compile_supply_chain_baseline(execution, original.clone()).expect("Court world compiles");
-    let keys = original
-        .definition()
-        .relations
-        .keys()
-        .filter(|key| key.kind == RelationKind::SharesPilotageZone)
-        .copied()
-        .collect::<Vec<_>>();
-    let mut duplicate = original;
-    let first_spec = duplicate
-        .relation_specs()
-        .iter()
-        .find(|spec| spec.client_key == super::world::supply_chain::relation_client_key(keys[0]))
-        .expect("first repeated relation spec exists")
-        .clone();
-    let first_edge = duplicate.definition().relations[&keys[0]];
-    duplicate
-        .definition_mut_for_test()
-        .relations
-        .insert(keys[1], first_edge);
-    duplicate
-        .relation_specs_mut_for_test()
-        .iter_mut()
-        .find(|spec| spec.client_key == super::world::supply_chain::relation_client_key(keys[1]))
-        .expect("second repeated relation spec exists")
-        .clone_from(&first_spec);
-    let duplicate_error = SupplyChainSemanticHandles::bind(
-        &duplicate,
-        &world.commit_result,
-        world.handles.snapshot.clone(),
-    )
-    .expect_err("two semantic relations cannot claim one owner identity");
-    assert!(matches!(
-        duplicate_error,
-        HandleBindingError::DuplicateRelationReference(_)
-    ));
-}
-
 #[path = "production_failures/unbound_observation.rs"]
 mod unbound_observation;
+
+#[path = "production_failures/correspondence.rs"]
+mod correspondence;

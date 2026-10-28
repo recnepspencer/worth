@@ -117,7 +117,9 @@ fn publication_lease(work: u64) -> worth_execution::ExecutionResourceLease<'stat
 
 #[test]
 fn leased_publication_matches_serial_without_post_merge_clone() {
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder().build();
+    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let preparation = runtime.preparation_runtime_snapshot();
     let fragments = vec![
         fragment(7, RecordStructuralChange::Updated),
@@ -134,7 +136,9 @@ fn leased_publication_matches_serial_without_post_merge_clone() {
 
 #[test]
 fn leased_publication_stops_inside_large_packet_without_publishing() {
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder().build();
+    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let preparation = runtime.preparation_runtime_snapshot();
     let fragments = (0..100)
         .map(|index| fragment(index, RecordStructuralChange::Updated))

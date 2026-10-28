@@ -133,6 +133,7 @@ fn schema_evolution_cdc_contract_test() {
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(registry)
             .build_durable(TestDurableMedium::new().attachment())
+            .expect("valid native runtime configuration")
     });
 
     let recovered_envelope = recovered

@@ -12,10 +12,16 @@ fn perf_retention_reclaim_matrix() {
         capture_perf_samples(suite, "snapshot_release_to_reclaimable_entity", || {
             let runtime = runtime_with_test_schema();
             let created = create_entity_outcome(execution, &runtime, "retained");
-            let created_snapshot = runtime.visibility_authority().snapshot();
+            let created_snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let entity = changed_entities(&created)[0];
             let _deleted = delete_entity(execution, &runtime, entity);
-            let deleted_snapshot = runtime.visibility_authority().snapshot();
+            let deleted_snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
 
             assert!(runtime
                 .visibility_authority()

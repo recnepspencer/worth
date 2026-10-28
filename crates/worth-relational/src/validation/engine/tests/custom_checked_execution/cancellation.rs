@@ -24,7 +24,8 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
                 })
                 .unwrap(),
             )
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         target
             .set(create_entity_of_kind(
                 execution,

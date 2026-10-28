@@ -67,7 +67,12 @@ pub(super) fn rebuild_runtime_from_plan(
     drop(tail_envelopes);
     // The rebuilt runtime has no durable medium until recovery binds one after
     // replay, so replaying history never republishes it.
-    let mut restored = RelationalRuntime::new(plan.config.clone());
+    let mut restored = RelationalRuntime::new(plan.config.clone()).map_err(|denial| {
+        DurabilityError::new(
+            crate::durability::data::RecoveryFailureClass::ReplayFailure,
+            format!("rebuild configuration refused: {denial}"),
+        )
+    })?;
     unshared_state(&mut restored)?.commit_strategies.executors =
         plan.commit_strategy_executors.clone();
 

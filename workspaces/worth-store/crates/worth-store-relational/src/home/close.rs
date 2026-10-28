@@ -48,6 +48,11 @@ impl RelationalStoreHome {
 /// the journal medium, then the Store.
 pub(super) fn abandon(runtime: RelationalRuntime, serving: Arc<ServingPhysicalRuntime>) {
     drop(runtime);
+    abandon_store(serving);
+}
+
+/// Release a physical home when native runtime construction was refused.
+pub(super) fn abandon_store(serving: Arc<ServingPhysicalRuntime>) {
     if let Ok(serving) = Arc::try_unwrap(serving) {
         let _closed = serving.close();
     }

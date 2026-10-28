@@ -89,7 +89,7 @@ impl RelationalPreparationRuntime {
                 transaction.with_preparation_overlay(|transaction| {
                     transaction.ensure_current_basis(self)?;
                     if let Some(prior) = &transaction.pending_symbols {
-                        symbols.adopt(prior);
+                        symbols.adopt(prior)?;
                     }
                     transaction.validate_staged_branch_locality(&selected, symbols.interner())?;
                     let input = RelationalTransactionValidationInput::from_transaction(transaction);

@@ -25,9 +25,13 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
     let source: Arc<dyn RelationalDurableColdSource> = fixture.source.clone();
     assert!(Arc::ptr_eq(&prefix.source, &source));
 
-    arena.retire(slot, VersionId(1_000));
+    arena
+        .retire(slot, VersionId(1_000))
+        .expect("fixture slot is materialized");
     arena.set_lifecycle_for_slot(slot, RecordLifecycleState::Reusable);
-    arena.reset_slot(slot);
+    arena
+        .reset_slot(slot)
+        .expect("fixture slot is materialized");
     assert_eq!(
         arena.history_prefixes[physical].as_ref().unwrap().member,
         prefix.member

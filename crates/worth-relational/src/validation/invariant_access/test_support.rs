@@ -56,6 +56,7 @@ pub(super) fn runtime_with_invariants(invariant_catalog: InvariantCatalog) -> Re
         .schema_registry(RelationalSchemaRegistry::new())
         .invariant_catalog(invariant_catalog)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn relation_integrity_runtime() -> RelationalRuntime {
@@ -95,6 +96,7 @@ pub(super) fn relation_integrity_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn relation_symmetry_runtime(mode: SymmetryMode) -> RelationalRuntime {
@@ -131,6 +133,7 @@ pub(super) fn relation_symmetry_runtime(mode: SymmetryMode) -> RelationalRuntime
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn relation_cardinality_runtime() -> RelationalRuntime {
@@ -176,6 +179,7 @@ pub(super) fn relation_cardinality_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn create_entity(

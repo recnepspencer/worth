@@ -252,7 +252,8 @@ fn envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage() {
                 EnvelopeSurface::CompiledArtifact => RelationalRuntimeApi::builder()
                     .profile(RelationalRuntimeProfile::ChipSimulation)
                     .schema_registry(test_schema_registry())
-                    .build_durable(TestDurableMedium::new().attachment()),
+                    .build_durable(TestDurableMedium::new().attachment())
+                    .expect("valid native runtime configuration"),
                 _ => durable_runtime_with_test_schema(),
             };
             let (source, counter, _) = fixture_from_runtime(execution, producer, false, 16);
@@ -266,7 +267,8 @@ fn envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage() {
                 EnvelopeSurface::CompiledArtifact => RelationalRuntimeApi::builder()
                     .profile(RelationalRuntimeProfile::ChipSimulation)
                     .schema_registry(test_schema_registry())
-                    .build_durable(TestDurableMedium::new().attachment()),
+                    .build_durable(TestDurableMedium::new().attachment())
+                    .expect("valid native runtime configuration"),
                 _ => durable_runtime_with_test_schema(),
             };
             let plan = runtime

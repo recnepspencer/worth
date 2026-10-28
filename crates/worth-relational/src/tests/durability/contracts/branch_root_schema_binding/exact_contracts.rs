@@ -12,7 +12,8 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
     let medium = TestDurableMedium::new();
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(v1_registry)
-        .build_durable(medium.attachment());
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration");
     let old = create_entity_outcome(execution, &runtime, "old-contract");
     let old_entity = changed_entities(&old)[0];
     create_branch_from_main(&runtime, "legacy-schema");
@@ -74,7 +75,8 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
 
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(v2_registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     recovered
         .durability_recovery()
         .recover(execution, plan)

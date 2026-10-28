@@ -118,11 +118,15 @@ fn harness_fixture_loads_declared_aspect_field_patches() {
     .compile();
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     adapter.load_fixture(&mut runtime, &fixture).unwrap();
 
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let read = runtime
         .read_truth()
         .read_version(execution, snapshot.version_id)
@@ -140,7 +144,10 @@ fn runtime_packet_execution_and_storage_stats_are_readable() {
 
     let runtime = runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "first");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let result = execute_explicit_query(
         execution,
         &runtime,

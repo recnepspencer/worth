@@ -11,14 +11,17 @@ fn fixture(
 ) {
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(execution, &runtime, "selected-field");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "admitted.selected-field".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "admitted.selected-field".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

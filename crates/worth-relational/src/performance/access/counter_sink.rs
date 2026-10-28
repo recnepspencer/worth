@@ -1,4 +1,5 @@
 //! Borrowed complexity telemetry: global or provisional, with no new allocation.
+// Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 use crate::performance::data::RuntimeComplexityCounters;
 use std::sync::Mutex;
 
@@ -16,14 +17,14 @@ impl<'owner> ComplexityCounterSink<'owner> {
             &mut self
                 .counters
                 .lock()
-                .expect("complexity counter lock poisoned"),
+                .unwrap_or_else(|error| error.into_inner()),
         );
     }
 
     pub(super) fn snapshot(&self) -> RuntimeComplexityCounters {
         self.counters
             .lock()
-            .expect("complexity counter lock poisoned")
+            .unwrap_or_else(|error| error.into_inner())
             .clone()
     }
 }

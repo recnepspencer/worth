@@ -17,7 +17,8 @@ fn stale_strategy_basis_denies_before_raw_key_normalization() {
     let runtime = crate::runtime::builder::RelationalRuntimeBuilder::new()
         .schema_registry(crate::tests::support::test_schema_registry())
         .client_key_symbol_policy(crate::symbols::data::ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let validation_input =
         crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime);
     let transaction = runtime
@@ -78,7 +79,8 @@ fn foreign_strategy_basis_preserves_taxonomy_and_exact_target_state() {
     let runtime_b = crate::runtime::builder::RelationalRuntimeBuilder::new()
         .schema_registry(crate::tests::support::test_schema_registry())
         .client_key_symbol_policy(crate::symbols::data::ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let symbols_before = runtime_b.services.symbols.clone();
     let configured_symbols_before = runtime_b.config().identity.symbol_table.clone();
     let branch_cells_before = runtime_b.history().branch_cells_snapshot();
@@ -243,6 +245,7 @@ fn require_interned_runtime() -> crate::runtime::RelationalRuntime {
         .schema_registry(crate::tests::support::test_schema_registry())
         .client_key_symbol_policy(crate::symbols::data::ClientKeySymbolPolicy::RequireInterned)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn create_batch(client_key: &str) -> WorkerIntentBatch {

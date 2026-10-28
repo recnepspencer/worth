@@ -140,7 +140,8 @@ fn prepare_merge_execution_rejects_rejected_merge_plans() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, shared, "shared-main");

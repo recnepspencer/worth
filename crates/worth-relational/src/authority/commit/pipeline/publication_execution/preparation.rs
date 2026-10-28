@@ -10,8 +10,8 @@ use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::{CommitLog, TransactionCommitError};
 
 pub(super) struct PreparedPublicationPhase {
-    pub(super) mutation_identities:
-        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
+    pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
+    pub(super) symbol_meanings: crate::runtime::PreparedSymbolPublication,
     pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublication,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
@@ -60,7 +60,7 @@ impl PreparedPublicationPhase {
     }
 
     pub(super) fn reservation_count(&self) -> usize {
-        self.mutation_identities.records.reservation_count()
+        self.record_allocations.reservation_count()
     }
 
     pub(super) fn prepared_root(&self) -> &Arc<crate::branch::RelationalBranchRoot> {
@@ -81,7 +81,8 @@ impl PreparedPublicationPhase {
         let (next_cell, root, _envelope, prepared_history) =
             self.prepared_history.into_canonical_parts();
         let movement = crate::mvcc::PreparedCanonicalBranchMovement::new(
-            self.mutation_identities,
+            self.record_allocations,
+            self.symbol_meanings,
             next_cell,
             root,
             self.canonical_publication_route,
@@ -274,8 +275,19 @@ pub(super) fn prepare_publication_phase(
         .map_err(|failure| {
             crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
         })?;
+    let symbol_meanings = mutation_identities
+        .symbols
+        .seal_for_publication(&canonical_commit_envelope.symbol_texts)
+        .map_err(|detail| {
+            TransactionCommitError::publication(PublicationError::new(
+                PublicationStage::BundleAssembly,
+                detail,
+            ))
+            .with_commit_log(commit_log.clone())
+        })?;
     Ok(PreparedPublicationPhase {
-        mutation_identities,
+        record_allocations: mutation_identities.records,
+        symbol_meanings,
         mirror_publication,
         prepared_history,
         validated_lineage_events,

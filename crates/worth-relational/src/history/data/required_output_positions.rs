@@ -207,7 +207,7 @@ fn balance(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Arc<PositionNode>, TransactionCommitError> {
     if i16::from(height(&root.left)) - i16::from(height(&root.right)) > 1 {
-        let left = root.left.as_ref().expect("left-heavy native position tree");
+        let left = root.left.as_ref().expect(/* Proof: AVL height imbalance requires the corresponding child to exist; rotation is called only after that check, and its pivot is that retained child. */ "left-heavy native position tree");
         if height(&left.right) > height(&left.left) {
             let left = rotate_left(left, lease, context)?;
             root = node(
@@ -225,7 +225,7 @@ fn balance(
         let right = root
             .right
             .as_ref()
-            .expect("right-heavy native position tree");
+            .expect(/* Proof: AVL height imbalance requires the corresponding child to exist; rotation is called only after that check, and its pivot is that retained child. */ "right-heavy native position tree");
         if height(&right.left) > height(&right.right) {
             let right = rotate_right(right, lease, context)?;
             root = node(
@@ -250,7 +250,7 @@ fn rotate_left(
     let pivot = root
         .right
         .as_ref()
-        .expect("native left rotation has a pivot");
+        .expect(/* Proof: AVL height imbalance requires the corresponding child to exist; rotation is called only after that check, and its pivot is that retained child. */ "native left rotation has a pivot");
     let lower = node(
         root.route.clone(),
         root.publication,
@@ -277,7 +277,7 @@ fn rotate_right(
     let pivot = root
         .left
         .as_ref()
-        .expect("native right rotation has a pivot");
+        .expect(/* Proof: AVL height imbalance requires the corresponding child to exist; rotation is called only after that check, and its pivot is that retained child. */ "native right rotation has a pivot");
     let lower = node(
         root.route.clone(),
         root.publication,

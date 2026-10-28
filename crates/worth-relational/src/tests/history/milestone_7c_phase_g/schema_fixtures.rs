@@ -100,4 +100,5 @@ pub(super) fn durable_runtime_with_registry(
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry)
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }

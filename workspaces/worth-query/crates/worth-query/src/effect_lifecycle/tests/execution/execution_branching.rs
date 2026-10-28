@@ -248,6 +248,7 @@ fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
             &descriptor,
         ))
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn create_entity(

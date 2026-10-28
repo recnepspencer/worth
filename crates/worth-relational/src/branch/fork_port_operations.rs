@@ -253,6 +253,6 @@ fn with_basis(
 ) -> (RelationalForkOutcome, AdmittedRelationalBranchBasis) {
     (
         outcome,
-        basis.expect("basis-enabled fork installation returns its basis"),
+        basis.expect(/* Proof: This call requests basis-enabled fork installation; its successful branch constructs Some(basis), while every refusal returns before extraction. */ "basis-enabled fork installation returns its basis"),
     )
 }

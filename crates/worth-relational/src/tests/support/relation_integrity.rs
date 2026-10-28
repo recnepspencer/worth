@@ -49,6 +49,7 @@ impl RelationIntegritySchemaFixture {
             .schema_registry(self.build_registry())
             .cascade_delete_policy(self.cascade_delete_policy)
             .build()
+            .expect("valid native runtime configuration")
     }
 }
 

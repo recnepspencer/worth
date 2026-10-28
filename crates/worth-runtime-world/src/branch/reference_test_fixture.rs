@@ -57,7 +57,9 @@ pub(crate) struct RealReferenceFixture {
 
 pub(crate) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> RealReferenceFixture {
     real_fixture_with_relational_runtime(
-        RelationalRuntimeApi::builder().build(),
+        RelationalRuntimeApi::builder()
+            .build()
+            .expect("valid native runtime configuration"),
         unique_pin_limit,
         reservation_limit,
     )

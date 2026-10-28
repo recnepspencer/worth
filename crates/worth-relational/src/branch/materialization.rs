@@ -190,6 +190,7 @@ impl RelationalRematerializationCompletion {
 
 #[derive(Debug)]
 pub enum RelationalMaterializationError {
+    Read(crate::execution::RelationalExecutionDenialCause),
     OwnerUnavailable,
     SourceCommitMismatch,
     SourceIsNotCompleteCreatePublication,

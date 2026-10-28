@@ -24,6 +24,7 @@ fn main_basis(
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum SupplyChainCompilationError {
+    RuntimeConstruction(worth_relational::facade::runtime::RelationalRuntimeConstructionDenial),
     SchemaInstallation(RelationalInitialSchemaInstallationDenial),
     Transaction(TransactionCommitError),
     HandleBinding(HandleBindingError),
@@ -161,7 +162,9 @@ fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
     for custom_invariant in custom_invariants {
         builder = builder.custom_invariant(custom_invariant);
     }
-    let mut runtime = builder.build();
+    let mut runtime = builder
+        .build()
+        .map_err(SupplyChainCompilationError::RuntimeConstruction)?;
     let schema_receipt = runtime
         .prepare_initial_schema_installation()
         .map_err(SupplyChainCompilationError::SchemaInstallation)?

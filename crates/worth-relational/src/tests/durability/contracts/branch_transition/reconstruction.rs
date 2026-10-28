@@ -100,7 +100,8 @@ fn replay_reads_only_the_gap_after_its_checkpoint() {
             .build_durable(Box::new(CountedTransitionReads {
                 medium: contents.attachment(),
                 reads: Arc::clone(&reads),
-            }));
+            }))
+            .expect("valid native runtime configuration");
         create_entity(execution, &runtime, "source");
         for index in 0..covered {
             fork(execution, &runtime, &format!("covered-{index}"));

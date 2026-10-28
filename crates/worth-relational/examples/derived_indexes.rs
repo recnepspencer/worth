@@ -12,17 +12,21 @@ fn main() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let (created, _entity_id) = support::create_entity(request_execution, &runtime, "indexed");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: support::aspect_field_locator("name"),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: support::aspect_field_locator("name"),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
 
     let build = runtime.index_authority().build_for_commit(
         request_execution,

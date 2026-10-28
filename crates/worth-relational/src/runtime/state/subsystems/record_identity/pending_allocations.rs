@@ -98,7 +98,7 @@ impl PendingRecordAllocations {
             let origin = self
                 .pending_origins
                 .pop_front()
-                .expect("record allocation must have a reserved canonical origin");
+                .expect(/* Proof: Creation reserves one canonical origin per accepted record before constructing this private allocation batch; each consuming allocation removes exactly one origin. */ "record allocation must have a reserved canonical origin");
             self.canonical.push(CanonicalRecordAllocation::with_origin(
                 self.canonical.len() as u64,
                 record,

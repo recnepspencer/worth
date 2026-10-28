@@ -143,7 +143,7 @@ impl FoundationalBranchTargetBasis for RelationalBranchTarget {
         bytes.extend_from_slice(self.roots.truth_root());
         bytes.extend_from_slice(self.roots.schema_root());
         FoundationalBranchTargetEncoding::new("worth.relational.branch-target", 2, bytes)
-            .expect("static relational target encoding is valid")
+            .expect(/* Proof: This constructor receives a fixed nonempty literal in the required grammar and version/domain; it has no runtime-dependent input. */ "static relational target encoding is valid")
     }
 }
 

@@ -63,6 +63,7 @@ pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn execute_feature_merge(

@@ -87,13 +87,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        edition
+        let state = edition
             .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| {
-                let state = edition.clone();
                 let mut records = Vec::new();
                 let (partitions, partition_bytes) =
                     super::super::read_work::record_memory::partition_ids(&state, memory)?;
@@ -128,13 +127,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        edition
-            .demand_partition_with_symbols(execution, &self.runtime.services.symbols, partition_id)
+        let state = edition
+            .demand_selected(execution, &self.runtime.services.symbols, [partition_id])
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| {
-                let state = edition.clone();
                 self.paid_entities_in_partition(
                     &state,
                     &self.runtime.config.schema.registry,
@@ -160,13 +158,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        edition
+        let state = edition
             .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| {
-                let state = edition.clone();
                 let mut records = Vec::new();
                 let (partitions, partition_bytes) =
                     super::super::read_work::record_memory::partition_ids(&state, memory)?;
@@ -202,13 +199,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        edition
-            .demand_partition_with_symbols(execution, &self.runtime.services.symbols, partition_id)
+        let state = edition
+            .demand_selected(execution, &self.runtime.services.symbols, [partition_id])
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| {
-                let state = edition.clone();
                 let mut records = self.paid_relations_in_partition(
                     &state,
                     &self.runtime.config.schema.registry,
@@ -235,11 +231,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Option<Vec<AspectKey>>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        edition
-            .demand_partition_with_symbols(
+        let state = edition
+            .demand_selected(
                 execution,
                 &self.runtime.services.symbols,
-                entity_id.partition_id,
+                [entity_id.partition_id],
             )
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
@@ -248,7 +244,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 context
                     .checkpoint(super::super::read_prices::KEYED_RECORD)
                     .map_err(crate::execution::denial::kernel_stop)?;
-                let state = edition.clone();
                 let clone_bytes = super::super::read_work::record_quote::entity_for_id(
                     &state,
                     &self.runtime.config.schema.registry,
@@ -301,11 +296,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Option<Vec<AspectKey>>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        edition
-            .demand_partition_with_symbols(
+        let state = edition
+            .demand_selected(
                 execution,
                 &self.runtime.services.symbols,
-                relation_id.partition_id,
+                [relation_id.partition_id],
             )
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
@@ -314,7 +309,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 context
                     .checkpoint(super::super::read_prices::KEYED_RECORD)
                     .map_err(crate::execution::denial::kernel_stop)?;
-                let state = edition.clone();
                 let clone_bytes = super::super::read_work::record_quote::relation_for_id(
                     &state,
                     &self.runtime.config.schema.registry,

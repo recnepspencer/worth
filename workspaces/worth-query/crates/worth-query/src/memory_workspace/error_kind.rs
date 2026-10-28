@@ -23,6 +23,7 @@ pub enum WorthQueryWorkspaceErrorKind {
         requested_payload_bytes: Option<u64>,
     },
     TransactionStagingCardinalityOverflow,
+    TransactionSymbolIdentityExhausted,
     TransactionInputDirectoryAllocationDenied {
         requested_batches: usize,
     },

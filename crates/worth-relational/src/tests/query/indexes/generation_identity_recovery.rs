@@ -19,9 +19,15 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
         branch_scoped: true,
     };
     // More than one definition/generation exposes reset-to-zero and reset-to-one.
-    let first = runtime.index_authority().register(definition.clone());
+    let first = runtime
+        .index_authority()
+        .register(definition.clone())
+        .expect("index fixture has identity capacity");
     definition.name = "entity.name.second".into();
-    let second = runtime.index_authority().register(definition.clone());
+    let second = runtime
+        .index_authority()
+        .register(definition.clone())
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -36,10 +42,19 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
         &runtime,
         durable_runtime_with_index_field_aspects,
     );
-    let old_snapshot = recovered.visibility_authority().snapshot();
+    let old_snapshot = recovered
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     definition.name = "entity.name.after-recovery".into();
-    let third = recovered.index_authority().register(definition.clone());
-    let fourth = recovered.index_authority().register(definition);
+    let third = recovered
+        .index_authority()
+        .register(definition.clone())
+        .expect("index fixture has identity capacity");
+    let fourth = recovered
+        .index_authority()
+        .register(definition)
+        .expect("index fixture has identity capacity");
     assert!(third.index_id > second.index_id);
     assert!(fourth.index_id > third.index_id);
     let committed = update_entity(execution, &recovered, entity, "after-recovery");

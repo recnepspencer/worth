@@ -232,7 +232,8 @@ mod tests {
     fn lower_execution_routes_strategy_batches_through_transaction_admission() {
         let runtime = RelationalRuntimeBuilder::new()
             .schema_registry(crate::tests::support::test_schema_registry())
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let request = canonical_request();
         let execution = execution_draft(&request);
         let transaction_validation_input =
@@ -272,7 +273,9 @@ mod tests {
 
     #[test]
     fn lower_execution_rejects_request_execution_mismatch() {
-        let runtime = RelationalRuntimeBuilder::new().build();
+        let runtime = RelationalRuntimeBuilder::new()
+            .build()
+            .expect("valid native runtime configuration");
         let request = canonical_request();
         let other_request = CanonicalStrategyCommitRequest::new(
             CommitStrategyId(42),

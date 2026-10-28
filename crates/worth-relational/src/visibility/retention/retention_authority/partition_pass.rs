@@ -77,10 +77,10 @@ pub(super) fn inspect_partition_retention<K: RecordKind>(
     runtime: &RelationalRuntime,
     partition: &mut ResidentPartitionEntry<'_>,
     retention_fence: VersionId,
-) -> RetentionCounts {
+) -> Result<RetentionCounts, crate::execution::RelationalExecutionDenialCause> {
     let mut counts = RetentionCounts::default();
-    for slot in K::arena(partition.read()).occupied_slots() {
-        let retired_at = K::arena(partition.read()).retired_at_for_slot(slot);
+    for slot in K::arena(partition.read()?).occupied_slots() {
+        let retired_at = K::arena(partition.read()?).retired_at_for_slot(slot);
         if retired_at.is_some() {
             runtime.storage_authority().refresh_retention_state::<K>(
                 partition.edit(),
@@ -89,7 +89,7 @@ pub(super) fn inspect_partition_retention<K: RecordKind>(
                 retention_fence,
             );
         }
-        let arena = K::arena(partition.read());
+        let arena = K::arena(partition.read()?);
         counts.branch_pinned += usize::from(arena.branch_pin_count(slot).unwrap_or(0) > 0);
         counts.replay_pinned += usize::from(arena.replay_pin_count(slot).unwrap_or(0) > 0);
         counts.snapshot_pinned += usize::from(arena.snapshot_pin_count(slot).unwrap_or(0) > 0);
@@ -103,7 +103,7 @@ pub(super) fn inspect_partition_retention<K: RecordKind>(
                 .is_some_and(|view| view.lifecycle() == RecordLifecycleState::Reclaimable),
         );
     }
-    counts
+    Ok(counts)
 }
 
 pub(super) fn run_partition_retention_pass<K: RecordKind>(
@@ -112,17 +112,17 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
     pass: PartitionRetentionPass,
     count_scan: impl Fn(&RelationalRuntime),
     reclaimed: &mut Vec<crate::runtime::ReclaimedRecordSlot>,
-) -> RetentionPassCounts {
+) -> Result<RetentionPassCounts, crate::execution::RelationalExecutionDenialCause> {
     let mut counts = RetentionPassCounts::default();
     let mut current_chunk = None;
-    for slot in K::arena(partition.read()).occupied_slots() {
+    for slot in K::arena(partition.read()?).occupied_slots() {
         let chunk = slot / pass.chunk_size.max(1);
         if current_chunk != Some(chunk) {
             current_chunk = Some(chunk);
             counts.chunks_scanned += 1;
         }
         count_scan(runtime);
-        let retired_at = K::arena(partition.read()).retired_at_for_slot(slot);
+        let retired_at = K::arena(partition.read()?).retired_at_for_slot(slot);
         let Some(version) = retired_at else { continue };
         runtime.storage_authority().refresh_retention_state::<K>(
             partition.edit(),
@@ -130,7 +130,7 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
             Some(version),
             pass.retention_fence,
         );
-        if !K::arena(partition.read())
+        if !K::arena(partition.read()?)
             .get_slot(slot)
             .is_some_and(|view| view.lifecycle() == RecordLifecycleState::Reclaimable)
         {
@@ -147,7 +147,7 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
             counts.reclaimed += 1;
         }
     }
-    counts
+    Ok(counts)
 }
 
 #[cfg(test)]
@@ -168,7 +168,8 @@ mod tests {
 
     #[test]
     fn sparse_high_slot_retention_scans_one_materialized_chunk() {
-        let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default());
+        let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default())
+            .expect("valid native runtime configuration");
         let partition_id = PartitionId(7);
         let high_slot = 50_000;
         let mut entity_arena = EntityArena::with_capacity(0);
@@ -220,7 +221,7 @@ mod tests {
                     &runtime,
                     &mut partition,
                     VersionId(1),
-                );
+                )?;
                 assert_eq!(inspected.branch_pinned, 1);
                 let outcome = run_partition_retention_pass::<EntityRecordKind>(
                     &runtime,
@@ -232,7 +233,7 @@ mod tests {
                     },
                     |_| scans.set(scans.get() + 1),
                     &mut Vec::new(),
-                );
+                )?;
                 assert_eq!(outcome.chunks_scanned, 1);
                 Ok(())
             })
@@ -242,6 +243,6 @@ mod tests {
         let counts = runtime.performance_access().counters();
         assert_eq!(counts.ordinary_partitions_copied_on_write, 0);
         assert_eq!(counts.ordinary_partition_slots_copied_on_write, 0);
-        assert!(retained.partition(partition_id).is_some());
+        assert!(retained.try_full_partition(partition_id).unwrap().is_some());
     }
 }

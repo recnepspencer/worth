@@ -23,7 +23,10 @@ pub(super) fn certify_commit_query_churn_stability(
                 total_commit_micros += commit_started_at.elapsed().as_micros();
 
                 let entity = changed_entities(&outcome)[0];
-                let snapshot = runtime.visibility_authority().snapshot();
+                let snapshot = runtime
+                    .visibility_authority()
+                    .snapshot()
+                    .expect("current snapshot fixture is admitted");
                 let packet = explicit_query_packet(
                     &runtime,
                     &snapshot,

@@ -80,7 +80,7 @@ impl DetachedRelationalTransactionOverlay {
             })
             .map(|row| match self.intent(row.location) {
                 MutationIntent::Entity(intent) => intent,
-                _ => unreachable!("entity index points only to entity mutations"),
+                _ => unreachable!(/* Proof: The private mutation index is populated only in the corresponding entity/relation/create insertion branch; its immutable index points to that discriminant. */ "entity index points only to entity mutations"),
             })
     }
     pub(crate) fn relation_mutations(
@@ -95,7 +95,7 @@ impl DetachedRelationalTransactionOverlay {
             })
             .map(|row| match self.intent(row.location) {
                 MutationIntent::Relation(intent) => intent,
-                _ => unreachable!("relation index points only to relation mutations"),
+                _ => unreachable!(/* Proof: The private mutation index is populated only in the corresponding entity/relation/create insertion branch; its immutable index points to that discriminant. */ "relation index points only to relation mutations"),
             })
     }
     fn entity_creates(
@@ -153,7 +153,7 @@ impl DetachedRelationalTransactionOverlay {
         (rows.len() > 0).then(|| {
             rows.map(|row| match self.intent(row.location) {
                 MutationIntent::Create(intent) => intent,
-                _ => unreachable!("created entity index points only to creates"),
+                _ => unreachable!(/* Proof: The private mutation index is populated only in the corresponding entity/relation/create insertion branch; its immutable index points to that discriminant. */ "created entity index points only to creates"),
             })
         })
     }
@@ -165,7 +165,7 @@ impl DetachedRelationalTransactionOverlay {
         (rows.len() > 0).then(|| {
             rows.map(|row| match self.intent(row.location) {
                 MutationIntent::Create(intent) => intent,
-                _ => unreachable!("created relation index points only to creates"),
+                _ => unreachable!(/* Proof: The private mutation index is populated only in the corresponding entity/relation/create insertion branch; its immutable index points to that discriminant. */ "created relation index points only to creates"),
             })
         })
     }

@@ -5,8 +5,10 @@ use crate::history::data::BranchId;
 use crate::identity::data::VersionId;
 use crate::runtime::RelationalRuntime;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum HistoricalVisibilityDenial {
+/// Why retained history cannot admit the requested branch/version visibility basis.
+/// These refusals carry no replay or reconstruction authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum HistoricalVisibilityDenial {
     UnknownVersion,
     AuthoringBranchUnavailable,
     MvccIntervalUnavailable,
@@ -188,7 +190,8 @@ fn historical_retention_denial(
             HistoricalVisibilityDenial::RetentionIdentityExhausted
         }
         crate::history::retention::RelationalRetentionAcquisitionDenial::OwnerUnavailable
-        | crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
             HistoricalVisibilityDenial::RetentionUnavailable
         }
     }

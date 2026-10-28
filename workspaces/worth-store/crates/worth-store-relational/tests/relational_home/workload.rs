@@ -114,7 +114,9 @@ impl Script {
     pub(crate) fn generate(seed: u64, commits: usize, checkpoint_every: usize) -> Self {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
-        let runtime = runtime_builder(schema_transition::SOURCE).build();
+        let runtime = runtime_builder(schema_transition::SOURCE)
+            .build()
+            .expect("valid native reference runtime configuration");
         let mut generator = Xorshift(seed | 1);
         let main = BranchId("main".to_owned());
         let fork = BranchId("feature".to_owned());
@@ -208,7 +210,9 @@ impl Script {
 fn replay_states(steps: &[Step], records: &[RecordRef]) -> Vec<BranchStates> {
     let request = serial_request();
     let execution = ExecutionRequest::serial(&request);
-    let runtime = runtime_builder(schema_transition::SOURCE).build();
+    let runtime = runtime_builder(schema_transition::SOURCE)
+        .build()
+        .expect("valid native reference runtime configuration");
     let mut states = vec![states_of(&runtime, records)];
     for step in steps {
         match step {

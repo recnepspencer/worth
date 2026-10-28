@@ -227,7 +227,8 @@ fn collect_all_invariant_failures_emits_multiple_relation_integrity_entries_for_
             .build_registry(),
         )
         .diagnostics(diagnostics)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);

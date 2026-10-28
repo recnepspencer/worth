@@ -142,7 +142,10 @@ impl RelationalCommitArtifact {
         root: Option<&Arc<crate::branch::RelationalBranchRoot>>,
         descriptor: Option<&RelationalCommitRootDescriptor>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
-        if !Arc::ptr_eq(&self.envelope(), envelope) {
+        if self
+            .resident_envelope()
+            .is_none_or(|resident| !Arc::ptr_eq(&resident, envelope))
+        {
             return Err(RelationalCommitArtifactDenial::RootLinkage);
         }
         let roots = if let Some(root) = root {
@@ -178,6 +181,15 @@ impl RelationalCommitArtifact {
         source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
         admitted: Option<crate::history::data::PositionedCanonicalCommit>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
+        if let Some(commit) = &admitted {
+            if commit.position() != entry.position || commit.commit != entry.commit
+                || commit.schema_version != entry.schema_version
+                || entry.root.schema_root() != &crate::schema::data::schema_authority_snapshot_digest_bytes(&commit.schema_authority)
+                || crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::positioned_payload_digest(commit)
+                    .map_err(|_| RelationalCommitArtifactDenial::CanonicalPayloadEncoding)? != entry.payload_digest {
+                return Err(RelationalCommitArtifactDenial::RootLinkage);
+            }
+        }
         let canonical_payload = admitted
             .as_ref()
             .map(|commit| encode_canonical_payload(commit.envelope()))
@@ -248,12 +260,6 @@ impl RelationalCommitArtifact {
         &self.roots
     }
 
-    pub(crate) fn envelope(&self) -> Arc<CanonicalCommitEnvelope> {
-        self.envelope
-            .get()
-            .expect("envelope body requires an accepted demand")
-    }
-
     pub(crate) fn canonical_payload_bytes(&self) -> u64 {
         self.envelope
             .resident_payload()
@@ -261,10 +267,12 @@ impl RelationalCommitArtifact {
             .map_or(0, |payload| payload.len() as u64)
     }
 
-    pub(crate) fn canonical_payload_digest(&self) -> [u8; 32] {
+    pub(crate) fn canonical_payload_digest(
+        &self,
+    ) -> Result<[u8; 32], RelationalCommitArtifactDenial> {
         self.envelope
             .payload_digest()
-            .expect("payload digest requires an admitted envelope")
+            .ok_or(RelationalCommitArtifactDenial::CanonicalPayloadEncoding)
     }
 
     pub(crate) fn authoritative_allocation_observations(

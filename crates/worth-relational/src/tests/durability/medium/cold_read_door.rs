@@ -5,6 +5,9 @@ use crate::execution::RelationalExecutionDenialCause;
 #[derive(Clone, Copy, Debug)]
 pub(super) enum ReadDoor {
     ProjectionScan(super::cold_projection_scan_door::ProjectionScanDoor, bool),
+    StorageOutgoing,
+    StorageIncoming,
+    StorageAll,
     IndexCommitBuild,
     IndexBasisBuild,
     MemoryCheckpoint,
@@ -44,7 +47,7 @@ pub(super) enum ReadDoor {
 }
 
 impl ReadDoor {
-    pub(super) const ALL: [Self; 44] = [
+    pub(super) const ALL: [Self; 47] = [
         Self::ProjectionScan(
             super::cold_projection_scan_door::ProjectionScanDoor::EntityKind,
             false,
@@ -77,6 +80,9 @@ impl ReadDoor {
             super::cold_projection_scan_door::ProjectionScanDoor::RelationRecords,
             true,
         ),
+        Self::StorageOutgoing,
+        Self::StorageIncoming,
+        Self::StorageAll,
         Self::IndexCommitBuild,
         Self::IndexBasisBuild,
         Self::MemoryCheckpoint,
@@ -135,6 +141,9 @@ impl ReadDoor {
         let version = runtime.current_version_id();
         let reader = runtime.read_truth();
         match self {
+            Self::StorageOutgoing => runtime.storage_access().outgoing_relations_for_entity(execution, entity, version).map(|_| ()),
+            Self::StorageIncoming => runtime.storage_access().incoming_relations_for_entity(execution, entity, version).map(|_| ()),
+            Self::StorageAll => runtime.storage_access().all_relations_for_entity(execution, entity, version).map(|_| ()),
             Self::ProjectionScan(door, historical) => door.run(historical, execution, runtime),
             Self::IndexCommitBuild | Self::IndexBasisBuild => {
                 let door = if matches!(self, Self::IndexCommitBuild) { super::cold_index_build_door::IndexBuildDoor::Commit } else { super::cold_index_build_door::IndexBuildDoor::Basis };

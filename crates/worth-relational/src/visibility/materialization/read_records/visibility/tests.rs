@@ -60,11 +60,13 @@ fn visibility_regression_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(visibility_regression_schema_registry())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 #[test]
 fn stale_entity_id_does_not_materialize_reused_slot_at_current_version() {
-    let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default());
+    let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default())
+        .expect("valid native runtime configuration");
     let partition_id = PartitionId(7);
     let adjacency_policy = runtime.config.storage.adjacency_policy.clone();
     let mut entity_arena = crate::storage::substrate::EntityArena::with_capacity(1);
@@ -75,9 +77,13 @@ fn stale_entity_id_does_not_materialize_reused_slot_at_current_version() {
         extra: EntityExtra::default(),
     });
     let stale_id = crate::identity::data::EntityId::new(partition_id, slot as u64, generation);
-    entity_arena.retire(slot, VersionId(2));
+    entity_arena
+        .retire(slot, VersionId(2))
+        .expect("fixture slot is materialized");
     entity_arena.lifecycle[slot] = RecordLifecycleState::Reusable;
-    entity_arena.reset_slot(slot);
+    entity_arena
+        .reset_slot(slot)
+        .expect("fixture slot is materialized");
     let (_, reused_generation, _) = entity_arena.push_slot(crate::storage::substrate::SlotInit {
         partition_id,
         kind_id: KindId(12),
@@ -102,7 +108,11 @@ fn stale_entity_id_does_not_materialize_reused_slot_at_current_version() {
         },
     );
 
-    let current_state = runtime.storage_access().current_edition();
+    let current_state = runtime
+        .storage_access()
+        .current_edition()
+        .resident_full()
+        .expect("memory fixture retains Full custody");
     assert!(runtime
         .read_truth()
         .authoritative_entity_record_for_id_at_version(
@@ -125,9 +135,13 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
         version_id: VersionId(1),
         extra: EntityExtra::default(),
     });
-    entity_arena.retire(slot, VersionId(2));
+    entity_arena
+        .retire(slot, VersionId(2))
+        .expect("fixture slot is materialized");
     entity_arena.lifecycle[slot] = RecordLifecycleState::Reusable;
-    entity_arena.reset_slot(slot);
+    entity_arena
+        .reset_slot(slot)
+        .expect("fixture slot is materialized");
     let (_, reused_generation, _) = entity_arena.push_slot(crate::storage::substrate::SlotInit {
         partition_id,
         kind_id: KindId(12),
@@ -152,7 +166,11 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
         },
     );
 
-    let state = runtime.storage_access().current_edition();
+    let state = runtime
+        .storage_access()
+        .current_edition()
+        .resident_full()
+        .expect("memory fixture retains Full custody");
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let historical_records = super::super::read_work::metered_with_memory(
@@ -233,9 +251,13 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
                 authoritative_aspect_state: None,
             },
         });
-    relation_arena.retire(slot, VersionId(2));
+    relation_arena
+        .retire(slot, VersionId(2))
+        .expect("fixture slot is materialized");
     relation_arena.lifecycle[slot] = RecordLifecycleState::Reusable;
-    relation_arena.reset_slot(slot);
+    relation_arena
+        .reset_slot(slot)
+        .expect("fixture slot is materialized");
     let (_, reused_generation, _) = relation_arena.push_slot(crate::storage::substrate::SlotInit {
         partition_id,
         kind_id: KindId(22),
@@ -263,7 +285,11 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
         },
     );
 
-    let state = runtime.storage_access().current_edition();
+    let state = runtime
+        .storage_access()
+        .current_edition()
+        .resident_full()
+        .expect("memory fixture retains Full custody");
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let historical_records = super::super::read_work::metered_with_memory(

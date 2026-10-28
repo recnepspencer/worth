@@ -11,7 +11,9 @@ pub(super) fn update<K: RecordKind>(
 where
     K::Meta: serde::Serialize,
 {
-    let physical = arena.physical_index(slot).expect("selected record exists");
+    let physical = arena
+        .physical_index(slot)
+        .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
     let prefix = arena.history_prefixes[physical].as_ref();
     let old_physical = previous.and_then(|old| old.physical_index(slot));
     let old_prefix = previous
@@ -24,6 +26,7 @@ where
             .unwrap_or(&empty);
         let offset = cached
             .next_history_index()
+            .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?
             .checked_sub(old.len() as u128)
             .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
         (cached.clone(), old, offset)
@@ -32,6 +35,7 @@ where
             .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
         let offset = history
             .next_history_index()
+            .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?
             .checked_sub(1)
             .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
         (history, &empty, offset)
@@ -46,13 +50,29 @@ where
         return Err(PartitionContentDigestError::InvalidHistoryCoverage);
     }
     let mut hashed = 0;
+    let mut failure = None;
     current.visit_changed_values(old, &mut |index, value, _| {
-        history.set(
-            offset + index as u128,
-            value.map(|value| hash_value(b"metadata", value)),
-        );
+        if failure.is_some() {
+            return;
+        }
+        let digest = match value
+            .map(|value| hash_value(b"metadata", value))
+            .transpose()
+        {
+            Ok(digest) => digest,
+            Err(denial) => {
+                failure = Some(denial);
+                return;
+            }
+        };
+        if let Err(denial) = history.set(offset + index as u128, digest) {
+            failure = Some(denial);
+        }
         hashed += u64::from(value.is_some());
     });
+    if let Some(denial) = failure {
+        return Err(denial);
+    }
     Ok((history, hashed))
 }
 

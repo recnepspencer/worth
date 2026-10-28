@@ -32,7 +32,7 @@ pub(super) fn derive_closed_relations(
     for partition_id in root.partition_ids_iter() {
         charge(context, 1)?;
         let partition = root
-            .partition_state(partition_id)
+            .partition_state(partition_id)?
             .ok_or("native relation partition missing")?;
         for slot in partition.relation_arena.occupied_slots_iter() {
             charge(
@@ -83,7 +83,7 @@ pub(super) fn derive_closed_relations(
     }
     for id in &relations {
         let partition = root
-            .partition_state(id.partition_id)
+            .partition_state(id.partition_id)?
             .ok_or("relation partition absent")?;
         let row = partition
             .relation_arena

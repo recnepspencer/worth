@@ -277,7 +277,8 @@ fn historical_inspection_matrix_keeps_entity_and_relation_subresults_honest_acro
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let relation_outcome =

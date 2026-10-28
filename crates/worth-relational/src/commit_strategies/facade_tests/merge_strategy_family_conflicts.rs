@@ -27,7 +27,8 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             CommitStrategyRegistration::new(feature_descriptor.clone())
                 .expect("feature strategy registration"),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch = crate::tests::support::create_branch_from_main(&runtime, "feature");
 
@@ -185,7 +186,8 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &replica_descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch = crate::tests::support::create_branch_from_main(&runtime, "feature-real");
 
@@ -205,7 +207,10 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
                 .expect("native canonical strategy request"),
             )
             .expect("intent canonical request");
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let execution = runtime
             .commit_strategies()
             .execute(&request, &snapshot, request_execution)
@@ -245,7 +250,10 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
                 .expect("native canonical strategy request"),
             )
             .expect("replica canonical request");
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let execution = runtime
             .commit_strategies()
             .execute(&request, &snapshot, request_execution)

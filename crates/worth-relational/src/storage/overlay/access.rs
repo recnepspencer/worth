@@ -153,14 +153,20 @@ impl<S: super::CurrentPartitionAccess> crate::storage::overlay::CurrentPartition
                 return Err(error);
             }
         };
-        debug_assert!(partition_ids_are_canonical(staged.iter().copied()));
+        debug_assert!(
+            /* Proof: The staged ids are collected from BTreeMap keys and merged by the canonical ordered merge before this private helper is called; no unsorted facade iterator reaches this point. */
+            partition_ids_are_canonical(staged.iter().copied())
+        );
         memory::merge_partition_ids(base, staged, memory)
     }
 
     fn partition_ids(&self) -> Vec<PartitionId> {
         let base_ids = self.base_partitions.partition_ids();
         let staged_ids = self.staged.partition_ids();
-        debug_assert!(partition_ids_are_canonical(staged_ids.iter().copied()));
+        debug_assert!(
+            /* Proof: The staged ids are collected from BTreeMap keys and merged by the canonical ordered merge before this private helper is called; no unsorted facade iterator reaches this point. */
+            partition_ids_are_canonical(staged_ids.iter().copied())
+        );
 
         let mut merged = Vec::with_capacity(base_ids.len() + staged_ids.len());
         let mut base_iter = base_ids.into_iter().peekable();

@@ -118,7 +118,8 @@ pub(super) fn certify_chip_global_step_endurance(
                 let adjacency_started_at = Instant::now();
                 let outgoing_relations = runtime
                     .storage_access()
-                    .outgoing_relations_for_entity(driver, commit.version_id);
+                    .outgoing_relations_for_entity(&execution, driver, commit.version_id)
+                    .expect("funded adjacency read succeeds");
                 let adjacency_micros = adjacency_started_at.elapsed().as_micros();
                 total_adjacency_micros += adjacency_micros;
                 max_outgoing_relation_count =

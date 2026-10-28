@@ -18,7 +18,7 @@ fn subscriber_stream_rejects_durable_only_checkpoint_with_descriptor_version_mis
     let checkpoint = checkpoint_for_schema_version(PatchStreamPosition(1), SchemaVersionId(1))
         .with_incoherent_continuation_for_test(
             "default.subscriber.contract".to_string(),
-            NormalizedContinuationProof::new(Vec::new(), DescriptorSemanticsVersion(99)),
+            NormalizedContinuationProof::new(Vec::new(), DescriptorSemanticsVersion(99)).unwrap(),
             SubscriberContinuationSummary::new(
                 "default.subscriber.contract".to_string(),
                 SchemaContinuationClassification::ContinueUnchanged,

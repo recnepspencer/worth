@@ -26,7 +26,7 @@ pub(crate) use subsystems::{
     IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
     MirrorResidencyDemandBinding, PartitionEdition, PatchPositionReservationAdmission,
     PendingRecordAllocations, PendingSymbolMeanings, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
+    PreparedCanonicalPublicationRoute, PreparedCommitSequence, PreparedGenerationBatch,
     PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,

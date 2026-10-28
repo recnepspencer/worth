@@ -85,9 +85,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
     ) -> Result<RelationalReadView, crate::execution::RelationalExecutionDenialCause> {
-        Ok(self
-            .try_read_version(execution, version_id)?
-            .expect("internal historical read requires retained MVCC coverage"))
+        self.try_read_version(execution, version_id)?
+            .map_err(crate::execution::RelationalExecutionDenialCause::HistoricalVisibility)
     }
 
     pub(crate) fn try_read_version(

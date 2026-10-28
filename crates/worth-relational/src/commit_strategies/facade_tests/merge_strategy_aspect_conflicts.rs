@@ -39,7 +39,8 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &replica_descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch =
         crate::tests::support::create_branch_from_main(&runtime, "feature-aspects");
@@ -66,7 +67,10 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
                 .expect("native canonical strategy request"),
             )
             .expect("aspect canonical request");
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let execution = runtime
             .commit_strategies()
             .execute(&request, &snapshot, request_execution)
@@ -106,7 +110,10 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
                 .expect("native canonical strategy request"),
             )
             .expect("replica canonical request");
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let execution = runtime
             .commit_strategies()
             .execute(&request, &snapshot, request_execution)
@@ -195,7 +202,8 @@ fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_confl
         .commit_strategy_executor(AspectFieldReconciliationStrategy::execution_registration(
             &aspect_descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch =
         crate::tests::support::create_branch_from_main(&runtime, "feature-same-aspect");
@@ -225,7 +233,10 @@ fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_confl
                 .expect("native canonical strategy request"),
             )
             .expect("aspect canonical request");
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let execution = runtime
             .commit_strategies()
             .execute(&request, &snapshot, request_execution)

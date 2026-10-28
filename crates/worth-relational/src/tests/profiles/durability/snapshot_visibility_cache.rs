@@ -15,7 +15,8 @@ fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
             protect_active_snapshots: true,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let first = create_entity_outcome(execution, &runtime, "first");
     let second = create_entity_outcome(execution, &runtime, "second");
@@ -54,10 +55,14 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let first = create_entity_outcome(execution, &runtime, "first");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let entity = changed_entities(&first)[0];
     let _updated = update_entity(execution, &runtime, entity, "first-updated");
 
@@ -121,10 +126,14 @@ fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
             protect_active_snapshots: false,
             recent_version_window: 1,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let first = create_entity_outcome(execution, &runtime, "first");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let entity = changed_entities(&first)[0];
     let _updated = update_entity(execution, &runtime, entity, "first-updated");
 
@@ -166,7 +175,8 @@ fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
             protect_active_snapshots: true,
             recent_version_window: 1,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let first = create_entity_outcome(execution, &runtime, "first");
     let second = create_entity_outcome(execution, &runtime, "second");
@@ -212,7 +222,8 @@ fn heavy_profiles_keep_recent_visibility_cache_small_under_sustained_history_rea
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::ChipSimulation)
         .schema_registry(test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut versions = Vec::new();
     for index in 0..6 {
         versions.push(create_entity_outcome(execution, &runtime, &format!("e{index}")).version_id);

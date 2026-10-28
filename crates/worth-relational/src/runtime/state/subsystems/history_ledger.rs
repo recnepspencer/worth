@@ -48,6 +48,7 @@ impl HistoryLedger {
         artifact: crate::history::RelationalCommitArtifact,
         patch_position: PatchStreamPosition,
         recovery_readmission: bool,
+        sequence: super::PreparedCommitSequence,
     ) {
         let envelope = artifact.envelope_residency();
         if recovery_readmission {
@@ -55,19 +56,9 @@ impl HistoryLedger {
         } else {
             self.commit_catalog.install_prepared(artifact);
         }
-        self.next_commit_id = self.next_commit_id.max(
-            commit_id
-                .0
-                .checked_add(1)
-                .expect("reserved commit id has successor"),
-        );
-        self.next_version_id = self.next_version_id.max(
-            commit_reference
-                .version_id
-                .0
-                .checked_add(1)
-                .expect("reserved version id has successor"),
-        );
+        let (next_commit, next_version) = sequence.into_successors();
+        self.next_commit_id = self.next_commit_id.max(next_commit);
+        self.next_version_id = self.next_version_id.max(next_version);
         self.commit_graph.insert(
             commit_id,
             VersionNode {

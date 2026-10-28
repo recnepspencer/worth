@@ -13,6 +13,10 @@ pub enum StrategyExecutorFailureClass {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StrategyExecutorFailureEvidence {
+    ProjectionContract {
+        denial:
+            crate::visibility::materialization::read_records::RelationalProjectionContractDenial,
+    },
     AspectFieldLocator {
         #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator")]
         locator: worth_foundational::facade::AspectFieldLocator,

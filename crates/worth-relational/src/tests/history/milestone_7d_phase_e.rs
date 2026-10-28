@@ -188,4 +188,5 @@ fn runtime_with_topology_identity_registry(
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }

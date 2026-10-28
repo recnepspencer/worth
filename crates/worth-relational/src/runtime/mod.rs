@@ -1,5 +1,7 @@
 pub mod builder;
 mod construction;
+mod construction_denial;
+pub use construction_denial::RelationalRuntimeConstructionDenial;
 mod field_text;
 mod guided;
 mod initial_schema_installation;
@@ -74,7 +76,7 @@ pub(crate) use state::{
     IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
     MirrorResidencyDemandBinding, PartitionEdition, PatchPositionReservationAdmission,
     PendingRecordAllocations, PendingSymbolMeanings, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
+    PreparedCanonicalPublicationRoute, PreparedCommitSequence, PreparedGenerationBatch,
     PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,

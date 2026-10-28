@@ -287,9 +287,11 @@ impl FintechWorld {
             .profile(RelationalRuntimeProfile::AiWorkflow)
             .schema_registry(fintech_schema_registry());
         let runtime = if persisted {
-            builder.build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+            builder
+                .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+                .expect("valid native runtime configuration")
         } else {
-            builder.build()
+            builder.build().expect("valid native runtime configuration")
         };
         let case_seeds = seeded_trade_cases(scale);
         let seeded = seed_entities(execution, &runtime, &case_seeds);

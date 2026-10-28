@@ -12,6 +12,8 @@
 mod certification;
 mod checkpoint;
 mod close;
+#[cfg(test)]
+mod construction_tests;
 mod open_refusal;
 mod request;
 mod resolution;
@@ -101,7 +103,16 @@ impl RelationalStoreHome {
             physical_store::placement(),
             cold_source.clone(),
         );
-        let mut runtime = builder.build_durable(Box::new(medium));
+        let mut runtime = match builder.build_durable(Box::new(medium)) {
+            Ok(runtime) => runtime,
+            Err(denial) => {
+                // The refused builder has dropped its medium; release the
+                // remaining cold port before closing the physical owner.
+                drop(cold_source);
+                close::abandon_store(serving);
+                return Err(Refusal::RuntimeConstruction(denial));
+            }
+        };
         let readmitted = admit_descriptor(&serving, &cold_source, &runtime)
             .and_then(|()| readmit_history(&serving, &cold_source, &mut runtime, execution));
         match readmitted {

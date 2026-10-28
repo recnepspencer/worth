@@ -106,6 +106,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
     // is left intact and must not acquire the new workflow interpretation.
     assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK9\n"));
     assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK12\n"));
+    assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK13\n"));
     let mut body = Vec::from(13u16.to_be_bytes());
     body.extend_from_slice(&2u16.to_be_bytes());
     body.extend_from_slice(&4u16.to_be_bytes());
@@ -130,7 +131,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
             // (which can report UnsupportedRecoveredNativeAuthorityLayout) is unreachable.
             assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
             assert!(cause.subject().contains("UnsupportedLegacySemantics"), "{cause:?}");
-            assert!(cause.subject().contains("unsupported native checkpoint frame; WORTH-REL-CHK12 required"), "{cause:?}");
+            assert!(cause.subject().contains("unsupported native checkpoint frame; WORTH-REL-CHK13 required"), "{cause:?}");
         }
         other => panic!("expected native frame refusal: {other:?}"),
     }

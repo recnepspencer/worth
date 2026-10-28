@@ -13,7 +13,8 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
             &descriptor,
             PlanningExecutor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -28,7 +29,10 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
             ),
         )
         .expect("canonical strategy request");
-    let snapshot: SnapshotHandle = runtime.visibility_authority().snapshot();
+    let snapshot: SnapshotHandle = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -94,7 +98,8 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
         .commit_strategy_executor(IntentReconciliationStrategy::execution_registration(
             &descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
@@ -120,7 +125,10 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot: SnapshotHandle = runtime.visibility_authority().snapshot();
+    let snapshot: SnapshotHandle = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -206,7 +214,8 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
         .commit_strategy_executor(
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let original_lineage = runtime
         .lineage_access()
@@ -230,7 +239,10 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             .expect("native canonical strategy request"),
         )
         .expect("canonical replacement request");
-    let snapshot: SnapshotHandle = runtime.visibility_authority().snapshot();
+    let snapshot: SnapshotHandle = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)

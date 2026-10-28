@@ -109,7 +109,7 @@ impl ValidatedEntityStructTouch<'_> {
     }
     pub fn field(&self) -> &FieldKey {
         self.field
-            .expect("presence-only groups are unrepresentable, never struct field effects")
+            .expect(/* Proof: Struct-field groups are constructed only with Some(field); presence-only groups take the separate presence effect path. */ "presence-only groups are unrepresentable, never struct field effects")
     }
     pub const fn before_present(&self) -> bool {
         self.before_present

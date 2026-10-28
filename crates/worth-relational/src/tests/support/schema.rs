@@ -254,6 +254,7 @@ impl AspectSchemaFixture {
         RelationalRuntimeApi::builder()
             .schema_registry(self.build_registry())
             .build()
+            .expect("valid native runtime configuration")
     }
 }
 

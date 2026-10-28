@@ -2,7 +2,7 @@
 use super::VisibilityPinAuthority;
 use crate::identity::data::VersionId;
 use crate::runtime::{PartitionEdition, RelationalRuntime};
-use crate::storage::overlay::{PartitionAccess, SnapshotPartitionPins};
+use crate::storage::overlay::SnapshotPartitionPins;
 use crate::storage::residency::{Full, RelationalResidencyLease};
 use crate::storage::substrate::{EntityRecordKind, PinClass, RecordKind, RelationRecordKind};
 use crate::visibility::snapshot_states::SnapshotState;
@@ -12,7 +12,10 @@ use crate::visibility::snapshot_states::SnapshotState;
 #[derive(Debug)]
 pub(crate) struct ResidentReplayPins {
     state: SnapshotState,
-    mirror: PartitionEdition,
+    mirror: std::collections::BTreeMap<
+        crate::identity::data::PartitionId,
+        RelationalResidencyLease<Full>,
+    >,
 }
 
 impl ResidentReplayPins {
@@ -27,8 +30,8 @@ impl ResidentReplayPins {
         for (id, pins) in &self.state.pinned_partitions {
             // A branch-only record can be absent from the legacy main mirror.
             // Present cells were demanded before this custody was constructed.
-            if let Some(resident) = self.mirror.shared_partition(*id) {
-                visit(pins, &resident);
+            if let Some(resident) = self.mirror.get(id) {
+                visit(pins, resident);
             }
         }
     }
@@ -43,7 +46,7 @@ impl VisibilityPinAuthority<'_> {
         let mirror = self.runtime.acquire_partition_edition();
         for id in state.pinned_partitions.keys() {
             mirror
-                .demand_full_partition(execution, *id)
+                .demand_partition(execution, *id)
                 .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         }
         self.resident_replay_pins_in(state, mirror)
@@ -64,12 +67,16 @@ impl VisibilityPinAuthority<'_> {
         state: SnapshotState,
         mirror: PartitionEdition,
     ) -> Result<ResidentReplayPins, crate::storage::data::RelationalStorageUnavailable> {
+        let mut leases = std::collections::BTreeMap::new();
         for (id, _) in mirror.cells() {
             if state.pinned_partitions.contains_key(&id) {
-                mirror.resident_pin_lease(id)?;
+                leases.insert(id, mirror.resident_pin_lease(id)?);
             }
         }
-        Ok(ResidentReplayPins { state, mirror })
+        Ok(ResidentReplayPins {
+            state,
+            mirror: leases,
+        })
     }
 
     pub(crate) fn pin_replay_state(&self, pins: &ResidentReplayPins, retention_fence: VersionId) {

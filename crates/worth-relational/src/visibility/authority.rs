@@ -139,7 +139,7 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         self.runtime
             .snapshots()
             .release_snapshot(&snapshot)
-            .expect("retained-basis projection releases its operation-local snapshot once");
+            .expect(/* Proof: This operation minted and exclusively owns this snapshot handle; the consuming release occurs exactly once before the handle escapes or drops. */ "retained-basis projection releases its operation-local snapshot once");
         let value = projection?;
         let work = crate::visibility::exact_commit_snapshot::RelationalRetainedCommitProjectionWork::opened_snapshot()
             .record_projection(usize::from(value.is_some()), projected_fields);

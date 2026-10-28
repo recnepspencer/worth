@@ -32,8 +32,7 @@ pub(super) fn select<'a>(
             let verified = consumed.claim_verified_checkpoint_root(owner)
                 .map_err(|stop| match stop {
                     crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => match stop {
-                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-                        | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => prerequisite_denials::work_denial(),
+                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => prerequisite_denials::work_denial(),
                         _ => prerequisite_denials::capacity_denial(),
                     },
                     _ => prerequisite_denials::stale_upstream_denial(),
@@ -61,9 +60,7 @@ pub(super) fn select<'a>(
             let requested = consumed.requested_read().map_err(|stop| {
                 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
                 match stop {
-                    Stop::WorkExhausted { .. }
-                    | Stop::WorkExhaustedWithoutRequirement { .. }
-                    | Stop::WorkCounterOverflow => prerequisite_denials::work_denial(),
+                    Stop::WorkCounterOverflow => prerequisite_denials::work_denial(),
                     _ => prerequisite_denials::capacity_denial(),
                 }
             })?;

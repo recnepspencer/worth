@@ -89,7 +89,9 @@ pub(super) fn assemble_snapshot_state_with_memory(
             (None, Some(_)) => {
                 relations.next();
             }
-            _ => unreachable!(),
+            _ => {
+                unreachable!(/* Proof: The while condition requires at least one iterator peek to be Some; the match uses those same peeks without advancing either iterator first. */ )
+            }
         }
         entries = entries.checked_add(1).ok_or(Cause::ChargedBytesOverflow)?;
     }

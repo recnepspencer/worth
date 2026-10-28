@@ -104,7 +104,10 @@ pub(super) fn region_with_history() -> RegionFixture {
         .branch_cell(&BranchId("main".into()))
         .and_then(|cell| cell.root())
         .unwrap();
-    let partition = root.partition_state(entity.partition_id).unwrap();
+    let partition = root
+        .partition_state(entity.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
     let symbols = Arc::new(runtime.services.symbols.interner_snapshot());
     let (commitment, _) = PartitionContentCommitment::capture(partition, &symbols, None).unwrap();
     let schema = Arc::new(root.schema_authority().clone());

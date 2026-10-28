@@ -138,7 +138,7 @@ impl BranchLocalClientKey {
             None => Self::UnresolvedSymbol(
                 client_key
                     .as_symbol()
-                    .expect("only an unknown symbol can fail read-only resolution"),
+                    .expect(/* Proof: Read-only resolution accepts all textual keys; only an unknown Symbol reaches this error branch, so this key has the Symbol variant. */ "only an unknown symbol can fail read-only resolution"),
             ),
         }
     }

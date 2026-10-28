@@ -55,6 +55,8 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     DuplicateRegion(PartitionId),
     InvalidAdjacencyProjection(PartitionId),
     InvalidHistoryCoverage(PartitionId),
+    ContentEncoding(PartitionId),
+    AllocationAccountingOverflow(PartitionId),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     SlotCountOverflow,
     CanonicalEnvelopeMismatch,
@@ -187,11 +189,11 @@ impl RelationalBranchRoot {
         let expected = registry.authority_snapshot();
         let schema_authority_id = issuer
             .issue_schema_authority_id()
-            .expect("empty root has schema authority capacity");
+            .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has schema authority capacity");
         Arc::new(Self {
             id: 0,
             regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
-                .expect("empty root has reachability capacity"),
+                .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has reachability capacity"),
             entity_slot_count: 0,
             relation_slot_count: 0,
             content_accumulator: [0; 32],
@@ -203,7 +205,7 @@ impl RelationalBranchRoot {
                 descriptor_semantics_version,
                 None,
             )
-            .expect("runtime schema plans match the runtime registry"),
+            .expect(/* Proof: Both runtime schema plans and this initial root are built from the same validated registry and current descriptor semantics policy. */ "runtime schema plans match the runtime registry"),
             committed: None,
         })
     }

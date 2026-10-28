@@ -21,7 +21,7 @@ impl StoredSymbolText {
     pub fn as_str(&self) -> &str {
         match &self.backing {
             Backing::System(text) => text,
-            Backing::Managed(bytes) => std::str::from_utf8(bytes.bytes()).expect("admitted UTF-8"),
+            Backing::Managed(bytes) => std::str::from_utf8(bytes.bytes()).expect(/* Proof: StoredText is constructed only from str/String or after UTF-8 admission; its private bytes cannot subsequently be mutated. */ "admitted UTF-8"),
         }
     }
     /// Native field-text custody/readmission, which may use explicit System policy.

@@ -70,41 +70,41 @@ impl MutationIntent {
         &mut self,
         interner: &mut StringInterner,
         policy: ClientKeySymbolPolicy,
-    ) {
+    ) -> Result<(), crate::symbols::data::RelationalSymbolExhausted> {
         match self {
             Self::Create(CreateIntent::Entity(spec)) => {
-                spec.client_key = normalize_client_key(interner, policy, spec.client_key.clone());
+                spec.client_key = normalize_client_key(interner, policy, spec.client_key.clone())?;
             }
             Self::Create(CreateIntent::EntityAspects(spec)) => {
-                spec.client_key = normalize_client_key(interner, policy, spec.client_key.clone());
+                spec.client_key = normalize_client_key(interner, policy, spec.client_key.clone())?;
             }
             Self::Create(CreateIntent::BulkEntities(spec)) => {
-                normalize_bulk_client_keys(&mut spec.client_keys, interner, policy);
+                normalize_bulk_client_keys(&mut spec.client_keys, interner, policy)?;
             }
             Self::Create(CreateIntent::BulkRelations(spec)) => {
-                normalize_bulk_client_keys(&mut spec.client_keys, interner, policy);
+                normalize_bulk_client_keys(&mut spec.client_keys, interner, policy)?;
                 for (source, target) in &mut spec.endpoints {
-                    normalize_entity_reference_client_key(source, interner, policy);
-                    normalize_entity_reference_client_key(target, interner, policy);
+                    normalize_entity_reference_client_key(source, interner, policy)?;
+                    normalize_entity_reference_client_key(target, interner, policy)?;
                 }
             }
             Self::Create(CreateIntent::Relation(spec)) => {
-                spec.client_key = normalize_client_key(interner, policy, spec.client_key.clone());
-                normalize_entity_reference_client_key(&mut spec.source, interner, policy);
-                normalize_entity_reference_client_key(&mut spec.target, interner, policy);
+                spec.client_key = normalize_client_key(interner, policy, spec.client_key.clone())?;
+                normalize_entity_reference_client_key(&mut spec.source, interner, policy)?;
+                normalize_entity_reference_client_key(&mut spec.target, interner, policy)?;
             }
             Self::Create(CreateIntent::RelationAspects(spec)) => {
-                spec.client_key = normalize_client_key(interner, policy, spec.client_key.clone());
-                normalize_entity_reference_client_key(&mut spec.source, interner, policy);
-                normalize_entity_reference_client_key(&mut spec.target, interner, policy);
+                spec.client_key = normalize_client_key(interner, policy, spec.client_key.clone())?;
+                normalize_entity_reference_client_key(&mut spec.source, interner, policy)?;
+                normalize_entity_reference_client_key(&mut spec.target, interner, policy)?;
             }
             Self::Entity(EntityMutationIntent::Replace(spec)) => {
                 spec.replacement.client_key =
-                    normalize_client_key(interner, policy, spec.replacement.client_key.clone());
+                    normalize_client_key(interner, policy, spec.replacement.client_key.clone())?;
             }
             Self::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
-                normalize_entity_reference_client_key(&mut spec.source, interner, policy);
-                normalize_entity_reference_client_key(&mut spec.target, interner, policy);
+                normalize_entity_reference_client_key(&mut spec.source, interner, policy)?;
+                normalize_entity_reference_client_key(&mut spec.target, interner, policy)?;
             }
             Self::Entity(_)
             | Self::Materialization(_)
@@ -112,6 +112,7 @@ impl MutationIntent {
             | Self::Relation(RelationMutationIntent::Delete(_))
             | Self::Relation(RelationMutationIntent::Revalidate(_)) => {}
         }
+        Ok(())
     }
 }
 
@@ -133,10 +134,11 @@ fn normalize_bulk_client_keys(
     client_keys: &mut [ClientKey],
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
-) {
+) -> Result<(), crate::symbols::data::RelationalSymbolExhausted> {
     for client_key in client_keys {
-        *client_key = normalize_client_key(interner, policy, client_key.clone());
+        *client_key = normalize_client_key(interner, policy, client_key.clone())?;
     }
+    Ok(())
 }
 
 fn collect_entity_reference_raw_client_key(
@@ -154,16 +156,17 @@ fn normalize_entity_reference_client_key(
     entity_reference: &mut EntityReference,
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
-) {
+) -> Result<(), crate::symbols::data::RelationalSymbolExhausted> {
     if let EntityReference::Created(created) = entity_reference {
-        created.client_key = normalize_client_key(interner, policy, created.client_key.clone());
+        created.client_key = normalize_client_key(interner, policy, created.client_key.clone())?;
     }
+    Ok(())
 }
 
 fn normalize_client_key(
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
     value: ClientKey,
-) -> ClientKey {
+) -> Result<ClientKey, crate::symbols::data::RelationalSymbolExhausted> {
     value.normalize_with(interner, policy)
 }

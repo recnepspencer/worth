@@ -77,6 +77,7 @@ fn recovered_shape(
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
         })
+        .expect("index fixture has identity capacity")
         .index_id;
     let branch = BranchId("main".into());
     let built = producer.index_authority().build_for_commit(
@@ -152,7 +153,8 @@ fn recovered_shape(
     let mut runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(test_schema_registry())
-        .build_durable(medium);
+        .build_durable(medium)
+        .expect("valid native runtime configuration");
     let plan = runtime
         .durability()
         .recovery_plan_from_source(

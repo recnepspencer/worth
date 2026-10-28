@@ -81,7 +81,10 @@ pub(super) fn certify_flat_entity_batch_region_wave(
             };
             let update_micros = update_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let explicit_targets = batch_targets
                 .iter()
                 .take(12)

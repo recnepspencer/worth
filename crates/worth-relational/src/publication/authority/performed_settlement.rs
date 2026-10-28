@@ -21,7 +21,11 @@ impl RelationalRuntime {
         performed: crate::mvcc::PerformedRelationalCommit,
     ) -> Result<CommitResult, TransactionCommitError> {
         let (positioned, record) = performed.into_settlement_parts();
-        debug_assert_eq!(positioned.envelope().commit.commit_id, record.commit_id());
+        debug_assert_eq!(
+            /* Proof: PerformedRelationalCommit::record is called only after authorizing the exact positioned commit in its pending record. The non-Clone witness keeps that record and cannot change either commit identity. */
+            positioned.envelope().commit.commit_id,
+            record.commit_id()
+        );
         if record.runtime_instance_id() != self.runtime_instance_id() {
             return Err(TransactionCommitError::publication_denied(
                 crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
@@ -32,11 +36,11 @@ impl RelationalRuntime {
         }
         let completion = self
             .execute_pending_settlement(&record, RelationalSettlementResultOwner::Witness)
-            .expect("a performed witness exists only after its reservation is authorized");
+            .expect(/* Proof: PerformedRelationalCommit is non-Clone and record is called only after authorize transitions this exact reservation to Performed. claim runs under enter_execution; receipt-only Runtime repair uses record_settled to retain the result, and only this consuming Witness call may take it. The witness pins the record even after registry acknowledgement. */ "a performed witness exists only after its reservation is authorized");
         match completion {
             RelationalSettlementCompletion::Performed { committed, .. } => Ok(committed),
             RelationalSettlementCompletion::Repeated { committed, .. } => {
-                let retained = committed.expect(
+                let retained = committed.expect(/* Proof: PerformedRelationalCommit is non-Clone and record is called only after authorize transitions this exact reservation to Performed. claim runs under enter_execution; receipt-only Runtime repair uses record_settled to retain the result, and only this consuming Witness call may take it. The witness pins the record even after registry acknowledgement. */
                     "a receipt-only executor retains the commit result for its live witness",
                 );
                 Ok(Arc::try_unwrap(retained).unwrap_or_else(|shared| shared.as_ref().clone()))

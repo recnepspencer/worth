@@ -52,7 +52,8 @@ fn default_publication_admits_more_than_eight_thousand_records_atomically() {
     let runtime = RelationalRuntimeApi::builder()
         .profile(crate::config::data::RelationalRuntimeProfile::AiWorkflow)
         .schema_registry(test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut batch = WorkerIntentBatch::new("one-coherent-publication");
     const RECORDS: usize = 8_193;
     for index in 0..RECORDS {
@@ -94,7 +95,8 @@ fn patch_budget_failure_carries_artifact_phase_decision_trace() {
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         batch_create("budget-fail"),
@@ -324,7 +326,8 @@ fn audit_retained_relations_remain_visible_after_endpoint_delete() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .cascade_delete_policy(CascadeDeletePolicy::RetainDanglingForAudit)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r1");

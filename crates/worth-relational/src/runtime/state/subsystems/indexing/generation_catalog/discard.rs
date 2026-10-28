@@ -11,7 +11,7 @@ impl GenerationCatalog {
     ) -> usize {
         let mut removed = 0;
         while let Some(id) = self.scope(index_id, None).and_then(|scope| scope.latest()) {
-            let generation = self.entries.remove(&id).expect("catalog scope has payload");
+            let generation = self.entries.remove(&id).expect(/* Proof: Selection records IDs from this same catalog under exclusive mutation; no intervening removal occurs before consuming the selected entries. */ "catalog scope has payload");
             self.remove_bindings(&generation);
             removed += 1;
         }

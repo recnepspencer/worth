@@ -34,7 +34,7 @@ pub(super) fn prepare(
                 |mut symbols, round| {
                     transaction.with_preparation_overlay(|transaction| {
                         if let Some(prior) = &transaction.pending_symbols {
-                            symbols.adopt(prior);
+                            symbols.adopt(prior)?;
                         }
                         transaction.validate_staged_branch_locality(&read, symbols.interner())?;
                         transaction.reserve_preparation_client_keys(

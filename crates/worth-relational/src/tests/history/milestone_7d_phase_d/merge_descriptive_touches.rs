@@ -23,17 +23,20 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
             "off",
         ),
     );
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "status.merge.touch".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: crate::tests::support::aspect_field_locator(
-                AspectKey::new("status").unwrap(),
-                field_key("status"),
-            ),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "status.merge.touch".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: crate::tests::support::aspect_field_locator(
+                    AspectKey::new("status").unwrap(),
+                    field_key("status"),
+                ),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     create_branch_from_main(&runtime, "feature");
     let mut source = crate::tests::support::test_owner_begin_transaction_for_branch(
         &runtime,

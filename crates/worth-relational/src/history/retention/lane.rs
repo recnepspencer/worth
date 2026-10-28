@@ -237,30 +237,36 @@ impl RelationalRetentionGuard {
         self.release()
     }
 
-    pub(crate) fn transfer_to_performed_settlement(
+    pub(super) fn transfer_to_performed_settlement(
         &mut self,
         current_root: Arc<RelationalBranchRoot>,
+        owner: &Arc<RelationalBranchRetentionOwnerInner>,
     ) {
         let mut state = lock_lane(&self.lane);
         let record = state
             .obligations
             .get_mut(&self.obligation_id)
-            .expect("live candidate obligation remains registered through transfer");
-        assert_eq!(record.kind, RelationalRetentionObligationKind::Candidate);
+            .expect(/* Proof: The private live candidate token owns this registered obligation until consuming transfer or Drop; no other token can remove its ID. */ "live candidate obligation remains registered through transfer");
+        // Proof: only RelationalCandidateRetentionObligation::into_performed_settlement calls this method. Its private acquire hardcodes Candidate; into_performed_settlement consumes that non-Clone token, so it cannot transfer twice.
+        assert_eq!(
+            /* Proof: RelationalRetentionGuard is non-Clone and owns one private obligation id. acquire inserts the exact root ids; consuming transfer updates the record and held roots together. release removes that id once under the lane Mutex and terminal prevents a second release. */
+            record.kind,
+            RelationalRetentionObligationKind::Candidate
+        );
         record.kind = RelationalRetentionObligationKind::PerformedSettlement;
         record.root_ids = vec![current_root.id()];
         record_release(
             &mut state.counters,
             RelationalRetentionObligationKind::Candidate,
         );
-        owner_counter(&self.owner)
+        owner
             .ordinary_counters
             .record_release(RelationalRetentionObligationKind::Candidate);
         record_acquire(
             &mut state.counters,
             RelationalRetentionObligationKind::PerformedSettlement,
         );
-        owner_counter(&self.owner)
+        owner
             .ordinary_counters
             .record_acquire(RelationalRetentionObligationKind::PerformedSettlement);
         drop(state);
@@ -279,6 +285,7 @@ impl RelationalRetentionGuard {
         let mut state = lock_lane(&self.lane);
         if let Some(record) = state.obligations.remove(&self.obligation_id) {
             debug_assert_eq!(
+                /* Proof: RelationalRetentionGuard is non-Clone and owns one private obligation id. acquire inserts the exact root ids; consuming transfer updates the record and held roots together. release removes that id once under the lane Mutex and terminal prevents a second release. */
                 record.root_ids,
                 self.roots.iter().map(|root| root.id()).collect::<Vec<_>>()
             );
@@ -286,7 +293,7 @@ impl RelationalRetentionGuard {
                 state.active_operations = state
                     .active_operations
                     .checked_sub(1)
-                    .expect("active branch-operation accounting remains balanced");
+                    .expect(/* Proof: Each operation guard increments on construction and decrements once on Drop; guards cannot be copied or released twice. */ "active branch-operation accounting remains balanced");
             }
             record_release(&mut state.counters, record.kind);
             owner.ordinary_counters.record_release(record.kind);
@@ -296,14 +303,6 @@ impl RelationalRetentionGuard {
         drop(std::mem::take(&mut self.roots));
         super::RelationalBranchRetentionTerminalOutcome::Released
     }
-}
-
-fn owner_counter(
-    owner: &Weak<RelationalBranchRetentionOwnerInner>,
-) -> Arc<RelationalBranchRetentionOwnerInner> {
-    owner
-        .upgrade()
-        .expect("live retention guard keeps its owner available")
 }
 
 impl Drop for RelationalRetentionGuard {

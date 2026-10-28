@@ -28,15 +28,18 @@ impl ClientKey {
         self,
         interner: &mut StringInterner,
         policy: ClientKeySymbolPolicy,
-    ) -> Self {
+    ) -> Result<Self, super::RelationalSymbolExhausted> {
         if policy.interns_requested_strings() {
-            Self(interner.normalize(self.0))
+            interner.normalize(self.0).map(Self)
         } else {
-            self
+            Ok(self)
         }
     }
 
-    pub fn intern_with(&self, interner: &mut StringInterner) -> Symbol {
+    pub fn intern_with(
+        &self,
+        interner: &mut StringInterner,
+    ) -> Result<Symbol, super::RelationalSymbolExhausted> {
         self.0.intern_with(interner)
     }
 
@@ -84,7 +87,9 @@ mod tests {
         let mut interner = StringInterner::default();
         let key = ClientKey::raw("edge-a");
 
-        let normalized = key.normalize_with(&mut interner, ClientKeySymbolPolicy::PreferInterned);
+        let normalized = key
+            .normalize_with(&mut interner, ClientKeySymbolPolicy::PreferInterned)
+            .expect("symbol fixture has identity capacity");
 
         assert_eq!(normalized.as_symbol(), Some(Symbol(1)));
         assert_eq!(normalized.resolve_with_interner(&interner), Some("edge-a"));
@@ -95,7 +100,9 @@ mod tests {
         let mut interner = StringInterner::default();
         let key = ClientKey::raw("edge-a");
 
-        let normalized = key.normalize_with(&mut interner, ClientKeySymbolPolicy::Disabled);
+        let normalized = key
+            .normalize_with(&mut interner, ClientKeySymbolPolicy::Disabled)
+            .expect("symbol fixture has identity capacity");
 
         assert_eq!(normalized.as_raw_str(), Some("edge-a"));
         assert_eq!(interner.resolve(Symbol(1)), None);

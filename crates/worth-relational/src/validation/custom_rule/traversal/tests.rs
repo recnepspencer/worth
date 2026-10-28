@@ -65,7 +65,7 @@ impl Graph {
             |builder, rule| builder.custom_invariant(rule),
         );
         let mut graph = Self {
-            runtime: builder.build(),
+            runtime: builder.build().expect("valid native runtime configuration"),
             entities: Vec::new(),
         };
         graph.add_entities(execution, count);

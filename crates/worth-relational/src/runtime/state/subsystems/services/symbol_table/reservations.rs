@@ -39,6 +39,7 @@ pub(crate) enum SymbolReservationDenial {
     ColdBucket(StoredSymbolText),
     StorageUnavailable(RelationalStorageUnavailable),
     IdentityExhausted,
+    InvalidDictionary,
 }
 
 /// One candidate's unpublished meanings and its repeatable dictionary view.
@@ -150,17 +151,16 @@ impl PendingSymbolMeanings {
     pub(crate) fn required_references(&self) -> &BTreeSet<Symbol> {
         &self.required
     }
-    pub(crate) fn adopt(&mut self, prior: &Self) {
-        assert!(
-            Arc::ptr_eq(&self.owner.state, &prior.owner.state),
-            "pending meanings belong to one runtime owner"
-        );
+    pub(crate) fn adopt(&mut self, prior: &Self) -> Result<(), SymbolReservationDenial> {
+        if !Arc::ptr_eq(&self.owner.state, &prior.owner.state) {
+            return Err(SymbolReservationDenial::InvalidDictionary);
+        }
         for (symbol, text) in &prior.admitted {
             self.interner
                 .import_canonical_snapshot(&SymbolTableSnapshot {
                     entries: vec![(*symbol, text.clone())],
                 })
-                .expect("same-owner pending meanings cannot alias");
+                .map_err(|_| SymbolReservationDenial::InvalidDictionary)?;
             self.admitted.insert(*symbol, text.clone());
         }
         self.reserved.extend(
@@ -169,19 +169,17 @@ impl PendingSymbolMeanings {
                 .iter()
                 .map(|(symbol, meaning)| (*symbol, meaning.clone())),
         );
+        Ok(())
     }
 
     pub(crate) fn binding(&self) -> RuntimeSymbolTable {
         let binding = self.binding.detached_owner_snapshot();
         binding.with_write(|symbols| *symbols = self.interner.clone());
-        let mut configuration = binding
-            .configuration_snapshot
-            .write()
-            .unwrap_or_else(|error| error.into_inner());
-        for (symbol, text) in &self.admitted {
-            configuration.insert(text.clone(), *symbol);
-        }
-        drop(configuration);
+        binding.update(|state| {
+            for (symbol, text) in &self.admitted {
+                state.configuration.insert(text.clone(), *symbol);
+            }
+        });
         binding
     }
 
@@ -201,8 +199,16 @@ impl PendingSymbolMeanings {
             .state
             .write()
             .unwrap_or_else(|error| error.into_inner());
-        let (symbol, text, reservation) = if let Some(symbol) = state.symbol(value) {
-            (symbol, state.retained_text(symbol).unwrap().clone(), None)
+        let (symbol, text, reservation) = if let Some(symbol) = state.interner.symbol(value) {
+            (
+                symbol,
+                state
+                    .interner
+                    .retained_text(symbol)
+                    .ok_or(SymbolReservationDenial::InvalidDictionary)?
+                    .clone(),
+                None,
+            )
         } else {
             let mut directory = self
                 .owner
@@ -213,6 +219,7 @@ impl PendingSymbolMeanings {
                 Some(reservation) => reservation,
                 None => {
                     let symbol = state
+                        .interner
                         .reserve_identity()
                         .map_err(|_| SymbolReservationDenial::IdentityExhausted)?;
                     let reservation = Arc::new(ReservedSymbolMeaning {
@@ -237,7 +244,7 @@ impl PendingSymbolMeanings {
             .import_canonical_snapshot(&SymbolTableSnapshot {
                 entries: vec![(symbol, text.clone())],
             })
-            .expect("candidate meaning comes from the shared owner reservation");
+            .map_err(|_| SymbolReservationDenial::InvalidDictionary)?;
         if let Some(reservation) = reservation {
             self.reserved.insert(symbol, reservation);
         }
@@ -248,24 +255,22 @@ impl PendingSymbolMeanings {
     pub(crate) fn seal_for_publication(
         mut self,
         meanings: &SymbolTableSnapshot,
-    ) -> PreparedSymbolPublication {
+    ) -> Result<PreparedSymbolPublication, &'static str> {
+        if meanings.entries.iter().any(|(symbol, text)| {
+            symbol.0 == u32::MAX || self.interner.resolve(*symbol) != Some(text.as_str())
+        }) {
+            return Err("canonical text differs from candidate meaning");
+        }
         let reservations = meanings
             .entries
             .iter()
-            .filter_map(|(symbol, text)| {
-                assert_eq!(
-                    self.interner.resolve(*symbol),
-                    Some(text.as_str()),
-                    "canonical text comes from candidate meaning"
-                );
-                self.reserved.remove(symbol)
-            })
+            .filter_map(|(symbol, _)| self.reserved.remove(symbol))
             .collect();
-        PreparedSymbolPublication {
+        Ok(PreparedSymbolPublication {
             owner: self.owner,
             meanings: meanings.clone(),
             reservations,
-        }
+        })
     }
 }
 

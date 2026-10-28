@@ -14,10 +14,16 @@ pub(super) fn certify_retention_release_reclaim_round_trip(
                 PartitionId(10),
             );
             let deleted_created = create_entity_outcome(execution, &runtime, "retention-deleted");
-            let created_snapshot = runtime.visibility_authority().snapshot();
+            let created_snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let deleted_entity = changed_entities(&deleted_created)[0];
             let deleted_commit = delete_entity(execution, &runtime, deleted_entity);
-            let deleted_snapshot = runtime.visibility_authority().snapshot();
+            let deleted_snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
 
             assert!(runtime
                 .visibility_authority()
@@ -36,7 +42,10 @@ pub(super) fn certify_retention_release_reclaim_round_trip(
             let reclaim_pass = runtime.retention().run_pass(execution).unwrap();
             let run_pass_micros = reclaim_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let packet = explicit_query_packet(
                 &runtime,
                 &snapshot,

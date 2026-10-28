@@ -6,6 +6,6 @@ use worth_relational::facade::runtime::RelationalRuntimeApi;
 
 fn main() {
     let medium: Box<dyn RelationalDurableMedium> = Box::new(Journal);
-    let _first = RelationalRuntimeApi::builder().build_durable(medium.clone());
-    let _second = RelationalRuntimeApi::builder().build_durable(medium);
+    let _first = RelationalRuntimeApi::builder().build_durable(medium.clone()).expect("valid native runtime configuration");
+    let _second = RelationalRuntimeApi::builder().build_durable(medium).expect("valid native runtime configuration");
 }

@@ -102,14 +102,14 @@ pub(super) fn prepare_query_packets(
             claimed: 0,
         };
         budget.checkpoint(0)?;
-        let packets = build.take().expect("one preparation step")(&mut budget)?;
+        let packets = build.take().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one preparation step")(&mut budget)?;
         Ok(((), packets))
     }) {
         ScanOutcome::Complete {
             mut prefixes,
             report,
             ..
-        } => Ok((prefixes.pop().expect("one preparation output"), report)),
+        } => Ok((prefixes.pop().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one preparation output"), report)),
         ScanOutcome::Stopped { reason, report, .. } => {
             Err(QueryReadExecutionStop::PreparationStopped { reason, report })
         }

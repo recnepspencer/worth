@@ -171,9 +171,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let expected = self.primary_provider.graph.layout.entity_kind(&role.entity_name)
                         .ok_or(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch)?;
                     let actual = port.retained_entity_kind(
+                        execution,
                         suspended.publication.observation().basis().relational_basis(),
                         &suspended.custody, role.entity)
-                        .map_err(|_| WorthQueryGeneratedOutputReconstructionDenial::MissingRetainedEntity)?;
+                        .map_err(|denial| match denial {
+                            worth_relational::facade::branch::RelationalMaterializationError::Read(cause) => WorthQueryGeneratedOutputReconstructionDenial::NativeRead(cause),
+                            _ => WorthQueryGeneratedOutputReconstructionDenial::MissingRetainedEntity,
+                        })?;
                     if actual != expected {
                         return Err(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch);
                     }

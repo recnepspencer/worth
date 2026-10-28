@@ -63,6 +63,7 @@ impl DeferredIndexImage {
                 return Err(refusal(Cause::Damaged).into());
             }
             let mut state = IndexingState::default();
+            state.restore_generation_frontier(self.directory.manifest.index_generation_frontier);
             for definition in &self.directory.manifest.index_definitions {
                 state.insert_definition(definition.clone());
             }
@@ -71,6 +72,7 @@ impl DeferredIndexImage {
                 &self.history,
                 &legacy,
                 checkpoint.as_ref(),
+                self.directory.manifest.index_generation_frontier,
                 &mut Default::default(),
             )
             .map_err(|_| refusal(Cause::Damaged))?;
@@ -113,13 +115,29 @@ impl IndexingSubsystem {
                 cause,
             })?;
         let mut state = IndexingState::default();
+        state.restore_generation_frontier(directory.manifest.index_generation_frontier);
         for definition in &directory.manifest.index_definitions {
             state.insert_definition(definition.clone());
         }
+        let history =
+            history
+                .detached_owner_snapshot()
+                .map_err(|_| RelationalStorageUnavailable {
+                    subject: RelationalStorageSubject::Index(
+                        directory
+                            .manifest
+                            .index_definitions
+                            .first()
+                            .map_or(crate::indexes::data::DerivedIndexId(0), |definition| {
+                                definition.index_id
+                            }),
+                    ),
+                    cause: Cause::Damaged,
+                })?;
         state.cold_checkpoint = Some(Arc::new(DeferredIndexImage {
             _placement: placement,
             directory,
-            history: history.detached_owner_snapshot(),
+            history,
             admitted: Mutex::new(None),
         }));
         self.install(state);

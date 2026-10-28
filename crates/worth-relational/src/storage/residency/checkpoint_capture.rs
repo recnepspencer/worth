@@ -121,7 +121,9 @@ impl RelationalRegionResidency {
                                     cause: Cause::SourceUnavailable,
                                 }
                             }
-                            PartitionContentDigestError::InvalidHistoryCoverage => {
+                            PartitionContentDigestError::InvalidHistoryCoverage
+                            | PartitionContentDigestError::Encoding
+                            | PartitionContentDigestError::AllocationAccountingOverflow => {
                                 self.capture_failure(Cause::IntegrityMismatch)
                             }
                         })?;

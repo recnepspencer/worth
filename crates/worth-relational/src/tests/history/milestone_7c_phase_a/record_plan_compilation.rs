@@ -95,7 +95,8 @@ fn prepare_merge_execution_compiles_exact_shared_record_plan() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, shared, "same");
@@ -191,7 +192,8 @@ fn prepare_merge_execution_compiles_reconcile_record_plan() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity(execution, &runtime, "shared-name");

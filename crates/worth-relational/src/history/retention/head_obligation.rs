@@ -38,42 +38,43 @@ impl RelationalHeadRetentionObligation {
         self.binding.clone()
     }
 
-    fn require_binding(
+    pub(super) fn validate_binding(
         &self,
-        owner_identity: usize,
+        owner: &Arc<RelationalBranchRetentionOwnerInner>,
         identity: &RelationalBranchIdentity,
-        root: &Arc<RelationalBranchRoot>,
-    ) {
-        assert!(!self.terminal);
-        assert_eq!(self.owner_identity, owner_identity);
-        assert_eq!(&self.identity, identity);
-        assert!(Arc::ptr_eq(&self.root, root));
+    ) -> Result<(), super::RelationalRetentionAcquisitionDenial> {
+        if self.terminal
+            || self.owner_identity != Arc::as_ptr(owner) as usize
+            || &self.identity != identity
+        {
+            return Err(super::RelationalRetentionAcquisitionDenial::BindingMismatch);
+        }
+        Ok(())
     }
-
-    pub(crate) fn transfer(
+    pub(super) fn validate_root(
+        &self,
+        root: &Arc<RelationalBranchRoot>,
+    ) -> Result<(), super::RelationalRetentionAcquisitionDenial> {
+        if self.terminal || !Arc::ptr_eq(&self.root, root) {
+            return Err(super::RelationalRetentionAcquisitionDenial::BindingMismatch);
+        }
+        Ok(())
+    }
+    pub(super) fn is_live(&self) -> bool {
+        !self.terminal
+    }
+    pub(super) fn transfer(
         &mut self,
-        owner_identity: usize,
-        identity: &RelationalBranchIdentity,
-        previous_root: &Arc<RelationalBranchRoot>,
+        owner: &Arc<RelationalBranchRetentionOwnerInner>,
         next_root: &Arc<RelationalBranchRoot>,
     ) {
-        self.require_binding(owner_identity, identity, previous_root);
         self.root = Arc::clone(next_root);
         self.binding.record_head_transfer();
-        self.owner
-            .upgrade()
-            .expect("live head obligation retains an available owner")
+        owner
             .head_transfer_count
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
-
-    pub(crate) fn consume(
-        mut self,
-        owner_identity: usize,
-        identity: &RelationalBranchIdentity,
-        previous_root: &Arc<RelationalBranchRoot>,
-    ) {
-        self.require_binding(owner_identity, identity, previous_root);
+    pub(super) fn consume(&mut self) {
         self.release();
     }
 

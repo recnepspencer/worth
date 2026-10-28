@@ -10,14 +10,17 @@ fn generation_routing_respects_declared_branch_scope_without_history_inventory()
         let created = create_entity_outcome(execution, &runtime, "alpha");
         let entity = changed_entities(&created)[0];
         let field = aspect_field_locator(aspect_key("name"), field_key("name"));
-        let index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "entity.name.branch-routing".into(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: field.clone(),
-            },
-            branch_scoped,
-        });
+        let index = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "entity.name.branch-routing".into(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: field.clone(),
+                },
+                branch_scoped,
+            })
+            .expect("index fixture has identity capacity");
         let main_build = runtime.index_authority().build_for_commit(
             execution,
             DerivedIndexBuildRequest {

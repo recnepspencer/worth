@@ -44,7 +44,10 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
     let fitting = entities[(stopped_ordinal + 1) % entities.len()];
     let oversized = entities[stopped_ordinal];
     let targets = entities.into_iter().map(RecordRef::Entity).collect();
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let plan = planned_explicit_query(&runtime, &snapshot, "packet-stop-identity", targets);
     let expected = runtime
         .read_truth()

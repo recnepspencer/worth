@@ -37,7 +37,7 @@ impl<K: Ord + Copy, V: Clone> IntoIterator for SharedMap<K, V> {
 impl<K: Ord + Copy, V: Clone> std::ops::Index<&K> for SharedMap<K, V> {
     type Output = V;
     fn index(&self, key: &K) -> &V {
-        self.get(key).expect("map key is absent")
+        self.get(key).expect(/* Proof: Private map indexing callers first select the key from the same immutable owner map; external lookup uses the Option-returning get door. */ "map key is absent")
     }
 }
 

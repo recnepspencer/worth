@@ -24,7 +24,8 @@ fn recovered(
                 InvariantRule::LiveRecordRequiresSidecar(RecordKindTag::Entity),
             )],
         })
-        .build_durable(TestDurableMedium::new().attachment());
+        .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration");
     let plan = runtime
         .durability()
         .recovery_plan_from_source(

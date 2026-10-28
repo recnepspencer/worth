@@ -178,7 +178,7 @@ fn invariant_work_packets<'state>(
         .filter_map(|(packet_index, registration)| {
             let packet_index = packet_offset
                 .checked_add(packet_index)
-                .expect("the two retained packet arrays fit addressable storage");
+                .expect(/* Proof: packet_offset is the completed native stage Vec length, and packet_index indexes the custom registration Vec. Both are allocated arrays of nonzero-size packet records larger than one byte, so their combined element counts are below usize::MAX. */ "the two retained packet arrays fit addressable storage");
             if budget.is_some_and(|budget| {
                 !budget.try_plan_item(
                     2 * std::mem::size_of::<

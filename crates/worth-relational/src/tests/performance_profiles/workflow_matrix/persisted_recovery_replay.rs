@@ -55,7 +55,10 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(
                 .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
-            let recovered_snapshot = recovered.visibility_authority().snapshot();
+            let recovered_snapshot = recovered
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let recovered_packet = explicit_query_packet(
                 &recovered,
                 &recovered_snapshot,

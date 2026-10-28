@@ -16,10 +16,11 @@ pub(crate) use projection::{
 pub use projection::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
     EntityRecordProjection, ProjectionAspectFilter, ProjectionAspectFilterMode,
-    ProjectionAspectRequirement, ProjectionAspectScope, RelationProjectionRecord,
-    RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
-    RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,
-    RelationalProjectedFieldObservation, RelationalRelationMetadata, VisibilityProjectionView,
+    ProjectionAspectRequirement, ProjectionAspectScope, ProjectionContractRefusal,
+    ProjectionRecordDomain, RelationProjectionRecord, RelationRecordProjection,
+    RelationalAdjacencyDirection, RelationalAdjacencyVisit, RelationalBorrowedRecordReadDenial,
+    RelationalEntityMetadata, RelationalEntityRetirement, RelationalProjectedFieldObservation,
+    RelationalProjectionContractDenial, RelationalRelationMetadata, VisibilityProjectionView,
 };
 pub use reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,

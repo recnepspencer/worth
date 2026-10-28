@@ -9,7 +9,8 @@ fn one_large_index_build_stops_at_its_request_memory_without_publication() {
     let _serial = serial();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).expect("main basis");
     let mut transaction = runtime
@@ -42,14 +43,17 @@ fn one_large_index_build_stops_at_its_request_memory_without_publication() {
     let committed = runtime
         .commit_branch_transaction(execution, transaction)
         .expect("source commits");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "large.index.name".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: support::aspect_field_locator("name"),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "large.index.name".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: support::aspect_field_locator("name"),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {
         source_commit_id: committed.commit.commit_id,
         branch_id: BranchId("main".to_owned()),

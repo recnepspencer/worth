@@ -31,7 +31,10 @@ fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portf
     };
 
     let (recovered, outcome) = recover_persisted_world(execution, &world).unwrap();
-    let recovered_snapshot = recovered.visibility_authority().snapshot();
+    let recovered_snapshot = recovered
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let packet = {
         let context = recovered
             .read_truth()
@@ -239,7 +242,10 @@ fn fintech_persisted_workflow_recovers_from_its_filed_checkpoint() {
             .branch_head(&BranchId("analysis".to_string())),
         recovered.history().latest_commit()
     );
-    let recovered_snapshot = recovered.visibility_authority().snapshot();
+    let recovered_snapshot = recovered
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let packet = {
         let context = recovered
             .read_truth()

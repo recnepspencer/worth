@@ -268,7 +268,7 @@ impl<'a, 'b, 'c> PacketKernelContext<'a, 'b, 'c> {
         let tracking = self
             .tracking
             .take()
-            .expect("owner carriage holds real tickets");
+            .expect(/* Proof: The Owner carriage variant is constructed only by taking a real tracking ticket; untracked batches use their separate variant. */ "owner carriage holds real tickets");
         let mut ticket = tracking.result.into_inner();
         ticket.resize(bytes).map_err(memory_stop)?;
         Ok(ticket)

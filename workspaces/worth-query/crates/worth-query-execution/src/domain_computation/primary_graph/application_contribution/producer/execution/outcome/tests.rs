@@ -28,35 +28,10 @@ fn a_commit_a_companion_has_no_room_for_stops_for_that_budget() {
     use WorthQueryOutputDemandDenialKind as Kind;
     for (stop, expected_kind) in [
         (
-            Stop::RetainedCompanionCapacityExhausted {
-                requested: 2,
-                retained: 1,
-                maximum: 2,
-            },
-            Kind::RetentionBudgetExceeded,
-        ),
-        (
-            Stop::PreparationMemoryExhausted {
-                required: 2,
-                maximum: 1,
-            },
-            Kind::RetentionBudgetExceeded,
-        ),
-        (
             Stop::PreparationMemoryCounterOverflow,
             Kind::RetentionBudgetExceeded,
         ),
-        (
-            Stop::WorkExhausted {
-                required: 2,
-                maximum: 1,
-            },
-            Kind::WorkBudgetExceeded,
-        ),
-        (
-            Stop::WorkExhaustedWithoutRequirement { maximum: 1 },
-            Kind::WorkBudgetExceeded,
-        ),
+        /* ee07da2b0e retired preflight forecast-work exhaustion; actual request stops use Execution. */
         (Stop::WorkCounterOverflow, Kind::WorkBudgetExceeded),
     ] {
         let observed = stopped(stop);
@@ -270,14 +245,7 @@ fn consumed_verification_capacity_reaches_the_original_demand_denial() {
         WorthQueryProviderSessionDenialKind as ProviderKind, WorthQueryProviderSessionFailure,
         WorthQueryProviderSessionProtocolStage,
     };
-    for capacity in [
-        Some(Capacity::Meter(Stop::PreparationMemoryExhausted {
-            required: 65,
-            maximum: 64,
-        })),
-        Some(Capacity::ScratchAllocationRefused { bytes: 65 }),
-        None,
-    ] {
+    for capacity in [Some(Capacity::ScratchAllocationRefused { bytes: 65 }), None] {
         let mut failure = WorthQueryProviderSessionFailure::new(
             ProviderKind::ProviderRejected,
             WorthQueryProviderSessionProtocolStage::Commit,

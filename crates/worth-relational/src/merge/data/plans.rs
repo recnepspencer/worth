@@ -198,10 +198,6 @@ pub enum MergePlanningError {
     MissingPolicySourceRecord {
         record: RecordRef,
     },
-    MissingPolicyTargetRecord {
-        record: RecordRef,
-        target_record: RecordRef,
-    },
     MissingLoweringSourceRecord {
         record: RecordRef,
     },

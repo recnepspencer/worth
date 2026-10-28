@@ -128,6 +128,7 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
         .inner
         .root
         .partition_state(world.output.partition_id)
+        .expect("fixture root has admitted Full custody")
         .unwrap()
         .entity_arena
         .get(&world.output)
@@ -196,6 +197,7 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
         .inner
         .root
         .partition_state(world.output.partition_id)
+        .unwrap()
         .unwrap()
         .entity_arena
         .get(&world.output)
@@ -365,7 +367,8 @@ fn unsupported_ordering_index_refuses_codec_restore_without_replacing_the_target
                     crate::indexes::data::RelatedEntityOrderingDirection::Ascending,
                 )],
             },
-        });
+        })
+        .expect("index fixture has identity capacity");
     let (mut target, _) = installed(2);
     let initial_id = target.runtime_instance_id();
     let initial_schema = target.config().schema.registry;

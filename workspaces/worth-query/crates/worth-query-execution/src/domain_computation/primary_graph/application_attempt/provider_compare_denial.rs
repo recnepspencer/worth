@@ -89,7 +89,9 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         Kind::CandidateIdentityExhausted => {
             Denial::candidate_identity_exhausted(Stage::ProviderCommit)
         }
-        Kind::StorageUnavailable(_)
+        Kind::ProjectionContract { .. }
+        | Kind::HistoricalVisibility { .. }
+        | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }

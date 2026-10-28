@@ -57,7 +57,8 @@ pub(super) fn discover<T>(
     mut load_miss: impl FnMut(ReadMiss) -> Result<(), RelationalResidencyDemandFailure>,
     mut load_all: impl FnMut() -> Result<(), RelationalResidencyDemandFailure>,
 ) -> Result<T, RelationalResidencyDemandFailure> {
-    for round_index in 0..=MAX_DISCOVERY_ROUNDS + 1 {
+    let mut round_index = 0;
+    loop {
         crate::execution::check_request(execution)
             .map_err(RelationalResidencyDemandFailure::Request)?;
         let misses = Mutex::new(MissFootprint::default());
@@ -86,6 +87,6 @@ pub(super) fn discover<T>(
                 load_miss(miss)?;
             }
         }
+        round_index += 1;
     }
-    unreachable!("the final round either accepts or refuses an unresolved miss")
 }

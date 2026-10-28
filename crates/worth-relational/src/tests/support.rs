@@ -380,3 +380,7 @@ pub(super) use truth_comparison::assert_recovered_commit_truth_matches;
 pub(super) use truth_comparison::assert_stable_aspect_truth_bundle_eq;
 mod worker_completion;
 pub(super) use worker_completion::join_completed_worker;
+
+#[path = "support/generated_materialization.rs"]
+mod generated_materialization;
+pub(crate) use generated_materialization::create_group_with_external_endpoint;

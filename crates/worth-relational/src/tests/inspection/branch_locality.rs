@@ -14,7 +14,8 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let created = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&created)[0];
     runtime

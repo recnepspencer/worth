@@ -34,7 +34,8 @@ fn facade_namespaces_expose_domain_groupings() {
     let _config = facade::config::RelationalRuntimeProfile::CertificationCore;
     let runtime = facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(facade::schema::RelationalSchemaRegistry::new())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let _txn_options =
         crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime);
     let _diagnostics_scope = facade::diagnostics::DiagnosticsScope::Transaction;

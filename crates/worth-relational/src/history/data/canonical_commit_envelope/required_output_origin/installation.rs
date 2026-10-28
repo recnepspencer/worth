@@ -330,7 +330,7 @@ impl CanonicalCommitEnvelope {
         crate::history::data::publication_relations::validate(
             &basis.inner.root,
             Some(state),
-            self.required_output_origin.as_deref().unwrap(),
+            self.required_output_origin.as_deref().unwrap(/* Proof: This method assigns Some(required_output_origin) immediately above and borrows it without an intervening take or mutation. */ ),
             Some(self),
             &mut |commit| runtime.history.canonical_envelope(commit),
             &mut |version| runtime.history.canonical_envelope_for_version(version),

@@ -27,20 +27,23 @@ impl OrderingFixture {
         for child in [beta, alpha_two, alpha_one] {
             create_relation_outcome(execution, &runtime, parent, child, "owns");
         }
-        let index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "discard.owns.child-name".into(),
-            kind: DerivedIndexKind::RelatedEntityOrdering {
-                relation_kind: KindId(2),
-                parent_endpoint: RelatedEntityEndpoint::SourceParent,
-                child_kind: KindId(1),
-                ordering: vec![RelatedEntityOrderingField::new(
-                    aspect_field_locator(aspect_key("name"), field_key("name")),
-                    RelatedEntityOrderingDirection::Ascending,
-                )],
-            },
-            branch_scoped: true,
-        });
+        let index = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "discard.owns.child-name".into(),
+                kind: DerivedIndexKind::RelatedEntityOrdering {
+                    relation_kind: KindId(2),
+                    parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                    child_kind: KindId(1),
+                    ordering: vec![RelatedEntityOrderingField::new(
+                        aspect_field_locator(aspect_key("name"), field_key("name")),
+                        RelatedEntityOrderingDirection::Ascending,
+                    )],
+                },
+                branch_scoped: true,
+            })
+            .expect("index fixture has identity capacity");
         let mut expected = vec![alpha_one, alpha_two];
         expected.sort();
         expected.push(beta);
@@ -146,14 +149,17 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
             .index_authority()
             .build_for_basis(execution, fixture.request(&current), &current);
     assert!(built.failed_indexes.is_empty());
-    let unrelated = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "discard.unrelated.name".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let unrelated = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "discard.unrelated.name".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let mut unrelated_request = fixture.request(&current);
     unrelated_request.index_ids = vec![unrelated.index_id];
     let unrelated_build =

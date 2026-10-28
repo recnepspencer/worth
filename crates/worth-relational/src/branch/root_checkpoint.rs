@@ -22,14 +22,15 @@ pub(crate) struct RelationalRootRegionCheckpoint {
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRootCheckpoint {
     root: Arc<super::RelationalBranchRoot>,
+    commit_id: CommitId,
 }
 
 impl RelationalBranchRootCheckpoint {
-    pub(crate) fn new(root: Arc<super::RelationalBranchRoot>) -> Self {
-        Self { root }
+    pub(crate) fn new(commit_id: CommitId, root: Arc<super::RelationalBranchRoot>) -> Self {
+        Self { root, commit_id }
     }
     pub(crate) fn commit_id(&self) -> CommitId {
-        self.root.commit_id().expect("checkpoint root is committed")
+        self.commit_id
     }
     pub(crate) fn regions(&self) -> Vec<RelationalRootRegionCheckpoint> {
         self.root.checkpoint_regions()
@@ -41,14 +42,21 @@ impl RelationalBranchRootCheckpoint {
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         self.root.demand_all_full(execution, symbols)
     }
-    pub(crate) fn partitions(&self) -> Vec<PartitionState> {
+    pub(crate) fn partitions(
+        &self,
+    ) -> Result<Vec<PartitionState>, crate::storage::data::RelationalStorageUnavailable> {
         self.root
             .partition_ids_iter()
             .map(|id| {
-                self.root
-                    .partition_state(id)
-                    .expect("reconstructive checkpoint requires admitted regions")
-                    .clone()
+                let lease = self
+                    .root
+                    .resident_full_region_witness(id)?
+                    .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                    cause:
+                        crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+                })?;
+                Ok(lease.full_view().partition().clone())
             })
             .collect()
     }

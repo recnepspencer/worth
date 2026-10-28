@@ -48,7 +48,8 @@ fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
                 ),
             },
             branch_scoped: true,
-        });
+        })
+        .expect("index fixture has identity capacity");
     let build = world.runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -147,7 +148,8 @@ fn empty_entity_field_cache_growth(execution: &worth_execution::ExecutionRequest
                 ),
             },
             branch_scoped: true,
-        });
+        })
+        .expect("index fixture has identity capacity");
     let build = world.runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {

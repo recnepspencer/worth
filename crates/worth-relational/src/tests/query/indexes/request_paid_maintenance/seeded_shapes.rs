@@ -79,6 +79,7 @@ fn prove_shapes(shapes: impl IntoIterator<Item = (usize, usize)>) {
                             field_locator: aspect_field_locator(aspect_key(&key), field_key(&key)),
                         },
                     })
+                    .expect("index fixture has identity capacity")
                     .index_id
             })
             .collect();

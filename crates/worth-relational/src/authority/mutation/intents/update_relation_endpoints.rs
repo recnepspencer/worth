@@ -120,15 +120,19 @@ pub(super) fn apply(
         let partition = context
             .state
             .get_partition_mut(intent.relation_id.partition_id);
-        partition.relation_arena.apply_extra_update(
-            slot,
-            RelationExtra {
-                endpoints: Some(RelationEndpoints { source, target }),
-                authoritative_aspect_state: authoritative_aspect_state.clone(),
-            },
-            version_id,
-        );
-    });
+        partition
+            .relation_arena
+            .apply_extra_update(
+                slot,
+                RelationExtra {
+                    endpoints: Some(RelationEndpoints { source, target }),
+                    authoritative_aspect_state: authoritative_aspect_state.clone(),
+                },
+                version_id,
+            )
+            .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
+        Ok::<_, CommitConflict>(())
+    })?;
 
     Ok(MutationOutcome::relation_updated(
         intent.relation_id,
@@ -157,4 +161,14 @@ fn resolve_relation_endpoint(
                 ),
             })
         })
+}
+
+fn missing(
+    intent: &UpdateRelationEndpointsIntent,
+    missing: RelationEndpointUpdateMissingState,
+) -> CommitConflict {
+    CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
+        relation_id: intent.relation_id,
+        missing,
+    })
 }

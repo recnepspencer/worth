@@ -18,6 +18,8 @@ use sha2::{Digest, Sha256};
 pub(crate) enum PartitionContentDigestError {
     UnresolvedContentSymbol(Symbol),
     InvalidHistoryCoverage,
+    AllocationAccountingOverflow,
+    Encoding,
 }
 
 /// Derived, destroyable commitment acceleration. Exact storage identities and
@@ -91,14 +93,14 @@ impl PartitionContentCommitment {
                             ))
                     })
                     .transpose()?;
-                Ok(hash_value(
+                hash_value(
                     b"entity-extra",
                     &(
                         fingerprint,
                         &extra.lineage_id,
                         &extra.authoritative_aspect_state,
                     ),
-                ))
+                )
             },
         )?;
         hashed += commitment.relations.update(
@@ -106,7 +108,7 @@ impl PartitionContentCommitment {
             old.map(|old| &old.relation_arena),
             relation_slots,
             symbols,
-            |extra, _| Ok(hash_value(b"relation-extra", extra)),
+            |extra, _| hash_value(b"relation-extra", extra),
         )?;
         let adjacency_slots = previous.map_or_else(
             || {
@@ -132,12 +134,12 @@ impl PartitionContentCommitment {
             &partition.adjacency,
             old.map(|old| &old.adjacency),
             adjacency_slots,
-        );
+        )?;
         hashed += commitment.reverse_adjacency.update(
             &partition.reverse_adjacency,
             old.map(|old| &old.reverse_adjacency),
             reverse_slots,
-        );
+        )?;
         Ok((commitment, hashed))
     }
 
@@ -151,7 +153,7 @@ impl PartitionContentCommitment {
                 self.adjacency.digest(),
                 self.reverse_adjacency.digest(),
             ),
-        )
+        ).expect(/* Proof: this concrete tuple contains a native PartitionId(u32) and four fixed [u8; 32] arrays. Their bounded derived Serialize implementations write only native integers to the infallible Sha256Writer; no input-sized collection or custom serializer participates. */ "fixed native region digest tuple is serializable")
     }
 
     pub(crate) fn allocation_bytes(&self) -> u64 {
@@ -180,14 +182,17 @@ impl PartitionState {
     }
 }
 
-fn hash_value(domain: &[u8], value: &impl Serialize) -> [u8; 32] {
+fn hash_value(
+    domain: &[u8],
+    value: &impl Serialize,
+) -> Result<[u8; 32], PartitionContentDigestError> {
     let mut hash = Sha256::new();
     hash.update(b"worth.relational.partition-value.v2\0");
     hash.update((domain.len() as u64).to_be_bytes());
     hash.update(domain);
     rmp_serde::encode::write(&mut Sha256Writer(&mut hash), value)
-        .expect("authoritative in-memory values are serializable");
-    hash.finalize().into()
+        .map_err(|_| PartitionContentDigestError::Encoding)?;
+    Ok(hash.finalize().into())
 }
 
 struct Sha256Writer<'a>(&'a mut Sha256);
@@ -208,7 +213,7 @@ mod tests {
     use serde::Serialize;
     use sha2::{Digest, Sha256};
 
-    use super::hash_value;
+    use super::{hash_value, PartitionContentDigestError};
     use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
     use crate::identity::data::{KindId, PartitionId, RelationId};
     use crate::storage::overlay::PartitionState;
@@ -236,17 +241,17 @@ mod tests {
             ("field-b", (8_u64, true)),
         ]);
         assert_eq!(
-            hash_value(b"record", &records),
+            hash_value(b"record", &records).unwrap(),
             buffered(b"record", &records)
         );
         assert_eq!(
-            hash_value(b"metadata", &revisions),
+            hash_value(b"metadata", &revisions).unwrap(),
             buffered(b"metadata", &revisions)
         );
-        assert_eq!(hash_value(b"", &0_u64), buffered(b"", &0_u64));
+        assert_eq!(hash_value(b"", &0_u64).unwrap(), buffered(b"", &0_u64));
         assert_ne!(
-            hash_value(b"record", &records),
-            hash_value(b"extra", &records)
+            hash_value(b"record", &records).unwrap(),
+            hash_value(b"extra", &records).unwrap()
         );
     }
 
@@ -269,7 +274,10 @@ mod tests {
         let baseline_digest = partition.authoritative_content_digest(&symbols).unwrap();
         let baseline_inventory = partition.allocation_inventory();
 
-        partition.adjacency[0]
+        partition
+            .adjacency
+            .get_mut(0)
+            .unwrap()
             .index_historical_kind(KindId(9), RelationId::new(PartitionId(5), 4, 1));
         let perturbed_inventory = partition.allocation_inventory();
 
@@ -283,5 +291,18 @@ mod tests {
         );
         assert_eq!(perturbed_inventory.allocator_bookkeeping_bytes, 0);
         assert!(perturbed_inventory.optional_cache_bytes > baseline_inventory.optional_cache_bytes);
+    }
+    #[test]
+    fn content_hash_refuses_a_serializer_failure() {
+        struct Refused;
+        impl serde::Serialize for Refused {
+            fn serialize<S: serde::Serializer>(&self, _: S) -> Result<S::Ok, S::Error> {
+                Err(serde::ser::Error::custom("fixture encoding refusal"))
+            }
+        }
+        assert_eq!(
+            hash_value(b"metadata", &Refused),
+            Err(PartitionContentDigestError::Encoding)
+        );
     }
 }

@@ -68,7 +68,8 @@ fn main() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let services = OwnerServices::obtain(&runtime);
     let main_branch = runtime.main_branch_identity();
 

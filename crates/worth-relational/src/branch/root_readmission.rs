@@ -239,7 +239,11 @@ impl RelationalBranchRoot {
         let (reconstructed_root, reconstructed_accumulator) =
             axes::storage_root_from_authoritative_regions(&self.regions, symbols)?;
         require_descriptor_content(&descriptor, reconstructed_root)?;
-        debug_assert_eq!(self.content_accumulator, reconstructed_accumulator);
+        debug_assert_eq!(
+            /* Proof: readmit rebuilds both the region set and accumulator from the same checked immutable regions before installing the new root; no caller can set the private accumulator independently. */
+            self.content_accumulator,
+            reconstructed_accumulator
+        );
         committed.descriptor = descriptor;
         Ok(self.with_committed(committed))
     }

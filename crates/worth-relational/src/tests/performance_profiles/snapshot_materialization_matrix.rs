@@ -17,7 +17,10 @@ fn perf_snapshot_materialization_matrix() {
                 PartitionId(1 + (index % 4) as u32),
             );
         }
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
 
         runtime.performance_access().reset_counters();
         let started_at = Instant::now();
@@ -63,7 +66,10 @@ fn perf_snapshot_materialization_matrix() {
                     PartitionId(1 + (index % 3) as u32),
                 );
             }
-            let pinned_snapshot = runtime.visibility_authority().snapshot();
+            let pinned_snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             for index in 0..24 {
                 let entity_id = create_entity_in_partition(
                     execution,
@@ -122,7 +128,10 @@ fn perf_snapshot_materialization_matrix() {
                     PartitionId(1 + (index % 4) as u32),
                 );
             }
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
 
             runtime.performance_access().reset_counters();
             let started_at = Instant::now();

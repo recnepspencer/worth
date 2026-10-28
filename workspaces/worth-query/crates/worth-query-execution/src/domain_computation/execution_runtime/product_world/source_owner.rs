@@ -65,11 +65,11 @@ impl WorthQueryRelationalSourceOwner {
         #[cfg(test)]
         let bridge_lock_observations = {
             let count = Arc::clone(&read_acquisitions);
-            Arc::new(Mutex::new(vec![source.observe_runtime_locks_for_test(
-                move || {
+            Arc::new(Mutex::new(vec![source
+                .observe_runtime_locks_for_test(move || {
                     count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                },
-            )]))
+                })
+                .expect("the new source admits its first passive observer")]))
         };
         Ok(Self {
             runtime,

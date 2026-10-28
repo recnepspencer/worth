@@ -26,7 +26,11 @@ struct Fixture {
 }
 
 fn fixture(unique: u64, reservations: u64) -> Fixture {
-    let relational_runtime = Arc::new(RelationalRuntimeApi::builder().build());
+    let relational_runtime = Arc::new(
+        RelationalRuntimeApi::builder()
+            .build()
+            .expect("valid native runtime configuration"),
+    );
     let relational_port = relational_runtime.owner_component_services().basis_port();
     let relational_identity = relational_runtime.main_branch_identity();
     let (_, relational) = relational_runtime

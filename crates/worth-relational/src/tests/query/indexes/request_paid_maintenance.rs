@@ -19,14 +19,17 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(execution, &runtime, "paid");
-    let definition = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "paid.name".into(),
-        branch_scoped: true,
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-    });
+    let definition = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "paid.name".into(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+        })
+        .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {
         source_commit_id: created.commit.commit_id,
         branch_id: BranchId("main".into()),
@@ -119,6 +122,7 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
         })
+        .expect("index fixture has identity capacity")
         .index_id;
     let request = DerivedIndexBuildRequest {
         source_commit_id: created.commit.commit_id,

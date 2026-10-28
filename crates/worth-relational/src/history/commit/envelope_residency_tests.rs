@@ -209,3 +209,52 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
         }
     }
 }
+
+#[test]
+fn positioned_demand_owns_its_result_across_journal_settlement() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let (entry, source) = selected(&execution, None);
+    let cell = RelationalCommitEnvelopeResidency::cold(entry.clone(), source.clone(), None, None);
+    let first = cell.demand_positioned(&execution, 1 << 30).unwrap();
+    cell.settle();
+    assert_eq!(first.position(), entry.position);
+    assert_eq!(first.commit, entry.commit);
+    assert_eq!(source.reads.load(Ordering::Relaxed), 1);
+    assert_eq!(cell.demand_positioned(&execution, 1 << 30).unwrap(), first);
+    assert_eq!(source.reads.load(Ordering::Relaxed), 1);
+}
+
+#[test]
+fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let (entry, source) = selected(&execution, None);
+    let id = entry.commit.commit_id;
+    let mut catalog = super::RelationalCommitCatalog::default();
+    catalog
+        .append_indexed_recovery(entry, source, None)
+        .unwrap();
+    let artifact = catalog.get(id).unwrap();
+    assert_eq!(
+        artifact.canonical_payload_digest(),
+        Err(super::RelationalCommitArtifactDenial::CanonicalPayloadEncoding)
+    );
+    let envelope = artifact.demand_envelope(&execution, 1 << 30).unwrap();
+    assert!(artifact.canonical_payload_digest().is_ok());
+    assert_eq!(artifact.matches_envelope(&envelope), Ok(true));
+    let mut conflicting = envelope.as_ref().clone();
+    conflicting.commit.version_id = crate::identity::data::VersionId(u64::MAX);
+    assert_eq!(artifact.matches_envelope(&conflicting), Ok(false));
+    let payload = Arc::from(envelope.encode_authoritative_payload().unwrap());
+    let cell = RelationalCommitEnvelopeResidency::resident(envelope, payload);
+    let Err(crate::durability::data::RelationalRecoveryStop::Durability(failure)) =
+        cell.demand_positioned(&execution, 1 << 30)
+    else {
+        panic!("an unpositioned memory envelope must refuse typed checkpoint reconstruction");
+    };
+    assert_eq!(
+        failure.class,
+        crate::durability::data::RecoveryFailureClass::CorruptCheckpoint
+    );
+}

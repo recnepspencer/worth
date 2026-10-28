@@ -18,7 +18,6 @@ use worth_relational::facade::mvcc::PreparedPublicationCompanionEffect;
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 use worth_relational::facade::mvcc::PublicationCompanionPreflight;
 use worth_relational::facade::mvcc::RelationalPublicationCompanion;
-use worth_relational::facade::mvcc::RelationalPublicationDeferred;
 use worth_relational::facade::mvcc::RelationalPublicationOutcome;
 use worth_relational::facade::transactions::AspectFieldPatch;
 use worth_relational::facade::transactions::EntityMutationIntent;
@@ -228,13 +227,8 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                                 runtime.settle_performed_publication(published).unwrap();
                             release_test_commit_snapshot(runtime, &committed);
                         }
-                        RelationalPublicationOutcome::Deferred(
-                            RelationalPublicationDeferred::CompanionPreflight(
-                                CompanionPreflightStop::RetainedCompanionCapacityExhausted {
-                                    ..
-                                },
-                            ),
-                        ) => {}
+                        // ee07da2b0e retired hint byte-forecast capacity refusal;
+                        // both admitted hints must install in this journey.
                         _ => panic!("only native hint retention can stop the selected write"),
                     }
                 }

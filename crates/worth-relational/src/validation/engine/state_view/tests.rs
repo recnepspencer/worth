@@ -190,8 +190,16 @@ fn sparse_speculative_overlay_reads_untouched_relation_truth_from_base_partition
     base_partition.adjacency = vec![AdjacencySet::new(&policy), AdjacencySet::new(&policy)].into();
     base_partition.reverse_adjacency =
         vec![AdjacencySet::new(&policy), AdjacencySet::new(&policy)].into();
-    base_partition.adjacency[left_slot].insert(KindId(9), relation_id);
-    base_partition.reverse_adjacency[right_slot].insert(KindId(9), relation_id);
+    base_partition
+        .adjacency
+        .get_mut(left_slot)
+        .expect("fixture adjacency is materialized")
+        .insert(KindId(9), relation_id);
+    base_partition
+        .reverse_adjacency
+        .get_mut(right_slot)
+        .expect("fixture adjacency is materialized")
+        .insert(KindId(9), relation_id);
 
     let mut base = BTreeMap::new();
     base.insert(partition_id, base_partition);

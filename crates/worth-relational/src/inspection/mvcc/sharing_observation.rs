@@ -64,7 +64,7 @@ use super::root_commitment::{
 ///
 /// let mut runtime = RelationalRuntimeApi::builder()
 ///     .schema_registry(RelationalSchemaRegistry::new())
-///     .build();
+///     .build().expect("valid documented runtime configuration");
 ///
 /// // Sharing evidence is reported over complete, artifact-linked roots only,
 /// // so the main branch publishes once before it can be observed.

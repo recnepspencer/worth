@@ -11,6 +11,7 @@ pub(super) fn empty_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn commit_through_services(

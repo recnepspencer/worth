@@ -79,37 +79,38 @@ impl RelationalRegionRetention {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<(), super::RelationalResidencyDemandFailure> {
+    ) -> Result<RelationalResidencyLease<Full>, super::RelationalResidencyDemandFailure> {
         crate::execution::check_request(execution)
             .map_err(super::RelationalResidencyDemandFailure::Request)?;
         self.cell.check_damage()?;
-        if self.full.get().is_none() {
-            let lease = self
-                .cell
-                .demand_full(execution, limit, self.authority.as_deref())?;
-            let _ = self.full.set(lease);
+        if let Some(lease) = self.full.get() {
+            return Ok(lease.clone());
         }
-        Ok(())
-    }
-
-    pub(crate) fn lease(&self) -> &RelationalResidencyLease<Full> {
-        self.full.get_or_init(|| {
-            self.cell
-                .lease_resident_full()
-                .expect("resident lease admission fits the process")
-                .expect("operation must demand a cold region before reading it")
-        })
+        let lease = self
+            .cell
+            .demand_full(execution, limit, self.authority.as_deref())?;
+        let _ = self.full.set(lease.clone());
+        Ok(lease)
     }
 
     /// Lend only a previously admitted full view. A probe records `None` as a
     /// miss and discards its provisional result before any demand can run.
     pub(crate) fn admitted_partition(&self) -> Option<&PartitionState> {
-        self.cell.check_damage().ok()?;
-        if self.full.get().is_none() {
-            let lease = self.cell.lease_resident_full().ok().flatten()?;
+        // A probe turns every unavailable state into a discovered demand. The
+        // round discards this provisional absence before the typed demand runs.
+        self.try_admitted_partition().ok().flatten()
+    }
+
+    pub(crate) fn try_admitted_partition(
+        &self,
+    ) -> Result<Option<&PartitionState>, super::super::data::RelationalStorageUnavailable> {
+        self.cell.check_damage()?;
+        if self.full.get().is_none()
+            && let Some(lease) = self.cell.lease_resident_full()?
+        {
             let _ = self.full.set(lease);
         }
-        self.full.get().map(|lease| lease.full_view().partition())
+        Ok(self.full.get().map(|lease| lease.full_view().partition()))
     }
 
     /// Borrow custody already accepted by this immutable root. Fresh operations
@@ -265,18 +266,5 @@ impl Clone for RelationalRegionRetention {
             head,
             clear_pins_on_write: self.clear_pins_on_write,
         }
-    }
-}
-
-impl AsRef<PartitionState> for RelationalRegionRetention {
-    fn as_ref(&self) -> &PartitionState {
-        self.lease().full_view().partition()
-    }
-}
-
-impl std::ops::Deref for RelationalRegionRetention {
-    type Target = PartitionState;
-    fn deref(&self) -> &Self::Target {
-        self.as_ref()
     }
 }

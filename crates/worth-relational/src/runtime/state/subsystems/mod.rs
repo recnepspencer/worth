@@ -27,10 +27,11 @@ pub(crate) use history::{
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
     CanonicalPositionAdmission, CanonicalPublicationRecordError, HistorySubsystem,
     PatchPositionReservationAdmission, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedRecoveredVersionedArtifactPublication,
-    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
-    RelationalCanonicalPublicationRoutes, RelationalForkMaterializationCost,
-    RelationalForkOwnerBinding, RelationalPreparationHistory, RetainedCanonicalPosition,
+    PreparedCanonicalPublicationRoute, PreparedCommitSequence,
+    PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
+    PreparedVersionedArtifactPublication, RelationalCanonicalPublicationRoutes,
+    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
+    RetainedCanonicalPosition,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub use history::{

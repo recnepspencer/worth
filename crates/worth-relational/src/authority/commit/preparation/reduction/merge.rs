@@ -15,6 +15,7 @@ where
 {
     pub(crate) fn new(items: Vec<(K, T)>) -> Self {
         debug_assert!(
+            /* Proof: merge_ordered receives only the private sorted per-packet reduction streams; their builder sorts by this exact key before handing the owned streams to this merge. */
             items.windows(2).all(|window| window[0].0 <= window[1].0),
             "ordered reduction streams must be locally sorted"
         );
@@ -102,7 +103,7 @@ where
         let stream_index = head.stream_index;
         let (key, item) = current[stream_index]
             .take()
-            .expect("merge head must reference a current stream item");
+            .expect(/* Proof: A heap entry is inserted only together with its current stream item; popping removes that entry before taking the item, then installs both successors together. */ "merge head must reference a current stream item");
         merged.push((key, item));
         if let Some((next_key, next_item)) = iterators[stream_index].next() {
             heap.push(MergeHead {

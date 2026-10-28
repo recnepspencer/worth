@@ -66,7 +66,8 @@ impl HarnessAdapter for RelationalHarnessAdapter {
     fn create_runtime(&self) -> Result<Self::Runtime, Self::Error> {
         Ok(RelationalRuntimeApi::builder()
             .schema_registry(default_harness_schema_registry())
-            .build())
+            .build()
+            .expect("valid native runtime fixture"))
     }
 
     fn prepare_runtime(

@@ -1,4 +1,4 @@
-use super::{digest_index::DigestIndex, hash_value};
+use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
 use crate::storage::partition::SparseAdjacencyTable;
 use crate::storage::substrate::{SharedMap, StorageAllocationVisitor};
 
@@ -15,7 +15,7 @@ impl AdjacencyContentIndex {
         current: &SparseAdjacencyTable,
         previous: Option<&SparseAdjacencyTable>,
         slots: impl IntoIterator<Item = usize>,
-    ) -> u64 {
+    ) -> Result<u64, PartitionContentDigestError> {
         let mut hashed = 0;
         let mut cold_slots = previous.is_none().then(Vec::new);
         let mut cold_memberships = previous.is_none().then(Vec::new);
@@ -30,21 +30,23 @@ impl AdjacencyContentIndex {
                         | id.generation_value() as u128;
                     membership.set(
                         key,
-                        present.then(|| hash_value(b"relation-membership", &id)),
-                    );
+                        present
+                            .then(|| hash_value(b"relation-membership", &id))
+                            .transpose()?,
+                    )?;
                     hashed += u64::from(present);
                 }
                 if let Some(entries) = &mut cold_slots {
                     entries.push((slot as u128, membership.digest()));
                 } else {
-                    self.slots.set(slot as u128, Some(membership.digest()));
+                    self.slots.set(slot as u128, Some(membership.digest()))?;
                 }
                 self.membership_bytes = self
                     .membership_bytes
                     .checked_sub(old_bytes)
-                    .unwrap()
+                    .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?
                     .checked_add(membership.allocation_bytes())
-                    .unwrap();
+                    .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
                 if let Some(entries) = &mut cold_memberships {
                     entries.push((slot, membership));
                 } else {
@@ -52,10 +54,13 @@ impl AdjacencyContentIndex {
                 }
             } else {
                 if cold_slots.is_none() {
-                    self.slots.set(slot as u128, None);
+                    self.slots.set(slot as u128, None)?;
                     self.memberships.remove(&slot);
                 }
-                self.membership_bytes = self.membership_bytes.checked_sub(old_bytes).unwrap();
+                self.membership_bytes = self
+                    .membership_bytes
+                    .checked_sub(old_bytes)
+                    .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
             }
         }
         if let Some(mut entries) = cold_slots {
@@ -66,7 +71,7 @@ impl AdjacencyContentIndex {
             entries.sort_unstable_by_key(|(slot, _)| *slot);
             self.memberships = SharedMap::from_sorted_unique(entries);
         }
-        hashed
+        Ok(hashed)
     }
 
     pub(super) fn digest(&self) -> [u8; 32] {
@@ -113,9 +118,11 @@ mod tests {
         let slots = [0, 1, 64, 127];
         let mut cold = AdjacencyContentIndex::default();
         let mut incremental = AdjacencyContentIndex::default();
-        assert_eq!(cold.update(&table, None, slots), 2);
+        assert_eq!(cold.update(&table, None, slots).unwrap(), 2);
         assert_eq!(
-            incremental.update(&table, Some(&SparseAdjacencyTable::default()), slots),
+            incremental
+                .update(&table, Some(&SparseAdjacencyTable::default()), slots)
+                .unwrap(),
             2
         );
         assert_eq!(cold.digest(), incremental.digest());

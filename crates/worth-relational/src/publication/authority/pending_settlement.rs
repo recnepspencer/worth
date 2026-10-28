@@ -106,12 +106,19 @@ impl RelationalRuntime {
             published_snapshot_basis,
             control,
             positioned,
+            envelope_cell,
             settlement_retention,
             late_interruption,
         } = performed;
         let commit_id = positioned.envelope().commit.commit_id;
         let diagnostic_capture = self.publication.diagnostics.begin_operation_capture();
-        let mut published = publish_commit_execution(self, completion, published_snapshot_basis);
+        let mut published = publish_commit_execution(
+            self,
+            completion,
+            published_snapshot_basis,
+            Arc::clone(&positioned),
+            envelope_cell,
+        );
         published.append_diagnostics(diagnostic_capture.finish());
         let late_interruption = late_interruption.or_else(|| {
             let event = control.observe(crate::runtime::RelationalInterruptionBoundary::Settlement);

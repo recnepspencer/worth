@@ -38,6 +38,14 @@ pub(crate) fn probe_symbol_rounds<T>(
         match answer {
             Ok(accepted) => return Ok(accepted),
             Err(MutationApplyDenial::Commit(error)) => return Err(error),
+            Err(MutationApplyDenial::Symbols(SymbolReservationDenial::InvalidDictionary)) => {
+                return Err(TransactionCommitError::publication(
+                    crate::publication::data::PublicationError::new(
+                        crate::publication::bundle::PublicationStage::BundleAssembly,
+                        "candidate dictionary conflicts with reserved symbol meaning",
+                    ),
+                ));
+            }
             Err(MutationApplyDenial::Symbols(SymbolReservationDenial::IdentityExhausted)) => {
                 return Err(TransactionCommitError::preparation(
                     CommitPreparationError::symbol_identity_exhausted(

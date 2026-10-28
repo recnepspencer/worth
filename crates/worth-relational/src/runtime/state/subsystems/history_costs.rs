@@ -163,5 +163,5 @@ fn increment(counter: &std::sync::atomic::AtomicU64) {
             std::sync::atomic::Ordering::Relaxed,
             |current| Some(current.saturating_add(1)),
         )
-        .expect("saturating counter update cannot fail");
+        .expect(/* Proof: fetch_update always receives Some(saturating_add(1)); only returning None can make fetch_update fail. */ "saturating counter update cannot fail");
 }

@@ -22,6 +22,7 @@ fn durable_runtime_declaring(version: u32) -> RelationalRuntime {
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry(version))
         .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration")
 }
 
 /// Reopen `source`'s medium in a runtime declaring schema `version`.

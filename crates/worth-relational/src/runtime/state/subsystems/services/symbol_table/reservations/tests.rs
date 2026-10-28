@@ -6,14 +6,16 @@ fn publication_excludes_abandoned_preview_meanings_adopted_for_reading() {
     let mut preview = owner.begin_pending_meanings();
     let unused = preview.reserve("rolled-back-preview").unwrap();
     let mut candidate = owner.begin_pending_meanings();
-    candidate.adopt(&preview);
+    candidate.adopt(&preview).unwrap();
     let used = candidate
         .reserve_revision_reference("actual-field")
         .unwrap();
     let meanings = SymbolTableSnapshot {
         entries: vec![(used, "actual-field".into())],
     };
-    let publication = candidate.seal_for_publication(&meanings);
+    let publication = candidate
+        .seal_for_publication(&meanings)
+        .expect("fixture meanings agree with the candidate");
     drop(preview);
     publication.publish().unwrap();
     assert_eq!(
@@ -45,7 +47,11 @@ fn concurrent_pending_meanings_deduplicate_and_publish_only_the_accepted_candida
     );
     drop(abandoned);
     let meanings = accepted.interner().snapshot();
-    accepted.seal_for_publication(&meanings).publish().unwrap();
+    accepted
+        .seal_for_publication(&meanings)
+        .expect("fixture meanings agree with the candidate")
+        .publish()
+        .unwrap();
     assert_eq!(
         owner.with_read(|symbols| symbols.symbol("shared")),
         Some(shared)
@@ -68,7 +74,11 @@ fn abandoning_the_last_custodian_spends_the_identity_and_removes_pending_text() 
     let fresh = retry.reserve("retry").unwrap();
     assert!(fresh.0 > abandoned.0);
     let meanings = retry.interner().snapshot();
-    retry.seal_for_publication(&meanings).publish().unwrap();
+    retry
+        .seal_for_publication(&meanings)
+        .expect("fixture meanings agree with the candidate")
+        .publish()
+        .unwrap();
     assert_eq!(
         owner.with_read(|symbols| symbols.symbol("retry")),
         Some(fresh)
@@ -94,7 +104,11 @@ fn independent_admission_uses_the_pending_identity() {
         symbol
     );
     let meanings = candidate.interner().snapshot();
-    candidate.seal_for_publication(&meanings).publish().unwrap();
+    candidate
+        .seal_for_publication(&meanings)
+        .expect("fixture meanings agree with the candidate")
+        .publish()
+        .unwrap();
     assert_eq!(
         owner.with_read(|symbols| symbols.symbol("independent")),
         Some(symbol)
@@ -166,5 +180,28 @@ fn checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers() {
         None
     );
     let meanings = candidate.interner().snapshot();
-    candidate.seal_for_publication(&meanings).publish().unwrap();
+    candidate
+        .seal_for_publication(&meanings)
+        .expect("fixture meanings agree with the candidate")
+        .publish()
+        .unwrap();
+}
+
+#[test]
+fn canonical_symbol_sealing_and_cross_owner_adoption_refuse_before_publication() {
+    let owner = super::RuntimeSymbolTable::default();
+    let mut candidate = owner.begin_pending_meanings();
+    let symbol = candidate.reserve("reserved").unwrap();
+    let false_meaning = crate::symbols::data::SymbolTableSnapshot {
+        entries: vec![(symbol, "different".into())],
+    };
+    assert!(candidate.seal_for_publication(&false_meaning).is_err());
+    assert!(owner.with_read(|interner| interner.resolve(symbol).is_none()));
+    let mut first = owner.begin_pending_meanings();
+    let second_owner = super::RuntimeSymbolTable::default();
+    let second = second_owner.begin_pending_meanings();
+    assert!(matches!(
+        first.adopt(&second),
+        Err(super::SymbolReservationDenial::InvalidDictionary)
+    ));
 }

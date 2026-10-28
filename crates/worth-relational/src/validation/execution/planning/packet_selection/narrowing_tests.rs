@@ -106,6 +106,7 @@ fn runtime() -> RelationalRuntime {
         .custom_invariant(CustomInvariantRegistration::new(TinyRule(0)).unwrap())
         .custom_invariant(CustomInvariantRegistration::new(TinyRule(1)).unwrap())
         .build()
+        .expect("valid native runtime configuration")
 }
 fn request(serial: bool) -> ExecutionResourceLease<'static> {
     let request = LeaseRequest {

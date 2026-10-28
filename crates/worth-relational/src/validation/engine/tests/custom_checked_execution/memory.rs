@@ -21,7 +21,8 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let lease = checked_lease(REQUEST_MEMORY, 10_000, CancellationToken::new());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,

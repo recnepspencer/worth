@@ -140,7 +140,11 @@ pub(crate) fn probe_head_sources<const N: usize, T>(
             let source = if miss.base {
                 source
                     .base_current_source()
-                    .expect("a recorded base miss has a base source")
+                    .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Region(miss.partition),
+                    cause:
+                        crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+                })?
             } else {
                 source
             };

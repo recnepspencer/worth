@@ -123,6 +123,7 @@ impl<'view> HistoricalProjectionReader<'view> {
         }
         super::super::read_work::record_memory::release(memory, partition_bytes)?;
         debug_assert!(
+            /* Proof: Historical projection walks canonical immutable (partition, slot) rows, selecting one visible generation per row; the collection preserves that identity order. */
             super::read_record_identity_ordering::authoritative_entity_records_are_identity_ordered(
                 &records
             )
@@ -203,7 +204,7 @@ impl<'view> HistoricalProjectionReader<'view> {
         }
         super::super::read_work::record_memory::release(memory, partition_bytes)?;
         records.sort_unstable_by_key(relation_identity_order_key);
-        debug_assert!(super::read_record_identity_ordering::authoritative_relation_records_are_identity_ordered(&records));
+        debug_assert!(/* Proof: Historical projection walks canonical immutable (partition, slot) rows, selecting one visible generation per row; the collection preserves that identity order. */ super::read_record_identity_ordering::authoritative_relation_records_are_identity_ordered(&records));
         Ok(records)
     }
     pub(super) fn relation_records_in(

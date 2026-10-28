@@ -39,12 +39,6 @@ impl InvariantRegistration {
         execution_point: InvariantExecutionPoint,
         failure_effect: InvariantFailureEffect,
     ) -> Self {
-        assert!(
-            rule.supports_execution_point(execution_point),
-            "invariant rule {:?} does not support execution point {:?}",
-            rule,
-            execution_point
-        );
         let descriptor = rule.descriptor_for(failure_effect);
         Self {
             descriptor,

@@ -233,7 +233,9 @@ pub(crate) fn state_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> St
 pub(crate) fn reference_prefixes(steps: &[Step], records: &[RecordRef]) -> ReferencePrefixes {
     let request = workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
-    let runtime = workload::runtime_builder(super::schema_transition::SOURCE).build();
+    let runtime = workload::runtime_builder(super::schema_transition::SOURCE)
+        .build()
+        .expect("valid native reference runtime configuration");
     let mut prefixes = BTreeMap::new();
     let (mut commits, mut transitions) = (0, 0);
     prefixes.insert((commits, transitions), state_of(&runtime, records));

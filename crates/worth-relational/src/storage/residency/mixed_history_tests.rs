@@ -19,7 +19,8 @@ fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
     let extra = later.entity_arena.get_slot(slot).unwrap().extra().clone();
     later
         .entity_arena
-        .apply_extra_update(slot, extra, VersionId(2_000));
+        .apply_extra_update(slot, extra, VersionId(2_000))
+        .expect("fixture slot is materialized");
     let (other_cold, other_source) = recapture(&fixture.cold, &later);
     let second = region_load::load_head(&other_cold, execution, 1 << 24).unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
@@ -56,10 +57,12 @@ fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
     let previous = head.clone();
     let extra = head.entity_arena.get_slot(slot).unwrap().extra().clone();
     head.entity_arena
-        .apply_extra_update(slot, extra.clone(), VersionId(3_000));
+        .apply_extra_update(slot, extra.clone(), VersionId(3_000))
+        .expect("fixture slot is materialized");
     oracle
         .entity_arena
-        .apply_extra_update(slot, extra, VersionId(3_000));
+        .apply_extra_update(slot, extra, VersionId(3_000))
+        .expect("fixture slot is materialized");
     let (next, _) = PartitionContentCommitment::capture(
         &head,
         &symbols,
@@ -182,7 +185,8 @@ fn relation_adoption_and_append_preserve_the_independent_entity_prefixes() {
     let extra = later.relation_arena.get_slot(slot).unwrap().extra().clone();
     later
         .relation_arena
-        .apply_extra_update(slot, extra, VersionId(2_000));
+        .apply_extra_update(slot, extra, VersionId(2_000))
+        .expect("fixture slot is materialized");
     let (cold, source) = recapture(&fixture.cold, &later);
     let second = region_load::load_head(&cold, execution, 1 << 24).unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
@@ -212,10 +216,12 @@ fn relation_adoption_and_append_preserve_the_independent_entity_prefixes() {
     let previous = head.clone();
     let extra = head.relation_arena.get_slot(slot).unwrap().extra().clone();
     head.relation_arena
-        .apply_extra_update(slot, extra.clone(), VersionId(3_000));
+        .apply_extra_update(slot, extra.clone(), VersionId(3_000))
+        .expect("fixture slot is materialized");
     oracle
         .relation_arena
-        .apply_extra_update(slot, extra, VersionId(3_000));
+        .apply_extra_update(slot, extra, VersionId(3_000))
+        .expect("fixture slot is materialized");
     let (appended, _) =
         PartitionContentCommitment::capture(&head, &symbols, Some((&adopted, &previous, &journal)))
             .unwrap();

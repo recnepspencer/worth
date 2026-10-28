@@ -1,6 +1,7 @@
 use super::*;
 use crate::identity::data::{KindId, PartitionId};
 use crate::mvcc::{RelationalBranchTransactionAdmissionDenial, RelationalTransactionIntent};
+use crate::tests::support::create_group_with_external_endpoint;
 use crate::tests::support::{
     changed_entities, changed_relations, durable_runtime_with_test_schema, runtime_with_test_schema,
 };
@@ -86,7 +87,10 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
     let (_, recovered_restored) =
         crate::tests::support::recover_with(execution, &runtime, durable_runtime_with_test_schema);
     assert_cold_inventory(&recovered_restored);
-    let current = recovered_restored.visibility_authority().snapshot();
+    let current = recovered_restored
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let read = recovered_restored
         .read_truth()
         .read_snapshot(&current, execution)
@@ -173,45 +177,6 @@ fn create_generated_group(
     )
 }
 
-fn create_group_with_external_endpoint(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
-    external: crate::identity::data::EntityId,
-) -> crate::transactions::data::CommitResult {
-    let target = CreatedEntityRef {
-        partition_id: PartitionId::main(),
-        kind_id: KindId(1),
-        client_key: crate::symbols::data::ClientKey::raw("internal-endpoint"),
-    };
-    let batch = crate::transactions::data::WorkerIntentBatch::new("open-generated-group")
-        .push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-            partition_id: target.partition_id,
-            kind_id: target.kind_id,
-            client_key: target.client_key.clone(),
-            fields: crate::tests::support::name_field_patch("internal-endpoint"),
-        })))
-        .push(MutationIntent::Create(CreateIntent::Relation(
-            RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(2),
-                client_key: crate::symbols::data::ClientKey::raw("external-edge"),
-                source: EntityReference::Existing(external),
-                target: EntityReference::Created(target),
-                fields: crate::tests::support::relation_label_field_patch("external-edge"),
-            },
-        )));
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    transaction
-        .push_batch(
-            batch,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the open generated group fits transaction budgets");
-    transaction
-        .commit(execution, runtime)
-        .expect("the open generated group is otherwise a valid all-create publication")
-}
-
 fn entity_materialization(
     entity_id: crate::identity::data::EntityId,
     fields: crate::transactions::data::AspectFieldPatch,
@@ -232,6 +197,7 @@ fn assert_suspended_records(
         .inner
         .root
         .partition_state(PartitionId::main())
+        .expect("fixture root has admitted Full custody")
         .expect("the suspended root retains its partition identity");
     for entity in entities {
         let slot = partition

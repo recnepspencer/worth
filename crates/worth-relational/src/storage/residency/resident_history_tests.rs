@@ -22,11 +22,10 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
     extra.structural_fingerprint = Some(crate::identity::data::StructuralFingerprint::new(
         family, 731,
     ));
-    partial.entity_arena.apply_extra_update(
-        fixture.entity.slot_index(),
-        extra.clone(),
-        VersionId(1_000),
-    );
+    partial
+        .entity_arena
+        .apply_extra_update(fixture.entity.slot_index(), extra.clone(), VersionId(1_000))
+        .expect("fixture slot is materialized");
     let symbols = candidate_symbols.interner_snapshot();
     assert!(matches!(
         PreparedResidentRegion::initial(partial.clone(), &symbols),
@@ -115,7 +114,8 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         .clone();
     oracle
         .entity_arena
-        .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000));
+        .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000))
+        .expect("fixture slot is materialized");
     assert_eq!(
         oracle.authoritative_content_digest(&symbols).unwrap(),
         captured.leaf.content_digest
@@ -175,11 +175,10 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
         .unwrap()
         .extra()
         .clone();
-    partial.entity_arena.apply_extra_update(
-        fixture.entity.slot_index(),
-        extra.clone(),
-        VersionId(1_000),
-    );
+    partial
+        .entity_arena
+        .apply_extra_update(fixture.entity.slot_index(), extra.clone(), VersionId(1_000))
+        .expect("fixture slot is materialized");
     // Deliberately retain the old cached digest: inspection must hash the rows.
     let owned = RelationalRegionResidency::resident_head(
         partial,
@@ -201,7 +200,8 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
         .clone();
     complete
         .entity_arena
-        .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000));
+        .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000))
+        .expect("fixture slot is materialized");
     assert_eq!(
         digest,
         complete

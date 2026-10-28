@@ -11,16 +11,25 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
 
     let runtime = runtime_with_test_schema();
     let entity_created = create_entity_outcome(execution, &runtime, "entity-pinned");
-    let entity_created_snapshot = runtime.visibility_authority().snapshot();
+    let entity_created_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let entity = changed_entities(&entity_created)[0];
     let _deleted_entity = delete_entity(execution, &runtime, entity);
-    let deleted_entity_snapshot = runtime.visibility_authority().snapshot();
+    let deleted_entity_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let relation_source = create_entity(execution, &runtime, "relation-left");
     let relation_target = create_entity(execution, &runtime, "relation-right");
     let relation_created =
         create_relation_outcome(execution, &runtime, relation_source, relation_target, "r1");
-    let relation_created_snapshot = runtime.visibility_authority().snapshot();
+    let relation_created_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let relation = changed_relations(&relation_created)[0];
     let _deleted_relation = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -35,7 +44,10 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
         .expect("test staging stays within configured resource budgets");
         txn.commit(execution, &runtime).unwrap()
     };
-    let deleted_relation_snapshot = runtime.visibility_authority().snapshot();
+    let deleted_relation_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let plan = runtime.retention().inspect_plan(execution).unwrap();
 
@@ -83,10 +95,16 @@ fn retention_plan_turns_deleted_records_reclaimable_after_snapshot_release() {
 
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "reclaimable");
-    let created_snapshot = runtime.visibility_authority().snapshot();
+    let created_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let entity = changed_entities(&created)[0];
     let _deleted = delete_entity(execution, &runtime, entity);
-    let deleted_snapshot = runtime.visibility_authority().snapshot();
+    let deleted_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     assert!(runtime
         .visibility_authority()
@@ -304,76 +322,6 @@ fn replay_retention_preserves_historical_live_entity_aspects_across_updates() {
         .release_version_replay_retention(created.version_id));
 }
 
-#[test]
-fn retention_plan_reports_explicit_replay_pins_for_deleted_relations_until_released() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(execution, &runtime, "replay-left");
-    let target = create_entity(execution, &runtime, "replay-right");
-    let created = create_relation_outcome(execution, &runtime, source, target, "replay-r1");
-    let relation = changed_relations(&created)[0];
-    let deleted = {
-        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(
-            WorkerIntentBatch::new("delete-relation").push(MutationIntent::Relation(
-                RelationMutationIntent::Delete(DeleteRelationIntent {
-                    relation_id: relation,
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-        txn.commit(execution, &runtime).unwrap()
-    };
-
-    assert!(runtime
-        .visibility_authority()
-        .release_snapshot(&created.snapshot)
-        .is_ok());
-    assert!(runtime
-        .visibility_authority()
-        .release_snapshot(&deleted.snapshot)
-        .is_ok());
-    assert!(runtime
-        .history_authority()
-        .retain_version_for_replay(execution, created.version_id)
-        .unwrap());
-
-    let pinned = runtime.retention().inspect_plan(execution).unwrap();
-    let diagnostics = runtime.publication().diagnostics();
-    let retention_artifacts = diagnostics.by_scope(DiagnosticsScope::Retention);
-    let latest_retention = retention_artifacts.last().unwrap();
-    let latest_entry = latest_retention.entries.last().unwrap();
-    assert!(retention_artifacts
-        .iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .any(|entry| entry.code == DiagnosticCode::ReplayRetentionPinned));
-    assert!(pinned.replay_pinned_relations >= 1);
-    assert_eq!(pinned.reclaimable_relations, 0);
-    assert_eq!(latest_entry.code, DiagnosticCode::RetentionPlanInspected);
-    assert_eq!(
-        diagnostic_field(latest_entry, "replay_pinned_relations"),
-        &RelationalDiagnosticValue::Unsigned(pinned.replay_pinned_relations as u64)
-    );
-    assert_eq!(
-        diagnostic_field(latest_entry, "branch_pinned_relations"),
-        &RelationalDiagnosticValue::Unsigned(pinned.branch_pinned_relations as u64)
-    );
-    assert_eq!(
-        diagnostic_unsigned_field(latest_entry, "branch_replay_overlap_relations"),
-        0
-    );
-
-    assert!(runtime
-        .history_authority()
-        .release_version_replay_retention(created.version_id));
-    let released = runtime.retention().inspect_plan(execution).unwrap();
-    assert_eq!(released.replay_pinned_relations, 0);
-    assert_eq!(released.branch_pinned_relations, 0);
-}
-
 fn diagnostic_unsigned_field(
     entry: &crate::facade::diagnostics::RelationalDiagnosticsEntry,
     field: &str,
@@ -383,3 +331,6 @@ fn diagnostic_unsigned_field(
         other => panic!("expected unsigned diagnostic field {field}, got {other:?}"),
     }
 }
+
+#[path = "retention/replay_relations.rs"]
+mod replay_relations;

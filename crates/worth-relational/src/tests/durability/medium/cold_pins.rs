@@ -81,7 +81,8 @@ fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> PinFixture
     let mut runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(test_schema_registry())
-        .build_durable(attachment);
+        .build_durable(attachment)
+        .expect("valid native runtime configuration");
     let plan = runtime
         .durability()
         .recovery_plan_from_source(
@@ -123,7 +124,9 @@ fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> PinFixture
     assert!(
         matches!(
             crate::storage::overlay::PartitionAccess::probe_full_partition(
-                &runtime.acquire_partition_edition(),
+                &runtime
+                    .acquire_partition_edition()
+                    .with_symbol_admission(&runtime.services.symbols),
                 entity.partition_id
             ),
             crate::storage::residency::PartitionProbe::Cold

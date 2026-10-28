@@ -71,6 +71,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
             .root
             .partition_state(id.partition_id)
             .unwrap()
+            .unwrap()
             .entity_arena
             .get(id)
             .unwrap()
@@ -79,6 +80,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
             .inner
             .root
             .partition_state(id.partition_id)
+            .unwrap()
             .unwrap()
             .entity_arena
             .get(id)
@@ -92,6 +94,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
             .root
             .partition_state(id.partition_id)
             .unwrap()
+            .unwrap()
             .relation_arena
             .get(id)
             .unwrap()
@@ -100,6 +103,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
             .inner
             .root
             .partition_state(id.partition_id)
+            .unwrap()
             .unwrap()
             .relation_arena
             .get(id)

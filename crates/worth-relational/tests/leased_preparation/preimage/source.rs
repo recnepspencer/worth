@@ -87,7 +87,8 @@ impl Source {
     ) -> Self {
         let runtime = RelationalRuntimeApi::builder()
             .schema_registry(schema())
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let mut entities = Vec::new();
         for partition in 1..=partitions {
             let (_, basis) = runtime

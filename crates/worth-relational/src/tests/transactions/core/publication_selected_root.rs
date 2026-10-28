@@ -49,6 +49,12 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
     let retention_before_failure = runtime
         .branch_retention_cost_counters(&identity)
         .expect("main branch retention counters remain observable");
+    let probe_root = runtime
+        .history
+        .branch_cell(&branch)
+        .unwrap()
+        .root()
+        .unwrap();
     runtime
         .history
         .branch_cell_mut(&branch)
@@ -146,10 +152,6 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         registry_entries_before_candidate
     );
 
-    let probe_root = crate::branch::RelationalBranchRoot::empty_with_schema(
-        &runtime.config().schema.registry,
-        crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
-    );
     let head_retention = std::sync::Arc::clone(
         runtime
             .history

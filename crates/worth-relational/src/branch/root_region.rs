@@ -134,6 +134,12 @@ pub(super) fn capture_failure(
         RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage,
         ) => RelationalBranchRootCaptureDenial::InvalidHistoryCoverage(partition),
+        RegionContentFailure::Content(
+            crate::storage::overlay::PartitionContentDigestError::Encoding,
+        ) => RelationalBranchRootCaptureDenial::ContentEncoding(partition),
+        RegionContentFailure::Content(
+            crate::storage::overlay::PartitionContentDigestError::AllocationAccountingOverflow,
+        ) => RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(partition),
     }
 }
 

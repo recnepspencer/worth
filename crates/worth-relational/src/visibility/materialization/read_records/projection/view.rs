@@ -3,7 +3,9 @@ use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
 
 use super::super::reader::VisibilityReadContext;
-use super::contracts::{assert_declared_projection_aspects, ProjectionAspectScope};
+use super::contracts::{
+    admit_declared_projection_aspects, ProjectionAspectScope, ProjectionRecordDomain,
+};
 use super::projection_records::{EntityRecordProjection, RelationRecordProjection};
 
 #[derive(Debug, Clone)]
@@ -53,56 +55,60 @@ impl VisibilityProjectionView {
         )
     }
 
-    pub(super) fn assert_entity_projection_contract<T: EntityRecordProjection>(
+    pub(super) fn admit_entity_projection_contract<T: EntityRecordProjection>(
         &self,
-    ) -> ProjectionAspectScope {
+    ) -> Result<ProjectionAspectScope, crate::execution::RelationalExecutionDenialCause> {
         let projection_scope = T::projection_scope();
-        assert_declared_projection_aspects(
+        admit_declared_projection_aspects(
             &projection_scope,
             self.entity_aspect_plan(T::KIND),
-            "entity",
+            ProjectionRecordDomain::Entity,
             T::KIND,
-        );
-        projection_scope
+        )
+        .map_err(crate::execution::RelationalExecutionDenialCause::ProjectionContract)?;
+        Ok(projection_scope)
     }
 
-    pub(super) fn assert_relation_projection_contract<T: RelationRecordProjection>(
+    pub(super) fn admit_relation_projection_contract<T: RelationRecordProjection>(
         &self,
-    ) -> ProjectionAspectScope {
+    ) -> Result<ProjectionAspectScope, crate::execution::RelationalExecutionDenialCause> {
         let projection_scope = T::projection_scope();
-        assert_declared_projection_aspects(
+        admit_declared_projection_aspects(
             &projection_scope,
             self.relation_aspect_plan(T::KIND),
-            "relation",
+            ProjectionRecordDomain::Relation,
             T::KIND,
-        );
-        projection_scope
+        )
+        .map_err(crate::execution::RelationalExecutionDenialCause::ProjectionContract)?;
+        Ok(projection_scope)
     }
 
-    pub(super) fn assert_entity_projection_scope(
+    pub(super) fn admit_entity_projection_scope(
         &self,
         kind_id: KindId,
         projection_scope: &ProjectionAspectScope,
-    ) {
-        assert_declared_projection_aspects(
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        admit_declared_projection_aspects(
             projection_scope,
             self.entity_aspect_plan(kind_id),
-            "entity",
+            ProjectionRecordDomain::Entity,
             kind_id,
-        );
+        )
+        .map_err(crate::execution::RelationalExecutionDenialCause::ProjectionContract)
     }
 
-    pub(super) fn assert_relation_projection_scope(
+    pub(super) fn admit_relation_projection_scope(
         &self,
         kind_id: KindId,
         projection_scope: &ProjectionAspectScope,
-    ) {
-        assert_declared_projection_aspects(
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        admit_declared_projection_aspects(
             projection_scope,
             self.relation_aspect_plan(kind_id),
-            "relation",
+            ProjectionRecordDomain::Relation,
             kind_id,
-        );
+        )
+        .map_err(crate::execution::RelationalExecutionDenialCause::ProjectionContract)
     }
 
     pub(super) fn entity_aspect_plan(

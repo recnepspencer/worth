@@ -237,7 +237,7 @@ impl<'access, 'runtime, 'scope, 'authority>
             if kinds.contains(&kind_id) {
                 self.scopes
                     .get_mut(relation_kind)
-                    .expect("minimum scope prepared")
+                    .expect(/* Proof: RelationIntegrityScopeAccumulator::new installs a scope for every requirement and derives minimum_candidate_kinds from that same set. Collection does not remove scopes. */ "minimum scope prepared")
                     .created_candidate_entities
                     .insert(created.clone());
             }
@@ -261,7 +261,7 @@ impl<'access, 'runtime, 'scope, 'authority>
             if kinds.contains(&metadata.kind_id) {
                 self.scopes
                     .get_mut(relation_kind)
-                    .expect("minimum scope prepared")
+                    .expect(/* Proof: RelationIntegrityScopeAccumulator::new installs a scope for every requirement and derives minimum_candidate_kinds from that same set. Collection does not remove scopes. */ "minimum scope prepared")
                     .minimum_touched_entities
                     .insert(entity_id);
             }

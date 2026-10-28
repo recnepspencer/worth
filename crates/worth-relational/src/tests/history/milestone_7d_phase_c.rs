@@ -76,7 +76,7 @@ fn prepared_merge_promoted_to_deleted_on_both_sides(
         .expect("compiled promoted executable plan");
     runtime
         .merge()
-        .replace_bound_merge_plan_for_test(&mut prepared, compiled)
+        .replace_bound_merge_plan_for_test(execution, &mut prepared, compiled)
         .expect("promoted mutation plan");
     prepared
 }

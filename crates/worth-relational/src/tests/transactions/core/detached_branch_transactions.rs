@@ -257,7 +257,8 @@ fn stale_transaction_denies_before_interning_new_client_keys() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     create_entity(execution, &runtime, "stale-symbol-basis");
     let (_, mut transaction) = begin_on(&runtime, "main");
     create_entity(execution, &runtime, "stale-symbol-advance");

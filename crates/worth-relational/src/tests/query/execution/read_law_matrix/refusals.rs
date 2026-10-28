@@ -110,7 +110,8 @@ fn runtime_read_law_bounded_index_refusal_values() {
                 field_locator: world.label.clone(),
             },
             branch_scoped: false,
-        });
+        })
+        .expect("index fixture has identity capacity");
     for leased in [false, true] {
         let lease = admitted_lease(CancellationToken::new());
         let execution = if leased {

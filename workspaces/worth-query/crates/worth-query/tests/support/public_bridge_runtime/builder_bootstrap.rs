@@ -67,7 +67,9 @@ impl PublicBridgeRuntimeBootstrapWithSupportProfile {
         );
         let source =
             worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
-                worth_relational::facade::runtime::RelationalRuntimeBuilder::new().build(),
+                worth_relational::facade::runtime::RelationalRuntimeBuilder::new()
+                    .build()
+                    .expect("valid native runtime configuration"),
                 "public-graph",
                 product_world_resources.invalidation_resources(),
             )
@@ -190,7 +192,9 @@ mod tests {
         resources: &WorthQueryProductWorldResources,
     ) -> worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner {
         worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
-            worth_relational::facade::runtime::RelationalRuntimeBuilder::new().build(),
+            worth_relational::facade::runtime::RelationalRuntimeBuilder::new()
+                .build()
+                .expect("valid native runtime configuration"),
             role,
             resources.invalidation_resources(),
         )

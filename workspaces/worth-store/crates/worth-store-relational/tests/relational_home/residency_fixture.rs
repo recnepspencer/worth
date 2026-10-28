@@ -16,7 +16,9 @@ pub(super) struct Fixture {
 
 impl Fixture {
     pub fn new(execution: &ExecutionRequest<'_, '_>) -> Self {
-        let reference = workload::runtime_builder(schema_transition::SOURCE).build();
+        let reference = workload::runtime_builder(schema_transition::SOURCE)
+            .build()
+            .expect("valid native reference runtime configuration");
         let branch = BranchId("main".into());
         let mut steps = Vec::new();
         let mut records = Vec::new();

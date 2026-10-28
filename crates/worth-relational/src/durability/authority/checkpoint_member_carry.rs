@@ -81,12 +81,9 @@ pub(super) fn may_carry_metadata(
 pub(super) fn unavailable(
     subject: crate::storage::data::RelationalStorageSubject,
 ) -> DurabilityError {
-    let stop = RelationalRecoveryStop::from(crate::storage::data::RelationalStorageUnavailable {
+    crate::storage::data::RelationalStorageUnavailable {
         subject,
         cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-    });
-    let RelationalRecoveryStop::Durability(error) = stop else {
-        unreachable!()
-    };
-    error
+    }
+    .into()
 }

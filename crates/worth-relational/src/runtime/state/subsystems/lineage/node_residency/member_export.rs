@@ -70,10 +70,7 @@ impl RelationalDurableColdSource for NodeMemberExport {
         if let Err(cause) = &result
             && cause.is_proven_damage()
         {
-            let Failure::StorageUnavailable(failure) = node_page::failure(&page.descriptor, *cause)
-            else {
-                unreachable!()
-            };
+            let failure = node_page::storage_failure(&page.descriptor, *cause);
             *state = NodePageState::Damaged(failure);
         }
         result

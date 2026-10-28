@@ -223,7 +223,8 @@ fn declared_schema_transition_requires_non_empty_runtime_basis() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let proposed_transition = ProposedSchemaTransition {
         source_schema_id: SchemaId("empty".to_string()),

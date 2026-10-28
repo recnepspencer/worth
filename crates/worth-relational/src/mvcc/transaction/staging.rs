@@ -2,6 +2,7 @@
 pub enum RelationalTransactionStagingDenial {
     AllocationDenied(worth_execution::ExecutionAllocationDenial),
     CardinalityOverflow,
+    SymbolIdentityExhausted,
     InputDirectoryAllocationDenied { requested_batches: usize },
     SavepointCapacityExhausted { maximum_savepoints: usize },
     SavepointIdentityExhausted,
@@ -12,6 +13,7 @@ pub enum RelationalTransactionStagingDenial {
 impl RelationalTransactionStagingDenial {
     pub(crate) fn into_conflict(self) -> crate::transactions::data::CommitConflict {
         let class = match self {
+            Self::SymbolIdentityExhausted => crate::transactions::data::ConflictClass::SymbolIdentityExhausted,
             Self::AllocationDenied(denial) => crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
             Self::CardinalityOverflow => crate::transactions::data::ConflictClass::TransactionStagingCardinalityOverflow,
             Self::InputDirectoryAllocationDenied { requested_batches } => crate::transactions::data::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches },
@@ -45,5 +47,11 @@ impl RelationalTransactionStagingDenial {
             Self::AllocationDenied(denial) => Some(denial),
             _ => None,
         }
+    }
+}
+
+impl From<crate::symbols::data::RelationalSymbolExhausted> for RelationalTransactionStagingDenial {
+    fn from(_: crate::symbols::data::RelationalSymbolExhausted) -> Self {
+        Self::SymbolIdentityExhausted
     }
 }

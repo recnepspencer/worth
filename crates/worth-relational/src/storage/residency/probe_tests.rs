@@ -15,14 +15,22 @@ fn related_sources_do_not_confuse_equal_partition_ids() {
             RelationalRegionRetention::new(fixture.cell.clone(), None),
         )]))
     });
+    let symbols = crate::runtime::RuntimeSymbolTable::default();
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let id = fixtures[0].entity.partition_id;
     let mut rounds = 0;
-    let answer = probe_full_sources(&execution, [&editions[0], &editions[1]], |views| {
-        rounds += 1;
-        views.map(|view| view.get_partition(id).is_some())
-    })
+    let answer = probe_full_sources(
+        &execution,
+        [
+            &editions[0].with_symbol_admission(&symbols),
+            &editions[1].with_symbol_admission(&symbols),
+        ],
+        |views| {
+            rounds += 1;
+            views.map(|view| view.get_partition(id).is_some())
+        },
+    )
     .unwrap();
     assert_eq!(answer, [true, true]);
     assert!(rounds > 1 && rounds < 4);
@@ -47,8 +55,10 @@ fn a_resident_overlay_does_not_hide_its_cold_before_image() {
         base.entity.partition_id,
         RelationalRegionRetention::new(base.cell.clone(), None),
     )]));
+    let symbols = crate::runtime::RuntimeSymbolTable::default();
+    let source = edition.with_symbol_admission(&symbols);
     let overlay = FullCompositeSource {
-        base: &edition,
+        base: &source,
         staged: &staged,
         current: crate::storage::overlay::OverlayStateView::new(&edition, &staged),
     };
@@ -80,24 +90,31 @@ fn a_cold_round_discards_absence_before_accepting_the_resident_answer() {
         fixture.entity.partition_id,
         RelationalRegionRetention::new(fixture.cell.clone(), None),
     )]));
+    let symbols = crate::runtime::RuntimeSymbolTable::default();
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let mut rounds = 0;
-    let answer = probe_full(&execution, &edition, |view| {
-        rounds += 1;
-        view.get_partition(fixture.entity.partition_id)
-            .and_then(|partition| partition.entity_arena.get(&fixture.entity))
-            .map(|slot| slot.generation())
-    })
+    let answer = probe_full(
+        &execution,
+        &edition.with_symbol_admission(&symbols),
+        |view| {
+            rounds += 1;
+            view.get_partition(fixture.entity.partition_id)
+                .and_then(|partition| partition.entity_arena.get(&fixture.entity))
+                .map(|slot| slot.generation())
+        },
+    )
     .unwrap();
     assert_eq!(answer, Some(fixture.entity.generation_value()));
     assert!(rounds > 1 && rounds < 4);
     assert!(fixture.source.history_reads.load(Ordering::SeqCst) > 0);
     assert!(fixture.cell.leases.load(Ordering::SeqCst) > 0);
     let reads = fixture.source.reads.load(Ordering::SeqCst);
-    let warm = probe_full(&execution, &edition, |view| {
-        view.get_partition(fixture.entity.partition_id).is_some()
-    })
+    let warm = probe_full(
+        &execution,
+        &edition.with_symbol_admission(&symbols),
+        |view| view.get_partition(fixture.entity.partition_id).is_some(),
+    )
     .unwrap();
     assert!(warm);
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
@@ -113,16 +130,21 @@ fn a_provisional_denial_cannot_mask_sticky_storage_damage() {
         fixture.entity.partition_id,
         RelationalRegionRetention::new(fixture.cell.clone(), None),
     )]));
+    let symbols = crate::runtime::RuntimeSymbolTable::default();
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let attempt = || {
-        probe_full(&execution, &edition, |view| {
-            if view.get_partition(fixture.entity.partition_id).is_none() {
-                Err::<(), _>("provisional record missing")
-            } else {
-                Ok(())
-            }
-        })
+        probe_full(
+            &execution,
+            &edition.with_symbol_admission(&symbols),
+            |view| {
+                if view.get_partition(fixture.entity.partition_id).is_none() {
+                    Err::<(), _>("provisional record missing")
+                } else {
+                    Ok(())
+                }
+            },
+        )
     };
     let first = attempt().unwrap_err();
     assert!(matches!(

@@ -70,7 +70,8 @@ fn durable_recovery_and_schema_mismatch_test() {
             }
             .build_registry(),
         )
-        .build_durable(TestDurableMedium::new().attachment());
+        .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration");
     let _outcome = recovered
         .durability_recovery()
         .recover(execution, plan.clone())
@@ -128,7 +129,8 @@ fn durable_recovery_and_schema_mismatch_test() {
         .unwrap();
     let mut mismatched = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let error = mismatched
         .durability_recovery()
         .recover(execution, plan)
@@ -205,7 +207,8 @@ fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
         .plan_revision;
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -271,7 +274,8 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
     let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(base_registry)
-        .build_durable(medium.attachment());
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     create_relation_outcome(execution, &runtime, source, target, "guarded");
@@ -322,7 +326,8 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
         .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
-        .build_durable(medium.attachment());
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration");
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)

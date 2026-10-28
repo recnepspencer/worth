@@ -23,6 +23,14 @@ pub fn relational_execution_kind(
         policy_ancestor,
     };
     let kind = match cause {
+        Cause::ProjectionContract(denial) => Kind::ProjectionContract {
+            denial,
+            partition_identity,
+        },
+        Cause::HistoricalVisibility(denial) => Kind::HistoricalVisibility {
+            denial,
+            partition_identity,
+        },
         Cause::StorageUnavailable(failure) => Kind::StorageUnavailable(failure),
         Cause::WorkerLimitExceedsParent => resource(Resource::WorkerLimit, None),
         Cause::MemoryLimitExceedsParent => resource(Resource::PolicyMemoryLimit, None),

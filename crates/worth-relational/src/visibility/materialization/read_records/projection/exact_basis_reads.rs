@@ -52,6 +52,7 @@ impl<'view> ExactProjectionReader<'view> {
         }
         super::super::read_work::record_memory::release(memory, partition_bytes)?;
         debug_assert!(
+            /* Proof: Exact projection collects from the immutable owner walk in (partition, slot, generation) order; the owner iterator cannot emit the same live generation twice and the projection preserves its order. */
             super::read_record_identity_ordering::authoritative_entity_records_are_identity_ordered(
                 &records
             )
@@ -122,7 +123,7 @@ impl<'view> ExactProjectionReader<'view> {
         }
         super::super::read_work::record_memory::release(memory, partition_bytes)?;
         records.sort_unstable_by_key(relation_identity_order_key);
-        debug_assert!(super::read_record_identity_ordering::authoritative_relation_records_are_identity_ordered(&records));
+        debug_assert!(/* Proof: Exact projection collects from the immutable owner walk in (partition, slot, generation) order; the owner iterator cannot emit the same live generation twice and the projection preserves its order. */ super::read_record_identity_ordering::authoritative_relation_records_are_identity_ordered(&records));
         Ok(records)
     }
     pub(super) fn relation_records_in(

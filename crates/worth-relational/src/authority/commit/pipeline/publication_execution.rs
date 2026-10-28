@@ -141,6 +141,8 @@ pub(crate) fn publish_commit_execution(
     runtime: &crate::runtime::RelationalRuntime,
     prepared: PreparedCommitPublicationCompletion,
     published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    positioned: std::sync::Arc<crate::history::data::PositionedCanonicalCommit>,
+    envelope_cell: std::sync::Arc<crate::history::RelationalCommitEnvelopeResidency>,
 ) -> PublishedCommitExecution {
     let PreparedCommitPublicationCompletion {
         mut admitted,
@@ -166,6 +168,8 @@ pub(crate) fn publish_commit_execution(
             publication,
             published_snapshot_basis,
             published_snapshot_slot,
+            positioned,
+            envelope_cell,
         )
     };
     let (positioned_commit, changed_records) = finalized.into_parts();

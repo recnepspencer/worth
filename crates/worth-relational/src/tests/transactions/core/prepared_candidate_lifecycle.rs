@@ -17,7 +17,8 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
             max_prepared_candidates: Some(1),
             candidate_max_lifetime_millis: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let before = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
     let cost_scope = crate::facade::inspection::RelationalMvccCostScope::capture(
         &runtime,
@@ -89,7 +90,8 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
             max_prepared_candidates: Some(1),
             candidate_max_lifetime_millis: 1_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
     let candidate = prepared_write(execution, &runtime, &basis, "waited-expiry").unwrap();
     let publication_cell = candidate.publication_cell_for_test();
@@ -205,7 +207,8 @@ fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
             max_prepared_candidates: Some(1),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
     let first = prepared_write(execution, &runtime, &basis, "candidate-one").unwrap();
 

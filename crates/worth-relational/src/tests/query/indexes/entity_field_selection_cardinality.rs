@@ -16,14 +16,17 @@ fn complete_equality_selection_preserves_the_callers_cardinality_above_sixty_fou
     }
     entities.sort();
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(76),
-        name: "entity.name.selection-cardinality".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(76),
+            name: "entity.name.selection-cardinality".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -33,7 +36,10 @@ fn complete_equality_selection_preserves_the_callers_cardinality_above_sixty_fou
         },
     );
     assert!(build.failed_indexes.is_empty());
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let view = runtime.read_truth().project_snapshot(&snapshot).unwrap();
     let prepared = runtime
         .index_access()

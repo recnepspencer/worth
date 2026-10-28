@@ -5,6 +5,8 @@ use super::super::WorthQuerySuspendedGeneratedOutput;
 /// Why a reconstruction step was refused. The refused step changed nothing.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputReconstructionDenial {
+    /// Native residency or request admission refused the retained identity read.
+    NativeRead(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// The suspended output belongs to another runtime.
     ForeignRuntime,
     ForeignPhase,

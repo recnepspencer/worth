@@ -49,6 +49,9 @@ pub(super) fn staging(
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
         Denial::AllocationDenied(ref denial) => allocation_kind(denial),
+        Denial::SymbolIdentityExhausted => {
+            WorthQueryWorkspaceErrorKind::TransactionSymbolIdentityExhausted
+        }
         Denial::CardinalityOverflow => {
             WorthQueryWorkspaceErrorKind::TransactionStagingCardinalityOverflow
         }
@@ -145,6 +148,7 @@ pub(super) fn commit(
             WorthQueryWorkspaceErrorKind::ProposalIdentityExhausted
         }
         Error::Conflict { error, .. } => match &error.class {
+            worth_relational::facade::transactions::ConflictClass::SymbolIdentityExhausted => WorthQueryWorkspaceErrorKind::TransactionSymbolIdentityExhausted,
             worth_relational::facade::transactions::ConflictClass::ExecutionAllocationDenied { denial } => allocation_kind(denial),
             worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => WorthQueryWorkspaceErrorKind::TransactionStagingCardinalityOverflow,
             worth_relational::facade::transactions::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches } => WorthQueryWorkspaceErrorKind::TransactionInputDirectoryAllocationDenied { requested_batches: *requested_batches },

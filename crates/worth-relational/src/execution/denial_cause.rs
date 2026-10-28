@@ -4,6 +4,10 @@ use serde::{Deserialize, Serialize};
 /// Memory refusals retain the refusing limit and its remaining room.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalExecutionDenialCause {
+    HistoricalVisibility(crate::visibility::snapshot_states::HistoricalVisibilityDenial),
+    ProjectionContract(
+        crate::visibility::materialization::read_records::RelationalProjectionContractDenial,
+    ),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     WorkerLimitExceedsParent,
     MemoryLimitExceedsParent,

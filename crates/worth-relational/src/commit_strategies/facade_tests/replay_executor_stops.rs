@@ -53,7 +53,8 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
                 one_publication: one_publication.clone(),
             },
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let canonical = canonical_request();

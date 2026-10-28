@@ -108,8 +108,11 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
         if !target.is_full() {
             return false;
         }
-        debug_assert!(matches!(self.mirror.regions.get(&id),
-            Some(MirrorRegion::Resident(current)) if current.same_target(target)));
+        debug_assert!(
+            /* Proof: PartitionEditionWriter retains the exclusive RwLockWriteGuard<CurrentMirror>. Resident targets are selected from that same mirror; every edit is retained in this writer until finish_edits restores it, before the write guard can be released. */
+            matches!(self.mirror.regions.get(&id),
+            Some(MirrorRegion::Resident(current)) if current.same_target(target))
+        );
         // The cached edition is an owner projection, not another observer.
         // An external edition retains its old map and payload independently.
         drop(self.map_mut().remove(&id));
@@ -142,6 +145,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
             return;
         }
         debug_assert!(
+            /* Proof: PartitionEditionWriter retains the exclusive RwLockWriteGuard<CurrentMirror>. Resident targets are selected from that same mirror; every edit is retained in this writer until finish_edits restores it, before the write guard can be released. */
             matches!(self.mirror.regions.get(&id), Some(MirrorRegion::Resident(current)) if current.same_target(target))
         );
         drop(self.map_mut().remove(&id));
@@ -171,7 +175,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
         let TargetEdit { target, edit } = self
             .edits
             .remove(&target.partition_id())
-            .expect("this writer owns the accepted resident target edit");
+            .expect(/* Proof: Accepted target creation registers this partition edit in its owning edition writer; the private target retains that writer identity and extraction consumes the registered edit once. */ "this writer owns the accepted resident target edit");
         let edit = edit.transform(transform);
         self.edits
             .insert(target.partition_id(), TargetEdit { target, edit });
@@ -195,7 +199,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
             .admit_current_target(id)
             .ok()
             .flatten()
-            .map(|target| target.current_lease())
+            .and_then(|target| target.current_lease())
     }
 
     /// Runtime pin/lifecycle metadata changes add no field meanings or history.
@@ -290,22 +294,27 @@ impl Drop for PartitionEditionWriter<'_> {
 }
 
 impl ResidentTargetEditor for PartitionEditionWriter<'_> {
-    fn read_target(&self, target: &ResidentMirrorTarget) -> &PartitionState {
-        match self.edits.get(&target.partition_id()) {
-            Some(entry) => entry.edit.partition(),
-            None => self
-                .mirror
-                .edition
-                .partition(target.partition_id())
-                .expect("accepted resident target remains in its writer's edition"),
+    fn read_target(
+        &self,
+        target: &ResidentMirrorTarget,
+    ) -> Result<&PartitionState, crate::execution::RelationalExecutionDenialCause> {
+        if let Some(entry) = self.edits.get(&target.partition_id()) {
+            return Ok(entry.edit.partition());
         }
+        self.mirror.edition.try_full_partition(target.partition_id()).map_err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable)?
+            .ok_or_else(|| crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
+                crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Region(target.partition_id()),
+                    cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+                }
+            ))
     }
 
     fn edit_target(&mut self, target: &ResidentMirrorTarget) -> &mut PartitionState {
         self.begin_target_edit(target);
         self.edits
             .get_mut(&target.partition_id())
-            .expect("this writer owns the accepted target edit")
+            .expect(/* Proof: Accepted target creation registers this partition edit in its owning edition writer; the private target retains that writer identity and extraction consumes the registered edit once. */ "this writer owns the accepted target edit")
             .edit
             .partition_mut()
     }

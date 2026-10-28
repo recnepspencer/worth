@@ -183,7 +183,8 @@ impl WorthQueryPrimaryGraphProvider {
                         },
                         worth_relational::facade::mvcc::RelationalTransactionStagingDenial::CardinalityOverflow => Denial::StagingCardinalityOverflow,
                         worth_relational::facade::mvcc::RelationalTransactionStagingDenial::InputDirectoryAllocationDenied { requested_batches } => Denial::StagingInputDirectoryAllocationDenied { requested_batches },
-                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SavepointCapacityExhausted { .. }
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SymbolIdentityExhausted
+                        | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SavepointCapacityExhausted { .. }
                         | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SavepointIdentityExhausted
                         | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationAuthorityRequired
                         | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationModeMismatch => Denial::StagingUnavailable,

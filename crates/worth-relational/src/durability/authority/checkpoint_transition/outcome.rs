@@ -70,4 +70,9 @@ pub enum RecoveredCheckpointTransitionError {
     /// Native settlement refused the performed witness. No successor authority
     /// was issued; the native error retains its posture.
     SettlementFailed(Box<TransactionCommitError>),
+    /// Publication and settlement performed, but closing their temporary snapshot refused.
+    SnapshotCloseoutFailed {
+        commit_id: crate::history::data::CommitId,
+        denial: crate::visibility::RelationalSnapshotReleaseDenial,
+    },
 }

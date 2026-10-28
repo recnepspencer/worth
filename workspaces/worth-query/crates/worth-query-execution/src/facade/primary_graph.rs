@@ -48,6 +48,9 @@ pub use worth_relational::facade::mvcc::{
     CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
 };
 pub use worth_relational::facade::publication::RecordStructuralChange;
+pub use worth_relational::facade::runtime::{
+    HistoricalVisibilityDenial, RelationalProjectionContractDenial,
+};
 pub use worth_relational::facade::storage::{
     RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
 };

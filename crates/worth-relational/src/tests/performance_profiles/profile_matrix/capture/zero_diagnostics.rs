@@ -30,7 +30,10 @@ pub(super) fn certify(execution: &worth_execution::ExecutionRequest<'_, '_>, sui
             };
             let commit_micros = commit_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let targets = changed_entities(&commit_outcome)
                 .into_iter()
                 .map(RecordRef::Entity)

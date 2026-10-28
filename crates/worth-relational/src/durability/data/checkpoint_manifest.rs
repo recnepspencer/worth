@@ -20,6 +20,7 @@ pub(crate) struct RelationalCheckpointManifest {
     pub(crate) schemas: Vec<DurableBranchRootSchemaImage>,
     pub(crate) record_identity: DurableRecordIdentityState,
     pub(crate) aspect_contracts: Vec<worth_foundational::facade::PortableAspectContract>,
+    pub(crate) index_generation_frontier: u64,
     pub(crate) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
     pub(crate) roots: Vec<RelationalCheckpointRoot>,
     pub(crate) mirror_schema: Option<[u8; 32]>,

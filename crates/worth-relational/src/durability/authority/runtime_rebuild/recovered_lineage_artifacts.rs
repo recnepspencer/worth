@@ -83,13 +83,15 @@ fn validate_envelope_lineage(
                 ),
             ));
         }
-        if previous_event_id.is_some_and(|previous| event.event_id() <= previous) {
+        if let Some(previous) = *previous_event_id
+            && event.event_id() <= previous
+        {
             return Err(DurabilityError::new(
                 failure_class,
                 format!(
                     "recovered lineage event id {} does not advance within its canonical batch after {}",
                     event.event_id(),
-                    previous_event_id.expect("checked predecessor exists")
+                    previous
                 ),
             ));
         }
@@ -104,15 +106,14 @@ fn validate_envelope_lineage(
                         ),
                     ));
                 }
-                if previous_created_lineage_id.is_some_and(|previous| lineage_id.0 <= previous.0) {
+                if let Some(previous) = *previous_created_lineage_id
+                    && lineage_id.0 <= previous.0
+                {
                     return Err(DurabilityError::new(
                         failure_class,
                         format!(
                             "recovered create lineage id {} does not advance after {}",
-                            lineage_id.0,
-                            previous_created_lineage_id
-                                .expect("checked predecessor exists")
-                                .0
+                            lineage_id.0, previous.0
                         ),
                     ));
                 }

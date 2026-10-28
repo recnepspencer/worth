@@ -108,7 +108,8 @@ fn derive_merge_commit_mutation_plan_preserves_exact_shared_truth_without_mutati
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, shared, "same");
@@ -185,7 +186,8 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let mut main_txn = {
         let transaction_validation_input =

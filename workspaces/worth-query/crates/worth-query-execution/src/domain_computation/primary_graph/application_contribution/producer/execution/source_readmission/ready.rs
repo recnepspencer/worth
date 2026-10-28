@@ -20,9 +20,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             Stop::Execution(cause) => {
                 crate::domain_computation::primary_graph::output_reuse::read_denial(cause).kind()
             }
-            Stop::WorkExhausted { .. }
-            | Stop::WorkExhaustedWithoutRequirement { .. }
-            | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+            Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
             Stop::Interrupted(event) => {
                 WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }
@@ -31,9 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             | Stop::SelectedPositionUnavailable { .. }
             | Stop::ForeignCell
             | Stop::RegistrationChanged
-            | Stop::PreparationMemoryExhausted { .. }
-            | Stop::PreparationMemoryCounterOverflow
-            | Stop::RetainedCompanionCapacityExhausted { .. } => {
+            | Stop::PreparationMemoryCounterOverflow => {
                 WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
             }
         },
@@ -75,14 +71,26 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         CurrentAcceptedStop::Closure(_) | CurrentAcceptedStop::Registration(_) => None,
     };
     let kind = match stop {
-        CurrentAcceptedStop::Closure(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => return crate::domain_computation::primary_graph::output_reuse::verification_denial(stop, subject.to_owned()).into(),
+        CurrentAcceptedStop::Closure(
+            stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_),
+        ) => {
+            return crate::domain_computation::primary_graph::output_reuse::verification_denial(
+                stop,
+                subject.to_owned(),
+            )
+            .into()
+        }
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::Execution(cause))
-        | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause))) => return crate::domain_computation::primary_graph::output_reuse::read_denial(cause)
-            .with_producer_admission_stop(native_stop).into(),
+        | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
+            worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+        )) => {
+            return crate::domain_computation::primary_graph::output_reuse::read_denial(cause)
+                .with_producer_admission_stop(native_stop)
+                .into()
+        }
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::WorkExhausted)
         | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-            | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
+            worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
         )) => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::Interrupted(event))
         | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
@@ -122,14 +130,11 @@ mod tests {
     use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop as Verification;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-    /// Ready readmission keeps the verifier's capacity cause, with the meter's
-    /// own amounts, as evidence; its kind and posture are unchanged.
+    /// Ready readmission keeps the verifier's capacity cause, including its
+    /// counter overflow, as evidence; its kind and posture are unchanged.
     #[test]
     fn ready_readmission_keeps_the_typed_capacity_cause() {
-        let meter = CompanionPreflightStop::PreparationMemoryExhausted {
-            required: 2,
-            maximum: 1,
-        };
+        let meter = CompanionPreflightStop::PreparationMemoryCounterOverflow;
         let refused = || {
             WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,

@@ -209,7 +209,9 @@ impl RelationalRegionResidency {
                 ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
                     Ok(region.clone())
                 }
-                _ => unreachable!("load either publishes a region or refuses"),
+                _ => Err(Failure::StorageUnavailable(
+                    self.failure(Cause::SourceUnavailable),
+                )),
             }
         })();
         match loaded {

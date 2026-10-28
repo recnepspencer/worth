@@ -137,6 +137,13 @@ impl NodePageVisitor<'_, '_, '_> {
 }
 
 pub(super) fn failure(descriptor: &RelationalCheckpointPage, cause: Cause) -> Failure {
+    storage_failure(descriptor, cause).into()
+}
+
+pub(super) fn storage_failure(
+    descriptor: &RelationalCheckpointPage,
+    cause: Cause,
+) -> RelationalStorageUnavailable {
     RelationalStorageUnavailable {
         subject: RelationalStorageSubject::Lineage {
             first: crate::identity::data::LineageId(descriptor.first),
@@ -144,5 +151,4 @@ pub(super) fn failure(descriptor: &RelationalCheckpointPage, cause: Cause) -> Fa
         },
         cause,
     }
-    .into()
 }

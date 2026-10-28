@@ -37,7 +37,8 @@ fn relation_integrity_commit_boundary_requires_paired_inverse_edge() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
 
@@ -132,7 +133,8 @@ fn relation_integrity_commit_boundary_requires_canonical_undirected_ordering() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let first = create_entity(execution, &runtime, "first");
     let second = create_entity(execution, &runtime, "second");
 
@@ -198,7 +200,8 @@ fn relation_integrity_commit_boundary_prohibits_inverse_duplication() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
 
@@ -266,7 +269,8 @@ fn relation_integrity_commit_boundary_requires_paired_twin_edge() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
 

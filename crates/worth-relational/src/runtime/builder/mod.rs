@@ -204,7 +204,7 @@ impl RelationalRuntimeBuilder {
 
     /// Build a memory-only runtime: its canonical history is its in-memory
     /// log.
-    pub fn build(self) -> RelationalRuntime {
+    pub fn build(self) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
         self.build_with(None)
     }
 
@@ -217,14 +217,14 @@ impl RelationalRuntimeBuilder {
     pub fn build_durable(
         self,
         medium: Box<dyn crate::durability::medium::RelationalDurableMedium>,
-    ) -> RelationalRuntime {
+    ) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
         self.build_with(Some(medium))
     }
 
     fn build_with(
         self,
         medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
-    ) -> RelationalRuntime {
+    ) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
         RelationalRuntime::build_from_extensions(
             RelationalRuntimeConfig::resolved(self.profile, self.overrides),
             RuntimeExtensions::new(self.custom_invariants, self.commit_strategy_executors)

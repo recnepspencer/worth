@@ -39,7 +39,9 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
     let location = directory.path().join("home");
     let host = workload::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let reference = workload::runtime_builder(schema_transition::SOURCE).build();
+    let reference = workload::runtime_builder(schema_transition::SOURCE)
+        .build()
+        .expect("valid native reference runtime configuration");
     let home = durable_run::open(&location, &execution).unwrap();
     let branch = BranchId("main".into());
     let mut entities = Vec::new();

@@ -99,7 +99,7 @@ impl PerformedPublicationStream {
             .fetch_max(floor.0, Ordering::AcqRel);
     }
 
-    pub(super) fn record_with_cutover(
+    pub(super) fn record_with_cutover<T>(
         &self,
         route: Arc<CanonicalPublicationRoute>,
         resident: Arc<CanonicalCommitEnvelope>,
@@ -111,8 +111,8 @@ impl PerformedPublicationStream {
             Option<crate::durability::medium::RelationalDurableCommitReadmission>,
             DurableStepStop,
         >,
-        cutover: impl FnOnce(PatchStreamPosition),
-    ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
+        cutover: impl FnOnce(PatchStreamPosition) -> T,
+    ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
         let current = self.head.load_full();
         let prior_position = self.performed_head_position(&current);
@@ -141,9 +141,9 @@ impl PerformedPublicationStream {
         route.set_position(PatchStreamPosition(next_position));
         self.head.store(Some(node));
         self.reservation.assignments.fetch_add(1, Ordering::Relaxed);
-        cutover(PatchStreamPosition(next_position));
+        let completed = cutover(PatchStreamPosition(next_position));
         route.mark_performed();
-        Ok(positioned)
+        Ok((positioned, completed))
     }
 
     pub(super) fn link_recovered(

@@ -60,6 +60,7 @@ fn hostile_transport_descriptor(
 
 fn runtime() -> RelationalRuntime {
     RelationalRuntime::new(RelationalRuntimeConfig::default())
+        .expect("valid native runtime configuration")
 }
 
 #[test]

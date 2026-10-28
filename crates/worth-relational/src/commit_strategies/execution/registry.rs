@@ -9,7 +9,7 @@ use crate::commit_strategies::data::{
 use super::super::FrozenCommitStrategyRegistry;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum CommitStrategyExecutionRegistryError {
+pub enum CommitStrategyExecutionRegistryError {
     DuplicateBinding {
         strategy_id: CommitStrategyId,
     },

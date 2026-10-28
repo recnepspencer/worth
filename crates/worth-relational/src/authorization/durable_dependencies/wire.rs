@@ -9,7 +9,7 @@ mod inventory;
 pub struct RelationalAuthorizationDependencyWire(ExecutionImmutableBytes);
 impl RelationalAuthorizationDependencyWire {
     pub fn as_str(&self) -> &str {
-        std::str::from_utf8(self.0.bytes()).expect("native hex is UTF8")
+        std::str::from_utf8(self.0.bytes()).expect(/* Proof: The buffer is filled exclusively with lowercase hexadecimal ASCII bytes; every stored byte is valid UTF-8. */ "native hex is UTF8")
     }
     pub fn charged_payload_bytes(&self) -> Option<u64> {
         self.0.charged_payload_bytes()
@@ -150,7 +150,7 @@ impl RelationalAuthorizationDurableDependencies {
         writer
             .output
             .take()
-            .expect("serialization owns buffer")
+            .expect(/* Proof: This serializer takes ownership of one output buffer and extracts it once; no earlier path takes the buffer. */ "serialization owns buffer")
             .seal()
             .map_err(Denial::Allocation)
     }

@@ -65,7 +65,10 @@ fn current_graph_surfaces_match_version_and_snapshot_scopes_for_same_truth() {
         crate::facade::identity::PartitionId(7),
     );
     let _cross_relation = create_relation(execution, &runtime, left_b, right, "cross-rel");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let version_id = runtime.current_version_id();
 
     let current_graph = runtime

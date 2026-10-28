@@ -3,8 +3,7 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 use crate::schema::data::{
-    DescriptorSemanticsVersion, SchemaBoundaryFingerprint, SchemaContinuationClassification,
-    SchemaStratum,
+    DescriptorSemanticsVersion, SchemaContinuationClassification, SchemaStratum,
 };
 
 pub const MAX_NORMALIZED_CONTINUATION_BOUNDARIES: usize = 64;
@@ -85,69 +84,6 @@ impl SubscriberContractDeclaration {
 
     pub fn accepts_upgrade(&self, classification: SchemaContinuationClassification) -> bool {
         self.accepted_upgrade_classes.contains(&classification)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct NormalizedContinuationProof {
-    boundary_fingerprints: Vec<SchemaBoundaryFingerprint>,
-    descriptor_semantics_version: DescriptorSemanticsVersion,
-    normalized_boundary_count: usize,
-}
-
-impl NormalizedContinuationProof {
-    pub fn new(
-        boundary_fingerprints: Vec<SchemaBoundaryFingerprint>,
-        descriptor_semantics_version: DescriptorSemanticsVersion,
-    ) -> Self {
-        let mut deduped = BTreeSet::new();
-        let mut normalized = Vec::with_capacity(boundary_fingerprints.len());
-        for fingerprint in boundary_fingerprints {
-            if deduped.insert(fingerprint) {
-                normalized.push(fingerprint);
-            }
-        }
-        assert!(
-            normalized.len() <= MAX_NORMALIZED_CONTINUATION_BOUNDARIES,
-            "normalized continuation proof exceeded boundary complexity ceiling of {}",
-            MAX_NORMALIZED_CONTINUATION_BOUNDARIES
-        );
-        Self {
-            normalized_boundary_count: normalized.len(),
-            boundary_fingerprints: normalized,
-            descriptor_semantics_version,
-        }
-    }
-
-    pub fn boundary_fingerprints(&self) -> &[SchemaBoundaryFingerprint] {
-        &self.boundary_fingerprints
-    }
-
-    pub fn descriptor_semantics_version(&self) -> DescriptorSemanticsVersion {
-        self.descriptor_semantics_version
-    }
-
-    pub fn normalized_boundary_count(&self) -> usize {
-        self.normalized_boundary_count
-    }
-
-    #[cfg(test)]
-    pub(crate) fn from_raw_parts_for_test(
-        boundary_fingerprints: Vec<SchemaBoundaryFingerprint>,
-        descriptor_semantics_version: DescriptorSemanticsVersion,
-        normalized_boundary_count: usize,
-    ) -> Self {
-        Self {
-            boundary_fingerprints,
-            descriptor_semantics_version,
-            normalized_boundary_count,
-        }
-    }
-}
-
-impl Default for NormalizedContinuationProof {
-    fn default() -> Self {
-        Self::new(Vec::new(), DescriptorSemanticsVersion::default())
     }
 }
 

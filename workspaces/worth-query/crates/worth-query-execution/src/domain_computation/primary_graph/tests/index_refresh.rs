@@ -160,17 +160,21 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
             .snapshots()
             .snapshot_for_observation(&before_basis.observation())
             .unwrap();
-        let index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "missing-prior-generation".into(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: worth_relational::facade::transactions::planned_single_field_locator(
-                    AspectKey::new("missing-prior").unwrap(),
-                    FieldKey::new("value").unwrap(),
-                ),
-            },
-            branch_scoped: true,
-        });
+        let index = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "missing-prior-generation".into(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator:
+                        worth_relational::facade::transactions::planned_single_field_locator(
+                            AspectKey::new("missing-prior").unwrap(),
+                            FieldKey::new("value").unwrap(),
+                        ),
+                },
+                branch_scoped: true,
+            })
+            .expect("index fixture has identity capacity");
         let committed = commit_empty(execution, runtime, "main");
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
         let refreshed = super::super::index_maintenance_budget::refresh_with_cold_fallback(

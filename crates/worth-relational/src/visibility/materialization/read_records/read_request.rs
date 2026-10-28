@@ -7,7 +7,10 @@ pub(super) fn cause(denial: worth_execution::WorkCeilingDenial) -> Cause {
             kind: CommitExecutionDenialKind::Cause(cause),
             ..
         }) => cause,
-        None => unreachable!("a request stop always carries its execution cause"),
+        None => unreachable!(
+            /* Proof: This private adapter receives only request-level stops; its producer always attaches an execution cause before constructing the stop. */
+            "a request stop always carries its execution cause"
+        ),
     }
 }
 

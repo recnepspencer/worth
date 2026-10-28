@@ -79,7 +79,7 @@ pub(super) fn validate_member(
     let partition = basis
         .inner
         .root
-        .partition_state(id.partition_id)
+        .partition_state(id.partition_id)?
         .ok_or("output partition absent")?;
     let row = partition
         .entity_arena
@@ -133,7 +133,10 @@ pub(super) fn validate_member(
         return Err("present payload differs from native producer patch succession".into());
     }
     Ok(Arc::clone(
-        selected.required_output_origin.as_ref().unwrap(),
+        selected
+            .required_output_origin
+            .as_ref()
+            .ok_or("required producer origin is absent")?,
     ))
 }
 

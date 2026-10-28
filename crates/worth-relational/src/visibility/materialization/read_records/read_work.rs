@@ -68,7 +68,7 @@ pub(crate) fn metered_with_memory<T>(
                             cause,
                         },
                         std::convert::identity,
-                        |()| unreachable!("the opaque read stage emits no domain failure"),
+                        |()| unreachable!(/* Proof: The opaque read callback returns only success or request stop; its domain error type has no producer in this adapter. */ "the opaque read stage emits no domain failure"),
                     ))
                 }
             }

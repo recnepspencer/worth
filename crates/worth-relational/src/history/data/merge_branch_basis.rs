@@ -131,7 +131,7 @@ fn canonical_commit_ids_bytes(bytes: &mut Vec<u8>, commit_ids: &[CommitId]) {
 
 fn write_u64(bytes: &mut Vec<u8>, value: u64) {
     let mut buffer = String::new();
-    write!(&mut buffer, "{value:020}").expect("u64 formatting should succeed");
+    write!(&mut buffer, "{value:020}").expect(/* Proof: The destination is String and all formatted arguments are native integers; String::write_str always returns Ok and integer formatting introduces no fallible writer. */ "u64 formatting should succeed");
     bytes.extend_from_slice(buffer.as_bytes());
     bytes.push(0xfd);
 }
@@ -140,7 +140,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
     let digest = Sha256::digest(bytes);
     let mut output = String::with_capacity(digest.len() * 2);
     for byte in digest {
-        write!(&mut output, "{byte:02x}").expect("hex formatting should succeed");
+        write!(&mut output, "{byte:02x}").expect(/* Proof: The destination is String and all formatted arguments are native integers; String::write_str always returns Ok and integer formatting introduces no fallible writer. */ "hex formatting should succeed");
     }
     output
 }

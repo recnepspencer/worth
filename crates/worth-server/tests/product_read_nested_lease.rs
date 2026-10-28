@@ -159,7 +159,8 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     let runtime = Arc::new(
         RelationalRuntimeApi::builder()
             .schema_registry(relational_support::demo_schema_registry())
-            .build(),
+            .build()
+            .expect("valid native runtime configuration"),
     );
     let fixture_host_request = relational_support::serial_request();
     let fixture_execution = &worth_execution::ExecutionRequest::serial(&fixture_host_request);

@@ -13,14 +13,17 @@ fn entity_field_certification_rejects_a_missing_candidate() {
     let created = create_entity_outcome(execution, &runtime, "parity-candidate");
     let entity_id = changed_entities(&created)[0];
     let field_locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(75),
-        name: "entity.name.parity-red-control".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: field_locator.clone(),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(75),
+            name: "entity.name.parity-red-control".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: field_locator.clone(),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     build_entity_field_generation(execution, &runtime, index.index_id);
     runtime
         .indexes
@@ -30,7 +33,10 @@ fn entity_field_certification_rejects_a_missing_candidate() {
             };
             entries.clear();
         });
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = || {
         entity_field_request(
             snapshot.clone(),
@@ -79,14 +85,17 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
     for entity in &entities {
         update_entity(execution, &runtime, *entity, "shared");
     }
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(71),
-        name: "entity.name.bounded".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(71),
+            name: "entity.name.bounded".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let source_commit_id = runtime.history().latest_commit().unwrap().commit_id;
     let build = runtime.index_authority().build_for_commit(
         execution,
@@ -97,7 +106,10 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
         },
     );
     assert!(build.failed_indexes.is_empty());
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = || {
         BoundedEntityFieldLookupRequest::new(
             snapshot.clone(),
@@ -148,14 +160,17 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
     let unrelated_id = changed_entities(&unrelated)[0];
     update_entity(execution, &runtime, unrelated_id, &"x".repeat(32 * 1024));
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(76),
-        name: "entity.name.corrupt-large-value".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(76),
+            name: "entity.name.corrupt-large-value".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     build_entity_field_generation(execution, &runtime, index.index_id);
     let requested_key = crate::facade::storage::AuthoritativeFieldComparisonKey::from_aspect_value(
         &string_aspect_value("small"),
@@ -171,7 +186,10 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
             rows.insert(0, unrelated_id);
         });
     let request = BoundedEntityFieldLookupRequest::new(
-        runtime.visibility_authority().snapshot(),
+        runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted"),
         index.index_id,
         KindId(1),
         locator,
@@ -198,14 +216,17 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
 
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(execution, &runtime, "alpha");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(72),
-        name: "entity.name.exact-generation".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(72),
+            name: "entity.name.exact-generation".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -229,7 +250,10 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
     );
 
     create_entity_outcome(execution, &runtime, "later");
-    let later_snapshot = runtime.visibility_authority().snapshot();
+    let later_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = BoundedEntityFieldLookupRequest::new(
         later_snapshot,
         index.index_id,
@@ -262,14 +286,17 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
     let historical_version_id = created.version_id;
     let historical_value = string_aspect_value("historical");
     let field_locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(73),
-        name: "entity.name.historical-rebuild".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: field_locator.clone(),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(73),
+            name: "entity.name.historical-rebuild".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: field_locator.clone(),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
 
     update_entity(execution, &runtime, entity_id, "current");
     assert_ne!(historical_version_id, runtime.current_version_id());

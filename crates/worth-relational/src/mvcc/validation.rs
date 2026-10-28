@@ -191,8 +191,16 @@ impl RelationalTransactionValidationInput {
         self,
         transaction: &mut crate::mvcc::BranchBoundRelationalTransaction,
     ) {
-        debug_assert_eq!(transaction.basis, self.basis);
-        debug_assert_eq!(transaction.intent, self.intent);
+        debug_assert_eq!(
+            /* Proof: The private validation overlay is cloned from this transaction basis and intent for the duration of with_preparation_overlay; preparation cannot replace either field, and restoration consumes that overlay. */
+            transaction.basis,
+            self.basis
+        );
+        debug_assert_eq!(
+            /* Proof: The private validation overlay is cloned from this transaction basis and intent for the duration of with_preparation_overlay; preparation cannot replace either field, and restoration consumes that overlay. */
+            transaction.intent,
+            self.intent
+        );
         transaction.merge_parent_bases = self.merge_parent_bases;
         transaction.schema_authority_input = self.schema_authority_input;
         transaction.recovered_codec_publication_custody = self.recovered_codec_publication_custody;

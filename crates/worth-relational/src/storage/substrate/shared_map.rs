@@ -26,7 +26,10 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
     /// Cold construction when the owner already has unique ordered keys.
     /// Incremental publication continues to use path-copying `insert`.
     pub(crate) fn from_sorted_unique(values: Vec<(K, V)>) -> Self {
-        debug_assert!(values.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        debug_assert!(
+            /* Proof: from_sorted_unique is private native map construction from sorted unique BTreeMap/arena keys; deserialized input is validated by its owner before that conversion. */
+            values.windows(2).all(|pair| pair[0].0 < pair[1].0)
+        );
         let len = values.len();
         let mut values = values.into_iter();
         Self {
@@ -154,7 +157,7 @@ impl<'a, K: Ord + Copy, V: Clone> SharedMapEntry<'a, K, V> {
         if !self.map.contains_key(&self.key) {
             self.map.insert(self.key, value());
         }
-        self.map.get_mut(&self.key).expect("entry was installed")
+        self.map.get_mut(&self.key).expect(/* Proof: The entry constructor installs this key before returning its exclusive entry handle; the handle exposes no removal operation. */ "entry was installed")
     }
     pub(crate) fn or_insert(self, value: V) -> &'a mut V {
         self.or_insert_with(|| value)

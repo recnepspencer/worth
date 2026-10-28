@@ -1,5 +1,5 @@
 use crate::storage::substrate::SharedMap;
-use std::ops::{Index, IndexMut};
+use std::ops::Index;
 
 use crate::config::data::AdjacencyPolicy;
 
@@ -146,13 +146,5 @@ impl Index<usize> for SparseAdjacencyTable {
 
     fn index(&self, slot: usize) -> &Self::Output {
         &self.entries[&slot]
-    }
-}
-
-impl IndexMut<usize> for SparseAdjacencyTable {
-    fn index_mut(&mut self, slot: usize) -> &mut Self::Output {
-        self.entries
-            .get_mut(&slot)
-            .expect("adjacency slot must be materialized")
     }
 }

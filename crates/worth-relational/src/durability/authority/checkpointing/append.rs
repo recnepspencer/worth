@@ -9,13 +9,9 @@ impl DurabilityAuthority<'_> {
     pub(crate) fn append_commit(
         &self,
         positioned: &crate::history::data::PositionedCanonicalCommit,
+        cell: std::sync::Arc<crate::history::RelationalCommitEnvelopeResidency>,
     ) {
         let id = positioned.commit.commit_id;
-        let cell = self
-            .runtime
-            .history
-            .performed_envelope_residency(id)
-            .expect("performed publication installed its exact route");
         self.runtime
             .durability
             .push_log_envelope((id, positioned.position(), cell));

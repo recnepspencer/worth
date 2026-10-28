@@ -7,7 +7,7 @@ use crate::commit_strategies::data::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum DuplicateCommitStrategyRegistration {
+pub enum DuplicateCommitStrategyRegistration {
     Id {
         id: crate::commit_strategies::data::CommitStrategyId,
     },
