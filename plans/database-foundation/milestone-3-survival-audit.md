@@ -14,6 +14,15 @@ Each source citation names its row and opens that part's plain-text line;
 owner/path abbreviations retain the definitions in the cited part (A and C
 use different prefixes). The parts remain unchanged.
 
+**Scope note (spec commit `0e1896fbed`).** `workspaces/worth-ui` is out of
+Milestone 3 entirely (see [Out of scope: worth-ui](milestone-3.md#out-of-scope-worth-ui)).
+That covers every row, caller group and refusal-matrix entry that names UI or
+the `U/` path prefix: `UiStatusMutationOwner`, `UiInstalledReferences`,
+`UiLiveRetention`, `UiPresentationCustody`, `UiSettledSnapshots`,
+`UiPresentationBaseline`, the UI caller groups and the UI binding callers of
+`in_memory_program`. These rows are kept as an inventory for when worth-ui is
+picked up. They are not phase obligations, and no phase gate checks them.
+
 ## 1. DurableStateFamily and creation mapping
 
 One row below is one proposed variant. A variant is a semantic admission
