@@ -14,7 +14,8 @@ depends on process memory, orderly close or application-owned byte transport.
 
 This milestone is delivered in ten numbered phases. Each phase states its own
 requirements, design, required tests, oracle extension, documentation and exit
-criteria. The cross-cutting decisions below bind every phase.
+criteria. The cross-cutting decisions below bind every phase. D17 decides how
+each invariant is enforced and where each new type lives.
 
 ## Phase map
 
@@ -442,6 +443,92 @@ The supported development workflow is:
   - It is idempotent. It completes a partly discarded or damaged location.
   - Opening a tombstoned location refuses with `DiscardPending` until
     `discard_home` completes.
+
+**D17. Type-enforced invariants, placed by the vocabulary rule.**
+
+The decisions above are invariants. Each one is enforced by the compiler
+wherever the arch laws require it (laws 3, 5, 9, 10, 13 and 16). A prose rule,
+a review finding or a test is enough only where this decision says so.
+Implementers are mostly AI agents. For them, a compile error at the edit site
+is reliable. An invariant stated 1,400 lines away in a specification is not.
+
+*Placement.* Before a new type is designed, it is placed by the AGENTS.md
+rule:
+
+- **`worth-proof`** holds anything that decides whether an operation is
+  legal: witnesses, phase proofs and fenced authority.
+- **`worth-foundational`** holds anything that means the same thing when it
+  crosses a boundary into another runtime: identities, associations, fates,
+  classes and families.
+- **The owning runtime** holds anything that needs a clock, a counter, a live
+  table or `Drop`: issuers, the lease, the incarnation advance and custody
+  registries.
+
+New vocabulary reuses what these crates already provide:
+
+- `worth-proof`'s `AuthorityWitness`, `CapabilityWitness` and minting
+  patterns;
+- `linear::LinearResource`, for values that must end exactly once;
+- `phase` markers;
+- `brand`, only within a scope. Its documented limit applies: a long-lived
+  carrier uses a runtime-owned identity value instead.
+- `worth-foundational`'s `boundary_protocol` versioning and
+  unsupported-version refusal, for every artifact frame (law 21).
+
+The implementer verifies that the crate dependency exists before concluding
+that vocabulary is missing. No parallel vocabulary is introduced.
+
+*Invariants and their mechanisms.* The table names the decision each
+invariant comes from.
+
+| Invariant | Mechanism | Placement |
+|---|---|---|
+| Durable artifacts record only durable identity (D6, R17) | A sealed `DurableIdentity` marker trait. Artifact codecs accept only fields whose types implement it. Process-local identities (runtime instance, session, graph instance, participation pointer, installed-runtime ordinal) never implement it, so recording one does not compile. | Trait and home-scoped identity values: `worth-foundational`. Issuers: owning runtimes. |
+| Durable before live (D2, D4) | The live cutover and the live product compare-and-swap each take a `DurablyCommitted` witness, move-only and consumed by the cutover. Only the owner's medium binding mints it, and only from a `Committed` answer. `ProvenNoEffect` and `Indeterminate` mint nothing. | Witness type: `worth-proof`. Minting: owner runtime. |
+| Publication fates (D2) | One owner-neutral `DurablePublicationFate`: `Committed`, `ProvenNoEffect`, `Indeterminate`. Every owner port answers with it, and it never collapses to `Result` or a boolean. Owner-specific detail rides in typed payloads. M2's `RelationalDurablePublication` adopts it. | `worth-foundational`. |
+| Recovery order (D8) | Typestate with plain, named proof structs, one per step: `StoreRecovered`, `HomeAdmitted`, `RelationalReadmitted`, `SignalReadmitted`, `WorldReconciled`, `QueryReadmitted`, `CustodyReadmitted`, `TransitionSettled`. Each step consumes its predecessor's proof. Service is constructible only from the last one. Adding an owner breaks compilation at every composition site until it is wired in (law 9). | Proof structs: `worth-proof` phase markers. Sequencing: `worth-store-application`. |
+| Fencing (D7) | Authority values and durable data are distinct sealed types. Authority values are capabilities, handles, sessions, leases and recovery claims. They carry the home incarnation and are never `DurableIdentity`. Durable data is receipts, occurrence and commit identities, and cursors. It carries no incarnation and is never authority. The cross-process check stays a run-time comparison, because old in-memory values die with their process. | `HomeIncarnation` value: `worth-foundational`. Fenced-authority shape: `worth-proof`. Advance: Store home. |
+| Receipts from durable state only (D9) | The original-receipt constructor takes only readmitted durable inputs: the binding, the occurrence and the owner artifacts. Building a receipt from the evidence index is uncallable. | Query. |
+| Unsupported families (D15) | One declaration: an exhaustive `match` over `DurableStateFamily` returning `Supported` or `RefusedUntil(phase)`, with no wildcard arm. Operations declare their capabilities as types. Admission computes refusal from those declarations, never from hand-written checks at call sites. | `DurableStateFamily`: `worth-foundational`. Support table: `worth-query-host` composition. |
+| Retention class (D10) | An associated constant on every artifact type, matched exhaustively wherever retention is decided. | `RetentionClass`: `worth-foundational`. |
+| Custody that ends exactly once (D5, D11, R11) | Custody dispositions, transition intents, managed-cleanup obligations and pinned correction material are `LinearResource`s. Their terminal transition takes `self`. | `worth-proof` `linear`. Owners implement it. |
+| Attempt association (D5) | `CompositeAttemptAssociation` is one `DurableIdentity` value carried by every owner effect. Owners treat it as opaque. | `worth-foundational`. |
+| Continuous lease (D7, Phase 2) | The lease owner value moves from recovery into serving. No code path holds neither. | Store. |
+
+*Agent-oriented type style* for all new durability code:
+
+- **Plain named types.** Prefer concrete, named proof and witness structs
+  over generic proof towers such as `Proof<Stage<Owner<..>>>`. Keep generics
+  shallow, and add no new macros or blanket impls.
+- **Exhaustive matching.** Every `match` over a durable family, fate, class,
+  retained decision (R9) or recovery step is exhaustive, with no `_` arm, so
+  that adding a variant lists every site to update.
+- **One meaning per name** (law 10). Names are unique and greppable.
+- **Enforcement or a named test.** Every invariant in this specification is
+  either compiler-enforced or covered by a test named after its requirement,
+  such as `d4_live_cutover_requires_durable_commit`.
+- **Explicit over clever.** Explicit, repetitive code is acceptable. An
+  abstraction is acceptable only when it shares semantic authority, lifecycle,
+  failure topology and cost class (law 12).
+
+*Phase binding.*
+
+- **Phase 2:** the continuous-lease row.
+- **Phases 3 and 4:**
+  - placement;
+  - `DurableIdentity`;
+  - `DurablyCommitted`;
+  - `DurablePublicationFate`, including the adoption by Relational's port;
+  - the recovery typestate, with the owners that exist by then;
+  - fencing types;
+  - the receipt constructor;
+  - the `DurableStateFamily` declaration;
+  - `RetentionClass`;
+  - `CompositeAttemptAssociation`;
+  - `LinearResource` custody for dispositions and transitions.
+- **Phases 5 to 9:** each extends the typestate, the family declaration and
+  linear custody for its owners. A phase is not complete while any of its
+  invariants is enforced only by prose.
 
 ## Anchors and journals
 
