@@ -30,6 +30,9 @@ pub enum WorthQuerySourceExpectationDenialKind {
     PreparationMemoryExceeded,
     /// Exact backing or request stop while retaining a source payload.
     RetainedSourceStorageDenied,
+    /// Managed index dependencies cannot yet enter source expectation or fact
+    /// retention expansion. The complete original query evidence is preserved.
+    ManagedSourceExpansionUnsupported,
 }
 
 /// Refusal to bind an observed query source as an admitted mutation's source

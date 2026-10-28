@@ -97,3 +97,19 @@ fn entry(locus: impl Into<String>, value: CanonicalBasisValue) -> CanonicalBasis
         value,
     )
 }
+
+fn append_managed_index(
+    entries: &mut Vec<CanonicalBasisEntry>,
+    selection: Option<
+        &worth_query_declaration::facade::application_query::ApplicationQueryManagedIndexMeaning,
+    >,
+) {
+    if let Some(selection) = selection {
+        let parts = selection.parts();
+        entries.extend([
+            unsigned("managed-index.version", usize::from(parts.semantic_version)),
+            text("managed-index.index", &parts.index),
+            text("managed-index.probe-parameter", &parts.probe_parameter),
+        ]);
+    }
+}

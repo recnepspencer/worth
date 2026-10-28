@@ -18,6 +18,7 @@ use super::{
 
 mod omission_posture;
 mod root_path;
+mod source_terminal;
 mod work_evidence;
 pub(in crate::domain_computation::primary_graph::application_query) use root_path::RootPathReadEvidence;
 pub use root_path::WorthQueryApplicationQueryRootPathStepRead;

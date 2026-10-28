@@ -163,6 +163,26 @@ pub(in crate::domain_computation) struct WorthQueryPrincipalReuseWitness {
 }
 
 impl WorthQueryPrincipalFreshnessEvidence {
+    /// Compare the actual Native scalar decoded by the admitted principal
+    /// resolver, without calling the application encoder a second time.
+    pub(in crate::domain_computation::primary_graph) fn matches_principal_identity<E>(
+        &self,
+        value: &AspectValue,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+        overflow: impl FnOnce() -> E,
+    ) -> Result<bool, E> {
+        let bytes = self
+            .target
+            .principal_identity
+            .owned_allocation_capacity_bytes()
+            .checked_add(value.owned_allocation_capacity_bytes())
+            .and_then(|bytes| bytes.checked_add(2 * size_of::<AspectValue>()))
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or_else(overflow)?;
+        admit(bytes)?;
+        Ok(self.target.principal_identity == *value)
+    }
+
     pub(in crate::domain_computation) fn reuse_witness(&self) -> WorthQueryPrincipalReuseWitness {
         WorthQueryPrincipalReuseWitness {
             mapping: self.mapping.entity_id,

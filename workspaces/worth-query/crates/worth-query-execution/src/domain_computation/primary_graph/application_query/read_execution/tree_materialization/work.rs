@@ -2,7 +2,8 @@ use super::super::OneShotReadWorkObservation;
 use super::WorthQueryApplicationReadExecutionDenial;
 use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 
-pub(super) struct ResultTreeWork<'a> {
+pub(super) struct ResultTreeWork<'a, 'request, 'authority> {
+    material: Option<super::material_storage::MaterialTreeStorage<'request, 'authority>>,
     interruption: super::super::ReadInterruption<'a>,
 
     pub(super) projected_records: usize,
@@ -15,12 +16,24 @@ pub(super) struct ResultTreeWork<'a> {
     spent: Option<&'a OneShotReadWorkObservation<'a>>,
 }
 
-impl<'a> ResultTreeWork<'a> {
+impl<'a, 'request, 'authority> ResultTreeWork<'a, 'request, 'authority> {
     pub(super) fn new(
         interruption: super::super::ReadInterruption<'a>,
         spent: Option<&'a OneShotReadWorkObservation<'a>>,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        allocation: Option<
+            &std::sync::Arc<
+                crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+            >,
+        >,
     ) -> Self {
         Self {
+            material: allocation.map(|allocation| {
+                super::material_storage::MaterialTreeStorage::new(
+                    execution,
+                    std::sync::Arc::clone(allocation),
+                )
+            }),
             interruption,
 
             projected_records: 0,
@@ -32,6 +45,72 @@ impl<'a> ResultTreeWork<'a> {
             work_units: 0,
             spent,
         }
+    }
+
+    pub(super) fn materialized(&self) -> bool {
+        self.material.is_some()
+    }
+    pub(super) fn collect_material<T>(
+        &self,
+        capacity: usize,
+        values: impl Iterator<Item = T>,
+        subject: &str,
+    ) -> Result<Vec<T>, WorthQueryApplicationReadExecutionDenial> {
+        if !self.materialized() {
+            return Ok(values.collect());
+        }
+        self.material_slots::<T>(capacity)?;
+        let mut result = super::allocate_result_vector(capacity, subject)?;
+        for value in values {
+            if result.len() == capacity {
+                return Err(super::result_buffer_denial(subject));
+            }
+            result.push(value);
+        }
+        Ok(result)
+    }
+    pub(super) fn material_slots<T>(
+        &self,
+        count: usize,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.material
+            .as_ref()
+            .map_or(Ok(()), |storage| storage.slots::<T>(count))
+    }
+    pub(super) fn material_next<T>(
+        &self,
+        values: &mut Vec<T>,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        if self.material.is_some() && values.len() == values.capacity() {
+            self.material_slots::<T>(values.len().checked_add(1).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, "managed source replacement"))?)?;
+            values.try_reserve_exact(1).map_err(|_| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed, "managed source tree"))?;
+        }
+        Ok(())
+    }
+    pub(super) fn material_tree<T>(
+        &self,
+        len: usize,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.material
+            .as_ref()
+            .map_or(Ok(()), |storage| storage.tree::<T>(len))
+    }
+    pub(super) fn material_field(
+        &self,
+        slot: &str,
+        value: &worth_foundational::facade::AspectValue,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.material
+            .as_ref()
+            .map_or(Ok(()), |storage| storage.field(slot, value))
+    }
+    pub(super) fn material_text(
+        &self,
+        text: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.material
+            .as_ref()
+            .map_or(Ok(()), |storage| storage.text(text))
     }
 
     pub(super) fn charge_projection(
@@ -122,7 +201,7 @@ impl<'a> ResultTreeWork<'a> {
     }
 }
 
-impl Drop for ResultTreeWork<'_> {
+impl Drop for ResultTreeWork<'_, '_, '_> {
     fn drop(&mut self) {
         if let Some(spent) = self.spent {
             spent.tree(self.work_units);

@@ -35,6 +35,14 @@ pub(in crate::application_query) fn prepare_definition_basis(
             entries.push(text(format!("components.{key}"), value))
         });
     }
+    if let Some(selection) = definition.managed_index() {
+        let parts = selection.parts();
+        entries.extend([
+            text("managed-index.grammar", "committed-index-v1"),
+            text("managed-index.definition", &parts.index),
+            text("managed-index.probe-parameter", &parts.probe_parameter),
+        ]);
+    }
     append_result_shape(&mut entries, definition.result_shape(), "result");
     append_predicates(&mut entries, definition);
     append_ordering(&mut entries, definition);

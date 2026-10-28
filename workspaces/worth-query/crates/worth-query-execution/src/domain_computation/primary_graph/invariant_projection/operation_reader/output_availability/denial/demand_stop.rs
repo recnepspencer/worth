@@ -95,6 +95,9 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
             }
             use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenialKind as Source;
             match stop.kind() {
+                Source::ManagedSourceExpansionUnsupported => {
+                    Kind::ManagedSourceExpansionUnsupported
+                }
                 Source::WorkBudgetExceeded => Kind::WorkBudgetExceeded,
                 Source::PreparationMemoryExceeded | Source::RetainedSourceStorageDenied => {
                     Kind::RetentionBudgetExceeded

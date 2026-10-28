@@ -62,9 +62,13 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     /// Installed runtimes resolve typed query references against this retained
     /// member; callers cannot add query meaning after package installation.
     pub fn application_query<Query, Parameters, QueryResult, Scope>(
-        self,
-        definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
+        mut self,
+        mut definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Self {
+        if let Some(recipe) = definition.take_managed_index_recipe() {
+            self.member_provenance
+                .register_managed_index_selection(recipe);
+        }
         self.push_member(ApplicationSchemaMember::ApplicationQuery {
             definition: definition.into_erased(),
         })

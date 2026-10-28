@@ -173,13 +173,23 @@ pub use super::application_query::{
     WorthQueryApplicationQueryResumeControls, WorthQueryApplicationQueryRootPathStepRead,
     WorthQueryApplicationQueryWorkEvidence, WorthQueryApplicationReadObservation,
     WorthQueryBoundSourceExpectation, WorthQueryCapturedApplicationHistorySubjects,
+    WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans,
     WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
     WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
     WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
-    WorthQueryManagedDerivedViewSnapshot, WorthQueryObservedResultSet, WorthQueryObservedSource,
-    WorthQueryPendingSourceExpectation, WorthQueryPrimaryGraphApplicationReadinessSnapshot,
-    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
+    WorthQueryManagedDerivedViewSnapshot, WorthQueryManagedIndex,
+    WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
+    WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
+    WorthQueryManagedIndexLifecycle, WorthQueryManagedIndexNodeId,
+    WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
+    WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
+    WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
+    WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceRows,
+    WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop, WorthQueryManagedIndexWorkDenial,
+    WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryPendingSourceExpectation,
+    WorthQueryPrimaryGraphApplicationReadinessSnapshot, WorthQuerySourceExpectationDenial,
+    WorthQuerySourceExpectationDenialKind,
 };
 pub use super::application_runtime::{
     WorthQueryAdmittedInboundOccurrence, WorthQueryApplicationLiveDeliveryCloseReceipt,
@@ -326,10 +336,13 @@ pub use super::product_operation::{
     WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use super::provider::{
-    WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
-    WorthQueryCommittedDispatchOutboxReadWork, WorthQueryManagedApplicationRecoveryDenial,
-    WorthQueryManagedApplicationRecoveryOutcome, WorthQueryManagedApplicationRecoveryPerformed,
-    WorthQueryPrimaryMutationWorkEvidence, WorthQueryTouchedRecordIdentity,
+    WorthQueryAftermathCausalityReadDenial, WorthQueryCommittedDispatchOutboxObservation,
+    WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryCommittedDispatchOutboxReadWork,
+    WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,
+    WorthQueryManagedApplicationRecoveryPerformed, WorthQueryManagedCleanupRegistrationDenial,
+    WorthQueryManagedCleanupScheduleForTest, WorthQueryPrimaryMutationWorkEvidence,
+    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
+    WorthQueryRecoveredProgramSourceDeliveryForTest, WorthQueryTouchedRecordIdentity,
 };
 pub use super::resolution::WorthQueryPrincipalResolutionMode;
 pub use super::resolution_denial::{
@@ -373,9 +386,7 @@ pub use super::application_contribution::{
     WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
     WorthQueryAdvancementObservationForTest,
 };
-pub use crate::domain_computation::primary_graph::application_query::{
-    WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans,
-};
+
 pub use worth_execution::ExecutionRequest;
 
 mod authorization;
@@ -383,13 +394,6 @@ mod operation_body;
 
 pub use authorization::*;
 pub use operation_body::*;
-
-pub use super::provider::WorthQueryAftermathCausalityReadDenial;
-pub use super::provider::{
-    WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
-    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
-    WorthQueryRecoveredProgramSourceDeliveryForTest,
-};
 
 mod checkpoint_inspection;
 pub use checkpoint_inspection::*;

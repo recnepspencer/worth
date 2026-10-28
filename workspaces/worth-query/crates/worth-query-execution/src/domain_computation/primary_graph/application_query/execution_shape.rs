@@ -72,9 +72,11 @@ pub(in crate::domain_computation::primary_graph::application_query) fn prepare_o
 ///
 /// Result relations and path-bound ordering are supported by the shared bounded
 /// tree materializer after their exact requirements have been admitted.
-/// Root enumeration remains the admitted scope or an installed union of
-/// scope-to-root paths. Complete steps use the original Native request; sharing
-/// an entity kind with the scope does not make a declared path an exact root.
+/// Cold root shapes include the admitted scope, installed scope-to-root paths,
+/// and an installed managed selector. The latter still requires its sealed
+/// Parent selection lease at execution; shape admission grants no root authority.
+/// Complete steps use the original Native request; sharing an entity kind with
+/// the scope does not make a declared path an exact root.
 pub(super) fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
@@ -87,13 +89,19 @@ pub(super) fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Sc
         _ => false,
     };
     let declared_path_selection = !graph.root_paths().is_empty() && graph.predicates().is_empty();
+    let managed_selection = graph.managed_index_selection().is_some()
+        && graph.root_paths().is_empty()
+        && graph.orbit().is_none()
+        && graph.component_selection().is_none()
+        && bounded_exact_selection;
     let declared_result = graph.component_selection().is_some()
         || graph.orbit().is_some()
         || !graph.projections().is_empty()
         || !graph.relations().is_empty();
     if declared_result
         && ((exact_root_scope && graph.root_paths().is_empty() && bounded_exact_selection)
-            || declared_path_selection)
+            || declared_path_selection
+            || managed_selection)
     {
         return Ok(());
     }

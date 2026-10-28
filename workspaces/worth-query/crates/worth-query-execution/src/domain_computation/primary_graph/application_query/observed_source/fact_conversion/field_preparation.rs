@@ -9,50 +9,25 @@ impl<Query> WorthQueryObservedSource<Query> {
         super::PreparedSourceFactMaterialization<'_, Query>,
         WorthQuerySourceExpectationDenial,
     > {
+        self.require_supported_fact_expansion(subject)?;
         self.validate_completeness(subject)?;
         let footprint = self.source_meaning.footprint();
-        let selected = footprint.root_selection.as_deref();
-        let selected_count = selected.map_or(Some(0), |selection| {
-            selection
-                .entities
-                .len()
-                .checked_add(selection.aspects.len())
-                .and_then(|count| count.checked_add(selection.adjacencies.len()))
-        });
-        let count = footprint
-            .entities
-            .len()
-            .checked_add(footprint.aspects.len())
-            .and_then(|count| count.checked_add(footprint.adjacencies.len()))
-            .and_then(|count| count.checked_add(selected_count?))
-            .ok_or_else(|| {
-                WorthQuerySourceExpectationDenial::new(
-                    WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
-                    subject,
-                )
-            })?;
+        footprint.validate_selections(layout, None)?;
+        let count = super::source_fact_count(self, subject)?;
         let mut fields = Vec::new();
-        let field_count = footprint
-            .aspects
-            .len()
-            .checked_add(selected.map_or(0, |selection| selection.aspects.len()))
-            .ok_or_else(|| {
-                WorthQuerySourceExpectationDenial::new(
-                    WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
-                    subject,
-                )
-            })?;
+        let field_count = footprint.field_count().ok_or_else(|| {
+            WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
+                subject,
+            )
+        })?;
         fields.try_reserve_exact(field_count).map_err(|_| {
             WorthQuerySourceExpectationDenial::new(
                 WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
                 subject,
             )
         })?;
-        for aspect in footprint.aspects.iter().chain(
-            selected
-                .into_iter()
-                .flat_map(|selection| &selection.aspects),
-        ) {
+        for aspect in footprint.fact_sources().flat_map(|facts| facts.aspects) {
             let contract = layout
                 .aspect_contract(&aspect.entity_name, &aspect.aspect)
                 .ok_or_else(|| {

@@ -72,6 +72,8 @@ where
     producers: super::producer::PendingProducerRegistry<Schema>,
     conditionals: PendingConditionalRegistry<Schema>,
     resources: super::super::application_resource::installation::PendingResourceRegistry<Schema>,
+    managed_indexes:
+        super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
 }
 
 impl<Schema> WorthQueryConfiguredApplicationContributions<Schema>
@@ -103,6 +105,7 @@ where
             super::producer::PendingProducerRegistry<Schema>,
             PendingConditionalRegistry<Schema>,
             super::super::application_resource::installation::PendingResourceRegistry<Schema>,
+            super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
         ),
         WorthQueryPrimaryGraphInstallationDenial,
     > {
@@ -112,6 +115,7 @@ where
             self.producers,
             self.conditionals,
             self.resources,
+            self.managed_indexes,
         ))
     }
 }
@@ -161,6 +165,7 @@ macro_rules! contribution_tuple {
                     producers,
                     conditionals,
                     resources: Default::default(),
+                    managed_indexes: Default::default(),
                 };
                 let ($($configuration,)+) = configuration;
                 $(
@@ -171,6 +176,7 @@ macro_rules! contribution_tuple {
                         &mut configured.producers,
                         &mut configured.conditionals,
                         &mut configured.resources,
+                        &mut configured.managed_indexes,
                     );
                     $Contribution::configure($configuration, &mut setup)?;
                 )+
@@ -178,6 +184,7 @@ macro_rules! contribution_tuple {
                 configured.producers.validate_complete()?;
                 configured.conditionals.validate_complete()?;
                 configured.resources.validate_complete(installed_schema)?;
+                configured.managed_indexes.validate_complete(installed_schema)?;
                 Ok(configured)
             }
 

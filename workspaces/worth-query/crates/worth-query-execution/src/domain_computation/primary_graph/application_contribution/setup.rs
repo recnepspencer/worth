@@ -1,6 +1,7 @@
 mod collection;
 mod derived_relation;
 mod feature;
+mod managed_index;
 mod resource;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
@@ -40,6 +41,8 @@ where
     factories: &'a mut WorthQueryApplicationInvariantFactories<Schema>,
     producers: &'a mut PendingProducerRegistry<Schema>,
     conditionals: &'a mut PendingConditionalRegistry<Schema>,
+    managed_indexes:
+        &'a mut super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     resources:
         &'a mut super::super::application_resource::installation::PendingResourceRegistry<Schema>,
 }
@@ -53,6 +56,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         producers: &'a mut PendingProducerRegistry<Schema>,
         conditionals: &'a mut PendingConditionalRegistry<Schema>,
         resources: &'a mut super::super::application_resource::installation::PendingResourceRegistry<Schema>,
+        managed_indexes: &'a mut super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     ) -> Self {
         Self {
             installed_schema,
@@ -62,6 +66,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
             producers,
             conditionals,
             resources,
+            managed_indexes,
         }
     }
 

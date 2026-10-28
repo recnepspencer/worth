@@ -9,12 +9,26 @@ use worth_query_installation::facade::{
 /// Every child read borrows the original control. Explicitly accounted reads
 /// also retain their original meter and cumulative reservation.
 pub(in crate::domain_computation::primary_graph) struct ValueDecodeSession<'a> {
+    pub(super) on_refusal: Option<&'a dyn Fn(Stop)>,
     pub(super) state: &'a super::state::ValueDecodeState,
     pub(super) checkpoint: Option<&'a dyn Fn(u64) -> Result<(), MapKernelStop>>,
     pub(super) poll: &'a dyn Fn() -> Result<(), MapKernelStop>,
 }
 
-impl ValueDecodeSession<'_> {
+impl<'a> ValueDecodeSession<'a> {
+    /// A synchronous managed-invocation observer; no callback enters retained custody.
+    pub(in crate::domain_computation::primary_graph) fn observing<'b>(
+        &'b self,
+        observer: &'b dyn Fn(Stop),
+    ) -> ValueDecodeSession<'b> {
+        ValueDecodeSession {
+            state: self.state,
+            checkpoint: self.checkpoint,
+            poll: self.poll,
+            on_refusal: Some(observer),
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn stopped(&self) -> bool {
         self.state.denial().is_some()
     }
@@ -25,6 +39,9 @@ impl ValueDecodeSession<'_> {
 
     fn refuse(&self, stop: Stop) -> ValueCodecDenial {
         self.state.refuse(stop);
+        if let Some(observer) = self.on_refusal {
+            observer(self.state.denial().expect("latched decode refusal"));
+        }
         ValueCodecDenial::Admission
     }
 
@@ -51,6 +68,36 @@ impl ValueDecodeSession<'_> {
 
     fn poll_request(&self) -> Result<(), ValueCodecDenial> {
         (self.poll)().map_err(|cause| self.refuse(Stop::Checkpoint(cause)))
+    }
+
+    /// The selected installed Index already binds this exact Parent probe codec.
+    /// Its input is the actual admitted parameter, not a fabricated entity field.
+    pub(in crate::domain_computation::primary_graph) fn decode_managed_probe<
+        Binding: ApplicationReadableScalarValueBinding,
+    >(
+        &self,
+        raw: &AspectValue,
+    ) -> Option<Binding::Value> {
+        if self.stopped() {
+            return None;
+        }
+        // The actual installed adapter has already checked the complete codec
+        // recipe. Reconstructing its owned grammar here would allocate again.
+        if !Binding::SUPPORTS_ADMITTED_DECODE {
+            self.refuse(Stop::BindingContractMismatch);
+            return None;
+        }
+        let decoded = Binding::decode_admitted(raw, &mut |work, bytes| self.admit(work, bytes));
+        if self.stopped() {
+            return None;
+        }
+        match decoded {
+            Ok(value) if Binding::validate(&value).is_ok() => Some(value),
+            _ => {
+                self.refuse(Stop::CodecRejected);
+                None
+            }
+        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn decode<
@@ -98,6 +145,10 @@ impl ValueDecodeSession<'_> {
         raw: &AspectValue,
     ) -> Option<Binding::Value> {
         if self.stopped() {
+            return None;
+        }
+        if self.state.require_admitted && !Binding::SUPPORTS_ADMITTED_DECODE {
+            self.refuse(Stop::BindingContractMismatch);
             return None;
         }
         // Legacy entity owners keep their existing contract. Canonical owners

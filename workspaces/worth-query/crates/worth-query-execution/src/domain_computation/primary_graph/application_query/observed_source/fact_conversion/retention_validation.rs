@@ -11,22 +11,16 @@ impl<Query> WorthQueryObservedSource<Query> {
             &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         >,
     ) -> Result<(), WorthQuerySourceExpectationDenial> {
+        self.require_supported_fact_expansion(expected)?;
         self.validate_completeness(expected)?;
         source_fact_count(self, expected)?;
         let footprint = self.source_meaning.footprint();
-        if let Some(selection) = &footprint.root_selection {
-            selection.validate_walks(layout, request)?;
-        }
+        footprint.validate_selections(layout, request)?;
         // Temporary borrowed-key indexes remain outside payload custody. They
         // validate the same duplicate body rule without constructing a Fact or
         // cloning endpoints, field locators, or canonical identity material.
         let mut fields = BTreeMap::new();
-        for field in footprint.aspects.iter().chain(
-            footprint
-                .root_selection
-                .iter()
-                .flat_map(|selection| &selection.aspects),
-        ) {
+        for field in footprint.fact_sources().flat_map(|facts| facts.aspects) {
             check_request(request, expected)?;
             let contract = layout
                 .aspect_contract(&field.entity_name, &field.aspect)
@@ -41,12 +35,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             }
         }
         let mut adjacencies = BTreeMap::new();
-        for adjacency in footprint.adjacencies.iter().chain(
-            footprint
-                .root_selection
-                .iter()
-                .flat_map(|selection| &selection.adjacencies),
-        ) {
+        for adjacency in footprint.fact_sources().flat_map(|facts| facts.adjacencies) {
             check_request(request, expected)?;
             let key = (
                 adjacency.anchor,

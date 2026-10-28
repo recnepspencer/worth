@@ -183,6 +183,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
     pub(super) installed_resources:
         super::application_resource::installation::InstalledResourceRegistry<Schema>,
+    pub(super) managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:
         super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
 }

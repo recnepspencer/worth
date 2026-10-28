@@ -3,9 +3,15 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
+mod managed_index;
+mod material;
 mod native_count;
 
-pub(super) trait RegisteredDerivedView: Send + Sync {
+use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+
+pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredDerivedView:
+    Send + Sync
+{
     fn dispose(&self);
     fn belongs_to(&self, basis: &super::publication::ViewPublicationBasis<'_>) -> bool;
     fn warm_at(&self, before: &worth_runtime_world::facade::CompositeCommitIdentity) -> bool;
@@ -46,19 +52,27 @@ impl PreparedManagedViewPublication {
     }
 }
 
-#[derive(Default)]
-struct RegistryState {
-    next_id: u64,
-    views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
-    native_counts: Vec<(
-        u64,
+enum OwnedDerivedView {
+    NativeCount(
         Arc<
             super::retention::ManagedDerivedViewState<
                 worth_relational::facade::identity::EntityId,
                 native_count::ClosedCount,
             >,
         >,
-    )>,
+    ),
+    ManagedIndex {
+        state: Arc<dyn Any + Send + Sync>,
+        _publication: Arc<dyn RegisteredDerivedView>,
+    },
+}
+
+#[derive(Default)]
+struct RegistryState {
+    next_id: u64,
+    views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
+    owned: Vec<(u64, OwnedDerivedView)>,
+    material_allocations: Vec<Arc<SourceFactsAllocation>>,
 }
 
 #[derive(Default)]
@@ -121,41 +135,62 @@ impl ManagedDerivedViewRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.views.retain(|_, view| view.strong_count() > 0);
-        if state.views.len() >= MAXIMUM_REGISTERED_VIEWS {
-            return None;
-        }
-        let id = state.next_id.checked_add(1)?;
-        state.next_id = id;
-        state.views.insert(id, Arc::downgrade(view));
-        Some(id)
+        let result = (|| {
+            if state.views.len() >= MAXIMUM_REGISTERED_VIEWS {
+                return None;
+            }
+            let id = state.next_id.checked_add(1)?;
+            state.next_id = id;
+            state.views.insert(id, Arc::downgrade(view));
+            Some(id)
+        })();
+        let empty = state.take_empty_material_storage();
+        drop(state);
+        drop(empty);
+        result
     }
 
-    pub(super) fn unregister(&self, id: u64) {
-        self.state
+    pub(in crate::domain_computation::primary_graph::application_query) fn unregister(
+        &self,
+        id: u64,
+    ) {
+        let mut state = self
+            .state
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .views
-            .remove(&id);
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.views.remove(&id);
+        let removed = state
+            .owned
+            .iter()
+            .position(|(actual, _)| *actual == id)
+            .map(|position| state.owned.remove(position));
+        let empty = state.take_empty_material_storage();
+        drop(state);
+        drop(removed);
+        drop(empty);
     }
 
     pub(in crate::domain_computation::primary_graph) fn dispose(&self) {
-        let (views, owned) = {
+        let (views, owned, allocations) = {
             let mut state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let views = std::mem::take(&mut state.views)
-                .into_values()
-                .filter_map(|view| view.upgrade())
-                .collect::<Vec<_>>();
-            (views, std::mem::take(&mut state.native_counts))
+            (
+                std::mem::take(&mut state.views),
+                std::mem::take(&mut state.owned),
+                std::mem::take(&mut state.material_allocations),
+            )
         };
-        for view in views {
-            view.dispose();
+        // Move the real containers out. No upgrade, disposal, final owner drop
+        // or scratch collection allocation runs while holding the registry.
+        for (_, view) in views {
+            if let Some(view) = view.upgrade() {
+                view.dispose();
+            }
         }
-        // Retained states and their backing are destroyed after the registry
-        // lock is released, just like ordinary view disposal.
         drop(owned);
+        drop(allocations);
     }
 }
 

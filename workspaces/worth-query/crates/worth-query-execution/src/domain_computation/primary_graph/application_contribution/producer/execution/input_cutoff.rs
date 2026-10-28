@@ -319,6 +319,10 @@ pub(super) fn source_preparation_denial(
 ) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenialKind as Kind;
     match stop.kind() {
+        Kind::ManagedSourceExpansionUnsupported => denial(
+            WorthQueryOutputDemandDenialKind::ManagedSourceExpansionUnsupported,
+            format!("{identity}: {stop}"),
+        ),
         Kind::WorkBudgetExceeded => denial(
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
             format!("{identity}: {stop}"),

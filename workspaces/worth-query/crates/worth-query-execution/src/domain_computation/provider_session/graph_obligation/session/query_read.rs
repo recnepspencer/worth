@@ -9,7 +9,137 @@ use crate::domain_computation::provider_session::{
     WorthQueryObservedGraphReadWork, WorthQuerySessionGraphReadProof,
 };
 
+fn same_managed_product<Stop>(
+    left: &crate::basis::WorthQueryProductObservationLease,
+    right: &crate::basis::WorthQueryProductObservationLease,
+    admit: &mut impl FnMut(u64) -> Result<(), Stop>,
+    overflow: impl FnOnce() -> Stop,
+) -> Result<bool, Stop> {
+    use worth_relational::facade::branch::{
+        RelationalBranchBasisAdmissionIdentity, RelationalBranchBasisDescriptor,
+        RelationalBranchIdentity,
+    };
+    use worth_runtime_world::facade::{
+        CompositeBasisKey, CompositeCommitIdentity, ProductBranchIdentity,
+        ProductBranchIncarnation, ProductBranchReferenceGeneration, RuntimeWorldOwnerIdentity,
+    };
+    // Both fixed identity layouts and every variable byte visited by World Eq
+    // and Native issued_from are admitted before either actual comparison.
+    let fixed = [
+        size_of::<RuntimeWorldOwnerIdentity>(),
+        size_of::<ProductBranchIdentity>(),
+        size_of::<ProductBranchIncarnation>(),
+        size_of::<ProductBranchReferenceGeneration>(),
+        size_of::<CompositeCommitIdentity>(),
+        size_of::<CompositeBasisKey>(),
+        size_of::<RelationalBranchBasisDescriptor>(),
+        size_of::<RelationalBranchIdentity>(),
+        size_of::<RelationalBranchBasisAdmissionIdentity>(),
+        size_of::<u64>(),
+    ]
+    .into_iter()
+    .try_fold(0usize, usize::checked_add)
+    .and_then(|bytes| bytes.checked_mul(2))
+    .and_then(|bytes| u64::try_from(bytes).ok());
+    let work = (|| {
+        let mut work = fixed?;
+        for product in [left, right] {
+            work = work.checked_add(
+                u64::try_from(product.branch_identity().name().as_str().len()).ok()?,
+            )?;
+            work = work.checked_add(
+                WorthQueryApplicationBasisIdentity::retained_basis_clone_heap_bytes(
+                    product.relational_basis(),
+                )?,
+            )?;
+        }
+        Some(work)
+    })()
+    .ok_or_else(overflow)?;
+    admit(work)?;
+    Ok(left.observation() == right.observation()
+        && left
+            .relational_basis()
+            .observation()
+            .issued_from(right.relational_basis()))
+}
+
+/// Issued by the genuine Query session; selectors cannot construct this context.
+pub(in crate::domain_computation) struct WorthQueryQuerySourceContext {
+    session: super::WorthQueryGraphWorkSessionIdentity,
+    runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    principal: worth_relational::facade::identity::EntityId,
+    scope: worth_relational::facade::identity::EntityId,
+    product: crate::basis::WorthQueryProductObservationLease,
+}
+
+impl WorthQueryQuerySourceContext {
+    pub(in crate::domain_computation) fn admits_parent<Stop>(
+        &self,
+        parent: &WorthQueryManagedGraphWorkSession,
+        admit: &mut impl FnMut(u64) -> Result<(), Stop>,
+        overflow: impl FnOnce() -> Stop,
+    ) -> Result<bool, Stop> {
+        parent.admits_managed_product(&self.product, admit, overflow)
+    }
+    pub(in crate::domain_computation) fn session(
+        &self,
+    ) -> super::WorthQueryGraphWorkSessionIdentity {
+        self.session
+    }
+    pub(in crate::domain_computation) fn runtime(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+        self.runtime
+    }
+    pub(in crate::domain_computation) fn principal(
+        &self,
+    ) -> worth_relational::facade::identity::EntityId {
+        self.principal
+    }
+    pub(in crate::domain_computation) fn scope(
+        &self,
+    ) -> worth_relational::facade::identity::EntityId {
+        self.scope
+    }
+}
+
 impl WorthQueryManagedGraphWorkSession {
+    /// Compare genuine admitted occurrences, independently of each Query's
+    /// snapshot issuance. Exact snapshot/session/proof checks remain separate.
+    pub(in crate::domain_computation) fn admits_managed_product<Stop>(
+        &self,
+        product: &crate::basis::WorthQueryProductObservationLease,
+        admit: &mut impl FnMut(u64) -> Result<(), Stop>,
+        overflow: impl FnOnce() -> Stop,
+    ) -> Result<bool, Stop> {
+        let Ok(read) = self.query_read_basis() else {
+            return Ok(false);
+        };
+        same_managed_product(&read._product, product, admit, overflow)
+    }
+
+    pub(in crate::domain_computation) fn retain_query_source_context(
+        &self,
+    ) -> Result<WorthQueryQuerySourceContext, WorthQueryManagedGraphReadDenial> {
+        let super::ProductReadBasis {
+            identity, _product, ..
+        } = self.query_read_basis()?;
+        if !self.branch.admits_query_basis(identity) {
+            return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
+        }
+        let scope = self
+            .entity_access_context()
+            .ok_or(WorthQueryManagedGraphReadDenial::ForeignReadIntent)?;
+        Ok(WorthQueryQuerySourceContext {
+            session: self.identity,
+            runtime: self.runtime,
+            principal: self.principal,
+            scope,
+            product: _product.retained_clone(),
+        })
+    }
+
     pub(in crate::domain_computation) fn graph_read_review(
         &self,
     ) -> &worth_query_admission::facade::graph_read_access::WorthQueryGraphReadPlanReview {

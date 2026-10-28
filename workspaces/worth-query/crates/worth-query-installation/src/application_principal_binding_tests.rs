@@ -1,7 +1,7 @@
 #[path = "application_principal_binding_tests/inspection.rs"]
 mod inspection;
 #[path = "application_principal_binding_tests/schema_members.rs"]
-mod schema_members;
+pub(crate) mod schema_members;
 use worth_foundational::facade::AspectValue;
 #[path = "application_principal_binding_tests/resource.rs"]
 mod resource;

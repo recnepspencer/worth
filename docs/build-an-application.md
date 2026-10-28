@@ -5274,6 +5274,50 @@ in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots
 and candidates through their owning runtime and generation. Handle stale or
 foreign-runtime refusals and release each original holder when finished.
 
+### Construct committed provider indexes
+
+Declare an `ApplicationManagedIndexBinding` with its complete Source query,
+candidate entity, admitted Probe codec and versioned provider identity. Add its
+`ApplicationManagedIndexDefinition` to the schema and select it on the Parent
+query with `.managed_index(Index::reference(), probe_parameter)`. The contribution
+installs the matching pure provider with `setup.managed_index::<Index, _>(provider)`.
+Providers borrow disclosed, query-bound Source rows and finite node/candidate
+writers; they receive no mutation handle or reusable read permission.
+
+Source queries have no parameters and must have Public authorization and Public
+disclosure without capability or rule governance. Consuming Parent queries also
+currently require that Public posture. They must run as current committed
+one-shot requests, with the same admitted principal and full-generation scope.
+Parent admission and current READ/security checks precede cache/provider access;
+ordinary Parent predicates, final ordering, result limits and disclosure still
+apply after candidate selection.
+
+Call `request.query(intent).open_index::<Index>()` to obtain a Created registration,
+then `request.query(intent).rebuild_index(&index)` for explicit cold construction.
+Ordinary `execute()` returns typed `NotReady` while Created or Evicted; it does
+not silently rebuild or fall back to a scope-root query. Probe values share the
+same complete Source image. Source authored ordering remains intact; the provider
+receives a separate canonical full-generation source-slot order. Every publication
+on the owning branch makes the image cold again.
+
+Repeated opens share one registration. `index.lifecycle()` reports retained cache
+status, not fresh authorization. `evict()` releases its image; explicit rebuild
+is required before another indexed read. `close()` disposes and unregisters it
+for every sibling handle; later open creates a fresh registration. Dropping a
+handle leaves the runtime-owned cache alive; explicit close or final runtime
+disposal releases it.
+
+Indexed results retain complete positive, empty and ordering dependencies from
+the original Source. Binding those managed results as mutation source expectations
+or expanding them for retained program dependency facts is currently unsupported
+and returns `ManagedSourceExpansionUnsupported`; no dependency subset is accepted.
+Governed Parent queries are also unsupported at installation. The
+[public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
+shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and
+shared-handle cleanup; its
+[provider adapter](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs)
+uses the same finite storage contract as other providers.
+
 ### Ordinary Query resource policies
 
 Output-demand, performed-output, discovered-output and workflow assessment settlement
