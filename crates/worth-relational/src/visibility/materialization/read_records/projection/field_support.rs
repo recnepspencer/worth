@@ -60,14 +60,8 @@ impl VisibilityProjectionView {
                             .ok_or(Denial::Execution(Cause::WorkCounterOverflow))?;
                         checkpoint(context, work).map_err(|stop| Denial::Execution(crate::execution::denial::kernel_stop(stop)))?;
                         Ok(left == right)
-                    }).map_err(|cause| match cause {
-                        super::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::Execution(cause),
-                        super::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Denial::SourceUnavailable,
-                    })?.ok_or(Denial::SourceUnavailable)?
-                }).map_err(|cause| match cause {
-                        super::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::Execution(cause),
-                        super::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Denial::SourceUnavailable,
-                    })?.ok_or(Denial::SourceUnavailable)?
+                    }).map_err(borrowed_denial)?.ok_or(Denial::SourceUnavailable)?
+                }).map_err(borrowed_denial)?.ok_or(Denial::SourceUnavailable)?
             };
             compare()
         }, |_| 0).map_err(Denial::Execution)?
@@ -141,4 +135,14 @@ fn admit_field_lookup(
             .map_err(|stop| Denial::Execution(crate::execution::denial::kernel_stop(stop)))?;
     }
     Ok(())
+}
+
+fn borrowed_denial(
+    cause: super::RelationalBorrowedRecordReadDenial,
+) -> RelationalFieldSupportComparisonDenial {
+    use super::RelationalBorrowedRecordReadDenial as Read;
+    match cause {
+        Read::ExactBasisRequired => RelationalFieldSupportComparisonDenial::SourceUnavailable,
+        Read::Execution(cause) => RelationalFieldSupportComparisonDenial::Execution(cause),
+    }
 }

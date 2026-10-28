@@ -131,7 +131,7 @@ impl RelationalPreparationHistory {
             crate::transactions::data::TransactionCommitError::publication(
                 crate::publication::data::PublicationError::new(
                     crate::publication::bundle::PublicationStage::BundleAssembly,
-                    "prepared envelope is not resident",
+                    "prepared publication envelope is not resident",
                 ),
             )
         })?;

@@ -30,6 +30,7 @@ pub(super) fn prepare(
         let catalog = runtime.index_definitions.snapshot();
         let output = funding::Output::new(execution, context)?;
         let mut builder = projection::Projection {
+            execution,
             runtime,
             catalog: &catalog,
             unavailable: false,
@@ -38,7 +39,13 @@ pub(super) fn prepare(
             context,
             output,
         };
-        builder.project(plan, allocations)?;
+        match builder.project(plan, allocations) {
+            Ok(()) => {}
+            // An unavailable authoritative image cannot issue complete index
+            // evidence. Keep the existing unavailable packet, not guessed keys.
+            Err(Denial::SourceUnavailable) => return Ok(Evidence::default()),
+            Err(cause) => return Err(cause),
+        }
         if builder.unavailable {
             Ok(Evidence::default())
         } else {

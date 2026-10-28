@@ -22,7 +22,6 @@ pub(crate) trait RuntimeSubsystem: Sized {
 
 pub(crate) use commit_strategies::CommitStrategiesSubsystem;
 pub(crate) use durability::{DurabilitySubsystem, RelationalCheckpointManifestPublication};
-pub use history::RelationalPatchPositionReservationCounters;
 pub(crate) use history::{authored_write_commit_denial, AuthoredWriteGeneration};
 pub(crate) use history::{
     readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,

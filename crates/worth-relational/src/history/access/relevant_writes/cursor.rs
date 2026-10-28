@@ -68,8 +68,10 @@ impl RelationalRuntime {
                 .observation()
                 .commit_id()
                 .ok_or(Denial::NoSelectedCommit)?;
-            if self.history.commit_artifact(original_commit).is_none()
-                && self.history.canonical_envelope(original_commit).is_none()
+            if self
+                .history_access()
+                .immutable_commit_receipt(original_commit)
+                .is_none()
             {
                 return Err(Denial::SourceUnavailable);
             }

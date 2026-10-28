@@ -37,6 +37,7 @@ pub enum RelationalAuthoredWriteDenial {
     Request(worth_execution::WorkCeilingDenial),
     Interrupted(worth_execution::MapKernelStop),
     Retention(crate::branch::RelationalBranchBasisDenial),
+    /// The original request or selected durable body could not be admitted.
     Execution(crate::execution::RelationalExecutionDenialCause),
 }
 

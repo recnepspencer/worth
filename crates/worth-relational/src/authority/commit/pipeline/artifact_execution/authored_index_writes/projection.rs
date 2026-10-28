@@ -9,7 +9,8 @@ use worth_foundational::facade::{
     AspectBinding, AspectShape, PortableAspectPatchOperation, PortableRecordAspectPatch,
 };
 
-pub(super) struct Projection<'a, 'kernel, 'controls> {
+pub(super) struct Projection<'a, 'kernel, 'controls, 'request, 'authority> {
+    pub(super) execution: ExecutionRequest<'request, 'authority>,
     pub(super) runtime: &'a RelationalPreparationRuntime,
     pub(super) catalog: &'a crate::runtime::IndexDefinitionCatalog,
     pub(super) unavailable: bool,
@@ -19,7 +20,7 @@ pub(super) struct Projection<'a, 'kernel, 'controls> {
     pub(super) output: funding::Output,
 }
 
-impl Projection<'_, '_, '_> {
+impl Projection<'_, '_, '_, '_, '_> {
     pub(super) fn project(
         &mut self,
         plan: &MergedCommitPlan,
@@ -99,8 +100,8 @@ impl Projection<'_, '_, '_> {
 
     fn record(&mut self, entity: EntityId, aspect: Option<&AspectKey>) -> Result<(), Denial> {
         self.point_work()?;
-        let before = values::live(self.selected, entity);
-        let after = values::live(self.working, entity);
+        let before = values::live(&self.execution, self.selected, entity)?;
+        let after = values::live(&self.execution, self.working, entity)?;
         let runtime = self.runtime;
         for kind in before
             .map(|(kind, _)| kind)
@@ -163,8 +164,8 @@ impl Projection<'_, '_, '_> {
 
     fn field(&mut self, entity: EntityId, locus: &Locus<'_>) -> Result<(), Denial> {
         self.point_work()?;
-        let before = values::live(self.selected, entity);
-        let after = values::live(self.working, entity);
+        let before = values::live(&self.execution, self.selected, entity)?;
+        let after = values::live(&self.execution, self.working, entity)?;
         let context = &mut *self.context;
         let output = &mut self.output;
         self.catalog.with_field_admitted(

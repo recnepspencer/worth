@@ -41,8 +41,8 @@ pub(crate) type UniqueEntityAspectFieldIndex = BTreeMap<
 /// the guard.
 #[derive(Debug, Clone)]
 pub(crate) struct IndexingState {
-    catalog: Arc<IndexDefinitionCatalog>,
     cold_checkpoint: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
+    catalog: Arc<IndexDefinitionCatalog>,
     generations: GenerationCatalog,
     pub(crate) entity_unique_aspect_field_index: UniqueEntityAspectFieldIndex,
     pub(crate) next_index_id: u64,
@@ -66,8 +66,8 @@ impl IndexingState {
 
     fn empty() -> Self {
         Self {
-            catalog: Arc::new(IndexDefinitionCatalog::default()),
             cold_checkpoint: None,
+            catalog: Arc::new(IndexDefinitionCatalog::default()),
             generations: GenerationCatalog::default(),
             entity_unique_aspect_field_index: BTreeMap::new(),
             next_index_id: 1,
