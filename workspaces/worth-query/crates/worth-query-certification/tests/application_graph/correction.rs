@@ -27,6 +27,11 @@ fn reapplication_completes_original_required_outputs_and_retries() {
 }
 
 #[test]
+fn required_output_correction_preserves_cancellation_publication_and_retry_custody() {
+    model::required_output_courts::run();
+}
+
+#[test]
 fn correction_history_rebuild_preserves_causality_and_source_expiry() {
     model::history_reapplication::run();
 }
