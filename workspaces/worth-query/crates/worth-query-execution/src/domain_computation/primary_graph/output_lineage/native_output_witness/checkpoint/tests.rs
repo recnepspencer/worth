@@ -30,9 +30,6 @@ use worth_relational::facade::{
 };
 #[test]
 fn recovered_witness_requires_complete_unambiguous_original_aspects() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_authorization_world(true);
     let selected = world
         .application
@@ -56,7 +53,6 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph.layout();
     let handle = graph.integration_handle();
-    let _owner = &handle.source_owner.invalidation_owner;
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
@@ -108,13 +104,13 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(request_execution, |runtime| {
+    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(request_execution, |runtime| {
         let before = snapshot(runtime);
         let truth = runtime.read_truth();
         let mut facts = vec![Fact::Entity {
             entity_id: entity,
             kind: truth
-                 .read_exact_snapshot_live_entity_kind(execution, &before, entity).unwrap()
+                 .read_exact_snapshot_live_entity_kind(request_execution, &before, entity).unwrap()
                 .unwrap(),
         }];
         for aspect in layout.native_output_aspects("Account") {
@@ -122,7 +118,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 entity_id: entity,
                 aspect: aspect.clone(),
                 native_revision: truth
-                     .read_exact_snapshot_entity_aspect_version(execution, &before, entity, aspect).unwrap()
+                     .read_exact_snapshot_entity_aspect_version(request_execution, &before, entity, aspect).unwrap()
                     .unwrap(),
             });
         }
@@ -160,7 +156,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(restored
             .get()
             .unwrap()
-            .unchanged_in( runtime, &before, execution)
+            .unchanged_in( runtime, &before, request_execution)
             .unwrap());
         assert!(restored
             .get()
@@ -175,12 +171,12 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             .unwrap().equality_index_id.unwrap();
         let indexed = crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection(
             runtime,&host_custody.borrowed_request_for_test(),  &before, index,
-            runtime.read_truth() .read_exact_snapshot_live_entity_kind(execution, &before, entity).unwrap().unwrap(),
+            runtime.read_truth() .read_exact_snapshot_live_entity_kind(request_execution, &before, entity).unwrap().unwrap(),
             planned_status.clone(), AspectValue::String("open".into()), 100_001,
         ).expect("the actual installed sparse selection supplies the checkpoint fact");
         let witness = restored.get().unwrap();
 
-        assert!(witness.unchanged_in( runtime, &before, execution).unwrap());
+        assert!(witness.unchanged_in( runtime, &before, request_execution).unwrap());
 
 
         assert!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
@@ -209,7 +205,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         // Producer selection reads both halves of the retained fact set.
 
         assert!(matches!(
-            compare_retained_output_witness(execution,
+            compare_retained_output_witness(request_execution,
                 runtime,
                 &before,
                 restored.get(),
@@ -259,7 +255,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let current_facts: Vec<_> = facts.iter().map(|fact| match fact {
             Fact::SourceAspectRevision { entity_id, aspect, .. } => Fact::SourceAspectRevision {
                 entity_id: *entity_id, aspect: aspect.clone(),
-                native_revision: runtime.read_truth() .read_exact_snapshot_entity_aspect_version(execution, &after, *entity_id, aspect).unwrap().unwrap(),
+                native_revision: runtime.read_truth() .read_exact_snapshot_entity_aspect_version(request_execution, &after, *entity_id, aspect).unwrap().unwrap(),
             },
             other => other.clone(),
         }).collect();
@@ -269,7 +265,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(!after_restore
             .get()
             .unwrap()
-            .unchanged_in( runtime, &after, execution)
+            .unchanged_in( runtime, &after, request_execution)
             .unwrap());
         assert!(
             producer_facts[0]
@@ -298,7 +294,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             Ok(OutputDependencySelection::Reuse)
         ));
         assert!(matches!(
-            compare_retained_output_witness(execution,
+            compare_retained_output_witness(request_execution,
                 runtime,
                 &after,
                 after_restore.get(),
@@ -307,7 +303,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ));
         // A row no sealed witness covers is decided by its source facts.
         assert!(matches!(
-            compare_retained_output_witness(execution,  runtime, &after, None),
+            compare_retained_output_witness(request_execution,  runtime, &after, None),
             Ok(OutputDependencySelection::Reuse)
         ));
 

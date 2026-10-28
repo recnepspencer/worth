@@ -78,3 +78,9 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/branch_reconstruction_parity.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_parity.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_stops.rs
+
+# Slice5b ruling: installed metadata lookup; real principal/scope admission and execution follow.
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/read.rs
+
+# Slice5b ruling: installed closure metadata; ordinary/admitted requirements and support matching.
+installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/complete_closure.rs

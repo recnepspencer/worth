@@ -162,7 +162,7 @@ fn unrelated_partition_selection(population: u64) {
         generation: revised_generation,
     };
 
-    let (prior, _work) = lineage
+    let (prior, work) = lineage
         .matching_output_in_partition_budgeted(
             &source,
             revised_coordinate,
@@ -171,6 +171,7 @@ fn unrelated_partition_selection(population: u64) {
             |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
         )
         .expect("same-partition predecessors, not siblings, consume the budget");
+    assert_eq!(work, 2);
     assert!(Arc::ptr_eq(&prior.unwrap().correspondence, &target));
 
     // An unavailable derived locator must never guess from a sibling record.

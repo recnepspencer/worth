@@ -349,6 +349,4 @@ fn checked_custom_preparation_observes_cancellation_mid_scan() {
 }
 
 mod cancellation;
-
-#[path = "custom_checked_execution/memory.rs"]
 mod memory;

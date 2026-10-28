@@ -42,6 +42,7 @@ fn checkpoint(cause: MapKernelStop, stage_identity: Option<String>) -> WorkflowF
         }
     }
 }
+
 pub(super) fn scope(cause: WorkCeilingDenial) -> WorkflowFrontierFailure {
     match cause {
         WorkCeilingDenial::Admission(cause) => admission(cause),
@@ -51,7 +52,6 @@ pub(super) fn scope(cause: WorkCeilingDenial) -> WorkflowFrontierFailure {
         }),
     }
 }
-
 pub(super) fn map(
     cause: MapStop<WorthQueryWorkflowStageComputed>,
     stage_identity: Option<String>,
@@ -83,6 +83,34 @@ pub(super) fn map(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn worker_only_accounting_stop_keeps_the_workflow_resource_cause() {
+        use worth_execution::{
+            CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest,
+        };
+        use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+        let lease = ExecutionResourceLease::serial(LeaseRequest {
+            policy: ExecutionRequestPolicy::for_workers(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                std::num::NonZeroUsize::MIN,
+            ),
+            cancellation: CancellationToken::new(),
+            deadline: None,
+        })
+        .unwrap();
+        let stop = ExecutionRequest::leased(&lease)
+            .run_native_with_checkpoint(|context| context.checkpoint(1))
+            .unwrap_err();
+        assert!(matches!(
+            scope(stop),
+            WorkflowFrontierFailure::Denied(Denial::ComputationAccountingUnavailable {
+                stage_identity: None
+            })
+        ));
+    }
+
     #[test]
     fn unavailable_accounting_retains_its_own_workflow_stop() {
         let stopped = scope(WorkCeilingDenial::Stopped(

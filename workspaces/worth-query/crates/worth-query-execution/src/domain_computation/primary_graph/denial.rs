@@ -159,6 +159,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignProducerBinding,
     /// A producer binding does not match its declared meaning.
     ProducerBindingMeaningMismatch,
+    /// A producer declares a domain denial binding without a finite canonical
+    /// wire bound, so a rejected decision could not carry its value.
+    ProducerDenialValueUnbounded,
     /// A declared producer's immutable operation resource plan is unsupported
     /// by this runtime's final graph provider support.
     ProducerGraphWorkRejected,
@@ -201,8 +204,14 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
 pub struct WorthQueryPrimaryGraphInstallationDenial {
     kind: WorthQueryPrimaryGraphInstallationDenialKind,
     subject: String,
-    readiness:
-        Option<Box<super::application_contribution::WorthQueryOutputReadinessContractDenial>>,
+    /// Only the refusing owner contributes a cause; ordinary results reserve no payload.
+    cause: Option<Box<InstallationDenialCause>>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum InstallationDenialCause {
+    Readiness(super::application_contribution::WorthQueryOutputReadinessContractDenial),
+    RelationLaw(worth_relational::facade::transactions::InvariantViolationFields),
 }
 
 impl WorthQueryPrimaryGraphInstallationDenial {
@@ -227,7 +236,7 @@ impl WorthQueryPrimaryGraphInstallationDenial {
         Self {
             kind,
             subject: subject.into(),
-            readiness: None,
+            cause: None,
         }
     }
 
@@ -251,7 +260,30 @@ impl WorthQueryPrimaryGraphInstallationDenial {
     pub fn readiness_denial(
         &self,
     ) -> Option<&super::application_contribution::WorthQueryOutputReadinessContractDenial> {
-        self.readiness.as_deref()
+        match self.cause.as_deref()? {
+            InstallationDenialCause::Readiness(denial) => Some(denial),
+            _ => None,
+        }
+    }
+
+    /// Original native law evidence from the refused bootstrap commit.
+    pub fn relation_law(
+        &self,
+    ) -> Option<crate::domain_computation::WorthQueryRelationLawDenial<'_>> {
+        match self.cause.as_deref()? {
+            InstallationDenialCause::RelationLaw(fields) => {
+                crate::domain_computation::WorthQueryRelationLawDenial::from_fields(fields)
+            }
+            _ => None,
+        }
+    }
+
+    pub(super) fn with_relation_law_fields(
+        mut self,
+        fields: worth_relational::facade::transactions::InvariantViolationFields,
+    ) -> Self {
+        self.cause = Some(Box::new(InstallationDenialCause::RelationLaw(fields)));
+        self
     }
 }
 
@@ -264,7 +296,7 @@ impl From<super::application_contribution::WorthQueryOutputReadinessContractDeni
         Self {
             kind: WorthQueryPrimaryGraphInstallationDenialKind::ReadinessContractRejected,
             subject: cause.to_string(),
-            readiness: Some(Box::new(cause)),
+            cause: Some(Box::new(InstallationDenialCause::Readiness(cause))),
         }
     }
 }

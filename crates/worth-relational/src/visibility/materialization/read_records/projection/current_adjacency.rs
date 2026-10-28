@@ -15,7 +15,7 @@ pub(super) fn visit<Stop>(
     visit(RelationalAdjacencyVisit::List)?;
     visit(RelationalAdjacencyVisit::Prepare { work: 33, bytes: 0 })?;
     let Some(head) = head else {
-        return Ok(());
+        return visit(RelationalAdjacencyVisit::Acquired);
     };
     let direction = match direction {
         RelationalAdjacencyDirection::Outgoing => AdjacencyDirection::Outgoing,
@@ -36,6 +36,7 @@ pub(super) fn visit<Stop>(
     let mut ledger = AdjacencyLeaseLedger::default();
     let ids = ledger.lease_current(adjacency, kind);
     let result = (|| {
+        visit(RelationalAdjacencyVisit::Acquired)?;
         let mut ids =
             ids.try_iter(|work, bytes| visit(RelationalAdjacencyVisit::Prepare { work, bytes }))?;
         while let Some(id) =

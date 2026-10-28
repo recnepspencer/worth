@@ -6,7 +6,7 @@ macro_rules! schema {
         worth_query_decl::facade::worth_query_application! {
             pub(super) $schema { owner: $owner, version: (1, 0), contributions: [installation::Members], }
         }
-        impl TopologySchemaBinding for $schema {}
+        impl TopologyModelBinding for $schema {}
         impl BirthSchema for $schema {
             const REQUIRED: bool = false;
             const SOURCE_WRITE: SourceWrite = SourceWrite::$write;

@@ -46,7 +46,7 @@ pub(super) fn append_schema_member(
             basis.text(format!("{prefix}.relation"), relation);
             basis.text(format!("{prefix}.from"), from);
             basis.text(format!("{prefix}.to"), to);
-            append_relation_integrity(basis, prefix, *integrity);
+            append_relation_integrity(basis, prefix, integrity);
         }
         ApplicationSchemaMember::PrincipalBinding { .. } => {
             append_principal_binding(basis, prefix, member)
@@ -58,12 +58,24 @@ pub(super) fn append_schema_member(
 fn append_relation_integrity(
     basis: &mut ApplicationSchemaCanonicalBasis,
     prefix: &str,
-    integrity: crate::application_schema::ApplicationRelationIntegrity,
+    integrity: &crate::application_schema::ApplicationRelationIntegrityRecord,
 ) {
     use crate::application_schema::{
         ApplicationRelationCrossContextPolicy as CrossContext,
         ApplicationRelationDeletionPolicy as Deletion,
     };
+    // No enabled law preserves the pre-existing relation meaning.
+    for (law, value) in integrity.enabled_laws() {
+        use crate::application_schema::relation_integrity::ApplicationRelationLawValue;
+        match value {
+            ApplicationRelationLawValue::Number(value) => {
+                basis.u64(format!("{prefix}.laws.{law}"), value)
+            }
+            value @ ApplicationRelationLawValue::KindSet(_) => {
+                basis.text(format!("{prefix}.laws.{law}"), &value.canonical_text())
+            }
+        }
+    }
     basis.text(
         format!("{prefix}.endpoints.cross_context"),
         match integrity.endpoints.cross_context_policy {

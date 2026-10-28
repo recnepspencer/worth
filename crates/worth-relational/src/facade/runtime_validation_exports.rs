@@ -1,7 +1,8 @@
 pub use crate::validation::data::{
-    CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantExecutionContext,
-    CustomInvariantExecutionError, CustomInvariantInterruption, CustomInvariantLeaseBudget,
-    CustomInvariantOperationalMetadata, CustomInvariantPreparationError,
+    CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,
+    CustomInvariantExecutionContext, CustomInvariantExecutionError, CustomInvariantInterruption,
+    CustomInvariantLeaseBudget, CustomInvariantOperationalMetadata,
+    CustomInvariantPreparationError, CustomInvariantReadBudget, CustomInvariantRefusal,
     CustomInvariantRegistration, CustomInvariantRegistrationError, CustomInvariantRule,
     CustomInvariantRuleId, CustomInvariantScopePlanner, CustomInvariantSemanticIdentity,
     CustomInvariantSemanticVersion, CustomInvariantVerdict, InvariantCatalog, InvariantCheckResult,
@@ -9,7 +10,8 @@ pub use crate::validation::data::{
     InvariantExecutionPoint, InvariantFailureEffect, InvariantGroup, InvariantGroupSet,
     InvariantRegistration, InvariantReportedRule, InvariantRule, InvariantVerdict,
     PlannedRelationEndpointUpdate, StructuralAspectStateView, StructuralReadError,
-    StructuralRelationRecord, StructuralRelationView,
+    StructuralRelationRecord, StructuralRelationView, StructuralWalkDenial,
+    StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
 };
 pub use crate::validation::engine::InvariantExecutionResult;
 

@@ -1,8 +1,10 @@
 //! Validate retained outputs and original query dependencies at one selected image.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
-use crate::domain_computation::primary_graph::output_reuse::first_moved_fact;
 use crate::domain_computation::primary_graph::output_reuse::retained_fact_denial;
+use crate::domain_computation::primary_graph::output_reuse::{
+    first_moved_fact_in, RetainedFactVerification,
+};
 use crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -28,14 +30,20 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
-                self.require_current_settlements_in(execution, relational, settlements)?;
+                let query_control = || match request.interruption() {
+                    None => Ok(()),
+                    Some(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled) => Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled),
+                    Some(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded) => Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed),
+                };
+                let mut verification = RetainedFactVerification::new(&execution, relational, self.application_basis().snapshot_handle(), Some(&query_control));
+                self.require_current_settlements_in_extent(execution, relational, settlements, &mut verification)?;
                 for source in dependencies.sources.elements() {
                     self.require_current_dependency_in(
-                        &execution,
                         relational,
                         source,
                         control.policy(),
                         request,
+                        &mut verification,
                     )?;
                 }
                 Ok(())
@@ -45,11 +53,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     // production validates each member at the same selected native image.
     pub(super) fn require_current_dependency_in(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         source: &super::RetainedQuerySource,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         request: &WorthQueryRequestScope,
+        verification: &mut RetainedFactVerification<'_, '_, '_>,
     ) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
         let runtime = self.application();
         policy.check_live().map_err(storage)?;
@@ -79,12 +87,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             &source.query_identifier,
         )?;
         let facts = prepared.into_facts(StorageControl::new(policy, Some(request)))?;
-        match first_moved_fact(
-            execution,
-            relational,
-            self.application_basis().snapshot_handle(),
-            facts.iter(),
-        ) {
+        match first_moved_fact_in(verification, facts.iter()) {
             Ok(None) => {}
             Ok(Some(fact)) => {
                 return Err(WorthQueryOutputDemandDenial::new(

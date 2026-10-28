@@ -198,7 +198,7 @@ fn assert_rejected_by_strictness_rule(error: &TransactionCommitError) {
         matches!(
             &error.class,
             ConflictClass::InvariantViolation {
-                fields: InvariantViolationFields::CustomInvariantViolation { identity },
+                fields: InvariantViolationFields::CustomInvariantViolation { identity, .. },
                 ..
             } if identity.rule_id.as_str() == STRICTNESS_RULE_ID
         ),

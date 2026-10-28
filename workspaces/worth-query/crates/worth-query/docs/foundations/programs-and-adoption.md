@@ -109,6 +109,13 @@ The rules that follow from the separation:
 A program is a type implementing `ApplicationProgramDefinition<Schema>`.
 Validation produces the revision:
 
+When the schema declares [relation laws](../modeling/relation-laws.md), call
+`.with_schema(&schema)` before `.validated_program()`. It captures the completed
+schema's law meaning alongside executable bodies. Law changes affect the
+program revision and its semantic facts; installation refuses a program with
+missing or different law bindings. Programs without enabled relation laws keep
+their existing revisions.
+
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
@@ -246,7 +253,8 @@ let outcome = host
 
 - The second argument is the request's `ExecutionAllocationPolicy`
   (`worth_query_host::facade::runtime`): `SystemAllocation` or
-  `Execution(&lease)`. There is no default.
+  `Execution(&lease)`. There is no default. Under `Execution(&lease)` the lane
+  runs as a controlled child of that lease, its one budget.
 - `execute_in_program` resolves the commit owner from the program carried by
   the request's exact branch. No caller-supplied revision or activation receipt
   takes part in selection.

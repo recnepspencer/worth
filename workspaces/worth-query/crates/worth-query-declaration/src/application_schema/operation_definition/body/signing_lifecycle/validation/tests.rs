@@ -65,7 +65,7 @@ fn fixture() -> (Body, Vec<Member>) {
         relation: name.into(),
         from: from.into(),
         to: to.into(),
-        integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+        integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
     };
     let members = vec![
         Member::OperationBody {

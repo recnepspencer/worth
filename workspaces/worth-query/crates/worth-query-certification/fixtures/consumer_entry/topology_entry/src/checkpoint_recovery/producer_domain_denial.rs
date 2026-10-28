@@ -8,9 +8,12 @@ use worth_query_host::facade::application_entry::{
 };
 
 use super::*;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryProducerDenialDecodeDenial, WorthQueryProducerDenialValue,
+};
 
 #[test]
-fn producer_domain_denial_preserves_reason_and_releases_claim_for_retry() {
+fn producer_domain_denial_preserves_reason_and_undeclared_value_and_releases_claim_for_retry() {
     let _guard = checkpoint_recovery_test_guard();
     let domain_denial = Arc::new(AtomicBool::new(true));
     let application = support::install_with_domain_denial(Arc::clone(&domain_denial));
@@ -55,6 +58,17 @@ fn producer_domain_denial_preserves_reason_and_releases_claim_for_retry() {
     assert_eq!(
         cause.domain_reason(),
         Some("A current planar output is required before this decision.")
+    );
+    // This provider explicitly declares no domain value. The caller is told
+    // so by type; it never receives an empty value that looks like one.
+    assert_eq!(
+        cause.producer_denial_value(),
+        Some(&WorthQueryProducerDenialValue::Undeclared)
+    );
+    assert_eq!(cause.producer_denial_bytes(), None);
+    assert_eq!(
+        cause.decode_producer_denial::<crate::TopologyLengthBinding>(),
+        Err(WorthQueryProducerDenialDecodeDenial::Undeclared)
     );
     assert_eq!(
         cause.subject(),

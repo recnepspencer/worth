@@ -7,6 +7,7 @@ pub(super) fn prepare<'state>(
     execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     lease: &ExecutionResourceLease<'_>,
+    stage: super::super::InvariantStage,
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
     let empty = ExecutionReport::new(
         lease.resolved_posture(),
@@ -32,7 +33,7 @@ pub(super) fn prepare<'state>(
                         ))
                     })?;
                     let plan = plan_invariant_execution_checked(
-                        runtime, execution, request, child, &meter,
+                        runtime, execution, request, child, &meter, stage,
                     );
                     context
                         .account_completed_work(meter.charged_work())
@@ -58,25 +59,34 @@ pub(super) fn prepare<'state>(
     );
     match outcome {
         Ok((Ok((plan, bytes)), report)) => Ok((plan, bytes, report)),
+        // The single planning stage is partition 1.
         Ok((Err(cause), _)) => Err(PacketExecutionStop::Execution {
-            boundary: None,
+            boundary: Some(PartitionIdentity::new(1)),
             reason: MapStop::Failure {
                 identity: PartitionIdentity::new(1),
                 cause,
             },
         }),
-        Err(denial) => Err(PacketExecutionStop::Execution {
-            boundary: None,
-            reason: match denial {
-                worth_execution::WorkCeilingDenial::Admission(denial) => MapStop::Admission(denial),
-                worth_execution::WorkCeilingDenial::Stopped(stop) => MapStop::Failure {
+        Err(worth_execution::WorkCeilingDenial::Admission(denial)) => {
+            Err(PacketExecutionStop::Execution {
+                boundary: None,
+                reason: MapStop::Admission(denial),
+            })
+        }
+        Err(worth_execution::WorkCeilingDenial::Stopped(stop)) => {
+            Err(PacketExecutionStop::Execution {
+                boundary: Some(PartitionIdentity::new(1)),
+                reason: MapStop::Failure {
                     identity: PartitionIdentity::new(1),
                     cause: MapKernelFailure::Stop(stop),
                 },
-                worth_execution::WorkCeilingDenial::Panicked => MapStop::Failure {
-                    identity: PartitionIdentity::new(1),
-                    cause: MapKernelFailure::Panic,
-                },
+            })
+        }
+        Err(worth_execution::WorkCeilingDenial::Panicked) => Err(PacketExecutionStop::Execution {
+            boundary: Some(PartitionIdentity::new(1)),
+            reason: MapStop::Failure {
+                identity: PartitionIdentity::new(1),
+                cause: MapKernelFailure::Panic,
             },
         }),
     }

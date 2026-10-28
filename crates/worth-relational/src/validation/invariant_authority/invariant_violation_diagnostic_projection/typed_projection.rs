@@ -260,14 +260,37 @@ impl InvariantViolationDiagnosticProjection<'_> {
                     ("detail", RelationalDiagnosticValue::string(*detail)),
                 ],
             ),
-            Self::CustomInvariantViolation { identity } => violation_diagnostic_object(
+            Self::CustomInvariantViolation { identity, refusal } => violation_diagnostic_object(
                 "custom_invariant_violation",
-                [(
-                    "identity",
-                    typed_value_helpers::custom_invariant_semantic_identity_diagnostic_value(
-                        identity,
+                [
+                    (
+                        "identity",
+                        typed_value_helpers::custom_invariant_semantic_identity_diagnostic_value(
+                            identity,
+                        ),
                     ),
-                )],
+                    (
+                        "refusal",
+                        match refusal {
+                            crate::validation::data::CustomInvariantRefusal::Empty => {
+                                RelationalDiagnosticValue::Null
+                            }
+                            crate::validation::data::CustomInvariantRefusal::DeclaredValue {
+                                value_identity,
+                                bytes,
+                            } => RelationalDiagnosticValue::object([
+                                (
+                                    "value_identity",
+                                    RelationalDiagnosticValue::string(value_identity.clone()),
+                                ),
+                                (
+                                    "bytes",
+                                    RelationalDiagnosticValue::CanonicalBytes(bytes.clone()),
+                                ),
+                            ]),
+                        },
+                    ),
+                ],
             ),
             Self::PartitionIsolation {
                 contract_id,
@@ -275,12 +298,16 @@ impl InvariantViolationDiagnosticProjection<'_> {
                 relation_id,
                 source_partition_id,
                 target_partition_id,
+                source,
+                target,
             } => relation_projection::partition_isolation(
                 contract_id,
                 *relation_kind_id,
                 *relation_id,
                 *source_partition_id,
                 *target_partition_id,
+                source,
+                target,
             ),
             Self::Acyclicity {
                 contract_id,

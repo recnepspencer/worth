@@ -16,7 +16,10 @@ pub(super) struct DagFixture {
 
 impl DagFixture {
     pub(super) fn new(count: usize) -> Self {
-        let runtime = runtime_with_acyclicity_and_connectivity();
+        Self::from_runtime(runtime_with_acyclicity_and_connectivity(), count)
+    }
+
+    pub(super) fn from_runtime(runtime: RelationalRuntime, count: usize) -> Self {
         let backing = crate::test_execution_policy::serial_request();
         let execution = ExecutionRequest::serial(&backing);
         let keys: Vec<_> = (0..count)

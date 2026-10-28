@@ -149,7 +149,7 @@ pub(super) fn invariant_violation_witness_key(
             phase.diagnostic_label(),
             failure.diagnostic_label()
         ),
-        InvariantViolationFields::CustomInvariantViolation { identity } => format!(
+        InvariantViolationFields::CustomInvariantViolation { identity, .. } => format!(
             "custom_violation:{}:{}.{}",
             identity.rule_id.as_str(),
             identity.semantic_version.major,
@@ -160,9 +160,11 @@ pub(super) fn invariant_violation_witness_key(
             relation_id,
             source_partition_id,
             target_partition_id,
+            source,
+            target,
             ..
         } => format!(
-            "partition_isolation:{}:{relation_id:?}:{}:{}",
+            "partition_isolation:{}:{relation_id:?}:{}:{}:{source:?}:{target:?}",
             relation_kind_id.as_u32(),
             source_partition_id.as_u32(),
             target_partition_id.as_u32()

@@ -33,10 +33,13 @@ mod execution;
 mod facts;
 mod oracle;
 mod output_producer;
+mod own_write;
 mod owner;
 mod probe;
 mod refusal;
 mod region_output;
+mod region_output_demand;
+mod region_output_modes;
 mod worker_axis;
 
 /// A set of entries, each tagged with the region it lies in. An owner reads
@@ -241,6 +244,7 @@ where
         CheckpointSchema,
         RegionTotalsProgram<DeclaredOnly<Computation>>,
     >::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     .expect("the region totals program is complete")
     .revision()
@@ -254,6 +258,7 @@ where
         CheckpointSchema,
         RegionTotalsProgram<DeclaredOnly<Computation>>,
     >::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     .err()
     .map(|denial| denial.kind())
@@ -266,6 +271,7 @@ fn program_with_one_partitioned_computation_installs_with_its_owner() {
         CheckpointSchema,
         RegionTotalsProgram<owner::PartitionedOwner>,
     >::begin()
+    .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     .expect("the region totals program is complete");
     let computations = program

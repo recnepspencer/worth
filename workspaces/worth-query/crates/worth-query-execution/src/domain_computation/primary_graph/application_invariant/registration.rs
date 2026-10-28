@@ -34,6 +34,7 @@ where
         binding_identity: ApplicationSchemaBindingIdentity,
         program_selection: Option<WorthQueryProgramRuleSelection>,
     ) -> Result<CustomInvariantRegistration, String> {
+        super::refusal::maximum::<Rule::RefusalBinding>()?;
         CustomInvariantRegistration::new(InstalledApplicationInvariantRule {
             rule: *self,
             descriptor,
@@ -55,6 +56,7 @@ struct InstalledApplicationInvariantRule<Schema, Rule> {
 
 struct InstalledApplicationInvariantScope<Scope> {
     rule_scope: Scope,
+    preparation_reads: super::super::invariant_projection::WorthQueryInvariantProjectionWork,
     admission: std::sync::Arc<super::prepared_scope::ApplicationInvariantAdmission>,
 }
 
@@ -76,11 +78,13 @@ where
         let mut planner = super::WorthQueryApplicationInvariantScopePlanner::new(
             planner,
             self.binding_identity.clone(),
-        );
+        )
+        .map_err(preparation_denial)?;
         let rule_scope = self.rule.prepare_scope(&mut planner)?;
         Ok(InstalledApplicationInvariantScope {
             rule_scope,
-            admission: planner.freeze_admission(),
+            admission: planner.freeze_admission().map_err(preparation_denial)?,
+            preparation_reads: planner.reads(),
         })
     }
 
@@ -93,16 +97,22 @@ where
         planner: &mut CustomInvariantScopePlanner<'_>,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<Self::Scope, CustomInvariantPreparationError>> {
-        let mut planner = super::WorthQueryApplicationInvariantScopePlanner::new(
+        let mut planner = match super::WorthQueryApplicationInvariantScopePlanner::new(
             planner,
             self.binding_identity.clone(),
-        );
+        ) {
+            Ok(planner) => planner,
+            Err(denial) => return Some(Err(preparation_denial(denial))),
+        };
         self.rule
             .prepare_scope_checked(&mut planner, budget)
             .map(|result| {
-                result.map(|rule_scope| InstalledApplicationInvariantScope {
-                    rule_scope,
-                    admission: planner.freeze_admission(),
+                result.and_then(|rule_scope| {
+                    Ok(InstalledApplicationInvariantScope {
+                        rule_scope,
+                        admission: planner.freeze_admission().map_err(preparation_denial)?,
+                        preparation_reads: planner.reads(),
+                    })
                 })
             })
     }
@@ -126,9 +136,15 @@ where
             context,
             self.binding_identity.clone(),
             std::sync::Arc::clone(&scope.admission),
+            scope.preparation_reads,
         );
         self.rule
             .evaluate_checked(&context, &scope.rule_scope, budget)
+            .map(|result| {
+                result.and_then(|verdict| {
+                    super::refusal::encode::<Rule::RefusalBinding>(verdict, budget)
+                })
+            })
     }
 
     fn evaluate(
@@ -141,11 +157,23 @@ where
         {
             return Ok(CustomInvariantVerdict::Pass);
         }
+        let refusal_budget = context.refusal_budget();
         let context = super::WorthQueryApplicationInvariantContext::new(
             context,
             self.binding_identity.clone(),
             std::sync::Arc::clone(&scope.admission),
+            scope.preparation_reads,
         );
-        self.rule.evaluate(&context, &scope.rule_scope)
+        self.rule
+            .evaluate(&context, &scope.rule_scope)
+            .and_then(|verdict| {
+                super::refusal::encode::<Rule::RefusalBinding>(verdict, refusal_budget)
+            })
     }
+}
+
+fn preparation_denial(
+    denial: super::WorthQueryInvariantAccessDenial,
+) -> CustomInvariantPreparationError {
+    CustomInvariantPreparationError::new(denial.to_string())
 }

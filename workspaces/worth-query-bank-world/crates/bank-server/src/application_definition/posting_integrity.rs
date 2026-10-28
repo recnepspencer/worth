@@ -68,6 +68,9 @@ pub(super) struct BankPostingIntegrityRule {
 }
 
 impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule {
+    type Refusal = ();
+    type RefusalBinding =
+        worth_query_host::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
     type Scope = Vec<WorthQueryApplicationInvariantEntity<BankSchema, JournalEntry>>;
 
     fn supports_checked_preparation(&self) -> bool {
@@ -86,7 +89,10 @@ impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         Some(self.evaluate_under(context, scope, Some(budget)))
     }
@@ -102,8 +108,10 @@ impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, BankSchema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         self.evaluate_under(context, scope, None)
     }
 }
@@ -257,8 +265,10 @@ impl BankPostingIntegrityRule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, BankSchema>,
         scope: &<Self as WorthQueryApplicationInvariantRule<BankSchema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         if budget.is_some_and(|budget| !budget.checkpoint(0)) {
             return Err(WorthQueryApplicationInvariantExecutionError::new(
                 "caller stopped",
@@ -271,7 +281,7 @@ impl BankPostingIntegrityRule {
                 ));
             }
             if !self.journal_is_balanced(context, journal, budget)? {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)

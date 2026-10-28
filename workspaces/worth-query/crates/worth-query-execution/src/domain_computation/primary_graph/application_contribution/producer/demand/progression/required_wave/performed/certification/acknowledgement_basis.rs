@@ -16,12 +16,20 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
         .unwrap();
         let a = CurrentBasis::of(basis_a.selected().product().observation());
         let registry = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry::default();
-        let (interest, member) = registry.fixture_admitted_work_membership(
+        // The row's key names this World's own occurrence. The shared registry
+        // fixture key would install a second fixture World inside this
+        // advancement, which the advancement owner refuses as a nested opening.
+        let (interest, member) = registry.fixture_scope_work_membership(
             basis_a
                 .selected()
                 .product()
                 .observation()
                 .lifecycle_incarnation(),
+            worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId::main(),
+                1,
+                1,
+            ),
         );
         let proof = PerformedMembers::start().current(
             (),

@@ -282,6 +282,7 @@ where
 mod interruption;
 #[cfg(test)]
 use interruption::authorization_interruption;
+pub(super) use interruption::request_stop;
 
 #[cfg(test)]
 mod cancellation_spelling {

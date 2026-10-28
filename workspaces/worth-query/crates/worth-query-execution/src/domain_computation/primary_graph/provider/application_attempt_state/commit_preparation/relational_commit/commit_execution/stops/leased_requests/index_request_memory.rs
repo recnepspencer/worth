@@ -1,0 +1,146 @@
+//! An index build beyond its request's memory retains the request's quote at
+//! the application boundary.
+use super::*;
+use worth_foundational::facade::{
+    aspects, AspectFieldLocator, AspectIdentity, AspectKey, AspectValue, CanonicalFieldPath,
+    FieldKey, LocatorAuthority, ScalarAspectType,
+};
+use worth_relational::facade::{
+    schema::{AspectBinding, DeclaredAspectContractBinding},
+    transactions::BulkEntityCreateIntent,
+};
+
+#[test]
+fn index_request_memory_refusal_reaches_application_caller() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    in_isolated_process(
+        concat!(
+            module_path!(),
+            "::index_request_memory_refusal_reaches_application_caller"
+        ),
+        || {
+            let key = AspectKey::new("name").unwrap();
+            let field = FieldKey::new("name").unwrap();
+            let locator = AspectFieldLocator::new(
+                LocatorAuthority::Planned,
+                key.clone(),
+                CanonicalFieldPath::single(field.clone()),
+            );
+            let schema = RelationalSchemaRegistry::new()
+                .register_entity_kind(EntityKindRegistration {
+                    kind_id: KindId(1),
+                    kind_name: "result.entity".to_owned(),
+                    schema_id: SchemaId("result-probe".to_owned()),
+                    schema_version_id: SchemaVersionId(1),
+                    aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
+                        DeclaredAspectContractBinding {
+                            binding: AspectBinding::EntityField { field },
+                            contract: aspects()
+                                .contract()
+                                .for_key(key)
+                                .identified_by(AspectIdentity(1))
+                                .at_revision(aspects().vocabulary().revision(1))
+                                .scalar(ScalarAspectType::String),
+                        },
+                    ]),
+                })
+                .unwrap();
+            let runtime = RelationalRuntimeApi::builder()
+                .schema_registry(schema)
+                .build()
+                .expect("valid native runtime configuration");
+            let (_, basis) = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .unwrap();
+            let mut transaction = runtime
+                .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+                .unwrap();
+            transaction
+                .push_batch(
+                    WorkerIntentBatch::new("index-source").push(MutationIntent::Create(
+                        CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                            partition_id: PartitionId::main(),
+                            kind_id: KindId(1),
+                            client_keys: (0..128)
+                                .map(|i| ClientKey::raw(format!("index-heavy-{i}")))
+                                .collect(),
+                            field_patches: (0..128)
+                                .map(|i| {
+                                    AspectFieldPatch::from_locator(
+                                        locator.clone(),
+                                        AspectValue::String(format!("index-heavy-{i}").into()),
+                                    )
+                                })
+                                .collect(),
+                        }),
+                    )),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let committed = transaction.commit(execution, &runtime).unwrap();
+            let index = runtime
+                .index_authority()
+                .register(DerivedIndexDefinition {
+                    index_id: DerivedIndexId(0),
+                    name: "large.index.name".to_owned(),
+                    kind: DerivedIndexKind::EntityField {
+                        field_locator: locator,
+                    },
+                    branch_scoped: true,
+                })
+                .expect("index fixture has identity capacity");
+            let build_request = DerivedIndexBuildRequest {
+                source_commit_id: committed.commit.commit_id,
+                branch_id: BranchId("main".to_owned()),
+                index_ids: vec![index.index_id],
+            };
+            let baseline = runtime
+                .index_authority()
+                .build_for_commit(execution, build_request.clone());
+            assert!(baseline.execution_denial.is_none());
+            let published = baseline.generations[0].generation_id;
+            // One worker and 64 KiB cannot hold 128 indexed rows: the request's
+            // own policy refuses the build, quoting more than it holds.
+            const POLICY: u64 = 64 * 1024;
+            let lease = authority()
+                .request_lease(request(POLICY, 1_000_000))
+                .unwrap();
+            let build = runtime.index_authority().build_for_commit(
+                &worth_execution::ExecutionRequest::leased(&lease),
+                build_request.clone(),
+            );
+            assert!(build.generations.is_empty());
+            let denial = build
+                .execution_denial
+                .expect("index request memory refused");
+            let DerivedIndexExecutionDenialKind::Cause(cause) = denial.kind;
+            let stop = super::super::relational_execution_stop(cause, denial.partition_identity);
+            let Stop::PreEffectDenied(failure) = stop else {
+                panic!("request memory must reach pre-effect refusal");
+            };
+            let denial = resource(provider_compare_denied(Compare::ProviderSession(failure)));
+            assert!(
+                matches!(
+                    denial,
+                    Resource::MemoryLimit {
+                        requested,
+                        admitted,
+                        level: Level::Policy,
+                    } if admitted <= POLICY && requested > admitted
+                ),
+                "the request policy refuses with its quote: {denial:?}"
+            );
+            assert_eq!(
+                runtime
+                    .index_access()
+                    .read_latest_generation(execution, index.index_id, &build_request.branch_id)
+                    .unwrap()
+                    .unwrap()
+                    .generation_id,
+                published
+            );
+        },
+    );
+}

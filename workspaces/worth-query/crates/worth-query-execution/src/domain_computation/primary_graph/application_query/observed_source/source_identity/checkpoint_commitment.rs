@@ -125,7 +125,7 @@ mod tests {
         let mut changed_selection = footprint(root, true);
         changed_selection.root_selection = Some(std::sync::Arc::new(
             crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection::new(
-                vec![root], Vec::new(), Vec::new(),
+                vec![root], Vec::new(), Vec::new(), None, None,
             ),
         ));
         let changed = epoch(&registry, root, changed_selection, &first_selection);

@@ -40,6 +40,9 @@ pub enum WorthQueryReadGraphRelationDirection {
 pub struct WorthQueryReadGraphRelationView<'a> {
     pub relation: &'a str,
     pub direction: WorthQueryReadGraphRelationDirection,
+    /// Repeats the endorelation until its frontier is exhausted. `depth`
+    /// remains authored/planning metadata and never bounds this closure.
+    pub complete_closure: bool,
     pub cardinality: ApplicationQueryCardinality,
     pub depth: usize,
 }

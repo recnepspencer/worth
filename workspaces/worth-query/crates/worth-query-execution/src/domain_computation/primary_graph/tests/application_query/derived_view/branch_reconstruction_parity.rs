@@ -132,7 +132,7 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                 WorthQueryApplicationQueryAccessContext::new(&sibling_principal, &sibling_root);
             let mut first = Some(first);
             let request = execution;
-            let (answer, _work) = request
+            let (answer, work) = request
                 .run(ExecutionWorkCeiling::new(None), |_| {
                     world
                         .application
@@ -178,6 +178,7 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                 answer,
                 Err(WorthQueryManagedDerivedViewDenial::ForeignBranch)
             );
+            assert!(work.charged_work() > 0);
         })
         .unwrap();
 }

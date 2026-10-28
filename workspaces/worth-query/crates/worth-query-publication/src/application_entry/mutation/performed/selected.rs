@@ -1,4 +1,5 @@
 //! Performed sources committed under the program their branch selected.
+use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
 use worth_query_declaration::facade::application_operation::{
@@ -120,9 +121,42 @@ where
         <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             WorthQueryApplicationProjection<Schema, <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query> + Clone,
     {
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            let (selected, _) = request.select_performed_owner::<Program, Root>(phase, application)?;
+            <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
+                Schema,
+                RootConnection<Schema, Root>,
+            >>::demand_from_source(request.request.intent.input())
+            .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
+            <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase, request, identities, staged, &selected)
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)
+        }) {
+            RecordedReplay::Replayed(outcome) => {
+                let outcome = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
+                    Schema,
+                    RootConnection<Schema, Root>,
+                >>::demand_from_source(self.request.intent.input())
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)
+                .map(|demand| {
+                    performed_outcome(
+                        demand,
+                        outcome,
+                        crate::application_entry::mutation::performed_source::PerformedSourceCommit::default(),
+                    )
+                });
+                return crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport::new(
+                    outcome,
+                    worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted,
+                );
+            }
+            RecordedReplay::Refused(refusal) => {
+                return crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport::new(Err(refusal), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+            }
+            RecordedReplay::Miss => {}
+        }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
-        runtime.with_application_advancement(&scope, |phase| {
+        runtime.with_funded_application_advancement(&scope, allocation_policy, |phase| {
         let mut decision_work =
             worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
         let outcome = self.execute_performed_with_work::<Program, Root>(&phase,
@@ -164,31 +198,7 @@ where
         <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             WorthQueryApplicationProjection<Schema, <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query> + Clone,
     {
-        crate::application_entry::mutation::performed_source::require_program_output_root::<
-            Schema,
-            Program,
-            Root,
-        >(self.request.application, application)?;
-        let selected = self
-            .request
-            .application
-            .on_branch(self.request.branch)
-            .select(phase)
-            .map_err(|selection| {
-                WorthQueryPerformedMutationExecutionDenial::Mutation(
-                    WorthQueryApplicationRequestMutationDenial::ProductSelection(selection),
-                )
-            })?;
-        let owner = application.selected_program_owner(&selected).map_err(|denial| {
-            WorthQueryPerformedMutationExecutionDenial::Mutation(
-                crate::application_entry::mutation::selected_program::map_selected_program_owner_denial(denial),
-            )
-        })?;
-        if let Some(declared) = self.compiled_action {
-            owner
-                .resolve_declared_action::<Intent::Binding>(declared)
-                .map_err(WorthQueryPerformedMutationExecutionDenial::Action)?;
-        }
+        let (selected, owner) = self.select_performed_owner::<Program, Root>(phase, application)?;
         let demand = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
             Schema,
             RootConnection<Schema, Root>,

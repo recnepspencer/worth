@@ -84,10 +84,13 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             "the same owner preflighted one work unit"
         );
         self.realized_scope.record(identity.entity_id);
-        self.work.record_field();
+        let reads = &mut self.work;
         match crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
             self.runtime, self.execution, self.snapshot, identity.entity_id, identity.kind,
-            locator, observe,
+            locator, |raw| {
+                reads.record_fields(1);
+                observe(raw)
+            },
         ) {
             Ok(Some(value)) => value,
             Ok(None) => Err(HandlerExecutionDenial::new(

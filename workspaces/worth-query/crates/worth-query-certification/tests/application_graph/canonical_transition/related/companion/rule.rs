@@ -93,8 +93,10 @@ impl Rule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, CanonicalSchema>,
         scope: &[Entity],
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         let view = context.proposed();
         for entity in scope {
             if budget.is_some_and(|b| !b.checkpoint(1)) {
@@ -113,7 +115,7 @@ impl Rule {
                 if from.as_deref() != Some("companion-left")
                     || to.as_deref() != Some("companion-right")
                 {
-                    return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+                    return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
                 }
             }
         }
@@ -121,6 +123,9 @@ impl Rule {
     }
 }
 impl WorthQueryApplicationInvariantRule<CanonicalSchema> for Rule {
+    type Refusal = ();
+    type RefusalBinding =
+        worth_query_host::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
     type Scope = Vec<Entity>;
     fn supports_checked_preparation(&self) -> bool {
         true
@@ -138,7 +143,10 @@ impl WorthQueryApplicationInvariantRule<CanonicalSchema> for Rule {
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         Some(self.judge(context, scope, Some(budget)))
     }
@@ -152,8 +160,10 @@ impl WorthQueryApplicationInvariantRule<CanonicalSchema> for Rule {
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, CanonicalSchema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         self.judge(context, scope, None)
     }
 }

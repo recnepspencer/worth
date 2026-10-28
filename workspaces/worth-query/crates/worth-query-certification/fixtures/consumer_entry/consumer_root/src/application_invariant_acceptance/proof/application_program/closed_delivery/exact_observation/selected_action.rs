@@ -13,18 +13,22 @@ use worth_query_host::facade::{
 fn closed_no_projection_compares_the_action_selected_at_the_caller_observation() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let original = ApplicationProgramAuthoring::<ConsumerSchema, NoProjectionProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let original_revision = *original.revision();
     let changed = ApplicationProgramAuthoring::<ConsumerSchema, ChangedNoProjection>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let changed_revision = *changed.revision();
     let removed = ApplicationProgramAuthoring::<ConsumerSchema, RemovedFixed>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let removed_revision = *removed.revision();
     let unchanged = ApplicationProgramAuthoring::<ConsumerSchema, UnchangedNoProjection>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let unchanged_revision = *unchanged.revision();
@@ -201,6 +205,7 @@ fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
     use crate::application_program::fixed_source_receipts::{self as source, Program, Root};
     let _observations = WorthQueryExecutionObservation::install_on_this_thread();
     let program = ApplicationProgramAuthoring::<ConsumerSchema, Program>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [model_owner_grant::<Program>()];

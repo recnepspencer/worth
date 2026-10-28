@@ -70,7 +70,7 @@ fn one_scope_enforces_total_work_and_preserves_snapshot_after_stop() {
     let accounting = complete
         .reduction_metrics
         .accounted_metrics()
-        .expect("an accounted lease records reduction accounting");
+        .expect("a policy-serial run carries reduction accounting");
     assert_eq!(accounting.structural_visits, 11);
     assert_eq!(accounting.combine_calls, 4);
     assert_eq!(accounting.charged_work, 15);

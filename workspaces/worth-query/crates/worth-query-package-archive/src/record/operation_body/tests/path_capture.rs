@@ -2,9 +2,8 @@
 use super::*;
 use worth_query_declaration::facade::{
     application_query::{
-        ApplicationQueryRootPathDirection as Direction, ApplicationQueryRootPathMeaning as Path,
-        ApplicationQueryRootPathStep as Step,
-        WorthQueryPortableApplicationQueryRootPathParts as Parts,
+        ApplicationQueryRootPathMeaning as Path, ApplicationQueryRootPathStep as Step,
+        RelationDirection as Direction, WorthQueryPortableApplicationQueryRootPathParts as Parts,
     },
     application_schema::{
         ApplicationFieldPresence as Presence, ApplicationOperationBodyCaptureRole as Role,
@@ -30,7 +29,7 @@ fn capture(identity_path: bool) -> ApplicationOperationBodyCreatedField {
                         "Lot".into(),
                         "Row".into(),
                         Direction::Reverse,
-                    )]
+                     worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)]
                 },
             }),
             field: ApplicationFieldBindingLocus::new(entity, "Facts", "Comment"),

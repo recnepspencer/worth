@@ -20,6 +20,7 @@ impl ConsumerDeploymentGrantSeed {
     ) -> Self {
         Self {
             source: *ApplicationProgramAuthoring::<ConsumerSchema, Source>::begin()
+                .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
                 .validated_program()
                 .expect("deployment grant names actual validated source meaning")
                 .revision(),

@@ -189,7 +189,7 @@ mod tests {
         let mut closure = WorthQueryProviderPlanDeclaredClosure::default();
         let exact = WorthQueryInvariantExecutionContract::declared([original.clone()]).unwrap();
         bind_native_reference_invariants(&mut closure, &mut requirements, &exact).unwrap();
-        assert_eq!(requirements.as_slice(), std::slice::from_ref(&original));
+        assert_eq!(requirements, std::slice::from_ref(&original));
         let conflict = WorthQueryInvariantExecutionContract::declared([requirement(2)]).unwrap();
         assert!(
             bind_native_reference_invariants(&mut closure, &mut requirements, &conflict).is_err()

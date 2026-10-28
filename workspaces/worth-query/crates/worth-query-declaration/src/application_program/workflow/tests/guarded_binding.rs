@@ -69,3 +69,21 @@ crate::worth_query_mutation_binding!(@binding
     scope_field_type Principal, PrincipalFacts, PrincipalId, u64, ReadOnly, NoApplicationUnit,
     scope_field PrincipalId::reference(),
 );
+
+#[test]
+fn guarded_binding_members_keep_their_declared_identities() {
+    let principal = PrincipalId::reference();
+    let mapping = ExternalId::reference();
+    assert_eq!(principal.entity(), "Principal");
+    assert_eq!(mapping.entity(), "ExternalMapping");
+    assert_eq!(principal.aspect(), "PrincipalFacts");
+    assert_eq!(
+        <PrincipalFacts as ApplicationAspectMarkerIdentity<TestSchema, Principal>>::ASPECT_IDENTITY,
+        AspectIdentity(0x9500_0101)
+    );
+    assert_eq!(mapping.aspect(), "MappingFacts");
+    assert_eq!(
+        <MappingFacts as ApplicationAspectMarkerIdentity<TestSchema, ExternalMapping>>::ASPECT_IDENTITY,
+        AspectIdentity(0x9500_0102)
+    );
+}

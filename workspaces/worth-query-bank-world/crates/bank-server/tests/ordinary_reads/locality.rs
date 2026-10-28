@@ -99,6 +99,9 @@ fn account_discovery_result_limit_denies_before_projecting_an_oversized_union() 
     ));
 }
 
+/// Commit `ee07da2b0e` removed the caller's dynamic frontier work control.
+/// A 250-account root union reads in full with only a result limit: no caller
+/// supplies a work estimate or ceiling.
 #[test]
 fn account_discovery_root_union_work_grows_at_most_linearly() {
     let mut baseline = None;

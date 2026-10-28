@@ -11,6 +11,49 @@ pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnes
 }
 
 impl WorthQueryApplicationObservedFact {
+    /// The extent retains actual bodies and its one admitted pin. It cannot
+    /// answer for another runtime/image or omit an original control poll.
+    pub(in crate::domain_computation::primary_graph) fn source_currentness_with<'runtime>(
+        &self,
+        runtime: &'runtime worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        walks: &mut Option<
+            crate::domain_computation::primary_graph::structural_walk::StructuralWalkVerification<
+                'runtime,
+            >,
+        >,
+        control: Option<
+            &dyn Fn() -> Result<
+                (),
+                worth_relational::facade::transactions::RelationalExecutionDenialCause,
+            >,
+        >,
+    ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
+    {
+        if let Some(control) = control {
+            control().map_err(CompanionPreflightStop::Execution)?;
+        }
+        let Self::StructuralWalk { observation } = self else {
+            return self.source_currentness_in(runtime, execution, snapshot);
+        };
+        check_request(execution)?;
+        super::super::super::fact_verification_observation::source_currentness();
+        if walks.is_none() {
+            match crate::domain_computation::primary_graph::structural_walk::StructuralWalkVerification::open(runtime, execution, snapshot) {
+                Ok(value) => *walks = Some(value),
+                Err(stop) => return comparison_result(Err(stop)),
+            }
+        }
+        let walks = walks
+            .as_mut()
+            .expect("the extent admitted its selected image");
+        if !walks.answers_image(runtime, snapshot) {
+            return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
+        }
+        comparison_result(walks.check(observation, execution, control))
+    }
+
     /// Compare at the genuine selected snapshot under the original execution request.
     pub(in crate::domain_computation::primary_graph) fn source_currentness_in(
         &self,
@@ -50,13 +93,18 @@ impl WorthQueryApplicationObservedFact {
                 actual.eq(matching_relations.iter().copied()),
             )));
         }
-        match self.comparison(runtime, execution, snapshot) {
-            Ok(equal) => Ok(Ok(FactMovement::from_equal(equal))),
-            Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
-                Err(CompanionPreflightStop::Execution(cause))
-            }
-            Err(stop) => Ok(Err(stop)),
+        comparison_result(self.comparison(runtime, execution, snapshot))
+    }
+}
+fn comparison_result(
+    result: Result<bool, WorthQuerySourceCurrentnessFailure>,
+) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop> {
+    match result {
+        Ok(equal) => Ok(Ok(FactMovement::from_equal(equal))),
+        Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+            Err(CompanionPreflightStop::Execution(cause))
         }
+        Err(stop) => Ok(Err(stop)),
     }
 }
 fn check_request(

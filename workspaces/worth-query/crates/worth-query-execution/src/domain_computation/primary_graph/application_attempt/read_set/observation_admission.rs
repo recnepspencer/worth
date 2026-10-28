@@ -108,6 +108,10 @@ pub(super) fn graph_read_scope_matches_key(
 ) -> bool {
     match (scope, key) {
         (
+            WorthQueryOperationGraphReadScope::Relation(scope),
+            WorthQueryApplicationFactKey::StructuralWalk(key),
+        ) => scope.relation() == key.relation(),
+        (
             WorthQueryOperationGraphReadScope::Entity(scope),
             WorthQueryApplicationFactKey::Entity { entity, .. },
         ) => scope.semantic_key() == entity,

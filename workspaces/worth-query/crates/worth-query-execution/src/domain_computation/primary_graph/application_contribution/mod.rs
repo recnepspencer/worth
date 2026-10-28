@@ -82,10 +82,13 @@ pub use producer::{
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadCleanup,
     WorthQueryOutputReadCloseDenial, WorthQueryProducerApplicability,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
-    WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
+    WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
+    WorthQueryProducerDenialValue, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
+    WorthQuerySelectedApplicationProducer, WorthQueryUndeclaredProducerDenial,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
 pub use request_execution::{

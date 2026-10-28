@@ -123,8 +123,8 @@ fn root_path() -> ApplicationQueryRootPathMeaning {
                 text("relates"),
                 text("Entity"),
                 text("Other"),
-                ApplicationQueryRootPathDirection::Forward,
-            )],
+                RelationDirection::Forward,
+             worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)],
             guards: vec![ApplicationQueryRootPathGuard::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryRootPathGuardParts {
                     after_step: 1,

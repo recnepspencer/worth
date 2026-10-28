@@ -6,8 +6,35 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         settlements: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let mut verification =
+            crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification::new(
+                &execution,
+                relational,
+                self.application_basis().snapshot_handle(),
+                None,
+            );
+        self.require_current_settlements_in_extent(
+            execution,
+            relational,
+            settlements,
+            &mut verification,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn require_current_settlements_in_extent<
+        's,
+    >(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        relational: &worth_relational::facade::runtime::RelationalRuntime,
+        settlements: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
+        verification: &mut crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification<'_, '_, '_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         for settlement in settlements {
+            verification
+                .check_live()
+                .map_err(crate::domain_computation::primary_graph::output_reuse::read_denial)?;
             if !settlement.belongs_to(runtime) {
                 return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
             }
@@ -50,13 +77,17 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 require_own_publication(receipt, self.product().observation())?;
                 continue;
             };
-            self.require_current_read(
+            self.require_current_read_in(
                 &execution,
                 relational,
                 &read,
                 settlement.application_commit_receipt(),
+                verification,
             )?;
         }
+        verification
+            .check_live()
+            .map_err(crate::domain_computation::primary_graph::output_reuse::read_denial)?;
         Ok(())
     }
 }

@@ -53,9 +53,11 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    crate::domain_computation::primary_graph::with_bootstrap_advancement(
-        limits.world.execution_policy(),
-        |phase| {
+    let world_policy = limits.world.execution_policy();
+    let transition =
+        |phase: crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >| {
             transition_in_advancement(
                 &phase,
                 program,
@@ -70,8 +72,23 @@ where
                 capture_policy,
                 author,
             )
-        },
-    )
+        };
+    // An `Execution(lease)` caller funds the whole transition: the bootstrap
+    // runs on that lease, so capture charges inside its own worker lineage.
+    match capture_policy {
+        WorthQueryCheckpointCapturePolicy::SystemAllocation => {
+            crate::domain_computation::primary_graph::with_bootstrap_advancement(
+                world_policy,
+                transition,
+            )
+        }
+        WorthQueryCheckpointCapturePolicy::Execution(lease) => {
+            crate::domain_computation::primary_graph::with_bootstrap_advancement_from_request(
+                worth_execution::ExecutionRequest::leased(lease),
+                transition,
+            )
+        }
+    }
     .map_err(|cause| {
         WorthQueryInMemoryApplicationDenial::Graph(super::super::super::bootstrap::request_denial(
             cause,
@@ -80,7 +97,9 @@ where
 }
 
 /// Perform the same native transition inside the caller's original bootstrap request.
-/// Capture derives funding from this request; unsupported serial backing refuses before effects.
+/// The request funds the transition; `capture_policy` caps its capture and must
+/// name the request's funding lease or a lease descending from it. Serial
+/// backing, or any other capture policy, refuses before work or effects.
 pub fn in_memory_rostered_program_from_checkpoint_with_transition_in_advancement<Schema, Program>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     program: ValidatedApplicationProgram<Schema, Program>,
@@ -92,6 +111,7 @@ pub fn in_memory_rostered_program_from_checkpoint_with_transition_in_advancement
     checkpoint: WorthQueryApplicationCheckpoint,
     predecessor: WorthQueryCheckpointProgramPredecessor,
     resources: WorthQueryCheckpointTransitionResources,
+    capture_policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     author: impl FnOnce(
         &mut WorthQueryCheckpointMigrationWriter<'_, Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
@@ -105,7 +125,7 @@ where
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     let capture_policy = phase
-        .funded_capture_policy()
+        .admit_capture_policy(capture_policy)
         .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
     transition_in_advancement(
         phase,

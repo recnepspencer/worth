@@ -13,10 +13,12 @@ pub use super::super::invariant_projection::{
     WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantEntityIdentity,
     WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionDenial,
     WorthQueryInvariantProjectionDenialKind, WorthQueryInvariantProjectionTraversalDenial,
-    WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWork,
-    WorthQueryInvariantRelation, WorthQueryOperationProjectionDenial,
-    WorthQueryOperationProjectionDenialKind, WorthQueryPreparedEntitySelection,
-    WorthQueryPriorOutputFamilyMember, WorthQueryRetainedSnapshotRead, WorthQueryValueDecodeDenial,
+    WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWalk,
+    WorthQueryInvariantProjectionWalkIter, WorthQueryInvariantProjectionWalkStep,
+    WorthQueryInvariantProjectionWork, WorthQueryInvariantRelation,
+    WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
+    WorthQueryPreparedEntitySelection, WorthQueryPriorOutputFamilyMember,
+    WorthQueryRetainedSnapshotRead, WorthQueryValueDecodeDenial,
 };
 pub use super::super::invariant_projection::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,

@@ -11,6 +11,7 @@ use worth_relational::facade::{
 
 use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
+pub(in crate::domain_computation::primary_graph::application_query) mod comparison;
 mod denial;
 mod expression_context;
 mod fact_conversion;
@@ -80,6 +81,9 @@ pub(in crate::domain_computation::primary_graph) mod source_identity;
 pub(in crate::domain_computation::primary_graph) use super::super::entity_resolution::WorthQueryObservedScopeSelector;
 pub(in crate::domain_computation::primary_graph::application_query) use retained_parameters::WorthQueryRetainedObservedParameters;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
+pub(in crate::domain_computation::primary_graph::application_query) use root_selection::{
+    tree_clone_bytes, RootPathAllocation,
+};
 pub(in crate::domain_computation::primary_graph) use source_identity::{
     WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
     WorthQueryObservedSourceSelection, WorthQueryRuntimeSourceIdentity,
@@ -143,7 +147,7 @@ const fn adjacency_direction_rank(
     }
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
     pub(in crate::domain_computation::primary_graph) root: EntityId,
     pub(in crate::domain_computation::primary_graph) complete: bool,

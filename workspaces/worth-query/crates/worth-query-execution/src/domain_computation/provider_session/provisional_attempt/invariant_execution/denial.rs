@@ -1,6 +1,8 @@
 use std::sync::Arc;
 mod native_denial;
+mod relation_law;
 use native_denial::NativeDenial;
+pub use relation_law::WorthQueryRelationLawDenial;
 use worth_execution::ExecutionAllocationDenial;
 
 /// Why an installed custom invariant refused a candidate.
@@ -10,6 +12,7 @@ pub enum WorthQueryCustomInvariantDenial {
     Violation {
         /// The invariant that found the violation.
         identity: worth_relational::facade::transactions::CustomInvariantSemanticIdentity,
+        refusal: worth_relational::facade::runtime::CustomInvariantRefusal,
     },
     /// The invariant could not be evaluated; the phase and failure kind say where
     /// and why.
@@ -105,6 +108,11 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// The verdicts presented do not satisfy the contract, for example a receipt
     /// from another session or too few passed slots.
     VerdictPostureMismatch,
+    /// A producer-required invariant's receipt did not admit the publication;
+    /// the admission denial keeps the receipt's verdict and basis.
+    ProducerRequirementNotAdmitted(
+        crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    ),
 }
 
 /// How to read an invariant execution failure.
@@ -171,6 +179,20 @@ impl WorthQueryInvariantExecutionFailure {
         detail: impl Into<Arc<str>>,
     ) -> Self {
         Self::native_denied(NativeDenial::Staging(denial), detail)
+    }
+    pub(crate) fn relation_law_denied(
+        fields: worth_relational::facade::transactions::InvariantViolationFields,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::RelationLaw(Box::new(fields)), detail)
+    }
+
+    /// Original native law evidence, borrowed from this failure.
+    pub fn relation_law(&self) -> Option<WorthQueryRelationLawDenial<'_>> {
+        match self.native.as_ref()? {
+            NativeDenial::RelationLaw(fields) => WorthQueryRelationLawDenial::from_fields(fields),
+            _ => None,
+        }
     }
     pub(crate) fn physical_allocation(
         denial: ExecutionAllocationDenial,

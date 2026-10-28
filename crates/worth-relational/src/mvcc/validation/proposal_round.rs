@@ -150,7 +150,7 @@ impl RelationalPreparationRuntime {
                             &runtime,
                             &prepared,
                             &selected,
-                            mutation.state(),
+                            &mutation,
                             identity.proposed_version_id(),
                             Some(&identity),
                             execution,

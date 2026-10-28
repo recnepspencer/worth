@@ -36,7 +36,7 @@ fn parts() -> ApplicationSigningGraphSubjectProvenanceParts {
         anchor: authentication.subject,
         selected,
         relation: "Lot".into(),
-        direction: ApplicationQueryRootPathDirection::Forward,
+        direction: RelationDirection::Forward,
         native_revision: 9,
     };
     ApplicationSigningGraphSubjectProvenanceParts {

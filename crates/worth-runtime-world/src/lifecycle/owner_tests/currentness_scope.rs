@@ -39,6 +39,38 @@ fn currentness_scope_holds_operation_and_service_through_exact_head_callback() {
 }
 
 #[test]
+fn refused_currentness_admission_returns_the_same_custody_before_registry_lookup() {
+    // Ordinary currentness admission carries no Work forecast; the remaining
+    // pre-lookup refusal is owner admission, and it returns custody untouched.
+    let (_fixture, owner, expected) = setup();
+    let (_foreign_fixture, foreign, _) = setup();
+    let foreign_port = port(&foreign);
+    let custody = Box::new(41);
+    let address = &*custody as *const i32;
+    let stopped = foreign_port
+        .while_product_branch_current(&expected, custody, |_, _| {
+            panic!("a refused admission cannot enter the current-head callback")
+        })
+        .unwrap_err();
+    let ProductBranchCurrentnessFailure::AdmissionDenied {
+        denial: RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner),
+        argument: custody,
+    } = stopped
+    else {
+        panic!("a foreign observation is refused at owner admission")
+    };
+    assert_eq!(&*custody as *const i32, address);
+    assert_eq!(*custody, 41);
+    assert_eq!(foreign.state.operation.active(), 0);
+    assert_eq!(
+        port(&owner)
+            .observe_product_branch(expected.branch_identity())
+            .unwrap(),
+        expected
+    );
+}
+
+#[test]
 fn currentness_scope_returns_unmodified_custody_after_actual_publication() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

@@ -11,11 +11,18 @@ pub(in crate::domain_computation) struct InvalidationOracleReceiver {
 pub struct WorthQueryInvalidationResources {
     oracle: Arc<InvalidationOracleReceiver>,
 }
+impl Default for WorthQueryInvalidationResources {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl WorthQueryInvalidationResources {
     pub fn new() -> Self {
         let resources = Self {
             oracle: Arc::default(),
         };
+        // Law 2: construction may finish on a worker after resource installation,
+        // so the receiver joins this thread's construction factory here.
         resources.attach_runtime_observations();
         resources
     }
@@ -39,11 +46,5 @@ impl WorthQueryInvalidationResources {
         self.oracle
             .oracle_checks
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    }
-}
-
-impl Default for WorthQueryInvalidationResources {
-    fn default() -> Self {
-        Self::new()
     }
 }

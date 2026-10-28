@@ -31,6 +31,9 @@ pub(super) fn resolve_rule(
 }
 
 impl WorthQueryApplicationInvariantRule<WorthUiApplicationSchema> for WorthUiStatusIntegrityRule {
+    type Refusal = ();
+    type RefusalBinding =
+        worth_query_host::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
     type Scope = Vec<WorthQueryApplicationInvariantEntity<WorthUiApplicationSchema, WorthUiRecord>>;
 
     fn supports_checked_preparation(&self) -> bool {
@@ -49,7 +52,10 @@ impl WorthQueryApplicationInvariantRule<WorthUiApplicationSchema> for WorthUiSta
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         Some(self.evaluate_under(context, scope, Some(budget)))
     }
@@ -65,8 +71,10 @@ impl WorthQueryApplicationInvariantRule<WorthUiApplicationSchema> for WorthUiSta
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, WorthUiApplicationSchema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         self.evaluate_under(context, scope, None)
     }
 }
@@ -109,8 +117,10 @@ impl WorthUiStatusIntegrityRule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, WorthUiApplicationSchema>,
         scope: &<Self as WorthQueryApplicationInvariantRule<WorthUiApplicationSchema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         if budget.is_some_and(|budget| !budget.checkpoint(0)) {
             return Err(WorthQueryApplicationInvariantExecutionError::new(
                 "caller stopped",
@@ -137,7 +147,7 @@ impl WorthUiStatusIntegrityRule {
                         && (revision > 0 || status == "PENDING")
             );
             if !valid {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)

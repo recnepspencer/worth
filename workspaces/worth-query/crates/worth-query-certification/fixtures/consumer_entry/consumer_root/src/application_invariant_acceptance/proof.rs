@@ -197,7 +197,7 @@ fn typed_domain_denial_has_no_publication(
     assert!(matches!(
         outcome,
         WorthQueryApplicationMutationOutcome::DomainDenied(
-            worth_query_consumer_values::PlanarMutationDenial::CycleNeedsThreeVertices
+            worth_query_consumer_values::PlanarMutationDenial::EmptyCycle
         )
     ));
     assert_eq!(source_version(request), before);
@@ -280,7 +280,7 @@ fn require_planar_violation<Denial: std::fmt::Debug, Result: std::fmt::Debug>(
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
-    let Some(WorthQueryCustomInvariantDenial::Violation { identity }) =
+    let Some(WorthQueryCustomInvariantDenial::Violation { identity, .. }) =
         denial.custom_invariant_denial()
     else {
         panic!("the denial must carry the domain violation, not an execution failure")

@@ -23,8 +23,8 @@ pub(crate) fn posting_integrity_invariant(
     ApplicationInvariantDefinition::new(
         BankPostingIntegrity::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        // The enclosing Execution request bounds the complete touched batch.
-        // A per-rule quota cannot describe both one journal and a bulk seed.
+        // No declared work budget: a commit's evaluation grows with the
+        // journals it touches, and its request's own policy bounds it.
         RelationalInvariantWorkBudget::new(None),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,

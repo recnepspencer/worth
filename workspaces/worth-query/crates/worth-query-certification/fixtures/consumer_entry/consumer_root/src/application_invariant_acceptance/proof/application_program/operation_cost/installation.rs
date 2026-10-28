@@ -17,6 +17,7 @@ pub(super) fn install(fanout: usize, unrelated: usize) -> Runtime {
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
+            invariant_read_observer: None,
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
@@ -24,6 +25,7 @@ pub(super) fn install(fanout: usize, unrelated: usize) -> Runtime {
         (),
     );
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
+        .with_schema(&Schema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     in_memory_program(

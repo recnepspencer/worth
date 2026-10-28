@@ -16,12 +16,14 @@ use worth_relational::facade::mvcc::{
 pub(super) enum NativeDenial {
     Staging(RelationalTransactionStagingDenial),
     Allocation(ExecutionAllocationDenial),
+    RelationLaw(Box<worth_relational::facade::transactions::InvariantViolationFields>),
 }
 impl NativeDenial {
     pub(super) fn allocation(&self) -> Option<&ExecutionAllocationDenial> {
         match self {
             Self::Staging(denial) => denial.allocation_denial(),
             Self::Allocation(denial) => Some(denial),
+            Self::RelationLaw(_) => None,
         }
     }
     pub(super) fn classification(&self) -> (Kind, Posture) {

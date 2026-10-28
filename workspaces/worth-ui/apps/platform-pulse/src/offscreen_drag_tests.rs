@@ -3,6 +3,17 @@
 //! the work the host does today: a change that does more fails, and a change
 //! that does less lowers the ceiling with it.
 //!
+//! Digested bytes count everything the presenting thread does between two
+//! frames, including work it does for the application's own threads, such as
+//! presenting a Query observation (see
+//! `worth_ui_host_contract::presentation_work`). The application observes its
+//! Query value and theme preference while it is prepared, so startup presents
+//! them before the host settles and none of that work can reach a measured
+//! step. The drag makes each transition twice, and every count of both
+//! frames is held to the ceiling. The second frame repeats the first, so its
+//! digested bytes may not exceed the first's: work that falls in only one of
+//! them is a defect to remove, not noise to discount.
+//!
 //! Milestone 3.16.2 lowers these ceilings. Block-level retained text takes a
 //! move-only frame to zero glyphs in every text stage, and a rewrap frame to
 //! the glyphs of the blocks it rewraps.
@@ -25,6 +36,9 @@ const PRODUCT: [u32; 2] = PLATFORM_PULSE_PRODUCT_LOGICAL_EXTENT;
 const MOVE_ONLY: [u32; 2] = [PRODUCT[0], PRODUCT[1] - 16];
 const REWRAP: [u32; 2] = [PRODUCT[0] - 16, PRODUCT[1] - 16];
 
+/// Both transitions, back to the product extent, then both again.
+const PATH: [[u32; 2]; 5] = [MOVE_ONLY, REWRAP, PRODUCT, MOVE_ONLY, REWRAP];
+
 const STAGES: usize = UiPresentationWorkStage::ALL.len();
 
 /// One frame's work: glyphs per stage in [`UiPresentationWorkStage::ALL`]
@@ -44,22 +58,23 @@ struct Step {
     frames: Vec<Counts>,
 }
 
-/// The drag's two steps, run once for every budget.
-fn steps() -> &'static [Step; 2] {
-    static STEPS: OnceLock<[Step; 2]> = OnceLock::new();
+/// The drag's steps along [`PATH`], run once for every budget.
+fn steps() -> &'static [Step; 5] {
+    static STEPS: OnceLock<[Step; 5]> = OnceLock::new();
     STEPS.get_or_init(|| {
         let publisher = PlatformPulseObservationPublisher::start().expect("observation stream");
         let launch = AdmittedPlatformPulseLaunchConfiguration::from_arguments(std::iter::empty())
             .expect("default launch");
-        let drag = drag(launch, publisher, &[MOVE_ONLY, REWRAP]).expect("offscreen drag");
+        let drag = drag(launch, publisher, &PATH).expect("offscreen drag");
         assert!(
             matches!(drag.startup, UiNativeOffscreenSettle::Idle { .. }),
             "startup settles: {:?}",
             drag.startup
         );
-        let [move_only, rewrap] = <[PlatformPulseDragStep; 2]>::try_from(drag.steps)
-            .unwrap_or_else(|_| panic!("one step per extent"));
-        [step(&move_only), step(&rewrap)]
+        let extents = drag.steps.iter().map(|step| step.extent);
+        assert!(extents.eq(PATH), "one step per extent");
+        <[Step; 5]>::try_from(drag.steps.iter().map(step).collect::<Vec<_>>())
+            .unwrap_or_else(|_| panic!("one step per extent"))
     })
 }
 
@@ -81,7 +96,7 @@ fn counts(frame: &UiNativeSubmittedFrameWork) -> Counts {
     counts
 }
 
-fn assert_within(step: &Step, ceiling: &Counts) {
+fn only_frame(step: &Step) -> &Counts {
     assert!(
         matches!(step.settle, UiNativeOffscreenSettle::Idle { .. }),
         "the step settles: {:?}",
@@ -90,24 +105,44 @@ fn assert_within(step: &Step, ceiling: &Counts) {
     let [frame] = step.frames.as_slice() else {
         panic!("one frame per step: {:?}", step.frames);
     };
-    let names = UiPresentationWorkStage::ALL
-        .iter()
-        .map(|stage| stage.name())
-        .chain(["digested bytes", "map inserts"]);
-    for ((name, count), ceiling) in names.zip(frame).zip(ceiling) {
-        assert!(
-            count <= ceiling,
-            "{name}: {count} exceeds the ceiling {ceiling}; frame {frame:?}"
-        );
+    frame
+}
+
+/// Holds `first` and `repeat`, the same transition made again, each to
+/// `ceiling`, and the repeat's digested bytes to the first's.
+fn assert_within(first: &Step, repeat: &Step, ceiling: &Counts) {
+    let frame = only_frame(first);
+    let repeated = only_frame(repeat);
+    for (which, counts) in [("first", frame), ("repeat", repeated)] {
+        let names = UiPresentationWorkStage::ALL
+            .iter()
+            .map(|stage| stage.name())
+            .chain(["digested bytes", "map inserts"]);
+        for ((name, count), ceiling) in names.zip(counts).zip(ceiling) {
+            assert!(
+                count <= ceiling,
+                "{which} {name}: {count} exceeds the ceiling {ceiling}; \
+                 frame {frame:?}, repeat {repeated:?}"
+            );
+        }
     }
+    assert!(
+        repeated[STAGES] <= frame[STAGES],
+        "the repeat digests {} bytes, more than the first frame's {}; \
+         frame {frame:?}, repeat {repeated:?}",
+        repeated[STAGES],
+        frame[STAGES]
+    );
 }
 
 #[test]
 fn a_move_only_frame_stays_within_its_budget() {
-    assert_within(&steps()[0], &MOVE_ONLY_CEILING);
+    let steps = steps();
+    assert_within(&steps[0], &steps[3], &MOVE_ONLY_CEILING);
 }
 
 #[test]
 fn a_rewrap_frame_stays_within_its_budget() {
-    assert_within(&steps()[1], &REWRAP_CEILING);
+    let steps = steps();
+    assert_within(&steps[1], &steps[4], &REWRAP_CEILING);
 }

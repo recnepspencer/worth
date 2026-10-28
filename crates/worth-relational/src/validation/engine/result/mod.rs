@@ -45,6 +45,26 @@ impl InvariantExecutionResult {
         );
         let summary = InvariantExecutionSummary::from_results(&results);
         let decision_log = build_decision_log(&results);
+        Self::from_reduced_parts(metadata, summary, results, decision_log)
+    }
+
+    /// The reducer already classified each check and admitted its decision log.
+    pub(crate) fn from_reduced_parts(
+        metadata: InvariantExecutionMetadata,
+        summary: InvariantExecutionSummary,
+        results: Vec<InvariantCheckResult>,
+        decision_log: Vec<InvariantDecisionRecord>,
+    ) -> Self {
+        debug_assert_eq!(
+            /* Proof: executed derives the summary from this exact result Vec. The other caller, ReducedInvariantPrefix::project, moves the same retained worker results that absorb added to its summary; no result is removed in between. */
+            summary.result_count(),
+            results.len()
+        );
+        debug_assert_eq!(
+            /* Proof: executed builds one decision for each result in this exact Vec. ReducedInvariantPrefix::project likewise pushes one decision for each retained worker result before moving those same results into the output Vec. */
+            decision_log.len(),
+            results.len()
+        );
         Self {
             metadata,
             summary,

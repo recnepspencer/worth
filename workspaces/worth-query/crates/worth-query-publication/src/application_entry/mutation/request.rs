@@ -27,6 +27,15 @@ pub(in crate::application_entry) enum WorthQueryMutationExpectedSource<Query> {
     ResultSet(worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<Query>),
 }
 
+impl<Query> Clone for WorthQueryMutationExpectedSource<Query> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Row(source) => Self::Row(source.clone()),
+            Self::ResultSet(source) => Self::ResultSet(source.clone()),
+        }
+    }
+}
+
 /// A mutation request under construction. State its source expectation and preconditions,
 /// then bind an idempotency key.
 pub struct WorthQueryApplicationMutationRequest<

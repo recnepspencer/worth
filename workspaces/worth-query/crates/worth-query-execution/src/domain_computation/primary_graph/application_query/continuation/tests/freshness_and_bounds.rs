@@ -284,4 +284,31 @@ fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
     );
     assert_eq!(width_context.basis_acquisitions(), width_acquisitions);
     width_context.assert_resource_baseline();
+
+    let work_context = ContinuationTestContext::new(Duration::from_secs(60));
+    let work_continuation = work_context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            work_context.issue(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
+    let work_acquisitions = work_context.basis_acquisitions();
+    let work_request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
+    // ee07da2b0e removed the caller work forecast from resume controls: a
+    // width-one resume has no work quota to exhaust, so it is admitted, reads
+    // its page and releases the basis it acquired.
+    let (rows, basis_released) = work_context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            work_context.readmit_page(&host_custody, work_continuation, &work_request, 1)
+        })
+        .expect("the fixture read owns its installed host call");
+    assert_eq!(rows, 1);
+    assert!(basis_released);
+    assert!(work_context.basis_acquisitions() > work_acquisitions);
+    work_context.assert_resource_baseline();
 }

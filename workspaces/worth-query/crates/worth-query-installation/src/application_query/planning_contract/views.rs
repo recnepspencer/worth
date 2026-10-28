@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryCardinality, ApplicationQueryResultTraversalDirection,
-    ApplicationQueryRootPathDirection,
+    ApplicationQueryCardinality, ApplicationQueryResultTraversalDirection, RelationDirection,
 };
 
 use super::{
@@ -123,13 +122,10 @@ pub(super) fn root_step_view(
 ) -> WorthQueryReadGraphRelationView<'_> {
     WorthQueryReadGraphRelationView {
         relation: step.relation(),
+        complete_closure: step.traversal() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::Closure,
         direction: match step.direction() {
-            ApplicationQueryRootPathDirection::Forward => {
-                WorthQueryReadGraphRelationDirection::Forward
-            }
-            ApplicationQueryRootPathDirection::Reverse => {
-                WorthQueryReadGraphRelationDirection::Reverse
-            }
+            RelationDirection::Forward => WorthQueryReadGraphRelationDirection::Forward,
+            RelationDirection::Reverse => WorthQueryReadGraphRelationDirection::Reverse,
         },
         cardinality: ApplicationQueryCardinality::Many,
         depth: step.depth(),
@@ -141,6 +137,7 @@ pub(super) fn result_relation_view(
 ) -> WorthQueryReadGraphRelationView<'_> {
     WorthQueryReadGraphRelationView {
         relation: relation.relation(),
+        complete_closure: false,
         direction: match relation.direction() {
             ApplicationQueryResultTraversalDirection::Forward => {
                 WorthQueryReadGraphRelationDirection::Forward

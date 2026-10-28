@@ -120,6 +120,9 @@ mod tests {
         let completed = boundary
             .seal_decision_reuse(capture(), DecisionContextUse::default())
             .unwrap();
+        // Matching compares recorded context exactly (ee07da2b0e removed its
+        // work forecast): an equal empty context matches, a declared key
+        // matches only the same key.
         assert!(capture().matches_completed(&completed));
         let declared_key = WorthQueryProducerInputReuseContract::canonical_bitwise(
             WorthQueryDecisionContextDependencies::KEY,
@@ -129,6 +132,17 @@ mod tests {
         let completed_key = boundary
             .seal_decision_reuse(key_capture, DecisionContextUse::default().key_for_test())
             .unwrap();
+        assert!(
+            PreparedDecisionReuseContext::new(declared_key, Some([7; 32]), None, None)
+                .unwrap()
+                .matches_completed(&completed_key)
+        );
+        assert!(!capture().matches_completed(&completed_key));
+        assert!(
+            !PreparedDecisionReuseContext::new(declared_key, Some([7; 32]), None, None)
+                .unwrap()
+                .matches_completed(&completed)
+        );
         assert!(
             !PreparedDecisionReuseContext::new(declared_key, Some([8; 32]), None, None)
                 .unwrap()

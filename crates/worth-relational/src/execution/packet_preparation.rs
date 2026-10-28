@@ -7,8 +7,6 @@ use worth_foundational::{ExecutionReport, PartitionIdentity};
 
 use super::{PacketExecutionStop, ReadOnlyPacket};
 
-const PREPARATION_MEMORY_DIVISOR: u64 = 8;
-
 #[cfg(test)]
 mod memory_tests;
 
@@ -149,10 +147,9 @@ pub(crate) fn prepare_borrowed_packets<T>(
 ) -> Result<(Vec<ReadOnlyPacket<T>>, ExecutionReport), PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
     let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
-    let ceiling = lease
-        .policy()
-        .charged_memory_bytes()
-        .map_or(declared_bytes, |limit| limit / PREPARATION_MEMORY_DIVISOR);
+    // Preparation declares the descriptors it will hold; the lease's own
+    // memory policy admits that declaration, not a fixed share of the policy.
+    let ceiling = declared_bytes;
     let mut build = Some(build);
     let outcome = super::run_with_remaining_request_work(
         lease,

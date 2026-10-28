@@ -238,6 +238,7 @@ fn install_no_projection(
     grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
 ) -> NoProjectionWorld {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, NoProjectionProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     installation::install_selected_program(&crate::installed_schema(), roster, grants, program)

@@ -10,6 +10,20 @@ use super::schema::{
     IntentLifecycleField, IntentRevisionField, TemporalHostSchema, TemporalIntent,
 };
 
+#[derive(Clone, Debug, Eq, PartialEq, worth_query_decl::facade::application_schema::WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub enum TemporalIntegrityRefusal {
+    InvalidState {
+        revision: Option<u64>,
+        lifecycle: Option<String>,
+    },
+}
+
+worth_query_decl::facade::worth_query_value_binding!(pub TemporalIntegrityRefusalBinding for TemporalIntegrityRefusal {
+    identity: "worth.examples.temporal-integrity-refusal.v1", scalar: String,
+    canonical: worth_query_decl::facade::application_schema::ValueDecodeBounds::new(1024, 128, 8, 8),
+});
+
 pub struct TemporalIntegrityRule {
     lifecycle:
         WorthQueryApplicationInvariantFieldBinding<TemporalHostSchema, TemporalIntent, String>,
@@ -30,6 +44,8 @@ pub fn resolve_rule(
 }
 
 impl WorthQueryApplicationInvariantRule<TemporalHostSchema> for TemporalIntegrityRule {
+    type Refusal = TemporalIntegrityRefusal;
+    type RefusalBinding = TemporalIntegrityRefusalBinding;
     type Scope = Vec<WorthQueryApplicationInvariantEntity<TemporalHostSchema, TemporalIntent>>;
 
     fn supports_checked_preparation(&self) -> bool {
@@ -48,7 +64,10 @@ impl WorthQueryApplicationInvariantRule<TemporalHostSchema> for TemporalIntegrit
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<TemporalIntegrityRefusal>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         Some(self.evaluate_under(context, scope, Some(budget)))
     }
@@ -64,8 +83,10 @@ impl WorthQueryApplicationInvariantRule<TemporalHostSchema> for TemporalIntegrit
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, TemporalHostSchema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<TemporalIntegrityRefusal>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         self.evaluate_under(context, scope, None)
     }
 }
@@ -110,8 +131,10 @@ impl TemporalIntegrityRule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, TemporalHostSchema>,
         scope: &<Self as WorthQueryApplicationInvariantRule<TemporalHostSchema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<TemporalIntegrityRefusal>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         if budget.is_some_and(|budget| !budget.checkpoint(0)) {
             return Err(WorthQueryApplicationInvariantExecutionError::new(
                 "caller stopped",
@@ -135,7 +158,12 @@ impl TemporalIntegrityRule {
                 (Some(revision), Some("active" | "completed")) if revision > 0
             );
             if !valid {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(
+                    TemporalIntegrityRefusal::InvalidState {
+                        revision,
+                        lifecycle,
+                    },
+                ));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)

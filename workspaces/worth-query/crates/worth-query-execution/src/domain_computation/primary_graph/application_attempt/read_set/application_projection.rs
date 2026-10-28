@@ -91,6 +91,7 @@ impl CompletedFactProjection {
                     | Fact::OptionalAspectAbsent { .. }
                     | Fact::Relation { .. }
                     | Fact::Adjacency { .. }
+                    | Fact::StructuralWalk { .. }
             );
             physical &= matches!(scopes.get(ordinal),
                 Some(worth_query_installation::facade::WorthQueryOperationGraphReadScope::Entity(_)

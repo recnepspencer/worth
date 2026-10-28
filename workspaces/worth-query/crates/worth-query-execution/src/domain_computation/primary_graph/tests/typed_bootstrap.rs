@@ -150,6 +150,59 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
 }
 
 #[test]
+fn invalidation_keeps_no_window_so_a_finite_world_history_installs() {
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        use crate::domain_computation::execution_runtime::product_world::{
+            test_product_world_resources, WorthQueryProductWorldResources,
+        };
+        use crate::domain_computation::execution_runtime::WorthQueryInvalidationResources;
+        let declaration = IdentityExecutionSchema::declaration().unwrap();
+        let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+            "identity_execution_test",
+            1,
+            0,
+        ))
+        .application_schema(declaration.clone())
+        .validate()
+        .unwrap();
+        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+            .admit(package)
+            .unwrap();
+        let installation = WorthQueryExecutionRuntimeInstaller::new()
+            .install(WorthQueryInstallationGeneration::initial(), [admitted])
+            .unwrap();
+        let (runtime, authority) = installation.into_parts();
+        let schema = runtime
+            .installed_packages()
+            .bind_application_schema(declaration)
+            .unwrap();
+        // Invalidation keeps no position the World no longer keeps a commit for.
+        // Since ee07da2b0e it keeps no retention window at all, so even the
+        // shortest finite World history admits it; nothing is refused.
+        let (budgets, clock, _defaults, execution) = test_product_world_resources().into_parts();
+        assert!(
+            budgets.retained_composite_commits().get().is_some(),
+            "explicit finite history policy"
+        );
+        let invalidation = WorthQueryInvalidationResources::new();
+        let resources =
+            WorthQueryProductWorldResources::new(budgets, clock, invalidation, execution.policy);
+        if let Err(denial) = authority.prepare_primary_graph(
+            &phase.bootstrap_for_test(),
+            &runtime,
+            &schema,
+            resources,
+        ) {
+            panic!(
+                "a windowless invalidation fits any history: {:?}",
+                denial.kind()
+            );
+        }
+    });
+}
+
+#[test]
 fn typed_policy_facts_publish_atomically_with_principal_identity() {
     let world = installed_world_with_policy_fact(
         &[("alice", WorthQueryPrincipalMappingStatus::Enabled)],

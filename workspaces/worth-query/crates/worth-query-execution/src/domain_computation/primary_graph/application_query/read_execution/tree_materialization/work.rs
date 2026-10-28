@@ -1,13 +1,13 @@
 use super::super::OneShotReadWorkObservation;
 use super::WorthQueryApplicationReadExecutionDenial;
+use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 
 pub(super) struct ResultTreeWork<'a> {
     interruption: super::super::ReadInterruption<'a>,
 
     pub(super) projected_records: usize,
     pub(super) projected_fields: usize,
-    pub(super) adjacency_lists_read: usize,
-    pub(super) relation_records_examined: usize,
+    pub(super) reads: WorthQueryInvariantProjectionWork,
     pub(super) ordered_index_entries_examined: usize,
     pub(super) relation_predicate_work_units: usize,
     pub(super) ordering_comparisons: usize,
@@ -25,8 +25,7 @@ impl<'a> ResultTreeWork<'a> {
 
             projected_records: 0,
             projected_fields: 0,
-            adjacency_lists_read: 0,
-            relation_records_examined: 0,
+            reads: WorthQueryInvariantProjectionWork::default(),
             ordered_index_entries_examined: 0,
             relation_predicate_work_units: 0,
             ordering_comparisons: 0,
@@ -59,8 +58,7 @@ impl<'a> ResultTreeWork<'a> {
             lists.saturating_add(examined).saturating_add(reserved),
             subject,
         )?;
-        self.adjacency_lists_read = self.adjacency_lists_read.saturating_add(lists);
-        self.relation_records_examined = self.relation_records_examined.saturating_add(examined);
+        self.reads.record_adjacencies(lists, examined);
         Ok(())
     }
 
@@ -79,6 +77,7 @@ impl<'a> ResultTreeWork<'a> {
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         self.charge_work(examined, subject)?;
+        self.reads.record_index_candidates(examined);
         self.ordered_index_entries_examined =
             self.ordered_index_entries_examined.saturating_add(examined);
         Ok(())

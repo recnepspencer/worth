@@ -113,13 +113,11 @@ impl AggregateWorld {
 
     pub(in super::super) fn remove_relation_on(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: WorthQueryProductBranch,
         relation_id: RelationId,
     ) {
         self.commit_on(
-            execution,
             phase_custody,
             branch,
             "aggregate-remove-contribution",
@@ -131,16 +129,16 @@ impl AggregateWorld {
 
     pub(in super::super) fn commit_on(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: WorthQueryProductBranch,
         label: &'static str,
         intent: MutationIntent,
     ) {
         let identity = self.relational_identity(phase_custody, branch);
-        self.authority.graph.with_runtime_mut(
-            &phase_custody.borrowed_request_for_test(),
-            |runtime| {
+        let execution = phase_custody.borrowed_request_for_test();
+        self.authority
+            .graph
+            .with_runtime_mut(&execution, |runtime| {
                 let admitted = runtime
                     .admit_branch_basis(&identity)
                     .expect("the branch binding admits");
@@ -157,14 +155,13 @@ impl AggregateWorld {
                     )
                     .expect("test staging stays within configured resource budgets");
                 let committed = transaction
-                    .commit(execution, runtime)
+                    .commit(&execution, runtime)
                     .expect("the branch commits");
                 crate::relational_snapshot_release::release_query_snapshot(
                     runtime,
                     &committed.snapshot,
                 );
-            },
-        );
+            });
     }
 
     fn relational_identity(

@@ -2,9 +2,11 @@
 mod document;
 pub use document::{decode_application_document, encode_application_document};
 pub use worth_foundational::facade::{
-    decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
-    CanonicalDocumentCodec, CanonicalValue, ValueCodecDenial, ValueDecodeAdmission,
-    ValueDecodeBounds, ValueShape, ValueShapeDefinition,
+    decode_canonical_value, decode_canonical_value_with_admission,
+    decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
+    encode_canonical_value, encode_delegated_canonical_value, CanonicalDocumentCodec,
+    CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+    ValueShapeDefinition,
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -15,6 +17,17 @@ pub struct ApplicationCanonicalValueContract {
 }
 
 impl ApplicationCanonicalValueContract {
+    /// A foreign domain value's complete grammar, owned by its entry binding.
+    pub fn delegated<Delegate: worth_foundational::facade::ValueSeedDelegate>(
+        bounds: ValueDecodeBounds,
+    ) -> Self {
+        let definition = ValueShapeDefinition::from_delegate::<Delegate>();
+        Self {
+            shape: definition.materialize(),
+            bounds,
+            supports_admission: definition.supports_admission(),
+        }
+    }
     pub fn of<Value: CanonicalValue>(bounds: ValueDecodeBounds) -> Self {
         let definition = ValueShapeDefinition::of::<Value>();
         Self {

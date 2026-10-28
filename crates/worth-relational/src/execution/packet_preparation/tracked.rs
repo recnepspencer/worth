@@ -51,8 +51,9 @@ pub(crate) fn prepare_tracked_artifact<T>(
             boundary: None,
             reason: worth_execution::MapStop::Admission(denial),
         }),
+        // The single artifact stage is partition 1, as on the borrowed scan path.
         Err(ScopeStop::Failure(cause)) => Err(PacketExecutionStop::Execution {
-            boundary: None,
+            boundary: Some(PartitionIdentity::new(1)),
             reason: worth_execution::MapStop::Failure {
                 identity: PartitionIdentity::new(1),
                 cause,

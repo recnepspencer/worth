@@ -40,6 +40,7 @@ macro_rules! producer {
         impl<Schema: BirthSchema> WorthQueryApplicationProducerProvider<Schema, $producer<Schema>>
             for Provider
         {
+            type DenialValue = WorthQueryUndeclaredProducerDenial;
             const SEMANTIC_IDENTITY: &'static str = $identity;
             fn operation_input(&self, source: &PlanarReadResult) -> $input {
                 $input {

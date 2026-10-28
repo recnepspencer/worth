@@ -80,7 +80,6 @@ impl AggregateScanReader<'_, '_> {
         self.accounting.complete_adjacency(
             read.work_units(),
             row_count,
-            read.endpoint_records_reserved(),
             self.plan.relation_member(),
         )?;
         self.accounting.record_cold_lookup(row_count);
@@ -120,7 +119,6 @@ impl AggregateScanReader<'_, '_> {
         self.accounting.complete_adjacency(
             relations.work_units(),
             relations.relation_records_examined(),
-            relations.endpoint_records_reserved(),
             self.plan.relation_member(),
         )?;
         if relations.into_records().as_slice() != [record.clone()] {
@@ -131,24 +129,26 @@ impl AggregateScanReader<'_, '_> {
         }
         self.accounting
             .admit_source_field(self.plan.field_member())?;
-        let value =
-            crate::domain_computation::primary_graph::application_attempt::observe_field_value(
-                self.runtime,
-                execution,
-                self.snapshot,
-                record.source,
-                self.plan.source_kind(),
-                &self.plan.key().field,
+        let value = crate::domain_computation::primary_graph::application_attempt::observe_field(
+            self.runtime,
+            execution,
+            self.snapshot,
+            record.source,
+            self.plan.source_kind(),
+            &self.plan.key().field,
+        )
+        .map_err(|cause| {
+            denial(
+                WorthQueryInvariantAggregateDenialKind::ReadExecution(
+                    crate::facade::primary_graph::relational_execution_kind(cause, None),
+                ),
+                self.plan.field_member(),
             )
-            .map_err(|cause| {
-                denial(
-                    WorthQueryInvariantAggregateDenialKind::ReadExecution(
-                        crate::facade::primary_graph::relational_execution_kind(cause, None),
-                    ),
-                    self.plan.field_member(),
-                )
-            })?;
-        Ok(value)
+        })?;
+        if value.is_some() {
+            self.accounting.record_source_field();
+        }
+        Ok(value.and_then(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFieldObservation::into_value))
     }
 
     /// Reads the plan's snapshot on its own branch root, so a sibling branch's

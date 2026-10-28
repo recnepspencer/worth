@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::validation::data::{
-    CustomInvariantProvenance, CustomInvariantSemanticIdentity, InvariantDecisionKind,
-    InvariantExecutionPoint, InvariantReportedRule, InvariantVerdict,
+    CustomInvariantNonApplicability, CustomInvariantProvenance, CustomInvariantSemanticIdentity,
+    InvariantDecisionKind, InvariantExecutionPoint, InvariantReportedRule, InvariantVerdict,
 };
 use crate::validation::engine::InvariantExecutionResult;
 
@@ -46,6 +46,11 @@ impl CustomInvariantExecutionReceipt {
 
     pub const fn provenance(&self) -> &CustomInvariantProvenance {
         &self.provenance
+    }
+
+    /// Why Relational did not evaluate this rule; `None` when it did.
+    pub const fn non_applicability(&self) -> Option<CustomInvariantNonApplicability> {
+        self.provenance.non_applicability
     }
 }
 

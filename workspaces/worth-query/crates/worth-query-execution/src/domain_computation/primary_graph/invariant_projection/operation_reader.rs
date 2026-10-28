@@ -73,7 +73,7 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
     source_query: Option<&'reader crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<'reader, Schema>>,
     source_context_use: Option<&'reader std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
-    admitted_contracts: Option<&'reader WorthQueryCompiledApplicationOperationContracts>,
+    admitted_contracts: Option<Arc<WorthQueryCompiledApplicationOperationContracts>>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,

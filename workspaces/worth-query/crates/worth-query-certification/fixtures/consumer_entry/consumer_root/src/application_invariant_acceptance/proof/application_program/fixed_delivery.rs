@@ -79,7 +79,6 @@ fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_his
         .unwrap()
         .selected_commit()
         .clone();
-    let _one = NonZeroUsize::new(1).unwrap();
     let policy = WorthQueryOperationDeliveryPolicy::default();
 
     assert!(matches!(settled.read_current_with_policy(&request, policy.query(NonZeroUsize::new(2).unwrap())), Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Limit(_)))));
@@ -152,6 +151,7 @@ fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_his
 #[test]
 fn fixed_delivery_no_projection_settles_real_required_outputs() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, NoProjectionProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [
@@ -232,6 +232,7 @@ fn fixed_prepared_source_receipts_distinguish_shared_scope_publications() {
     let _observation = primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     source::assert_single_adjustment_shape();
     let program = ApplicationProgramAuthoring::<ConsumerSchema, source::Program>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let mut world = installation::install_selected_program(

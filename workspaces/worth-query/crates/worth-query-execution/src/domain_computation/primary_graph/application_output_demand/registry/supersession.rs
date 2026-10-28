@@ -81,11 +81,7 @@ pub(super) fn reject_older_successor(
     // rejects its work; only a newer revision of this producer blocks it.
 
     for (key, _) in super::refreshed_rejoin::occurrence_rows(&state.records, successor) {
-        let other_row = {
-            #[cfg(test)]
-            super::demand_key::observe_row_comparison();
-            key != successor
-        };
+        let other_row = key != successor;
         if other_row && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater) {
             return Err(superseded_denial(&successor.producer));
         }

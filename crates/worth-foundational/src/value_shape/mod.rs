@@ -13,7 +13,10 @@ mod primitive;
 mod wire;
 
 pub use admission::{ValueCodecDenial, ValueDecodeBounds};
-pub use admitted::decode_canonical_value_with_admission;
+pub use admitted::{
+    decode_canonical_value_with_admission, decode_delegated_canonical_value,
+    decode_delegated_canonical_value_with_admission,
+};
 pub use decode_control::{value_decode_error, ValueDecodeAdmission, ValueDecodeControl};
 pub use definition::{
     ValueFieldDefinition, ValueShapeBody, ValueShapeDefinition, ValueShapeEdge,
@@ -29,5 +32,6 @@ pub use description::{
 };
 pub use document::CanonicalDocumentCodec;
 pub use wire::{
-    decode_canonical_value, encode_canonical_value, CanonicalValue, CanonicalValueSeed,
+    decode_canonical_value, encode_canonical_value, encode_delegated_canonical_value,
+    CanonicalValue, CanonicalValueSeed,
 };

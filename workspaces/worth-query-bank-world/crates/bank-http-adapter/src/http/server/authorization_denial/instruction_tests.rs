@@ -111,6 +111,11 @@ fn an_authorization_read_stop_keeps_its_http_disposition() {
             Next::ContactOperator,
         ),
         (
+            Cause::AccountingUnavailable,
+            Kind::InternalDenied,
+            Next::ContactOperator,
+        ),
+        (
             Cause::ExpectedIdentitiesNotCanonical,
             Kind::InternalDenied,
             Next::ContactOperator,

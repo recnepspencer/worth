@@ -33,21 +33,6 @@ impl Model {
     }
 
     pub(in super::super::super) fn completes(&self) -> bool {
-        self.completes_at(TOTALS_WORK)
-    }
-    pub(in super::super::super) fn completes_at(&self, ceiling: usize) -> bool {
         !self.entries.iter().flatten().any(|entry| entry.fault)
-            && self
-                .entries
-                .iter()
-                .flatten()
-                .map(|entry| entry.work)
-                .sum::<u64>()
-                + self
-                    .regions()
-                    .iter()
-                    .filter(|key| key.is_multiple_of(2))
-                    .count() as u64
-                <= ceiling as u64
     }
 }

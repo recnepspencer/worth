@@ -1,5 +1,5 @@
 use crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration;
-use crate::validation::data::CustomInvariantScopePlanner;
+use crate::validation::data::{CustomInvariantNonApplicability, CustomInvariantScopePlanner};
 use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
 use std::mem::size_of;
@@ -11,6 +11,7 @@ pub(super) fn eligible_registrations<'state>(
     execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     preparation_budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
+    stage: super::InvariantStage,
 ) -> Vec<InvariantPacketRegistration> {
     let touched_kinds = std::cell::OnceCell::new();
     let native = runtime
@@ -25,6 +26,7 @@ pub(super) fn eligible_registrations<'state>(
                 .relation_integrity_registrations
                 .iter(),
         )
+        .take(if stage.native() { usize::MAX } else { 0 })
         .take_while(|_| {
             execution.check_live().is_ok()
                 && preparation_budget.is_none_or(|budget| budget.try_plan_item(0))
@@ -49,6 +51,7 @@ pub(super) fn eligible_registrations<'state>(
         .schema_contract_runtime
         .custom_invariant_registries
         .iter()
+        .take(if stage.custom() { usize::MAX } else { 0 })
         .take_while(|_| {
             execution.check_live().is_ok()
                 && preparation_budget.is_none_or(|budget| budget.try_plan_item(0))
@@ -94,6 +97,7 @@ pub(super) fn eligible_registrations<'state>(
                     prepared_scope,
                     retained_touched,
                     work,
+                    basis: CustomInvariantNonApplicability::CandidateOutsideClosure,
                 });
             }
             let prepared_scope =
@@ -128,6 +132,7 @@ pub(super) fn eligible_registrations<'state>(
                     prepared_scope,
                     retained_touched: planner.retained_touched(),
                     work,
+                    basis: CustomInvariantNonApplicability::NoApplicableTouch,
                 });
             }
             let prepared_execution = if !registration.supports_checked_preparation()
@@ -152,6 +157,7 @@ pub(super) fn eligible_registrations<'state>(
                             prepared_scope,
                             retained_touched: planner.retained_touched(),
                             work,
+                            basis: CustomInvariantNonApplicability::PreparationRefused,
                         });
                     }
                 }
@@ -177,3 +183,6 @@ pub(super) fn eligible_registrations<'state>(
 
 #[cfg(test)]
 mod narrowing_tests;
+
+#[cfg(test)]
+mod basis_tests;

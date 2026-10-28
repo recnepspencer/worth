@@ -93,10 +93,9 @@ where
             owned_bytes,
         },
     )])?;
-    let ceiling = lease
-        .policy()
-        .charged_memory_bytes()
-        .map_or(declared_bytes, |limit| limit / 4);
+    // The merge declares the extent it will hold; the lease's own memory
+    // policy admits that declaration, not a fixed share of the policy.
+    let ceiling = declared_bytes;
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,
         work_budget,
@@ -286,15 +285,22 @@ mod tests {
         )]
     }
 
-    /// The admission declaration reads every key's clone size once, unmetered,
-    /// before the merge; only reads beyond these are merge progress.
-    const DECLARATION_KEY_READS: usize = 1_000;
-
-    fn merge_key_reads(reads: &AtomicUsize) -> usize {
-        reads
-            .load(Ordering::SeqCst)
-            .checked_sub(DECLARATION_KEY_READS)
-            .expect("the declaration reads every key before the merge")
+    /// Admission prices every retained item's heap key before the kernel runs,
+    /// so kernel visits are the key callbacks after this declaration pass.
+    fn declaration_key_visits() -> usize {
+        let visits = AtomicUsize::new(0);
+        let item_bytes = |_: &u64, _: &u64| 0;
+        let key_clone_bytes = |_: &u64| {
+            visits.fetch_add(1, Ordering::SeqCst);
+            0
+        };
+        super::extent::declaration::<u64, u64, (u64, u64)>(
+            &streams(),
+            &item_bytes,
+            &key_clone_bytes,
+        )
+        .unwrap();
+        visits.into_inner()
     }
 
     #[test]
@@ -337,9 +343,9 @@ mod tests {
             },
         )
         .unwrap_err();
-        let merged = merge_key_reads(&visited);
-        assert!(merged > 1);
-        assert!(merged < 1_000);
+        let kernel_visits = visited.load(Ordering::SeqCst) - declaration_key_visits();
+        assert!(kernel_visits > 1);
+        assert!(kernel_visits < 1_000);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {
@@ -352,6 +358,7 @@ mod tests {
     #[test]
     fn checked_merge_observes_cancellation_between_heap_pops() {
         let cancellation = CancellationSource::new();
+        let declaration = declaration_key_visits();
         let visits = AtomicUsize::new(0);
         let stop = canonical_merge_streams_checked(
             streams(),
@@ -359,14 +366,14 @@ mod tests {
             None,
             |_, _| 0,
             |_| {
-                if visits.fetch_add(1, Ordering::SeqCst) == DECLARATION_KEY_READS + 40 {
+                if visits.fetch_add(1, Ordering::SeqCst) == declaration + 40 {
                     cancellation.cancel();
                 }
                 0
             },
         )
         .unwrap_err();
-        assert!(merge_key_reads(&visits) < 1_000);
+        assert!(visits.load(Ordering::SeqCst) - declaration < 1_000);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {

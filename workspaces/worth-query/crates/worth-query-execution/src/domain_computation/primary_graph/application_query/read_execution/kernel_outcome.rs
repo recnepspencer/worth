@@ -57,7 +57,7 @@ impl NonLiveKernelReceiptEvidence {
             examined_candidates: self.read.examined_candidates,
             projected_records: self.read.projected_records,
             projected_fields: self.read.projected_fields,
-            relation_records_examined: self.read.relation_records_examined,
+            relation_records_examined: self.read.reads.adjacency_edges_inspected(),
             ordering_comparisons: self.read.ordering_comparisons,
         }
     }

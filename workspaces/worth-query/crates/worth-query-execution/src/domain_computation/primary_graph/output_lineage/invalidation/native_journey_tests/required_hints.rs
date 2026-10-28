@@ -26,7 +26,6 @@ use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
 use super::*;
-use crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredWorkKind;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry;
@@ -38,11 +37,9 @@ use gate::TwoPrepareGate;
 struct TwoCellHints {
     cells: BTreeMap<BranchId, CompanionBranchCell<u64>>,
     member: Arc<RequiredWorkMembership>,
-    _resources: WorthQueryInvalidationResources,
     observers: Arc<Mutex<Vec<CompanionPublicationCompletionObserver>>>,
     saw_two_prepared: Arc<AtomicBool>,
     gate: Arc<TwoPrepareGate>,
-    retained: Arc<()>,
 }
 
 impl fmt::Debug for TwoCellHints {
@@ -63,7 +60,6 @@ impl RelationalPublicationCompanion for TwoCellHints {
             .expect("both real branch cells are registered");
         let reserved = cell.reserve_preflight(context)?;
         let mut effect = context.seal_replacement(reserved, Arc::new(index as u64 + 1))?;
-        let _retained: Arc<dyn Send + Sync> = self.retained.clone();
         let observer = effect.attach_completion_observer(context)?;
         {
             let mut observers = self.observers.lock().unwrap();
@@ -104,12 +100,9 @@ use prepare_update::prepare_update;
 
 #[test]
 fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     {
+        let allowed_hints = 2_u64;
         {
-            let allowed_hints = 2_u64;
             let world = installed_authorization_world(true);
             let (entity, product) = world
                 .application
@@ -141,7 +134,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 .application
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request();
-                    let resources = WorthQueryInvalidationResources::new();
+                    let execution = &host_custody.borrowed_request_for_test();
                     let graph = world.application.runtime.primary_graph().unwrap();
                     let handle = graph.integration_handle();
                     let owner = &handle.source_owner.invalidation_owner;
@@ -182,11 +175,9 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 let participant = Arc::new(TwoCellHints {
                     cells: BTreeMap::from([(main.clone(), main_cell), (fork.clone(), fork_cell)]),
                     member: Arc::clone(&member),
-                    _resources: resources.clone(),
                     observers: Arc::clone(&observers),
                     saw_two_prepared: Arc::clone(&saw_two_prepared),
                     gate: Arc::clone(&gate),
-                    retained: Arc::new(()),
                 });
                 let registration = pending
                     .activate(participant)

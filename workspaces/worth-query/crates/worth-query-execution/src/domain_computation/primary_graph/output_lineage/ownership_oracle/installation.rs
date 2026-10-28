@@ -11,7 +11,7 @@ use worth_query_decl::facade::{application_program::*, application_schema::*};
 worth_query_decl::facade::worth_query_application! {
     pub(super) OwnerSchema { owner: "worth.query.test.mixed-owner", version: (1, 0), contributions: [OwnerMembers], }
 }
-impl TopologySchemaBinding for OwnerSchema {}
+impl TopologyModelBinding for OwnerSchema {}
 worth_query_decl::facade::worth_query_application_contribution! {
     pub(super) contribution OwnerMembers in OwnerSchema {
         identity: "worth.query.test.mixed-owner-members",
@@ -44,7 +44,8 @@ impl WorthQueryApplicationContribution<OwnerSchema> for OwnerMembers {
                 planar_invariant::resolve_rule(
                     resolver,
                     Arc::new(AtomicUsize::new(0)),
-                    Arc::new(AtomicUsize::new(0)),
+                    Arc::new(AtomicUsize::new(planar_invariant::INVARIANT_PROBE_STANDARD)),
+                    None,
                 )
                 .map(|rule| super::commit_interruption::InterruptingRule { rule, interruption })
             },
@@ -97,7 +98,8 @@ pub(super) fn install_with_interruption(
     interruption: super::commit_interruption::Interruption,
 ) -> Application {
     in_memory_program(
-        ApplicationProgramAuthoring::<OwnerSchema, OwnerProgram>::begin().validated_program().unwrap(),
+        ApplicationProgramAuthoring::<OwnerSchema, OwnerProgram>::begin()
+        .with_schema(&OwnerSchema::declaration().unwrap()).validated_program().unwrap(),
         OwnerSchema::declaration().unwrap(), (interruption,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(

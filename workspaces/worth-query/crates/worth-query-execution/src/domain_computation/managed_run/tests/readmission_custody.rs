@@ -23,9 +23,6 @@ impl Drop for Restore {
 }
 #[test]
 fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmission() {
-    let host_request = crate::bridge_host_request::serial_request();
-    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
-
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     use std::num::NonZeroUsize;
     bound(None);
@@ -34,7 +31,9 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let _restore = Restore(place(placement), bound(None));
         let (yielded, bridge, runtime) = host
             .run_provider_fixture(|phase| {
-                readmission_direct::yielded_direct(&phase.test_host_request(), resource_request)
+                let custody = phase.test_host_request();
+                let bootstrap = custody.bootstrap_for_test();
+                readmission_direct::yielded_direct(&custody, bootstrap.execution_request())
             })
             .unwrap();
         let mut direct = Some(yielded);

@@ -1,4 +1,5 @@
-//! A selected epoch's candidate lookup map is admitted before its evaluators.
+//! D12 admits a selected epoch's candidate lookup map before its evaluators.
+//! Its retained ticket survives callback contention through publication.
 //! Canonical deltas later select which of its finite aspect slots do work.
 
 use worth_execution::{

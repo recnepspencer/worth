@@ -77,6 +77,10 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
     ));
 }
 
+/// Commit `ee07da2b0e` removed the caller's dynamic work control. An
+/// approver's guarded frontier over 265 accounts with no pending payment reads
+/// to its empty result with only a result limit: no caller supplies a work
+/// estimate or ceiling.
 #[test]
 fn empty_guarded_frontier_work_grows_at_most_linearly() {
     let mut baseline = None;

@@ -3,6 +3,7 @@ mod branch_and_aspect_history;
 mod branch_root_checkpoint;
 mod branch_root_content_binding;
 mod branch_root_schema_binding;
+mod branch_root_shared_target_binding;
 mod branch_transition;
 mod canonical_artifact_neutrality;
 mod canonical_commit_artifact;

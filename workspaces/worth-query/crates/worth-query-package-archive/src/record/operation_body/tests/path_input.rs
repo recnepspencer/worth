@@ -2,9 +2,8 @@
 use super::*;
 use worth_query_declaration::facade::{
     application_query::{
-        ApplicationQueryRootPathDirection as Direction, ApplicationQueryRootPathMeaning,
-        ApplicationQueryRootPathStep as Step,
-        WorthQueryPortableApplicationQueryRootPathParts as Parts,
+        ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep as Step,
+        RelationDirection as Direction, WorthQueryPortableApplicationQueryRootPathParts as Parts,
     },
     application_schema::{
         ApplicationFieldPresence as Presence, ApplicationOperationBodyPathFieldSource as Source,
@@ -26,7 +25,7 @@ fn path_input_v32_roundtrips_identity_and_reverse_paths_and_cannot_fully_downgra
                         "Parent".into(),
                         "Row".into(),
                         Direction::Reverse,
-                    )]
+                     worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)]
                 },
                 guards: vec![],
             }),

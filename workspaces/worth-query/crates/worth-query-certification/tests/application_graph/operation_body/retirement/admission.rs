@@ -141,23 +141,18 @@ fn fresh_readmission_reconstructs_retirement_meaning_and_required_authority() {
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
         )
         .unwrap_err();
-        match (corrupt, denied) {
-            (
-                "read",
-                ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
-                    operation,
-                    ..
-                },
-            ) => assert_eq!(operation, "SetRetention"),
-            (
-                _,
-                ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
-                    operation,
-                    ..
-                },
-            ) => assert_eq!(operation, "SetRetention"),
-            (_, denied) => panic!("{corrupt}: wrong dependency denial: {denied:?}"),
-        }
+        let denied_operation = match &denied {
+            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                operation,
+                ..
+            } if corrupt == "read" => operation,
+            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                operation,
+                ..
+            } if corrupt != "read" => operation,
+            other => panic!("{corrupt}: {other:?}"),
+        };
+        assert_eq!(denied_operation, "SetRetention", "{corrupt}");
     }
 }
 #[test]
@@ -180,4 +175,16 @@ fn typed_finish_requires_the_exact_source_write_not_an_independent_input_read() 
         result,
         Err(ApplicationOperationBodyAuthoringDenial::InvalidSelectionRetirement)
     ));
+}
+/// Installation needs declared Delete and Unlink authority, not a supplier
+/// forecast of candidate cardinality (owned-selection-retirement.md, "the
+/// native owner grows actual effect storage fallibly"). Missing authority
+/// refuses at declaration above; exceeding the bound refuses at execution
+/// before any prefix (`evidence::bound_overflow_and_overlapping_targets_never_apply_a_prefix`).
+/// So the program that once carried no forecast installs and bootstraps.
+#[test]
+fn installation_admits_the_retirement_bound_without_candidate_forecasts() {
+    // The real fixture bootstrap binds the operator and seeds both holders.
+    let app = super::super::install::<125>();
+    assert_eq!(super::super::read_retention(&app), 7);
 }

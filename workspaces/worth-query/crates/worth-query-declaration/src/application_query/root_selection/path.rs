@@ -8,12 +8,12 @@ use crate::application_schema::{
 
 use super::ApplicationQueryRootPathGuard;
 
-#[derive(
-    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Serialize, serde::Deserialize,
-)]
-pub enum ApplicationQueryRootPathDirection {
-    Forward,
-    Reverse,
+pub use worth_foundational::facade::RelationDirection;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationQueryRootPathTraversal {
+    OneHop,
+    Closure,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -21,7 +21,8 @@ pub struct ApplicationQueryRootPathStep {
     relation: String,
     from: String,
     to: String,
-    direction: ApplicationQueryRootPathDirection,
+    direction: RelationDirection,
+    traversal: ApplicationQueryRootPathTraversal,
 }
 
 impl ApplicationQueryRootPathStep {
@@ -29,13 +30,15 @@ impl ApplicationQueryRootPathStep {
         relation: String,
         from: String,
         to: String,
-        direction: ApplicationQueryRootPathDirection,
+        direction: RelationDirection,
+        traversal: ApplicationQueryRootPathTraversal,
     ) -> Self {
         Self {
             relation,
             from,
             to,
             direction,
+            traversal,
         }
     }
 
@@ -51,21 +54,25 @@ impl ApplicationQueryRootPathStep {
         &self.to
     }
 
-    pub const fn direction(&self) -> ApplicationQueryRootPathDirection {
+    pub const fn direction(&self) -> RelationDirection {
         self.direction
+    }
+
+    pub const fn traversal(&self) -> ApplicationQueryRootPathTraversal {
+        self.traversal
     }
 
     pub fn parent_entity(&self) -> &str {
         match self.direction {
-            ApplicationQueryRootPathDirection::Forward => &self.from,
-            ApplicationQueryRootPathDirection::Reverse => &self.to,
+            RelationDirection::Forward => &self.from,
+            RelationDirection::Reverse => &self.to,
         }
     }
 
     pub fn child_entity(&self) -> &str {
         match self.direction {
-            ApplicationQueryRootPathDirection::Forward => &self.to,
-            ApplicationQueryRootPathDirection::Reverse => &self.from,
+            RelationDirection::Forward => &self.to,
+            RelationDirection::Reverse => &self.from,
         }
     }
 }
@@ -142,7 +149,8 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
             relation: relation.name().to_owned(),
             from: relation.from().to_owned(),
             to: relation.to().to_owned(),
-            direction: ApplicationQueryRootPathDirection::Forward,
+            direction: RelationDirection::Forward,
+            traversal: ApplicationQueryRootPathTraversal::OneHop,
         });
         ApplicationQueryRootPath {
             start_entity: self.start_entity,
@@ -161,7 +169,8 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
             relation: relation.name().to_owned(),
             from: relation.from().to_owned(),
             to: relation.to().to_owned(),
-            direction: ApplicationQueryRootPathDirection::Reverse,
+            direction: RelationDirection::Reverse,
+            traversal: ApplicationQueryRootPathTraversal::OneHop,
         });
         ApplicationQueryRootPath {
             start_entity: self.start_entity,
@@ -170,6 +179,38 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
             guards: self.guards,
             _marker: PhantomData,
         }
+    }
+
+    /// Reflexive complete reachability over one endorelation, including roots.
+    pub fn forward_closure<Relation>(
+        mut self,
+        relation: ApplicationRelationRef<Schema, Relation, Current, Current>,
+    ) -> Self {
+        self.steps
+            .push(ApplicationQueryRootPathStep::from_untrusted_fields(
+                relation.name().to_owned(),
+                relation.from().to_owned(),
+                relation.to().to_owned(),
+                RelationDirection::Forward,
+                ApplicationQueryRootPathTraversal::Closure,
+            ));
+        self
+    }
+
+    /// Complete reverse reachability over one endorelation, including roots.
+    pub fn reverse_closure<Relation>(
+        mut self,
+        relation: ApplicationRelationRef<Schema, Relation, Current, Current>,
+    ) -> Self {
+        self.steps
+            .push(ApplicationQueryRootPathStep::from_untrusted_fields(
+                relation.name().to_owned(),
+                relation.from().to_owned(),
+                relation.to().to_owned(),
+                RelationDirection::Reverse,
+                ApplicationQueryRootPathTraversal::Closure,
+            ));
+        self
     }
 
     pub fn where_equal<Aspect, Field, Value, Write, Unit>(

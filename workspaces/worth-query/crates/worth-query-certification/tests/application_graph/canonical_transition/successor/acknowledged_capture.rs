@@ -42,6 +42,7 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
             installation::WorthQueryCheckpointTransitionResources::bounded(4096, 32, 16384)
                 .unwrap()
                 .with_capture_memory_limit(0),
+            phase.execution_request().allocation_policy(),
             |_, _| {
                 callbacks += 1;
                 Ok(())

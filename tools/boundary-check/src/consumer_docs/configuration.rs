@@ -129,7 +129,7 @@ pub(super) fn load(root: &Path) -> Result<Configuration, String> {
                 .get("autobins")
                 .and_then(toml::Value::as_bool)
                 != Some(false)
-            || ["bin", "example"].into_iter().any(|kind| {
+            || ["bin", "example", "test"].into_iter().any(|kind| {
                 manifest
                     .get(kind)
                     .and_then(toml::Value::as_array)

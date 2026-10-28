@@ -49,15 +49,20 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Unowned {
 
 pub(super) fn install_rostered(model: &Model) -> Application {
     let initial = ApplicationProgramAuthoring::<CheckpointSchema, OracleProgram>::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let adopted = ApplicationProgramAuthoring::<CheckpointSchema, Adopted>::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let roster = application_installation::WorthQueryApplicationProgramRoster::new()
         .support(adopted)
         .support(
             ApplicationProgramAuthoring::<CheckpointSchema, Unowned>::begin()
+                .with_schema(
+                    &CheckpointSchema::declaration().expect("the completed schema is valid"),
+                )
                 .validated_program()
                 .unwrap(),
         );
@@ -66,8 +71,10 @@ pub(super) fn install_rostered(model: &Model) -> Application {
         setup_calls: Arc::new(AtomicUsize::new(0)),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
         invariant_probe: Arc::new(AtomicUsize::new(0)),
+        invariant_read_observer: None,
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
         producer_domain_denial: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        producer_contacts: None,
     };
 
     let limits = support::limits_with_room(32, 16, 64, support::invalidation());

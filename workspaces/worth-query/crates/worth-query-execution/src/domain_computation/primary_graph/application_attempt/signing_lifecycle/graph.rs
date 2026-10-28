@@ -11,7 +11,7 @@ pub(super) use routing::affected_subjects;
 pub(super) use selection::changed_selections;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryRootPathDirection as PathDirection, ApplicationQueryRootPathStep as Step,
+    ApplicationQueryRootPathStep as Step, RelationDirection as PathDirection,
 };
 use worth_relational::facade::identity::KindId;
 

@@ -51,10 +51,8 @@ where
         if !self.work_budget.consume(read.work_units()) {
             return Err(work_budget_exceeded(relation.name()));
         }
-        self.work.record_adjacency(
-            read.relation_records_examined(),
-            read.endpoint_records_reserved(),
-        );
+        self.work
+            .record_adjacencies(1, read.relation_records_examined());
         read.into_records()
             .into_iter()
             .map(|record| {
@@ -107,10 +105,8 @@ where
         if !self.work_budget.consume(read.work_units()) {
             return Err(work_budget_exceeded(relation.name()));
         }
-        self.work.record_adjacency(
-            read.relation_records_examined(),
-            read.endpoint_records_reserved(),
-        );
+        self.work
+            .record_adjacencies(1, read.relation_records_examined());
         read.into_records()
             .into_iter()
             .map(|record| {
@@ -163,17 +159,15 @@ where
         relation: &str,
     ) -> WorthQueryInvariantProjectionTraversalDenial {
         if self.work_budget.consume(limit.consumed_work_units()) {
-            self.work.record_adjacency(
-                limit.relation_records_examined(),
-                limit.endpoint_records_reserved(),
-            );
+            self.work
+                .record_adjacencies(1, limit.relation_records_examined());
         }
         self.work_budget.mark_exceeded();
         work_budget_exceeded(relation)
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn endpoint<Entity>(
-        &self,
+        &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: worth_relational::facade::identity::EntityId,
         expected_kind: worth_relational::facade::identity::KindId,
@@ -182,14 +176,16 @@ where
         WorthQueryInvariantEntityIdentity<Schema, Entity>,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
-        let available = self
-            .branch_view(entity)?
+        let view = self.branch_view(entity)?;
+        let work = &mut self.work;
+        let available = view
             .entity_record_with_projection_scope_admitted(
                 execution,
                 entity_id,
                 ProjectionAspectScope::empty(),
                 |_| Ok::<_, std::convert::Infallible>(()),
                 |record| {
+                    work.record_endpoint();
                     (record.kind_id() == expected_kind
                         && record.lifecycle() == RecordLifecycleState::Live)
                         .then_some(())
@@ -263,3 +259,6 @@ fn work_budget_exceeded(relation: &str) -> WorthQueryInvariantProjectionTraversa
         relation,
     )
 }
+
+#[cfg(test)]
+mod tests;

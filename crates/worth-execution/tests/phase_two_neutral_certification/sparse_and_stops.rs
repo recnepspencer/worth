@@ -265,7 +265,7 @@ fn sparse_decomposition_matches_independent_undecomposed_solver_across_widths() 
                 + result
                     .reduction_metrics
                     .accounted_metrics()
-                    .unwrap()
+                    .expect("an accounted decomposition carries reduction accounting")
                     .charged_work
                 + result.interface_report.unwrap().charged_work()
                 + result.back_report.unwrap().charged_work()

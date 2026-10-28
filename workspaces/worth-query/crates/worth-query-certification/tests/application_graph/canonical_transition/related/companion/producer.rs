@@ -209,6 +209,7 @@ impl WorthQueryApplicationProducerBinding<CanonicalSchema> for Producer {
     const REUSE_POLICY: &'static str = "exact-source";
 }
 impl WorthQueryApplicationProducerProvider<CanonicalSchema, Producer> for Provider {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = super::output::PROVIDER_IDENTITY;
     fn operation_input(&self, _: &NestedValue) -> Input {
         Input {

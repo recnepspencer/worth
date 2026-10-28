@@ -81,7 +81,8 @@ impl Denial {
                 | Invariant::EvidenceSubstitution
                 | Invariant::EmptyStateLoad
                 | Invariant::StateLoadClosureMismatch
-                | Invariant::VerdictPostureMismatch => {
+                | Invariant::VerdictPostureMismatch
+                | Invariant::ProducerRequirementNotAdmitted(..) => {
                     allocation_control(failure.allocation_denial())
                 }
             },

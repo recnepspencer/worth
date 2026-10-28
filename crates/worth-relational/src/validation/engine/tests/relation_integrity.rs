@@ -43,11 +43,21 @@ fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts(
             contract_id,
             source_partition_id,
             target_partition_id,
+            source: actual_source,
+            target: actual_target,
             ..
         } => {
             assert_eq!(contract_id.as_str(), "same_partition");
             assert_eq!(*source_partition_id, PartitionId(1));
             assert_eq!(*target_partition_id, PartitionId(2));
+            assert_eq!(
+                actual_source,
+                &crate::transactions::data::EntityReference::Existing(source)
+            );
+            assert_eq!(
+                actual_target,
+                &crate::transactions::data::EntityReference::Existing(target)
+            );
         }
         other => panic!("expected partition isolation violation, got {other:?}"),
     }

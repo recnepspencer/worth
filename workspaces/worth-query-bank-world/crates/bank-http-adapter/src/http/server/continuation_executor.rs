@@ -26,6 +26,8 @@ mod activity;
 pub(super) mod correction_history;
 use activity::{execute_page, execute_resume};
 mod replay;
+#[cfg(test)]
+pub(super) use replay::fault as replay_fault;
 use replay::{fail_resume, revalidate_replay, revokes_cached_access};
 
 pub(super) struct BankHttpContinuationExecutor {

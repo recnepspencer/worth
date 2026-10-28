@@ -121,10 +121,11 @@ mod tests {
         };
         let before = super::super::retirement_observation::sweep_contacts();
         registry.release_product_occurrence(receipt.product_branch().occurrence());
-        // Two instrumented three-row lifecycle passes; notes remain separate.
+        // Two lifecycle and two prerequisite-custody passes over three rows.
+        // Cleanup notes remain separate.
         assert_eq!(
             super::super::retirement_observation::sweep_contacts() - before,
-            6
+            12
         );
         {
             let state = registry.state.lock().unwrap();
@@ -199,7 +200,7 @@ mod tests {
                 .values()
                 .all(|row| row.terminal()));
         }
-        // Two instrumented lifecycle passes plus one contact per custody entry.
-        assert_eq!(contacts, [5, 11, 22]);
+        // Two lifecycle and two prerequisite-custody passes, plus each custody entry.
+        assert_eq!(contacts, [4 * 2 + 1, 4 * 5 + 1, 4 * 9 + 4]);
     }
 }

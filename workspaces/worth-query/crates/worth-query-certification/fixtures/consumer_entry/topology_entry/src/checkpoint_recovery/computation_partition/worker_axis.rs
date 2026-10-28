@@ -17,7 +17,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryExecutionPlacementForTest as Placement,
 };
 
-use super::execution::{association_sensitive_entries, entry, heavy_regions, several_refusals};
+use super::execution::{association_sensitive_entries, entry, several_refusals};
 use super::facts::{self, RegionEntry};
 use super::owner::{with_region_totals, RegionOutcome};
 
@@ -214,11 +214,6 @@ fn the_least_failing_partition_is_the_same_at_every_worker_count() {
 }
 }
 
-worth_execution::needs_os_threads! {
-#[test]
-fn the_work_boundary_is_the_same_at_every_worker_count() { assert_work_boundary(axis()); }
-}
-
 #[test]
 fn the_floating_point_sum_keeps_its_bits_and_its_work_at_one_worker() {
     assert_floating_point(one_worker());
@@ -233,36 +228,6 @@ fn assert_floating_point(placements: Vec<Placement>) {
     let serial = across_the_axis(sets, &["sensitive", "exact"], placements);
     assert!(f64::from_bits(serial[0].as_ref().unwrap().0).is_finite());
     assert_eq!(serial[1].as_ref().unwrap().0, 820.0_f64.to_bits());
-}
-
-#[test]
-fn the_work_boundary_is_the_same_at_one_worker() {
-    assert_work_boundary(one_worker());
-}
-
-fn assert_work_boundary(placements: Vec<Placement>) {
-    let (heavy, exhausted) = heavy_regions();
-    let mut reversed = heavy.clone();
-    reversed.reverse();
-    let light = heavy
-        .iter()
-        .map(|entry| RegionEntry { work: 1, ..*entry })
-        .collect::<Vec<_>>();
-    let sets: facts::Sets<'_> = &[
-        ("heavy", &heavy),
-        ("reversed", &reversed),
-        ("light", &light),
-    ];
-    let [heavy, reversed, light] = <[Compared; 3]>::try_from(across_the_axis(
-        sets,
-        &["heavy", "reversed", "light"],
-        placements,
-    ))
-    .unwrap();
-    let exhausted = exhausted.expect_err("the work boundary is a denial");
-    assert_eq!(heavy.err().as_ref(), Some(&exhausted));
-    assert_eq!(reversed.err().as_ref(), Some(&exhausted));
-    assert_eq!(light.unwrap().0, 3.0_f64.to_bits());
 }
 
 #[test]

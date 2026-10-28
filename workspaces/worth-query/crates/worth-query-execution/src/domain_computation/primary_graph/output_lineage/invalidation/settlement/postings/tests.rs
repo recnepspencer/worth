@@ -69,7 +69,6 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
 
     let prepared = PreparedPostingOrdinals::prepare(&source, Some(&output), &mut None).unwrap();
     let mut state = MarkState::initial();
-    let _resources = resources();
     let projection = prepared.into_projection(0, source.len(), output.len(), None);
     super::super::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
     let ordinals = &projection.ordinals;
@@ -106,7 +105,6 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
             .all(|ordinals| ordinals.len() == copies));
 
         let (_, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
-        let _resources = resources();
         let mut state = MarkState::initial();
         let prior = state.postings.clone();
         let projection = prepared.into_projection(0, facts.len(), 0, None);
@@ -125,9 +123,43 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
     }
 }
 
-fn resources() -> crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources{
-    use crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources;
-    WorthQueryInvalidationResources::new()
+/// Query's posting store and native marking produce Relational's two
+/// preflight counter-overflow stops; Relational defers them verbatim.
+#[test]
+fn posting_and_marking_counters_stop_with_their_typed_overflow() {
+    use super::super::super::delivery::affected::mark_keys;
+    use super::super::super::WorthQueryNativeMarkingWork;
+    use worth_relational::facade::mvcc::CompanionPreflightStop;
+
+    let entity = EntityId::new(PartitionId::main(), 1, 1);
+    let facts = [Fact::SourceEntity { entity_id: entity }];
+    let projection = PreparedPostingOrdinals::prepare(&facts, None, &mut None)
+        .unwrap()
+        .into_projection(0, facts.len(), 0, None);
+    let (_, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+
+    let mut full = MarkState::initial();
+    full.posting_count = usize::MAX;
+    assert_eq!(
+        super::super::posting_bindings::bind(&mut full, &projection, &identity),
+        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow)
+    );
+
+    let mut state = MarkState::initial();
+    super::super::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
+    let mut counts = WorthQueryNativeMarkingWork {
+        posting_key_lookups: u64::MAX,
+        ..WorthQueryNativeMarkingWork::default()
+    };
+    assert_eq!(
+        mark_keys(
+            &mut state,
+            &[FactPostingKey::EntityLifecycle(entity)],
+            &mut counts
+        )
+        .map(|affected| affected.len()),
+        Err(CompanionPreflightStop::WorkCounterOverflow)
+    );
 }
 
 mod bindings;

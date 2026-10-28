@@ -51,10 +51,11 @@ pub(super) fn controls() -> WorthQueryOutputDemandControls {
 #[test]
 fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
     let _guard = checkpoint_recovery_test_guard();
-    let mut app = installation::install();
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let mut app = installation::install_observed(&provider_observation);
     let (scope, principal) = authenticate(&app);
     let request = app.request(&principal, &scope);
-    crate::producer::reset_provider_contacts();
+    provider_observation.reset();
     let first = quantity(&app, &request);
     let held = first
         .read_current(&request, read::Read(publication::output_key("population")))
@@ -67,7 +68,7 @@ fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
     assert_eq!(held.rows()[0].count, 1);
     assert_eq!(held.rows()[0].measure, Measure::Pending);
     assert_eq!(
-        crate::producer::provider_contacts(),
+        provider_observation.count(),
         0,
         "first source observation must not execute upstream provider"
     );
@@ -154,7 +155,7 @@ fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
     // Availability observes the edited source without driving regeneration.
     // Genuine interrupted-owner custody is exercised in races::interruption;
     // an obsolete one-unit producer quote is not a semantic stop contract.
-    crate::producer::reset_provider_contacts();
+    provider_observation.reset();
     let pending = quantity(&app, &request);
     let pending_read = pending
         .read_current(&request, read::Read(publication::output_key("population")))
@@ -162,7 +163,7 @@ fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
     assert_eq!(pending_read.rows()[0].count, 1);
     assert_eq!(pending_read.rows()[0].measure, Measure::Pending);
     assert_eq!(
-        crate::producer::provider_contacts(),
+        provider_observation.count(),
         0,
         "edited source observation cannot fund upstream"
     );

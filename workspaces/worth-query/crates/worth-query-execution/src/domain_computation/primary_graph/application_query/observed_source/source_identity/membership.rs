@@ -22,12 +22,17 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self,
     ) -> Option<WorthQueryObservedSourceSelection> {
         let footprint = self.source_meaning.footprint();
-        (footprint.complete && footprint.root_selection.is_some()).then(|| {
-            WorthQueryObservedSourceSelection {
-                runtime_authority: self.runtime_authority,
-                schema_binding: self.schema_binding.clone(),
-                meaning: Arc::clone(&self.source_meaning),
-            }
+        // Selective membership cutoff has no qualified complete-walk rule yet.
+        // Retained full source currentness still consumes the original bodies.
+        (footprint.complete
+            && footprint
+                .root_selection
+                .as_ref()
+                .is_some_and(|selection| selection.walks.is_none()))
+        .then(|| WorthQueryObservedSourceSelection {
+            runtime_authority: self.runtime_authority,
+            schema_binding: self.schema_binding.clone(),
+            meaning: Arc::clone(&self.source_meaning),
         })
     }
 }
@@ -113,6 +118,9 @@ fn same_root_selection(
     left: &WorthQueryObservedRootSelection,
     right: &WorthQueryObservedRootSelection,
 ) -> bool {
+    if left.walks.is_some() || right.walks.is_some() {
+        return false;
+    }
     same_entities(&left.entities, &right.entities)
         && same_fields(&left.aspects, &right.aspects)
         && same_adjacencies(&left.adjacencies, &right.adjacencies)
@@ -227,6 +235,8 @@ mod tests {
                 vec![entity(1)],
                 Vec::new(),
                 vec![adjacency.clone()],
+                None,
+                None,
             ))),
             adjacencies: vec![adjacency],
         }
@@ -312,11 +322,17 @@ mod tests {
     }
 
     #[test]
-    fn text_comparison_uses_initialized_utf8_not_spare_capacity() {
+    fn text_comparison_reads_initialized_utf8_not_spare_capacity() {
         let mut spare = String::with_capacity(4096);
         spare.push_str("open");
-        assert!(same_text(&spare, "open"));
-        assert!(!same_text(&spare, "closed"));
-        assert!(!same_text(&spare, "oven"));
+        // Stale bytes past the initialized length stay in the spare capacity.
+        let mut truncated = String::from("openXYZ");
+        truncated.truncate("open".len());
+        for left in [spare.as_str(), truncated.as_str()] {
+            for right in ["open", "openXYZ", "opal", "closed", ""] {
+                assert_eq!(same_text(left, right), left == right, "{left:?} {right:?}");
+            }
+        }
+        assert!(same_text(&spare, &truncated));
     }
 }

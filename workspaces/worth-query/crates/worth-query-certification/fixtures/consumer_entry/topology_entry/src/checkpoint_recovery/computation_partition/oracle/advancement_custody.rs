@@ -1,5 +1,5 @@
 //! The real caller loop refreshes a Ready whose producer changed a gathered fact.
-use super::super::region_output::{arm_own_write, OwnWrite, OwnWriteRead};
+use super::super::own_write::{arm_own_write, OwnWrite, OwnWriteRead};
 use super::*;
 use worth_query_host::facade::primary_graph::{
     advancement_requests_on_this_thread_for_test as reports,
@@ -20,9 +20,6 @@ impl Drop for Restore {
 const RUNS: usize = 1;
 const ENTRY_WORK: usize = 1_000_000;
 const PRODUCER_WORK: usize = ENTRY_WORK + WORK_BESIDE_ENTRIES;
-// A caller allows one declared entry checkpoint with generous headroom,
-// but cannot fund two. Resetting its request on retry would admit both.
-const CALLER_WORK: u64 = ENTRY_WORK as u64 + ENTRY_WORK as u64 / 2;
 
 #[test]
 fn caller_refresh_retry_spends_what_the_first_attempt_left() {

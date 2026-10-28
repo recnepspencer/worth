@@ -60,12 +60,14 @@ fn map_relational_preparation_denial(
             fields:
                 worth_relational::facade::transactions::InvariantViolationFields::CustomInvariantViolation {
                     identity,
+                    refusal,
                 },
             ..
         } = &error.class
         {
             return WorthQueryBranchAdoptionPreparationDenial::TargetRuleRejected {
                 identity: identity.clone(),
+                refusal: refusal.clone(),
             };
         }
     WorthQueryBranchAdoptionPreparationDenial::RelationalPreparation

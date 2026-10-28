@@ -7,7 +7,7 @@ use worth_query_host::facade::runtime::{
 };
 
 // Twice the 64 MiB preparation ceiling leaves framework memory headroom.
-// The 16 million work allowance bounds leases; serial requests bound memory only.
+// The 16 million work ceiling bounds every advancement in both placements.
 const BANK_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,

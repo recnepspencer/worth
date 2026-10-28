@@ -23,7 +23,7 @@ pub(super) fn verify(application: &WorthQueryPrimaryGraphApplicationRuntime<Cons
     );
     assert_eq!(
         definition.denial_identity().as_str(),
-        "worth.query.certification.planar-mutation-denial.v1"
+        "worth.query.certification.planar-mutation-denial.v2"
     );
     assert_eq!(
         (

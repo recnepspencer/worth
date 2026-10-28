@@ -4,7 +4,8 @@ use super::*;
 #[test]
 fn equal_input_completion_without_business_commit_renews_same_consumer_record() {
     let _guard = checkpoint_recovery_test_guard();
-    let mut app = installation::install();
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let mut app = installation::install_observed(&provider_observation);
     let (scope, principal) = authenticate(&app);
     let request = app.request(&principal, &scope);
     races::complete_geometry(&app, &request, false);
@@ -51,7 +52,7 @@ fn equal_input_completion_without_business_commit_renews_same_consumer_record() 
     assert!(initial
         .read_current(&request, read::Read(publication::output_key("population")))
         .is_err());
-    crate::producer::reset_provider_contacts();
+    provider_observation.reset();
     let pending = quantity(&app, &request)
         .close_for_delivery(&request)
         .unwrap_or_else(|stop| panic!("original Pending delivery close: {:?}", stop.denial()));
@@ -62,7 +63,7 @@ fn equal_input_completion_without_business_commit_renews_same_consumer_record() 
         .unwrap();
     assert_eq!(held.rows()[0].count, 1);
     assert_eq!(held.rows()[0].measure, Measure::Pending);
-    assert_eq!(crate::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     let before = request.retain_current_read().unwrap();
     // The actual native owner must accept stable reuse, not force an execution.
     races::complete_geometry(&app, &request, true);

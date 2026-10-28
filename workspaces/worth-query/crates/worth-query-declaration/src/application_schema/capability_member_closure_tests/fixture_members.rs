@@ -151,6 +151,6 @@ pub(super) fn relation_member(relation: &str, from: &str, to: &str) -> Applicati
         relation: relation.to_string(),
         from: from.to_string(),
         to: to.to_string(),
-        integrity: crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+        integrity: crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
     }
 }

@@ -1,3 +1,4 @@
+//! Scratch admission refuses before custom evaluation.
 use super::*;
 
 #[test]
@@ -34,18 +35,26 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
     let result = InvariantEngine::new(&runtime)
         .execute(&worth_execution::ExecutionRequest::leased(&lease), request);
     assert_eq!(evaluation_visits.load(Ordering::SeqCst), 0);
-    assert!(matches!(
-        result,
-        Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
-                        crate::execution::RelationalExecutionDenialCause::ScratchCapacityExceeded
+    // The claim is charged to the lease before it is made, so the request's
+    // own memory policy refuses it: the claim alone exceeds the request.
+    let Err(crate::transactions::data::TransactionCommitError::Execution {
+        denial:
+            crate::transactions::data::CommitExecutionDenial {
+                kind:
+                    crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                            requested,
+                            admitted,
+                            ..
+                        },
                     ),
-                    ..
-                },
                 ..
-            }
-        )
-    ));
+            },
+        ..
+    }) = result
+    else {
+        panic!("the request's memory policy must refuse the claim: {result:?}");
+    };
+    assert!(requested > REQUEST_MEMORY, "{requested}");
+    assert!(admitted <= REQUEST_MEMORY, "{admitted}");
 }

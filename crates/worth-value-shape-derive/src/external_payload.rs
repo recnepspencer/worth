@@ -24,6 +24,7 @@ pub(crate) fn emit(value: &Value) -> TokenStream {
         let types = fields.iter().map(|field| &field.ty);
         let payload = Value {
             ident: helper.clone(),
+            facade: value.facade.clone(),
             wire_name: variant.wire_name.clone(),
             kind: ValueKind::Struct(fields.clone()),
         };

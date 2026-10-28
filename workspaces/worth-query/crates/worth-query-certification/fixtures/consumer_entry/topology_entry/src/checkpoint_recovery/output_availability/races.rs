@@ -23,10 +23,9 @@ pub(super) fn complete_geometry(
         assert_eq!(
             before.selected_commit(),
             request.retain_current_read().unwrap().selected_commit(),
-            "sequential equal-input completion changes no World business commit; this completion events: {:?}; provider contacts: {}; prior event count: {}",
+            "sequential equal-input completion changes no World business commit; this completion events: {:?}; prior event count: {}",
             worth_query_host::facade::primary_graph::advancement_observations_on_this_thread_for_test()
                 .into_iter().flat_map(|record| record.applied).collect::<Vec<_>>(),
-            crate::producer::provider_contacts(),
             prior_events.as_ref().map_or(0, Vec::len)
         );
     }

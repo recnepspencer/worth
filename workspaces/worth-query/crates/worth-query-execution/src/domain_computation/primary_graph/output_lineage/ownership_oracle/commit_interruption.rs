@@ -168,6 +168,14 @@ pub(super) struct InterruptingRule {
     pub interruption: Interruption,
 }
 impl WorthQueryApplicationInvariantRule<OwnerSchema> for InterruptingRule {
+    type Refusal =
+        <planar_invariant::PositiveTurnRule<OwnerSchema> as WorthQueryApplicationInvariantRule<
+            OwnerSchema,
+        >>::Refusal;
+    type RefusalBinding =
+        <planar_invariant::PositiveTurnRule<OwnerSchema> as WorthQueryApplicationInvariantRule<
+            OwnerSchema,
+        >>::RefusalBinding;
     type Scope =
         <planar_invariant::PositiveTurnRule<OwnerSchema> as WorthQueryApplicationInvariantRule<
             OwnerSchema,
@@ -200,7 +208,10 @@ impl WorthQueryApplicationInvariantRule<OwnerSchema> for InterruptingRule {
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<Self::Refusal>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         self.rule.evaluate_checked(context, scope, budget)
     }
@@ -208,8 +219,10 @@ impl WorthQueryApplicationInvariantRule<OwnerSchema> for InterruptingRule {
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, OwnerSchema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<Self::Refusal>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         self.rule.evaluate(context, scope)
     }
 }

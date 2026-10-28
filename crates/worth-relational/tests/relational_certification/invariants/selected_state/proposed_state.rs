@@ -13,7 +13,7 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::{
     CustomInvariantDescriptor, CustomInvariantExecutionContext, CustomInvariantExecutionError,
-    CustomInvariantOperationalMetadata, CustomInvariantPreparationError,
+    CustomInvariantOperationalMetadata, CustomInvariantPreparationError, CustomInvariantRefusal,
     CustomInvariantRegistration, CustomInvariantRule, CustomInvariantScopePlanner,
     CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion, CustomInvariantVerdict,
     InvariantCostClass, InvariantDecisionKind, InvariantExecutionPoint, InvariantFailureEffect,
@@ -147,7 +147,7 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
     let evidence = ProbeEvidence::default();
     let registration = CustomInvariantRegistration::new(ProposedAspectStateProbe {
         evidence: evidence.clone(),
-        verdict: CustomInvariantVerdict::Violation,
+        verdict: CustomInvariantVerdict::Violation(CustomInvariantRefusal::Empty),
     })
     .expect("proposed-state denial rule registers");
     let world =
@@ -171,6 +171,7 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
         fields:
             worth_relational::facade::transactions::InvariantViolationFields::CustomInvariantViolation {
                 identity,
+                refusal,
             },
         ..
     } = error.class
@@ -178,6 +179,7 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
         panic!("custom violation must preserve its semantic identity");
     };
     assert_eq!(identity.rule_id.as_str(), RULE_ID);
+    assert_eq!(refusal, CustomInvariantRefusal::Empty);
     assert_eq!(
         identity.semantic_version,
         CustomInvariantSemanticVersion::new(1, 0)
@@ -266,7 +268,7 @@ impl CustomInvariantRule for ProposedAspectStateProbe {
                 "the candidate version must follow its committed basis"
             );
             *self.evidence.evaluated.lock().expect("evaluated lock") += 1;
-            return Ok(self.verdict);
+            return Ok(self.verdict.clone());
         }
         Ok(CustomInvariantVerdict::Pass)
     }
