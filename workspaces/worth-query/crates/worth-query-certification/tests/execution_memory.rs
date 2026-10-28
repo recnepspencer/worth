@@ -28,7 +28,7 @@ use worth_query_host::facade::{
 
 // Headroom for bootstrap and charged native reads; the ledger proof below fills
 // this capacity and does not depend on its absolute size.
-const AUTHORITY_BYTES: usize = 64 * 1024;
+const AUTHORITY_BYTES: usize = 8 * 1024 * 1024;
 const RETAINED_BYTES: usize = 96;
 
 fn install(

@@ -17,6 +17,8 @@ mod financial_runtime_world;
 mod long_gap;
 #[path = "granular_invalidation/query_runtime_world.rs"]
 mod query_runtime_world;
+#[path = "granular_invalidation/retained_delivery.rs"]
+mod retained_delivery;
 #[path = "granular_invalidation/runtime_composition.rs"]
 mod runtime_composition;
 #[path = "granular_invalidation/shared_lifecycle.rs"]
@@ -70,6 +72,16 @@ fn primary_runtime_stamps_granular_receipts_from_the_execution_basis() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     runtime_composition::assert_granular_receipt_uses_execution_snapshot_basis(request_execution);
+}
+
+#[test]
+fn retained_conditional_observation_delivers_exact_live_projection() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    retained_delivery::assert_retained_observation_delivers_exact_live_projection(
+        request_execution,
+    );
 }
 
 #[test]

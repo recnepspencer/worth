@@ -70,7 +70,7 @@ impl WorthQueryManagedGraphWorkSession {
     ) -> Result<WorthQueryPreparedSessionRead, WorthQueryManagedGraphReadDenial> {
         execution
             .check_live()
-            .map_err(WorthQueryManagedGraphReadDenial::RequestStop)?;
+            .map_err(|cause| WorthQueryManagedGraphReadDenial::RequestStop(cause.into()))?;
         let super::ProductReadBasis { identity, .. } = self.query_read_basis()?;
         if identity != basis
             || !self.branch.admits_query_basis(basis)
@@ -122,7 +122,7 @@ impl WorthQueryPreparedSessionRead {
     ) -> Result<(T, WorthQueryPreparedReadCompletion), WorthQueryManagedGraphReadDenial> {
         execution
             .check_live()
-            .map_err(WorthQueryManagedGraphReadDenial::RequestStop)?;
+            .map_err(|cause| WorthQueryManagedGraphReadDenial::RequestStop(cause.into()))?;
         let output = read(&self.pin.read, &self.pin.layout);
         Ok((
             output,

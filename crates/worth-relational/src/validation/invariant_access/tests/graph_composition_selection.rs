@@ -42,7 +42,8 @@ fn graph_composition_plan_selects_only_graph_composition_custom_registrations() 
             InvariantExecutionPoint::GraphComposition,
             InvariantCostClass::Touched,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = graph_relevant_plan(71);
 
     let graph_result = evaluate_main_graph_composition_plan(&runtime, &plan);
@@ -68,7 +69,8 @@ fn graph_composition_plan_does_not_execute_global_cost_custom_registration() {
             InvariantExecutionPoint::GraphComposition,
             InvariantCostClass::Global,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     runtime.performance_access().reset_counters();
 
     let result = evaluate_main_graph_composition_plan(&runtime, &graph_relevant_plan(72));
@@ -93,7 +95,8 @@ fn custom_registration_runs_only_for_its_declared_affected_kind() {
     let runtime = RelationalRuntimeApi::builder()
         .custom_invariant(scoped_registration("matching.rule", KindId(1)))
         .custom_invariant(scoped_registration("unrelated.rule", KindId(2)))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let result = evaluate_main_commit_boundary_plan(&runtime, &graph_relevant_plan(73));
 
@@ -112,7 +115,8 @@ fn unrelated_large_candidate_does_not_spend_a_custom_rules_work_budget() {
             KindId(2),
             16,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = large_kind_one_plan(74);
     let result = evaluate_main_commit_boundary_plan(&runtime, &plan);
     assert!(result.results().iter().any(|check| {
@@ -125,7 +129,8 @@ fn unrelated_large_candidate_does_not_spend_a_custom_rules_work_budget() {
 fn related_large_candidate_still_spends_its_custom_rules_work_budget() {
     let runtime = RelationalRuntimeApi::builder()
         .custom_invariant(scoped_registration_with_work("related.rule", KindId(1), 16))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let result = evaluate_main_commit_boundary_plan(&runtime, &large_kind_one_plan(75));
     assert!(result.results().iter().any(|check| {
         matches!(check.rule, InvariantReportedRule::Custom(ref identity) if identity.rule_id.as_str() == "related.rule")

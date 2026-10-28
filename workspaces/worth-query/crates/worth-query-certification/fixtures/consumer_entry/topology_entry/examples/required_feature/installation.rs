@@ -25,6 +25,10 @@ pub fn configuration() -> program::ExampleConfiguration {
     }
 }
 
+#[allow(
+    dead_code,
+    reason = "The default-policy example and shared-service example compile this module independently"
+)]
 pub fn install<const ERASE: bool>(
     configuration: program::ExampleConfiguration,
     seeded: impl FnOnce(),

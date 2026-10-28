@@ -70,7 +70,7 @@ mod tests {
         let graph = world.application.primary_provider.graph.clone();
         let count = || {
             graph.with_runtime(request_execution, |runtime| {
-                runtime.retention().inspect_plan().active_snapshot_count
+                runtime.retention().active_snapshot_count()
             })
         };
         let baseline = count();

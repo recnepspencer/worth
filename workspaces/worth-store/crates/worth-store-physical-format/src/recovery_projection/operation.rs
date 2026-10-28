@@ -1,6 +1,7 @@
 use crate::{
     BlobRecordKind, CurrentPhysicalRecordPlacement, IndexedThroughBlobPublication,
-    PersistedRecordIdentity, ReleaseCustodyHeadMutationV1, SelectedRecordContentClass,
+    PersistedRecordIdentity, RecordAnchorAdvance, ReleaseCustodyHeadMutationV1,
+    SelectedRecordContentClass,
 };
 
 use super::{
@@ -58,6 +59,29 @@ pub struct PersistedBlobSemanticRecordBinding {
     candidate_root_generation: u64,
 }
 
+/// A record append that also advances one root-referenced record anchor to a
+/// record of the same batch, inside the batch's candidate root.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PersistedRecordAnchorAdvance {
+    advance: RecordAnchorAdvance,
+    candidate_root_generation: u64,
+}
+
+impl PersistedRecordAnchorAdvance {
+    pub fn new(advance: RecordAnchorAdvance, candidate_root_generation: u64) -> Option<Self> {
+        (candidate_root_generation != 0).then_some(Self {
+            advance,
+            candidate_root_generation,
+        })
+    }
+    pub const fn advance(self) -> RecordAnchorAdvance {
+        self.advance
+    }
+    pub const fn candidate_root_generation(self) -> u64 {
+        self.candidate_root_generation
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PersistedPhysicalRecoveryOperation {
     None,
@@ -79,6 +103,7 @@ pub enum PersistedPhysicalRecoveryOperation {
     /// A terminal release head left the head tree. The only operation whose
     /// member carries no data record.
     TerminalReleaseHeadRetired(PersistedTerminalReleaseHeadRetirementV1),
+    RecordAnchorAdvanced(PersistedRecordAnchorAdvance),
 }
 
 impl PersistedBlobSemanticRecordBinding {
@@ -133,7 +158,8 @@ impl PersistedPhysicalRecoveryOperation {
             }
             | Self::DerivedDirectory { .. }
             | Self::ChunkReused(_)
-            | Self::DedupeQuarantined(_) => None,
+            | Self::DedupeQuarantined(_)
+            | Self::RecordAnchorAdvanced(_) => None,
         }
     }
 
@@ -145,6 +171,15 @@ impl PersistedPhysicalRecoveryOperation {
     ) -> bool {
         let binding = match self {
             Self::None => return true,
+            Self::RecordAnchorAdvanced(anchored) => {
+                let record = anchored.advance().record();
+                return records.contains(&record)
+                    && placements
+                        .iter()
+                        .any(|placement| placement.record() == record)
+                    && source_root_generation.checked_add(1)
+                        == Some(anchored.candidate_root_generation());
+            }
             Self::TerminalReleaseHeadRetired(retirement) => {
                 return placements.is_empty()
                     && retirement.source_root_generation() == source_root_generation;

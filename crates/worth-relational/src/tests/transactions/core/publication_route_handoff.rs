@@ -63,7 +63,12 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         let reader_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&reader_request);
         let mut observed_commits = Vec::new();
-        observe_canonical_consumers(&runtime, &observed_identity, &mut observed_commits);
+        observe_canonical_consumers(
+            execution,
+            &runtime,
+            &observed_identity,
+            &mut observed_commits,
+        );
         observation_count.fetch_add(1, Ordering::Release);
         assert_eq!(
             runtime
@@ -71,9 +76,7 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
                 .expect_err("fork rejects instead of waiting on an active publication"),
             crate::runtime::RelationalRuntimeForkDenial::PublicationInFlight
         );
-        let checkpoint_error = runtime
-            .durability_authority()
-            .checkpoint(execution)
+        let checkpoint_error = crate::tests::support::checkpoint_durably(execution, &runtime)
             .expect_err("checkpoint rejects instead of waiting on an active publication");
         assert_eq!(
             match checkpoint_error {
@@ -85,11 +88,21 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         reader_ready_signal.store(true, Ordering::Release);
 
         while !publisher_done.load(Ordering::Acquire) {
-            observe_canonical_consumers(&runtime, &observed_identity, &mut observed_commits);
+            observe_canonical_consumers(
+                execution,
+                &runtime,
+                &observed_identity,
+                &mut observed_commits,
+            );
             observation_count.fetch_add(1, Ordering::Release);
             std::thread::yield_now();
         }
-        observe_canonical_consumers(&runtime, &observed_identity, &mut observed_commits);
+        observe_canonical_consumers(
+            execution,
+            &runtime,
+            &observed_identity,
+            &mut observed_commits,
+        );
         (runtime, observed_commits)
     });
 
@@ -118,15 +131,13 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
 
     let stream = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .expect("performed stream is visible before settlement");
     assert!(stream
         .patches
         .iter()
         .any(|patch| patch.position == performed.patch_position()));
-    let checkpoint_error = runtime
-        .durability_authority()
-        .checkpoint(execution)
+    let checkpoint_error = crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect_err("performed publication still requires settlement");
     assert_eq!(
         match checkpoint_error {
@@ -139,13 +150,12 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         .settle_performed_publication(performed)
         .expect("performed publication settles explicitly");
     release_test_commit_snapshot(&runtime, &committed);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("checkpoint admits after settlement");
 }
 
 fn observe_canonical_consumers(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     identity: &crate::branch::RelationalBranchIdentity,
     observed_commits: &mut Vec<crate::facade::history::CommitId>,
@@ -163,12 +173,16 @@ fn observe_canonical_consumers(
         Some(envelope.commit.clone())
     );
     assert_eq!(
-        runtime.replay().canonical_commit_envelope(commit_id),
+        runtime
+            .replay()
+            .canonical_commit_envelope(execution, commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone()),
         Some(envelope.clone())
     );
     let stream = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .expect("canonical patch stream remains readable");
     assert!(stream
         .patches

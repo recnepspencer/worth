@@ -54,6 +54,9 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
             .rule_readable=Some(RuleReadableCount { relation,
                 association:worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation::of::<Schema,Feature,Collection>,
             });
+        let association = worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation::of::<Schema, Feature, Collection>(relation);
+        self.rule_readable_owners
+            .insert(association, TypeId::of::<Collection::Computation>());
     }
 
     pub(in crate::domain_computation::primary_graph) fn validate_rule_readable_collections(
@@ -67,12 +70,13 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
             else {
                 continue;
             };
-            if !self
-                .computations
-                .values()
-                .filter_map(|owner| owner.collection)
-                .filter_map(|collection| collection.rule_readable)
-                .any(|owner| (owner.association)(owner.relation) == *association)
+            if self
+                .rule_readable_owners
+                .get(association)
+                .and_then(|identity| self.computations.get(identity))
+                .and_then(|owner| owner.collection)
+                .and_then(|collection| collection.rule_readable)
+                .is_none_or(|owner| (owner.association)(owner.relation) != *association)
             {
                 return Err(denial(
                     DenialKind::CollectionOwnerMeaningMismatch,

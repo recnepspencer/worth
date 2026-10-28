@@ -52,7 +52,11 @@ pub(super) struct ComponentFixture {
 }
 
 pub(super) fn component_fixture() -> ComponentFixture {
-    let relational_runtime = Arc::new(RelationalRuntimeApi::builder().build());
+    let relational_runtime = Arc::new(
+        RelationalRuntimeApi::builder()
+            .build()
+            .expect("valid native runtime configuration"),
+    );
     let relational_port = relational_runtime.owner_component_services().basis_port();
     let relational_identity = relational_runtime.main_branch_identity();
     let (_, relational) = relational_runtime
@@ -323,7 +327,9 @@ fn foreign_owner_equal_descriptor_cannot_substitute_during_composite_admission()
 #[test]
 fn foreign_relational_owner_cannot_substitute_an_equal_looking_basis() {
     let fixture = component_fixture();
-    let foreign_runtime = RelationalRuntimeApi::builder().build();
+    let foreign_runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let foreign_identity = foreign_runtime.main_branch_identity();
     let (_, foreign_relational) = foreign_runtime
         .observe_branch(&foreign_identity)

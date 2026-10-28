@@ -82,6 +82,11 @@ impl DurablePhysicalRootManifestBuilder {
         self
     }
 
+    pub const fn record_anchors(mut self, anchors: RecordAnchorTable) -> Self {
+        self.record_anchors = anchors;
+        self
+    }
+
     pub fn admit(self) -> Option<DurablePhysicalRootManifest> {
         let Self {
             generation,
@@ -102,6 +107,7 @@ impl DurablePhysicalRootManifestBuilder {
             derived_family_directory,
             last_inline_record,
             last_inline_segment,
+            record_anchors,
         } = self;
         let generation = PhysicalGeneration::from_raw(generation).ok()?;
         let root_reference = PhysicalRootReference::from_raw(generation.get()).ok()?;
@@ -144,6 +150,9 @@ impl DurablePhysicalRootManifestBuilder {
         });
         let quarantine_shape_is_valid = latest_blob_quarantine
             .is_none_or(|record| routing_root.is_some_and(|reference| reference.contains(record)));
+        let anchors_shape_are_valid = record_anchors.iter().all(|anchor| {
+            routing_root.is_some_and(|reference| reference.contains(anchor.record()))
+        });
         if tree_identity == 0
             || node_capacity < 2
             || next_block == 0
@@ -158,6 +167,7 @@ impl DurablePhysicalRootManifestBuilder {
             || !directory_shape_is_valid
             || !publication_shape_is_valid
             || !quarantine_shape_is_valid
+            || !anchors_shape_are_valid
             || tier_epoch_anchor == Some([0; 32])
         {
             return None;
@@ -183,6 +193,7 @@ impl DurablePhysicalRootManifestBuilder {
             derived_family_directory,
             last_inline_record,
             last_inline_segment,
+            record_anchors,
             requires_maintenance_protocol: tier_epoch_anchor.is_some(),
         })
     }

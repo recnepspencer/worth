@@ -9,6 +9,10 @@ use worth_query_admission::{
 };
 use worth_query_installation::facade::WorthQueryInstalledResourceAccessContract;
 
+#[expect(
+    dead_code,
+    reason = "opaque completion retains its admitted plan, contract and release receipts"
+)]
 pub(in crate::domain_computation) struct WorthQueryResourceReadCompletion {
     pub(super) session: WorthQueryGraphWorkSessionIdentity,
     pub(super) managed_run: WorthQueryGraphWorkManagedRunIdentity,
@@ -17,18 +21,4 @@ pub(in crate::domain_computation) struct WorthQueryResourceReadCompletion {
     pub(super) basis: WorthQueryApplicationBasisIdentity,
     pub(super) basis_release: WorthQueryApplicationBasisReleaseReceipt,
     pub(super) release: WorthQueryExecutionCapacityReleaseReceipt,
-}
-
-impl WorthQueryResourceReadCompletion {
-    pub(in crate::domain_computation) const fn session_identity(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
-        self.session
-    }
-
-    pub(in crate::domain_computation) fn purpose(
-        &self,
-    ) -> worth_query_installation::facade::WorthQueryResourceAccessPurpose {
-        self.contract.purpose()
-    }
 }

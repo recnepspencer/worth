@@ -5,7 +5,6 @@ mod schema_declarations;
 mod seed_catalog;
 
 use crate::facade::config::RelationalRuntimeProfile;
-use crate::facade::durability::{DurabilityMode, DurableStoreLayout};
 use crate::facade::history::BranchId;
 use crate::facade::identity::{EntityId, PartitionId, RelationId};
 use crate::facade::runtime::{RelationalReadView, RelationalRuntime, RelationalRuntimeApi};
@@ -19,7 +18,6 @@ use self::relation_seeding::seed_relations;
 use self::schema_declarations::fintech_schema_registry;
 use self::seed_catalog::seeded_trade_cases;
 use super::scales::FintechScale;
-use crate::tests::support::unique_test_store_path;
 
 pub(super) const LEDGER_PARTITION: PartitionId = PartitionId(10);
 pub(super) const MARKET_PARTITION: PartitionId = PartitionId(20);
@@ -273,8 +271,11 @@ impl FintechWorld {
         }
     }
 
-    pub(super) fn create_analysis_branch(&mut self) -> BranchId {
-        create_analysis_branch(&self.runtime)
+    pub(super) fn create_analysis_branch(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> BranchId {
+        create_analysis_branch(execution, &self.runtime)
     }
 
     fn build(
@@ -282,18 +283,16 @@ impl FintechWorld {
         scale: FintechScale,
         persisted: bool,
     ) -> Self {
-        let mut builder = RelationalRuntimeApi::builder()
+        let builder = RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::AiWorkflow)
             .schema_registry(fintech_schema_registry());
-        if persisted {
-            builder = builder
-                .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-                .durable_store_layout(DurableStoreLayout {
-                    root_path: unique_test_store_path("worth-relational-fintech"),
-                    segment_commit_capacity: 2,
-                });
-        }
-        let runtime = builder.build();
+        let runtime = if persisted {
+            builder
+                .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+                .expect("valid native runtime configuration")
+        } else {
+            builder.build().expect("valid native runtime configuration")
+        };
         let case_seeds = seeded_trade_cases(scale);
         let seeded = seed_entities(execution, &runtime, &case_seeds);
         let workflow_cases = build_workflow_cases(&case_seeds, &seeded);
@@ -327,11 +326,14 @@ impl FintechWorld {
     }
 }
 
-pub(super) fn create_analysis_branch(runtime: &RelationalRuntime) -> BranchId {
+pub(super) fn create_analysis_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> BranchId {
     let branch = BranchId("analysis".to_string());
     runtime
         .history_authority()
-        .fork_branch_from(branch.clone(), &BranchId("main".to_string()))
+        .fork_branch_from(execution, branch.clone(), &BranchId("main".to_string()))
         .unwrap();
     branch
 }

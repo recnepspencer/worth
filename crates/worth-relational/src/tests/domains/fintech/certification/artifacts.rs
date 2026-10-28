@@ -110,12 +110,12 @@ fn branch_summary(session: &CertifiedRelationalFintechSession) -> WorkflowArtifa
 fn diagnostics_summary(session: &CertifiedRelationalFintechSession) -> WorkflowArtifactProjection {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let recovery = session
-        .world
-        .runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let recovery = crate::tests::support::recovery_plan_for(
+        execution,
+        &session.world.runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let publication_diagnostics = session
         .world
         .runtime
@@ -130,18 +130,13 @@ fn diagnostics_summary(session: &CertifiedRelationalFintechSession) -> WorkflowA
             "diagnostics_artifact_count",
             observation.diagnostics_artifact_count,
         ),
-        usize_field(
-            "checkpoint_count",
-            recovery
-                .store
-                .as_ref()
-                .map(|store| store.checkpoints.len())
-                .unwrap_or(session.checkpoints.len()),
-        ),
+        usize_field("checkpoint_count", session.checkpoints.len()),
         usize_field("tail_log_len", recovery.tail_log.len()),
         optional_u64_field(
             "selected_checkpoint",
-            recovery.cursor.checkpoint_id.as_ref().map(|id| id.0),
+            recovery
+                .checkpoint_covered_position()
+                .map(|position| position.0),
         ),
     ])
 }

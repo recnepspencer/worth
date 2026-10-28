@@ -9,7 +9,7 @@ use worth_query_host::facade::{
     runtime,
 };
 
-use crate::document_retention_model::host::world_resources;
+use crate::document_world_resources as world_resources;
 pub type Host = WorthQueryProgramApplicationRuntime<NumericSchema, Program>;
 pub type OutputHost =
     WorthQueryProgramApplicationRuntime<NumericSchema, super::output_program::OutputProgram>;

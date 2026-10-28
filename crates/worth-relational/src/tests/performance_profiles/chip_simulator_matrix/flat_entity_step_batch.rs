@@ -94,7 +94,7 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
             let compile_started_at = Instant::now();
             let artifact = runtime
                 .compiled_artifacts_authority()
-                .compile_execution_artifact(commit.commit_id, compile_partitions)
+                .compile_execution_artifact(execution, commit.commit_id, compile_partitions)
                 .expect("chip flat batch compiled artifact");
             let compile_micros = compile_started_at.elapsed().as_micros();
 
@@ -103,7 +103,10 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
                 .flat_map(|targets| targets.iter().take(1).copied())
                 .map(RecordRef::Entity)
                 .collect::<Vec<_>>();
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let explicit_packet = explicit_query_packet(
                 &runtime,
                 &snapshot,

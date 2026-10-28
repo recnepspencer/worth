@@ -110,7 +110,8 @@ mod tests {
                 CapabilityAvailability::Present
             );
         }
-        for unowned in [PhysicalCapability::Recovery] {
+        {
+            let unowned = PhysicalCapability::Recovery;
             assert_eq!(
                 admitted.availability(unowned),
                 CapabilityAvailability::Absent

@@ -87,7 +87,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         )),
     )
     .unwrap();
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
         write_field(&host_custody.borrowed_request_for_test(), runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let a_facts: Arc<[_]> =
@@ -115,7 +115,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         let mut output_facts = vec![WorthQueryApplicationObservedFact::Entity {
             entity_id: entity,
             kind: truth
-                .exact_snapshot_live_entity_kind(&before_handle, entity)
+                 .read_exact_snapshot_live_entity_kind(execution, &before_handle, entity).unwrap()
                 .unwrap(),
         }];
         for aspect in layout.native_output_aspects("Account") {
@@ -123,7 +123,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
                 entity_id: entity,
                 aspect: aspect.clone(),
                 native_revision: truth
-                    .exact_snapshot_entity_aspect_version(&before_handle, entity, aspect)
+                     .read_exact_snapshot_entity_aspect_version(execution, &before_handle, entity, aspect).unwrap()
                     .unwrap(),
             });
         }

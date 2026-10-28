@@ -1,10 +1,12 @@
+mod commit_denial;
 use super::super::demand::ProducerPublicationStale;
-use super::denial::{denial, failed, handler_execution_failed, request_authority_stop};
+use super::denial::{
+    commit_execution_stopped, denial, failed, handler_execution_failed, request_authority_stop,
+};
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph as graph;
 use graph::{
-    HandlerResult, WorthQueryApplicationCommitDeferredKind as DeferredKind,
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+    HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationNoEffectCause,
 };
 
@@ -162,15 +164,14 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 publication: CommitPublication::PreviouslyPublished,
             })
         }
-        WorthQueryApplicationCommitOutcome::Deferred(deferred)
-            if matches!(
-                deferred.kind(),
-                DeferredKind::RequiredPrerequisitePending(_)
-            ) =>
-        {
-            Err(deferred
-                .into_prerequisite_denial()
-                .expect("required prerequisite deferral retains its actual denial"))
+        WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
+            match deferred.into_prerequisite_denial() {
+                Ok(denial) => Err(denial),
+                Err(deferred) => Err(failed(
+                    identity,
+                    WorthQueryApplicationCommitOutcome::Deferred(deferred),
+                )),
+            }
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => Err(denial(
             WorthQueryOutputDemandDenialKind::PublicationStale,
@@ -199,91 +200,25 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             ))
         }
         WorthQueryApplicationCommitOutcome::Denied(commit_denial) => {
-            use WorthQueryApplicationCommitDenialKind as Kind;
             let kind = commit_denial.kind();
             let capacity = commit_denial.output_verification_capacity_stop();
-            let invariant = commit_denial.custom_invariant_denial().cloned();
             let requirement = commit_denial
                 .invariant_execution_failure()
                 .and_then(|failure| match failure.kind() {
                     crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial) => Some(denial),
                     _ => None,
                 });
-            let execution = commit_denial
-                .execution_denial_cause()
-                .map(|cause| (commit_denial.stage(), cause));
-            let failure = match kind {
-                Kind::UnobservedWrite => match commit_denial.unobserved_write() {
-                    Some(cause) => denial(
-                        WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()),
-                        identity.to_owned(),
-                    ),
-                    None => failed(identity, commit_denial),
-                },
-                Kind::ProductBasisStale => denial(
-                    WorthQueryOutputDemandDenialKind::PublicationStale,
-                    identity.to_owned(),
-                )
-                .with_publication_stale(Some(
-                    ProducerPublicationStale::CommitProductBasisStale {
-                        stage: commit_denial.stage(),
-                    },
-                )),
-                Kind::IdempotencyIntentDrift => denial(
-                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                    format!("{identity}: {commit_denial:?}"),
-                ),
-                Kind::ExecutionResource { .. }
-                | Kind::ExecutionNestedPatternStopped { .. }
-                | Kind::ExecutionWorkerPanicked { .. }
-                | Kind::ExecutionUncheckedCustomKernel { .. }
-                | Kind::ExecutionIdentitiesNotCanonical { .. }
-                | Kind::ProviderRejected
-                | Kind::CustomInvariantDenied
-                | Kind::WorkflowSettlementDenied { .. }
-                | Kind::UniqueValueTaken
-                | Kind::UniqueIndexUnavailable
-                | Kind::ActiveSnapshotCapacityExhausted { .. }
-                | Kind::RetentionCapacityExhausted
-                | Kind::RetentionIdentityExhausted
-                | Kind::SnapshotIdentityExhausted
-                | Kind::CandidateIdentityExhausted
-                | Kind::IndexMaintenanceBudgetExceeded
-                | Kind::IndexGenerationIdentityExhausted
-                | Kind::IdempotencyReceiptNotRetained { .. }
-                | Kind::IdempotencyIntentUnverifiable
-                | Kind::OperationBodyExecutionRequired
-                | Kind::SignedCreationAuthentication { .. }
-                | Kind::SignedEntityImmutable
-                | Kind::SigningLifecycleForgery
-                | Kind::SigningLifecycleUnavailable
-                | Kind::SigningLifecycleEvidenceCapacity { .. }
-                | Kind::SigningLifecycleSubjectCapacity { .. }
-                | Kind::SigningLifecycleRepresentationCapacity
-                | Kind::SigningLifecycleObservation { .. }
-                | Kind::MutationBindingMismatch
-                | Kind::MutationInputMismatch
-                | Kind::ElevationTransitionRequired
-                | Kind::ElevationRequestProgramMismatch
-                | Kind::ElevationApprovalProgramMismatch
-                | Kind::ElevationCloseProgramMismatch
-                | Kind::MandatoryReviewProgramMismatch
-                | Kind::DelegationActivationRequired
-                | Kind::CapabilityRevocationRequired
-                | Kind::ApplicationProgramRequired
-                | Kind::WorkflowAuthorityRequired
-                | Kind::ProgramNotActiveOnOccurrence { .. }
-                | Kind::ProgramSupportRetired
-                | Kind::ProgramActivationUnresolved
-                | Kind::CorrectionContextMismatch
-                | Kind::CorrectionIdentityMismatch => failed(identity, commit_denial),
-            };
-            Err(failure
-                .with_capacity_stop(capacity)
-                .with_custom_invariant_denial(invariant)
-                .with_producer_requirement_denial(requirement)
-                .with_commit_denial_kind(kind)
-                .with_commit_execution_denial(execution))
+            Err(commit_denial::stopped(
+                identity,
+                kind,
+                commit_denial.stage(),
+                commit_denial.execution_denial_cause(),
+                capacity,
+                &commit_denial,
+                commit_denial.unobserved_write(),
+            )
+            .with_custom_invariant_denial(commit_denial.custom_invariant_denial().cloned())
+            .with_producer_requirement_denial(requirement))
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(outcome) => Err(denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
@@ -299,15 +234,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         .with_uncommitted(graph::WorthQueryApplicationUncommitted::Indeterminate(
             outcome,
         ))),
-        WorthQueryApplicationCommitOutcome::SettlementDeferred(outcome) => Err(denial(
-            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-            identity.to_owned(),
-        )
-        .with_uncommitted(graph::WorthQueryApplicationUncommitted::SettlementDeferred(
-            outcome,
-        ))),
-        outcome @ (WorthQueryApplicationCommitOutcome::Deferred(_)
-        | WorthQueryApplicationCommitOutcome::NoEffect(_)
+        outcome @ (WorthQueryApplicationCommitOutcome::NoEffect(_)
         | WorthQueryApplicationCommitOutcome::Aborted) => Err(failed(identity, outcome)),
     }
 }
@@ -347,18 +274,12 @@ fn refused_preflight(
         | WorthQueryApplicationCommitOutcome::TimedOut
         | WorthQueryApplicationCommitOutcome::Denied(_)
         | WorthQueryApplicationCommitOutcome::Aborted
-        | WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
         | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
     };
     let kind = match stop {
         Stop::SelectedSourceMismatch => Some(WorthQueryOutputDemandDenialKind::PublicationStale),
-        Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
-        Stop::PreparationMemoryExhausted { .. }
-        | Stop::PreparationMemoryCounterOverflow
-        | Stop::RetainedCompanionCounterOverflow { .. }
-        | Stop::RetainedCompanionCapacityExhausted { .. } => {
+        Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
+        Stop::PreparationMemoryCounterOverflow => {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         }
         _ => None,

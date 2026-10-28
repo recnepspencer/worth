@@ -14,22 +14,31 @@ fn derived_index_contract_staged_parallel_generation_matches_serial_reference() 
     ) {
         let runtime = runtime_with_test_schema();
         let commit = create_entity_outcome(execution, &runtime, "main-a");
-        let name_index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "entity.name".to_string(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-            },
-            branch_scoped: false,
-        });
-        let missing_index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "entity.missing".to_string(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key("missing"), field_key("missing")),
-            },
-            branch_scoped: false,
-        });
+        let name_index = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "entity.name".to_string(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+                },
+                branch_scoped: false,
+            })
+            .expect("index fixture has identity capacity");
+        let missing_index = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "entity.missing".to_string(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: aspect_field_locator(
+                        aspect_key("missing"),
+                        field_key("missing"),
+                    ),
+                },
+                branch_scoped: false,
+            })
+            .expect("index fixture has identity capacity");
 
         (
             runtime,

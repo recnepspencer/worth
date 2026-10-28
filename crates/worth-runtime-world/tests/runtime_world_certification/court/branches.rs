@@ -45,7 +45,7 @@ fn reuse_fork_matrix_retirement_and_aba_preserve_exact_owner_bindings() {
         )
         .unwrap();
         let RuntimeWorldBranchCreationOutcome::Performed(child) = branch_port
-            .create_product_branch(root.clone(), intent, &token)
+            .create_product_branch(request_execution, root.clone(), intent, &token)
             .unwrap()
         else {
             panic!("healthy fork matrix")
@@ -119,6 +119,7 @@ fn reuse_fork_matrix_retirement_and_aba_preserve_exact_owner_bindings() {
             .is_err());
         let RuntimeWorldBranchCreationOutcome::Performed(recreated) = branch_port
             .create_product_branch(
+                request_execution,
                 root.clone(),
                 ProductBranchCreationIntent::from_source("child", plans(false, false, "unused"))
                     .unwrap(),
@@ -148,6 +149,8 @@ fn reuse_fork_matrix_retirement_and_aba_preserve_exact_owner_bindings() {
 }
 #[test]
 fn omitted_plans_are_denied_before_owner_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let mut court = CompositeSupplyChainCourt::compile();
     let root = court.bootstrap();
     let signal = court
@@ -160,6 +163,7 @@ fn omitted_plans_are_denied_before_owner_work() {
         .unwrap()
         .fork_destination_installations();
     let denied = court.world.branch_port().create_product_branch(
+        request_execution,
         root.clone(),
         ProductBranchCreationIntent::named("child").unwrap(),
         &RuntimeWorldCancellationSource::new().token(),
@@ -181,6 +185,7 @@ fn omitted_plans_are_denied_before_owner_work() {
         .world
         .branch_port()
         .create_product_branch(
+            request_execution,
             root.clone(),
             ProductBranchCreationIntent::from_source("child", plans(false, false, "unused"))
                 .unwrap(),
@@ -193,12 +198,15 @@ fn omitted_plans_are_denied_before_owner_work() {
 
 #[test]
 fn sibling_fork_denial_retains_only_real_relational_custody_until_cleanup() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let mut court = CompositeSupplyChainCourt::compile();
     let root = court.bootstrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let branch = court.world.branch_port();
     let RuntimeWorldBranchCreationOutcome::Performed(existing) = branch
         .create_product_branch(
+            request_execution,
             root.clone(),
             ProductBranchCreationIntent::from_source("existing", plans(false, true, "occupied"))
                 .unwrap(),
@@ -230,7 +238,7 @@ fn sibling_fork_denial_retains_only_real_relational_custody_until_cleanup() {
     )
     .unwrap();
     let RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) = branch
-        .create_product_branch(root.clone(), attempt, &token)
+        .create_product_branch(request_execution, root.clone(), attempt, &token)
         .unwrap()
     else {
         panic!("occupied Signal sibling must retain Relational fork")

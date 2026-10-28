@@ -115,7 +115,6 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
             .resident
             .transient(required)
             .map_err(Denial::Resident)?;
-        drop(storage);
         let grant = window.reserve_owned(required).map_err(Denial::Resident)?;
         resident.retain(required).map_err(Denial::Resident)?;
         let rechecked = step.recheck_actual_media(

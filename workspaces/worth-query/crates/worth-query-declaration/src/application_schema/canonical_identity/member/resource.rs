@@ -22,7 +22,7 @@ pub(super) fn append(
         parts.provider_role.as_str(),
     );
     for (name, value) in parts.access.canonical_fields() {
-        basis.text(format!("{prefix}.access.{name}"), &value);
+        basis.text(format!("{prefix}.access.{name}"), value);
     }
     for (name, value) in [
         ("input", &parts.input),

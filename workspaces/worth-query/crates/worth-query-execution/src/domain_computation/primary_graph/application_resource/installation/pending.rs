@@ -123,13 +123,18 @@ impl<Schema: ApplicationSchema + 'static> PendingResourceRegistry<Schema> {
                 "resource pools cannot share a cell with raw owned-async clock producers",
             ));
         }
-        let mut entries = HashMap::new();
+        let mut entries = Vec::new();
+        let mut by_binding = HashMap::new();
         for pending in self.entries.into_values() {
             let (identity, resource) = pending.install(execution, builder, support)?;
-            entries.insert(identity, resource);
+            if by_binding.insert(identity, entries.len()).is_some() {
+                return Err(denial("duplicate installed resource binding type"));
+            }
+            entries.push(resource);
         }
         Ok(InstalledResourceRegistry {
             entries,
+            by_binding,
             marker: PhantomData,
         })
     }

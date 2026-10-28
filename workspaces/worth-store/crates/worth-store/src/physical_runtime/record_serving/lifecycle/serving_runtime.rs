@@ -13,6 +13,9 @@ mod blob_claim;
 #[cfg(feature = "certification-test-authority")]
 #[path = "serving_runtime/certification/mod.rs"]
 mod certification;
+#[cfg(feature = "certification-test-authority")]
+pub use certification::CertificationRetirementPause;
+mod ordered_journals;
 mod physical_work;
 mod record_reader;
 mod retirement;
@@ -23,6 +26,10 @@ pub struct ServingPhysicalRuntime {
     scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,
     blob_declarations: std::sync::Mutex<()>,
     blob_index_publications: std::sync::Mutex<()>,
+    ordered_journals:
+        std::sync::Mutex<crate::physical_runtime::ordered_journal::OrderedJournalState>,
+    anchored_records: std::sync::Mutex<crate::physical_runtime::AnchoredRecordState>,
+    anchored_membership: std::sync::Mutex<crate::physical_runtime::AnchoredMembershipCache>,
     parts: PhysicalStoreInstanceParts,
 }
 
@@ -35,6 +42,9 @@ impl ServingPhysicalRuntime {
                 scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
                 blob_declarations: std::sync::Mutex::new(()),
                 blob_index_publications: std::sync::Mutex::new(()),
+                ordered_journals: std::sync::Mutex::new(Default::default()),
+                anchored_records: std::sync::Mutex::new(Default::default()),
+                anchored_membership: std::sync::Mutex::new(Default::default()),
                 parts,
             }),
             Err(failure) => {
@@ -113,6 +123,45 @@ impl ServingPhysicalRuntime {
             return Err(crate::physical_runtime::BlobFacadeDenial::ServingRequiresInspection);
         }
         Ok(crate::physical_runtime::PhysicalBlobFacade::new(self))
+    }
+
+    /// Borrows the home's anchored records: named values replaced whole, one
+    /// generation at a time.
+    pub fn anchored_records(
+        &self,
+    ) -> Result<
+        crate::physical_runtime::AnchoredRecords<'_>,
+        crate::physical_runtime::AnchoredRecordsDenial,
+    > {
+        if self.parts.work_runtime.health.requires_inspection() {
+            return Err(crate::physical_runtime::AnchoredRecordsDenial::ServingRequiresInspection);
+        }
+        Ok(crate::physical_runtime::AnchoredRecords::new(self))
+    }
+
+    pub(in crate::physical_runtime) fn anchored_record_state(
+        &self,
+    ) -> std::sync::MutexGuard<'_, crate::physical_runtime::AnchoredRecordState> {
+        self.anchored_records
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// The verified member tables of current anchored values. Held only to
+    /// look up or replace one entry, never across I/O.
+    pub(in crate::physical_runtime) fn anchored_membership_cache(
+        &self,
+    ) -> std::sync::MutexGuard<'_, crate::physical_runtime::AnchoredMembershipCache> {
+        self.anchored_membership
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// The record access policy this runtime admits batches under.
+    pub(in crate::physical_runtime) const fn record_access_policy(
+        &self,
+    ) -> crate::physical_runtime::record_serving::AdmittedRecordAccessPolicy {
+        self.parts.access
     }
 
     /// Captures a protected selected root and opens Store-owned derived-index access.

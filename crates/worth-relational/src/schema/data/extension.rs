@@ -33,7 +33,7 @@ impl RelationalSchemaRegistry {
         )
         .map_err(|denial| {
             SchemaRegistryError::inconsistent_schema_basis(format!(
-                "source catalog admission denied: {denial:?}"
+                "source catalog admission denied: {denial}"
             ))
         })
     }

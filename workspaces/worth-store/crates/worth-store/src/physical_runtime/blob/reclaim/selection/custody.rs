@@ -42,16 +42,14 @@ pub(super) fn observe_custody(
             false
         }
         BlobRecordV1::SessionAbandoned(value) => {
-            if value.session() == token.session
-                || value.declaration_record() == token.declaration_record
-            {
-                if !selected_abandonment_matches(value, &token, declaration, completed)
+            if (value.session() == token.session
+                || value.declaration_record() == token.declaration_record)
+                && (!selected_abandonment_matches(value, &token, declaration, completed)
                     || abandoned
                         .replace((record, Sha256::digest(bytes).into()))
-                        .is_some()
-                {
-                    return Err(BlobReclaimFailure::ConflictingSelectedFate);
-                }
+                        .is_some())
+            {
+                return Err(BlobReclaimFailure::ConflictingSelectedFate);
             }
             false
         }

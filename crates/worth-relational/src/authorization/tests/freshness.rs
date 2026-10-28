@@ -53,7 +53,11 @@ fn exact_authorization_observation_stales_after_membership_revocation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let admitted_snapshot = fixture.runtime.visibility_authority().snapshot();
+    let admitted_snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let admitted = fixture
         .runtime
         .observe_authorization(
@@ -61,7 +65,11 @@ fn exact_authorization_observation_stales_after_membership_revocation() {
             execution,
         )
         .unwrap();
-    let unchanged = fixture.runtime.visibility_authority().snapshot();
+    let unchanged = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     assert_eq!(
         fixture
             .runtime
@@ -91,7 +99,11 @@ fn unrelated_relation_kind_does_not_widen_authorization_causality() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let admitted_snapshot = fixture.runtime.visibility_authority().snapshot();
+    let admitted_snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let admitted = fixture
         .runtime
         .observe_authorization(
@@ -107,7 +119,11 @@ fn unrelated_relation_kind_does_not_widen_authorization_causality() {
         unrelated,
         KindId(99),
     );
-    let current = fixture.runtime.visibility_authority().snapshot();
+    let current = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     assert_eq!(
         fixture
@@ -123,7 +139,11 @@ fn newly_matching_parallel_path_stales_the_exact_observation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let admitted_snapshot = fixture.runtime.visibility_authority().snapshot();
+    let admitted_snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let admitted = fixture
         .runtime
         .observe_authorization(
@@ -140,7 +160,11 @@ fn newly_matching_parallel_path_stales_the_exact_observation() {
         fixture.scope,
         "newly-matching-deny",
     );
-    let current = fixture.runtime.visibility_authority().snapshot();
+    let current = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     assert_eq!(
         fixture
             .runtime

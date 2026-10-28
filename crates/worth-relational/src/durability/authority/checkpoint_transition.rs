@@ -1,11 +1,11 @@
 //! Carries verified native recovery lineage across one validated, settled commit.
 mod outcome;
+mod snapshot_closeout;
 #[cfg(test)]
 mod tests;
 pub use outcome::{
-    DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
-    RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
-    RecoveredCheckpointTransitionRepairError, RefusedRecoveredCheckpointTransition,
+    RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
+    RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,
 };
 
 use crate::branch::RelationalBranchBasisDescriptor;
@@ -20,8 +20,9 @@ impl DurabilityRecoveryAuthority<'_> {
     /// This attests native lineage, not application migration meaning. The
     /// application owner must validate its predecessor and target semantics
     /// before it prepares the candidate. Ordinary commits do not refresh recovery
-    /// authority. Refusal returns the original authority; durability deferral
-    /// retains the exact performed transition for explicit repair.
+    /// authority. Refusal, including a durable publication the medium refused or
+    /// left unresolved, returns the original authority; the commit is durable
+    /// before it is live, so a performed transition settles without deferral.
     ///
     /// ```
     /// use worth_relational::facade::{
@@ -80,56 +81,13 @@ impl DurabilityRecoveryAuthority<'_> {
         let successor = performed.next_basis().descriptor().clone();
         match self.runtime.settle_performed_publication(performed) {
             Ok(committed) => {
-                self.runtime
-                    .snapshots()
-                    .release_snapshot(&committed.snapshot)
-                    .expect(
-                        "checkpoint transition releases its settled native snapshot exactly once",
-                    );
+                snapshot_closeout::release(self.runtime, &committed)?;
                 self.install_acknowledged_codec_target(&mut recovered);
                 Ok(acknowledged(recovered, successor, committed.commit.clone()))
-            }
-            Err(cause) if cause.deferred_settlement().is_some() => {
-                Err(RecoveredCheckpointTransitionError::DurabilityDeferred(
-                    Box::new(DeferredRecoveredCheckpointTransition {
-                        recovered,
-                        successor,
-                        cause,
-                    }),
-                ))
             }
             Err(cause) => Err(RecoveredCheckpointTransitionError::SettlementFailed(
                 Box::new(cause),
             )),
-        }
-    }
-
-    /// Repairs the exact already-performed transition without republishing it
-    /// or reconstructing its successor from current runtime state.
-    pub fn repair_checkpoint_transition(
-        &mut self,
-        mut transition: DeferredRecoveredCheckpointTransition,
-    ) -> Result<RecoveredCheckpointTransition, RecoveredCheckpointTransitionRepairError> {
-        let settlement = transition
-            .cause
-            .deferred_settlement()
-            .expect("only a native durability deferral constructs transition repair custody");
-        match self
-            .runtime
-            .repair_deferred_publication_settlement(settlement)
-        {
-            Ok(receipt) => {
-                self.install_acknowledged_codec_target(&mut transition.recovered);
-                Ok(acknowledged(
-                    transition.recovered,
-                    transition.successor,
-                    receipt,
-                ))
-            }
-            Err(cause) => Err(RecoveredCheckpointTransitionRepairError {
-                transition: Box::new(transition),
-                cause,
-            }),
         }
     }
 

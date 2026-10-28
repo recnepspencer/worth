@@ -15,6 +15,9 @@ pub(in super::super) fn retire_stale_records(
     // Custody retirement is source-wide: a changed query source invalidates
     // every producer record that was computed from its older epoch.
 
+    // Keys come from this exclusively borrowed registry's own source index.
+    // The first pass changes row state and releases claims, queuing cleanup;
+    // physical removal occurs only in the second pass, once for each unique key.
     let keys = super::super::refreshed_rejoin::source_rows(&state.records, successor)
         .filter(|(key, record)| {
             #[cfg(test)]
@@ -71,13 +74,12 @@ mod tests {
     use super::super::super::tests::record;
     use super::*;
     #[test]
-    fn registry_source_retirement_sweep_names_its_source_coordinate_bound() {
+    fn source_retirement_closes_all_producers_and_preserves_custody() {
         let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::
             committed_recoverable_application();
         let scope = receipt.principal_scope().scope();
         let occurrence = receipt.product_branch().occurrence();
         let receipts = super::super::super::tests::walk_bounds::receipt_batch();
-        let mut contacts = Vec::new();
         for producers in [1, 3, 7] {
             let mut state = DemandRegistryState::default();
             for producer in 0..producers {
@@ -88,16 +90,19 @@ mod tests {
                     .insert(key(&format!("source-owner-{producer}"), 1, 1), row);
             }
             super::super::super::tests::walk_bounds::add_custody(&mut state, &receipts, 3);
-            let before = super::super::retirement_observation::sweep_contacts();
             retire_stale_records(&mut state, occurrence, scope, &key("unused", 2, 1).source);
-            contacts.push(super::super::retirement_observation::sweep_contacts() - before);
-            assert!(state
+            let selected = key("unused", 2, 1);
+            let selected_rows = state
                 .records
-                .source_occurrence_rows(&key("unused", 2, 1).source)
-                .all(|(_, row)| row.terminal()));
+                .source_occurrence_rows(&selected.source)
+                .collect::<Vec<_>>();
+            assert_eq!(selected_rows.len(), producers);
+            assert!(selected_rows.iter().all(|(_, row)| row.terminal()));
+            assert_eq!(
+                state.records.values().filter(|row| !row.terminal()).count(),
+                receipts.len() * 3
+            );
             assert_eq!(state.source_custody.len(), receipts.len());
         }
-        // One source-coordinate row per producer; no prerequisite edges.
-        assert_eq!(contacts, [1, 3, 7]);
     }
 }

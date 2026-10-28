@@ -37,7 +37,10 @@ pub(super) fn certify_hundred_k_nodes_geometry_profile_propagation_wave(
             );
             let hot_update_micros = hot_update_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let context = runtime
                 .read_truth()
                 .query_plan_context(&snapshot)

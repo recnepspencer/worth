@@ -25,7 +25,11 @@ fn planned_locator_is_resolved_to_native_authoritative_revision() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let path = RelationalAuthorizationPathPlan::new(
         [forward_traversal(), forward_traversal()],
         [RelationalAuthorizationPredicate::new(
@@ -76,7 +80,11 @@ fn source_native_stamp_survives_unrelated_publication_and_wire_roundtrip() {
         .source_revisions_match(
             &fixture.runtime,
             execution,
-            &fixture.runtime.visibility_authority().snapshot()
+            &fixture
+                .runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted")
         )
         .unwrap());
 
@@ -94,7 +102,11 @@ fn source_native_stamp_survives_unrelated_publication_and_wire_roundtrip() {
         .source_revisions_match(
             &fixture.runtime,
             execution,
-            &fixture.runtime.visibility_authority().snapshot()
+            &fixture
+                .runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted")
         )
         .unwrap());
 }
@@ -115,7 +127,11 @@ fn pinned_stamp_does_not_depend_on_which_snapshot_is_latest() {
         other,
         "bystander-edge",
     );
-    let pinned = fixture.runtime.visibility_authority().snapshot();
+    let pinned = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let observe_pinned = || {
         fixture
             .runtime
@@ -154,86 +170,16 @@ fn pinned_stamp_does_not_depend_on_which_snapshot_is_latest() {
 }
 
 #[test]
-fn source_native_stamp_compares_after_checkpoint_recovery() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let principal = create_entity(execution, &runtime, "principal");
-    let role = create_entity(execution, &runtime, "approver");
-    let scope = create_entity(execution, &runtime, "payment");
-    create_relation(execution, &runtime, principal, role, "principal-role");
-    create_relation(execution, &runtime, role, scope, "role-scope");
-    let before_evidence = runtime
-        .observe_authorization(
-            allow_plan(
-                runtime.visibility_authority().snapshot(),
-                principal,
-                scope,
-                [],
-            ),
-            execution,
-        )
-        .unwrap();
-    let wire = runtime
-        .capture_authorization_durable_dependencies(&before_evidence, execution)
-        .unwrap()
-        .to_wire(execution)
-        .unwrap();
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let recovery = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let mut recovered = runtime_with_test_schema();
-    recovered
-        .durability_recovery()
-        .recover(execution, recovery)
-        .unwrap();
-    let fresh_evidence = recovered
-        .observe_authorization(
-            allow_plan(
-                recovered.visibility_authority().snapshot(),
-                principal,
-                scope,
-                [],
-            ),
-            execution,
-        )
-        .unwrap();
-    let fresh = recovered
-        .capture_authorization_durable_dependencies(&fresh_evidence, execution)
-        .unwrap();
-    assert!(
-        RelationalAuthorizationDurableDependencies::from_wire(execution, &wire)
-            .unwrap()
-            .matches(&fresh)
-    );
-    assert!(
-        RelationalAuthorizationDurableDependencies::from_wire(execution, &wire)
-            .unwrap()
-            .source_revisions_match(
-                &recovered,
-                execution,
-                &recovered.visibility_authority().snapshot()
-            )
-            .unwrap()
-    );
-}
-
-#[test]
 fn predicate_field_change_back_cannot_revive_old_stamp() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let evidence = fixture
         .runtime
         .observe_authorization(
@@ -256,7 +202,11 @@ fn predicate_field_change_back_cannot_revive_old_stamp() {
         .source_revisions_match(
             &fixture.runtime,
             execution,
-            &fixture.runtime.visibility_authority().snapshot()
+            &fixture
+                .runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted")
         )
         .unwrap());
 }
@@ -287,7 +237,11 @@ fn adjacency_add_remove_cannot_revive_old_stamp() {
         .source_revisions_match(
             &fixture.runtime,
             execution,
-            &fixture.runtime.visibility_authority().snapshot()
+            &fixture
+                .runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted")
         )
         .unwrap());
 }
@@ -308,38 +262,24 @@ fn relation_retarget_and_return_cannot_revive_old_stamp() {
         .source_revisions_match(
             &fixture.runtime,
             execution,
-            &fixture.runtime.visibility_authority().snapshot()
+            &fixture
+                .runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted")
         )
         .unwrap());
-}
-
-#[test]
-fn noncanonical_or_oversized_wire_is_denied() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let fixture = authorization_fixture(execution);
-    let wire = stamp_now(execution, &fixture).to_wire(execution).unwrap();
-    assert_eq!(
-        RelationalAuthorizationDurableDependencies::from_wire(execution, &wire.to_uppercase())
-            .unwrap_err(),
-        RelationalAuthorizationDependencyDenial::MalformedWire
-    );
-    assert_eq!(
-        RelationalAuthorizationDurableDependencies::from_wire(
-            execution,
-            &"0".repeat(MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES * 2 + 2)
-        )
-        .unwrap_err(),
-        RelationalAuthorizationDependencyDenial::ByteBudgetExceeded
-    );
 }
 
 fn stamp_now(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &super::AuthorizationFixture,
 ) -> RelationalAuthorizationDurableDependencies {
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let evidence = fixture
         .runtime
         .observe_authorization(
@@ -357,7 +297,11 @@ fn role_for(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &super::AuthorizationFixture,
 ) -> crate::identity::data::EntityId {
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     fixture
         .runtime
         .observe_authorization(
@@ -397,3 +341,9 @@ fn retarget(
 }
 
 mod funding;
+
+#[path = "durable_dependencies/wire_admission.rs"]
+mod wire_admission;
+
+#[path = "durable_dependencies/recovery.rs"]
+mod recovery;

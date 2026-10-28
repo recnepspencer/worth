@@ -41,7 +41,7 @@ pub(in super::super) fn prepare(
                 StructuralWalkObservation::checkpoint(context)?;
                 Ok(retired.contains(&entity)
                     && view
-                        .entity_retirement(entity)
+                        .read_entity_retirement(execution, entity)?
                         .is_some_and(|record| record.deleted_at_version() == view.version_id()))
             };
             let covered = match fact {

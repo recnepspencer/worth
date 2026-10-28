@@ -1,4 +1,5 @@
 mod build_projection;
+mod build_residency;
 use build_projection::IndexBuildProjection;
 mod generation_publication;
 use generation_publication::{
@@ -70,7 +71,10 @@ impl<'runtime> IndexAuthority<'runtime> {
         Self { runtime }
     }
 
-    pub fn register(&self, definition: DerivedIndexDefinition) -> DerivedIndexDefinition {
+    pub fn register(
+        &self,
+        definition: DerivedIndexDefinition,
+    ) -> Result<DerivedIndexDefinition, crate::indexes::data::DerivedIndexRegistrationDenial> {
         self.runtime.indexes.register_definition(definition)
     }
 
@@ -91,7 +95,4 @@ impl<'runtime> IndexAuthority<'runtime> {
 }
 
 #[cfg(test)]
-pub(crate) use maintenance::{last_allocation_bytes, pass_memory_room};
-
-#[cfg(test)]
-pub(crate) use maintenance::two_row_patch_bytes;
+pub(crate) use maintenance::last_allocation_bytes;

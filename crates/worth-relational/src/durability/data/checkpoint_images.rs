@@ -286,8 +286,20 @@ pub(crate) fn branch_root_image_digest(
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurableCheckpoint {
+    pub(crate) root_kind_images:
+        BTreeMap<CommitId, crate::storage::residency::CheckpointRegionKindImages>,
+    pub(crate) mirror_kind_images: crate::storage::residency::CheckpointRegionKindImages,
     pub coverage: CheckpointCoverage,
+    pub(crate) directory: Option<std::sync::Arc<super::RelationalCheckpointDirectory>>,
+    pub(crate) commit_descriptors:
+        BTreeMap<CommitId, crate::branch::RelationalBranchRootDescriptor>,
+    pub(crate) mirror_schema_digest: Option<[u8; 32]>,
     pub(crate) branch_cells: Vec<RelationalBranchCellCheckpoint>,
+    /// One posture for every branch cell, in branch order.
+    pub(crate) branch_lifecycle: Vec<super::DurableBranchLifecycleImage>,
+    /// Every retired branch name, sorted; none may be reused.
+    pub(crate) retired_branch_names: Vec<crate::history::data::BranchId>,
+    /// Immutable root images selected by the checkpoint's branch cells.
     pub(crate) branch_roots: Vec<DurableBranchRootImage>,
     pub(crate) branch_root_schema_images: Vec<super::DurableBranchRootSchemaImage>,
     pub(crate) record_identity: DurableRecordIdentityState,
@@ -299,12 +311,14 @@ pub struct DurableCheckpoint {
     pub partition_images: Vec<PartitionCheckpointImage>,
     pub aspect_contracts: Vec<PortableAspectContract>,
     pub lineage: LineageCheckpointArtifact,
+    pub(crate) index_generation_frontier: u64,
     pub index_definitions: Vec<DerivedIndexDefinition>,
     pub derived_index_artifacts: DerivedIndexArtifacts,
     pub(crate) derived_index_checkpoint:
         Option<crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts>,
     pub(crate) derived_index_checkpoint_format: u16,
     pub symbol_table: SymbolTableSnapshot,
+    pub(crate) symbol_identity_frontier: u32,
     pub runtime_name: String,
 }
 
@@ -320,7 +334,7 @@ mod tests {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let runtime = persisted_runtime_with_test_schema();
+        let runtime = durable_runtime_with_test_schema();
         create_entity(execution, &runtime, "streamed-image-seed");
         let sibling = create_branch_from_main(&runtime, "streamed-image-sibling");
         let changed =

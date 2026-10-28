@@ -37,7 +37,10 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_narrow_round_trip(
             );
             let hot_update_micros = hot_update_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let explicit_packet = explicit_query_packet(
                 &runtime,
                 &snapshot,

@@ -226,8 +226,8 @@ impl PhysicalWalRuntimeOwner {
             start,
             end,
         );
-        if let Some(record) = planned.extent_copy {
-            if super::super::copy_obligation::observe_copy_record(
+        if let Some(record) = planned.extent_copy
+            && super::super::copy_obligation::observe_copy_record(
                 &mut state.copy_obligations,
                 record,
                 planned.segment.get(),
@@ -237,10 +237,9 @@ impl PhysicalWalRuntimeOwner {
                 0,
             )
             .is_err()
-            {
-                state.sealed = true;
-                return Err(());
-            }
+        {
+            state.sealed = true;
+            return Err(());
         }
         if state.record_durable_barrier(start, end) {
             Ok(())

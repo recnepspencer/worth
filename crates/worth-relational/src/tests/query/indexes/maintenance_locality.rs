@@ -22,6 +22,7 @@ fn unrelated_field_indexes_do_not_reread_changed_records() {
                     },
                     branch_scoped: true,
                 })
+                .expect("index fixture has identity capacity")
                 .index_id
         })
         .collect::<Vec<_>>();
@@ -69,14 +70,17 @@ fn relation_field_deletion_removes_the_old_entry_with_one_read_per_basis() {
     let target = create_entity(execution, &runtime, "target");
     let first = create_relation_outcome(execution, &runtime, source, target, "link");
     let relation = changed_relations(&first)[0];
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "maintenance.deleted-relation".into(),
-        kind: DerivedIndexKind::RelationField {
-            field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "maintenance.deleted-relation".into(),
+            kind: DerivedIndexKind::RelationField {
+                field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let request = |commit_id| DerivedIndexBuildRequest {
         source_commit_id: commit_id,
         branch_id: BranchId("main".into()),
@@ -119,14 +123,17 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
     let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let register = |name: &str, field: &str| {
-        runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: format!("maintenance.{name}"),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key(field), field_key(field)),
-            },
-            branch_scoped: true,
-        })
+        runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: format!("maintenance.{name}"),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: aspect_field_locator(aspect_key(field), field_key(field)),
+                },
+                branch_scoped: true,
+            })
+            .expect("index fixture has identity capacity")
     };
     let name = register("name", "name");
     let request = |commit_id, index_ids| DerivedIndexBuildRequest {

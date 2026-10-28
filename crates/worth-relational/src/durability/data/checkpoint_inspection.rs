@@ -21,7 +21,7 @@ pub struct CheckpointRecordFrontier {
 }
 
 /// Exact original value encodings for all non-exempt native fields. Map framing
-/// and allocator frontier/generation rows are not model fields. Unknown fields
+/// and record/symbol allocation frontiers or generation rows are not model fields. Unknown fields
 /// are refused by the native codec, not silently discarded by this projection.
 #[derive(Debug, PartialEq, Eq)]
 pub struct NativeCheckpointModelBytes<'a> {
@@ -33,6 +33,8 @@ pub struct NativeCheckpointModelBytes<'a> {
 /// Reconstructive native model-byte view, allocator coordinates and live census.
 pub struct RelationalCheckpointInspection<'a> {
     pub model: NativeCheckpointModelBytes<'a>,
+    /// Provisional symbol IDs can burn without publishing their meanings.
+    pub symbol_identity_frontier: u32,
     pub frontiers: Vec<CheckpointRecordFrontier>,
     pub generations: Vec<CheckpointRecordIdentity>,
     pub live_records: BTreeSet<CheckpointRecordIdentity>,
@@ -54,6 +56,6 @@ impl super::RelationalNativeCheckpoint {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bytes: &'a [u8],
     ) -> Result<RelationalCheckpointInspection<'a>, super::RelationalRecoveryStop> {
-        crate::durability::log::native_file_codec::inspect_checkpoint(execution, bytes)
+        crate::durability::log::native_checkpoint_codec::inspect_checkpoint(execution, bytes)
     }
 }

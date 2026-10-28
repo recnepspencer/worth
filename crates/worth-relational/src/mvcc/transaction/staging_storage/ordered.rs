@@ -43,12 +43,12 @@ impl<T: Ord> OrderedStore<T> {
     }
     pub(crate) fn with_inserted(
         &self,
-        values: impl IntoIterator<Item = T>,
+        values: impl IntoIterator<Item = Result<T, Denial>>,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, Denial> {
         let mut author = Author::new(self, policy)?;
         for value in values {
-            author.insert(value)?;
+            author.insert(value?)?;
         }
         author.finish()
     }

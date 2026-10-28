@@ -65,10 +65,15 @@ impl<'runtime> HistoryAuthority<'runtime> {
         };
         let mut replacement = envelope.as_ref().clone();
         mutate(&mut replacement.patch);
+        let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
         self.runtime.history.with_ledger_mut(|ledger| {
-            ledger
-                .commit_envelopes
-                .insert(commit_id, std::sync::Arc::new(replacement))
+            ledger.commit_envelopes.insert(
+                commit_id,
+                std::sync::Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
+                    std::sync::Arc::new(replacement),
+                    payload,
+                )),
+            )
         });
         self.runtime.history.replace_catalog_from_legacy_for_test();
         true
@@ -95,10 +100,15 @@ impl<'runtime> HistoryAuthority<'runtime> {
                 crate::indexes::data::DerivedIndexArtifacts::new(generations);
         }
         mutate(&mut replacement);
+        let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
         self.runtime.history.with_ledger_mut(|ledger| {
-            ledger
-                .commit_envelopes
-                .insert(commit_id, std::sync::Arc::new(replacement))
+            ledger.commit_envelopes.insert(
+                commit_id,
+                std::sync::Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
+                    std::sync::Arc::new(replacement),
+                    payload,
+                )),
+            )
         });
         self.runtime.history.replace_catalog_from_legacy_for_test();
         true

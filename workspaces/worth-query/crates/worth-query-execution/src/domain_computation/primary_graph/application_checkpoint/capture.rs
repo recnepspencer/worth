@@ -50,7 +50,7 @@ where
             .with_runtime(&execution, |runtime| {
                 runtime
                     .durability_authority()
-                    .native_checkpoint(policy)
+                    .native_checkpoint(&execution, policy)
                     .map_err(WorthQueryCheckpointCaptureDenial::from)
                     .and_then(|native| {
                         WorthQueryApplicationCheckpoint::encode(
@@ -105,7 +105,7 @@ where
                 policy.check_live()?;
                 runtime
                     .durability_authority()
-                    .native_checkpoint(policy)
+                    .native_checkpoint(&execution, policy)
                     .map_err(WorthQueryCheckpointCaptureDenial::from)
                     .and_then(|checkpoint| {
                         let accepted = self.output_demands.accepted_checkpoint_records();

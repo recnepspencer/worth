@@ -11,7 +11,7 @@ pub(crate) use aspect_locator_canonical_codec::{
 };
 pub(crate) use aspect_locator_canonical_codec::{
     serde_canonical_aspect_field_locator, serde_canonical_aspect_field_locator_arc_slice,
-    serde_canonical_aspect_value_locator, serde_canonical_boundary_source_locator,
+    serde_canonical_aspect_value_locator,
 };
 pub(crate) use aspect_value_canonical_codec::{
     decode_aspect_value, encode_aspect_value, encode_length_prefixed_aspect_value, encode_string,

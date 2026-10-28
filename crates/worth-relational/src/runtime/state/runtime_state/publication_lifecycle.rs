@@ -131,8 +131,14 @@ impl RelationalRuntimePublicationBinding {
                 (current != 0).then(|| current.checked_add(1).unwrap_or(0))
             })
             .map_err(|_| RelationalCandidateRegistrationDenial::IdentityExhausted)?;
-        assert_ne!(id, 0, "candidate identity zero is reserved");
+        assert_ne!(
+            /* Proof: register_candidate obtains the id from next_candidate_id.fetch_update, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
+            id,
+            0,
+            "candidate identity zero is reserved"
+        );
         assert!(
+            /* Proof: register_candidate obtains the id from next_candidate_id.fetch_update, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
             !candidates.contains_key(&id),
             "candidate identity allocator collided with a live candidate"
         );
@@ -143,7 +149,10 @@ impl RelationalRuntimePublicationBinding {
                 payload: Arc::downgrade(payload),
             },
         );
-        debug_assert!(replaced.is_none());
+        debug_assert!(
+            /* Proof: register_candidate obtains the id from next_candidate_id.fetch_update, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
+            replaced.is_none()
+        );
         Ok(id)
     }
 

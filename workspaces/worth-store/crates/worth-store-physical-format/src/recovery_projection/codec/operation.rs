@@ -68,6 +68,12 @@ pub(super) fn write_operation(
             binding_bytes.push(8);
             *binding
         }
+        PersistedPhysicalRecoveryOperation::RecordAnchorAdvanced(anchored) => {
+            binding_bytes.push(10);
+            write_anchor_advance(&mut binding_bytes, *anchored);
+            field(target, &binding_bytes);
+            return;
+        }
         PersistedPhysicalRecoveryOperation::TerminalReleaseHeadRetired(retirement) => {
             binding_bytes.push(9);
             write_record(&mut binding_bytes, retirement.declaration_record());
@@ -258,10 +264,50 @@ pub(super) fn read_operation<S: PhysicalRecoveryDecodeStorage>(
                 )?,
             )
         }
+        10 => PersistedPhysicalRecoveryOperation::RecordAnchorAdvanced(read_anchor_advance(
+            &mut binding,
+        )?),
         _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
     };
     binding.end()?;
     Ok(operation)
+}
+
+fn write_anchor_advance(target: &mut Vec<u8>, anchored: PersistedRecordAnchorAdvance) {
+    let advance = anchored.advance();
+    target.extend_from_slice(advance.name().as_str().as_bytes());
+    target.resize(
+        target.len() + crate::RECORD_ANCHOR_NAME_BYTES - advance.name().as_str().len(),
+        0,
+    );
+    target.extend_from_slice(&advance.expected_generation().to_le_bytes());
+    write_record(target, advance.record());
+    target.extend_from_slice(&advance.record_payload_sha256());
+    target.extend_from_slice(&anchored.candidate_root_generation().to_le_bytes());
+}
+
+fn read_anchor_advance(
+    cursor: &mut Cursor<'_>,
+) -> Result<PersistedRecordAnchorAdvance, PhysicalRecoveryProjectionDenial> {
+    let malformed = || PhysicalRecoveryProjectionDenial::Malformed;
+    let name_bytes = cursor.take(crate::RECORD_ANCHOR_NAME_BYTES)?;
+    let end = name_bytes
+        .iter()
+        .position(|byte| *byte == 0)
+        .unwrap_or(name_bytes.len());
+    if name_bytes[end..].iter().any(|byte| *byte != 0) {
+        return Err(malformed());
+    }
+    let name = std::str::from_utf8(&name_bytes[..end])
+        .ok()
+        .and_then(crate::RecordAnchorName::new)
+        .ok_or_else(malformed)?;
+    let expected = cursor.u64()?;
+    let record = read_record(cursor)?;
+    let digest = cursor.take(32)?.try_into().map_err(|_| malformed())?;
+    let advance =
+        crate::RecordAnchorAdvance::new(name, expected, record, digest).ok_or_else(malformed)?;
+    PersistedRecordAnchorAdvance::new(advance, cursor.u64()?).ok_or_else(malformed)
 }
 
 fn write_binding(target: &mut Vec<u8>, binding: PersistedBlobSemanticRecordBinding) {

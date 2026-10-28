@@ -25,7 +25,7 @@ pub(super) fn at_source(
     let origin = birth
         .required_output_origin
         .as_deref()
-        .expect("validated actual producer birth");
+        .expect(/* Proof: membership::latest returns this immutable Arc only after validate_output_membership_header succeeds on it; that method rejects a missing required_output_origin. */ "validated actual producer birth");
     let positions = &basis.inner.root.output_publication_positions;
     let position = match positions.get(&origin.meaning, context)? {
         Some(position) => Some(position),
@@ -87,7 +87,7 @@ fn relation_birth(
     let partition = basis
         .inner
         .root
-        .partition_state(relation_id.partition_id)
+        .partition_state(relation_id.partition_id)?
         .ok_or("incident producer relation partition absent")?;
     let created = partition
         .relation_arena

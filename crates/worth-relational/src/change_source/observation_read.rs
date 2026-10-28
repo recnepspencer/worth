@@ -7,6 +7,16 @@ pub enum RelationalObservationReadDenial {
     /// Another runtime issued the observation. Its commit and root mean
     /// nothing to this runtime's lineage index and commit ancestry.
     ForeignObservation,
+    /// The carried request or required storage refused the read.
+    Execution(crate::execution::RelationalExecutionDenialCause),
+}
+
+pub(super) struct ForeignObservation;
+
+impl From<ForeignObservation> for RelationalObservationReadDenial {
+    fn from(_: ForeignObservation) -> Self {
+        Self::ForeignObservation
+    }
 }
 
 impl RelationalRuntime {
@@ -14,11 +24,11 @@ impl RelationalRuntime {
     pub(super) fn admit_observation_read(
         &self,
         observation: &RelationalBranchObservation,
-    ) -> Result<(), RelationalObservationReadDenial> {
+    ) -> Result<(), ForeignObservation> {
         if observation.identity().runtime_instance_id() == self.runtime_instance_id() {
             Ok(())
         } else {
-            Err(RelationalObservationReadDenial::ForeignObservation)
+            Err(ForeignObservation)
         }
     }
 }

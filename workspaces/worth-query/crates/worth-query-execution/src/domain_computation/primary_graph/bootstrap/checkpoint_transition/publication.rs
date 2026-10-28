@@ -201,14 +201,9 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
         .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
     match successor {
         Ok(acknowledged) => Ok((acknowledged.into_parts().1, preserved_outputs)),
-        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::DurabilityDeferred(deferred)) => {
-            let publication = graph.recovered_publication.clone().expect("native checkpoint bootstrap publication was readmitted before transition");
-            Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionDeferred(Box::new(
-                WorthQueryCheckpointTransitionRecovery::new(graph.graph.integration_handle(), publication, *deferred, preserved_outputs),
-            )))
-        }
         Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::Refused(refusal)) => Err(WorthQueryInMemoryApplicationDenial::Graph(super::codec::map_refusal(refusal.denial()))),
         Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SettlementFailed(error)) => Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionSettlementFailed(error)),
+        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SnapshotCloseoutFailed { commit_id, denial }) => Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionSnapshotCloseoutFailed { commit_id, denial }),
     }
 }
 
@@ -230,13 +225,15 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
         .recovered_relational_authority
         .as_ref()
         .is_some_and(|authority| authority.codec_transition_pending());
+    let publication = graph.recovered_publication.clone().ok_or_else(|| {
+        WorthQueryInMemoryApplicationDenial::Graph(denial(
+            "checkpoint transition has no original native bootstrap publication",
+        ))
+    })?;
     let (successor, preserved_outputs) = prepare_transition(
         execution, phase, graph, checkpoint, &target, cell, transition,
     )?;
-    let publication = graph
-        .recovered_publication
-        .clone()
-        .expect("transition holds its original native bootstrap publication");
+
     if codec_pending && let Err(cause) = super::codec::finish(execution, graph) {
         return Err(
             WorthQueryInMemoryApplicationDenial::CheckpointTransitionFinalizationStopped(Box::new(
@@ -257,7 +254,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
             graph
                 .graph
                 .integration_handle()
-                .with_runtime(execution, |runtime| runtime.durability_authority().native_checkpoint(capture_policy))
+                .with_runtime(execution, |runtime| runtime.durability_authority().native_checkpoint(execution, capture_policy))
                 .map_err(crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial::from)
         })
         .and_then(|native| {

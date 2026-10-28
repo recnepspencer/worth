@@ -254,7 +254,7 @@ fn load_chunk(
     start: u64,
 ) -> Result<SelectedBlobChunk, BlobReadFailure> {
     let chunk_size = u64::from(session.publication.chunk_size());
-    if start % chunk_size != 0 || entry.covered_bytes() > chunk_size {
+    if !start.is_multiple_of(chunk_size) || entry.covered_bytes() > chunk_size {
         return Err(BlobReadFailure::TreeDamaged);
     }
     let ordinal = start / chunk_size;

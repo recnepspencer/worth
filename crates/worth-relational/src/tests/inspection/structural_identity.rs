@@ -260,7 +260,7 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let left = create_entity(execution, &runtime, "left");
     let right = create_entity(execution, &runtime, "right");
     // Recovery requires a real retained meaning, not a fabricated numeric symbol.
@@ -279,10 +279,7 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
         Some(StructuralFingerprint::new(family, 1002)),
         Some(LineageId(502)),
     ));
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let expected_left = runtime
         .inspect_what_happened()
         .structural_identity(
@@ -304,11 +301,13 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
         )
         .expect("read request remains live");
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -344,14 +343,11 @@ fn inspection_truth_bundle_recovery_parity_holds_for_current_and_historical_surf
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "bundle");
     let entity = changed_entities(&created)[0];
     let _relation = create_relation(execution, &runtime, entity, entity, "self");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
 
     let expected = capture_inspection_truth_bundle(
         execution,
@@ -360,11 +356,13 @@ fn inspection_truth_bundle_recovery_parity_holds_for_current_and_historical_surf
         entity,
         created.version_id,
     );
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)

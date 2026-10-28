@@ -4,7 +4,9 @@ use crate::domain_computation::{
     WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryFreshDecisionReadSet,
     WorthQuerySessionBoundReadsAndEffects,
 };
-use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
+use graph::application_attempt::provider_compare_denial::{
+    provider_session_execution_denied, read_set_failure,
+};
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome as Progression,
 };
@@ -287,21 +289,5 @@ where
                 ),
             ))
         }
-    }
-}
-
-/// The read owner already identified the original request's first stop.
-/// Preserve that control outcome instead of terminalizing its producer row.
-fn read_set_failure(
-    failure: crate::domain_computation::WorthQueryDecisionReadSetFailure,
-) -> Progression {
-    use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
-    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
-    match failure.kind() {
-        Kind::RequestInterrupted(Stop::Cancelled) => Progression::Cancelled,
-        Kind::RequestInterrupted(Stop::DeadlineExceeded) => Progression::TimedOut,
-        _ => Progression::Denied(WorthQueryApplicationCommitDenial::decision_read_set_denied(
-            failure,
-        )),
     }
 }

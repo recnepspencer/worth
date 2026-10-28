@@ -46,7 +46,7 @@ pub(super) fn replace_anchor(
         .unwrap();
     let old = truth
         .relations()
-        .into_iter()
+        .iter()
         .find(|edge| {
             edge.source == carrier && edge.kind.kind_id == KindId(anchor_kind(side, before))
         })
@@ -254,7 +254,7 @@ fn logical_cases_split_merge_and_transfer_without_invented_member_records_or_lin
         .unwrap()
         .unwrap();
     let mut removal = WorkerIntentBatch::new("retire-least-logical-carrier");
-    for relation in truth.relations().into_iter().filter(|relation| {
+    for relation in truth.relations().iter().filter(|relation| {
         relation.source == least
             && [
                 INCIDENCE,

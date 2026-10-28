@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use worth_server::{
     WorthServerCompatibilityExport, WorthServerCompatibilityRead, WorthServerCompatibilityStream,
     WorthServerStreamCancellationKind, WorthServerStreamCancellationReceipt,

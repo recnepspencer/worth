@@ -23,7 +23,8 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
                 })
                 .unwrap(),
             )
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         // This is the genuine empty runtime; no fabricated entity identity is used.
         let fixture = DagFixture {
             runtime,

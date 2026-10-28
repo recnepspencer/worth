@@ -111,7 +111,7 @@ impl ReducedInvariantPrefix {
             std::mem::replace(
                 &mut self.stages[0]
                     .as_mut()
-                    .expect("completed first stage")
+                    .expect(/* Proof: stage_count starts at zero and only successful absorb can increment it, after installing Some in the next contiguous slot. This branch requires stage_count == 1, so slot zero is present. */ "completed first stage")
                     .output
                     .proof_boundary,
                 empty_proof(),

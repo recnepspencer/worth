@@ -14,12 +14,14 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let created = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&created)[0];
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -150,6 +152,7 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -197,10 +200,12 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
 
     let feature_head = runtime
         .inspect_what_happened()
-        .inspect_branch_head(&BranchId("feature".to_string()))
+        .inspect_branch_head(execution, &BranchId("feature".to_string()))
+        .unwrap()
         .expect("feature branch head");
-    let feature_window = recent_commit_window(&runtime, &BranchId("feature".to_string()), 8);
-    let main_window = recent_commit_window(&runtime, &BranchId("main".to_string()), 8);
+    let feature_window =
+        recent_commit_window(execution, &runtime, &BranchId("feature".to_string()), 8);
+    let main_window = recent_commit_window(execution, &runtime, &BranchId("main".to_string()), 8);
 
     assert_eq!(
         feature_head.commit.branch_id,

@@ -188,11 +188,9 @@ pub(super) fn plan(
         if node_format != format {
             return Err(ReleaseCustodyHeadDenial::Path);
         }
-        selected = if let Some(children) = node.children() {
-            Some(children[child_index(children, mutation.key())])
-        } else {
-            None
-        };
+        selected = node
+            .children()
+            .map(|children| children[child_index(children, mutation.key())]);
         if index + 1 < source_path.len() && selected != Some(source_path[index + 1].reference()) {
             return Err(ReleaseCustodyHeadDenial::Path);
         }

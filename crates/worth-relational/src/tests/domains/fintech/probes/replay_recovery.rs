@@ -21,7 +21,7 @@ pub(crate) struct RecoveryProbe {
     pub(crate) latest_commit_id: Option<u64>,
     pub(crate) branch_heads: BTreeMap<String, u64>,
     pub(crate) recovered_commits: usize,
-    pub(crate) skipped_corrupt_checkpoints: usize,
+    pub(crate) checkpoint_covered_position: Option<u64>,
 }
 
 pub(crate) fn capture_replay_probe(
@@ -93,6 +93,9 @@ pub(crate) fn capture_recovery_probe(
             })
             .collect(),
         recovered_commits: outcome.recovered_commits,
-        skipped_corrupt_checkpoints: outcome.integrity_report.skipped_corrupt_checkpoints.len(),
+        checkpoint_covered_position: outcome
+            .coverage
+            .checkpoint_covered_position
+            .map(|position| position.0),
     }
 }

@@ -7,7 +7,8 @@ pub use admitted::AdmittedPhysicalRecordResidencyPolicy;
 pub use builder::{PhysicalRecordResidencyPolicy, PhysicalRecordResidencyPolicyBuilder};
 pub use denial::PhysicalRecordResidencyPolicyDenial;
 pub use worth_store_buffer_pool::{
-    PhysicalOperationAllocationScope, PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
+    PhysicalOperationAllocationScope, PhysicalResidencyDenial, PhysicalResidencyDimension,
+    PhysicalSpeculativeWorkKind,
 };
 
 /// The proof-bearing result of physical residency policy admission.

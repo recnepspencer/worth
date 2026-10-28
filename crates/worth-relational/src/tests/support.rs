@@ -1,7 +1,3 @@
-use std::fs;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 pub(super) use worth_harness::facade::{
     DiagnosticsHarnessAdapter, HarnessAdapter, ReplayHarnessAdapter,
 };
@@ -15,7 +11,6 @@ pub(super) use crate::facade::config::{
 pub(super) use crate::facade::diagnostics::{
     DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
 };
-pub(super) use crate::facade::durability::{DurabilityMode, DurableStoreLayout};
 pub(super) use crate::facade::harness::RelationalHarnessAdapter;
 pub(super) use crate::facade::history::{
     AspectHistoryCommitSpan, AspectHistoryEntry, AspectResolutionContext, BranchId,
@@ -58,11 +53,12 @@ pub(super) use worth_foundational::facade::AspectKey;
 
 // Test helper index:
 // - `schema`: baseline schema builders plus declared-aspect fixtures
-// - `runtime`: runtime builders, persisted-runtime builders, and store paths
+// - `runtime`: runtime builders, including durable runtimes on the test medium
 // - `records`: common entity/relation verbs and branch-aware mutation helpers
 // - `history`: aspect/history digest helpers and small read utilities
 // - `inspection`: canonical inspection request builders and historical read helpers
-// - `durability`: branch/recovery helpers for persisted round trips
+// - `durability`: branch/recovery helpers for durable round trips
+// - `durable_medium`: the in-crate test medium durable runtimes publish to
 // - `relation_integrity`: schema fixtures and scenario helpers for milestone-4 legality work
 // - `savepoint`: hostile savepoint residue assertions for patch/subscriber surfaces
 //
@@ -71,8 +67,10 @@ pub(super) use worth_foundational::facade::AspectKey;
 mod aspect_field_patches;
 #[path = "support/durability.rs"]
 mod durability;
+mod durable_medium;
 #[path = "support/history.rs"]
 mod history;
+mod history_snapshot;
 #[path = "support/inspection.rs"]
 mod inspection;
 #[path = "support/records.rs"]
@@ -90,7 +88,9 @@ mod transaction_authority;
 
 pub(crate) use aspect_field_patches::*;
 pub(crate) use durability::*;
+pub(crate) use durable_medium::*;
 pub(crate) use history::*;
+pub(crate) use history_snapshot::demand_canonical_history_snapshot;
 pub(crate) use inspection::*;
 pub(crate) use records::*;
 pub(crate) use relation_integrity::*;
@@ -152,7 +152,7 @@ pub(super) fn capture_aspect_truth_bundle(
             .map(|entity_id| {
                 (
                     *entity_id,
-                    entity_aspect_history_digest(runtime, *entity_id, None),
+                    entity_aspect_history_digest(execution, runtime, *entity_id, None),
                 )
             })
             .collect(),
@@ -161,7 +161,7 @@ pub(super) fn capture_aspect_truth_bundle(
             .map(|relation_id| {
                 (
                     *relation_id,
-                    relation_aspect_history_digest(runtime, *relation_id, None),
+                    relation_aspect_history_digest(execution, runtime, *relation_id, None),
                 )
             })
             .collect(),
@@ -170,7 +170,7 @@ pub(super) fn capture_aspect_truth_bundle(
             .map(|lineage_id| {
                 (
                     *lineage_id,
-                    lineage_aspect_history_digest(runtime, *lineage_id, None),
+                    lineage_aspect_history_digest(execution, runtime, *lineage_id, None),
                 )
             })
             .collect(),
@@ -295,20 +295,31 @@ pub(super) fn capture_inspection_truth_bundle(
             )
             .expect("read request remains live"),
         retention_summary: inspection
-            .retention_summary(&crate::tests::support::inspection::default_retention_request()),
+            .retention_summary(
+                execution,
+                &crate::tests::support::inspection::default_retention_request(),
+            )
+            .unwrap(),
         record_retention: inspection
-            .inspect_record_retention(RecordRef::Entity(entity_id))
+            .inspect_record_retention(execution, RecordRef::Entity(entity_id))
+            .unwrap()
             .expect("record retention"),
-        branch_head: inspection.inspect_branch_head(branch_id),
+        branch_head: inspection
+            .inspect_branch_head(execution, branch_id)
+            .unwrap(),
         latest_commit: inspection
-            .inspect_commit(latest_commit_id)
+            .inspect_commit(execution, latest_commit_id)
+            .unwrap()
             .expect("latest commit inspection"),
-        recent_commits: inspection.inspect_recent_commits(
-            &crate::facade::inspection::RecentCommitInspectionRequest {
-                branch_id: Some(branch_id.clone()),
-                limit: 8,
-            },
-        ),
+        recent_commits: inspection
+            .inspect_recent_commits(
+                execution,
+                &crate::facade::inspection::RecentCommitInspectionRequest {
+                    branch_id: Some(branch_id.clone()),
+                    limit: 8,
+                },
+            )
+            .unwrap(),
     }
 }
 
@@ -371,3 +382,7 @@ pub(super) use truth_comparison::assert_recovered_commit_truth_matches;
 pub(super) use truth_comparison::assert_stable_aspect_truth_bundle_eq;
 mod worker_completion;
 pub(super) use worker_completion::join_completed_worker;
+
+#[path = "support/generated_materialization.rs"]
+mod generated_materialization;
+pub(crate) use generated_materialization::create_group_with_external_endpoint;

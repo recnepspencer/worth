@@ -5,12 +5,8 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
-use worth_query_host::facade::{
-    primary_graph,
-    runtime::{
-        CancellationToken, ExecutionAllocationDenialKind, LeaseDenial, MemoryLimitDenial,
-        MemoryLimitLevel,
-    },
+use worth_query_host::facade::runtime::{
+    ExecutionAllocationDenialKind, LeaseDenial, MemoryLimitDenial, MemoryLimitLevel,
 };
 
 #[test]
@@ -29,18 +25,10 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
         &super::super::host::program().revision().to_string(),
     )
     .unwrap();
-    // The funding lease pays for authoring, the commit and its ACK; the
-    // capture child it names admits no capture memory at all.
-    let funding = primary_graph::query_test_execution_authority_for_test()
-        .request_lease(super::super::capture_child::funding(
-            CancellationToken::new(),
-            None,
-        ))
-        .unwrap();
-    let capture = super::super::capture_child::exhausted(&funding);
     let mut callbacks = 0;
     output::reset_decodes();
-    let denial = super::super::capture_child::funded_by(&funding, |phase| {
+    let pending = crate::checkpoint_capture::stopped(|phase| {
+        callbacks = 0;
         installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
             phase,
             host::program(),
@@ -49,25 +37,18 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
             ((),),
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             host::limits(),
-            checkpoint,
-            predecessor,
+            checkpoint.clone(),
+            predecessor.clone(),
             installation::WorthQueryCheckpointTransitionResources::bounded(4096, 32, 16384)
-                .unwrap(),
-            CapturePolicy::Execution(&capture),
+                .unwrap()
+                .with_capture_memory_limit(0),
+            phase.execution_request().allocation_policy(),
             |_, _| {
                 callbacks += 1;
                 Ok(())
             },
         )
-    })
-    .err()
-    .expect("zero capture memory must stop after the actual native acknowledgment");
-    let installation::WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(
-        pending,
-    ) = denial
-    else {
-        panic!("the acknowledged codec successor must retain its recovery owner: {denial:?}");
-    };
+    });
     let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
         pending.capture_denial()
     else {

@@ -18,10 +18,10 @@ pub(in crate::product_adapter) fn validate_product_mutation_preconditions(
             "product mutation operations require an explicit snapshot precondition basis digest",
         ));
     };
-    if let Some(observed_basis) = admitted_session.and_then(|session| session.basis_digest()) {
-        if expected_basis != observed_basis {
-            return Err(stale_basis_denial(expected_basis, observed_basis));
-        }
+    if let Some(observed_basis) = admitted_session.and_then(|session| session.basis_digest())
+        && expected_basis != observed_basis
+    {
+        return Err(stale_basis_denial(expected_basis, observed_basis));
     }
     if requires_durable_idempotency && request.identity().idempotency_key().is_none() {
         return Err(precondition_denial(

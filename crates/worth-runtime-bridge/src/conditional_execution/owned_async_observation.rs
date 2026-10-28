@@ -212,13 +212,6 @@ impl BridgeOwnedAsyncRetrySchedule {
 }
 
 impl BridgeOwnedAsyncRetryAdmission {
-    pub(super) fn new(
-        request: BridgeOwnedAsyncRequestAdmission,
-        lineage: crate::facade::BridgeAsyncRetryLineage,
-    ) -> Self {
-        Self { request, lineage }
-    }
-
     pub fn request(&self) -> &BridgeOwnedAsyncRequestAdmission {
         &self.request
     }
@@ -233,13 +226,6 @@ impl BridgeOwnedAsyncRetryAdmission {
 }
 
 impl BridgeOwnedAsyncRevalidationAdmission {
-    pub(super) fn new(
-        request: BridgeOwnedAsyncRequestAdmission,
-        lineage: crate::facade::BridgeAsyncRevalidationLineage,
-    ) -> Self {
-        Self { request, lineage }
-    }
-
     pub fn request(&self) -> &BridgeOwnedAsyncRequestAdmission {
         &self.request
     }

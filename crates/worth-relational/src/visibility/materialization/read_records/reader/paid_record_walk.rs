@@ -12,53 +12,24 @@ impl ProjectionRecordReader<'_> {
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        if matches!(visibility, KindScanVisibility::Live) {
+            return self.paid_current_entities(
+                state.get_current_partition(partition_id),
+                registry,
+                kind,
+                charge,
+                memory,
+            );
+        }
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(Vec::new());
         };
         let mut records = Vec::new();
         match visibility {
-            KindScanVisibility::Live => {
-                let (slots, held) = super::super::read_work::record_memory::slots(
-                    &partition.entity_arena.live_bitset,
-                    memory,
-                )?;
-                for slot in slots {
-                    charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
-                    if kind.is_some_and(|kind| {
-                        !slot_kind_matches_current(&partition.entity_arena, slot, kind)
-                    }) {
-                        continue;
-                    }
-                    charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
-                    let clone_bytes = super::super::read_work::record_quote::entity(
-                        registry, partition, slot, visibility,
-                    )?;
-                    super::super::read_work::record_memory::prepare_push(
-                        memory,
-                        &mut records,
-                        clone_bytes,
-                    )?;
-                    if let Some(record) = materialize_current_authoritative_entity_record(
-                        registry,
-                        partition,
-                        partition_id,
-                        slot,
-                    ) {
-                        self.instrumentation.count(|counters| {
-                            counters.visible_authoritative_entity_records_materialized += 1;
-                        });
-                        super::super::read_work::record_memory::settle_clone(
-                            memory,
-                            clone_bytes,
-                            super::super::read_footprint::entity(&record),
-                        )?;
-                        records.push(record);
-                    } else {
-                        super::super::read_work::record_memory::release(memory, clone_bytes)?;
-                    }
-                }
-                super::super::read_work::record_memory::release(memory, held)?;
-            }
+            KindScanVisibility::Live => unreachable!(
+                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
+                "current reads returned through Head"
+            ),
             KindScanVisibility::AtVersion(version) => {
                 let (slots, held) = super::super::read_work::record_memory::occupied_slots(
                     &partition.entity_arena,
@@ -132,53 +103,24 @@ impl ProjectionRecordReader<'_> {
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        if matches!(visibility, KindScanVisibility::Live) {
+            return self.paid_current_relations(
+                state.get_current_partition(partition_id),
+                registry,
+                kind,
+                charge,
+                memory,
+            );
+        }
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(Vec::new());
         };
         let mut records = Vec::new();
         match visibility {
-            KindScanVisibility::Live => {
-                let (slots, held) = super::super::read_work::record_memory::slots(
-                    &partition.relation_arena.live_bitset,
-                    memory,
-                )?;
-                for slot in slots {
-                    charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
-                    if kind.is_some_and(|kind| {
-                        !slot_kind_matches_current(&partition.relation_arena, slot, kind)
-                    }) {
-                        continue;
-                    }
-                    charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
-                    let clone_bytes = super::super::read_work::record_quote::relation(
-                        registry, partition, slot, visibility,
-                    )?;
-                    super::super::read_work::record_memory::prepare_push(
-                        memory,
-                        &mut records,
-                        clone_bytes,
-                    )?;
-                    if let Some(record) = materialize_current_authoritative_relation_record(
-                        registry,
-                        partition,
-                        partition_id,
-                        slot,
-                    ) {
-                        self.instrumentation.count(|counters| {
-                            counters.visible_authoritative_relation_records_materialized += 1;
-                        });
-                        super::super::read_work::record_memory::settle_clone(
-                            memory,
-                            clone_bytes,
-                            super::super::read_footprint::relation(&record),
-                        )?;
-                        records.push(record);
-                    } else {
-                        super::super::read_work::record_memory::release(memory, clone_bytes)?;
-                    }
-                }
-                super::super::read_work::record_memory::release(memory, held)?;
-            }
+            KindScanVisibility::Live => unreachable!(
+                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
+                "current reads returned through Head"
+            ),
             KindScanVisibility::AtVersion(version) => {
                 let (slots, held) = super::super::read_work::record_memory::occupied_slots(
                     &partition.relation_arena,
@@ -295,7 +237,9 @@ mod tests {
         let later = create_entity_outcome(&execution, &runtime, "later");
         let truth = runtime.read_truth();
         let current = truth.project_snapshot(&later.snapshot).unwrap();
-        let historical = truth.project_historical_version(relation.version_id);
+        let historical = truth
+            .try_project_historical_version(relation.version_id)
+            .unwrap();
         for (view, entities, entity_scans, relation_scans) in
             [(&current, 3, 0, 0), (&historical, 2, 2, 1)]
         {

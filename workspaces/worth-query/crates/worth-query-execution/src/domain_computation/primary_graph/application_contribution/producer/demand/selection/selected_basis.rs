@@ -120,10 +120,9 @@ pub(super) fn selection_lookup_denial(
     use crate::domain_computation::primary_graph::output_reuse;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
     match stop {
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } => {
-            selection_budget_denial(family)
-        }
+        CompanionPreflightStop::Execution(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted,
+        ) => selection_budget_denial(family),
         other => output_reuse::retained_fact_denial(
             output_reuse::preflight_stop(other),
             "native retained output selection unavailable",

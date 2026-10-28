@@ -1,5 +1,7 @@
+mod normalized_continuation_proof;
 mod subscriber_checkpoint;
 mod subscriber_contract;
+pub use normalized_continuation_proof::NormalizedContinuationProof;
 mod subscriber_decision;
 mod subscriber_failure;
 mod subscriber_recovery_plan;
@@ -9,8 +11,8 @@ mod subscriber_stream_batch;
 pub use subscriber_checkpoint::SubscriberCheckpoint;
 pub(crate) use subscriber_checkpoint::SubscriberCheckpointBasis;
 pub use subscriber_contract::{
-    NormalizedContinuationProof, SubscriberContinuationClassSet, SubscriberContinuationSummary,
-    SubscriberContractDeclaration, SubscriberStrataSet, MAX_NORMALIZED_CONTINUATION_BOUNDARIES,
+    SubscriberContinuationClassSet, SubscriberContinuationSummary, SubscriberContractDeclaration,
+    SubscriberStrataSet,
 };
 pub use subscriber_decision::{
     SubscriberRecoveryDecision, SubscriberRecoveryDisposition, SubscriberRecoverySource,

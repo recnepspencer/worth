@@ -22,6 +22,7 @@ pub enum RelationalBranchObservationConstructionDenial {
         target_runtime_instance_id: u64,
     },
     ForkProvenanceMismatch,
+    RetentionUnavailable,
 }
 
 /// Lower an owner branch name into the shared exact observation grammar.

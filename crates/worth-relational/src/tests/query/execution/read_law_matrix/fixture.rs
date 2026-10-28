@@ -50,14 +50,17 @@ impl World {
             aspect_key("label"),
             CanonicalFieldPath::single(field_key("label")),
         );
-        let definition = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(17),
-            name: "read-law-name".into(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: name.clone(),
-            },
-            branch_scoped: false,
-        });
+        let definition = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(17),
+                name: "read-law-name".into(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: name.clone(),
+                },
+                branch_scoped: false,
+            })
+            .expect("index fixture has identity capacity");
         if indexed {
             let built = runtime.index_authority().build_for_commit(
                 request,
@@ -70,7 +73,10 @@ impl World {
             assert!(built.failed_indexes.is_empty());
             assert_eq!(built.generations.len(), 1);
         }
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         Self {
             runtime,
             index: definition.index_id,

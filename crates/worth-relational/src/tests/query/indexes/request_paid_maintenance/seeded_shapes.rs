@@ -79,6 +79,7 @@ fn prove_shapes(shapes: impl IntoIterator<Item = (usize, usize)>) {
                             field_locator: aspect_field_locator(aspect_key(&key), field_key(&key)),
                         },
                     })
+                    .expect("index fixture has identity capacity")
                     .index_id
             })
             .collect();
@@ -260,7 +261,8 @@ fn prove_commit_paths(
     assert_eq!(prepared.patch_records, 0);
     assert!(request.index_ids.iter().all(|index| runtime
         .index_access()
-        .latest_generation(*index, &request.branch_id)
+        .read_latest_generation(execution, *index, &request.branch_id)
+        .unwrap()
         .is_none_or(|generation| generation.source_commit_id == created.commit.commit_id)));
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
         .publication_port()
@@ -272,7 +274,8 @@ fn prove_commit_paths(
     for (index, old) in request.index_ids.iter().zip(baseline) {
         let new = runtime
             .index_access()
-            .latest_generation(*index, &request.branch_id)
+            .read_latest_generation(execution, *index, &request.branch_id)
+            .unwrap()
             .unwrap();
         assert_eq!(new.entries, old.entries, "candidate seed {seed}");
         assert_eq!(new.source_commit_id, committed.commit.commit_id);

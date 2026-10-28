@@ -38,6 +38,7 @@ impl ActiveSnapshotHandleRegistry {
     pub(super) fn insert(&self, snapshot_id: SnapshotId, binding: SnapshotHandleBinding) {
         let mut handles = self.lock();
         assert!(
+            /* Proof: The private snapshot id allocator is checked and shared by active and published handles; it never resets or wraps in this runtime. This insertion owns the issued id and holds the active registry Mutex. */
             !handles.contains_key(&snapshot_id),
             "snapshot identity allocator collided with a live active handle"
         );

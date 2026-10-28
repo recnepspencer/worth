@@ -5,7 +5,6 @@ use crate::validation::data::InvariantViolationFields;
 use serde::{Deserialize, Serialize};
 
 mod aspect_field_target_rejection;
-mod authoritative_aspect_source_locator;
 mod entity_authoritative_aspect_state_denial;
 mod entity_authoritative_aspect_state_presentation;
 mod mutation_state_inconsistency;
@@ -109,6 +108,7 @@ impl BulkImportStage {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConflictClass {
+    SymbolIdentityExhausted,
     /// In-process physical refusal; never a serialized graph verdict.
     #[serde(skip)]
     ExecutionAllocationDenied {

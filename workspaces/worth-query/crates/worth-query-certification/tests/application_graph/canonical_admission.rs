@@ -90,8 +90,8 @@ fn cumulative_refusal_survives_a_swallowing_handler_and_does_not_poison_fresh_re
         worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Projection(denial)
     )) = denied else { panic!("swallowed decode refusal must veto the authored effect: {denied:?}"); };
     assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
-        worth_query_host::facade::primary_graph::WorthQueryInvariantProjectionDenialKind::ValueDecode(
-            worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial::Checkpoint(worth_execution::MapKernelStop::WorkCeiling))));
+        worth_query_host::facade::primary_graph::WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted)));
     assert_eq!(
         observed(),
         operation::Observed {

@@ -38,7 +38,8 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
     );
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema.clone())
-        .build();
+        .build()
+        .expect("valid native fixture configuration");
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
@@ -69,12 +70,16 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
     let target = born.created_entity(&created(1)).unwrap();
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            &execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let installed_handle = schema.derived_relation(&identity(2)).unwrap();
     let mut matching = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native fixture configuration");
     matching
         .durability_recovery()
         .restore_native_checkpoint(&execution, &checkpoint)
@@ -95,22 +100,28 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
         "exact readmission preserves the actual installed source issuer, not a rebuilt equal handle");
     let mut restored = RelationalRuntimeApi::builder()
         .schema_registry(changed.clone())
-        .build();
-    restored
+        .build()
+        .expect("valid native fixture configuration");
+    let before = restored
+        .durability_authority()
+        .native_checkpoint(&execution, execution.allocation_policy())
+        .unwrap();
+    let denied = restored
         .durability_recovery()
         .restore_native_checkpoint(&execution, &checkpoint)
-        .unwrap();
-    let (_, basis) = restored
-        .observe_branch(&restored.main_branch_identity())
-        .unwrap();
-    let snapshot = restored
-        .snapshots()
-        .snapshot_for_observation(&basis.observation())
-        .unwrap();
-    let pin = restored
-        .read_truth()
-        .pin_read_capability(&snapshot, &[], &execution)
-        .unwrap();
+        .unwrap_err();
+    assert!(
+        matches!(denied, worth_relational::facade::durability::RelationalRecoveryStop::Durability(error) if error.class == worth_relational::facade::durability::RecoveryFailureClass::DeclaredSchemaMismatch)
+    );
+    assert_eq!(
+        restored
+            .durability_authority()
+            .native_checkpoint(&execution, execution.allocation_policy())
+            .unwrap(),
+        before
+    );
+    // A matching receiving declaration retains its actual recovered source issuer.
+    let pin = matching_pin;
     assert_eq!(
         pin.schema().authority_snapshot(),
         expected,

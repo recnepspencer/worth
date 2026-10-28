@@ -9,7 +9,7 @@ pub(crate) fn execute(
 ) -> Result<(), String> {
     for unit in units {
         println!("run: {}", unit.identity());
-        let mut command = command(unit, target_root);
+        let mut command = command(unit, target_root)?;
         command
             .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())
@@ -24,15 +24,37 @@ pub(crate) fn execute(
     Ok(())
 }
 
-fn command(unit: &TestExecutionUnit, target_root: Option<&Path>) -> Command {
-    let mut command = Command::new(unit.program());
+fn command(unit: &TestExecutionUnit, target_root: Option<&Path>) -> Result<Command, String> {
+    let mut command = if unit.program() == "bash" {
+        // Windows searches its system directory before PATH for a bare name.
+        // Honor the selected shell instead of accidentally launching WSL.
+        Command::new(bash_on_path()?)
+    } else {
+        Command::new(unit.program())
+    };
     command.args(unit.arguments()).current_dir(unit.directory());
     if unit.program() == "cargo" {
+        if unit.arguments().windows(2).any(|pair| {
+            matches!(pair[0].as_str(), "--profile" | "--cargo-profile") && pair[1] == "ci-test"
+        }) {
+            // The repository's build.incremental setting overrides profiles.
+            // Preserve the CI profile's declared non-incremental compilation.
+            command.env("CARGO_INCREMENTAL", "0");
+        }
         if let Some(root) = target_root {
             command.env("CARGO_TARGET_DIR", root);
         }
     }
-    command
+    Ok(command)
+}
+
+fn bash_on_path() -> Result<std::path::PathBuf, String> {
+    let path = std::env::var_os("PATH").ok_or("structural checks require Bash on PATH")?;
+    let executable = format!("bash{}", std::env::consts::EXE_SUFFIX);
+    std::env::split_paths(&path)
+        .map(|directory| directory.join(&executable))
+        .find(|candidate| candidate.is_file())
+        .ok_or_else(|| "structural checks require Bash on PATH".to_owned())
 }
 
 #[cfg(test)]

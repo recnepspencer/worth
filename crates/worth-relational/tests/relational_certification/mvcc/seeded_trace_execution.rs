@@ -155,7 +155,7 @@ fn fork_and_observe(
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "fork source", error));
     let fork = world
         .runtime
-        .fork_branch(branch.clone(), source)
+        .fork_branch(execution, branch.clone(), source)
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "fork", error));
     if fork.fork_provenance() != fork.source_observation() {
         trace_panic(trace, scenario_index, "fork provenance", &fork);

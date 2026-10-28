@@ -244,19 +244,35 @@ fn caller_live_buffer_wider_than_the_removed_installed_ceiling_governs_the_queue
 /// gone (`ee07da2b0e`): the caller's controls open a subscription under the
 /// installed policy, which closes cleanly.
 #[test]
-fn live_subscription_opens_without_a_caller_work_ceiling() {
-    let fixture = ordinary_read_world("live-work-unbudgeted", 0);
+fn live_delivery_needs_result_cardinality_without_a_work_estimate() {
+    let fixture = ordinary_read_world("live-result-cardinality", 0);
     let owner = fixture.authenticate(OWNER);
-    let live = fixture
+    let teller = fixture.authenticate(TELLER);
+    let controls = WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap();
+    let mut live = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
-        .subscribe(WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap())
-        .expect("the caller's controls open with no work ceiling");
-    let BankApplicationLiveCloseOutcome::Completed = live.close() else {
-        panic!("the admitted subscription closes cleanly")
+        .subscribe(controls)
+        .expect("live delivery carries cardinality and request controls");
+    commit_deposit(
+        &fixture,
+        &teller,
+        fixture.personal_account,
+        "live-cardinality-deposit",
+    );
+    let BankAccountActivityLiveOutcome::Delivered(update) = live.poll(&owner, &request_scope())
+    else {
+        panic!("a matching commit delivers without a caller work estimate");
     };
+    assert_eq!(update.result().account(), fixture.personal_account);
+    assert_eq!(update.result().entries().len(), 1);
+    assert!(update.receipt().inspect().terminal_resources_released());
+    assert!(matches!(
+        live.close(),
+        BankApplicationLiveCloseOutcome::Completed
+    ));
 }
 
 #[test]

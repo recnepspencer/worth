@@ -108,10 +108,10 @@ pub(super) fn parse(
         if report.role != RUNTIME_ROLE && artifact.physical_path.is_none() {
             return Err(Denial::InvalidObservation);
         }
-        if let Some(path) = &artifact.physical_path {
-            if path.is_empty() || path.len() > 32768 || path.chars().any(char::is_control) {
-                return Err(Denial::InvalidObservation);
-            }
+        if let Some(path) = &artifact.physical_path
+            && (path.is_empty() || path.len() > 32768 || path.chars().any(char::is_control))
+        {
+            return Err(Denial::InvalidObservation);
         }
         validate_outcome(&artifact.outcome)?;
     }

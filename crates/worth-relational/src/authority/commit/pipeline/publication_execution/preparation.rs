@@ -1,7 +1,7 @@
+mod preparation_denial;
 use std::sync::Arc;
 
 use super::super::artifact_execution::preparation::PublicationPreparation;
-use crate::authority::mutation::apply_adjacency_deltas;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
 use crate::publication::bundle::PublicationStage;
@@ -10,22 +10,14 @@ use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::{CommitLog, TransactionCommitError};
 
 pub(super) struct PreparedPublicationPhase {
-    pub(super) durable_bytes: Option<worth_execution::ExecutionImmutableBytes>,
     pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
-    pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
-    pub(super) committed_partitions: std::collections::BTreeMap<
-        crate::identity::data::PartitionId,
-        (
-            crate::storage::overlay::PartitionState,
-            crate::storage::overlay::PartitionMutationJournal,
-        ),
-    >,
+    pub(super) symbol_meanings: crate::runtime::PreparedSymbolPublication,
+    pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublication,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     pub(super) artifacts: crate::storage::overlay::PublicationArtifacts,
     pub(super) changed_records: Vec<crate::transactions::data::RecordRef>,
-    pub(super) append_authority: crate::durability::authority::DurableAppendAuthority,
     pub(super) version_id: VersionId,
     pub(super) previous_branch_head_version: Option<VersionId>,
     pub(super) commit_id: CommitId,
@@ -39,21 +31,12 @@ pub(super) struct PreparedPublicationPhase {
 }
 
 pub(super) struct PreparedPublicationCompletion {
-    pub(super) durable_bytes: Option<worth_execution::ExecutionImmutableBytes>,
-    pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
-    pub(super) committed_partitions: std::collections::BTreeMap<
-        crate::identity::data::PartitionId,
-        (
-            crate::storage::overlay::PartitionState,
-            crate::storage::overlay::PartitionMutationJournal,
-        ),
-    >,
+    pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublicationAccelerators,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     pub(super) artifacts: crate::storage::overlay::PublicationArtifacts,
     pub(super) changed_records: Vec<crate::transactions::data::RecordRef>,
-    pub(super) append_authority: crate::durability::authority::DurableAppendAuthority,
     pub(super) version_id: VersionId,
     pub(super) previous_branch_head_version: Option<VersionId>,
     pub(super) commit_id: CommitId,
@@ -99,20 +82,18 @@ impl PreparedPublicationPhase {
             self.prepared_history.into_canonical_parts();
         let movement = crate::mvcc::PreparedCanonicalBranchMovement::new(
             self.record_allocations,
+            self.symbol_meanings,
             next_cell,
             root,
             self.canonical_publication_route,
         );
         let completion = PreparedPublicationCompletion {
-            durable_bytes: self.durable_bytes,
-            clone_mode: self.clone_mode,
-            committed_partitions: self.committed_partitions,
+            mirror_publication: self.mirror_publication,
             prepared_history,
             validated_lineage_events: self.validated_lineage_events,
             lineage_nodes: self.lineage_nodes,
             artifacts: self.artifacts,
             changed_records: self.changed_records,
-            append_authority: self.append_authority,
             version_id: self.version_id,
             previous_branch_head_version: self.previous_branch_head_version,
             commit_id: self.commit_id,
@@ -136,7 +117,8 @@ pub(super) struct PreparePublicationPhaseInput<'a> {
     pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) working_state: crate::storage::overlay::WorkingState,
-    pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
+    pub(super) mutation_identities:
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     pub(super) selected_branch_state: crate::branch::SelectedRelationalBranchState,
     pub(super) publication: PublicationPreparation,
     pub(super) version_id: VersionId,
@@ -162,7 +144,7 @@ pub(super) fn prepare_publication_phase(
         created_relations,
         commit_log,
         working_state,
-        record_allocations,
+        mutation_identities,
         selected_branch_state,
         publication,
         version_id,
@@ -178,7 +160,7 @@ pub(super) fn prepare_publication_phase(
         artifacts,
         changed_records,
         mut canonical_commit_envelope,
-        adjacency_deltas,
+        _adjacency_deltas,
         lineage_nodes,
         deferred_diagnostic_artifacts,
         target_schema_registry,
@@ -215,11 +197,7 @@ pub(super) fn prepare_publication_phase(
     } else {
         None
     };
-    let durable_bytes = prepare_durable_bytes(execution, runtime, &canonical_commit_envelope)
-        .map_err(|error| error.with_commit_log(commit_log.clone()))?;
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
-    let mut working_state = working_state;
-    apply_adjacency_deltas(&mut working_state, &adjacency_deltas, version_id);
     let clone_mode = working_state.clone_mode();
     let committed_partitions = working_state.into_partition_commits().1;
     runtime
@@ -255,20 +233,9 @@ pub(super) fn prepare_publication_phase(
             publication_schema_registry.as_ref(),
             output_positions,
         )
-        .map_err(|detail| {
-            TransactionCommitError::publication(PublicationError::new(
-                PublicationStage::BundleAssembly,
-                detail,
-            ))
-            .with_commit_log(commit_log.clone())
+        .map_err(|denial| {
+            preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
         })?;
-    let append_authority = crate::durability::authority::DurableAppendAuthority::from_commit(
-        super::CommitDurableAppendAdmission::new(
-            runtime.runtime_instance_id(),
-            commit_id,
-            &branch_id,
-        ),
-    );
     runtime
         .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())
         .map_err(|detail| {
@@ -285,22 +252,43 @@ pub(super) fn prepare_publication_phase(
         .history
         .reserve_canonical_publication_route(
             *execution,
-            Arc::clone(&canonical_commit_envelope),
+            prepared_history.envelope_residency(),
             Arc::clone(prepared_history.root()),
         )
         .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
+    let mirror_publication = runtime
+        .mirror_residency
+        .prepare_publication(
+            execution,
+            &runtime.services.symbols,
+            &branch_id,
+            prepared_history.root(),
+            clone_mode,
+            committed_partitions,
+        )
+        .map_err(|failure| {
+            crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
+        })?;
+    let symbol_meanings = mutation_identities
+        .symbols
+        .seal_for_publication(&canonical_commit_envelope.symbol_texts)
+        .map_err(|detail| {
+            TransactionCommitError::publication(PublicationError::new(
+                PublicationStage::BundleAssembly,
+                detail,
+            ))
+            .with_commit_log(commit_log.clone())
+        })?;
     Ok(PreparedPublicationPhase {
-        durable_bytes,
-        record_allocations,
-        clone_mode,
-        committed_partitions,
+        record_allocations: mutation_identities.records,
+        symbol_meanings,
+        mirror_publication,
         prepared_history,
         validated_lineage_events,
         lineage_nodes,
         artifacts,
         changed_records,
-        append_authority,
         version_id,
         previous_branch_head_version,
         commit_id,
@@ -310,71 +298,5 @@ pub(super) fn prepare_publication_phase(
         merge_parent_branches,
         deferred_diagnostic_artifacts,
         canonical_publication_route,
-    })
-}
-
-/// Pre-movement bytes retain their ORIGINAL selected payer through settlement.
-fn prepare_durable_bytes(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
-    envelope: &crate::history::data::CanonicalCommitEnvelope,
-) -> Result<Option<worth_execution::ExecutionImmutableBytes>, TransactionCommitError> {
-    use crate::durability::data::{
-        DurabilityMode, RelationalNativeCheckpointCaptureDenial as Denial,
-    };
-    if runtime.config.durability.policy.mode != DurabilityMode::PersistedSegmentedLocalFs {
-        return Ok(None);
-    }
-    let publication_error = |detail| {
-        TransactionCommitError::publication(PublicationError::new(
-            PublicationStage::BundleAssembly,
-            detail,
-        ))
-    };
-    let layout = runtime
-        .config
-        .durability
-        .policy
-        .store_layout
-        .as_ref()
-        .ok_or_else(|| {
-            publication_error("persisted durability requires its native store layout".to_owned())
-        })?;
-    crate::durability::log::local_store::preflight_store(execution, layout).map_err(|stop| {
-        match stop {
-            crate::durability::data::RelationalRecoveryStop::Request(cause) => {
-                TransactionCommitError::execution(
-                    crate::transactions::data::CommitExecutionDenial {
-                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
-                        partition_identity: None,
-                    },
-                )
-            }
-            crate::durability::data::RelationalRecoveryStop::Durability(error) => {
-                publication_error(error.detail)
-            }
-            crate::durability::data::RelationalRecoveryStop::Allocation(denial) => {
-                crate::execution::allocation_commit_error(TransactionCommitError::conflict(
-                    crate::transactions::data::CommitConflict::new(
-                        crate::transactions::data::ConflictClass::ExecutionAllocationDenied {
-                            denial,
-                        },
-                    ),
-                ))
-            }
-        }
-    })?;
-    crate::durability::log::native_file_codec::encode_payload(
-        envelope,
-        execution.allocation_policy(),
-    )
-    .map(Some)
-    .map_err(|denial| match denial {
-        Denial::Allocation(denial) => crate::execution::allocation_commit_error(
-            TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
-            )),
-        ),
-        Denial::Durability(error) => publication_error(error.detail),
     })
 }

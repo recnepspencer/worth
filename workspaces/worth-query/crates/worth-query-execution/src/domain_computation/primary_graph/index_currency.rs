@@ -21,14 +21,15 @@ pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
 /// authority. The primary integration handle's installed index inventory is
 /// irrelevant to this exact read.
 pub(crate) fn selected_index_is_current(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
     index: DerivedIndexId,
-) -> bool {
+) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
     runtime
         .index_access()
-        .published_generation_for_observation(index, &basis.observation())
-        .is_some()
+        .read_published_generation_for_observation(execution, index, &basis.observation())
+        .map(|generation| generation.is_some())
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
@@ -50,17 +51,17 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         let Some(source_commit_id) = observation.commit_id() else {
             return Ok(());
         };
-        let stale = self
-            .primary_index_ids
-            .iter()
-            .copied()
-            .filter(|index_id| {
-                runtime
-                    .index_access()
-                    .published_generation_for_observation(*index_id, &observation)
-                    .is_none()
-            })
-            .collect::<Vec<_>>();
+        let mut stale = Vec::new();
+        for index in self.primary_index_ids.iter().copied() {
+            if runtime
+                .index_access()
+                .read_published_generation_for_observation(execution, index, &observation)
+                .map_err(WorthQueryPrimaryIndexCurrencyDenial::Execution)?
+                .is_none()
+            {
+                stale.push(index);
+            }
+        }
         if stale.is_empty() {
             return Ok(());
         }

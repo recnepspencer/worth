@@ -47,7 +47,7 @@ impl VisibilityCache {
         let recent_version_window = self
             .recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .recent_version_window;
         Self {
             states: RwLock::new(HashMap::new()),
@@ -67,20 +67,20 @@ impl VisibilityCache {
     pub(crate) fn clear(&self) {
         self.states
             .write()
-            .expect("visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility state lock poisoned")
             .clear();
         self.residency
             .write()
-            .expect("visibility residency lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility residency lock poisoned")
             .clear();
         self.branch_head_states
             .write()
-            .expect("branch-head visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "branch-head visibility state lock poisoned")
             .clear();
         let mut recent_policy = self
             .recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned");
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned");
         recent_policy.order.clear();
         recent_policy.resident_count = 0;
     }
@@ -88,7 +88,7 @@ impl VisibilityCache {
     pub(crate) fn cached_version_count(&self) -> usize {
         self.states
             .read()
-            .expect("visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility state lock poisoned")
             .len()
     }
 
@@ -99,7 +99,7 @@ impl VisibilityCache {
         let mut keys = self
             .residency
             .read()
-            .expect("visibility residency lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility residency lock poisoned")
             .iter()
             .filter_map(|(key, entry)| {
                 (entry.branch_head_refs > 0
@@ -115,7 +115,7 @@ impl VisibilityCache {
     pub(crate) fn recent_visibility_count(&self) -> usize {
         self.recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .resident_count
     }
 
@@ -125,7 +125,7 @@ impl VisibilityCache {
         let mut keys = self
             .branch_head_states
             .read()
-            .expect("branch-head visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "branch-head visibility state lock poisoned")
             .values()
             .cloned()
             .collect::<Vec<_>>();
@@ -136,7 +136,7 @@ impl VisibilityCache {
     pub(crate) fn track_branch_head_state(&self, key: &VisibilitySnapshotStateKey) {
         self.branch_head_states
             .write()
-            .expect("branch-head visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "branch-head visibility state lock poisoned")
             .insert(key.branch_id().clone(), key.clone());
     }
 
@@ -146,14 +146,14 @@ impl VisibilityCache {
     ) -> Option<VisibilitySnapshotStateKey> {
         self.branch_head_states
             .write()
-            .expect("branch-head visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "branch-head visibility state lock poisoned")
             .remove(branch_id)
     }
 
     pub(crate) fn state(&self, key: &VisibilitySnapshotStateKey) -> Option<SnapshotState> {
         self.states
             .read()
-            .expect("visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility state lock poisoned")
             .get(key)
             .cloned()
     }
@@ -162,14 +162,14 @@ impl VisibilityCache {
         let key = state.basis.key();
         self.states
             .write()
-            .expect("visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility state lock poisoned")
             .insert(key, state);
     }
 
     pub(crate) fn remove_state(&self, key: &VisibilitySnapshotStateKey) {
         self.states
             .write()
-            .expect("visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility state lock poisoned")
             .remove(key);
     }
 
@@ -177,7 +177,7 @@ impl VisibilityCache {
         self.residency_key_lookups.fetch_add(1, Ordering::Relaxed);
         self.residency
             .read()
-            .expect("visibility residency lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility residency lock poisoned")
             .get(key)
             .cloned()
             .unwrap_or_default()
@@ -191,7 +191,7 @@ impl VisibilityCache {
         let mut residency = self
             .residency
             .write()
-            .expect("visibility residency lock poisoned");
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility residency lock poisoned");
         self.residency_key_lookups.fetch_add(1, Ordering::Relaxed);
         let entry = residency.entry(key.clone()).or_default();
         update(entry);
@@ -224,21 +224,21 @@ impl VisibilityCache {
     pub(crate) fn recent_window(&self) -> usize {
         self.recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .recent_version_window
     }
 
     pub(crate) fn resident_recent_count(&self) -> usize {
         self.recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .resident_count
     }
 
     pub(crate) fn recent_candidate_count(&self) -> usize {
         self.recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .order
             .len()
     }
@@ -246,7 +246,7 @@ impl VisibilityCache {
     pub(crate) fn enqueue_recent_candidate(&self, key: VisibilitySnapshotStateKey) {
         self.recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .order
             .push_back(key);
     }
@@ -254,7 +254,7 @@ impl VisibilityCache {
     pub(crate) fn pop_oldest_recent_candidate(&self) -> Option<VisibilitySnapshotStateKey> {
         self.recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .order
             .pop_front()
     }
@@ -264,7 +264,7 @@ impl VisibilityCache {
             let mut residency = self
                 .residency
                 .write()
-                .expect("visibility residency lock poisoned");
+                .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility residency lock poisoned");
             let entry = residency.entry(key.clone()).or_default();
             if entry.recent_resident {
                 return false;
@@ -274,7 +274,7 @@ impl VisibilityCache {
         let mut recent_policy = self
             .recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned");
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned");
         recent_policy.order.push_back(key.clone());
         recent_policy.resident_count += 1;
         true
@@ -287,7 +287,7 @@ impl VisibilityCache {
         let mut residency = self
             .residency
             .write()
-            .expect("visibility residency lock poisoned");
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility residency lock poisoned");
         let Some(entry) = residency.get_mut(key) else {
             return false;
         };
@@ -300,7 +300,7 @@ impl VisibilityCache {
         entry.recent_resident = false;
         self.recent_policy
             .lock()
-            .expect("recent visibility policy lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .resident_count -= 1;
         if entry.branch_head_refs == 0 && entry.replay_refs == 0 && entry.active_snapshot_refs == 0
         {
@@ -315,12 +315,12 @@ impl VisibilityCache {
     ) {
         self.branch_head_states
             .write()
-            .expect("branch-head visibility state lock poisoned")
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "branch-head visibility state lock poisoned")
             .clear();
         let mut residency = self
             .residency
             .write()
-            .expect("visibility residency lock poisoned");
+            .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility residency lock poisoned");
         for key in tracked_states {
             if let Some(entry) = residency.get_mut(key) {
                 entry.branch_head_refs = 0;

@@ -61,7 +61,7 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (world, companion) = independent(execution);
     let (mut target, recovered, selected, _transaction) = staged(execution, &world);
-    let before = capture(&target);
+    let before = capture(execution, &target);
     target
         .durability_recovery()
         .validate_recovered_codec_output_correspondence(
@@ -117,7 +117,7 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
             )
         )
         .is_err());
-    assert_eq!(capture(&target), before);
+    assert_eq!(capture(execution, &target), before);
     // Equal ordinary writes cannot inherit the original producer association.
     let mut transaction = world
         .runtime
@@ -177,7 +177,7 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (world, companion) = independent(execution);
     let (mut target, recovered, selected, _transaction) = staged(execution, &world);
-    let before = capture(&target);
+    let before = capture(execution, &target);
     let limited = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(Some(0)),
         worth_execution::CancellationSource::new().token(),
@@ -226,7 +226,7 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
         Some(&crate::execution::RelationalExecutionDenialCause::Cancelled)
     );
     assert!(selected.is_current());
-    assert_eq!(capture(&target), before);
+    assert_eq!(capture(execution, &target), before);
     target
         .durability_recovery()
         .validate_recovered_codec_output_correspondence(

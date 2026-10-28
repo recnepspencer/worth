@@ -76,7 +76,8 @@ impl CargoRecords {
         let runtime = Arc::new(
             RelationalRuntimeApi::builder()
                 .schema_registry(registry)
-                .build(),
+                .build()
+                .expect("valid native runtime configuration"),
         );
         let mut ids = BTreeMap::new();
         for (name, kind, value) in [

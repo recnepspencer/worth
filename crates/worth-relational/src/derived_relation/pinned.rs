@@ -145,8 +145,15 @@ impl SourceRead for PinnedSource<'_, '_, '_, '_, '_> {
         )?;
         let entity = self
             .projection
-            .with_exact_entity_state(id, |metadata, _| metadata)
-            .map_err(|_| DefinitionDenial::RecordUnavailable)?
+            .read_exact_entity_state(&self.execution, id, |metadata, _| metadata)
+            .map_err(|cause| match cause {
+                crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                    Denial::Definition(DefinitionDenial::RecordUnavailable)
+                }
+                crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                    Denial::Request(cause)
+                }
+            })?
             .ok_or(DefinitionDenial::RecordUnavailable)?;
         if entity.entity_id != id || entity.lifecycle != RecordLifecycleState::Live {
             return Err(DefinitionDenial::RecordUnavailable.into());
@@ -195,8 +202,8 @@ impl SourceRead for PinnedSource<'_, '_, '_, '_, '_> {
                                     .ok_or(DefinitionDenial::RecordUnavailable)?,
                             )?;
                             let record = projection
-                                .exact_relation_metadata(id)
-                                .map_err(|_| DefinitionDenial::RecordUnavailable)?;
+                                .read_exact_relation_metadata(&self.execution, id)
+                                .map_err(|cause| match cause {crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired=>Denial::Definition(DefinitionDenial::RecordUnavailable),crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause)=>Denial::Request(cause)})?;
                             if let Some(record) = record {
                                 reads.relation_records += 1;
                                 if record.lifecycle == RecordLifecycleState::Live

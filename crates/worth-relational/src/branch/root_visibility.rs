@@ -29,7 +29,7 @@ impl RelationalBranchVisibilityCommitment {
         digest.update(
             envelope
                 .encode_authoritative_payload()
-                .expect("canonical branch envelope must encode for visibility commitment"),
+                .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "canonical branch envelope must encode for visibility commitment"),
         );
         Self(digest.finalize().into())
     }

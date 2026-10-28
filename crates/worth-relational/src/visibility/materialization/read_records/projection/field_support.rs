@@ -47,8 +47,8 @@ impl VisibilityProjectionView {
                     checkpoint(context, view.exact_entity_state_read_work_bound().ok_or(Denial::SourceUnavailable)?)
                         .map_err(|stop| Denial::Execution(crate::execution::denial::kernel_stop(stop)))?;
                 }
-                self.with_exact_entity_state(entity, |original, before| {
-                    target.with_exact_entity_state(entity, |current, after| {
+                self.read_exact_entity_state(execution, entity, |original, before| {
+                    target.read_exact_entity_state(execution, entity, |current, after| {
                         if original != current { return Ok(false); }
                         if !same_installed_contract(self, target, original.kind_id, locator, context)? { return Ok(false); }
                         admit_field_lookup(before, locator, context)?;
@@ -60,8 +60,8 @@ impl VisibilityProjectionView {
                             .ok_or(Denial::Execution(Cause::WorkCounterOverflow))?;
                         checkpoint(context, work).map_err(|stop| Denial::Execution(crate::execution::denial::kernel_stop(stop)))?;
                         Ok(left == right)
-                    }).map_err(|_| Denial::SourceUnavailable)?.ok_or(Denial::SourceUnavailable)?
-                }).map_err(|_| Denial::SourceUnavailable)?.ok_or(Denial::SourceUnavailable)?
+                    }).map_err(borrowed_denial)?.ok_or(Denial::SourceUnavailable)?
+                }).map_err(borrowed_denial)?.ok_or(Denial::SourceUnavailable)?
             };
             compare()
         }, |_| 0).map_err(Denial::Execution)?
@@ -135,4 +135,14 @@ fn admit_field_lookup(
             .map_err(|stop| Denial::Execution(crate::execution::denial::kernel_stop(stop)))?;
     }
     Ok(())
+}
+
+fn borrowed_denial(
+    cause: super::RelationalBorrowedRecordReadDenial,
+) -> RelationalFieldSupportComparisonDenial {
+    use super::RelationalBorrowedRecordReadDenial as Read;
+    match cause {
+        Read::ExactBasisRequired => RelationalFieldSupportComparisonDenial::SourceUnavailable,
+        Read::Execution(cause) => RelationalFieldSupportComparisonDenial::Execution(cause),
+    }
 }

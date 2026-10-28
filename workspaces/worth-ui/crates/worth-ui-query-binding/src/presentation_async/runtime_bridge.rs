@@ -17,8 +17,6 @@ pub(super) use completion_progress::WorthUiPresentationCompletionProgress;
 mod owned_source;
 pub(super) use owned_source::installed_presentation_owned_async_source;
 pub(crate) use owned_source::presentation_owned_async_source_declaration;
-#[path = "runtime_bridge/request_admission.rs"]
-mod request_admission;
 
 pub struct WorthUiPresentationRuntimeAdmission {
     request: std::sync::Arc<worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission>,
@@ -69,11 +67,9 @@ impl WorthUiPresentationRuntimeAdmission {
         query_declaration: &runtime::WorthQueryInstalledOwnedAsyncDeclaration,
         product: &worth_query::facade::product::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthUiPresentationRuntimeAdmissionDenial> {
-        let custody = match request_admission::admit_presentation_owned_request(
-            workspace,
-            query_declaration,
-            product,
-        ) {
+        let custody = match workspace
+            .admit_owned_bridge_async_request_at_branch_head(query_declaration, product)
+        {
             Ok(request) => request,
             Err(denial) => {
                 let (cause, custody) = denial.into_parts();

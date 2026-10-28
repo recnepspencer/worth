@@ -19,12 +19,12 @@ pub(super) fn prefix_payload_bytes(prefix: &[u8], schema: u8, kind: u8) -> Optio
     usize::try_from(read_u32(prefix, 12)?).ok()
 }
 
-pub(super) fn fixed_record<'a>(
-    record: &'a [u8],
+pub(super) fn fixed_record(
+    record: &[u8],
     schema: u8,
     kind: u8,
     payload_bytes: usize,
-) -> Option<&'a [u8]> {
+) -> Option<&[u8]> {
     if prefix_payload_bytes(record.get(..PREFIX_BYTES)?, schema, kind)? != payload_bytes
         || record.len()
             != PREFIX_BYTES

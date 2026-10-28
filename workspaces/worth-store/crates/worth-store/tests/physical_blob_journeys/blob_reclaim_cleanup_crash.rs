@@ -9,9 +9,10 @@ use std::{
 };
 
 use worth_store::physical_runtime::{
-    production::PhysicalMutationCheckpoint, BlobAppendFailure, BlobReclaimDisposition,
-    BlobReclaimFailure, BlobReclaimLimits, BlobReclaimRequest, PhysicalMutationDeadline,
-    PhysicalMutationProvenNoEffectCause, PhysicalRetirementDenial,
+    production::{PhysicalMutationCheckpoint, PhysicalMutationPauseGate},
+    BlobAppendFailure, BlobReclaimDisposition, BlobReclaimFailure, BlobReclaimLimits,
+    BlobReclaimRequest, PhysicalMutationDeadline, PhysicalMutationProvenNoEffectCause,
+    PhysicalRetirementDenial,
 };
 use worth_store_physical_format::{decode_blob_record, BlobRecordV1, PersistedRecordIdentity};
 
@@ -144,21 +145,15 @@ pub(super) fn child(root: &Path, role: &str) {
         serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
     let result = thread::scope(|workers| {
         workers.spawn(|| {
-            assert!(manifest_gate.await_arrival(), "V2 manifest did not publish");
+            await_cleanup_seam(&manifest_gate, "V2 manifest");
             let reservation_gate = serving
                 .pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
             manifest_gate.release();
-            assert!(
-                reservation_gate.await_arrival(),
-                "OriginalDropReserved did not publish"
-            );
+            await_cleanup_seam(&reservation_gate, "OriginalDropReserved");
             let drop_gate =
                 serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeEffectCutover);
             reservation_gate.release();
-            assert!(
-                drop_gate.await_arrival(),
-                "original drop did not reach pre-seal seam"
-            );
+            await_cleanup_seam(&drop_gate, "original drop before group seal");
             serving
                 .certification_advance_physical_signal_clock(
                     worth_signal::facade::ClockAdvanceRequest::new(
@@ -286,4 +281,21 @@ fn identity(bytes: &[u8]) -> PersistedRecordIdentity {
         u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
     )
     .unwrap()
+}
+
+// The gate's five-second wait is a notification window, not a claim about
+// scheduling a durable mutation on a loaded CI host. Keep the exact seam and
+// simulated-clock expiry, with a bounded aggregate arrival wait.
+fn await_cleanup_seam(gate: &PhysicalMutationPauseGate, phase: &str) {
+    let started = Instant::now();
+    while !gate.await_arrival() {
+        if started.elapsed() >= Duration::from_secs(30) {
+            gate.release();
+            panic!(
+                "cleanup stalled at {phase} ({:?}) after {:?}",
+                gate.checkpoint(),
+                started.elapsed()
+            );
+        }
+    }
 }

@@ -48,6 +48,10 @@ pub(super) fn relevant_authoritative_commits<Schema>(
     WorthQueryRelevantAuthoritativeCommits { batch }
 }
 
+// These module-private entries are called only by the temporal lifecycle after
+// execution_request_for(runtime.product_runtime) succeeds. Its retained truth
+// owner is created from that same runtime's selected affinity, not caller data;
+// the borrowed phase and immutable truth keep that admitted owner unchanged.
 /// Delivers each relevant commit to Signal-hosted nodes and reconsiders the
 /// wakes it touches. The cursor passes a commit only once its invalidations
 /// are owed on `pending`, so they survive a later failure in this batch.
@@ -210,7 +214,6 @@ fn retained_decision_evidence_mut(
         | Decision::OperationBackpressured(evidence, _)
         | Decision::OperationControlStopped(evidence, _)
         | Decision::OperationTerminalFailure(evidence, _)
-        | Decision::OperationSettlementDeferred(evidence, _)
         | Decision::OperationProductUnpublished(evidence, _)
         | Decision::OperationProductStale(evidence, _)
         | Decision::OperationNoEffect(evidence, _)
@@ -219,7 +222,6 @@ fn retained_decision_evidence_mut(
         | Decision::OperationAlreadyCommitted(evidence) => Some(evidence),
         Decision::OperationCommitRetryable(evidence, _)
         | Decision::OperationExecutionControlRetryable(evidence, _) => Some(evidence),
-        Decision::OperationSettlementExecutionDenied(evidence, _, _) => Some(evidence),
         Decision::Failed(_) | Decision::InterruptedDuringReentry => None,
     }
 }

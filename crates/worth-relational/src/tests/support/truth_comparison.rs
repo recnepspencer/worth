@@ -30,11 +30,15 @@ pub(crate) fn assert_recovered_commit_truth_matches(
 ) {
     let original_envelope = original_runtime
         .replay()
-        .canonical_commit_envelope(commit_id)
+        .canonical_commit_envelope(execution, commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let recovered_envelope = recovered_runtime
         .replay()
-        .canonical_commit_envelope(commit_id)
+        .canonical_commit_envelope(execution, commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let original_bundle = capture_aspect_truth_bundle(
         execution,

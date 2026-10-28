@@ -1,10 +1,10 @@
 //! Bank-owned classifications for every estate elevation transition.
 
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitDeferred, WorthQueryApplicationSettlementDeferred,
-    WorthQueryElevationApprovalOutcome, WorthQueryElevationCloseOutcome,
-    WorthQueryElevationRequestOutcome, WorthQueryMandatoryReviewOutcome,
-    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
+    WorthQueryApplicationCommitDeferred, WorthQueryElevationApprovalOutcome,
+    WorthQueryElevationCloseOutcome, WorthQueryElevationRequestOutcome,
+    WorthQueryMandatoryReviewOutcome, WorthQueryProductStaleApplication,
+    WorthQueryProductUnpublishedApplication,
 };
 use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
@@ -34,7 +34,6 @@ pub enum BankEstateElevationRequestOutcome {
     },
     Aborted,
     Deferred(WorthQueryApplicationCommitDeferred),
-    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate,
 }
 
@@ -65,7 +64,6 @@ pub enum BankEstateElevationApprovalOutcome {
     },
     Aborted(BankRequestedEstateElevation),
     Deferred(WorthQueryApplicationCommitDeferred),
-    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate,
 }
 
@@ -96,7 +94,6 @@ pub enum BankEstateElevationCloseOutcome {
     },
     Aborted(BankApprovedEstateElevation),
     Deferred(WorthQueryApplicationCommitDeferred),
-    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate,
 }
 
@@ -124,7 +121,6 @@ pub enum BankEstateMandatoryReviewOutcome {
     },
     Aborted(BankEstateMandatoryReview),
     Deferred(WorthQueryApplicationCommitDeferred),
-    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate,
 }
 
@@ -158,9 +154,6 @@ impl BankEstateElevationRequestOutcome {
             },
             WorthQueryElevationRequestOutcome::Aborted => Self::Aborted,
             WorthQueryElevationRequestOutcome::Deferred(deferred) => Self::Deferred(deferred),
-            WorthQueryElevationRequestOutcome::SettlementDeferred(deferred) => {
-                Self::SettlementDeferred(deferred)
-            }
             WorthQueryElevationRequestOutcome::Indeterminate => Self::Indeterminate,
         }
     }
@@ -205,9 +198,6 @@ impl BankEstateElevationApprovalOutcome {
                 Self::Aborted(BankRequestedEstateElevation::from_query(requested))
             }
             WorthQueryElevationApprovalOutcome::Deferred(deferred) => Self::Deferred(deferred),
-            WorthQueryElevationApprovalOutcome::SettlementDeferred(deferred) => {
-                Self::SettlementDeferred(deferred)
-            }
             WorthQueryElevationApprovalOutcome::Indeterminate => Self::Indeterminate,
         }
     }
@@ -252,9 +242,6 @@ impl BankEstateElevationCloseOutcome {
                 Self::Aborted(BankApprovedEstateElevation::from_query(approved))
             }
             WorthQueryElevationCloseOutcome::Deferred(deferred) => Self::Deferred(deferred),
-            WorthQueryElevationCloseOutcome::SettlementDeferred(deferred) => {
-                Self::SettlementDeferred(deferred)
-            }
             WorthQueryElevationCloseOutcome::Indeterminate => Self::Indeterminate,
         }
     }
@@ -299,9 +286,6 @@ impl BankEstateMandatoryReviewOutcome {
                 Self::Aborted(BankEstateMandatoryReview::from_query(mandatory))
             }
             WorthQueryMandatoryReviewOutcome::Deferred(deferred) => Self::Deferred(deferred),
-            WorthQueryMandatoryReviewOutcome::SettlementDeferred(deferred) => {
-                Self::SettlementDeferred(deferred)
-            }
             WorthQueryMandatoryReviewOutcome::Indeterminate => Self::Indeterminate,
         }
     }

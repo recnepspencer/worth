@@ -120,7 +120,7 @@ pub(super) fn evaluate_relation_update_delta(
                     .executable_bindings
                     .iter()
                     .find(|candidate| candidate.aspect_key() == &binding.aspect_key)
-                    .expect("patch binding came from the same lowered relation plan");
+                    .expect(/* Proof: The binding is selected from this same immutable lowered relation plan; no plan mutation occurs between selection and lookup. */ "patch binding came from the same lowered relation plan");
                 let (value_evidence, changed) = evaluate_authoritative_binding_delta(
                     lowered,
                     BindingEvaluationContext::Relation {

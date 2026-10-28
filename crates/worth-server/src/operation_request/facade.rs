@@ -191,16 +191,15 @@ impl WorthServerOperationRequestFacade {
             .map(canonicalize_product_basis_digest_if_needed);
         if let (Some(input_basis_digest), Some(request_basis_digest)) =
             (input.basis_digest(), merged_basis_digest.as_deref())
+            && input_basis_digest != request_basis_digest
         {
-            if input_basis_digest != request_basis_digest {
-                return Err(WorthServerOperationRequestDenial::new(
-                    WorthServerOperationRequestDenialCode::InvalidBasisDigest,
-                    diagnostics_profile,
-                    format!(
-                        "compatibility request admitted basis digest `{request_basis_digest}` did not match product operation basis digest `{input_basis_digest}`"
-                    ),
-                ));
-            }
+            return Err(WorthServerOperationRequestDenial::new(
+                WorthServerOperationRequestDenialCode::InvalidBasisDigest,
+                diagnostics_profile,
+                format!(
+                    "compatibility request admitted basis digest `{request_basis_digest}` did not match product operation basis digest `{input_basis_digest}`"
+                ),
+            ));
         }
         if let Some(basis_digest) = input
             .basis_digest()
@@ -211,16 +210,15 @@ impl WorthServerOperationRequestFacade {
         }
         if let (Some(input_idempotency_key), Some(request_idempotency_key)) =
             (input.idempotency_key(), merged.idempotency_key())
+            && input_idempotency_key != request_idempotency_key
         {
-            if input_idempotency_key != request_idempotency_key {
-                return Err(WorthServerOperationRequestDenial::new(
-                    WorthServerOperationRequestDenialCode::InvalidIdempotencyKey,
-                    diagnostics_profile,
-                    format!(
-                        "compatibility request admitted idempotency key `{request_idempotency_key}` did not match product operation idempotency key `{input_idempotency_key}`"
-                    ),
-                ));
-            }
+            return Err(WorthServerOperationRequestDenial::new(
+                WorthServerOperationRequestDenialCode::InvalidIdempotencyKey,
+                diagnostics_profile,
+                format!(
+                    "compatibility request admitted idempotency key `{request_idempotency_key}` did not match product operation idempotency key `{input_idempotency_key}`"
+                ),
+            ));
         }
         if let Some(idempotency_key) = input
             .idempotency_key()

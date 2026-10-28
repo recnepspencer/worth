@@ -38,6 +38,7 @@ impl InvariantExecutionResult {
         results: Vec<InvariantCheckResult>,
     ) -> Self {
         assert_eq!(
+            /* Proof: These private result constructors are called by the executed and skipped evaluator branches respectively; each branch creates its own metadata with the corresponding disposition, and does not accept caller-authored metadata. */
             metadata.disposition(),
             InvariantExecutionDisposition::Executed,
             "executed invariant results require an executed disposition",
@@ -54,8 +55,16 @@ impl InvariantExecutionResult {
         results: Vec<InvariantCheckResult>,
         decision_log: Vec<InvariantDecisionRecord>,
     ) -> Self {
-        debug_assert_eq!(summary.result_count(), results.len());
-        debug_assert_eq!(decision_log.len(), results.len());
+        debug_assert_eq!(
+            /* Proof: executed derives the summary from this exact result Vec. The other caller, ReducedInvariantPrefix::project, moves the same retained worker results that absorb added to its summary; no result is removed in between. */
+            summary.result_count(),
+            results.len()
+        );
+        debug_assert_eq!(
+            /* Proof: executed builds one decision for each result in this exact Vec. ReducedInvariantPrefix::project likewise pushes one decision for each retained worker result before moving those same results into the output Vec. */
+            decision_log.len(),
+            results.len()
+        );
         Self {
             metadata,
             summary,
@@ -66,6 +75,7 @@ impl InvariantExecutionResult {
 
     pub fn skipped(metadata: InvariantExecutionMetadata) -> Self {
         assert_ne!(
+            /* Proof: These private result constructors are called by the executed and skipped evaluator branches respectively; each branch creates its own metadata with the corresponding disposition, and does not accept caller-authored metadata. */
             metadata.disposition(),
             InvariantExecutionDisposition::Executed,
             "skipped invariant results require a skipped disposition",

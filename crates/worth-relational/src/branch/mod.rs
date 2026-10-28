@@ -11,6 +11,7 @@ mod basis_observation;
 mod basis_readmission;
 mod basis_registry;
 mod basis_retention;
+mod canonical_runtime_frame;
 mod coordination;
 mod fork;
 mod fork_port;
@@ -31,8 +32,11 @@ mod root_regions;
 pub(crate) use root_regions::RelationalPartitionVisit;
 mod root_runtime_access;
 mod root_selection;
+mod selected_read;
+pub(crate) use selected_read::SelectedRelationalBranchRead;
 mod sharing_cost_cell;
 mod target;
+mod transition;
 mod version;
 
 pub(crate) use authority::issue_relational_branch_mutation_authority;
@@ -57,11 +61,13 @@ pub(crate) use basis_observation::{
 pub(crate) use basis_registry::{
     RelationalBranchBasisRegistry, RelationalBranchBasisRegistryMetrics,
 };
+pub(crate) use canonical_runtime_frame::{CANONICAL_RUNTIME_INSTANCE_ID, CANONICAL_TRANSACTION_ID};
 pub use coordination::RelationalBranchCoordinationCellId;
 pub use fork::{RelationalForkDenial, RelationalForkOutcome};
 pub use fork_port::RelationalForkPort;
 pub use fork_source_basis::{AdmittedRelationalForkSourceBasis, RelationalForkSourceDescriptor};
 pub use identity::{RelationalBranchIdentity, RelationalBranchIdentityDenial};
+pub(crate) use lifecycle::RelationalBranchDeletionKind;
 pub use lifecycle::{
     ArchivedRelationalBranch, DeletedRelationalBranch, RelationalBranchArchiveDenial,
     RelationalBranchDeleteDenial, RelationalBranchDeletionOutcome, RelationalBranchDeletionPending,
@@ -101,13 +107,22 @@ pub(crate) use root::{
     RelationalBranchRootIdentityIssuer, RelationalBranchRootSchemaAuthority,
     RelationalBranchRootState, RelationalRootAuthoritativeAllocationKind,
 };
-pub(crate) use root_checkpoint::RelationalBranchRootCheckpoint;
+pub(crate) use root_checkpoint::{RelationalBranchRootCheckpoint, RelationalRootRegionCheckpoint};
 pub(crate) use root_regions::{
     RelationalPersistentRegionAllocationKind, RelationalPersistentRegionSet,
 };
 pub(crate) use root_selection::SelectedRelationalBranchState;
 pub(crate) use sharing_cost_cell::RelationalBranchSharingCostCell;
 pub use target::{RelationalBranchRootDescriptor, RelationalBranchTarget};
+pub(crate) use transition::{
+    LiveBranchTransitionStep, RelationalBranchTransitionDenial,
+    RelationalBranchTransitionDurableStep, ReplayedBranchTransitionDivergence,
+    ReplayedBranchTransitionStep,
+};
+pub use transition::{
+    PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionSequence,
+    RelationalBranchTransitionStop,
+};
 pub use version::RelationalBranchVersion;
 
 #[cfg(test)]
@@ -116,3 +131,6 @@ mod basis_admission_tests;
 #[cfg(test)]
 #[path = "basis_registry_scale_tests.rs"]
 mod basis_registry_scale_tests;
+
+mod symbol_read;
+pub(crate) use symbol_read::SymbolAdmittedRootRead;

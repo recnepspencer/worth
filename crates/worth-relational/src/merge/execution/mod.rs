@@ -26,26 +26,36 @@ impl<'runtime> MergeAccess<'runtime> {
     ) -> Result<PreparedMergeExecution, MergeExecutionPreparationError> {
         let source_branch = request.source_branch().clone();
         let target_branch = request.target_branch().clone();
-        let bound =
-            self.runtime
-                .bind_merge_execution_request(request)
-                .map_err(|denial| match denial {
-                    crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(
-                        branch,
-                    ) if branch == source_branch => MergeExecutionPreparationError::Planning(
+        let bound = self
+            .runtime
+            .bind_merge_execution_request(request)
+            .map_err(|denial| match denial {
+                crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(branch)
+                    if branch == source_branch =>
+                {
+                    MergeExecutionPreparationError::Planning(
                         crate::merge::data::MergePlanningError::MissingSourceHead {
                             branch_id: branch,
                         },
-                    ),
-                    crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(
-                        branch,
-                    ) if branch == target_branch => MergeExecutionPreparationError::Planning(
+                    )
+                }
+                crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(branch)
+                    if branch == target_branch =>
+                {
+                    MergeExecutionPreparationError::Planning(
                         crate::merge::data::MergePlanningError::MissingTargetHead {
                             branch_id: branch,
                         },
+                    )
+                }
+                other => MergeExecutionPreparationError::Planning(
+                    crate::merge::data::MergePlanningError::RequestNormalization(
+                        crate::merge::data::RelationalMergeRequestNormalizationDenial::OwnerBinding(
+                            other,
+                        ),
                     ),
-                    other => MergeExecutionPreparationError::OwnerBinding(other),
-                })?;
+                ),
+            })?;
         self.prepare_bound_merge_execution(execution, bound)
     }
 
@@ -91,7 +101,7 @@ impl<'runtime> MergeAccess<'runtime> {
             bound_executable_plan,
         );
         let mutation_plan = self
-            .derive_merge_commit_mutation_plan(&compiled)
+            .derive_merge_commit_mutation_plan(execution, &compiled)
             .map_err(MergeExecutionPreparationError::MutationPlan)?;
         Ok(PreparedMergeExecution::from_compiled(
             compiled,
@@ -133,6 +143,7 @@ impl<'runtime> MergeAccess<'runtime> {
     #[cfg(test)]
     pub(crate) fn replace_bound_merge_plan_for_test(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         prepared: &mut PreparedMergeExecution,
         bound_executable_plan: crate::merge::data::BoundExecutableMergePlan,
     ) -> Result<(), crate::merge::data::MergeExecutionMutationPlanError> {
@@ -142,7 +153,7 @@ impl<'runtime> MergeAccess<'runtime> {
             prepared.execution_ready_plan().clone(),
             bound_executable_plan.clone(),
         );
-        let mutation_plan = self.derive_merge_commit_mutation_plan(&compiled)?;
+        let mutation_plan = self.derive_merge_commit_mutation_plan(execution, &compiled)?;
         prepared
             .replace_bound_plan_and_mutation_plan_for_test(bound_executable_plan, mutation_plan);
         Ok(())

@@ -44,10 +44,13 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         ),
     )
     .unwrap();
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let created = world
         .application
         .product_runtime()
         .create_product_branch(
+            execution,
             &source,
             None,
             intent,

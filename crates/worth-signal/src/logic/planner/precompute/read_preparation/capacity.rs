@@ -46,7 +46,13 @@ pub(in crate::logic::planner::precompute) fn checked_map_memory_requirement(
             .checked_add(size_of::<(PartitionIdentity, Vec<GraphProposalKey>)>())?;
         access = access.checked_add(u64::try_from(key_bytes.checked_add(member_bytes)?).ok()?)?;
     }
-    if let Some(lease) = lease {
+    let output_custody = prior
+        .iter()
+        .chain(std::iter::once(candidate))
+        .try_fold(0_u64, |total, basis| {
+            total.checked_add(grant)?.checked_add(basis.capture_bytes)
+        })?;
+    let map = if let Some(lease) = lease {
         ExecutionMap::<GraphWorkItem, GraphProposalKey>::declared_memory_requirement_for_lease::<
             (),
             (),
@@ -56,5 +62,6 @@ pub(in crate::logic::planner::precompute) fn checked_map_memory_requirement(
             (),
             (),
         >(count, 0, scratch, 0, access)
-    }
+    }?;
+    map.checked_add(output_custody)
 }

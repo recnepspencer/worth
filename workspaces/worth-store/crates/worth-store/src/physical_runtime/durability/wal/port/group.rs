@@ -178,21 +178,20 @@ impl PhysicalWalAppendPort {
         else {
             return self.growth_denied(reserved);
         };
-        if !sealing_bindings.is_empty() {
-            if let Err(denial) = self.idempotency.seal_group(sealing_bindings) {
-                if !matches!(
-                    denial,
-                    PhysicalMutationIdempotencyGroupSealDenial::AlreadyGroupSealed
-                ) {
-                    drop(charged);
-                    return PhysicalWalGroupAppendOutcome::AdmissionRejected(
-                        RejectedPhysicalDurabilityGroup::before_effect(
-                            self.release_before_effect(reserved),
-                            denial.admission_denial(),
-                        ),
-                    );
-                }
-            }
+        if !sealing_bindings.is_empty()
+            && let Err(denial) = self.idempotency.seal_group(sealing_bindings)
+            && !matches!(
+                denial,
+                PhysicalMutationIdempotencyGroupSealDenial::AlreadyGroupSealed
+            )
+        {
+            drop(charged);
+            return PhysicalWalGroupAppendOutcome::AdmissionRejected(
+                RejectedPhysicalDurabilityGroup::before_effect(
+                    self.release_before_effect(reserved),
+                    denial.admission_denial(),
+                ),
+            );
         }
         let outcome = self.append_reserved_group(basis, appended, reserved.into_members());
         if !matches!(outcome, PhysicalWalGroupAppendOutcome::NotStarted(_)) {

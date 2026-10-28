@@ -29,12 +29,11 @@ pub(super) fn overlapping_strategy_intent_diverges(
 }
 
 pub(super) fn strategy_conflict_evidence(
-    runtime: &crate::runtime::RelationalRuntime,
     source_delta: Option<&crate::merge::data::BranchTouchedRecordDelta>,
     target_delta: Option<&crate::merge::data::BranchTouchedRecordDelta>,
 ) -> Option<StrategyConflictEvidence> {
-    let source_descriptors = strategy_descriptors_for_delta(runtime, source_delta);
-    let target_descriptors = strategy_descriptors_for_delta(runtime, target_delta);
+    let source_descriptors = strategy_descriptors_for_delta(source_delta);
+    let target_descriptors = strategy_descriptors_for_delta(target_delta);
     if source_descriptors.is_empty() && target_descriptors.is_empty() {
         return None;
     }
@@ -66,12 +65,12 @@ pub(super) fn strategy_conflict_evidence(
         class,
         source_commit_ids: Arc::from(
             source_delta
-                .map(|delta| delta.commit_ids.iter().copied().collect::<Vec<_>>())
+                .map(|delta| delta.commit_ids().collect::<Vec<_>>())
                 .unwrap_or_default(),
         ),
         target_commit_ids: Arc::from(
             target_delta
-                .map(|delta| delta.commit_ids.iter().copied().collect::<Vec<_>>())
+                .map(|delta| delta.commit_ids().collect::<Vec<_>>())
                 .unwrap_or_default(),
         ),
         source_descriptors: Arc::from(source_descriptors),
@@ -80,19 +79,14 @@ pub(super) fn strategy_conflict_evidence(
 }
 
 fn strategy_descriptors_for_delta(
-    runtime: &crate::runtime::RelationalRuntime,
     delta: Option<&crate::merge::data::BranchTouchedRecordDelta>,
 ) -> Vec<crate::commit_strategies::data::StrategyMergeDescriptor> {
     let Some(delta) = delta else {
         return Vec::new();
     };
-    let history = runtime.history();
     let mut latest_by_strategy =
         BTreeMap::<[u8; 32], crate::commit_strategies::data::StrategyMergeDescriptor>::new();
-    for commit_id in delta.commit_ids.iter().rev().copied() {
-        let Some(envelope) = history.commit_envelope(commit_id) else {
-            continue;
-        };
+    for envelope in delta.envelopes.iter().rev() {
         let Some(strategy_artifacts) = envelope.strategy_artifacts.as_ref() else {
             continue;
         };

@@ -21,7 +21,8 @@ fn verification_memory_stop_has_no_serialized_mismatch_outcome() {
             &descriptor,
             PlanningExecutor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let canonical = canonical_request();
@@ -29,7 +30,15 @@ fn verification_memory_stop_has_no_serialized_mismatch_outcome() {
     let (input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(&runtime, None);
     let lowered = authority
-        .lower_execution_with_input(&runtime, &canonical, &draft, input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &canonical,
+            &draft,
+            input,
+        )
         .unwrap();
     let validated = authority
         .validate_lowered_plan(&execution, &runtime, lowered)

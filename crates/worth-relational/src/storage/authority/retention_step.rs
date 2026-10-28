@@ -42,6 +42,9 @@ impl StorageAuthority<'_> {
                 .try_partition_mut(partition_id, &mut |work, bytes| admit(work, bytes))
                 .map_err(|stop| match stop {
                     TryPartitionMutationDenied::Observed => Stop::StorageObserved,
+                    TryPartitionMutationDenied::Storage(cause) => {
+                        Stop::Request(Cause::StorageUnavailable(cause))
+                    }
                     TryPartitionMutationDenied::SizeOverflow => {
                         Stop::Request(Cause::ChargedBytesOverflow)
                     }

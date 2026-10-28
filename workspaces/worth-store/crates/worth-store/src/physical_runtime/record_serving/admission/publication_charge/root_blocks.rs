@@ -225,6 +225,18 @@ fn routing_scratch_limit(
     (limit > 0).then_some(limit).ok_or_else(metadata_pressure)
 }
 
+fn classify_block(failure: ManifestLookupFailure) -> BootstrapTransitionFailure {
+    match failure {
+        ManifestLookupFailure::Backend(failure) => {
+            super::super::bootstrap::backend_before_effect(failure)
+        }
+        ManifestLookupFailure::Residency(reason) => {
+            BootstrapTransitionFailure::Denied(RecordBootstrapDenial::from_residency(reason))
+        }
+        _ => damaged(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::routing_scratch_limit;
@@ -237,17 +249,5 @@ mod tests {
             routing_scratch_limit(frames + 1024, 16 * 1024),
             Ok(limit) if limit >= 1
         ));
-    }
-}
-
-fn classify_block(failure: ManifestLookupFailure) -> BootstrapTransitionFailure {
-    match failure {
-        ManifestLookupFailure::Backend(failure) => {
-            super::super::bootstrap::backend_before_effect(failure)
-        }
-        ManifestLookupFailure::Residency(reason) => {
-            BootstrapTransitionFailure::Denied(RecordBootstrapDenial::from_residency(reason))
-        }
-        _ => damaged(),
     }
 }

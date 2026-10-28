@@ -146,23 +146,22 @@ fn map_denial(
     original: PhysicalRecoveryAllocationAdmission,
     generation: LifecycleGeneration,
 ) -> PhysicalRecoveryRejoinResidentDenial {
-    if let PhysicalResidencyDenial::Pressure(pressure) = denial {
-        if pressure.dimension()
+    if let PhysicalResidencyDenial::Pressure(pressure) = denial
+        && pressure.dimension()
             == PhysicalResidencyDimension::OperationScope(
                 PhysicalOperationAllocationScope::Recovery,
             )
-            && pressure.limit() == original.byte_limit()
-        {
-            return match pressure.current().checked_add(pressure.requested()) {
-                Some(required) => PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
-                    required,
-                    admitted: original.byte_limit(),
-                },
-                None => PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-                    admitted: original.byte_limit(),
-                },
-            };
-        }
+        && pressure.limit() == original.byte_limit()
+    {
+        return match pressure.current().checked_add(pressure.requested()) {
+            Some(required) => PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
+                required,
+                admitted: original.byte_limit(),
+            },
+            None => PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
+                admitted: original.byte_limit(),
+            },
+        };
     }
     PhysicalRecoveryRejoinResidentDenial::OperationAllocation(
         PhysicalScopedAllocationFailure::from_denial(denial, generation),

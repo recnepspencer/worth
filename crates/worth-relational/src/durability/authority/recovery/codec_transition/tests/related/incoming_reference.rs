@@ -72,7 +72,7 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     let external_payload = protected_payload(&world.runtime, external);
     let reference_payload = relation_payload(&world.runtime, reference);
     super::refusals::complete_association(execution, &world).unwrap();
-    let saved = capture(&world.runtime);
+    let saved = capture(execution, &world.runtime);
     let (mut cold, receipt) = installed_references(1);
     cold.durability_recovery()
         .restore_native_checkpoint(execution, &saved)
@@ -210,7 +210,7 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     );
 
     // Cold readmission also authenticates the Preserve envelope, not merely the birth.
-    let saved = capture(&cold);
+    let saved = capture(execution, &cold);
     let (mut reopened, receipt) = installed_references(1);
     reopened
         .durability_recovery()
@@ -296,9 +296,12 @@ fn assert_retirement_refused(
     let (mut target, _) = installed_references(2);
     let (_, mut recovered) = target
         .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(execution, &capture(source))
+        .restore_native_checkpoint_for_codec_transition_with_authority(
+            execution,
+            &capture(execution, source),
+        )
         .unwrap();
-    let before = capture(&target);
+    let before = capture(execution, &target);
     let selected = basis(&target);
     let external_payload = protected_payload(&target, external);
     let reference_payload = relation_payload(&target, reference);
@@ -321,7 +324,7 @@ fn assert_retirement_refused(
     );
     assert!(selected.is_current());
     assert!(recovered.codec_transition_pending());
-    assert_eq!(capture(&target), before);
+    assert_eq!(capture(execution, &target), before);
     assert_eq!(protected_payload(&target, external), external_payload);
     assert_eq!(relation_payload(&target, reference), reference_payload);
 }

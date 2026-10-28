@@ -12,9 +12,8 @@ fn perf_artifact_recoverability_matrix() {
         suite,
         "geometry_diagnostics_summary_vs_trace_recoverability",
         || {
-            let runtime = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::GeometryKernel,
-            );
+            let runtime =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
             let source = create_entity_outcome(execution, &runtime, "recover-geometry-source");
@@ -54,19 +53,18 @@ fn perf_artifact_recoverability_matrix() {
             let hot_artifacts = runtime.publication().diagnostics_since(diagnostics_start);
 
             let checkpoint_started_at = Instant::now();
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("geometry recoverability checkpoint");
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::GeometryKernel,
-            );
+            let plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
@@ -90,7 +88,9 @@ fn perf_artifact_recoverability_matrix() {
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let recovered_envelope = recovered
                 .replay()
-                .canonical_commit_envelope(hot_commit.commit.commit_id)
+                .canonical_commit_envelope(execution, hot_commit.commit.commit_id)
+                .unwrap()
+                .map(|envelope| envelope.as_ref().clone())
                 .expect("recovered canonical geometry envelope");
 
             PerfMeasurement {
@@ -188,9 +188,8 @@ fn perf_artifact_recoverability_matrix() {
         suite,
         "chip_compiled_artifact_recoverability",
         || {
-            let mut runtime = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::ChipSimulation,
-            );
+            let mut runtime =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             apply_perf_diagnostics_policy(
                 &mut runtime,
                 PerfDiagnosticsPolicy::ChipOperationalHotPath,
@@ -239,6 +238,7 @@ fn perf_artifact_recoverability_matrix() {
             let hot_artifact = runtime
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     latest_commit.commit_id,
                     vec![
                         PartitionId(7),
@@ -251,19 +251,18 @@ fn perf_artifact_recoverability_matrix() {
             let hot_compile_micros = hot_compile_started_at.elapsed().as_micros();
 
             let checkpoint_started_at = Instant::now();
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("chip recoverability checkpoint");
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::ChipSimulation,
-            );
+            let plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
@@ -294,6 +293,7 @@ fn perf_artifact_recoverability_matrix() {
             let cold_artifact = recovered
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     recovered_commit.commit_id,
                     vec![
                         PartitionId(7),

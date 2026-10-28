@@ -314,3 +314,21 @@ fn decode_hex(encoded: &str) -> Vec<u8> {
         .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
         .collect()
 }
+
+#[test]
+fn retained_version_fifteen_is_refused_before_record_work() {
+    let bytes =
+        decode_hex(include_str!("artifact_contract_record/artifact_contract_v15.hex").trim());
+    let mut decoder =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
+    let denial = decoder.decode_frame(&bytes).unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 15);
+    assert_eq!(
+        decoder.work(),
+        WorthQueryPackageArchiveDecodeWork::default()
+    );
+}

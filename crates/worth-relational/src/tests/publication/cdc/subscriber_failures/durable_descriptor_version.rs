@@ -7,12 +7,9 @@ fn subscriber_stream_rejects_durable_only_checkpoint_with_descriptor_version_mis
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "anchor");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
 
     assert!(runtime
         .history_authority()
@@ -21,7 +18,7 @@ fn subscriber_stream_rejects_durable_only_checkpoint_with_descriptor_version_mis
     let checkpoint = checkpoint_for_schema_version(PatchStreamPosition(1), SchemaVersionId(1))
         .with_incoherent_continuation_for_test(
             "default.subscriber.contract".to_string(),
-            NormalizedContinuationProof::new(Vec::new(), DescriptorSemanticsVersion(99)),
+            NormalizedContinuationProof::new(Vec::new(), DescriptorSemanticsVersion(99)).unwrap(),
             SubscriberContinuationSummary::new(
                 "default.subscriber.contract".to_string(),
                 SchemaContinuationClassification::ContinueUnchanged,

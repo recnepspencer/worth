@@ -12,14 +12,17 @@ fn pinned_population_keeps_nonempty_predecessor_and_admits_empty_successor() {
     let created = create_entity_outcome(execution, &runtime, "population");
     let entity = changed_entities(&created)[0];
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.population".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.population".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let build = |commit| {
         let built = runtime.index_authority().build_for_commit(
             execution,

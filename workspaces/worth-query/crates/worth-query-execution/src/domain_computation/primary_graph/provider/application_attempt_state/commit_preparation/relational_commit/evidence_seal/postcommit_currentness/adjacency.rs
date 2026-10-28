@@ -131,7 +131,7 @@ mod tests {
     use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
     #[test]
-    fn pair_rebase_requires_admitted_native_work_and_never_retains_partial_facts() {
+    fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
         let host_request = crate::test_request_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -178,6 +178,13 @@ mod tests {
                     ..
                 }
             ));
+            assert!(
+                matches!(
+                    super::super::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
+                    super::super::RebasedSourceFacts::Exact(_)
+                ),
+                "a complete pair fact rebases through its native structural revision"
+            );
             // The admitted work is the decision's recorded limit; a stale
             // anchor or a zero limit acquires no revision.
             let mut stale_anchor = principal.entity_id();

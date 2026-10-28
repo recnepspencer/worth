@@ -11,7 +11,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_expl
     reader: &RelationalPinnedRead,
     plan: &SnapshotPinnedQueryPlan,
     packets: Vec<PacketizedQueryWork>,
-    basis: &crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    basis: &crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<
@@ -31,7 +31,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_expl
         |packet, ordinal, ceiling, context| {
             execute_leased_explicit_fragment(
                 reader,
-                basis,
+                basis.basis(),
                 state_access,
                 registry,
                 version_id,

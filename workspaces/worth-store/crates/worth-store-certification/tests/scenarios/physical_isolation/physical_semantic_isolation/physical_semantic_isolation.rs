@@ -179,7 +179,9 @@ fn foundational_roles_preserve_semantic_and_physical_authority_boundaries() {
 
 #[test]
 fn relational_exports_are_semantic_diagnostics_not_store_authority() {
-    let runtime = RelationalRuntimeBuilder::new().build();
+    let runtime = RelationalRuntimeBuilder::new()
+        .build()
+        .expect("valid native runtime configuration");
     let branch = runtime
         .branch_identity(&BranchId("main".to_owned()))
         .unwrap();

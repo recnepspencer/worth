@@ -25,8 +25,8 @@ pub(crate) fn compare_recovery_probe(left: &RecoveryProbe, right: &RecoveryProbe
     if left.branch_heads != right.branch_heads {
         mismatches.push("branch_heads".to_string());
     }
-    if left.skipped_corrupt_checkpoints != right.skipped_corrupt_checkpoints {
-        mismatches.push("skipped_corrupt_checkpoints".to_string());
+    if left.checkpoint_covered_position != right.checkpoint_covered_position {
+        mismatches.push("checkpoint_covered_position".to_string());
     }
     mismatches
 }

@@ -19,8 +19,8 @@ use worth_query_declaration::facade::application_program::{
 };
 
 use super::super::{WorthQueryProgramApplicationRuntime, WorthQuerySelectedProgramOwner};
+use super::recovery::ProgramOutputSourcePayload;
 use super::{ProgramSourceCommit, RootConnection};
-use crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
@@ -125,8 +125,7 @@ where
             program,
             idempotency,
             causality,
-            PreparedOutputRootKind::Required(root),
-            None,
+            ProgramOutputSourcePayload::Required(root),
             allocation_policy,
         )
     }
@@ -184,8 +183,10 @@ where
             program,
             idempotency,
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
-            PreparedOutputRootKind::Discovered(root),
-            Some(std::sync::Arc::new(discovery)),
+            ProgramOutputSourcePayload::Discovered {
+                root,
+                discovery: std::sync::Arc::new(discovery),
+            },
             allocation_policy,
         )
     }

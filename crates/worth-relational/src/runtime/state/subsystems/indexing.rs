@@ -7,6 +7,9 @@ mod admitted_definition;
 mod definition_catalog;
 pub(crate) use definition_catalog::{IndexCatalogCoverage, IndexDefinitionCatalog};
 mod admitted_selection;
+mod cold_checkpoint;
+#[cfg(test)]
+mod identity_exhaustion_tests;
 mod prepared_publication;
 pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
@@ -38,6 +41,7 @@ pub(crate) type UniqueEntityAspectFieldIndex = BTreeMap<
 /// the guard.
 #[derive(Debug, Clone)]
 pub(crate) struct IndexingState {
+    cold_checkpoint: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
     catalog: Arc<IndexDefinitionCatalog>,
     generations: GenerationCatalog,
     pub(crate) entity_unique_aspect_field_index: UniqueEntityAspectFieldIndex,
@@ -46,8 +50,23 @@ pub(crate) struct IndexingState {
 }
 
 impl IndexingState {
+    pub(crate) fn retained_generations(
+        &self,
+        retained: &crate::history::retention::RetainedIndexRoots,
+    ) -> Vec<Arc<DerivedIndexGeneration>> {
+        let global_indexes = self
+            .catalog
+            .definitions
+            .values()
+            .filter(|definition| !definition.branch_scoped)
+            .map(|definition| definition.index_id)
+            .collect();
+        self.generations.retained(retained, &global_indexes)
+    }
+
     fn empty() -> Self {
         Self {
+            cold_checkpoint: None,
             catalog: Arc::new(IndexDefinitionCatalog::default()),
             generations: GenerationCatalog::default(),
             entity_unique_aspect_field_index: BTreeMap::new(),
@@ -72,6 +91,15 @@ impl IndexingState {
             .next_generation_id
             .max(generation.generation_id.0.saturating_add(1));
         self.generations.insert(generation);
+    }
+
+    pub(crate) fn generation_frontier(&self) -> u64 {
+        self.generations.generation_frontier()
+    }
+
+    pub(crate) fn restore_generation_frontier(&mut self, frontier: u64) {
+        self.next_generation_id = self.next_generation_id.max(frontier);
+        self.generations.restore_frontier(frontier);
     }
 }
 
@@ -151,21 +179,6 @@ impl IndexingSubsystem {
         state
             .generations
             .reclaim_except_versions(retained, &global_indexes)
-    }
-
-    pub(crate) fn retained_generations(
-        &self,
-        retained: &crate::history::retention::RetainedIndexRoots,
-    ) -> Vec<Arc<DerivedIndexGeneration>> {
-        let state = self.state.read();
-        let global_indexes = state
-            .catalog
-            .definitions
-            .values()
-            .filter(|definition| !definition.branch_scoped)
-            .map(|definition| definition.index_id)
-            .collect();
-        state.generations.retained(retained, &global_indexes)
     }
 
     /// Replace the whole subsystem, for checkpoint restore.
@@ -255,26 +268,23 @@ impl IndexingSubsystem {
     pub(crate) fn register_definition(
         &self,
         mut definition: DerivedIndexDefinition,
-    ) -> DerivedIndexDefinition {
+    ) -> Result<DerivedIndexDefinition, crate::indexes::data::DerivedIndexRegistrationDenial> {
         let mut state = self.state.write();
         definition.index_id = DerivedIndexId(state.next_index_id);
         state.next_index_id = state
             .next_index_id
             .checked_add(1)
-            .expect("derived index identity exhausted");
+            .ok_or(crate::indexes::data::DerivedIndexRegistrationDenial::IdentityExhausted)?;
         state.insert_definition(definition.clone());
-        definition
+        Ok(definition)
     }
 
     /// Reserve the next generation identity without publishing anything.
-    pub(crate) fn next_generation_id(&self) -> u64 {
+    pub(crate) fn next_generation_id(&self) -> Option<u64> {
         let mut state = self.state.write();
         let generation_id = state.next_generation_id;
-        state.next_generation_id = state
-            .next_generation_id
-            .checked_add(1)
-            .expect("derived generation identity exhausted");
-        generation_id
+        state.next_generation_id = state.next_generation_id.checked_add(1)?;
+        Some(generation_id)
     }
 
     /// Reserve exact generation identities before the candidate can publish.

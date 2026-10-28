@@ -51,13 +51,14 @@ impl Rule {
                 return Err(failure("each node must have one authored root membership"));
             };
             let root = membership.to();
-            if let std::collections::btree_map::Entry::Vacant(e) = roots.entry(root.entity_id()) {
+            if let std::collections::btree_map::Entry::Vacant(entry) = roots.entry(root.entity_id())
+            {
                 let bytes = 11 * std::mem::size_of::<(EntityId, Entity)>()
                     + 14 * std::mem::size_of::<usize>();
                 if budget.is_some_and(|payer| !payer.claim_scratch(bytes as u64)) {
                     return Err(failure("root discovery retention refused"));
                 }
-                e.insert(root.clone());
+                entry.insert(root.clone());
             }
         }
         Ok(roots)

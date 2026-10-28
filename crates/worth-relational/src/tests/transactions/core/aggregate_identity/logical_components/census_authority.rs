@@ -239,7 +239,7 @@ fn empty_census_needs_its_own_audience_posture_and_genuine_registry_observation(
             .unwrap(),
         );
     }
-    let runtime = builder.build();
+    let runtime = builder.build().expect("valid native runtime configuration");
     // A genuine business touch runs both rules without ever creating a carrier.
     let born = commit(
         execution,
@@ -269,7 +269,8 @@ fn empty_census_needs_its_own_audience_posture_and_genuine_registry_observation(
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     // Full source access here proves the earlier audience denial is NOT the
     // reason the original runtime's genuine proof cannot be lent to this owner.
     commit(

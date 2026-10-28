@@ -233,14 +233,14 @@ impl<'reader> RootTransition<'_, 'reader> {
                 &mut ManifestDiscoveryCounterSnapshot::default(),
             )
             .map_err(membership_failure)?;
-        if let Some(CurrentPhysicalRecordPlacement::Extent(next)) = successor {
-            if next.extent_cell() == source.extent_cell() {
-                return if next == source {
-                    Ok(())
-                } else {
-                    Err(damaged_root())
-                };
-            }
+        if let Some(CurrentPhysicalRecordPlacement::Extent(next)) = successor
+            && next.extent_cell() == source.extent_cell()
+        {
+            return if next == source {
+                Ok(())
+            } else {
+                Err(damaged_root())
+            };
         }
         let artifact = RetiredArtifact::Extent {
             extent: source.extent().get(),

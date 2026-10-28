@@ -64,9 +64,10 @@ impl DecodedApplicationCheckpoint {
             .with_runtime(execution, |runtime| {
                 runtime
                     .replay()
-                    .canonical_commit_envelope(self.bootstrap_commit_id)
+                    .canonical_commit_envelope(execution, self.bootstrap_commit_id)
             });
         let envelope = envelope
+            .map_err(super::request_read_denial::read)?
             .ok_or_else(|| checkpoint_denial("checkpoint omitted its claimed bootstrap commit"))?;
         if envelope.branch_context != super::super::primary_relational_branch_id()
             || envelope.authority_kind() != CanonicalCommitAuthorityKind::VersionedTransaction
@@ -198,7 +199,12 @@ pub(super) fn verify_bootstrap_indexes(
             let indexes = runtime.index_access();
             for index_id in index_ids {
                 let generation = indexes
-                    .latest_generation(index_id, &super::super::primary_relational_branch_id());
+                    .read_latest_generation(
+                        execution,
+                        index_id,
+                        &super::super::primary_relational_branch_id(),
+                    )
+                    .map_err(super::request_read_denial::read)?;
                 if generation.is_none() {
                     return Err(checkpoint_denial(
                         "checkpoint omitted a bootstrap identity-index generation",

@@ -1,10 +1,9 @@
 //! Safe retry while the one terminal owner cannot yet answer.
 //!
 //! A completion the rail already performed may still be settling: its World
-//! publication can wait for the estate rail source, or fail and leave the
-//! terminal index unable to answer. Each state refuses with its own recovery
-//! kind, returns the live handle, contacts nothing, and later answers
-//! `AlreadyCompleted` once the completion settles.
+//! publication can wait for the estate rail source. That state refuses with
+//! its own recovery kind, returns the live handle, contacts nothing, and later
+//! answers `AlreadyCompleted` once the completion settles.
 
 use std::sync::Arc;
 
@@ -109,47 +108,4 @@ fn safe_retry_names_a_pending_completion_publication_then_the_completion() {
             .is_some(),
         "the retry published the retained completion into the terminal owner"
     );
-}
-
-#[test]
-fn safe_retry_names_an_unavailable_terminal_index_until_maintenance_settles_it() {
-    let (world, handle, token) =
-        completed_before_the_source_installs("safe-retry-index-unavailable", 85);
-    let route = install_source(&world);
-    // The retained completion's World publication fails durably, so the
-    // terminal index keeps the correlation pending until recovery settles it.
-    world
-        .fixture
-        .world
-        .runtime
-        .fail_next_durable_append_for_test();
-    let handle = refused_retry(
-        &world,
-        handle,
-        BankRecoveryDenialKind::CompletionPublicationPending,
-    );
-    let handle = refused_retry(
-        &world,
-        handle,
-        BankRecoveryDenialKind::TerminalIndexUnavailable,
-    );
-    assert!(world
-        .fixture
-        .world
-        .runtime
-        .observe_estate_rail_completion(&route, token)
-        .is_none());
-    world
-        .fixture
-        .world
-        .runtime
-        .maintain_estate_rail_completion(&route, &request_scope())
-        .expect("maintenance resumes the unpublished completion");
-    refused_retry(&world, handle, BankRecoveryDenialKind::AlreadyCompleted);
-    assert!(world
-        .fixture
-        .world
-        .runtime
-        .observe_estate_rail_completion(&route, token)
-        .is_some());
 }

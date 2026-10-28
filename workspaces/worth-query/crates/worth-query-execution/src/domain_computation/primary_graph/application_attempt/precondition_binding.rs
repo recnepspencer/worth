@@ -136,10 +136,6 @@ fn empty_bound_preconditions() -> WorthQueryBoundMutationPreconditions {
 }
 
 impl WorthQueryBoundMutationPreconditions {
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-    )]
     pub(in crate::domain_computation::primary_graph) fn validate_observations(
         &self,
         facts: &BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,

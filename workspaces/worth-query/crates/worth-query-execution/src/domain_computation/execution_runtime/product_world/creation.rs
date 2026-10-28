@@ -20,6 +20,7 @@ impl WorthQueryProductRuntime {
     /// bounded activation coordination before any component owner can move.
     pub(crate) fn create_product_branch(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &WorthQueryProductBranchLease,
         source_program: Option<&ApplicationProgramRevision>,
         intent: ProductBranchCreationIntent,
@@ -45,7 +46,12 @@ impl WorthQueryProductRuntime {
         let outcome = self
             .owner
             .branch_port()
-            .create_product_branch(source.observation().clone(), intent, cancellation)
+            .create_product_branch(
+                execution,
+                source.observation().clone(),
+                intent,
+                cancellation,
+            )
             .map_err(WorthQueryProductBranchCreationDenial::World)?;
         if let RuntimeWorldBranchCreationOutcome::Performed(observation) = &outcome {
             reservation.commit(observation);

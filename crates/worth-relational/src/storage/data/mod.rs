@@ -11,6 +11,11 @@ use crate::transactions::data::RecordRef;
 
 mod authoritative_field_comparison_key;
 mod field_revision;
+mod storage_unavailable;
+
+pub use storage_unavailable::{
+    RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
+};
 
 pub use authoritative_field_comparison_key::{
     authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,

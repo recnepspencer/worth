@@ -39,6 +39,10 @@ pub(in crate::domain_computation::primary_graph::application_resource) struct In
 }
 
 #[derive(Debug)]
+#[expect(
+    dead_code,
+    reason = "original typed refusal is retained opaquely; disclosure uses approved projections"
+)]
 pub(in crate::domain_computation::primary_graph::application_resource) enum IngressAllocationDenial
 {
     AccountingOverflow,

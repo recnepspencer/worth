@@ -1,8 +1,10 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-/// Ten decimal digits; changing text width requires another nine billion instances.
-const FIRST_RUNTIME_INSTANCE_ID: u64 = 1_000_000_000;
+/// Ten decimal digits; changing text width requires another nine billion
+/// instances. The first ten-digit id is the canonical artifact frame, which no
+/// live runtime is issued.
+const FIRST_RUNTIME_INSTANCE_ID: u64 = crate::branch::CANONICAL_RUNTIME_INSTANCE_ID + 1;
 
 #[derive(Debug, Clone)]
 pub(super) struct RuntimeSequenceState {
@@ -57,9 +59,18 @@ mod tests {
         let next = RuntimeSequenceState::new().runtime_instance_id();
         assert!(first >= FIRST_RUNTIME_INSTANCE_ID);
         assert!(next >= FIRST_RUNTIME_INSTANCE_ID);
+        assert!(first > crate::branch::CANONICAL_RUNTIME_INSTANCE_ID);
         assert_eq!(
             format!("relational/{first}/main").len(),
             format!("relational/{next}/main").len()
+        );
+        assert_eq!(
+            format!("relational/{first}/main").len(),
+            format!(
+                "relational/{}/main",
+                crate::branch::CANONICAL_RUNTIME_INSTANCE_ID
+            )
+            .len()
         );
     }
 

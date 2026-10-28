@@ -101,7 +101,7 @@ fn schema_reconciliation_witness_digest(
     bytes.extend_from_slice(rows.len().to_string().as_bytes());
     for row in rows {
         bytes.extend_from_slice(
-            &rmp_serde::to_vec_named(row).expect("schema reconciliation witness row must encode"),
+            &rmp_serde::to_vec_named(row).expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "schema reconciliation witness row must encode"),
         );
     }
     let digest = Sha256::digest(bytes);

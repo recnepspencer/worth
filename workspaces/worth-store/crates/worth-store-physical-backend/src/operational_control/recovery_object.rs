@@ -51,10 +51,8 @@ impl PhysicalControlRecoveryObjectStore {
         let root = location.recovery_object_root();
         let existed = root.exists();
         std::fs::create_dir_all(&root)?;
-        if !existed {
-            if let Some(parent) = root.parent() {
-                crate::directory_durability::sync_directory(parent)?;
-            }
+        if !existed && let Some(parent) = root.parent() {
+            crate::directory_durability::sync_directory(parent)?;
         }
         Ok(Self { root })
     }

@@ -51,7 +51,6 @@ fn released_control_arena_window_denies_before_effect_and_completes_when_admitte
         ingest.push(&vec![0x35; 32 << 10]).unwrap();
         ingest.push(&vec![0x35; 32 << 10]).unwrap();
         let published = ingest.finish().unwrap();
-        drop(blobs);
         let marker = serving
             .certification_selected_latest_blob_publication()
             .unwrap()

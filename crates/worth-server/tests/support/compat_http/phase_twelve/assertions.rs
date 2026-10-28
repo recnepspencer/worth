@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use worth_server::{
     WorthServerAbuseBudgetReceipt, WorthServerBinaryCounterSet, WorthServerCompatHttpRouteFamily,
     WorthServerExternalCounterSet, WorthServerTransferByteClass,

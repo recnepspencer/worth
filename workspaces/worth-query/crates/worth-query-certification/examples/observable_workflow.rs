@@ -14,6 +14,12 @@ mod discovery;
 #[path = "observable_workflow/model.rs"]
 #[allow(dead_code, unused_imports)]
 mod document_retention_model;
+#[path = "../tests/application_graph/document_retention_model/host/world_resources.rs"]
+#[allow(
+    dead_code,
+    reason = "The shared reference resources also define the independent workflow courts' limits"
+)]
+mod document_world_resources;
 #[path = "observable_workflow/effect.rs"]
 mod effect;
 #[path = "observable_workflow/history.rs"]

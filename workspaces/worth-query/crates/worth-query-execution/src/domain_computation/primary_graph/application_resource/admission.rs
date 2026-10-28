@@ -19,6 +19,10 @@ use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::WorthQueryInstalledResourceAccessContract;
 
+#[expect(
+    dead_code,
+    reason = "original typed refusal is retained opaquely; disclosure uses approved projections"
+)]
 pub(super) enum ResourceAdmissionDenial {
     Request(worth_execution::WorkCeilingDenial),
     RequestControl(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption),

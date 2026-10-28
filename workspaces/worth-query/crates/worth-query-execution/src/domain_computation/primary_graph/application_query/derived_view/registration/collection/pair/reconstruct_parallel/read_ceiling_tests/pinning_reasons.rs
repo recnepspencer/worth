@@ -22,7 +22,7 @@ fn pin_panic_does_not_poison_the_owner_mutex() {
     check(Case::Panic);
 }
 #[test]
-fn continuation_reads_a_scoped_predicate_without_its_equality_index() {
+fn continuation_pin_needs_its_ordering_index_but_not_a_root_predicate_index() {
     missing_door_index(false, true);
 }
 #[test]
@@ -98,7 +98,7 @@ fn check(case: Case) {
                 }
                 Case::Snapshot | Case::Predicate => {
                     let other =
-                        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
+                        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration");
                     let foreign = other
                         .snapshots()
                         .snapshot_for_observation(
@@ -234,22 +234,33 @@ fn missing_door_index(live: bool, predicate_missing: bool) {
                 } else {
                     read_continuation_page(runtime, &request, &layout, &plan, None).map(|_| ())
                 };
-                outcome.map_err(|denial| denial.kind())
+                if predicate_missing {
+                    assert!(
+                        outcome.is_ok(),
+                        "a scoped root predicate reads the root field without an index"
+                    );
+                    return None;
+                }
+                match outcome {
+                    Err(denial) => Some(denial.kind()),
+                    Ok(_) => panic!("uninstalled index was read"),
+                }
             });
             if predicate_missing {
                 // A scoped predicate reads its one root's guard field, not an
                 // equality index, so the page reads without that index.
-                assert_eq!(actual, Ok(()), "the scoped predicate needs no index");
+                assert_eq!(actual, None, "the scoped predicate needs no index");
                 return;
             }
             assert_eq!(
                 actual,
-                Err(if live {
-                    ReadKind::TargetIdentityIndexUnavailable
+                if predicate_missing {
+                    None
+                } else if live {
+                    Some(ReadKind::TargetIdentityIndexUnavailable)
                 } else {
-                    ReadKind::ContinuationIndexUnavailable
-                }),
-                "uninstalled index was read"
+                    Some(ReadKind::ContinuationIndexUnavailable)
+                }
             );
         })
         .unwrap();

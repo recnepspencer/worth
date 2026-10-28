@@ -10,11 +10,12 @@ fn codec_only_restore_refuses_partial_branch_adoption_while_exact_restore_keeps_
         .runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             crate::history::data::BranchId("retained-source-head".into()),
             world.runtime.main_branch_identity().branch_id(),
         )
         .unwrap();
-    let checkpoint = capture(&world.runtime);
+    let checkpoint = capture(execution, &world.runtime);
     for target_codec in [1, 2] {
         let (mut target, _) = installed(target_codec);
         let initial_identity = target.runtime_instance_id();

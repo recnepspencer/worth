@@ -8,7 +8,7 @@ pub(super) fn certify_merge_execution_zero_diagnostics_budget(
         suite,
         "merge_execution_feature_adoption_zero_diagnostics_budget",
         || {
-            let mut runtime = persisted_runtime_with_test_schema();
+            let mut runtime = durable_runtime_with_test_schema();
             runtime.configure_diagnostics_for_test(|profile| {
                 profile.max_entries_per_artifact = 0;
             });

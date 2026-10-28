@@ -46,9 +46,7 @@ impl IndexAccess<'_> {
             |stop| {
                 use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
                 let kind = match stop {
-                    Pin::Request(stop) => BoundedRelationJoinLookupDenialKind::Execution(
-                        crate::execution::denial::kernel_stop(stop),
-                    ),
+                    Pin::Request(stop) => BoundedRelationJoinLookupDenialKind::Execution(stop),
                     Pin::SnapshotUnavailable => {
                         BoundedRelationJoinLookupDenialKind::SnapshotUnavailable
                     }

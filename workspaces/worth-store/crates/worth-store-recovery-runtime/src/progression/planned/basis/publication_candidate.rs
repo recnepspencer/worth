@@ -154,7 +154,7 @@ pub(super) fn build(
         None
     };
     final_inventory.release(build.allowance)?;
-    let artifacts = build.allowance.into_box(build.artifacts)?;
+    let artifacts = build.allowance.charge_boxed_slice(build.artifacts)?;
     Ok(RecoveryCandidateBasis {
         root,
         referenced_artifacts,
@@ -249,7 +249,7 @@ fn topology_artifacts(
             }),
     );
     topology.sort_unstable();
-    Ok(allowance.into_box(topology)?)
+    Ok(allowance.charge_boxed_slice(topology)?)
 }
 
 fn build_new<'a>(
@@ -331,6 +331,7 @@ fn build_new<'a>(
     .latest_blob_publication(base.latest_blob_publication())
     .latest_blob_quarantine(base.latest_blob_quarantine())
     .tier_epoch_anchor(base.tier_epoch_anchor())
+    .record_anchors(base.record_anchors())
     .derived_family_directory(base.derived_family_directory())
     .last_inline_record(
         final_inventory

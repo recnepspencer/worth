@@ -79,7 +79,9 @@ fn prepared_publication_rejects_an_existing_envelope_before_any_effect() {
         .err()
         .expect("an existing envelope must fail the real prepared-publication court");
 
-    assert!(error.contains("DuplicateCommit"));
+    assert!(
+        matches!(error, crate::mvcc::PublicationPreparationDenial::Invalid(detail) if detail.contains("DuplicateCommit"))
+    );
     assert_eq!(runtime.history.branch_cells_snapshot(), before_cells);
     assert_eq!(runtime.history.catalog_len(), before_catalog);
 }
@@ -129,6 +131,8 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
 
     let before_storage = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .entries()
         .map(|(id, partition)| {
             (
@@ -165,9 +169,13 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
         )
         .err()
         .expect("the unresolved owner symbol sabotages root capture");
-    assert!(error.contains("UnresolvedContentSymbol"));
+    assert!(
+        matches!(error, crate::mvcc::PublicationPreparationDenial::Invalid(detail) if detail.contains("UnresolvedContentSymbol"))
+    );
     let after_storage = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .entries()
         .map(|(id, partition)| {
             (
@@ -205,6 +213,8 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
     create_entity_outcome(execution, &runtime, "root-capture-production-anchor");
     let before_storage = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .entries()
         .map(|(id, partition)| {
             (
@@ -238,6 +248,8 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
 
     let after_storage = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .entries()
         .map(|(id, partition)| {
             (

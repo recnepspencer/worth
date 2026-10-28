@@ -26,7 +26,7 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
         generation: u32,
         version_id: VersionId,
         extra: &Self::Extra,
-    ) -> Self::Meta;
+    ) -> Option<Self::Meta>;
     fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64;
     fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64;
 }
@@ -75,15 +75,15 @@ impl RecordKind for EntityRecordKind {
         generation: u32,
         version_id: VersionId,
         extra: &Self::Extra,
-    ) -> Self::Meta {
-        VersionedEntityMetadata {
+    ) -> Option<Self::Meta> {
+        Some(VersionedEntityMetadata {
             effective_at: version_id,
             retired_at: None,
             generation,
             kind_id,
             lineage_id: extra.lineage_id,
             authoritative_aspect_state: extra.authoritative_aspect_state.clone(),
-        }
+        })
     }
 
     fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64 {
@@ -149,18 +149,15 @@ impl RecordKind for RelationRecordKind {
         generation: u32,
         version_id: VersionId,
         extra: &Self::Extra,
-    ) -> Self::Meta {
-        VersionedRelationMetadata {
+    ) -> Option<Self::Meta> {
+        Some(VersionedRelationMetadata {
             effective_at: version_id,
             retired_at: None,
             generation,
             kind_id,
-            endpoints: extra
-                .endpoints
-                .clone()
-                .expect("relation metadata requires endpoints"),
+            endpoints: extra.endpoints.clone()?,
             authoritative_aspect_state: extra.authoritative_aspect_state.clone(),
-        }
+        })
     }
 
     fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64 {

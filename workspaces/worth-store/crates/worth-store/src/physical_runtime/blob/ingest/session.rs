@@ -159,11 +159,11 @@ impl BlobIngestSession<'_> {
                 )
                 .map_err(BlobIngestFailure::Memory)?;
             rest = tail;
-            if self.pending.len() == chunk_size {
-                if let Err(error) = self.flush_chunk() {
-                    self.poisoned = true;
-                    return Err(error);
-                }
+            if self.pending.len() == chunk_size
+                && let Err(error) = self.flush_chunk()
+            {
+                self.poisoned = true;
+                return Err(error);
             }
         }
         Ok(())

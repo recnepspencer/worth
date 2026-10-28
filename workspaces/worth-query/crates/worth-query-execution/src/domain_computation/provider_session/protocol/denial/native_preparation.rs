@@ -15,9 +15,7 @@ impl std::fmt::Debug for NativePreparationFailure {
             TransactionCommitError::PublicationDenied { .. } => "PublicationDenied",
             TransactionCommitError::PublicationDeferred { .. } => "PublicationDeferred",
             TransactionCommitError::PublicationFailed { .. } => "PublicationFailed",
-            TransactionCommitError::PerformedButDurabilityDeferred { .. } => {
-                "PerformedButDurabilityDeferred"
-            }
+            TransactionCommitError::DurabilityUnresolved { .. } => "DurabilityUnresolved",
         };
         let execution = match &self.0 {
             TransactionCommitError::Execution { denial, .. } => Some(denial),

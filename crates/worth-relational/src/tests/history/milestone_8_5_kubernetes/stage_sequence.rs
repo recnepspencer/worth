@@ -3,9 +3,9 @@ use super::*;
 pub(super) fn run_kubernetes_style_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> KubernetesIntentCertificationBundle {
-    let root_path = unique_test_store_path("worth-relational-m8-5-kubernetes-style");
-    let recovered_root = root_path.clone();
-    let runtime = persisted_strategy_runtime(root_path);
+    let medium = crate::tests::support::TestDurableMedium::new();
+    let recovered_root = medium.clone();
+    let runtime = persisted_strategy_runtime(medium);
     let entity = create_entity(execution, &runtime, "kube-service");
     let controller_branch = create_branch_from_main(&runtime, "kube-controller");
     let main_branch = BranchId("main".to_string());

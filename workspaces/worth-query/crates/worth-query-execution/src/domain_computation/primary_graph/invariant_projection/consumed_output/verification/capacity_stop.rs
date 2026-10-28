@@ -26,20 +26,13 @@ impl VerificationCapacityStop {
         stop: CompanionPreflightStop,
     ) -> Option<Self> {
         match stop {
-            CompanionPreflightStop::PreparationMemoryExhausted { .. }
-            | CompanionPreflightStop::PreparationMemoryCounterOverflow
-            | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }
-            | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
-                Some(Self::Meter(stop))
-            }
+            CompanionPreflightStop::PreparationMemoryCounterOverflow => Some(Self::Meter(stop)),
             CompanionPreflightStop::Execution(_)
             | CompanionPreflightStop::TopologyPending
             | CompanionPreflightStop::SelectedSourceMismatch
             | CompanionPreflightStop::SelectedPositionUnavailable { .. }
             | CompanionPreflightStop::ForeignCell
             | CompanionPreflightStop::RegistrationChanged
-            | CompanionPreflightStop::WorkExhausted { .. }
-            | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | CompanionPreflightStop::WorkCounterOverflow
             | CompanionPreflightStop::Interrupted(_) => None,
         }

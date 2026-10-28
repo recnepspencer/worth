@@ -99,10 +99,7 @@ pub(super) fn insert(
                 output_facts.as_ref().map(|set| set.facts.as_ref()),
                 &mut verification_requirement,
             )?;
-            let id = state.next_posting_projection;
-            state.next_posting_projection = id
-                .checked_add(1)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+            let id = state.reserve_posting_projection()?;
             prepared.into_projection(
                 id,
                 facts.len(),

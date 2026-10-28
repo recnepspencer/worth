@@ -59,14 +59,7 @@ impl WorthQueryApplicationAttemptOperationControl {
     }
 }
 fn wait(latch: &ExactAttemptPause, timeout: Duration) -> bool {
-    let state = latch.state.lock().unwrap_or_else(|e| e.into_inner());
-    latch
-        .changed
-        .wait_timeout_while(state, timeout, |state| state.0 != latch.target)
-        .unwrap_or_else(|e| e.into_inner())
-        .0
-         .0
-        == latch.target
+    latch.observe_arrivals(timeout)
 }
 fn release(slot: &PendingAttemptPause, latch: &Arc<ExactAttemptPause>) {
     clear(slot, latch);

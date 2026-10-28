@@ -210,9 +210,9 @@ fn phase_six_warm_consumers_cannot_hide_hashing_behind_a_helper() {
 }
 
 fn assert_warm_path_has_no_hashing(path: &Path) {
-    let is_source_meaning_owner = path
-        .ends_with("application_query/observed_source/source_identity.rs")
-        || path.ends_with("application_query/observed_source/source_identity/interning.rs");
+    let is_source_meaning_interner = path.ends_with(Path::new(
+        "application_query/observed_source/source_identity/interning.rs",
+    ));
     if path.is_dir() {
         for entry in std::fs::read_dir(path)
             .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
@@ -235,14 +235,13 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
     }
     let source = std::fs::read_to_string(path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
-    // Dynamic row and result-set witnesses require runtime evidence digests;
-    // the named cold interning owner and its two commitment files must not
-    // become a semantic contract hash seam. Each keeps its exact domain.
+    // The interner derives result-set evidence and checkpoint identity on a
+    // meaning miss. Its parent now only carries the resulting witnesses.
+    if is_source_meaning_interner {
+        assert!(source.contains("worth-query:observed-result-set:v1"));
+    }
+    // The commitment owners keep their exact runtime evidence domains.
     for (owner, domain) in [
-        (
-            "application_query/observed_source/source_identity/interning.rs",
-            "worth-query:observed-result-set:v1",
-        ),
         (
             "application_query/observed_source/source_identity/checkpoint_commitment.rs",
             "worth-query:checkpoint-observed-source:v2",
@@ -270,18 +269,37 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         assert!(!source.contains("prepare_canonical_basis_sequence"));
         return;
     }
-    if path.ends_with(Path::new(
-        "application_query/observed_source/root_selection/orbit.rs",
-    )) {
-        // This child only appends the whole-orbit observation descriptor to the
-        // parent's runtime witness. It may not derive another digest or an
-        // installed semantic identity of its own.
-        assert!(source.contains("declared-whole-orbit:v1"));
+    for (owner, domain) in [
+        (
+            "application_query/observed_source/root_selection/orbit.rs",
+            "declared-whole-orbit:v1",
+        ),
+        (
+            "application_query/observed_source/root_selection/components.rs",
+            "declared-components:v1",
+        ),
+    ] {
+        if !path.ends_with(Path::new(owner)) {
+            continue;
+        }
+        // These children only append descriptors to their parent's observation
+        // witness. They may not derive semantic identities or another digest.
+        assert!(source.contains(domain));
         assert!(source.contains("fn append_descriptor(&self, digest: &mut Sha256)"));
         for forbidden in [
             "Sha256::new",
             ".finalize(",
             "prepare_canonical_basis_sequence",
+            "hash_parts",
+            "digest_hash_parts",
+            "execution_digest",
+            "admission_digest",
+            "publication_digest",
+            "checkpoint_source_identity",
+            "for_sequence_with_budget",
+            "canonicalization().digest().derive",
+            ".render_support_hex()",
+            ".render_hex()",
         ] {
             assert!(
                 !source.contains(forbidden),
@@ -306,9 +324,15 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         ".render_support_hex()",
         ".render_hex()",
     ] {
-        if is_source_meaning_owner && forbidden == "checkpoint_source_identity" {
-            // Intern misses own cold derivation; the parent retains only its
-            // cfg(test) epoch constructor call. Neither may hide other hashing.
+        if is_source_meaning_interner
+            && matches!(
+                forbidden,
+                "checkpoint_source_identity" | "Sha256" | "sha2::"
+            )
+        {
+            // Only runtime evidence hashing belongs here. Semantic digest
+            // helpers and canonical preparation remain forbidden, including
+            // throughout the parent source-identity carrier.
             continue;
         }
         assert!(

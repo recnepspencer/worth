@@ -4,6 +4,7 @@ pub(crate) use codec_transition::{
 };
 pub(super) mod admission;
 pub(super) mod codec_transition;
+mod declared_schema;
 
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::durability::data::{DurabilityError, RecoveryCoverage, RecoveryPlan};
@@ -49,7 +50,7 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let native_bytes_read = checkpoint.bytes().len();
-        let checkpoint = crate::durability::log::native_file_codec::decode_checkpoint(
+        let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
             execution,
             checkpoint.bytes(),
         )?
@@ -99,8 +100,10 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
-        let material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
+        let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        declared_schema::require_declared_schema_of_recovered_main(&material.restored)?;
+        move_durable_medium(self.runtime, &mut material.restored)?;
         let outcome = publish_recovered_runtime(self.runtime, material);
         Ok(outcome)
     }
@@ -150,6 +153,34 @@ fn rebuild_admitted_recovery_or_emit(
     }
 }
 
+/// Move the recovering runtime's medium into the rebuilt runtime only after
+/// replay, so rebuilding history never republishes it. The medium is owned by
+/// exactly one runtime (D1): it leaves the recovering runtime as it enters
+/// the rebuilt one, which starts with no unresolved durable fate.
+fn move_durable_medium(
+    runtime: &mut RelationalRuntime,
+    restored: &mut RelationalRuntime,
+) -> Result<(), DurabilityError> {
+    if runtime.durability.medium().is_none() {
+        return Ok(());
+    }
+    let unmovable = |detail: &str| {
+        DurabilityError::new(
+            crate::durability::data::RecoveryFailureClass::ReplayFailure,
+            detail,
+        )
+    };
+    let rebuilt = restored.unshared_state_mut().ok_or_else(|| {
+        unmovable("a rebuilt runtime is shared before its durable medium is bound")
+    })?;
+    let medium = runtime
+        .durability
+        .detach_medium()
+        .ok_or_else(|| unmovable("the recovering runtime's durable medium already moved"))?;
+    rebuilt.durability.attach_medium(medium);
+    Ok(())
+}
+
 fn publish_recovered_runtime(
     runtime: &mut RelationalRuntime,
     material: RecoveredRuntimeMaterial,
@@ -165,9 +196,16 @@ fn publish_recovered_runtime(
         .durability
         .latest_checkpoint()
         .as_ref()
-        .map(|checkpoint| checkpoint.envelopes.len())
+        .map(|checkpoint| {
+            checkpoint
+                .directory
+                .as_ref()
+                .map_or(checkpoint.envelopes.len(), |directory| {
+                    directory.manifest.commits.len()
+                })
+        })
         .unwrap_or(0);
-    restored.durability.set_store(plan.store.clone());
+    let checkpoint_covered_position = plan.checkpoint_covered_position();
     record_recovery_verification_counters(&restored, &plan.authority_continuity);
     restored.publication_authority().push_bounded_diagnostic(
         DiagnosticsScope::History,
@@ -178,24 +216,20 @@ fn publish_recovered_runtime(
         DiagnosticsScope::History,
         DiagnosticsArtifactKind::MinimalSummary,
         vec![
-            recovery_checkpoint_selected(
-                plan.cursor.checkpoint_id,
-                &plan.integrity_report.skipped_corrupt_checkpoints,
-            ),
-            recovery_range_replayed(&plan.cursor.segment_ids, tail_commits),
+            recovery_checkpoint_selected(checkpoint_covered_position),
+            recovery_range_replayed(tail_commits),
         ],
     );
     let outcome = RuntimeRecoveryOutcome {
-        recovered_commits: restored.history.recorded_commit_envelope_count(),
+        recovered_commits: restored.history.catalog_len(),
         latest_commit: restored.history().latest_commit(),
         restored_branches: restored.history.branch_count(),
-        cursor: plan.cursor,
         coverage: RecoveryCoverage {
+            checkpoint_covered_position,
             checkpoint_commits,
             replayed_tail_commits: tail_commits,
             recovered_through_commit: restored.history().latest_commit(),
         },
-        integrity_report: plan.integrity_report,
         checkpoint_restore_work,
     };
     *runtime = restored;
@@ -210,9 +244,6 @@ impl RelationalRuntime {
     ) -> Result<RelationalRuntime, RelationalRecoveryStop> {
         let admitted =
             admission::admit_recovery(self, plan).map_err(|rejection| rejection.into_error())?;
-        rebuild_runtime_from_plan(execution, admitted).map(|(restored, plan, _)| {
-            restored.durability.set_store(plan.store);
-            restored
-        })
+        rebuild_runtime_from_plan(execution, admitted).map(|(restored, _, _)| restored)
     }
 }

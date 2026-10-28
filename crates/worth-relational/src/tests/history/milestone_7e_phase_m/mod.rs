@@ -29,7 +29,7 @@ fn merge_collaboration_truth_replay_equivalence_survives_live_publication_and_re
     let live = snapshot_from_summary(&runtime, &outcome.execution_summary);
     let published = snapshot_from_authority(
         &runtime,
-        published_merge_authority(&runtime, outcome.commit.commit.commit_id),
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id),
     );
     let (_recovery, recovered) = checkpoint_and_recover_with(
         execution,
@@ -38,7 +38,7 @@ fn merge_collaboration_truth_replay_equivalence_survives_live_publication_and_re
     );
     let recovered_snapshot = snapshot_from_authority(
         &recovered,
-        published_merge_authority(&recovered, outcome.commit.commit.commit_id),
+        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id),
     );
 
     assert_eq!(
@@ -102,7 +102,7 @@ fn merge_collaboration_support_surface_reflects_correspondence_posture_over_real
     let outcome = execute_feature_merge(execution, &runtime);
     let snapshot = snapshot_from_authority(
         &runtime,
-        published_merge_authority(&runtime, outcome.commit.commit.commit_id),
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id),
     );
     let witness = &snapshot.authority.execution_summary.correspondence_witness;
     let row = snapshot
@@ -164,7 +164,7 @@ fn merge_collaboration_truth_localizes_single_family_drift() {
 
     let runtime = runtime_with_collaboration_merge_history();
     let outcome = execute_feature_merge(execution, &runtime);
-    let baseline = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let baseline = published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
 
     assert_eq!(
         collaboration_family_drift(
@@ -198,7 +198,7 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
 
     let runtime = runtime_with_collaboration_merge_history();
     let outcome = execute_feature_merge(execution, &runtime);
-    let baseline = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let baseline = published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
 
     for drifted in [
         correspondence_drifted_authority(&baseline),
@@ -214,41 +214,27 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
         ));
     }
 
-    let segment_path = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap()
-        .store
-        .expect("persisted store")
-        .segments
-        .last()
-        .expect("persisted segment after merge")
-        .path
-        .clone();
-    let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
-            .unwrap();
-    let merge_entry = file
-        .entries
-        .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
-        .find(|entry| entry.commit.commit_id == outcome.commit.commit.commit_id)
-        .expect("merge entry in durable segment");
-    merge_entry
-        .merge_execution_authority
-        .as_mut()
-        .expect("merge execution authority")
-        .execution_summary
-        .schema_reconciliation_witness = schema_drifted_authority(&baseline)
-        .execution_summary
-        .schema_reconciliation_witness;
-    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
-        .unwrap();
+    crate::tests::support::attached_test_medium(&runtime).rewrite_commit_envelope(
+        execution,
+        outcome.commit.commit.commit_id,
+        |merge_entry| {
+            merge_entry
+                .merge_execution_authority
+                .as_mut()
+                .expect("merge execution authority")
+                .execution_summary
+                .schema_reconciliation_witness = schema_drifted_authority(&baseline)
+                .execution_summary
+                .schema_reconciliation_witness;
+        },
+    );
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mut recovered = runtime_with_collaboration_merge_history();
     let error = recovered
         .durability_recovery()
@@ -270,39 +256,25 @@ fn merge_collaboration_truth_denies_summary_only_and_planner_shortcuts() {
 
     let runtime = runtime_with_collaboration_merge_history();
     let outcome = execute_feature_merge(execution, &runtime);
-    let segment_path = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap()
-        .store
-        .expect("persisted store")
-        .segments
-        .last()
-        .expect("persisted segment after merge")
-        .path
-        .clone();
-    let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
-            .unwrap();
-    let merge_entry = file
-        .entries
-        .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
-        .find(|entry| entry.commit.commit_id == outcome.commit.commit.commit_id)
-        .expect("merge entry in durable segment");
-    merge_entry
-        .merge_execution_authority
-        .as_mut()
-        .expect("merge execution authority")
-        .execution_summary
-        .execution_digest = "forged-summary-digest".to_string();
-    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
-        .unwrap();
+    crate::tests::support::attached_test_medium(&runtime).rewrite_commit_envelope(
+        execution,
+        outcome.commit.commit.commit_id,
+        |merge_entry| {
+            merge_entry
+                .merge_execution_authority
+                .as_mut()
+                .expect("merge execution authority")
+                .execution_summary
+                .execution_digest = "forged-summary-digest".to_string();
+        },
+    );
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mut recovered = runtime_with_collaboration_merge_history();
     let error = recovered
         .durability_recovery()

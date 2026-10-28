@@ -13,6 +13,10 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationResource, WorthQueryResourceAccessPurpose,
 };
 
+#[expect(
+    dead_code,
+    reason = "original typed refusal is retained opaquely; disclosure uses approved projections"
+)]
 pub(in crate::domain_computation::primary_graph::application_resource) enum ResourcePlanDenial {
     Graph(WorthQueryGraphWorkAdmissionDenial),
     Request(WorkCeilingDenial),
@@ -83,7 +87,7 @@ pub(super) fn admit<Schema: ApplicationSchema, Binding: ApplicationResourceBindi
                     }
                 })
             })?;
-            drop(admit);
+
             Ok(CapturedPlan {
                 plan,
                 bytes: memory.as_deref().map_or(0, |memory| memory.bytes()),

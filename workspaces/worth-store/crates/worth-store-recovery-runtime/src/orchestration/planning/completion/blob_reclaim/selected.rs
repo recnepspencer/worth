@@ -211,26 +211,24 @@ fn scan_source(
                 bytes.capacity() as u64 + decoder as u64 + u64::from(format.page_size().bytes()),
             );
         }
-        if let BlobRecordV1::SessionFrontier(frontier) = &fact {
-            if frontier.session() == manifest.source_basis().session() {
-                selected_frontier_end = selected_frontier_end.max(frontier.next_chunk_ordinal());
-            }
+        if let BlobRecordV1::SessionFrontier(frontier) = &fact
+            && frontier.session() == manifest.source_basis().session()
+        {
+            selected_frontier_end = selected_frontier_end.max(frontier.next_chunk_ordinal());
         }
-        if let BlobRecordV1::OriginalDropReserved(value) = &fact {
-            if let SourceInspectionKind::DropDescriptor { reservation, .. } = kind {
-                let related = value.reclaim_attempt() == manifest.reclaim_attempt()
-                    || reservation.is_some_and(|expected| {
-                        value.manifest_record() == expected.manifest_record()
-                    });
-                if related {
-                    if reservation_seen
-                        || !reservation.is_some_and(|expected| expected.matches(*value))
-                    {
-                        result = Err(HistoricalFailure::Invalid);
-                        break;
-                    }
-                    reservation_seen = true;
+        if let BlobRecordV1::OriginalDropReserved(value) = &fact
+            && let SourceInspectionKind::DropDescriptor { reservation, .. } = kind
+        {
+            let related = value.reclaim_attempt() == manifest.reclaim_attempt()
+                || reservation
+                    .is_some_and(|expected| value.manifest_record() == expected.manifest_record());
+            if related {
+                if reservation_seen || !reservation.is_some_and(|expected| expected.matches(*value))
+                {
+                    result = Err(HistoricalFailure::Invalid);
+                    break;
                 }
+                reservation_seen = true;
             }
         }
         if kind.selected_conflict(record_id, &fact, manifest, declaration, candidate, &seen) {

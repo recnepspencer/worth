@@ -94,9 +94,12 @@ pub(super) fn apply_operation(
                 step,
             );
         }
-        ScenarioOperation::CaptureSnapshot => {
-            snapshots.push(runtime.visibility_authority().snapshot())
-        }
+        ScenarioOperation::CaptureSnapshot => snapshots.push(
+            runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted"),
+        ),
         ScenarioOperation::ReleaseSnapshot { snapshot_slot } => {
             release_snapshot(runtime, snapshots, *snapshot_slot);
         }
@@ -122,6 +125,7 @@ pub(super) fn apply_operation(
             from_branch_slot,
         } => {
             create_branch(
+                execution,
                 runtime,
                 branches,
                 branch_name,
@@ -142,10 +146,10 @@ pub(super) fn apply_operation(
             );
         }
         ScenarioOperation::RunRetentionPass => {
-            let _ = runtime.retention().run_pass();
+            let _ = runtime.retention().run_pass(execution).unwrap();
             refresh_live_world(execution, runtime, entities, relations);
         }
-        ScenarioOperation::DurableCheckpoint | ScenarioOperation::CompactDurableStore => {}
+        ScenarioOperation::DurableCheckpoint => {}
     }
 }
 
@@ -316,6 +320,7 @@ fn delete_entity(
 }
 
 fn create_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branches: &mut Vec<BranchId>,
     branch_name: &str,
@@ -334,7 +339,7 @@ fn create_branch(
     let branch = BranchId(branch_name);
     if runtime
         .history_authority()
-        .fork_branch_from(branch.clone(), &from_branch)
+        .fork_branch_from(execution, branch.clone(), &from_branch)
         .is_ok()
     {
         branches.push(branch);

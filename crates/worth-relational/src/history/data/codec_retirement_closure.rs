@@ -100,7 +100,7 @@ impl OwnedCodecRetirementClosure {
             let member = &origin.members[origin
                 .members
                 .binary_search_by_key(id, |member| member.id)
-                .expect("readmitted full membership")];
+                .expect(/* Proof: The only origins.push is preceded by membership::validate_member, which checks this exact id in validate_output_membership_header's sorted immutable members. OwnedCodecRetirementClosure fields are private and neither the id nor the Arc origin is mutated afterwards. */ "readmitted full membership")];
             (
                 *id,
                 *kind,
@@ -157,6 +157,16 @@ pub(crate) fn derive_codec_retirement_closure(
     basis: &AdmittedRelationalBranchBasis,
     changed_fields: &[CodecFieldLocus],
 ) -> Result<OwnedCodecRetirementClosure, CodecRetirementClosureStop> {
+    if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+        || !basis.is_current()
+    {
+        return Err("codec provenance requires the current recovered native basis".into());
+    }
+    basis
+        .inner
+        .root
+        .demand_all_full(execution, &runtime.services.symbols)
+        .map_err(|failure| CodecRetirementClosureStop::Request(failure.into()))?;
     let result = execution
         .in_scope(|lease| {
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
@@ -224,7 +234,7 @@ fn derive_metered(
     for partition_id in root.partition_ids_iter() {
         charge(context, 1)?;
         let partition = root
-            .partition_state(partition_id)
+            .partition_state(partition_id)?
             .ok_or("native partition disappeared")?;
         for slot in partition.entity_arena.occupied_slots_iter() {
             charge(context, 1)?;
@@ -274,7 +284,7 @@ fn derive_metered(
     }
     for &id in &affected {
         let partition = root
-            .partition_state(id.partition_id)
+            .partition_state(id.partition_id)?
             .ok_or("affected output partition missing")?;
         let row = partition
             .entity_arena
@@ -381,4 +391,10 @@ fn reserve(
     .map_err(|denial| {
         CodecRetirementClosureStop::Request(crate::execution::denial::lease_denial(denial))
     })
+}
+
+impl From<crate::storage::data::RelationalStorageUnavailable> for CodecRetirementClosureStop {
+    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+        Self::Request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure))
+    }
 }

@@ -31,6 +31,7 @@ impl ContinuityLineageSource for TestContinuityLineageSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         BridgeHistoricalLineageAuthority::try_new(
             request.authority_basis().clone(),
@@ -52,6 +53,7 @@ impl ContinuityLineageSource for TestMismatchedAuthorityLineageSource {
     fn historical_lineage(
         &self,
         _request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         BridgeHistoricalLineageAuthority::try_new(
             BridgeContinuityAuthorityBasis::new(
@@ -76,6 +78,7 @@ impl ContinuityLineageSource for TestUnsupportedContinuityLineageSource {
     fn historical_lineage(
         &self,
         _request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         Err(crate::facade::BridgeLineageSourceError::new(
             crate::facade::BridgeLineageSourceErrorKind::UnsupportedContinuityClass,
@@ -91,6 +94,7 @@ impl ContinuityLineageSource for TestSplitContinuityLineageSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         BridgeHistoricalLineageAuthority::try_new(
             request.authority_basis().clone(),
@@ -114,6 +118,7 @@ impl ContinuityLineageSource for TestMergeLikeContinuityLineageSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         BridgeHistoricalLineageAuthority::try_new(
             request.authority_basis().clone(),
@@ -136,6 +141,7 @@ impl ContinuityLineageSource for TestAmbiguousContinuityLineageSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         BridgeHistoricalLineageAuthority::try_new(
             request.authority_basis().clone(),
@@ -166,6 +172,7 @@ impl ContinuityLineageSource for TestNoAuthoritativeSuccessorLineageSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         BridgeHistoricalLineageAuthority::try_new(
             request.authority_basis().clone(),
@@ -197,6 +204,7 @@ impl ContinuityLineageSource for CountingContinuityLineageSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         self.call_count.fetch_add(1, Ordering::SeqCst);
         BridgeHistoricalLineageAuthority::try_new(

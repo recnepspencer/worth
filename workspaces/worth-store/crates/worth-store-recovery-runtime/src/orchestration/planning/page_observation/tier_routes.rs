@@ -87,9 +87,7 @@ fn selected_epoch_authorization(
             .is_none()
             .then_some(None);
     };
-    let Some(epoch) = header.tier_epoch_start() else {
-        return None;
-    };
+    let epoch = header.tier_epoch_start()?;
     let checkpoint = evidence.selection.checkpoint()?;
     let stream = evidence.checkpoint?;
     if stream.facts() != *checkpoint.checkpoint() {
@@ -182,12 +180,8 @@ fn selected_epoch_authorization(
             }))
         }
         None => {
-            let Some(observed) = evidence.sample.tier_epoch_activation() else {
-                return None;
-            };
-            let Some(completed_range) = observed.completion_range() else {
-                return None;
-            };
+            let observed = evidence.sample.tier_epoch_activation()?;
+            let completed_range = observed.completion_range()?;
             let intent = observed.intent();
             let intent_digest: [u8; 32] = Sha256::digest(intent.encode()).into();
             let completed_digest: [u8; 32] = Sha256::digest(intent.completed().encode()).into();

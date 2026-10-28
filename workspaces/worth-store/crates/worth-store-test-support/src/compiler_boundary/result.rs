@@ -20,7 +20,10 @@ pub enum UiRunFailure {
     EnvironmentObservation(String),
     FixtureRead(String),
     CompilerLaunch(String),
-    CompilerTimedOut(String),
+    CompilerTimedOut {
+        fixture: String,
+        stderr: String,
+    },
     UnexpectedCompilerSuccess(String),
     WrongCompilerDenial {
         fixture: String,
@@ -38,8 +41,8 @@ impl std::fmt::Display for UiRunFailure {
             }
             Self::FixtureRead(reason) => write!(formatter, "could not read UI fixture: {reason}"),
             Self::CompilerLaunch(reason) => write!(formatter, "could not launch UI compiler: {reason}"),
-            Self::CompilerTimedOut(fixture) => {
-                write!(formatter, "UI fixture {fixture} exceeded its compiler timeout")
+            Self::CompilerTimedOut { fixture, stderr } => {
+                write!(formatter, "UI fixture {fixture} exceeded its compiler timeout; Cargo progress:\n{stderr}")
             }
             Self::UnexpectedCompilerSuccess(fixture) => {
                 write!(formatter, "UI fixture {fixture} unexpectedly compiled")

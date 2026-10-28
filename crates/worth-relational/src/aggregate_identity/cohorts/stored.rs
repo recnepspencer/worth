@@ -31,14 +31,15 @@ pub(in crate::aggregate_identity) fn read_stored_group(
     }
     for member in members {
         work.checkpoint(1)?;
-        if !carriers.contains_key(&member.carrier()) {
+        if let std::collections::btree_map::Entry::Vacant(entry) = carriers.entry(member.carrier())
+        {
             let bindings =
                 super::super::membership::read(view, registry, contract, member.carrier(), work)?;
             work.retain(extent::tree_entry::<
                 EntityId,
                 BTreeMap<Member, (RelationId, EntityId)>,
             >())?;
-            carriers.insert(member.carrier(), bindings);
+            entry.insert(bindings);
         }
         let bindings = &carriers[&member.carrier()];
         super::super::membership::key_lookup(member, bindings.len(), work)?;

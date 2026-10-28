@@ -188,14 +188,18 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
     assert_eq!(
         runtime
             .replay()
-            .canonical_commit_envelope(performed.canonical_commit().commit.commit_id),
+            .canonical_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone()),
         Some(performed.canonical_commit().clone()),
         "the ordinary replay surface resolves the root-owned artifact"
     );
     assert_eq!(
         runtime
             .replay()
-            .canonical_commit_envelope_owned(performed.canonical_commit().commit.commit_id),
+            .canonical_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone()),
         Some(performed.canonical_commit().clone()),
         "replay input resolves the same canonical root-owned artifact"
     );
@@ -214,7 +218,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         .contains(&performed.canonical_commit().commit.commit_id));
     let stream = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .expect("the performed root's patch is immediately stream-visible");
     let expected_patch =
         crate::publication::patch::data::PublishedAuthoritativePatchEnvelope::from_canonical(

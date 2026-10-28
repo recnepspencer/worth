@@ -50,6 +50,7 @@ impl<'state> InvariantExecutionRequest<'state> {
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
         control.check()?;
         debug_assert!(
+            /* Proof: Request construction is private to the invariant planner, which selects each profile by supports_observation before building its packet. Unsupported registrations are refused at runtime construction. */
             profile.supports_observation(observation.kind()),
             "invariant profile {:?} does not support {:?} observation",
             profile,

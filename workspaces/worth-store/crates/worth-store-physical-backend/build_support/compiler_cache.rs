@@ -1,5 +1,7 @@
 //! The supported transparent compiler-cache composition, not binary attestation.
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(not(test))]
+use std::path::PathBuf;
 
 pub const RELEASE_INPUT: &str = "observed-compiler-cache-release";
 const SUPPORTED_RELEASE: &str = "sccache 0.18.0";
@@ -13,6 +15,7 @@ pub fn is_supported(program: &str, release: &str) -> bool {
 
 /// Observe the configured program rather than accepting a release from the
 /// environment. Replacing that executable or changing PATH reruns qualification.
+#[cfg(not(test))]
 pub fn observe(program: &str) -> String {
     if program.is_empty() {
         return String::new();
@@ -41,6 +44,7 @@ fn named_sccache(path: &Path) -> bool {
     )
 }
 
+#[cfg(not(test))]
 fn resolve(program: &str) -> Option<PathBuf> {
     let path = Path::new(program);
     if path.is_absolute() || path.components().count() > 1 {

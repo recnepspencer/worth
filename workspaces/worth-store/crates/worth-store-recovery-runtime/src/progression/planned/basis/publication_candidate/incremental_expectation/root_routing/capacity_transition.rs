@@ -40,7 +40,6 @@ pub(super) fn derive(
     }
     let root = traversal.writer.finish()?;
     let next_block = traversal.writer.next_block;
-    drop(traversal);
     writer.release_storage()?;
     let topology_bytes = PlanningResidentAllowance::vector_bytes(&topology)?;
     let updates_bytes = PlanningResidentAllowance::vector_bytes(&updates)?;

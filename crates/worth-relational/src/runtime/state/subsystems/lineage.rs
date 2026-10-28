@@ -5,8 +5,15 @@ use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::{LineageEventRecord, LineageNode};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 
+mod event_page;
+mod event_residency;
+mod node_page;
+mod page_admission;
+pub(crate) use event_residency::ResidentLineageEventPage;
+mod node_residency;
 mod resolution_indexes;
 mod state;
+pub(crate) use node_residency::ResidentLineageNode;
 
 pub(crate) use state::{LineageState, ValidatedLineageEventBatch};
 
@@ -15,12 +22,70 @@ pub(crate) use state::{LineageState, ValidatedLineageEventBatch};
 #[derive(Debug, Default)]
 pub(crate) struct LineageSubsystem {
     state: RuntimeOwnedState<LineageState>,
+    event_admissions:
+        RuntimeOwnedState<BTreeSet<crate::durability::medium::RelationalDurableMemberLocator>>,
+    event_residency:
+        RuntimeOwnedState<Option<std::sync::Arc<event_residency::RuntimeLineageEventResidency>>>,
+    node_residency:
+        RuntimeOwnedState<Option<std::sync::Arc<node_residency::RuntimeLineageNodeResidency>>>,
 }
 
 impl LineageSubsystem {
     /// Replace the whole subsystem, for checkpoint restore.
     pub(crate) fn install(&self, state: LineageState) {
         *self.state.write() = state;
+        *self.node_residency.write() = None;
+        *self.event_residency.write() = None;
+        self.event_admissions.write().clear();
+    }
+
+    pub(crate) fn demand_node(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: LineageId,
+    ) -> Result<
+        Option<ResidentLineageNode>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
+        let residency = self.node_residency.read().clone();
+        if let Some(residency) = residency
+            && residency.covers(id)
+        {
+            let Some(node) = residency.demand(execution, id)? else {
+                return Ok(None);
+            };
+            let mut state = self.state.write();
+            for admitted in node.page_nodes() {
+                if state
+                    .nodes
+                    .get(&admitted.lineage_id())
+                    .is_some_and(|prior| prior != admitted)
+                    || state
+                        .indexed_lineage_for_entity(admitted.entity_id())
+                        .0
+                        .is_some_and(|prior| prior != admitted.lineage_id())
+                {
+                    return Err(node.reject_binding());
+                }
+            }
+            for admitted in node.page_nodes() {
+                state.record_node(admitted.clone());
+            }
+            return Ok(Some(node));
+        }
+        Ok(self
+            .state
+            .read()
+            .nodes
+            .get(&id)
+            .cloned()
+            .map(ResidentLineageNode::published))
+    }
+
+    pub(crate) fn published_rows(&self) -> Vec<(std::sync::Arc<LineageEventRecord>, CommitId)> {
+        self.state.read().published_rows()
     }
 
     pub(crate) fn snapshot(&self) -> LineageState {
@@ -95,6 +160,7 @@ impl LineageSubsystem {
         self.state.write().record_node(node);
     }
 
+    #[cfg(test)]
     pub(crate) fn node(&self, lineage_id: LineageId) -> Option<LineageNode> {
         self.state.read().nodes.get(&lineage_id).cloned()
     }
@@ -178,7 +244,9 @@ impl LineageSubsystem {
     }
 
     pub(crate) fn replace_events(&self, events: Vec<(LineageEventRecord, CommitId)>) {
+        let mut admissions = self.event_admissions.write();
         self.state.write().replace_events(events);
+        admissions.clear();
     }
 
     pub(crate) fn drain_events(&self) -> Vec<(LineageEventRecord, CommitId)> {
@@ -192,12 +260,20 @@ impl RuntimeSubsystem for LineageSubsystem {
     fn new(_: &Self::Config) -> Self {
         Self {
             state: RuntimeOwnedState::new(LineageState::empty()),
+            node_residency: Default::default(),
+            event_residency: Default::default(),
+            event_admissions: Default::default(),
         }
     }
 
     fn fork(&self) -> Self {
+        // Admission membership and the copied resolution index form one basis.
+        let admissions = self.event_admissions.read();
         Self {
             state: RuntimeOwnedState::new(self.snapshot()),
+            node_residency: self.node_residency.detached(),
+            event_residency: self.event_residency.detached(),
+            event_admissions: RuntimeOwnedState::new(admissions.clone()),
         }
     }
 }

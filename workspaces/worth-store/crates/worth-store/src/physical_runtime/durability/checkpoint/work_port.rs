@@ -183,10 +183,7 @@ impl PhysicalCheckpointWorkPort {
                 foreground_pressure_events,
             )
             .map_err(|_denial| PhysicalCheckpointActionFailure::SchedulerCapacityUnavailable)?;
-        let lease = match require_complete_lease(pacing) {
-            Ok(lease) => lease,
-            Err(failure) => return Err(failure),
-        };
+        let lease = require_complete_lease(pacing)?;
         let demand = PhysicalSchedulerDemand::checkpoint_background(ready, lease, capacity)
             .map_err(|_denial| PhysicalCheckpointActionFailure::SchedulerDemandRejected)?;
         PhysicalWorkAdmission::require_current(

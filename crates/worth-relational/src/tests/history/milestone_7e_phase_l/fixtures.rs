@@ -12,7 +12,7 @@ use crate::facade::schema::{
 use crate::merge::data::PreparedMergeExecution;
 use crate::tests::support::{
     aspect_key, create_branch_from_main, create_entity, entity_field_aspect, field_key,
-    string_aspect_field_patch, unique_test_store_path, DurabilityMode, DurableStoreLayout,
+    string_aspect_field_patch,
 };
 use crate::transactions::data::PublishedMergeExecutionAuthority;
 
@@ -60,16 +60,14 @@ pub(super) fn runtime_with_schema_declared_entity_policy(persisted: bool) -> Rel
             })
         })
         .expect("schema registry");
-    let mut builder = RelationalRuntimeApi::builder().schema_registry(registry);
+    let builder = RelationalRuntimeApi::builder().schema_registry(registry);
     if persisted {
-        builder = builder
-            .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-            .durable_store_layout(DurableStoreLayout {
-                root_path: unique_test_store_path("worth-relational-7e-phase-l-support"),
-                segment_commit_capacity: 2,
-            });
+        builder
+            .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+            .expect("valid native runtime configuration")
+    } else {
+        builder.build().expect("valid native runtime configuration")
     }
-    builder.build()
 }
 
 pub(super) fn prepared_merge(
@@ -128,12 +126,15 @@ fn update_entity_status_on_branch(
 }
 
 pub(super) fn published_merge_authority(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     commit_id: crate::facade::history::CommitId,
 ) -> PublishedMergeExecutionAuthority {
     runtime
         .replay()
-        .canonical_commit_envelope(commit_id)
+        .canonical_commit_envelope(execution, commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
 }

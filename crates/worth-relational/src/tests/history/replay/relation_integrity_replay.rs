@@ -48,7 +48,8 @@ fn replay_contract_preserves_relation_integrity_declared_schema() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let outcome = create_relation_outcome(execution, &runtime, source, target, "guarded");
@@ -67,7 +68,9 @@ fn replay_contract_preserves_relation_integrity_declared_schema() {
         .unwrap();
     let replay_access = runtime.replay();
     let envelope = replay_access
-        .canonical_commit_envelope(outcome.commit.commit_id)
+        .canonical_commit_envelope(execution, outcome.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
@@ -110,6 +113,7 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

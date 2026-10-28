@@ -26,7 +26,8 @@ pub fn in_memory_test_product_world_installation(
 
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .runtime_name("worth-query-explicit-test-backend-product")
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
         runtime,
         "worth-query-explicit-test-backend-product",

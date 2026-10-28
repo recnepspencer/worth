@@ -88,7 +88,7 @@ impl DurableFreeSpaceManifestHeader {
             && tier_epoch_start.is_none_or(|epoch| epoch != 0 && epoch <= next_arena)
             && arena_alignment.is_power_of_two()
             && arena_capacity != 0
-            && arena_capacity % arena_alignment == 0
+            && arena_capacity.is_multiple_of(arena_alignment)
             && next_block != 0
             && shape
             && root.is_none_or(|reference| {

@@ -69,14 +69,25 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 )
             },
             |relational| {
-                selected_index_is_current(relational, self.product().relational_basis(), index)
-                    .then_some(())
-                    .ok_or_else(|| {
-                        entity_denial(
-                            Kind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
-                            field,
-                        )
-                    })?;
+                selected_index_is_current(
+                    execution,
+                    relational,
+                    self.product().relational_basis(),
+                    index,
+                )
+                .map_err(|cause| {
+                    entity_denial(
+                        native_denial_kind(BoundedEntityFieldLookupDenialKind::Execution(cause)),
+                        field,
+                    )
+                })?
+                .then_some(())
+                .ok_or_else(|| {
+                    entity_denial(
+                        Kind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                        field,
+                    )
+                })?;
                 let view = relational
                     .read_truth()
                     .project_snapshot_in_request(

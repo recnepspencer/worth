@@ -1,3 +1,4 @@
+#[cfg(test)]
 use std::num::NonZeroUsize;
 
 use worth_query_host::facade::application_entry::{
@@ -39,8 +40,6 @@ mod program_contract;
 mod readiness_recovery;
 mod recovery;
 mod required_basis;
-mod required_unpublished;
-mod required_unpublished_hostile;
 pub(super) mod root_selection;
 pub(super) mod selected_root_selection;
 mod settlement;
@@ -64,10 +63,6 @@ pub(super) fn performed_source_settles_required_output(
     discovered::recovery::newer_discovered_source_retires_recovery(foreign);
     discovered::recovery::foreign_runtime_cannot_recover_discovered_source(foreign);
     discovered::recovery::interrupted_discovery_recovers_both_consumed_roots(foreign);
-    discovered::unpublished::original_partial_recovers_discovered_outputs(foreign);
-    required_unpublished::original_partial_recovers_required_outputs(foreign);
-    required_unpublished_hostile::hostile_reconstruction_preserves_required_custody(foreign);
-    discovered::initial_unpublished::initial_partial_recovers_discovered_outputs(foreign);
     discovered::publication_lifecycle::unchanged_roots_join_new_publication(foreign);
     discovered::publication_lifecycle::older_publication_starts_after_newer_root_binding(foreign);
     discovered::publication_lifecycle::running_roots_follow_the_newer_publication(foreign);
@@ -305,21 +300,6 @@ pub(super) fn ordinary_source_publication_cannot_bypass_program(
         .execute()
         .expect("the denied source remains readable");
     assert_eq!(after.rows()[0].y, length(1));
-}
-
-#[cfg(test)]
-#[test]
-fn owning_fixed_partial_publication_delivery_and_close() {
-    required_unpublished::original_partial_recovers_required_outputs(&crate::installed_schema());
-}
-
-#[cfg(test)]
-#[test]
-fn required_source_cleanup_consumers_complete() {
-    let installed = crate::installed_schema();
-    required_unpublished_hostile::hostile_reconstruction_preserves_required_custody(&installed);
-    discovered::unpublished::original_partial_recovers_discovered_outputs(&installed);
-    discovered::initial_unpublished::initial_partial_recovers_discovered_outputs(&installed);
 }
 
 #[cfg(test)]

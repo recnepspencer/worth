@@ -19,8 +19,8 @@ pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
         executable_sha256(observer).unwrap(),
         executable_sha256(&executable).unwrap()
     );
-    let scenario = fresh_identity("namespace-matrix", &world);
-    let producer_run = fresh_identity("namespace-producer", &world);
+    let scenario = fresh_identity("namespace-matrix", world);
+    let producer_run = fresh_identity("namespace-producer", world);
     let produced = run_subject(
         &executable,
         &reports,
@@ -61,7 +61,7 @@ pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
             role,
             report: reports.join(format!("{}.{suffix}.json", operator.label())),
             scenario,
-            run: fresh_identity(&format!("{}-{suffix}", operator.label()), &world),
+            run: fresh_identity(&format!("{}-{suffix}", operator.label()), world),
         };
         let edited = execute(request_for("editor", Role::Editor(operator)));
         assert_eq!(edited["operator"], operator.label());
@@ -77,7 +77,7 @@ pub(in crate::c9_integrity_localization) fn run(observer: &Path) {
             None => std::fs::remove_file(root.join(IDENTITY)).unwrap(),
         }
         let before = ProcessTreeSnapshot::observe(&root).unwrap();
-        let offline_run = fresh_identity(&format!("{}-offline", operator.label()), &world);
+        let offline_run = fresh_identity(&format!("{}-offline", operator.label()), world);
         let offline = run_offline_observer(
             observer,
             &root,

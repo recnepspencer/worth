@@ -285,19 +285,15 @@ fn dropped_public_resource_is_reclaimed_only_by_exact_receipt_after_pending_clea
     assert_eq!(
         resources
             .close(&mut handle)
-            .err()
-            .expect("provider reports real pending cleanup")
+            .expect_err("provider reports real pending cleanup")
             .kind(),
         WorthQueryResourceStopKind::Cleanup
     );
     drop(handle);
-    drop(resources);
-    drop(request);
     assert_eq!(
         host.application
             .close_conditional_runtime()
-            .err()
-            .expect("actual shutdown preserves pending resource owner")
+            .expect_err("actual shutdown preserves pending resource owner")
             .kind(),
         WorthQueryConditionalRuntimeInstallationDenialKind::ResourceCleanupRetained
     );
@@ -317,8 +313,6 @@ fn dropped_public_resource_is_reclaimed_only_by_exact_receipt_after_pending_clea
         .is_err());
     assert_eq!(host.contacts.resource.counts().0, 2);
     resources.close(&mut successor).unwrap();
-    drop(resources);
-    drop(request);
     host.application.close_conditional_runtime().unwrap();
     assert_eq!(
         host.application
@@ -351,8 +345,7 @@ fn dropped_public_resource_is_reclaimed_only_by_exact_receipt_after_pending_clea
         .request(&actor, &fresh)
         .resources()
         .result_available_governed(&receipt, metadata::admit(&foreign, &actor, &fresh).unwrap())
-        .err()
-        .expect("old original branch cannot be adopted by a restarted runtime");
+        .expect_err("old original branch cannot be adopted by a restarted runtime");
     assert_eq!(
         expired.selection_denial(),
         Some(&WorthQueryProductBranchAdmissionDenial::Refused(

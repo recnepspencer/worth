@@ -15,6 +15,14 @@ use super::{
 #[path = "root_readmission/required_text.rs"]
 mod required_text;
 
+struct ReadmittedRegionSet {
+    root_id: u64,
+    regions: Arc<super::RelationalPersistentRegionSet>,
+    entity_slot_count: usize,
+    relation_slot_count: usize,
+    publication_cost: super::RelationalBranchRootPublicationCost,
+}
+
 impl RelationalBranchRoot {
     pub(crate) fn readmit(
         issuer: &RelationalBranchRootIdentityIssuer,
@@ -35,8 +43,79 @@ impl RelationalBranchRoot {
             .values()
             .map(|partition| partition.relation_arena.slot_count())
             .sum();
-        let (regions, mut publication_cost) =
+        let (regions, publication_cost) =
             capture::build_initial_regions_owned(issuer, root_id, partitions, symbols)?;
+        Self::bind_readmitted_regions(
+            ReadmittedRegionSet {
+                root_id,
+                regions,
+                entity_slot_count,
+                relation_slot_count,
+                publication_cost,
+            },
+            envelope,
+            descriptor,
+            schema_authority,
+        )
+    }
+
+    pub(crate) fn readmit_region_directory(
+        issuer: &RelationalBranchRootIdentityIssuer,
+        directory: Vec<super::super::root_checkpoint::RelationalRootRegionCheckpoint>,
+        envelope: Arc<CanonicalCommitEnvelope>,
+        descriptor: RelationalBranchRootDescriptor,
+        schema_authority: Arc<super::RelationalBranchRootSchemaAuthority>,
+    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let root_id = issuer.issue_root_id()?;
+        let mut regions = BTreeMap::new();
+        let mut entity_slot_count = 0_usize;
+        let mut relation_slot_count = 0_usize;
+        for region in directory {
+            entity_slot_count = entity_slot_count
+                .checked_add(region.entity_slots)
+                .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
+            relation_slot_count = relation_slot_count
+                .checked_add(region.relation_slots)
+                .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
+            let id = region.partition_id;
+            let region = super::RelationalRootRegion::from_checkpoint(
+                root_id,
+                issuer.issue_region_id()?,
+                region,
+            );
+            if regions.insert(id, Arc::new(region)).is_some() {
+                return Err(RelationalBranchRootCaptureDenial::DuplicateRegion(id));
+            }
+        }
+        let regions = super::RelationalPersistentRegionSet::initial(root_id, regions, issuer)?;
+        Self::bind_readmitted_regions(
+            ReadmittedRegionSet {
+                root_id,
+                regions,
+                entity_slot_count,
+                relation_slot_count,
+                publication_cost: Default::default(),
+            },
+            envelope,
+            descriptor,
+            schema_authority,
+        )
+    }
+
+    fn bind_readmitted_regions(
+        prepared: ReadmittedRegionSet,
+        envelope: Arc<CanonicalCommitEnvelope>,
+        descriptor: RelationalBranchRootDescriptor,
+        schema_authority: Arc<super::RelationalBranchRootSchemaAuthority>,
+    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let ReadmittedRegionSet {
+            root_id,
+            regions,
+            entity_slot_count,
+            relation_slot_count,
+            mut publication_cost,
+        } = prepared;
+        validate_schema_root(&envelope, &descriptor)?;
         let (storage_root, content_accumulator) = axes::storage_root_for(&regions);
         require_descriptor_content(&descriptor, storage_root)?;
         let schema_root = *descriptor.schema_root();
@@ -108,6 +187,37 @@ impl RelationalBranchRoot {
         Ok(self.with_committed(committed))
     }
 
+    /// Recovery binds admitted source authority after replay reconstructs storage.
+    /// Its visibility axis includes retained strategy facts absent from execution.
+    pub(crate) fn readmit_canonical_envelope(
+        &self,
+        source: &crate::history::data::PositionedCanonicalCommit,
+        symbols: &crate::symbols::data::StringInterner,
+    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let mut committed = self
+            .committed
+            .clone()
+            .ok_or(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch)?;
+        if committed.canonical_envelope.commit != source.commit {
+            return Err(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch);
+        }
+        validate_schema_root(source.envelope(), &committed.descriptor)?;
+        require_schema_authority(
+            &self.schema_authority,
+            source.envelope(),
+            &committed.descriptor,
+        )?;
+        self.require_current_content_binding(&committed, symbols)?;
+        committed.axes.visibility = RelationalBranchVisibilityCommitment::for_root(
+            source.envelope(),
+            committed.axes.storage_root,
+            committed.axes.schema_root,
+            committed.axes.correctness_index,
+        );
+        committed.canonical_envelope = source.canonical_arc().clone();
+        Ok(self.with_committed(committed))
+    }
+
     /// Readmit the durable descriptor learned from the next exact branch-cell
     /// checkpoint without rebuilding the reconstructed storage regions.
     pub(crate) fn readmit_descriptor(
@@ -129,7 +239,11 @@ impl RelationalBranchRoot {
         let (reconstructed_root, reconstructed_accumulator) =
             axes::storage_root_from_authoritative_regions(&self.regions, symbols)?;
         require_descriptor_content(&descriptor, reconstructed_root)?;
-        debug_assert_eq!(self.content_accumulator, reconstructed_accumulator);
+        debug_assert_eq!(
+            /* Proof: readmit rebuilds both the region set and accumulator from the same checked immutable regions before installing the new root; no caller can set the private accumulator independently. */
+            self.content_accumulator,
+            reconstructed_accumulator
+        );
         committed.descriptor = descriptor;
         Ok(self.with_committed(committed))
     }

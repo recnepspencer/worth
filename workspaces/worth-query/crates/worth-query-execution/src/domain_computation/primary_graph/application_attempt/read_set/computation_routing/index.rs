@@ -11,10 +11,6 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactIndex {
     pub(super) aggregate: bool,
 }
 impl ComputationFactIndex {
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-    )]
     pub(super) fn build(
         facts: &BTreeMap<WorthQueryApplicationFactKey, SealedComputationFact>,
         policy: ExecutionAllocationPolicy<'_, '_>,

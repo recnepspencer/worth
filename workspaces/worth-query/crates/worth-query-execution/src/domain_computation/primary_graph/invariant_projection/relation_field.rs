@@ -66,7 +66,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 context.poll()?;
             }
             let observed = projection
-                .with_exact_relation_state(identity.relation_id(), |record, state| {
+                .read_exact_relation_state(self.execution,identity.relation_id(), |record, state| {
                     if record.relation_id != identity.relation_id()
                         || record.kind_id != layout.kind
                         || record.lifecycle != RecordLifecycleState::Live
@@ -87,8 +87,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                         raw,
                     )
                 })
-                .ok()
-                .flatten();
+                .map_err(|cause| match cause {
+                    worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {self.native_read_stop.get_or_insert(cause);},
+                    worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {},
+                }).ok().flatten();
             Ok::<_, MapKernelStop>(observed)
         }) {
             Ok(value) => value,

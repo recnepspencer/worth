@@ -19,6 +19,13 @@ impl PartialEq for SelectedRelationalBranchState {
 impl Eq for SelectedRelationalBranchState {}
 
 impl SelectedRelationalBranchState {
+    pub(crate) fn with_symbol_admission<'read>(
+        &'read self,
+        symbols: &'read crate::runtime::RuntimeSymbolTable,
+    ) -> super::SymbolAdmittedRootRead<'read> {
+        super::SymbolAdmittedRootRead::new(self.state().root(), symbols)
+    }
+
     pub(crate) fn from_admitted_basis(basis: &super::AdmittedRelationalBranchBasis) -> Self {
         let state = RelationalBranchRootState::new(basis.inner.root.clone());
         match basis.descriptor().reference().target() {
@@ -49,11 +56,48 @@ impl SelectedRelationalBranchState {
 }
 
 impl PartitionAccess for SelectedRelationalBranchState {
+    fn probe_full_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        self.state().probe_full_partition(id)
+    }
+
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: crate::identity::data::PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.state().demand_full_partition(execution, id)
+    }
+
     fn get_partition(
         &self,
         partition_id: crate::identity::data::PartitionId,
     ) -> Option<&PartitionState> {
         self.state().get_partition(partition_id)
+    }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for SelectedRelationalBranchState {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.state().get_current_partition(id)
+    }
+    fn probe_head_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        self.state().probe_head_partition(id)
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: crate::identity::data::PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.state().demand_head_partition(execution, id)
     }
 
     fn partition_ids(&self) -> Vec<crate::identity::data::PartitionId> {

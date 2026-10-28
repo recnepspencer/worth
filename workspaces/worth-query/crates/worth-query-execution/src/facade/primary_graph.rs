@@ -1,9 +1,4 @@
 //! Primary Graph application contracts.
-pub use crate::domain_computation::application_aftermath::{
-    WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
-    WorthQueryCorrectionLineageBinding, WorthQueryCorrectionSourceCoordinates,
-    WorthQueryRecordedCorrectionSource,
-};
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryApplicationResource, WorthQueryApplicationResourceProvider,
@@ -63,6 +58,12 @@ pub use crate::domain_computation::primary_graph::{
 
 pub use crate::domain_computation::primary_graph::query_test_execution_authority_for_test;
 
+pub use worth_relational::facade::runtime::{
+    HistoricalVisibilityDenial, RelationalProjectionContractDenial, StructuralWalkDenialKind,
+};
+pub use worth_relational::facade::storage::{
+    RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
+};
 pub use worth_relational::facade::{
     indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
     lineage::{LineageEventKind, LineageEventRecord},
@@ -79,7 +80,9 @@ pub use crate::domain_computation::application_aftermath::{
     safe_retry_recovery_handle, ExternalEffectCausalLink, ExternalEffectClassification,
     ExternalEffectCorrelationIdentity, ExternalEffectPosture, ExternalEffectPostureIdentity,
     ExternalEffectPostureKind, ExternalRailTransportFault, WorthQueryAdmittedIdempotencyRead,
-    WorthQueryAftermathDerivationFailure, WorthQueryDispatchOutboxDurabilityPosture,
+    WorthQueryAftermathCausalRole, WorthQueryAftermathDerivationFailure,
+    WorthQueryCommittedAftermathCausality, WorthQueryCorrectionLineageBinding,
+    WorthQueryCorrectionSourceCoordinates, WorthQueryDispatchOutboxDurabilityPosture,
     WorthQueryDispatchOutboxRecord, WorthQueryExternalDispatchCausalRelation,
     WorthQueryExternalDispatchPosture, WorthQueryExternalDispatchPostureKind,
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectCausalLadder,
@@ -87,15 +90,16 @@ pub use crate::domain_computation::application_aftermath::{
     WorthQueryExternalTransportOutcome, WorthQueryInboundOccurrenceClaims,
     WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
     WorthQueryOpaqueRecoveryWireIdentity, WorthQueryPerformedExternalRedispatch,
-    WorthQueryRecoveryClaimStatus, WorthQueryRecoveryCompensateAdmission,
-    WorthQueryRecoveryCurrentDecision, WorthQueryRecoveryDisclosureAdmission,
-    WorthQueryRecoveryDisposalDenial, WorthQueryRecoveryDisposalReceipt,
-    WorthQueryRecoveryDurabilityPosture, WorthQueryRecoveryEffectAuthority,
-    WorthQueryRecoveryExpiryDecision, WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandle,
-    WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial,
-    WorthQueryRecoveryHandleDenialKind, WorthQueryRecoveryInspectAuthority,
-    WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
-    WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
+    WorthQueryRecordedCorrectionSource, WorthQueryRecoveryClaimStatus,
+    WorthQueryRecoveryCompensateAdmission, WorthQueryRecoveryCurrentDecision,
+    WorthQueryRecoveryDisclosureAdmission, WorthQueryRecoveryDisposalDenial,
+    WorthQueryRecoveryDisposalReceipt, WorthQueryRecoveryDurabilityPosture,
+    WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryExpiryDecision,
+    WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
+    WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryInspectionView,
+    WorthQueryRecoveryReconcileAdmission, WorthQueryRecoverySafeRetryAdmission,
+    WorthQueryRecoverySafeRetryDenial,
 };
 pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
@@ -172,28 +176,27 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationReadAttempt, WorthQueryApplicationReadObservation,
     WorthQueryApplicationRelationSeed, WorthQueryApplicationRequiredOutputConnection,
     WorthQueryApplicationRequiredOutputSource, WorthQueryApplicationRetainedCommitOutcome,
-    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
-    WorthQueryApplicationSettlementRecoveryError, WorthQueryApplicationStaleAttempt,
-    WorthQueryApplicationTypedOutputCorrespondence, WorthQueryApplicationUncommitted,
-    WorthQueryApplicationUnobservedWrite, WorthQueryApplicationUnresolvedCommitEvidence,
-    WorthQueryApprovedElevation, WorthQueryAuthenticatedInboundOccurrence,
-    WorthQueryAuthenticatedPrincipal, WorthQueryBoundSourceExpectation,
-    WorthQueryBranchAdoptionActivationDenial, WorthQueryBranchAdoptionPreparationDenial,
-    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionRecovery,
-    WorthQueryBranchAdoptionRecoveryDenial, WorthQueryBranchAdoptionRecoveryFailure,
-    WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryReleaseFailure,
-    WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionCancellation,
-    WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,
-    WorthQueryBranchSetAdoptionProgress, WorthQueryBranchSetAdoptionRecovery,
-    WorthQueryBranchSetAdoptionRecoveryFailure, WorthQueryBranchSetAdoptionRecoveryOutcome,
-    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionResumeDenial,
-    WorthQueryBranchSetAdoptionResumeFailure, WorthQueryBridgeGranularDeliveryCounters,
-    WorthQueryCapabilityRevocationProgram, WorthQueryCapturedApplicationHistorySubjects,
-    WorthQueryClosedBranchSetAdoption, WorthQueryCommittedDispatchOutboxObservation,
-    WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryCommittedDispatchOutboxReadWork,
-    WorthQueryCommittedProductPublication, WorthQueryCompleteApplicationReadSet,
-    WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryCompletedInvariantProjection,
-    WorthQueryCompletedMutationCandidate, WorthQueryCompletedOperationInvariantProjection,
+    WorthQueryApplicationStaleAttempt, WorthQueryApplicationTypedOutputCorrespondence,
+    WorthQueryApplicationUncommitted, WorthQueryApplicationUnobservedWrite,
+    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryApprovedElevation,
+    WorthQueryAuthenticatedInboundOccurrence, WorthQueryAuthenticatedPrincipal,
+    WorthQueryBoundSourceExpectation, WorthQueryBranchAdoptionActivationDenial,
+    WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
+    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
+    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
+    WorthQueryBranchAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionAdvanceDenial,
+    WorthQueryBranchSetAdoptionCancellation, WorthQueryBranchSetAdoptionCloseDenial,
+    WorthQueryBranchSetAdoptionPreparationDenial, WorthQueryBranchSetAdoptionProgress,
+    WorthQueryBranchSetAdoptionRecovery, WorthQueryBranchSetAdoptionRecoveryFailure,
+    WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
+    WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
+    WorthQueryBridgeGranularDeliveryCounters, WorthQueryCapabilityRevocationProgram,
+    WorthQueryCapturedApplicationHistorySubjects, WorthQueryClosedBranchSetAdoption,
+    WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
+    WorthQueryCommittedDispatchOutboxReadWork, WorthQueryCommittedProductPublication,
+    WorthQueryCompleteApplicationReadSet, WorthQueryCompletedGeneratedOutputReconstruction,
+    WorthQueryCompletedInvariantProjection, WorthQueryCompletedMutationCandidate,
+    WorthQueryCompletedOperationInvariantProjection,
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalAuthoritativeDeliveryFailure, WorthQueryConditionalClockHandle,
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,
@@ -387,14 +390,11 @@ pub use crate::domain_computation::{
 pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
 
 pub use crate::domain_computation::primary_graph::{
-    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
-};
-
-pub use crate::domain_computation::primary_graph::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
     CheckpointReservationAdvanceDenial, WorthQueryApplicationCheckpointInspection,
     WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
-    WorthQueryCheckpointRecordClass, WorthQueryRecordReservationObservation,
+    WorthQueryCheckpointRecordClass, WorthQueryDiscoveredRetentionControlDenial,
+    WorthQueryDiscoveredRetentionReservationForTest, WorthQueryRecordReservationObservation,
     WorthQueryRecordReservationObservationDenial, WorthQueryRecordReservationObservationFailure,
     WorthQueryRecordReservationReport, WorthQueryReservedRecord,
 };

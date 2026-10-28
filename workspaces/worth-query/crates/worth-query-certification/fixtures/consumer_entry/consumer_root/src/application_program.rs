@@ -38,6 +38,7 @@ pub(crate) mod fixed_batch;
 mod fixed_delivery;
 #[cfg(test)]
 pub(crate) mod fixed_source_receipts;
+#[cfg(test)]
 pub(crate) mod fixed_successors;
 #[cfg(test)]
 pub(crate) mod historical;
@@ -47,6 +48,7 @@ pub(crate) mod no_projection;
 pub(crate) mod pinned_source;
 mod source_completion;
 mod source_output_overlap;
+#[cfg(test)]
 pub use fixed_delivery::ConsumerFixedAction;
 pub(crate) use fixed_delivery::ConsumerFixedDelivery;
 mod omitted_program_binding;

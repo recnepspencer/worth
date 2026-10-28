@@ -23,7 +23,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             .ok_or_else(|| denied(Denial::IndexNotInstalled, index))?;
         PreparedEntityFieldLookup::pin(
             self.runtime_instance_id(),
-            self.pinned_basis().clone(),
+            self.resident_basis().clone(),
             selected.definition.clone(),
             kind,
             locator,

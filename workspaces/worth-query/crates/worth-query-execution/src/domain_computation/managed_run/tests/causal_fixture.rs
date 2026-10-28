@@ -238,6 +238,7 @@ fn relational_runtime() -> RelationalRuntime {
                 .expect("managed-run fixture schema should register"),
         )
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn create_fixture_entity(

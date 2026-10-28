@@ -51,7 +51,7 @@ impl RequestWorkBudget {
                 deadline: None,
                 cancellation: CancellationToken::new(),
             })
-            .expect("a remaining-work child preserves its parent's policy limits");
+            .expect(/* Proof: The child copies its already admitted parent policy and only reduces remaining work; it introduces no invalid limit or deadline relation. */ "a remaining-work child preserves its parent's policy limits");
         let outcome = run(&child);
         let report = report(&outcome);
         #[cfg(test)]

@@ -135,7 +135,6 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                     &foreign,
                     &request,
                     &cancellation,
-                    &caller,
                 );
                 mutation_run
                     .finish(

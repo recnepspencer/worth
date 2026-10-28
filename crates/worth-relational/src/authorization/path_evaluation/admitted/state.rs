@@ -19,7 +19,7 @@ impl Witness {
         *self
             .entities
             .last()
-            .expect("a witness retains its principal")
+            .expect(/* Proof: Witness and plan construction seed the principal before appending path entries; no operation removes that initial entry. */ "a witness retains its principal")
     }
     pub(super) fn entity_at(&self, ordinal: usize) -> Option<EntityId> {
         self.entities.get(ordinal).copied()

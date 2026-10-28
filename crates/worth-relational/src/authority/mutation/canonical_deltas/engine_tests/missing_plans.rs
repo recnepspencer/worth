@@ -1,7 +1,7 @@
 use crate::authority::mutation::outcomes::RecordMutation;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
+use crate::runtime::RuntimeSymbolTable;
 use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
-use crate::symbols::data::StringInterner;
 
 use super::super::{canonical_delta_for_mutation, CanonicalDeltaError};
 use super::support::{empty_working_state, empty_workspace, mutation_config};
@@ -10,7 +10,7 @@ use super::support::{empty_working_state, empty_workspace, mutation_config};
 fn missing_entity_aspect_plan_returns_typed_error() {
     let config = mutation_config();
     let mut state = empty_working_state(&config);
-    let mut symbols = StringInterner::default();
+    let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
     let catalog = AspectContractPlanCatalog::empty();
     let schema = RelationalSchemaRegistry::new();
     let mutation = RecordMutation::EntityCreated {
@@ -37,7 +37,7 @@ fn missing_entity_aspect_plan_returns_typed_error() {
 fn missing_relation_aspect_plan_returns_typed_error() {
     let config = mutation_config();
     let mut state = empty_working_state(&config);
-    let mut symbols = StringInterner::default();
+    let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
     let catalog = AspectContractPlanCatalog::empty();
     let schema = RelationalSchemaRegistry::new();
     let source = EntityId::new(PartitionId(1), 0, 1);

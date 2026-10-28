@@ -1,10 +1,12 @@
 mod capacity;
+mod checkpoint_publication;
 mod checkpoint_residue;
 mod cleanup;
 mod effect;
 mod funded_observation;
 mod funded_wal_read;
 mod owner;
+mod physical_work_discharge;
 mod publication;
 mod reopen;
 mod selected_checkpoint;
@@ -18,6 +20,7 @@ mod staging;
 mod wal_admission;
 
 pub use capacity::PhysicalRecoveryCoordinationCapacity;
+pub use checkpoint_publication::SelectedCheckpointPublicationDenial;
 pub use checkpoint_residue::{RecoveryCheckpointResidueDenial, RecoveryCheckpointResidueOutcome};
 pub(in crate::physical_runtime) use cleanup::PhysicalRecoveryCleanupRemovalCommand;
 pub use cleanup::{
@@ -56,13 +59,15 @@ pub use owner::{
     PhysicalRecoveryCoordination, PhysicalRecoveryCoordinationAdmissionError,
     PhysicalRecoveryQuiescenceObservation, PhysicalRecoveryRejoinResidentAdmissionDenial,
 };
+pub use physical_work_discharge::RecoveryPriorObligation;
 pub use publication::{
     CompletedPhysicalRecoveryPublicationCandidate, CompletedPhysicalRecoveryPublicationCommand,
     PhysicalRecoveryPublicationCandidate, PhysicalRecoveryPublicationCandidateMaterialization,
     PhysicalRecoveryPublicationCommand, PhysicalRecoveryPublicationCommandDenial,
     PhysicalRecoveryPublicationCommandDenialKind, PhysicalRecoveryPublicationCommandIndeterminate,
     PhysicalRecoveryPublicationCommandOutcome, PhysicalRecoveryPublicationCommandStage,
-    PhysicalRecoveryPublicationSettlementFailure,
+    PhysicalRecoveryPublicationSettlementFailure, RecoveryStagingResidueDenial,
+    RecoveryStagingResidueOutcome,
 };
 pub use reopen::{
     CompletedPhysicalRecoveryFreshReopen, PhysicalRecoveryFreshReopenCommand,
@@ -80,4 +85,3 @@ pub use staging::{
     PhysicalRecoveryStagingCommandStage, PhysicalRecoveryStagingMaterialization,
     PhysicalRecoveryStagingMaterializationEvidence,
 };
-pub use worth_store_buffer_pool::PhysicalResidencyDenial;

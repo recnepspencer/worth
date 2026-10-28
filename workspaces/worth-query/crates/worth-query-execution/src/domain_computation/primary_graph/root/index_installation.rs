@@ -34,7 +34,10 @@ impl<'runtime> IndexInstallation<'runtime> {
         definition: DerivedIndexDefinition,
     ) -> Result<DerivedIndexDefinition, String> {
         match self {
-            Self::Register(runtime) => Ok(runtime.index_authority().register(definition)),
+            Self::Register(runtime) => runtime
+                .index_authority()
+                .register(definition)
+                .map_err(|denial| format!("index registration refused: {denial:?}")),
             Self::RequireRecovered(lookup) => {
                 lookup.matching_definition(&definition).ok_or_else(|| {
                     format!(

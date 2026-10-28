@@ -65,7 +65,7 @@ impl PaymentCourt {
         let payment_id = fixture.payment;
         let source_account = fixture.business_account;
         let destination_account = fixture.recipient_account;
-        let runtime = fixture.into_shared_runtime();
+        let runtime = Arc::new(fixture.world.runtime);
         let transport = Arc::new(BankEstateRailTransport::connected_to(
             rail.local_addr(),
             rail.test_control_addr(),

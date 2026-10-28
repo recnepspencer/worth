@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::output_reuse;
 pub(super) fn require_witnessed_output(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<
@@ -15,21 +16,16 @@ pub(super) fn require_witnessed_output(
     let witness = witness
         .and_then(|witness| witness.get())
         .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
-    match witness.unchanged_in(relational, snapshot) {
+    match witness.unchanged_in(relational, snapshot, execution) {
         Err(CompanionPreflightStop::Execution(cause)) => Err(output_reuse::read_denial(cause)),
         Ok(true) => Ok(()),
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
-        Err(
-            CompanionPreflightStop::WorkExhausted { .. }
-            | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-            ,
-        ) => Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)),
+
         Err(CompanionPreflightStop::Interrupted(event)) => {
             Err(output_reuse::interruption_denial(event))
         }
         Err(CompanionPreflightStop::WorkCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)),
-        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
-        Err(CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => Err(output_reuse::memory_denial()),
+        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
         Err(CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
     }
 }
@@ -50,7 +46,6 @@ pub(super) fn require_current_facts(
         )),
         Err(RetainedFactStop::Execution(cause)) => Err(output_reuse::read_denial(cause)),
         Err(RetainedFactStop::Interrupted(event)) => Err(output_reuse::interruption_denial(event)),
-        Err(RetainedFactStop::Memory) => Err(output_reuse::memory_denial()),
         Err(RetainedFactStop::Work) => {
             Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
         }

@@ -113,7 +113,6 @@ where
             return (revocation_denied(Some(request_id), unavailable())).into();
         }
         BankEstateElevationCloseOutcome::Deferred(_)
-        | BankEstateElevationCloseOutcome::SettlementDeferred(_)
         | BankEstateElevationCloseOutcome::Indeterminate => {
             return (revocation_denied(Some(request_id), indeterminate())).into();
         }

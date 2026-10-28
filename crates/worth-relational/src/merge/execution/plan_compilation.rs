@@ -38,11 +38,19 @@ pub(super) fn compile_bound_executable_plan(
     let (target_reference, target_truth_version) = runtime
         .history()
         .branch_reference_state(request.target_branch())
-        .expect("merge planning must retain the target branch cell");
+        .ok_or(
+            MergeExecutionCompilationError::PreparedAuthorityBindingMismatch {
+                detail: "target branch is unavailable during merge compilation",
+            },
+        )?;
     let (source_reference, source_truth_version) = runtime
         .history()
         .branch_reference_state(request.source_branch())
-        .expect("merge planning must retain the source branch cell");
+        .ok_or(
+            MergeExecutionCompilationError::PreparedAuthorityBindingMismatch {
+                detail: "source branch is unavailable during merge compilation",
+            },
+        )?;
 
     let binding = MergeExecutionAuthorityBinding {
         request: request.clone(),

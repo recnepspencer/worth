@@ -95,6 +95,8 @@ worth-query-execution.debug = false
 
 [profile.test]
 opt-level = 0
+# The execution test binary exceeds MSVC's 4 GiB PDB limit with debug tables.
+debug = 0
 
 [profile.test.package]
 "*".opt-level = 2

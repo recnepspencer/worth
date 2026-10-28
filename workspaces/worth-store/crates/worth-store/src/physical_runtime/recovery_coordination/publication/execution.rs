@@ -13,6 +13,8 @@ mod admission;
 mod candidate;
 mod effect;
 mod outcome;
+mod staging_residue;
+pub use staging_residue::{RecoveryStagingResidueDenial, RecoveryStagingResidueOutcome};
 
 pub(super) fn execute(
     coordination: &PhysicalRecoveryCoordination,

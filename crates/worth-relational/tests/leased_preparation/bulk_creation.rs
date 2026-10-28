@@ -12,7 +12,8 @@ fn leased_bulk_creation_matches_serial_canonical_patch() {
     ) -> worth_relational::facade::transactions::CommitResult {
         let runtime = RelationalRuntimeApi::builder()
             .schema_registry(support::demo_schema_registry())
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).expect("main basis");
         let mut transaction = runtime

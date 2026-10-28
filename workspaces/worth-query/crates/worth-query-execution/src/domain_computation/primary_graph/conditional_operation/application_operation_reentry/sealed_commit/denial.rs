@@ -89,6 +89,9 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::EquivalenceContractUnavailable,
                         ..
                     }
+                    | Session::ProjectionContract { .. }
+                    | Session::HistoricalVisibility { .. }
+                    | Session::StorageUnavailable(_)
                     | Session::ForeignOperationAttempt
                     | Session::ForeignExecutionBasis
                     | Session::ForeignGraphAuthority
@@ -126,6 +129,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
 
 fn classify_kind(kind: Kind) -> Outcome {
     match kind {
+        Kind::StorageUnavailable(_) => Outcome::TerminalFailure(Terminal::ApplicationCommit(kind)),
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => Outcome::SnapshotCapacityBackpressured {

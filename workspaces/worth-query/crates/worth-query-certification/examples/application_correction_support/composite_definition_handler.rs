@@ -7,21 +7,12 @@ use super::{
 };
 use worth_query_host::facade::primary_graph::*;
 pub struct Handler;
-static DECISIONS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-static CANDIDATES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-pub fn handler_contacts() -> (usize, usize) {
-    (
-        DECISIONS.load(std::sync::atomic::Ordering::Relaxed),
-        CANDIDATES.load(std::sync::atomic::Ordering::Relaxed),
-    )
-}
 impl OperationHandler<NumericSchema, Binding> for Handler {
     fn decide(
         &self,
         input: &Change,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<Decision, Missing> {
-        DECISIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let result = (|| {
             let root = reader.resolve_entity(Key::reference(), input.key.clone())?;
             reader.field(&root, Primary::reference())?;
@@ -43,7 +34,6 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         decision: Decision,
         writer: &mut CandidateWriter<'_, NumericSchema, Binding>,
     ) -> HandlerResult<Changed, Missing> {
-        CANDIDATES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let result = (|| {
             let target = writer.projected_entity(&decision.target)?;
             writer.write_field(&target, Primary::reference(), input.value)?;

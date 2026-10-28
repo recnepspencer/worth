@@ -2,6 +2,21 @@
 //! for the rules it actually enforces.
 #![recursion_limit = "256"]
 
+#[path = "application_graph/document_retention_model/host/world_resources.rs"]
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Shared reference application ports are exercised by independent consumer courts"
+)]
+pub(crate) mod document_world_resources;
+#[path = "application_graph/document_retention_model/operator_identity.rs"]
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Shared reference application ports are exercised by independent consumer courts"
+)]
+pub(crate) mod operator_identity;
+
 #[path = "application_graph/adoption.rs"]
 mod adoption;
 #[path = "application_graph/allocation_custody.rs"]
@@ -26,6 +41,8 @@ mod fork_decision_reads;
 mod history_retirement;
 #[path = "application_graph/mutation_binding_guard.rs"]
 mod mutation_binding_guard;
+#[path = "application_graph/native_staging_allocation.rs"]
+mod native_staging_allocation;
 #[path = "application_graph/producer_predicate_checkpoint.rs"]
 mod producer_predicate_checkpoint;
 #[path = "application_graph/recorded_replay_ordering.rs"]
@@ -109,3 +126,6 @@ mod process_deadline;
 
 #[path = "application_graph/workflow_owning.rs"]
 mod workflow_owning;
+
+#[path = "support/checkpoint_capture.rs"]
+mod checkpoint_capture;

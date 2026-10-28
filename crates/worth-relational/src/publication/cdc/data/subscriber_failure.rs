@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SubscriberStreamFailureClass {
-    UnknownCheckpoint,
-    RetainedHistoryUnavailable,
     SchemaUnsupported,
     InvalidBatchSize,
     DurableCoverageGap,

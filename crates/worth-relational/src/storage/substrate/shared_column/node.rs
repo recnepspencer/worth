@@ -84,10 +84,12 @@ impl<T: Clone> ColumnNode<T> {
     pub(super) fn get_mut(&mut self, index: usize, height: usize) -> &mut T {
         match &mut self.storage {
             ColumnStorage::Page(values) => {
-                Arc::make_mut(values[index % PAGE_LEN].as_mut().unwrap())
+                Arc::make_mut(
+                    values[index % PAGE_LEN].as_mut().unwrap(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ ),
+                )
             }
             ColumnStorage::Branch(children) => {
-                Arc::make_mut(children[branch_index(index, height)].as_mut().unwrap())
+                Arc::make_mut(children[branch_index(index, height)].as_mut().unwrap(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ ))
                     .get_mut(index, height - 1)
             }
         }

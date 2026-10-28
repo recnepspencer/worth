@@ -36,15 +36,15 @@ impl<'a, T: Ord> Iterator for OrderedIter<'a, T> {
             if self.positions[index] == self.ends[index] {
                 continue;
             }
-            let row = &run.as_ref().expect("nonempty level")[self.positions[index]];
+            let row = &run.as_ref().expect(/* Proof: Run selection examines only occupied levels and retains the selected index into the same unchanged runs array. */ "nonempty level")[self.positions[index]];
             if selected.is_none_or(|prior| {
-                row < &self.runs[prior].as_ref().expect("selected level")[self.positions[prior]]
+                row < &self.runs[prior].as_ref().expect(/* Proof: Run selection examines only occupied levels and retains the selected index into the same unchanged runs array. */ "selected level")[self.positions[prior]]
             }) {
                 selected = Some(index);
             }
         }
         let index = selected?;
-        let row = self.runs[index].as_ref().expect("selected level")[self.positions[index]].value();
+        let row = self.runs[index].as_ref().expect(/* Proof: Run selection examines only occupied levels and retains the selected index into the same unchanged runs array. */ "selected level")[self.positions[index]].value();
         self.positions[index] += 1;
         self.remaining -= 1;
         Some(row)

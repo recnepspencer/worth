@@ -8,7 +8,7 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
         suite,
         "merge_execution_vs_persisted_commit_floor",
         || {
-            let merge_runtime = persisted_runtime_with_test_schema();
+            let merge_runtime = durable_runtime_with_test_schema();
             create_entity(execution, &merge_runtime, "main-anchor");
             create_branch_from_main(&merge_runtime, "feature");
             let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
@@ -55,7 +55,7 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
             let merge_elapsed_micros = merge_started_at.elapsed().as_micros();
             let merge_counters = merge_runtime.performance_access().counters();
 
-            let control_runtime = persisted_runtime_with_test_schema();
+            let control_runtime = durable_runtime_with_test_schema();
             control_runtime.performance_access().reset_counters();
             let control_started_at = Instant::now();
             let control_outcome = {

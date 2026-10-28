@@ -18,7 +18,7 @@ impl WorthQueryRuntimeBuilder {
         }
         let queued = std::mem::take(&mut self.queued_invariant_registrations);
         self.backend_parts = std::mem::take(&mut self.backend_parts)
-            .relational_runtime(queued.lower_into_relational_runtime());
+            .relational_runtime(queued.lower_into_relational_runtime()?);
         Ok(())
     }
 

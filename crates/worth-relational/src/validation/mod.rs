@@ -8,6 +8,7 @@ mod invariant_authority;
 mod preparation_invariant_authority;
 pub mod reduction;
 
+pub use custom_registry::DuplicateCustomInvariantRegistration;
 pub(crate) use custom_registry::FrozenCustomInvariantRegistry;
 pub(crate) use custom_rule::CustomInvariantWorkMeter;
 pub use invariant_access::InvariantAccess;

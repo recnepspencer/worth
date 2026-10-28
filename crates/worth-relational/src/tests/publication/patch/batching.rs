@@ -13,17 +13,23 @@ fn patch_stream_resume_batches_commits_without_duplication() {
 
     let first_batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: None,
-            max_commits: 2,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: None,
+                max_commits: 2,
+            },
+        )
         .unwrap();
     let resumed = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: first_batch.next_position,
-            max_commits: 2,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: first_batch.next_position,
+                max_commits: 2,
+            },
+        )
         .unwrap();
 
     assert_eq!(first_batch.patches.len(), 2);
@@ -44,10 +50,13 @@ fn patch_stream_rejects_unknown_resume_position() {
 
     let error = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(PatchStreamPosition(99)),
-            max_commits: 1,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(PatchStreamPosition(99)),
+                max_commits: 1,
+            },
+        )
         .unwrap_err();
 
     assert_eq!(
@@ -61,12 +70,9 @@ fn patch_stream_uses_durable_canonical_history_when_retained_envelope_is_missing
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let _second = create_entity_outcome(execution, &runtime, "b");
     let _third = create_entity_outcome(execution, &runtime, "c");
 
@@ -78,10 +84,13 @@ fn patch_stream_uses_durable_canonical_history_when_retained_envelope_is_missing
 
     let batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: None,
-            max_commits: 8,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: None,
+                max_commits: 8,
+            },
+        )
         .unwrap();
 
     assert_eq!(batch.patches.len(), 3);

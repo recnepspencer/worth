@@ -33,13 +33,27 @@ fn range(value: PhysicalByteRange) -> Value {
 
 fn supported(value: UnsupportedPhysicalIntegrityVersion) -> String {
     if value.axis() == PhysicalIntegrityVersionAxis::CheckpointRecordSchema {
-        return "1|2".to_owned();
+        return format!(
+            "1|2|{}",
+            worth_store_physical_format::CHECKPOINT_CERTIFIED_SCHEMA
+        );
     }
-    if value.axis() == PhysicalIntegrityVersionAxis::EnvelopeSchema
-        && value.scope().artifact_family() == PhysicalIntegrityArtifactFamily::RootManifest
-    {
-        // Both ordinary and maintenance-capable root envelopes are decoded.
-        return "2|3".to_owned();
+    if value.axis() == PhysicalIntegrityVersionAxis::EnvelopeSchema {
+        use worth_store_physical_format::DurableFrameKind;
+        let kind = match value.scope().artifact_family() {
+            PhysicalIntegrityArtifactFamily::RootManifest => Some(DurableFrameKind::RootManifest),
+            PhysicalIntegrityArtifactFamily::RootRoutingBlock => {
+                Some(DurableFrameKind::RootRoutingBlock)
+            }
+            _ => None,
+        };
+        if let Some(kind) = kind {
+            return (0..=u8::MAX)
+                .filter(|schema| kind.supports_envelope_schema(*schema))
+                .map(|schema| schema.to_string())
+                .collect::<Vec<_>>()
+                .join("|");
+        }
     }
     let version = value.scope().format_version();
     match value.axis() {
@@ -75,12 +89,17 @@ mod tests {
             range,
         );
         for (scope, axis, observed, supported) in [
-            (root, PhysicalIntegrityVersionAxis::EnvelopeSchema, 4, "2|3"),
+            (
+                root,
+                PhysicalIntegrityVersionAxis::EnvelopeSchema,
+                255,
+                "2|3|4|5|6|7|9|10|11",
+            ),
             (
                 checkpoint,
                 PhysicalIntegrityVersionAxis::CheckpointRecordSchema,
-                3,
-                "1|2",
+                255,
+                "1|2|3",
             ),
             (
                 selector,

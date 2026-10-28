@@ -2,6 +2,9 @@
 //! runtime. Each control is a verb or a count: none returns a Query runtime,
 //! so no caller can redeem a commit receipt through them.
 
+// Certification-only faults/backstops: only the sealed *_for_test doors arm
+// these controls. The boundary guard closes ordinary callers; their intentional
+// panic reports a violated test scenario, never an ordinary product refusal.
 use super::BankIdentityRuntime;
 
 impl BankIdentityRuntime {
@@ -11,20 +14,6 @@ impl BankIdentityRuntime {
         self.application_program()
             .runtime()
             .active_live_consumers_for_test()
-    }
-
-    /// Fails the next durable append of the installed owner, once.
-    #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(&self) {
-        let application = self.application_program().runtime();
-        application
-            .with_host_advancement(|phase| {
-                let execution = phase
-                    .checked_execution_request_for(application.product_runtime())
-                    .expect("control borrows its installed phase");
-                application.fail_next_durable_append_for_test(&execution);
-            })
-            .expect("certification control opens its host call");
     }
 
     /// Delays the next output-readiness delivery, once.
@@ -65,20 +54,5 @@ impl BankIdentityRuntime {
                     .expect("control borrows its own runtime")
             })
             .expect("control opens its host call")
-    }
-}
-
-impl BankIdentityRuntime {
-    /// Schedules native cleanup on a foreign worker once, on this installed receiver only.
-    #[doc(hidden)]
-    pub fn schedule_next_managed_cleanup_on_worker_for_test(
-        &self,
-    ) -> Result<
-        worth_query_host::facade::primary_graph::WorthQueryManagedCleanupScheduleForTest,
-        worth_query_host::facade::primary_graph::WorthQueryManagedCleanupRegistrationDenial,
-    > {
-        self.application_program()
-            .runtime()
-            .schedule_next_managed_cleanup_on_worker_for_test()
     }
 }

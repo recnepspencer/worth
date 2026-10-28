@@ -16,12 +16,7 @@ pub(super) fn pin_runtime_read(
         .map_err(|denial| {
             use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as Pin;
             match denial {
-                Pin::Request(stop) => denial::relational_read_denial(
-                    worth_relational::facade::transactions::RelationalExecutionDenialCause::from(
-                        stop,
-                    ),
-                    plan.name,
-                ),
+                Pin::Request(stop) => denial::relational_read_denial(stop, plan.name),
                 Pin::IndexNotInstalled(_) => read_execution_denial(additional_denial, plan.name),
                 Pin::SnapshotUnavailable => plan.snapshot_unavailable_denial(),
             }

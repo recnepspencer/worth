@@ -13,12 +13,7 @@ impl PerformanceAccess<'_> {
     }
 
     pub fn reset_counters(&self) {
-        *self
-            .runtime
-            .services
-            .instrumentation
-            .complexity_counters
-            .lock()
-            .expect("complexity counter lock poisoned") = RuntimeComplexityCounters::default();
+        self.counters
+            .count(|counts| *counts = RuntimeComplexityCounters::default());
     }
 }

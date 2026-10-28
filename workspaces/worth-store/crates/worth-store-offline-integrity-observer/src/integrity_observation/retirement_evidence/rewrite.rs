@@ -97,9 +97,9 @@ impl RewriteFact {
             || destination.0 == 0
             || source.2 == 0
             || source.2 != destination.2
-            || source.2 % alignment != 0
-            || source.1 % alignment != 0
-            || destination.1 % alignment != 0
+            || !source.2.is_multiple_of(alignment)
+            || !source.1.is_multiple_of(alignment)
+            || !destination.1.is_multiple_of(alignment)
             || source.1.checked_add(source.2).is_none()
             || destination.1.checked_add(destination.2).is_none()
             || (source.0 == destination.0

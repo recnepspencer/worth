@@ -3,7 +3,7 @@ use std::sync::mpsc::{sync_channel, RecvTimeoutError};
 use std::sync::{Arc, Barrier};
 use std::time::{Duration, Instant};
 
-use crate::publication::data::DeferredPublicationSettlementError;
+use crate::publication::data::PublicationSettlementRepairError;
 use crate::tests::support::*;
 
 /// Every wait in this module is bounded. A court that is red because a thread
@@ -23,7 +23,7 @@ fn phase3b_owner_drop_during_off_thread_settlement_completes() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3b-detached-anchor");
     let (reached, release, control) = settlement_pause();
     let performed = perform_write_with_control(
@@ -82,7 +82,7 @@ fn phase3b_owner_drop_during_off_thread_settlement_completes() {
     assert!(!port.retains_pending_settlement(commit_id));
     assert!(matches!(
         port.repair_pending_publication_settlement(commit_id),
-        Err(DeferredPublicationSettlementError::OwnerUnavailable {
+        Err(PublicationSettlementRepairError::OwnerUnavailable {
             runtime_instance_id: observed,
         }) if observed == runtime_instance_id
     ));
@@ -96,10 +96,10 @@ fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3b-close-window-anchor");
-    fork_from_main(&runtime, "phase3b-paused");
-    fork_from_main(&runtime, "phase3b-late");
+    fork_from_main(execution, &runtime, "phase3b-paused");
+    fork_from_main(execution, &runtime, "phase3b-late");
     let (reached, release, control) = settlement_pause();
     let paused = perform_write_with_control(
         execution,
@@ -143,7 +143,7 @@ fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
     );
     assert!(matches!(
         port.repair_pending_publication_settlement(late_commit_id),
-        Err(DeferredPublicationSettlementError::OwnerUnavailable { .. })
+        Err(PublicationSettlementRepairError::OwnerUnavailable { .. })
     ));
 
     release.wait();
@@ -170,7 +170,7 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let seeded = create_entity_outcome(execution, &runtime, "phase3b-recovery-anchor");
     let seeded_commit_id = seeded.commit.commit_id;
     release_test_commit_snapshot(&runtime, &seeded);
@@ -178,10 +178,12 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     let replaced_instance_id = runtime.runtime_instance_id();
     assert_eq!(port.runtime_instance_id(), replaced_instance_id);
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     runtime
         .durability_recovery()
         .recover(execution, plan)
@@ -194,7 +196,7 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     );
     assert!(matches!(
         port.repair_pending_publication_settlement(seeded_commit_id),
-        Err(DeferredPublicationSettlementError::OwnerUnavailable {
+        Err(PublicationSettlementRepairError::OwnerUnavailable {
             runtime_instance_id: observed,
         }) if observed == replaced_instance_id
     ));
@@ -266,12 +268,16 @@ fn wait_until_admission_closes(observer: &crate::runtime::RelationalRuntimeOwner
     );
 }
 
-fn fork_from_main(runtime: &RelationalRuntime, target: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    target: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(target.to_owned()), source)
+        .fork_branch(execution, BranchId(target.to_owned()), source)
         .expect("test branch fork succeeds");
 }
 

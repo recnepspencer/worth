@@ -39,7 +39,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
     let edges = world
         .relations
         .map(|id| relation_payload(&world.runtime, id));
-    let checkpoint = capture(&world.runtime);
+    let checkpoint = capture(execution, &world.runtime);
     let checkpoint_bytes = checkpoint.bytes().to_vec();
     let (mut target, mut recovered, receipt) = recover(execution, &world);
     assert!(target
@@ -71,6 +71,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
             .root
             .partition_state(id.partition_id)
             .unwrap()
+            .unwrap()
             .entity_arena
             .get(id)
             .unwrap()
@@ -79,6 +80,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
             .inner
             .root
             .partition_state(id.partition_id)
+            .unwrap()
             .unwrap()
             .entity_arena
             .get(id)
@@ -92,6 +94,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
             .root
             .partition_state(id.partition_id)
             .unwrap()
+            .unwrap()
             .relation_arena
             .get(id)
             .unwrap()
@@ -100,6 +103,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
             .inner
             .root
             .partition_state(id.partition_id)
+            .unwrap()
             .unwrap()
             .relation_arena
             .get(id)
@@ -135,7 +139,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
     );
     let v2_payloads = outputs.map(|id| protected_payload(&target, id));
     assert_ne!(v2_payloads, payloads);
-    let saved = capture(&target);
+    let saved = capture(execution, &target);
     let (mut reopened, receipt) = installed(2);
     reopened
         .durability_recovery()

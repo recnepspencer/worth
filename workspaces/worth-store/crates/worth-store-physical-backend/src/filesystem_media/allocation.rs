@@ -166,18 +166,18 @@ impl NamespaceFileHandle<'_, super::MutableFileAccess> {
             }
         };
         let logical_length = current.max(requested_end);
-        if logical_length > current {
-            if let Err(error) = self.file().set_len(logical_length) {
-                attempt.indeterminate(0);
-                return self.allocation_failure(
-                    operation,
-                    MediaOperationFailureKind::IndeterminateEffect {
-                        attempted: super::MediaAttemptedEffect::Allocation,
-                        last_established: super::MediaEstablishedBoundary::AllocationIssued,
-                    },
-                    Some(&error),
-                );
-            }
+        if logical_length > current
+            && let Err(error) = self.file().set_len(logical_length)
+        {
+            attempt.indeterminate(0);
+            return self.allocation_failure(
+                operation,
+                MediaOperationFailureKind::IndeterminateEffect {
+                    attempted: super::MediaAttemptedEffect::Allocation,
+                    last_established: super::MediaEstablishedBoundary::AllocationIssued,
+                },
+                Some(&error),
+            );
         }
         if attempt.effect_observation_is_indeterminate() {
             attempt.indeterminate(0);

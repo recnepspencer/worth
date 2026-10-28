@@ -68,6 +68,7 @@ fn scalar_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId(branch.to_string()),
         &BranchId("main".to_string()),
@@ -120,6 +121,7 @@ fn batch_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId(branch.to_string()),
         &BranchId("main".to_string()),

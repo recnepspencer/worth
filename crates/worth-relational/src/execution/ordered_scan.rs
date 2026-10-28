@@ -15,7 +15,7 @@ pub(crate) fn admit_ordered_scan<T: ChargedBytes>(
             ScanDenial::MemoryOverflow => PacketAdmissionDenial::MemoryOverflow,
             // Only this owner supplies both sequences, from the same entries.
             ScanDenial::CoverageMismatch => {
-                unreachable!("Relational derived matching scan coverage")
+                unreachable!(/* Proof: The private ordered-scan adapter requests derived matching coverage only; its callback cannot produce another coverage discriminant. */ "Relational derived matching scan coverage")
             }
         })
     })

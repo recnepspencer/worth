@@ -99,7 +99,9 @@ fn install_with_visibility<const O: bool>(
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,
-                worth_relational::facade::runtime::RelationalRuntimeApi::builder().build(),
+                worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+                    .build()
+                    .expect("valid native fixture configuration"),
                 product_world::test_product_world_resources(),
                 factories,
             )

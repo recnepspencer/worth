@@ -25,6 +25,7 @@ fn law_runtime(definition: DerivedRelationDefinitionParts) -> RelationalRuntime 
                 .unwrap(),
         )
         .build()
+        .expect("valid native runtime configuration")
 }
 pub(super) fn try_commit(
     execution: &ExecutionRequest<'_, '_>,

@@ -2041,13 +2041,26 @@ repository checks. A plan change or a value-equality shortcut cannot close it.
 
 ### Aspect-Presence Restoration Repair
 
-**Qualification held.** The latest private integration at `01817084` after
-incoming `851478c0` exposes `RestoredSupport(UnsupportedFact)` before the
-producer's first B reversal, and the session live-overlap control records actual
-`AspectPresence` rather than the required `SourceDiverged`. The acceptance draft
-below describes older source and is held pending this repair, independent Source
-review, public qualification, uniform immutable SDK repinning and latest-private
-mandatory gates. No earlier green result qualifies the correction.
+**Qualification held.** The original private integration at `01817084` after
+incoming `851478c0` exposed `RestoredSupport(UnsupportedFact)` before the
+producer's first B reversal, and the session live-overlap control recorded actual
+`AspectPresence` rather than the required `SourceDiverged`. SDK `4a833893` repaired
+that receiving boundary and passed its focused Native/Query courts and affected
+owner doctests before synchronization. Those results are historical evidence.
+
+Private `b00984ec`, including incoming `c1ad55cc`, compiled all targets but failed
+the unfiltered Entry gate: the bare consecutive Undo passed, the strict producer
+failed with `UnsupportedFact`, and the session's live-overlap control recorded
+`SourceAdjacencyRevision`. Its expected `SourceDiverged` and later 7-to-3 values
+remain unchanged. This is an open support gap, not renewed private acceptance.
+
+The current SDK must incorporate exact public master
+`7d94f26770d718d2ea63691258f9f715bf9a501d`, including the Native Store cutover.
+Canonical bodies and exact region reads now follow their execution-taking demand
+owners; authored history remains a discardable accelerator. Synchronization and
+its semantic joins require independent Source review and causally affected
+qualification before another immutable SDK adoption. No earlier green result
+qualifies the synchronized source; final acceptance drafts remain held.
 
 The adversarial boundary is a scalar `EntityMutationIntent::UpdateFields` that
 initializes an absent aspect. Its canonical authored scope is only the exact
@@ -2088,18 +2101,24 @@ tests, not selector-shape mirrors. Existing public consecutive/equal/live/reappl
 independent-dependency and sibling controls still apply.
 
 Source review must agree the evidence grouping before any Cargo lane is used.
-Then build Native's existing lib target once and run the `authored_write_history`
-family; build the existing Query `application_graph` target once and run its
-`correction::` family. Run affected-owner doctests and the required boundary and
-generated-context commands from AGENTS.md in the serialized lane. Before that
-grant, run only scoped rustfmt, `git diff --check` and
+Build Native's existing lib target once for `authored_write_history`, including
+scalar presence, binding compatibility, cursor custody and genuine durable
+recovery. Build Query's existing `application_graph` target once for
+`correction::consecutive_undo::` and exact
+`correction::correction_history_rebuild_preserves_causality_and_source_expiry`.
+Include affected unobserved-write and compiler qualification courts when their
+integration is exercised; do not broaden to the entire correction suite.
+Run affected-owner doctests and the real generator, boundary and context tools
+from AGENTS.md in the serialized lane. Before that grant, run only scoped
+rustfmt, `git diff --check` and
 `scripts/ci/check_workspace_rust_line_caps.sh dirty`.
 
 After public validation and independent final review, commit a new immutable SDK
 and uniformly repin the private root/probe manifests and lockfiles. Root groups
 the producer consecutive Undo and session live-overlap/consecutive Undo cases
-with mandatory latest-private gates; preserve their expected 7 then 3 values and
-strict `SourceDiverged` control. The already-passing bare source probe is not an
+with mandatory latest-private gates through one unfiltered Entry acquisition,
+including the bare positive. Preserve expected 7 then 3 values and the
+strict `SourceDiverged` control. A separate focused bare acquisition is not an
 automatic rerun. Keep all original failed evidence. Build grants, final acceptance,
 default integration and commits are outside this source-only turn.
 

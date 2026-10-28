@@ -1,4 +1,3 @@
-use crate::capabilities::RuntimeConfigSource;
 use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::commit_strategies::data::StrategyExecutionDraft;
 use crate::durability::data::RelationalRecoveryStop;
@@ -12,6 +11,8 @@ use crate::runtime::RelationalRuntime;
 use super::super::planning::replay_commit_closure_by_commit_id_order;
 
 mod basis_admission;
+mod lowering;
+use lowering::lower_strategy_replay;
 mod mismatch;
 
 use mismatch::strategy_mismatch;
@@ -127,8 +128,11 @@ fn select_strategy_basis_commits(
     ) {
         (Some(commit_id), _) => Some(commit_id),
         (None, Some(version_id)) if version_id.0 > 0 => {
-            match runtime.history().commit_envelope_for_version(version_id) {
-                Some(envelope) => Some(envelope.commit.commit_id),
+            match runtime
+                .history()
+                .immutable_commit_receipt_for_version(version_id)
+            {
+                Some(receipt) => Some(receipt.commit_id),
                 None => {
                     mismatches.push(strategy_mismatch(
                         ReplayMismatchClass::StrategyExecutorUnavailable,
@@ -168,10 +172,11 @@ fn rebuild_strategy_basis_runtime(
     mismatches: &mut Vec<ReplayMismatch>,
 ) -> Result<Option<RelationalRuntime>, RelationalRecoveryStop> {
     let basis_plan = super::super::planning::replay_recovery_plan_for_chain(
+        execution,
         runtime,
         basis_commits,
         verification_mode,
-    );
+    )?;
     let basis_runtime = match runtime.rebuild_runtime_from_plan(execution, basis_plan) {
         Ok(runtime) => runtime,
         Err(RelationalRecoveryStop::Request(cause)) => {
@@ -194,7 +199,7 @@ fn rebuild_strategy_basis_runtime(
         }
     };
     if let Err(detail) =
-        ensure_strategy_replay_basis_branch(&basis_runtime, envelope, expected_artifacts)
+        ensure_strategy_replay_basis_branch(execution, &basis_runtime, envelope, expected_artifacts)
     {
         mismatches.push(strategy_mismatch(
             ReplayMismatchClass::StrategyExecutorUnavailable,
@@ -215,7 +220,15 @@ fn execute_strategy_replay(
 ) -> Result<Option<StrategyExecutionDraft>, RelationalRecoveryStop> {
     crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
     let replay_request = expected_artifacts.replay_request();
-    let snapshot = basis_runtime.visibility_authority().snapshot();
+    let snapshot = basis_runtime
+        .visibility_authority()
+        .snapshot()
+        .map_err(|denial| {
+            crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::ReplayFailure,
+                format!("strategy replay snapshot admission refused: {denial:?}"),
+            )
+        })?;
     match basis_runtime
         .commit_strategies()
         .execute(&replay_request, &snapshot, request)
@@ -261,104 +274,8 @@ fn execute_strategy_replay(
     }
 }
 
-fn lower_strategy_replay(
-    basis_runtime: &RelationalRuntime,
-    request: &worth_execution::ExecutionRequest<'_, '_>,
-    envelope: &CanonicalCommitEnvelope,
-    expected_artifacts: &StrategyCommitArtifactBundle,
-    execution: &StrategyExecutionDraft,
-    mismatches: &mut Vec<ReplayMismatch>,
-) -> Result<Option<StrategyCommitArtifactBundle>, RelationalRecoveryStop> {
-    let replay_request = expected_artifacts.replay_request();
-    let options = match basis_admission::replay_transaction_context(
-        basis_runtime,
-        &envelope.branch_context,
-        &envelope.merge_parent_branches,
-    ) {
-        Ok(context) => context,
-        Err(denial) => {
-            mismatches.push(strategy_mismatch(
-                ReplayMismatchClass::StrategyLoweringDrift,
-                format!("strategy replay transaction basis was denied: {denial:?}"),
-                expected_artifacts,
-                None,
-            ));
-            return Ok(None);
-        }
-    };
-    let mut strategy_authority = basis_runtime.commit_strategies_authority();
-    let lowered = match strategy_authority.lower_execution_with_input(
-        basis_runtime,
-        &replay_request,
-        execution,
-        options,
-    ) {
-        Ok(lowered) => lowered,
-        Err(error) => {
-            mismatches.push(strategy_mismatch(
-                ReplayMismatchClass::StrategyLoweringDrift,
-                format!("strategy replay re-lowering failed: {error:?}"),
-                expected_artifacts,
-                None,
-            ));
-            return Ok(None);
-        }
-    };
-    let descriptor = basis_runtime
-        .commit_strategy_registry()
-        .get_by_id(replay_request.strategy_id())
-        .expect("replayed strategy request should resolve to a registered descriptor")
-        .descriptor()
-        .clone();
-    if expected_artifacts.preview_validation_summary().is_some()
-        || expected_artifacts.preview_validation_cost().is_some()
-        || expected_artifacts.validated_against_version_id().is_some()
-    {
-        if let Err(detail) = basis_runtime
-            .history
-            .prepare_replay_target_sequence(envelope.commit.commit_id, envelope.commit.version_id)
-        {
-            mismatches.push(strategy_mismatch(
-                ReplayMismatchClass::StrategyLoweringDrift,
-                detail.to_string(),
-                expected_artifacts,
-                None,
-            ));
-            return Ok(None);
-        }
-        match strategy_authority.validate_lowered_plan(request, basis_runtime, lowered) {
-            Ok(validated) => Ok(validated.strategy_commit_artifacts().cloned()),
-            Err(error) => {
-                let detail = format!("strategy replay re-validation failed: {error:?}");
-                let error = crate::execution::allocation_commit_error(error);
-                match crate::durability::authority::replay_commit_stop(error, detail.clone()) {
-                    RelationalRecoveryStop::Request(cause) => {
-                        return Err(RelationalRecoveryStop::Request(cause))
-                    }
-                    RelationalRecoveryStop::Allocation(error) => {
-                        return Err(RelationalRecoveryStop::Allocation(error))
-                    }
-                    RelationalRecoveryStop::Durability(_) => {}
-                }
-                mismatches.push(strategy_mismatch(
-                    ReplayMismatchClass::StrategyLoweringDrift,
-                    detail,
-                    expected_artifacts,
-                    None,
-                ));
-                Ok(None)
-            }
-        }
-    } else {
-        Ok(Some(StrategyCommitArtifactBundle::from_lowered(
-            &lowered,
-            &descriptor,
-            basis_runtime.runtime_config(),
-        )))
-    }
-}
-
 fn ensure_strategy_replay_basis_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis_runtime: &RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     expected_artifacts: &StrategyCommitArtifactBundle,
@@ -376,15 +293,15 @@ fn ensure_strategy_replay_basis_branch(
         .validated_against_commit_id()
         .and_then(|commit_id| {
             basis_runtime
-                .replay()
-                .canonical_commit_envelope(commit_id)
-                .map(|basis| basis.branch_context.clone())
+                .history()
+                .immutable_commit_receipt(commit_id)
+                .map(|basis| basis.branch_id.clone())
         })
         .unwrap_or_else(|| BranchId("main".to_string()));
 
     basis_runtime
         .history_authority()
-        .fork_branch_from(envelope.branch_context.clone(), &source_branch)
+        .fork_branch_from(execution, envelope.branch_context.clone(), &source_branch)
         .map_err(|error| {
             format!(
                 "failed to reconstruct strategy replay basis branch {:?} from {:?}: {error:?}",

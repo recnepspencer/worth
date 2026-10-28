@@ -33,7 +33,10 @@ fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     create_entity_in_partition(execution, &runtime, "value", PartitionId(7));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let plan = runtime
         .read_truth()
@@ -97,7 +100,10 @@ fn explicit_and_traversal_packet_copies_deny_before_allocation() {
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let entity = create_entity_in_partition(execution, &runtime, "seed", PartitionId(7));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let explicit = planned_explicit_query(
         &runtime,
         &snapshot,
@@ -171,7 +177,10 @@ fn scoped_scan_does_not_charge_unrelated_partitions() {
     let runtime = runtime_with_test_schema();
     create_entity_in_partition(execution, &runtime, "target", PartitionId(7));
     let scoped_read = || {
-        let snapshot = runtime.visibility_authority().snapshot();
+        let snapshot = runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted");
         let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
         let plan = runtime
             .read_truth()

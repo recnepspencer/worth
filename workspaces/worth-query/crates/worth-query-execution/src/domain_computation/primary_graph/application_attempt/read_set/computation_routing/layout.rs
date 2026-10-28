@@ -26,10 +26,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt::read_set) 
     pub(super) computation_ordinals: Arc<[usize]>,
 }
 impl CheckedReadLayout {
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-    )]
     pub(super) fn new(
         contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
         scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,

@@ -29,7 +29,8 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let shared = create_entity(execution, &runtime, "shared");
     let unrelated = create_entity(execution, &runtime, "unrelated");
     let external = |name: &str| {
@@ -86,7 +87,13 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     ];
     let ids = definitions
         .into_iter()
-        .map(|d| runtime.index_authority().register(d).index_id)
+        .map(|d| {
+            runtime
+                .index_authority()
+                .register(d)
+                .expect("index fixture has identity capacity")
+                .index_id
+        })
         .collect::<Vec<_>>();
     let request = |commit_id| DerivedIndexBuildRequest {
         source_commit_id: commit_id,

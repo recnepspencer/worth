@@ -30,7 +30,7 @@ pub(crate) trait PatchStreamSource: CommitEnvelopeSource {
         position: PatchStreamPosition,
     ) -> Option<CanonicalCommitEnvelope> {
         self.commit_id_at_patch_stream_position(position)
-            .and_then(|commit_id| self.commit_envelope(commit_id))
+            .and_then(|commit_id| self.resident_commit_envelope(commit_id))
     }
 }
 

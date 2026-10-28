@@ -18,7 +18,6 @@ pub use commit_outcome::{
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationManagedCleanupFailure,
     WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
-    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
     WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
     WorthQueryApplicationUnresolvedCommitEvidence,
 };

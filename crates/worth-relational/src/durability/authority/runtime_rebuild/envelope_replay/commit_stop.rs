@@ -9,6 +9,7 @@ pub(crate) fn replay_commit_stop(
 ) -> RelationalRecoveryStop {
     match error {
         TransactionCommitError::Execution { denial, .. } => match denial.kind {
+            CommitExecutionDenialKind::Cause(Cause::StorageUnavailable(failure)) => failure.into(),
             CommitExecutionDenialKind::Cause(cause) => RelationalRecoveryStop::Request(cause),
         },
         TransactionCommitError::Interrupted { interruption, .. } => {
@@ -25,12 +26,17 @@ pub(crate) fn replay_commit_stop(
             ),
             None => DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into(),
         },
+        TransactionCommitError::Preparation { error, .. } => match error.reason() {
+            crate::transactions::data::CommitPreparationReason::StorageUnavailable(failure) => failure.into(),
+            _ => DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into(),
+        },
         TransactionCommitError::Publication { .. }
-        | TransactionCommitError::Preparation { .. }
         | TransactionCommitError::PublicationDenied { .. }
         | TransactionCommitError::PublicationDeferred { .. }
         | TransactionCommitError::PublicationFailed { .. }
-        | TransactionCommitError::PerformedButDurabilityDeferred { .. } => {
+        // Replay runs before a medium is attached, so this cannot occur; it
+        // would still be replay failure rather than a durable fact.
+        | TransactionCommitError::DurabilityUnresolved { .. } => {
             DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into()
         }
     }
@@ -39,6 +45,27 @@ pub(crate) fn replay_commit_stop(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn execution_storage_refusal_is_cold_storage_failure_in_tail_replay() {
+        let failure = crate::storage::data::RelationalStorageUnavailable {
+            subject: crate::storage::data::RelationalStorageSubject::Region(
+                crate::identity::data::PartitionId::main(),
+            ),
+            cause: crate::storage::data::RelationalStorageUnavailableCause::Damaged,
+        };
+        let error =
+            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
+                kind: CommitExecutionDenialKind::Cause(Cause::StorageUnavailable(failure)),
+                partition_identity: None,
+            });
+        let RelationalRecoveryStop::Durability(error) =
+            replay_commit_stop(error, "storage read refused".into())
+        else {
+            panic!("storage refusal is a durable-source failure");
+        };
+        assert_eq!(error.class, RecoveryFailureClass::ColdStorageUnavailable);
+        assert_eq!(error.storage_unavailable, Some(failure));
+    }
     #[test]
     fn replay_interrupted_commit_preserves_each_control_cause_by_value() {
         use crate::mvcc::{
@@ -51,7 +78,11 @@ mod tests {
         ] {
             let boundary = RelationalInterruptionBoundary::ProposalValidation;
             let event = RelationalOperationControl::uninterrupted()
-                .with_injected_interruption_for_test(boundary, interruption, 1)
+                .with_injected_interruption_for_test(
+                    boundary,
+                    interruption,
+                    std::num::NonZeroUsize::MIN,
+                )
                 .observe(boundary)
                 .unwrap();
             let stop = replay_commit_stop(

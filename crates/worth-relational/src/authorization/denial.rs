@@ -3,11 +3,6 @@ use crate::identity::data::KindId;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RelationalAuthorizationPlanDenial {
     NoPaths,
-    PathStartsAtWrongKind {
-        path: usize,
-        expected: KindId,
-        actual: KindId,
-    },
     DiscontinuousTraversal {
         path: usize,
         traversal: usize,

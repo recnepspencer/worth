@@ -98,7 +98,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         Ok(WorthQueryProductBranchOwnerCleanupReservation {
             registry: self.clone(),
             identity,
-            entry: Some(entry),
+            entry,
             armed: true,
         })
     }
@@ -217,11 +217,20 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         runtime: &WorthQueryProductRuntime,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
     {
-        self.retry_admitted(identity, runtime, |_| Ok(()))
+        // The unbounded door: its checkpoints admit any work, so its owner
+        // transitions run on an unbounded serial request of their own.
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        self.retry_admitted(&execution, identity, runtime, |_| Ok(()))
     }
 
     pub(super) fn retry_admitted(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: u64,
         runtime: &WorthQueryProductRuntime,
         checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
@@ -233,10 +242,12 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
             .cloned()
             .ok_or(WorthQueryProductBranchOwnerCleanupDenial::CleanupUnavailable)?;
         let mut record = RetryRecordGuard::take(&entry.record)?;
-        match record
-            .record_mut()
-            .retry(runtime, || self.after_component_progress(), checkpoint)
-        {
+        match record.record_mut().retry(
+            execution,
+            runtime,
+            || self.after_component_progress(),
+            checkpoint,
+        ) {
             Ok(receipt) => {
                 let mut state = lock(&self.state);
                 if state
@@ -281,11 +292,14 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
     }
 }
 
+// A reservation is non-Clone and created only after incrementing reserved.
+// install consumes self and disarms Drop before callbacks; Drop decrements only
+// an armed reservation. Each decrement therefore owns one distinct reserved slot.
 #[must_use = "cleanup capacity must be installed or released"]
 pub(crate) struct WorthQueryProductBranchOwnerCleanupReservation {
     registry: WorthQueryProductBranchOwnerCleanupRegistry,
     identity: u64,
-    entry: Option<Arc<CleanupEntry>>,
+    entry: Arc<CleanupEntry>,
     armed: bool,
 }
 
@@ -309,10 +323,7 @@ impl WorthQueryProductBranchOwnerCleanupReservation {
     }
 
     fn install(mut self, record: WorthQueryProductBranchOwnerCleanupRecord) -> u64 {
-        let entry = self
-            .entry
-            .take()
-            .expect("a cleanup reservation owns its preallocated entry");
+        let entry = Arc::clone(&self.entry);
         *lock(&entry.record) = Some(record);
         let mut state = lock(&self.registry.state);
         state.reserved = state

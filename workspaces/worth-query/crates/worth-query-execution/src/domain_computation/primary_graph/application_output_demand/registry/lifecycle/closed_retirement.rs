@@ -31,10 +31,6 @@ impl DemandRegistryState {
     /// `candidates`, then retire each terminal row nothing holds, and each
     /// upstream its release leaves the same way. The caller drops the
     /// returned rows and claims after releasing the registry lock.
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-    )]
     pub(in super::super) fn retire_closed_rows(
         &mut self,
         mut candidates: Vec<WorthQueryOutputDemandKey>,
@@ -233,10 +229,6 @@ pub(super) fn ready_at_newest(
 }
 
 /// The claimants of every claimed row, in one pass over the rows.
-#[expect(
-    clippy::mutable_key_type,
-    reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-)]
 fn claimant_index(records: &Records) -> Claimants {
     let mut index = Claimants::new();
     for (dependent, record) in records {

@@ -18,6 +18,10 @@ pub(super) struct OriginalResourceAccess {
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) scope: Arc<WorthQueryObservedScopeSelector>,
     pub(super) parameters: CapturedApplicationQueryParameters,
+    #[expect(
+        dead_code,
+        reason = "issued selector retains its original principal provenance; fresh actions reauthorize"
+    )]
     pub(super) birth_principal: worth_relational::facade::identity::EntityId,
     // The original parameter admission includes this shared wrapper backing.
 }
@@ -25,6 +29,10 @@ pub(super) struct OriginalResourceAccess {
 pub(super) struct RetainedResourceValue {
     pub(super) value: AspectValue,
     // The value is dropped before its actual retained allocation reservation.
+    #[expect(
+        dead_code,
+        reason = "reservation is retained until after the value drops"
+    )]
     pub(super) funding: Option<ExecutionMemoryReservation>,
 }
 
@@ -53,6 +61,10 @@ pub(super) struct ResourceCandidate {
     pub(super) result_slot: Option<super::storage::ResourceResultReservation>,
 }
 
+#[expect(
+    dead_code,
+    reason = "actual queue mutation receipts remain under candidate custody"
+)]
 pub(super) enum ResourceCandidateQueue {
     Unadmitted,
     Admitted(worth_signal::facade::ResourceManagedQueueMutationReport),

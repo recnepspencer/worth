@@ -5,22 +5,18 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "lineage-seed");
     let feature = create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(execution, &runtime, "feature-only", feature.clone());
     create_entity_outcome(execution, &runtime, "main-only");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let checkpoint = plan.checkpoint.as_mut().unwrap();
     let foreign_target = checkpoint
         .branch_cells
@@ -37,7 +33,7 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
         .unwrap();
     replace_checkpoint_target(main, foreign_target);
 
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -54,7 +50,7 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "tail-lineage-seed");
     let feature = create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -63,18 +59,14 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
         "feature-before-checkpoint",
         feature.clone(),
     );
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let tail_commit = create_entity_outcome(execution, &runtime, "main-tail");
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let foreign_target = plan
         .checkpoint
         .as_ref()
@@ -97,7 +89,7 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
         .unwrap();
     replace_checkpoint_target(tail_cell, foreign_target);
 
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -113,6 +105,16 @@ fn replace_checkpoint_target(
     checkpoint: &mut crate::branch::RelationalBranchCellCheckpoint,
     target: worth_foundational::FoundationalBranchTarget<crate::branch::RelationalBranchTarget>,
 ) {
+    // The substitute is moved into the image's own runtime frame: a live
+    // checkpoint cell and a canonical envelope's cell record different frames.
+    let target = match target {
+        worth_foundational::FoundationalBranchTarget::Basis(target) => {
+            worth_foundational::FoundationalBranchTarget::basis(
+                target.rebind_runtime_instance_id(checkpoint.runtime_instance_id),
+            )
+        }
+        empty => empty,
+    };
     checkpoint.observation = crate::branch::relational_branch_observation(
         checkpoint.runtime_instance_id,
         &checkpoint.branch_id.0,

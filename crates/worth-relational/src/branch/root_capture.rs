@@ -53,7 +53,6 @@ pub(super) fn build_initial_regions_owned(
             issuer.issue_region_id()?,
             partition,
             symbols,
-            None,
         )?);
         let observation = region.observation();
         content_values_hashed += region.content_values_hashed;
@@ -88,7 +87,8 @@ pub(super) fn build_incremental_regions(
     root_id: u64,
     published_delta: &RelationalPublishedPartitionDelta,
     previous: &RelationalBranchRoot,
-    symbols: &crate::symbols::data::StringInterner,
+    symbols: &crate::runtime::RuntimeSymbolTable,
+    schema: &Arc<super::RelationalBranchRootSchemaAuthority>,
 ) -> Result<
     (
         Arc<RelationalPersistentRegionSet>,
@@ -105,41 +105,39 @@ pub(super) fn build_incremental_regions(
         let (overlay, journal) = published_delta
             .publication(partition_id)
             .ok_or(RelationalBranchRootCaptureDenial::PublishedPartitionMissing(partition_id))?;
-        let (partition, copied_partition_bytes) =
-            if let Some(previous_partition) = previous.partition_state(partition_id) {
-                replaced_prior_regions = replaced_prior_regions.saturating_add(1);
-                let mut partition = previous_partition.clone();
-                let mut overlay = overlay.clone();
-                let copied_truth_bytes = partition.merge_overlay_from_owned(&mut overlay, journal);
-                (partition, copied_truth_bytes)
-            } else {
-                (overlay.clone(), 0)
-            };
-        let region = Arc::new(RelationalRootRegion::new(
+        let prepared = if let Some(prior) = previous.regions.get(partition_id) {
+            replaced_prior_regions += 1;
+            crate::storage::residency::PreparedResidentRegion::incremental(
+                crate::storage::residency::RegionCaptureBasis {
+                    retention: &prior.partition,
+                    inventory: prior.allocation_inventory(),
+                    unavailable_records: prior.materialization_unavailable_records(),
+                },
+                overlay,
+                journal,
+                schema.clone(),
+                symbols,
+            )
+        } else {
+            crate::storage::residency::PreparedResidentRegion::initial(
+                overlay.clone(),
+                &symbols.interner_snapshot(),
+            )
+        }
+        .map_err(|failure| super::super::root_region::capture_failure(partition_id, failure))?;
+        let new_payload_bytes = prepared.new_payload_bytes;
+        copied_truth_bytes = copied_truth_bytes.saturating_add(prepared.copied_truth_bytes);
+        let region = Arc::new(RelationalRootRegion::from_prepared(
             root_id,
             issuer.issue_region_id()?,
-            partition,
-            symbols,
-            previous
-                .regions
-                .get(partition_id)
-                .map(|region| (region.as_ref(), journal)),
-        )?);
+            prepared,
+        ));
         let observation = region.observation();
         content_values_hashed += region.content_values_hashed;
-        let new_payload_bytes = previous.partition_state(partition_id).map_or(
-            observation.authoritative_bytes,
-            |previous| {
-                region
-                    .partition
-                    .new_authoritative_allocation_bytes_since(previous)
-            },
-        );
         new_region_authoritative_bytes = new_region_authoritative_bytes
             .saturating_add(new_payload_bytes)
             .saturating_add(observation.partition_state_bytes)
             .saturating_add(observation.root_region_bytes);
-        copied_truth_bytes = copied_truth_bytes.saturating_add(copied_partition_bytes);
         replacements.insert(partition_id, region);
     }
     let first_new_node_id = issuer.next_reachability_id();

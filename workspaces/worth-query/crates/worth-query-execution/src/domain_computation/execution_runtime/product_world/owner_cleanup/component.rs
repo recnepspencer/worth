@@ -1,5 +1,7 @@
 use worth_proof::TransitionOutcome;
-use worth_relational::facade::branch::RelationalBranchDeletionOutcome;
+use worth_relational::facade::branch::{
+    RelationalBranchDeletionOutcome, RelationalBranchTransitionStop,
+};
 use worth_runtime_world::facade::OwnerRetirementWork;
 use worth_signal::facade::branch::{SignalBranchRetirementReason, SignalOwnerCancellationSource};
 
@@ -9,14 +11,18 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryProdu
 impl WorthQueryProductRuntime {
     pub(super) fn retire_owner_component(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         work: &OwnerRetirementWork,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
         match work {
             OwnerRetirementWork::RelationalBranchRetirement { identity, .. } => {
-                match self.relational_lifecycle.delete_branch(identity) {
+                match self.relational_lifecycle.delete_branch(execution, identity) {
                     Ok(RelationalBranchDeletionOutcome::Deleted(_)) => Ok(()),
                     Ok(RelationalBranchDeletionOutcome::WaitingForActiveOperations(_)) => Err(
                         WorthQueryProductBranchOwnerCleanupDenial::RelationalOperationsStillActive,
+                    ),
+                    Err(RelationalBranchTransitionStop::DurabilityUnresolved(_)) => Err(
+                        WorthQueryProductBranchOwnerCleanupDenial::RelationalDurabilityUnresolved,
                     ),
                     Err(_) => Err(WorthQueryProductBranchOwnerCleanupDenial::RelationalOwnerDenied),
                 }

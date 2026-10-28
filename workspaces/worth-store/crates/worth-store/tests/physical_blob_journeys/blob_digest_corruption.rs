@@ -151,7 +151,6 @@ fn one_chunk_store(
         ingest.push(&[0x51]).unwrap();
         ingest.push(&[0x52]).unwrap();
         let published = ingest.finish().unwrap();
-        drop(blobs);
         serving.close();
         published
     };

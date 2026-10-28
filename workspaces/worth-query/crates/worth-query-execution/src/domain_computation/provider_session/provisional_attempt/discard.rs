@@ -1,17 +1,17 @@
 use super::WorthQueryProvisionalFailure;
 use crate::domain_computation::provider_session::{
-    WorthQueryProviderSessionRecoveryPosture, WorthQuerySessionCommitOrAbortOutcome,
+    WorthQueryProviderSessionRecoveryPosture, WorthQuerySessionAbortOutcome,
 };
 
 pub struct WorthQueryProvisionalDiscardOutcome {
     overlay_failure: Option<WorthQueryProvisionalFailure>,
-    session_outcome: WorthQuerySessionCommitOrAbortOutcome,
+    session_outcome: WorthQuerySessionAbortOutcome,
 }
 
 impl WorthQueryProvisionalDiscardOutcome {
     pub(crate) fn new(
         overlay_failure: Option<WorthQueryProvisionalFailure>,
-        session_outcome: WorthQuerySessionCommitOrAbortOutcome,
+        session_outcome: WorthQuerySessionAbortOutcome,
     ) -> Self {
         Self {
             overlay_failure,
@@ -31,7 +31,7 @@ impl WorthQueryProvisionalDiscardOutcome {
         }
     }
 
-    pub fn session_outcome(&self) -> &WorthQuerySessionCommitOrAbortOutcome {
+    pub fn session_outcome(&self) -> &WorthQuerySessionAbortOutcome {
         &self.session_outcome
     }
 }

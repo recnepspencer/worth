@@ -40,25 +40,13 @@ pub(crate) fn spawn_writer(
     )
 }
 
-pub(crate) fn wait_for_writer_ready(child: &mut ProcessChildGuard, start_marker: &Path) {
-    let ready_marker = start_marker.with_extension("ready");
-    let deadline = Instant::now() + Duration::from_secs(120);
-    while !ready_marker.exists() {
-        assert!(Instant::now() < deadline, "checkpoint root timeout");
-        if let Some(status) = child
-            .child_mut()
-            .try_wait()
-            .expect("poll checkpoint writer")
-        {
-            let (stdout, stderr) = exited_output(child);
-            panic!(
-                "checkpoint writer exited before root initialization: status={status}, stdout={}, stderr={}",
-                stdout,
-                stderr
-            );
-        }
-        std::thread::sleep(Duration::from_millis(20));
-    }
+pub(crate) fn wait_for_writer_ready(
+    child: &mut ProcessChildGuard,
+    start_marker: &Path,
+    operation_count: usize,
+) {
+    super::super::super::writer_readiness::wait(child, start_marker, operation_count)
+        .unwrap_or_else(|failure| panic!("{failure}"));
 }
 
 pub(crate) fn wait_for_marker(child: &mut ProcessChildGuard, marker: &Path, label: &str) {

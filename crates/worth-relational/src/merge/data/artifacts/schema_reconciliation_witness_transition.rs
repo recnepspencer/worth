@@ -43,9 +43,9 @@ pub(super) fn derive_schema_reconciliation_truth(
         None
     } else {
         let admitted_policy = retained_schema_reconciliation_admission_policy(input)
-            .expect("admitted schema reconciliation rows must declare a schema policy");
+            .expect(/* Proof: These private reconciliation rows are constructed only after schema-policy admission and continuity validation; the retained input and proposed transition are unchanged. */ "admitted schema reconciliation rows must declare a schema policy");
         let validated = validate_schema_transition(proposed_transition, Some(admitted_policy))
-            .expect("admitted schema reconciliation rows must validate through schema continuity");
+            .expect(/* Proof: These private reconciliation rows are constructed only after schema-policy admission and continuity validation; the retained input and proposed transition are unchanged. */ "admitted schema reconciliation rows must validate through schema continuity");
         Some(
             lower_schema_transition(
                 validated,
@@ -282,5 +282,5 @@ fn schema_transition_historical_interpretation(
 }
 
 fn synthetic_field_key() -> FieldKey {
-    FieldKey::new("merge_schema").expect("valid synthetic schema field")
+    FieldKey::new("merge_schema").expect(/* Proof: This constructor receives a fixed nonempty literal in the required grammar and version/domain; it has no runtime-dependent input. */ "valid synthetic schema field")
 }

@@ -126,7 +126,7 @@ fn retained_mixed_role_node_roots_fit_the_actual_predispatch_owner_bound() {
             .prepare_selected_epoch_nodes(
                 ledger,
                 &selections,
-                Charge::capacity::<u8>(2 * 1024 * 1024 * 1024).unwrap(),
+                Some(Charge::capacity::<u8>(2 * 1024 * 1024 * 1024).unwrap()),
                 &mut Work::new(None),
                 |drafts, _| {
                     for draft in drafts {

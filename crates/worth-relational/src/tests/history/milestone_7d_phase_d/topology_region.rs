@@ -5,9 +5,9 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_topology_identity_registry(unique_test_store_path(
-        "worth-relational-7d-topology-region",
-    ));
+    let runtime = durable_runtime_with_topology_identity_registry(
+        crate::tests::support::TestDurableMedium::new(),
+    );
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
     let target_b = create_entity(execution, &runtime, "target-b");
@@ -135,8 +135,8 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let store_path = unique_test_store_path("worth-relational-7d-topology-region-recovery");
-    let runtime = persisted_runtime_with_topology_identity_registry(store_path.clone());
+    let medium = crate::tests::support::TestDurableMedium::new();
+    let runtime = durable_runtime_with_topology_identity_registry(medium.clone());
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
     let target_b = create_entity(execution, &runtime, "target-b");
@@ -233,7 +233,7 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
     }
 
     let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {
-        persisted_runtime_with_topology_identity_registry(store_path.clone())
+        durable_runtime_with_topology_identity_registry(medium.clone())
     });
     let recovered_artifact = recovered
         .merge()

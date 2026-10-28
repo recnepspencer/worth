@@ -1,15 +1,27 @@
 //! Authored source selection through the ordinary request and a real performed receipt.
 #![recursion_limit = "256"]
-mod application_correction_support;
-// The support shares these modules with the application graph court, which
-// loads them at the same paths; the court owns and lints them, and the
-// example uses a part.
-#[allow(dead_code, unused_imports)]
-mod document_retention_model;
-
-#[allow(dead_code)]
+#[path = "../tests/application_graph/document_retention_model/host/world_resources.rs"]
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Shared reference application ports are exercised by independent consumer courts"
+)]
+pub(crate) mod document_world_resources;
+#[path = "../tests/application_graph/document_retention_model/operator_identity.rs"]
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Shared reference application ports are exercised by independent consumer courts"
+)]
+pub(crate) mod operator_identity;
 #[path = "../tests/support/execution_policy.rs"]
+#[allow(
+    dead_code,
+    reason = "Shared execution policy includes the other consumer courts? request adapter"
+)]
 mod test_request_policy;
+
+mod application_correction_support;
 use application_correction_support::publication_courts::*;
 use application_correction_support::{authentication::*, edit::Value, host, query::Row};
 use std::num::NonZeroUsize;
@@ -30,8 +42,6 @@ fn main() {
             match court.as_deref() {
                 None => run(),
                 Some("composite") => application_correction_support::composite_definition_court::run(),
-                Some("composite-recovery") => application_correction_support::composite_definition_recovery::run(),
-                Some("composite-unwind") => application_correction_support::composite_definition_recovery::unwind::run(),
                 Some("authored") => application_correction_support::authored_identity_courts::run(),
                 Some("race") => application_correction_support::correction_race_court::run(),
                 Some("tree-controls") => application_correction_support::tree_controls::run(),
@@ -45,7 +55,6 @@ fn main() {
                     application_correction_support::history_reapplication::run();
                 }
                 Some("outputs") => {
-                    application_correction_support::required_output_recovery::run();
                     application_correction_support::required_output_courts::run();
                 }
                 Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, tree, tree-controls, tree-history, tree-outputs, adoption-cycles, outputs, or no argument for all"),
@@ -71,11 +80,8 @@ fn run() {
     application_correction_support::correction_race_court::run();
     application_correction_support::authored_identity_courts::run();
     application_correction_support::composite_definition_court::run();
-    application_correction_support::composite_definition_recovery::run();
-    application_correction_support::composite_definition_recovery::unwind::run();
     application_correction_support::source_output_courts::run();
     application_correction_support::compensation_courts::run();
-    application_correction_support::required_output_recovery::run();
     application_correction_support::required_output_courts::run();
     application_correction_support::adoption_courts::run();
     selected_source_after_disjoint_edit();

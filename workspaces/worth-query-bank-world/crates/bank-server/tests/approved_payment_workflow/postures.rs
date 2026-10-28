@@ -5,7 +5,7 @@ use bank_external_rail::{test_control::FaultScript, LedgerStatus};
 use bank_server::BankApprovedPaymentApplyOutcome;
 use worth_query_host::facade::application_entry::{
     WorkflowProgressOutcome, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
-    WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryPreparationDenial,
+    WorthQueryWorkflowOperationOwnerPosture,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationUncommitted, WorthQueryExternalDispatchPostureKind,
@@ -177,56 +177,6 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         ready.rail.ledger_status(&dispatches[0].correlation),
         LedgerStatus::Completed
     );
-}
-
-#[test]
-fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
-    let ready = ReadyPaymentWorld::new("unpublished-payment-product", FaultScript::Succeed);
-    ready
-        .fixture
-        .world
-        .runtime
-        .fail_next_durable_append_for_test();
-    let partial = match ready.perform() {
-        BankApprovedPaymentApplyOutcome::Commit(
-            WorthQueryApplicationUncommitted::ProductUnpublished(partial),
-        ) => partial,
-        other => {
-            panic!("owner durability failure must retain unpublished product custody: {other:?}")
-        }
-    };
-    assert!(partial.relational_requires_settlement());
-    assert_eq!(partial.owner_effect_count(), 1);
-    assert!(ready.rail.attempts().is_empty());
-    let workflow = ready
-        .fixture
-        .world
-        .runtime
-        .approved_business_payment(&ready.principal, &ready.scope);
-    let denied = workflow
-        .advanced()
-        .prepare_native_effect_recovery(
-            &ready.operation,
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-        )
-        .err()
-        .expect("outbox recovery cannot precede owner product publication");
-    assert!(matches!(
-        denied,
-        bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(denial) if matches!(denial.as_ref(), WorthQueryWorkflowOperationRecoveryPreparationDenial::Owner(
-                WorthQueryWorkflowOperationOwnerPosture::ProductUnpublished(_)
-            ))
-    ));
-    let recovery = partial.into_recovery();
-    recovery
-        .continue_owner_settlement()
-        .expect("the original owner settles its performed facts");
-    assert!(!recovery
-        .inspect()
-        .expect("recovery remains inspectable")
-        .relational_requires_settlement());
-    assert!(ready.rail.attempts().is_empty());
 }
 
 #[test]

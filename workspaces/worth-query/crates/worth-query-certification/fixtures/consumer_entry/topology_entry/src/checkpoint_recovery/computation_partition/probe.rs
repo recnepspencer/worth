@@ -20,8 +20,6 @@ use super::*;
 pub(super) enum ProbeFault {
     /// The entry's key refuses to encode.
     NoKey,
-    /// The region's result holds this many more values, each a zero.
-    Hold(usize),
     /// The region's result carries a value the reducer panics on.
     PoisonReducer,
 }
@@ -103,12 +101,8 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
         let mut seen = vec![partition.key().entry];
         for entry in partition.gathered() {
             checkpoint.advance(1)?;
-            match entry.fault {
-                Some(RegionFault::Probe(ProbeFault::Hold(values))) => {
-                    seen.resize(seen.len() + values, 0);
-                }
-                Some(RegionFault::Probe(ProbeFault::PoisonReducer)) => seen.push(POISON),
-                _ => {}
+            if let Some(RegionFault::Probe(ProbeFault::PoisonReducer)) = entry.fault {
+                seen.push(POISON);
             }
         }
         Ok(seen)
@@ -134,7 +128,7 @@ impl RegionTotalsBinding for Probed {
     type Computation = ProbedTotals;
 
     fn install(setup: &mut Setup<'_>) -> Installed {
-        running::<ProbedTotals, _>(setup, ProbingOwner)
+        running::<4_096, ProbedTotals, _>(setup, ProbingOwner)
     }
 }
 

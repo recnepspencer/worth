@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
@@ -22,6 +20,12 @@ use product_adapter_phase_nine_fixture::schema_bound_json;
 #[derive(Clone, Debug)]
 pub struct StatefulEditorLikeBackend {
     state: Arc<Mutex<EditorLikeState>>,
+}
+
+impl Default for StatefulEditorLikeBackend {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl StatefulEditorLikeBackend {

@@ -5,7 +5,7 @@ use super::*;
 fn index_rebuild_requires_live_verified_canonical_evidence() {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let created = create_entity_outcome(&execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let pre_install_source = test_owner_main_basis(&runtime).unwrap();
@@ -104,7 +104,7 @@ fn index_rebuild_requires_live_verified_canonical_evidence() {
         rmp_serde::from_slice(&legacy_bytes).unwrap();
     assert!(legacy.authored_index_writes.is_unavailable());
     let (_, recovered) =
-        checkpoint_and_recover_with(&execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(&execution, &runtime, durable_runtime_with_test_schema);
     let recovered_source = recovered
         .admit_branch_basis(
             &recovered

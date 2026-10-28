@@ -1,36 +1,17 @@
 //! Identity belongs to the allocation, not to the partition that currently reaches it.
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-    Arc,
-};
+use std::sync::Arc;
 
-static NEXT_ALLOCATION_ID: AtomicU64 = AtomicU64::new(1);
-
-#[derive(Debug)]
-struct Allocation<T> {
-    id: u64,
-    value: T,
-}
-
-impl<T: Clone> Clone for Allocation<T> {
-    fn clone(&self) -> Self {
-        Self::new(self.value.clone())
-    }
-}
-
-impl<T> Allocation<T> {
-    fn new(value: T) -> Self {
-        let id = NEXT_ALLOCATION_ID
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |id| id.checked_add(1))
-            .expect("native storage allocation identity exhausted");
-        Self { id, value }
-    }
-}
+// Inspection identifiers describe process-local live backing, never authority
+// or durable identity. Every supported pointer fits the observation's u64.
+const _: () = assert!(
+    /* Proof: This is a compile-time platform check: a target whose usize pointers do not fit u64 cannot compile this allocation-identity representation. */
+    usize::BITS <= u64::BITS
+);
 
 /// Inspectable copy-on-write ownership; cloning a handle preserves identity,
 /// detaching its value issues a new identity. It conveys no mutation authority.
 #[derive(Debug)]
-pub(crate) struct StorageAllocation<T>(Arc<Allocation<T>>);
+pub(crate) struct StorageAllocation<T>(Arc<T>);
 
 impl<T> Clone for StorageAllocation<T> {
     fn clone(&self) -> Self {
@@ -41,7 +22,7 @@ impl<T> Clone for StorageAllocation<T> {
 impl<T> std::ops::Deref for StorageAllocation<T> {
     type Target = T;
     fn deref(&self) -> &T {
-        &self.0.value
+        &self.0
     }
 }
 
@@ -53,10 +34,13 @@ impl<T> AsRef<T> for StorageAllocation<T> {
 
 impl<T> StorageAllocation<T> {
     pub(crate) fn new(value: T) -> Self {
-        Self(Arc::new(Allocation::new(value)))
+        Self(Arc::new(value))
     }
     pub(crate) fn id(&self) -> u64 {
-        self.0.id
+        // An observation borrows retained roots throughout its traversal. Arc
+        // keeps each compared allocation alive, so addresses cannot be recycled
+        // during that comparison, including when T is zero-sized (Arc header).
+        Arc::as_ptr(&self.0) as usize as u64
     }
     pub(crate) fn is_unique(&self) -> bool {
         Arc::strong_count(&self.0) == 1
@@ -65,8 +49,8 @@ impl<T> StorageAllocation<T> {
     /// excluding allocator-private bookkeeping and T's separately owned storage.
     pub(crate) fn layout_bytes() -> u64 {
         std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<Allocation<T>>())
-            .expect("storage layout fits")
+            .extend(std::alloc::Layout::new::<T>())
+            .expect(/* Proof: StorageAllocation is crate-private. Its closed native monomorphizations are column/map/digest nodes and fixed owner metadata; their dynamic values are behind Vec/Arc/map headers, never input-sized inline arrays. These concrete layouts plus two usize headers are below isize::MAX on supported targets, including the preallocation callers that have not yet allocated T. */ "storage layout fits")
             .0
             .pad_to_align()
             .size() as u64
@@ -75,10 +59,10 @@ impl<T> StorageAllocation<T> {
 
 impl<T: Clone> StorageAllocation<T> {
     pub(crate) fn make_mut(this: &mut Self) -> &mut T {
-        &mut Arc::make_mut(&mut this.0).value
+        Arc::make_mut(&mut this.0)
     }
     pub(crate) fn unwrap_or_clone(this: Self) -> T {
-        Arc::unwrap_or_clone(this.0).value
+        Arc::unwrap_or_clone(this.0)
     }
 }
 

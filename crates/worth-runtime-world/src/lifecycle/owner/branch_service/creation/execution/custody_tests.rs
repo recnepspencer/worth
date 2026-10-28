@@ -37,13 +37,15 @@ fn unwind_after_first_actual_creation_fork_retains_exact_effect_without_signal_c
         branch,
         incarnation,
     };
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let cancellation = RuntimeWorldCancellationSource::new();
     let mut attempt = owner
         .prepare_creation(source.clone(), intent, &cancellation.token(), None)
         .unwrap();
     attempt.bind_destination(Arc::clone(&destination.witness));
     attempt.begin_owner_execution();
-    let returned = super::fork_relational(&owner, &mut attempt, &destination)
+    let returned = super::fork_relational(&owner, execution, &mut attempt, &destination)
         .unwrap_or_else(|_| panic!("actual Relational fork succeeds"));
     let (_, results) = CompositeAttemptProgress::new(returned, SignalAttemptProgress::untouched())
         .ready_results()

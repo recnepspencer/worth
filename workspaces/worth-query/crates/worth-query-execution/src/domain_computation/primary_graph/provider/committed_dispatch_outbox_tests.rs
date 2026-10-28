@@ -82,7 +82,9 @@ fn assert_commit_affinity_substitutions(
     let feature = BranchId("committed-outbox-feature".to_owned());
     provider.graph.with_runtime_mut(execution, |runtime| {
         let (_, basis) = runtime.observe_fork_source(&commit.branch_id).unwrap();
-        runtime.fork_branch(feature.clone(), basis).unwrap();
+        runtime
+            .fork_branch(execution, feature.clone(), basis)
+            .unwrap();
         let feature_record = record_for(99);
         let mut transaction = {
             let identity = runtime

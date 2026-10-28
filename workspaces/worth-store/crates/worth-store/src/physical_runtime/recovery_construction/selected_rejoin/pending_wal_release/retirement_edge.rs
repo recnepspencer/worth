@@ -213,7 +213,6 @@ pub(super) fn verify_completed(
     for snapshot in [source_snapshot.free_entries, result_snapshot.free_entries] {
         storage.discard_vec(snapshot)?;
     }
-    drop(storage);
     Ok((discovery.finish(), fingerprint))
 }
 

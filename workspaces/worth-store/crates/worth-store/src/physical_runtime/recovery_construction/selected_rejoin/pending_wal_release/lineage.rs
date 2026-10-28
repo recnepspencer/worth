@@ -57,7 +57,7 @@ pub(super) fn ordered_predecessor_matches(
         checkpoint_heads,
         legacy_base,
         current.descriptor(),
-        &current.manifest(),
+        current.manifest(),
     )
 }
 

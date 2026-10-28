@@ -35,8 +35,10 @@ const TEST_AUDIENCE: &str = "bank-http-test";
 const TEST_METHOD: &str = "causal-http-test";
 
 mod estate;
+mod expiring_authentication;
 mod held_authentication;
 use estate::estate_world;
+pub(super) use expiring_authentication::expiring_authentication_application;
 pub(super) use held_authentication::held_authentication_application;
 
 pub(in crate::http::server) struct CausalHttpApplication {

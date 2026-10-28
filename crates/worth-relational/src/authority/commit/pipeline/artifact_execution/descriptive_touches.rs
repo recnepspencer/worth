@@ -14,7 +14,7 @@ use crate::history::data::{
 };
 use crate::indexes::data::DerivedIndexKind;
 use crate::storage::data::RecordLifecycleState;
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::{partition_of, slot_of, EntityRecordKind, RelationRecordKind};
 use crate::transactions::data::{RecordRef, TransactionCommitError};
 

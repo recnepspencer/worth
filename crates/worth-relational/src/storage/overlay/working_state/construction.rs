@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::config::data::AdjacencyPolicy;
 use crate::identity::data::PartitionId;
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::{EntityArena, RelationArena};
 
 use super::super::{
@@ -66,7 +66,7 @@ impl WorkingState {
     /// global selection (None) must use Full instead. Direct test-only callers
     /// may construct partial states to exercise storage and validation behavior.
     pub(crate) fn from_touched_partitions_with_layout_and_sparse_slots(
-        base_partitions: &(impl PartitionAccess + ?Sized),
+        base_partitions: &(impl CurrentPartitionAccess + ?Sized),
         touched_partitions: impl IntoIterator<Item = PartitionId>,
         adjacency_policy: AdjacencyPolicy,
         clone_mode: PartitionCloneMode,
@@ -81,34 +81,13 @@ impl WorkingState {
                 continue;
             }
             mutation_journal.insert(partition_id, PartitionMutationJournal::default());
-            if let Some(partition) = base_partitions.get_partition(partition_id) {
-                let partition_state = match (
+            if let Some(partition) = base_partitions.get_current_partition(partition_id) {
+                let partition_state = partition.clone_for_mutation(
                     clone_mode,
                     sparse_entity_slots.and_then(|slots| slots.get(&partition_id)),
                     sparse_relation_overlay_partitions
                         .is_some_and(|partitions| partitions.contains(&partition_id)),
-                ) {
-                    (PartitionCloneMode::GraphSparseEntities, Some(touched_slots), true)
-                        if !touched_slots.is_empty() =>
-                    {
-                        partition
-                            .clone_graph_with_sparse_entity_slots_and_relation_shape(touched_slots)
-                    }
-                    (PartitionCloneMode::EntityOnly, Some(touched_slots), _)
-                        if !touched_slots.is_empty() =>
-                    {
-                        partition.clone_entity_slots_for_overlay(touched_slots)
-                    }
-                    (PartitionCloneMode::GraphSparseEntities, Some(touched_slots), _)
-                        if !touched_slots.is_empty() =>
-                    {
-                        partition.clone_graph_with_sparse_entity_slots(touched_slots)
-                    }
-                    (PartitionCloneMode::GraphSparseEntities, None, true) => {
-                        partition.clone_graph_with_sparse_relation_shape()
-                    }
-                    _ => partition.clone_for_overlay(clone_mode),
-                };
+                );
                 partitions.insert(partition_id, partition_state);
             }
         }

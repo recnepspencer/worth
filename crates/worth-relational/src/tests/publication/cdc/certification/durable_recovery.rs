@@ -21,14 +21,11 @@ fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     for name in ["a", "b", "c", "d", "e", "f"] {
         let _ = create_entity_outcome(execution, &runtime, name);
         if ["b", "d"].contains(&name) {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .unwrap();
+            crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
         }
     }
 
@@ -62,21 +59,26 @@ fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
     );
     assert_eq!(durable_mid_stitched, expected_mid);
 
-    let recovery_plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let recovery_plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)
         .unwrap();
     let recovered_patch_batch = recovered
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(PatchStreamPosition(3)),
-            max_commits: 32,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(PatchStreamPosition(3)),
+                max_commits: 32,
+            },
+        )
         .unwrap();
     assert_eq!(durable_mid_stitched, recovered_patch_batch.patches);
 }
@@ -103,17 +105,18 @@ fn cdc_certification_persisted_seeded_matrix_survives_checkpoint_compaction_and_
             &full_from_head,
         );
 
-        let recovery_plan = world
-            .runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
+        let recovery_plan = crate::tests::support::recovery_plan_for(
+            execution,
+            &world.runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
+        .unwrap();
         let mut recovered = build_property_runtime(RuntimeHarnessMode::Persisted);
         recovered
             .durability_recovery()
             .recover(execution, recovery_plan)
             .unwrap();
-        let recovered_patch_stream = collect_patch_stream_from_head(&recovered, 4096);
+        let recovered_patch_stream = collect_patch_stream_from_head(execution, &recovered, 4096);
         assert_eq!(
             recovered_patch_stream, full_from_head,
             "persisted seed {seed} drifted after recovery"
@@ -140,7 +143,7 @@ fn cdc_certification_retention_truncation_recovers_exact_suffix_from_old_checkpo
         .unwrap_or_else(|| world.baseline_checkpoint.clone());
 
     for _ in 0..16 {
-        let _ = world.runtime.retention().run_pass();
+        let _ = world.runtime.retention().run_pass(execution).unwrap();
     }
 
     let resumed = collect_subscriber_patches(&world.runtime, old_checkpoint.clone(), 3);

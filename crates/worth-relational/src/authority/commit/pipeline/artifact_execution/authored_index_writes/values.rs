@@ -1,7 +1,7 @@
 //! Borrowed exact-generation membership values at the real preparation roots.
 use super::*;
 use crate::identity::data::{EntityId, KindId};
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::{EntityRecordKind, SlotView};
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState,
@@ -9,11 +9,11 @@ use worth_foundational::facade::{
 };
 
 pub(super) fn live<'a>(
-    access: &'a impl PartitionAccess,
+    access: &'a impl CurrentPartitionAccess,
     entity: EntityId,
 ) -> Option<(KindId, SlotView<'a, EntityRecordKind>)> {
-    let partition = access.get_partition(entity.partition_id)?;
-    let slot = partition.entity_arena.get_slot(entity.slot_index())?;
+    let partition = access.get_current_partition(entity.partition_id)?;
+    let slot = partition.entity_arena().get_slot(entity.slot_index())?;
     if !slot.is_live() || slot.generation() != entity.generation_value() {
         return None;
     }

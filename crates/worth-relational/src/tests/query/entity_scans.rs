@@ -60,7 +60,8 @@ fn entity_kind_scans_can_be_partition_scoped_without_cross_partition_leakage() {
 
     let scoped = runtime
         .read_truth()
-        .project_historical_version(version_id)
+        .try_project_historical_version(version_id)
+        .unwrap()
         .entities_in::<NamedEntityProjection>(execution, PartitionId(7))
         .expect("read request remains live");
 
@@ -86,12 +87,14 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
 
     let ordered_records = ordered
         .read_truth()
-        .project_historical_version(ordered.current_version_id())
+        .try_project_historical_version(ordered.current_version_id())
+        .unwrap()
         .entities_in::<NamedEntityProjection>(execution, PartitionId(3))
         .expect("read request remains live");
     let reversed_records = reversed
         .read_truth()
-        .project_historical_version(reversed.current_version_id())
+        .try_project_historical_version(reversed.current_version_id())
+        .unwrap()
         .entities_in::<NamedEntityProjection>(execution, PartitionId(3))
         .expect("read request remains live");
 
@@ -112,7 +115,8 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
     assert_eq!(
         ordered
             .read_truth()
-            .project_historical_version(ordered.current_version_id())
+            .try_project_historical_version(ordered.current_version_id())
+            .unwrap()
             .entities_in::<NamedEntityProjection>(execution, PartitionId(3))
             .expect("read request remains live")
             .iter()
@@ -145,7 +149,8 @@ fn entity_kind_scans_preserve_historical_partition_visibility() {
 
     let historical = runtime
         .read_truth()
-        .project_historical_version(historical_version)
+        .try_project_historical_version(historical_version)
+        .unwrap()
         .entities_in::<NamedEntityProjection>(execution, PartitionId(17))
         .expect("read request remains live");
 

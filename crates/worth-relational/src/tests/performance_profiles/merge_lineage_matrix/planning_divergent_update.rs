@@ -6,7 +6,7 @@ pub(super) fn certify_merge_planning_divergent_update(
 ) {
     let merge_planning_samples =
         capture_perf_samples(suite, "merge_planning_divergent_update", || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             let shared = create_entity(execution, &runtime, "shared");
             create_branch_from_main(&runtime, "feature");
             let _ = update_entity(execution, &runtime, shared, "main-value");

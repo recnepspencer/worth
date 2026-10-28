@@ -42,10 +42,9 @@ pub(super) fn validate(parts: &WorthQueryPortableApplicationResourceParts) -> Re
             ability,
             scope_entity,
         } = parts.authorization.requirement(action)
+            && (!name_is_valid(ability) || scope_entity != &parts.access.parts().scope_entity)
         {
-            if !name_is_valid(ability) || scope_entity != &parts.access.parts().scope_entity {
-                return Err(Denial::InvalidAuthorization);
-            }
+            return Err(Denial::InvalidAuthorization);
         }
     }
     validate_disclosure(parts)

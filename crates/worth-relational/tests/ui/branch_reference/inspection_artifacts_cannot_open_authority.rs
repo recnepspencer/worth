@@ -8,9 +8,10 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 fn sharing_cannot_fork(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     observation: RelationalBranchSharingObservation,
 ) {
-    let _ = runtime.fork_branch(BranchId("forged".to_owned()), observation);
+    let _ = runtime.fork_branch(execution, BranchId("forged".to_owned()), observation);
 }
 
 fn allocation_cannot_begin_mutation(

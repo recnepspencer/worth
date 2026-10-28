@@ -21,7 +21,7 @@ pub use decode_storage::{PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeSt
 pub use head_effect::PersistedReleaseCustodyHeadEffectV1;
 pub use operation::{
     PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
-    PersistedPhysicalRecoveryOperation,
+    PersistedPhysicalRecoveryOperation, PersistedRecordAnchorAdvance,
 };
 pub use release_head_retirement::PersistedTerminalReleaseHeadRetirementV1;
 pub use release_head_tree_claim::{PersistedReleaseHeadClaim, PersistedReleaseHeadTreeClaim};

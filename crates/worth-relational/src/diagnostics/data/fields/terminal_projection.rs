@@ -96,8 +96,6 @@ pub(crate) fn project_diagnostic_value_for_terminal_projection(
             TerminalDiagnosticProjectionValue::String(value.0.clone())
         }
         RelationalDiagnosticValue::SnapshotId(value) => unsigned(value.0),
-        RelationalDiagnosticValue::DurableCheckpointId(value) => unsigned(value.0),
-        RelationalDiagnosticValue::DurableSegmentId(value) => unsigned(value.0),
         RelationalDiagnosticValue::DerivedIndexId(value) => unsigned(value.0),
         RelationalDiagnosticValue::DerivedIndexGenerationId(value) => unsigned(value.0),
         RelationalDiagnosticValue::CorrespondenceCandidateId(value) => unsigned(*value),
@@ -169,7 +167,7 @@ fn hex_bytes(bytes: &[u8]) -> String {
     let mut encoded = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
         use std::fmt::Write;
-        write!(&mut encoded, "{byte:02x}").expect("writing to String cannot fail");
+        write!(&mut encoded, "{byte:02x}").expect(/* Proof: The destination is String and all formatted arguments are native integers; String::write_str always returns Ok and integer formatting introduces no fallible writer. */ "writing to String cannot fail");
     }
     encoded
 }

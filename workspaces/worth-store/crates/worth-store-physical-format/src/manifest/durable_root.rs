@@ -16,6 +16,7 @@ use super::free_space_routing::{
     decode_reference as decode_free_space_reference,
     encode_reference as encode_free_space_reference, FreeSpaceBlockReference,
 };
+use super::record_anchor::{RecordAnchorTable, RECORD_ANCHOR_TABLE_BYTES};
 use super::release_custody_head::ReleaseCustodyHeadBlockReferenceV1;
 use super::routing_tree_height::required_tree_level;
 use super::{DerivedFamilyRootDirectoryBinding, IndexedThroughBlobPublication};
@@ -27,6 +28,8 @@ const DIRECTORY_BOUND_ROOT_PAYLOAD_BYTES: usize = 496;
 const QUARANTINE_BOUND_ROOT_PAYLOAD_BYTES: usize = 528;
 const TIER_ANCHORED_ROOT_PAYLOAD_BYTES: usize = 560;
 const HEAD_BOUND_ROOT_PAYLOAD_BYTES: usize = 680;
+const ANCHORED_ROOT_PAYLOAD_BYTES: usize =
+    HEAD_BOUND_ROOT_PAYLOAD_BYTES + RECORD_ANCHOR_TABLE_BYTES;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurablePhysicalRootManifest {
@@ -48,6 +51,7 @@ pub struct DurablePhysicalRootManifest {
     derived_family_directory: Option<DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
+    record_anchors: RecordAnchorTable,
     requires_maintenance_protocol: bool,
 }
 
@@ -71,13 +75,14 @@ pub struct DurablePhysicalRootManifestBuilder {
     derived_family_directory: Option<DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
+    record_anchors: RecordAnchorTable,
 }
 
 impl DurablePhysicalRootManifest {
     /// Maximum co-live payload and framed-output storage used by `encode`.
     /// Canonical admission may encode the current layout even for an older input.
     pub const fn maximum_encoding_scratch_bytes() -> usize {
-        2 * HEAD_BOUND_ROOT_PAYLOAD_BYTES + crate::record_framing::DURABLE_FRAME_HEADER_BYTES
+        2 * ANCHORED_ROOT_PAYLOAD_BYTES + crate::record_framing::DURABLE_FRAME_HEADER_BYTES
     }
 
     pub const fn builder(
@@ -105,6 +110,7 @@ impl DurablePhysicalRootManifest {
             derived_family_directory: None,
             last_inline_record: None,
             last_inline_segment: None,
+            record_anchors: RecordAnchorTable::EMPTY,
         }
     }
 
@@ -116,7 +122,9 @@ impl DurablePhysicalRootManifest {
 
     pub fn encoded_frame_bytes(&self) -> usize {
         crate::record_framing::DURABLE_FRAME_HEADER_BYTES
-            + if self.release_custody_head_root.is_some()
+            + if !self.record_anchors.is_empty() {
+                ANCHORED_ROOT_PAYLOAD_BYTES
+            } else if self.release_custody_head_root.is_some()
                 || self.next_release_custody_head_block > 1
             {
                 HEAD_BOUND_ROOT_PAYLOAD_BYTES
@@ -140,7 +148,9 @@ impl DurablePhysicalRootManifest {
     ) -> Option<Vec<u8>> {
         let payload_bytes =
             self.encoded_frame_bytes() - crate::record_framing::DURABLE_FRAME_HEADER_BYTES;
-        let schema = if payload_bytes == HEAD_BOUND_ROOT_PAYLOAD_BYTES {
+        let schema = if payload_bytes == ANCHORED_ROOT_PAYLOAD_BYTES {
+            11
+        } else if payload_bytes == HEAD_BOUND_ROOT_PAYLOAD_BYTES {
             10
         } else if self.tier_epoch_anchor.is_some() {
             9
@@ -214,13 +224,17 @@ impl DurablePhysicalRootManifest {
                 if let Some(anchor) = self.tier_epoch_anchor {
                     payload[528..560].copy_from_slice(&anchor);
                 }
-                if payload.len() == HEAD_BOUND_ROOT_PAYLOAD_BYTES {
+                if payload.len() >= HEAD_BOUND_ROOT_PAYLOAD_BYTES {
                     release_head_reference::encode(
                         payload,
                         self.release_custody_head_root,
                         self.next_release_custody_head_block,
                         self.requires_maintenance_protocol,
                     );
+                }
+                if payload.len() == ANCHORED_ROOT_PAYLOAD_BYTES {
+                    self.record_anchors
+                        .encode(&mut payload[HEAD_BOUND_ROOT_PAYLOAD_BYTES..]);
                 }
             },
         )
@@ -253,6 +267,12 @@ impl DurablePhysicalRootManifest {
         let next_segment_block = u64::from_le_bytes(frame.payload[224..232].try_into().unwrap());
         let (tier_epoch_anchor, head_root, next_head_block, head_maintenance) =
             release_head_reference::decode(frame.schema, frame.payload)?;
+        let record_anchors = if frame.schema == 11 {
+            RecordAnchorTable::decode(&frame.payload[HEAD_BOUND_ROOT_PAYLOAD_BYTES..])
+                .ok_or(RootManifestDenial::InvalidRecordIdentity)?
+        } else {
+            RecordAnchorTable::EMPTY
+        };
         if generation == 0 || generation != frame.identity {
             return Err(RootManifestDenial::IdentityMismatch);
         }
@@ -330,10 +350,11 @@ impl DurablePhysicalRootManifest {
         .derived_family_directory(bound_directory)
         .last_inline_record(last_inline_record)
         .last_inline_segment(last_inline_segment)
+        .record_anchors(record_anchors)
         .admit()
         .map(|mut manifest| {
             manifest = manifest.with_root_schema(frame.schema);
-            if frame.schema == 10 {
+            if frame.schema >= 10 {
                 manifest.requires_maintenance_protocol = head_maintenance;
             }
             (manifest, format)

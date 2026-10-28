@@ -119,7 +119,6 @@ Native history selection reports a bounded unavailable result without proving wh
 - [Application front door](ordinary-application-front-door.md)
 - [Build an application](../../../../../../docs/build-an-application.md)
 - [Executable retained courts](../../../worth-query-certification/tests/application_graph/source_only/retained.rs)
-- [Executable capability recovery court](../../../worth-query-certification/tests/application_graph/source_only/capability/recovery.rs)
 
 An `Initial` source owner has not entered its commit callback. After a refused
 first admission, `close(&fresh_request)` can release that unexecuted custody. It

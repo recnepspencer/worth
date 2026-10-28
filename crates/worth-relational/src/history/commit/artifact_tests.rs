@@ -8,7 +8,7 @@ use crate::indexes::data::{
     DerivedIndexApplicability, DerivedIndexArtifacts, DerivedIndexEntries, DerivedIndexGeneration,
     DerivedIndexGenerationId, DerivedIndexId, DerivedIndexPublicationStatus,
 };
-use crate::tests::support::{create_entity_outcome, persisted_runtime_with_test_schema};
+use crate::tests::support::{create_entity_outcome, durable_runtime_with_test_schema};
 
 #[test]
 fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
@@ -20,7 +20,7 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
     use crate::tests::support::test_execution_lease;
 
     for checked in [false, true] {
-        let runtime = persisted_runtime_with_test_schema();
+        let runtime = durable_runtime_with_test_schema();
         let committed = if checked {
             create_entity_outcome(
                 &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
@@ -32,7 +32,9 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
         };
         let envelope = runtime
             .replay()
-            .canonical_commit_envelope(committed.commit.commit_id)
+            .canonical_commit_envelope(execution, committed.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .expect("performed commit has sealed envelope");
         let touches = envelope
             .descriptive_touches()
@@ -67,19 +69,24 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
     use crate::tests::support::{aspect_field_locator, aspect_key, field_key};
     use worth_foundational::facade::AspectValue;
 
-    let runtime = persisted_runtime_with_test_schema();
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "touch-index".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let runtime = durable_runtime_with_test_schema();
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "touch-index".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let committed = create_entity_outcome(execution, &runtime, "indexed-value");
     let envelope = runtime
         .replay()
-        .canonical_commit_envelope(committed.commit.commit_id)
+        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("performed indexed commit has envelope");
     let touches = envelope
         .descriptive_touches()
@@ -104,7 +111,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "preencoded-recovery-root");
     let root = runtime
         .history
@@ -123,15 +130,19 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         .relink_preencoded_recovery(&envelope, Some(&root), None)
         .unwrap();
     assert!(Arc::ptr_eq(
-        &preencoded.canonical_payload,
-        &relinked.canonical_payload
+        &preencoded.envelope_residency().resident_payload().unwrap(),
+        &relinked.envelope_residency().resident_payload().unwrap()
     ));
     assert_eq!(relinked.identity(), legacy.identity());
     assert_eq!(relinked.parentage(), legacy.parentage());
     assert_eq!(relinked.roots(), legacy.roots());
     assert_eq!(
-        relinked.canonical_payload_digest(),
-        legacy.canonical_payload_digest()
+        relinked
+            .canonical_payload_digest()
+            .expect("resident fixture has a canonical digest"),
+        legacy
+            .canonical_payload_digest()
+            .expect("resident fixture has a canonical digest")
     );
 
     let equal_but_unsealed = Arc::new((*envelope).clone());
@@ -154,11 +165,13 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &runtime, "artifact-allocation-basis");
     let mut envelope = runtime
         .replay()
-        .canonical_commit_envelope(committed.commit.commit_id)
+        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("the performed commit owns one canonical envelope")
         .clone();
     let baseline_artifact = RelationalCommitArtifact::from_envelope(Arc::new(envelope.clone()))
@@ -250,11 +263,13 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &runtime, "derived-index-allocation-basis");
     let mut envelope = runtime
         .replay()
-        .canonical_commit_envelope(committed.commit.commit_id)
+        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("the performed commit owns one canonical envelope")
         .clone();
     envelope.derived_index_artifacts = DerivedIndexArtifacts::default();

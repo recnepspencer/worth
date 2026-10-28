@@ -123,8 +123,32 @@ pub fn execute_protocol_check(
 }
 
 fn canonical_file(path: &Path) -> Result<PathBuf, ProtocolRunnerFailure> {
-    std::fs::canonicalize(path)
-        .map_err(|error| ProtocolRunnerFailure::ProcessLaunch(error.to_string()))
+    let canonical = std::fs::canonicalize(path)
+        .map_err(|error| ProtocolRunnerFailure::ProcessLaunch(error.to_string()))?;
+    // Java's classpath parser does not accept Windows verbatim path prefixes.
+    #[cfg(windows)]
+    {
+        use std::path::{Component, Prefix};
+        let mut components = canonical.components();
+        if let Some(Component::Prefix(prefix)) = components.next() {
+            let mut ordinary = match prefix.kind() {
+                Prefix::VerbatimDisk(drive) => PathBuf::from(format!("{}:\\", char::from(drive))),
+                Prefix::VerbatimUNC(server, share) => {
+                    let mut path = PathBuf::from(r"\\");
+                    path.push(server);
+                    path.push(share);
+                    path
+                }
+                _ => return Ok(canonical),
+            };
+            if matches!(components.clone().next(), Some(Component::RootDir)) {
+                components.next();
+            }
+            ordinary.push(components.as_path());
+            return Ok(ordinary);
+        }
+    }
+    Ok(canonical)
 }
 
 fn prepare_state_directory(path: &Path) -> Result<(), ProtocolRunnerFailure> {
@@ -237,6 +261,17 @@ fn require_file(path: &Path, denial: ProtocolRunnerFailure) -> Result<(), Protoc
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn canonical_tool_path_preserves_the_file_in_a_directory_with_spaces() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join("checker tool.jar");
+        std::fs::write(&file, b"tool").unwrap();
+        let canonical = canonical_file(&file).unwrap();
+        assert_eq!(std::fs::read(&canonical).unwrap(), b"tool");
+        #[cfg(windows)]
+        assert!(!canonical.as_os_str().to_string_lossy().starts_with(r"\\?\"));
+    }
 
     #[test]
     fn checker_process_is_killed_when_its_runtime_bound_expires() {

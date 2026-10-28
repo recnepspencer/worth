@@ -5,6 +5,7 @@ use super::super::protocol::{
 use worth_query_host::facade::primary_graph::RelationalExecutionDenialCause as Cause;
 pub(super) fn denial(cause: Cause) -> BankHttpDenial {
     let (kind, next) = match cause {
+        Cause::StorageUnavailable(_) => (Kind::Unavailable, Next::ContactOperator),
         Cause::Cancelled => (Kind::Cancelled, Next::Retry),
         Cause::DeadlineElapsed => (Kind::DeadlineExceeded, Next::Retry),
         Cause::WorkerLimitExceedsParent
@@ -17,7 +18,9 @@ pub(super) fn denial(cause: Cause) -> BankHttpDenial {
         | Cause::ResultCapacityExceeded
         | Cause::ScratchCapacityExceeded => (Kind::ResourceExhausted, Next::NarrowRequest),
         Cause::NestedStopped | Cause::AllocationFailed => (Kind::Unavailable, Next::Retry),
-        Cause::ChargedBytesOverflow
+        Cause::ProjectionContract(_)
+        | Cause::HistoricalVisibility(_)
+        | Cause::ChargedBytesOverflow
         | Cause::AccountingUnavailable
         | Cause::UnrelatedNestedLease
         | Cause::NoActiveExecutionScope

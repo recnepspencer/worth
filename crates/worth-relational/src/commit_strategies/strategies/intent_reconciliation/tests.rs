@@ -60,7 +60,8 @@ fn intent_reconciliation_strategy_emits_update_when_aspect_fields_differ() {
         .commit_strategy_executor(IntentReconciliationStrategy::execution_registration(
             &descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
@@ -80,7 +81,10 @@ fn intent_reconciliation_strategy_emits_update_when_aspect_fields_differ() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -109,7 +113,8 @@ fn intent_reconciliation_strategy_emits_noop_when_aspect_fields_match() {
         .commit_strategy_executor(IntentReconciliationStrategy::execution_registration(
             &descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = create_entity(request_execution, &runtime, "before");
     update_entity(request_execution, &runtime, entity, "stable");
     let request = runtime
@@ -130,7 +135,10 @@ fn intent_reconciliation_strategy_emits_noop_when_aspect_fields_match() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -159,7 +167,8 @@ fn intent_reconciliation_strategy_preserves_untouched_declared_fields() {
         .commit_strategy_executor(IntentReconciliationStrategy::execution_registration(
             &descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
@@ -179,7 +188,10 @@ fn intent_reconciliation_strategy_preserves_untouched_declared_fields() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)

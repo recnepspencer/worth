@@ -104,7 +104,10 @@ fn graph_planning_uses_child_basis_after_main_diverges_and_rejects_stale_binding
     let main = BranchId("main".to_owned());
     let (_, source) = world.runtime.observe_fork_source(&main).unwrap();
     let child = BranchId("graph-child".to_owned());
-    world.runtime.fork_branch(child.clone(), source).unwrap();
+    world
+        .runtime
+        .fork_branch(execution, child.clone(), source)
+        .unwrap();
     let child_identity = world.runtime.branch_identity(&child).unwrap();
     let child_version =
         snapshot_for_supply_chain_identity(&world.runtime, &child_identity).version_id();

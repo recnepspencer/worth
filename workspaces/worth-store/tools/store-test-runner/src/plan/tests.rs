@@ -36,6 +36,8 @@ fn scenario_plan_names_real_targets_without_absorbing_special_lanes() {
 
     assert!(command.contains("binary_id(=worth-store::physical_record_journeys)"));
     assert!(command.contains("binary_id(=worth-store-recovery-runtime::phase_five_faults)"));
+    assert!(command.contains("binary_id(=worth-store-relational::relational_home)"));
+    assert!(command.contains("--features worth-store-relational/certification-test-authority"));
     assert!(!command.contains("phase_eight_process"));
     assert!(!command.contains("physical_runtime_authority_ui"));
     assert!(!command.contains("backend_assumptions"));

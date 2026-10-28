@@ -36,6 +36,7 @@ impl ResolvedCommitHistory {
 }
 
 pub(crate) fn resolve_commit_history(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     options: &RelationalTransactionValidationInput,
     version_id: VersionId,
@@ -55,7 +56,8 @@ pub(crate) fn resolve_commit_history(
     }
     let previous_branch_head_version = branch_basis.commit_identity().map(|head| head.version_id());
     let requested_merge_parent_count = options.merge_parent_bases().len();
-    let (parents, merge_base_commits) = resolve_parent_commits(runtime, options, &branch_id)?;
+    let (parents, merge_base_commits) =
+        resolve_parent_commits(execution, runtime, options, &branch_id)?;
     let effective_merge_parent_count = parents
         .len()
         .saturating_sub(usize::from(previous_branch_head_version.is_some()));
@@ -78,88 +80,108 @@ pub(crate) fn resolve_commit_history(
 }
 
 fn resolve_parent_commits(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     options: &RelationalTransactionValidationInput,
     branch_id: &BranchId,
 ) -> Result<(Vec<CommitId>, Vec<CommitId>), TransactionCommitError> {
+    use crate::transactions::data::ConflictClass;
     let mut parents = Vec::new();
     let mut merge_bases = std::collections::BTreeSet::new();
     let target_head = options
         .basis()
         .commit_identity()
         .map(|identity| identity.commit_id());
-    if let Some(head) = target_head {
-        parents.push(head);
-    }
+    parents.extend(target_head);
     for merge_binding in options.merge_parent_bases() {
         let merge_branch = merge_binding.identity().branch_id().clone();
-        let result = (|| {
-            if !merge_binding.is_current() {
-                return Err(crate::transactions::data::CommitConflict::new(
-                    crate::transactions::data::ConflictClass::InvalidMergeParent {
-                        detail: format!("merge parent is foreign or stale: {}", merge_branch.0),
+        if !merge_binding.is_current() {
+            return Err(merge_parent_conflict(
+                runtime,
+                options,
+                branch_id,
+                ConflictClass::InvalidMergeParent {
+                    detail: format!("merge parent is foreign or stale: {}", merge_branch.0),
+                },
+            ));
+        }
+        if &merge_branch == branch_id {
+            continue;
+        }
+        let head = merge_binding
+            .commit_identity()
+            .map(|identity| identity.commit_id())
+            .ok_or_else(|| {
+                merge_parent_conflict(
+                    runtime,
+                    options,
+                    branch_id,
+                    ConflictClass::InvalidMergeParent {
+                        detail: format!("merge parent has no head: {}", merge_branch.0),
                     },
-                ));
-            }
-            if &merge_branch == branch_id {
-                return Ok(());
-            }
-            let head = merge_binding
-                .commit_identity()
-                .map(|identity| identity.commit_id())
+                )
+            })?;
+        if parents.contains(&head) {
+            continue;
+        }
+        if target_head.is_some() {
+            let inspection = runtime
+                .history
+                .demand_merge_inspection(execution, merge_binding, options.basis())
+                .map_err(|failure| {
+                    crate::authority::commit::preparation::storage_read_denial(
+                        options.basis(),
+                        failure,
+                    )
+                })?
                 .ok_or_else(|| {
-                    crate::transactions::data::CommitConflict::new(
-                        crate::transactions::data::ConflictClass::InvalidMergeParent {
-                            detail: format!("merge parent has no head: {}", merge_branch.0),
+                    merge_parent_conflict(
+                        runtime,
+                        options,
+                        branch_id,
+                        ConflictClass::MissingMergeBase {
+                            detail: format!(
+                                "merge parent {} has no common ancestor with {}",
+                                merge_branch.0, branch_id.0
+                            ),
                         },
                     )
                 })?;
-            if !parents.contains(&head) {
-                if target_head.is_some() {
-                    let inspection = runtime
-                        .history
-                        .inspect_merge_from_bindings(merge_binding, options.basis())
-                        .ok_or_else(|| {
-                            crate::transactions::data::CommitConflict::new(
-                                crate::transactions::data::ConflictClass::MissingMergeBase {
-                                    detail: format!(
-                                        "merge parent {} has no common ancestor with {}",
-                                        merge_branch.0, branch_id.0
-                                    ),
-                                },
-                            )
-                        })?;
-                    if !inspection.conflicting_records.is_empty() {
-                        return Err(crate::transactions::data::CommitConflict::new(
-                            crate::transactions::data::ConflictClass::MergeConflictOverlap {
-                                detail: format!(
-                                    "merge between {} and {} overlaps {:?}",
-                                    merge_branch.0, branch_id.0, inspection.conflicting_records
-                                ),
-                            },
-                        ));
-                    }
-                    merge_bases.extend(inspection.merge_base);
-                }
-                parents.push(head);
-            }
-            Ok(())
-        })();
-        if let Err(conflict) = result {
-            emit_history_failure_diagnostic(
-                runtime,
-                DiagnosticsScope::History,
-                conflict.code,
-                conflict.detail.clone(),
-                merge_parent_resolution_failure_fields(
+            if !inspection.conflicting_records.is_empty() {
+                return Err(merge_parent_conflict(
+                    runtime,
+                    options,
                     branch_id,
-                    &options.merge_parent_branch_ids(),
-                ),
-            );
-            return Err(TransactionCommitError::conflict(conflict));
+                    ConflictClass::MergeConflictOverlap {
+                        detail: format!(
+                            "merge between {} and {} overlaps {:?}",
+                            merge_branch.0, branch_id.0, inspection.conflicting_records
+                        ),
+                    },
+                ));
+            }
+            merge_bases.extend(inspection.merge_base);
         }
+        parents.push(head);
     }
     Ok((parents, merge_bases.into_iter().collect()))
+}
+
+fn merge_parent_conflict(
+    runtime: &RelationalPreparationRuntime,
+    options: &RelationalTransactionValidationInput,
+    branch_id: &BranchId,
+    class: crate::transactions::data::ConflictClass,
+) -> TransactionCommitError {
+    let conflict = crate::transactions::data::CommitConflict::new(class);
+    emit_history_failure_diagnostic(
+        runtime,
+        DiagnosticsScope::History,
+        conflict.code,
+        conflict.detail.clone(),
+        merge_parent_resolution_failure_fields(branch_id, &options.merge_parent_branch_ids()),
+    );
+    TransactionCommitError::conflict(conflict)
 }
 
 pub(crate) fn resolve_commit_history_for_merge(

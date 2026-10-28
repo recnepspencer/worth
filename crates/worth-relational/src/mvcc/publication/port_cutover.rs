@@ -97,6 +97,19 @@ impl PreparedBranchPublicationPreflight {
             ));
         }
 
+        // Capacity was reserved before head comparison so stale attempts still
+        // release their exact preflight reservation. Only this coordinated,
+        // unchanged head can turn capacity into a transfer witness.
+        let head_retirement = match self.head_retirement.bind_current_head() {
+            Ok(reservation) => reservation,
+            Err(denial) => {
+                return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
+                    RelationalPublicationFailureKind::RetentionOwner,
+                    format!("selected head retention binding refused before movement: {denial:?}"),
+                ))
+            }
+        };
+
         if let (Some(effect), Some(binding)) = (&self.companion, &self.companion_binding)
             && let Err(stop) = effect.matches(binding)
         {
@@ -123,7 +136,7 @@ impl PreparedBranchPublicationPreflight {
         // a separate operation-control token cannot replace its first cause.
         if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
             execution,
-            crate::authority::commit::pipeline::CommitStage::Publication,
+            crate::authority::commit::pipeline::CommitStage::PublicationCutover,
         ) {
             return RelationalPublicationOutcome::RequestStopped(stop);
         }
@@ -133,33 +146,55 @@ impl PreparedBranchPublicationPreflight {
             .canonical_envelope()
             .map(|envelope| envelope.commit.version_id);
 
-        let retired_root = std::cell::RefCell::new(None);
-        let head_retirement = &mut self.head_retirement;
         let next_root = &self.movement.root;
         let reservation_pause = &self.control;
-        let positioned_commit = match self
+        let medium = self.medium.clone();
+        let durable_policy = execution.allocation_policy();
+        // A durable publisher waits for a publisher whose durable I/O holds
+        // the reservation. Memory-only commits defer only behind other commits.
+        let admission = match &medium {
+            Some(_) => crate::runtime::PatchPositionReservationAdmission::WaitWithin(execution),
+            None => crate::runtime::PatchPositionReservationAdmission::DeferBehindCommit(execution),
+        };
+        let symbol_meanings = self.movement.symbol_meanings;
+        let (positioned_commit, head_retirement) = match self
             .movement
             .canonical_publication_route
-            .record_performed_with_cutover(self.publication_cell.clone(), |position| {
-                // The cutover is the only orchestration this port runs while the
-                // global patch-position reservation is held, so this is where a
-                // concurrent publisher can be made to meet it.
-                reservation_pause.pause_holding_patch_position_reservation_for_test();
-                let previous_root = publication_state.replace_with(self.next_state);
-                if let Some(companion) = &mut companion_cutover {
-                    companion.install_at(position);
-                }
-                head_retirement.transfer_head(&previous_root, next_root);
-                self.branch_head_versions
-                    .move_head(previous_head_version, next_head_version);
-                *retired_root.borrow_mut() = Some(previous_root);
-                drop(publication_state);
-            }) {
+            .record_performed_with_cutover(
+                self.publication_cell.clone(),
+                admission,
+                |positioned, roots| match &medium {
+                    Some(medium) => medium.publish(positioned, roots, durable_policy).map(Some),
+                    None => Ok(None),
+                },
+                |position| {
+                    symbol_meanings
+                        .publish()
+                        .expect(/* Proof: PreparedSymbolPublication can only be issued by seal_for_publication after validating the canonical snapshot against the candidate interner. Its strong owner and retained ReservedSymbolMeaning tokens pin the unique identities allocated by reserve_identity; checked owner imports cannot replace either mapping, and recovery requires exclusive runtime access. */ "minted symbol reservations preserve owner meaning");
+                    // The cutover is the only orchestration this port runs while the
+                    // global patch-position reservation is held, so this is where a
+                    // concurrent publisher can be made to meet it.
+                    reservation_pause.pause_holding_patch_position_reservation_for_test();
+                    let previous_root = publication_state.replace_with(self.next_state);
+                    if let Some(companion) = &mut companion_cutover {
+                        companion.install_at(position);
+                    }
+                    let transferred = head_retirement.transfer_head(next_root);
+                    self.branch_head_versions
+                        .move_head(previous_head_version, next_head_version);
+                    drop(previous_root);
+                    drop(publication_state);
+                    transferred
+                },
+            ) {
             Ok(positioned) => positioned,
             Err(crate::runtime::CanonicalPublicationRecordError::ReservationContended) => {
                 return RelationalPublicationOutcome::deferred(
                     RelationalPublicationDeferred::PatchPositionReservationContended,
                 );
+            }
+            Err(crate::runtime::CanonicalPublicationRecordError::ReservationWaitStopped(stop)) => {
+                return RelationalPublicationOutcome::RequestStopped(stop);
             }
             Err(crate::runtime::CanonicalPublicationRecordError::PositionCapacityExhausted) => {
                 return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
@@ -167,18 +202,18 @@ impl PreparedBranchPublicationPreflight {
                     "performed publication stream position capacity exhausted",
                 ));
             }
+            Err(crate::runtime::CanonicalPublicationRecordError::Durable(stop)) => {
+                return durable_stop_outcome(stop);
+            }
         };
         drop(companion_cutover);
-        let retired_root = retired_root
-            .into_inner()
-            .expect("performed cutover returns the exact previous head root");
         self.control.pause_after_linearization_for_test();
         drop(_critical_section);
-        self.head_retirement.replace_head(retired_root);
+        let settlement_retention = head_retirement.replace_head_for_publication(
+            self.candidate_retention,
+            Arc::clone(&self.movement.root),
+        );
         drop(_publication_lifecycle);
-        let settlement_retention = self
-            .candidate_retention
-            .into_performed_settlement(Arc::clone(&self.movement.root));
         self.movement.record_allocations.commit();
         let late_interruption = self
             .control
@@ -203,5 +238,23 @@ impl PreparedBranchPublicationPreflight {
             record,
             late_interruption,
         ))
+    }
+}
+
+/// The answer for a commit the medium did not make durable. Nothing was
+/// installed, so a refusal is a pre-effect denial; an unknown fate is neither
+/// denied nor performed.
+fn durable_stop_outcome(
+    stop: crate::durability::medium::RelationalDurableStepStop,
+) -> RelationalPublicationOutcome {
+    match stop {
+        crate::durability::medium::RelationalDurableStepStop::Refused(refusal) => {
+            RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::DurablePublicationRefused(refusal),
+            )
+        }
+        crate::durability::medium::RelationalDurableStepStop::Unresolved(unresolved) => {
+            RelationalPublicationOutcome::DurabilityUnresolved(unresolved)
+        }
     }
 }

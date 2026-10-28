@@ -122,7 +122,7 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
             let native =
                 Arc::new(self.read_derived_key(relation, member.key.clone(), Shape::Component)?);
             let pin=self.reader.runtime.read_truth().pin_read_capability(self.reader.snapshot,&[],self.reader.execution).map_err(|cause|match cause {
-                worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop)=>self.reader.walk_stop(stop.into(),set.name()),
+                worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop)=>self.reader.walk_stop(stop,set.name()),
                 _=>Denial::new(Kind::EndpointUnavailable,set.name()),
             })?;
             let execution = *self.reader.execution;

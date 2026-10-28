@@ -35,7 +35,11 @@ fn actual_snapshot_observation_mints_exact_neutral_evidence() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let plan = allow_plan(
         snapshot,
         fixture.principal,
@@ -89,7 +93,11 @@ fn parallel_matching_paths_remain_neutral_graph_observations() {
         fixture.scope,
         "initiated-payment",
     );
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let plan = role_and_direct_path_plan(snapshot, fixture.principal, fixture.scope);
 
     let evidence = fixture
@@ -108,7 +116,11 @@ fn revocation_changes_only_new_snapshot_authority() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let before = fixture.runtime.visibility_authority().snapshot();
+    let before = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let before_evidence = fixture
         .runtime
         .observe_authorization(
@@ -159,7 +171,11 @@ fn foreign_runtime_is_a_typed_denial_before_graph_reads() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let source = authorization_fixture(execution);
-    let foreign_snapshot = source.runtime.visibility_authority().snapshot();
+    let foreign_snapshot = source
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let destination = runtime_with_test_schema();
     let denial = destination
         .observe_authorization(
@@ -180,7 +196,11 @@ fn empty_observation_plan_is_rejected_before_graph_reads() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let denial = RelationalAuthorizationObservationPlan::try_new(
         snapshot,
         fixture.principal,
@@ -201,7 +221,11 @@ fn reverse_path_validation_uses_declared_relation_orientation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let principal_kind = KindId(11);
     let scope_kind = KindId(12);
 
@@ -226,56 +250,6 @@ fn reverse_path_validation_uses_declared_relation_orientation() {
     assert!(plan.is_ok());
 }
 
-#[test]
-fn unrelated_graph_scale_does_not_change_observation_work() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let fixture = authorization_fixture(execution);
-    let baseline_snapshot = fixture.runtime.visibility_authority().snapshot();
-    let baseline = fixture
-        .runtime
-        .observe_authorization(
-            allow_plan(baseline_snapshot, fixture.principal, fixture.scope, []),
-            execution,
-        )
-        .expect("baseline observation");
-    for index in 0..64 {
-        let left = create_entity(
-            execution,
-            &fixture.runtime,
-            &format!("unrelated-left-{index}"),
-        );
-        let right = create_entity(
-            execution,
-            &fixture.runtime,
-            &format!("unrelated-right-{index}"),
-        );
-        create_relation(
-            execution,
-            &fixture.runtime,
-            left,
-            right,
-            &format!("unrelated-edge-{index}"),
-        );
-    }
-    let scaled_snapshot = fixture.runtime.visibility_authority().snapshot();
-    let scaled = fixture
-        .runtime
-        .observe_authorization(
-            allow_plan(scaled_snapshot, fixture.principal, fixture.scope, []),
-            execution,
-        )
-        .expect("scaled observation");
-
-    assert_eq!(scaled.counters(), baseline.counters());
-    assert_eq!(scaled.paths()[0].entities(), baseline.paths()[0].entities());
-    assert_eq!(
-        scaled.paths()[0].relations(),
-        baseline.paths()[0].relations()
-    );
-}
-
 struct AuthorizationFixture {
     runtime: crate::runtime::RelationalRuntime,
     principal: crate::identity::data::EntityId,
@@ -297,7 +271,8 @@ fn authorization_fixture(
     schema = schema.register_relation_kind(unrelated_relation).unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let principal = create_entity(execution, &runtime, "principal");
     let role = create_entity(execution, &runtime, "approver");
     let scope = create_entity(execution, &runtime, "payment");
@@ -369,3 +344,6 @@ fn forward_traversal() -> RelationalAuthorizationTraversal {
         RelationalAuthorizationTraversalDirection::Forward,
     )
 }
+
+#[path = "tests/scale.rs"]
+mod scale;

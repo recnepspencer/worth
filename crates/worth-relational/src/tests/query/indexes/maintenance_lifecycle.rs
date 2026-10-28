@@ -54,7 +54,13 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
     ];
     let ids = definitions
         .into_iter()
-        .map(|definition| runtime.index_authority().register(definition).index_id)
+        .map(|definition| {
+            runtime
+                .index_authority()
+                .register(definition)
+                .expect("index fixture has identity capacity")
+                .index_id
+        })
         .collect::<Vec<_>>();
     let request = |commit_id| DerivedIndexBuildRequest {
         source_commit_id: commit_id,

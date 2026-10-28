@@ -104,7 +104,7 @@ where
                 let (value, ticket) = slot
                     .into_inner()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .expect("every canonical packet completed into its own slot");
+                    .expect(/* Proof: The scheduler reports success only after every canonical packet has stored its unique completion slot; failed or cancelled execution returns before slot extraction. */ "every canonical packet completed into its own slot");
                 values.push(value);
                 tickets.push(ticket);
             }

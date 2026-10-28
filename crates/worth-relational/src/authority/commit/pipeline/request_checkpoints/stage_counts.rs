@@ -64,6 +64,7 @@ fn assert_one_consult_per_safe_point(batches: usize, split: bool, strategy: bool
     // keeps its first cause ahead of any separate operation control.
     let safe_points = [
         Validation,
+        PreparationRound,
         Admission,
         Draft,
         Boundary,
@@ -74,7 +75,7 @@ fn assert_one_consult_per_safe_point(batches: usize, split: bool, strategy: bool
         PublicationPreparation,
         CandidateRegistration,
         Publication,
-        Publication,
+        PublicationCutover,
     ];
     assert_eq!(*visits, safe_points);
 }

@@ -1,4 +1,4 @@
-use super::candidates::EligibleStrategyOperation;
+use super::candidates::EligibleLsmOperation;
 use super::cost::derive_access_plan_cost;
 use super::decision::{
     DegradedScanSelectionGrant, LsmCompactionSelectionGrant, LsmLookupSelectionGrant,
@@ -30,7 +30,7 @@ pub(super) struct PlanSelectionBasis {
     pub(super) materialization: Option<AdmittedLayoutMaterialization>,
     pub(super) strategy_admission: Option<LayoutStrategyRegistrySnapshot>,
     pub(super) selected_family: LayoutStrategyFamily,
-    pub(super) selected_operation: Option<EligibleStrategyOperation>,
+    pub(super) selected_operation: Option<EligibleLsmOperation>,
     pub(super) intent: AdmittedAccessIntent,
     pub(super) planned_counter_envelope: PlannedCounterEnvelope,
     pub(super) selection_rule: DeterministicSelectionRule,
@@ -67,7 +67,7 @@ impl CostedAccessPlan {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct SelectedAccessPlanBasis {
     identity: AccessPlanIdentity,
-    selected_operation: Option<EligibleStrategyOperation>,
+    selected_operation: Option<EligibleLsmOperation>,
     budget_receipt: PreExecutionBudgetAdmissionReceipt,
 }
 
@@ -134,7 +134,7 @@ impl SelectedAccessPlanBasis {
     pub fn selected_family(&self) -> LayoutStrategyFamily {
         self.identity.family()
     }
-    pub(super) const fn selected_operation(&self) -> Option<EligibleStrategyOperation> {
+    pub(super) const fn selected_operation(&self) -> Option<EligibleLsmOperation> {
         self.selected_operation
     }
     pub fn intent(&self) -> AdmittedAccessIntent {

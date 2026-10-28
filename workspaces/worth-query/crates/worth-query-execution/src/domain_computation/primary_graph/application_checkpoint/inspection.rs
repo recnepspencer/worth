@@ -19,6 +19,7 @@ pub struct WorthQueryCheckpointModelBytes<'a> {
 /// These values grant no recovery, publication or mutation authority.
 pub struct WorthQueryApplicationCheckpointInspection<'a> {
     pub model: WorthQueryCheckpointModelBytes<'a>,
+    pub symbol_identity_frontier: u32,
     pub frontiers: Vec<CheckpointRecordFrontier>,
     pub generations: Vec<CheckpointRecordIdentity>,
     pub live_records: std::collections::BTreeSet<CheckpointRecordIdentity>,
@@ -57,6 +58,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
         })?;
         let RelationalCheckpointInspection {
             model,
+            symbol_identity_frontier,
             frontiers,
             generations,
             live_records,
@@ -71,6 +73,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
                 accepted_count: accepted_count_bytes,
                 query_outputs: outputs,
             },
+            symbol_identity_frontier,
             frontiers,
             generations,
             live_records,

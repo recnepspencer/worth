@@ -290,25 +290,23 @@ fn evaluate_physical_signal_node(
     if let (Some(route), Some(family)) = (
         topology.route_for_node(view.node()),
         topology.family_for_node(view.node()),
-    ) {
-        if let Some(binding) = bindings
-            .bindings()
-            .iter()
-            .find(|binding| binding.digest() == route && binding.serves_family(family))
-        {
-            let slot = binding.signal_aspect().index();
-            let source = topology
-                .source_for_slot(slot)
-                .expect("installed binding and source slots remain aligned");
-            if let Some(partition) = binding.partition() {
-                let _ = view.read_partitioned_aspect_version(
-                    source,
-                    binding.signal_aspect(),
-                    partition.clone(),
-                )?;
-            } else {
-                let _ = view.read_aspect_version(source, binding.signal_aspect())?;
-            }
+    ) && let Some(binding) = bindings
+        .bindings()
+        .iter()
+        .find(|binding| binding.digest() == route && binding.serves_family(family))
+    {
+        let slot = binding.signal_aspect().index();
+        let source = topology
+            .source_for_slot(slot)
+            .expect("installed binding and source slots remain aligned");
+        if let Some(partition) = binding.partition() {
+            let _ = view.read_partitioned_aspect_version(
+                source,
+                binding.signal_aspect(),
+                partition.clone(),
+            )?;
+        } else {
+            let _ = view.read_aspect_version(source, binding.signal_aspect())?;
         }
     }
     Ok(view.finish(NodeEvaluationResult::from_version(AspectVersion::zero())))

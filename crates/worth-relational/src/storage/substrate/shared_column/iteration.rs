@@ -46,7 +46,7 @@ impl<'a, T: Clone> Iterator for SharedColumnIter<'a, T> {
                 self.remaining -= 1;
                 return Some(
                     self.default
-                        .expect("unmaterialized column range needs a default"),
+                        .expect(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ "unmaterialized column range needs a default"),
                 );
             }
             if let Some(value) = self.page.next() {
@@ -55,7 +55,7 @@ impl<'a, T: Clone> Iterator for SharedColumnIter<'a, T> {
                     value
                         .as_deref()
                         .or(self.default)
-                        .expect("column value must exist"),
+                        .expect(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ "column value must exist"),
                 );
             }
             let (node, height) = self.pending.pop()?;

@@ -28,8 +28,8 @@ write begins from a newly selected and admitted product occurrence.
   dispatch record that makes delivery recoverable.
 - Inspect or resolve an uncertain commit without accepting a caller-written
   recovery slot, posture, or boolean as authority.
-- Complete durability and Query index publication when the Relational branch
-  already moved but settlement did not finish.
+- Receive a typed `Indeterminate` outcome, not a denial, when a commit's
+  durable fate is unknown.
 - Retain an exact bounded pre-mutation field value when an installed contract
   requires it, while failing the commit if that exact truth is unavailable.
 - Show callers a closed aftermath or delivery posture without exposing runtime
@@ -55,9 +55,6 @@ Declaration consumers use `worth_query_decl::facade`:
 Hosts use `worth_query_host::facade`:
 
 - `primary_graph` for sealed commit receipts and recovery progression
-- `primary_graph::WorthQueryApplicationSettlementDeferred`
-- `primary_graph::WorthQueryApplicationSettlementNextAction`
-- `primary_graph::WorthQueryPrimaryGraphApplicationRuntime::recover_deferred_application_settlement`
 - `publication::domain_computation::publish_application_commit`
 - `publication::application_aftermath::publish_application_aftermath`
 - `publication::application_aftermath::publish_recovery_support`
@@ -237,21 +234,20 @@ There are four independent owners:
 4. The external service decides whether the external effect completed. Silence,
    a timeout, or a lost response is never treated as completion.
 
-There are two different recovery boundaries:
+Relational publishes every commit to its durable medium before the live
+cutover, so a performed commit has no settlement left to repair. When the
+durable fate is unknown, the commit outcome is `Indeterminate` (commit
+recovery required): nothing was installed live, the commit may be durable, the
+Relational owner refuses later publications until it is reopened, and
+reopening resolves the fate.
 
-- **Publication-settlement recovery** starts from
-  `WorthQueryApplicationSettlementDeferred`. The mutation already crossed the
-  Relational branch cutover, but durability acknowledgement or Query's derived
-  index/head publication failed. Recovery completes that exact publication.
-- **Application-aftermath recovery** starts from a sealed successful commit
-  receipt and a `WorthQueryRecoveryHandle`. It inspects or resolves external
-  effect and correction posture after commit.
+**Application-aftermath recovery** starts from a sealed successful commit
+receipt and a `WorthQueryRecoveryHandle`. It inspects or resolves external
+effect and correction posture after commit.
 
-Neither carrier is a serialized token. The application settlement carrier
-hides Relational's raw `DeferredPublicationSettlement`. The aftermath handle is
-a move-only runtime capability. An opaque wire identity can be logged or
-transported, but must be re-admitted by the owning runtime before it can affect
-anything.
+The aftermath handle is not a serialized token; it is a move-only runtime
+capability. An opaque wire identity can be logged or transported, but must be
+re-admitted by the owning runtime before it can affect anything.
 
 Published aftermath is deliberately weaker. It describes accepted posture,
 external observation, or recovery support, but cannot authorize a transition.
@@ -285,10 +281,11 @@ with an escaping external effect cannot be published as reversible.
    Callers cannot replace the effect name, protocol family, exact version,
    bound, or bytes.
 5. Relational compares the prepared candidate with the exact branch reference,
-   performs canonical branch movement, and settles durability.
-6. If durability or Query index publication fails after movement, Query returns
-   `SettlementDeferred`. The caller repairs that carrier; it does not retry the
-   operation.
+   publishes the commit to its durable medium, and then performs canonical
+   branch movement.
+6. If the durable fate is unknown, nothing is installed live and Query returns
+   `Indeterminate`. The caller does not retry the operation; reopening the
+   Relational owner resolves the fate.
 7. Query reads the committed outbox row through a fresh owner-sealed
    observation and dispatches it to the external owner.
 8. The returned observation becomes `Completed`, `Acknowledged`, or
@@ -505,7 +502,7 @@ identities, a missing or mismatched outstanding dispatch, an original still
 publishing, or a full in-flight window. A World terminal reached between
 admission and the send answers `AlreadyCompleted`.
 
-## Publication Settlement Recovery
+## Historical Commit Recovery
 
 Checkpoint replay requires the full stable original native intent to be
 re-expressible under fresh authorization. The restored fixed and discovered courts
@@ -549,39 +546,23 @@ handling. A landed commit returns its receipt; every other terminal arrives as a
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationSettlementNextAction,
-    WorthQueryApplicationUncommitted,
-};
+use worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted;
 
 match outcome.landed() {
     Ok((receipt, _replayed)) => {
         publish(receipt);
     }
-    Err(WorthQueryApplicationUncommitted::SettlementDeferred(deferred)) => {
-        assert_eq!(
-            deferred.next_action(),
-            WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement,
-        );
-        let receipt = application_runtime
-            .recover_deferred_application_settlement(&deferred)?;
-        publish_repaired(receipt);
+    Err(WorthQueryApplicationUncommitted::Indeterminate(evidence)) => {
+        // Commit recovery required; never retry the mutation.
+        recover_commit_in_direction_of(evidence);
     }
-    Err(other) => handle_unperformed_or_indeterminate(other),
+    Err(other) => handle_unperformed(other),
 }
 ```
 
 A request-lane mutation reports the same split directly: its
 `WorthQueryApplicationMutationOutcome::Commit(...)` variant carries the
-`WorthQueryApplicationUncommitted` value, including `SettlementDeferred`.
-
-Recovery runs under the application commit serialization boundary. It repairs
-the exact Relational durability route, refreshes Query's primary indexes,
-observes the current branch basis, proves the performed commit is still in the
-current ancestry, binds the current Bridge head, and validates the exact
-idempotency binding, readmitting it when required. A later legal application
-head is preserved rather than rewound. Repeated repair returns the same commit
-receipt.
+`WorthQueryApplicationUncommitted` value, including `Indeterminate`.
 
 This is not the `WorthQueryRecoveryHandle` flow below. No external effect is
 redispatched and the application mutation is not executed again.
@@ -678,8 +659,8 @@ when every count is zero; it cannot erase support needed by exact recovery.
 
 - Pair external effects with ordinary Query mutation and idempotency. The outbox
   row and mutation share one Relational commit.
-- Use application settlement recovery when publication already performed but
-  settlement or Query publication failed. Use aftermath recovery for an
+- Use commit recovery when the outcome is `Indeterminate` because the durable
+  fate is unknown. Use aftermath recovery for an
   unresolved external observation or correction posture. Do not use replay:
   reconstruction and historical replay remain certification-only.
 - Use publication for consumer descriptions. Use execution recovery authority
@@ -699,10 +680,6 @@ when every count is zero; it cannot erase support needed by exact recovery.
 ## Inspection And Debugging
 
 For a committed operation, inspect:
-
-- `WorthQueryApplicationSettlementDeferred::stage()`, `detail()`, counters,
-  optional Query publication failure detail, and `next_action()` before a
-  successful commit receipt exists;
 
 - the installed operation's `contracts().aftermath()` for correction
   `authority()`, `recovery()`, exact `reconciliation()`, canonical evidence,
@@ -727,15 +704,16 @@ Declare protocol versions and typed correlation families explicitly. Retain
 the admitted payload, dispatch record and returned native carrier together.
 External completion follows the protocol's authenticated observation.
 
-After `SettlementDeferred`, repair the returned settlement carrier. An
-aftermath handle continues its own external-effect or correction workflow.
+After `Indeterminate`, recover the commit once the reopened Relational owner
+has resolved its fate. An aftermath handle continues its own external-effect
+or correction workflow.
 Published briefs describe available support; live recovery uses the native
 owner-issued carrier. Relational owns commit ancestry and Runtime World owns
 composite publication.
 
 ## Recovery lifetime and scope
 
-Settlement carriers and aftermath recovery handles belong to their runtime.
+Aftermath recovery handles belong to their runtime.
 Published recovery support identifies the owner needed to continue recovery.
 Reconciliation and compensation admission values retain their exact owner
 binding. Each external-effect operation contract declares one typed effect.

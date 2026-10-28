@@ -44,7 +44,8 @@ impl StructuralWorld {
                 RelationalRuntimeApi::builder().schema_registry(schema),
                 |builder, rule| builder.custom_invariant(rule),
             )
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let source = create_entity_of_kind(execution, &runtime, KindId(1), "structural-source");
         let target = create_entity_of_kind(execution, &runtime, KindId(1), "structural-target");
         let relation = |client_key: &str| {

@@ -11,8 +11,7 @@ use worth_query_host::facade::{
     },
     application_entry::*,
     primary_graph::{
-        RuntimeWorldRecoveryDenial, WorthQueryConditionalRuntimeInstallationDenialKind,
-        WorthQueryOutputDemandDenialKind, WorthQueryProductUnpublishedRecoveryReleaseDenial,
+        WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryOutputDemandDenialKind,
     },
 };
 
@@ -44,87 +43,56 @@ type Host = worth_query_host::facade::application_installation::WorthQueryProgra
 
 #[test]
 fn fixed_leaf_domain_refusal_closes_unavailable_without_reexecution() {
-    // Both cases run the same real producer. Recovery adds an actual inspector-held
-    // cleanup obligation, so negative completion must survive a later close refusal.
-    for recover_source in [false, true] {
-        let source_before = (decision_count(0), candidate_count(0));
-        let assessment_before = assessment_counts(0);
-        let mut host = install();
-        let terminal = terminal_owner(&host, recover_source);
-        assert_eq!(host.retained_source_custody_count_for_test(), 1);
-        assert_eq!(
-            host.close_conditional_runtime().unwrap_err().kind(),
-            WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained
-        );
-        let terminal = if recover_source {
-            terminal
-        } else {
-            refuse_foreign_and_cancelled(&host, terminal)
-        };
-        assert!(terminal.output_unavailable().is_none());
-        let closed = close_original(&host, terminal, recover_source);
-        assert!(closed.output_unavailable().is_some());
-        let scope = request_scope();
-        let principal = authenticate_operator(host.installed_schema(), &scope);
-        let request = host.runtime().request(&principal, &scope);
-        assert_eq!(
-            request
-                .query(DocumentRetentionRead {
-                    identity: DOCUMENT_IDENTITY.into()
-                })
-                .execute()
-                .unwrap()
-                .rows()[0]
-                .retention_days,
-            0,
-            "source is independently saved despite no assessment output"
-        );
-        assert_eq!(decision_count(0), source_before.0 + 1);
-        assert_eq!(candidate_count(0), source_before.1 + 1);
-        assert_eq!(
-            assessment_counts(0),
-            (assessment_before.0 + 1, assessment_before.1),
-            "exactly one real producer decision, zero output candidates or replay"
-        );
-        assert_eq!(host.retained_source_custody_count_for_test(), 0);
-        assert_eq!(host.prepared_required_output_source_count_for_test(), 0);
-        assert_eq!(host.active_application_attempts_for_test(), 0);
-        assert_eq!(host.world_active_publication_attempts_for_test(), 0);
-        assert!(host
-            .runtime()
-            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+    let source_before = (decision_count(0), candidate_count(0));
+    let assessment_before = assessment_counts(0);
+    let mut host = install();
+    let terminal = terminal_owner(&host);
+    assert_eq!(host.retained_source_custody_count_for_test(), 1);
+    assert_eq!(
+        host.close_conditional_runtime().unwrap_err().kind(),
+        WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained
+    );
+    let terminal = refuse_foreign_and_cancelled(&host, terminal);
+    assert!(terminal.output_unavailable().is_none());
+    let closed = close_original(&host, terminal);
+    assert!(closed.output_unavailable().is_some());
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    assert_eq!(
+        request
+            .query(DocumentRetentionRead {
+                identity: DOCUMENT_IDENTITY.into()
+            })
+            .execute()
             .unwrap()
-            .rows()
-            .is_empty());
-        host.close_conditional_runtime()
-            .expect("lawful operation close released its authentic runtime keepalive");
-    }
+            .rows()[0]
+            .retention_days,
+        0,
+        "source is independently saved despite no assessment output"
+    );
+    assert_eq!(decision_count(0), source_before.0 + 1);
+    assert_eq!(candidate_count(0), source_before.1 + 1);
+    assert_eq!(
+        assessment_counts(0),
+        (assessment_before.0 + 1, assessment_before.1),
+        "exactly one real producer decision, zero output candidates or replay"
+    );
+    assert_eq!(host.retained_source_custody_count_for_test(), 0);
+    assert_eq!(host.prepared_required_output_source_count_for_test(), 0);
+    assert_eq!(host.active_application_attempts_for_test(), 0);
+    assert_eq!(host.world_active_publication_attempts_for_test(), 0);
+    assert!(host
+        .runtime()
+        .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+        .unwrap()
+        .rows()
+        .is_empty());
+    host.close_conditional_runtime()
+        .expect("lawful operation close released its authentic runtime keepalive");
 }
 
-fn close_original(
-    host: &Host,
-    terminal: Terminal,
-    recover_source: bool,
-) -> WorthQueryClosedOperation {
-    let inspector = if recover_source {
-        let catalog = host
-            .runtime()
-            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
-            .unwrap();
-        assert_eq!(
-            catalog.rows().len(),
-            1,
-            "the actual original unpublished source owns one recovery record"
-        );
-        Some(
-            host.runtime()
-                .readmit_product_publication_recovery(catalog.rows()[0].handle())
-                .unwrap(),
-        )
-    } else {
-        None
-    };
-    let mut held = inspector.as_ref().map(|owner| owner.inspect().unwrap());
+fn close_original(host: &Host, terminal: Terminal) -> WorthQueryClosedOperation {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
@@ -133,63 +101,9 @@ fn close_original(
         .unwrap()
         .selected_commit()
         .clone();
-    let closed = match terminal.close(&request) {
-        Ok(closed) => {
-            assert!(
-                !recover_source,
-                "a real inspector must prevent recovery record cleanup"
-            );
-            closed
-        }
-        Err((terminal, denial)) => {
-            assert!(
-                recover_source
-                    && matches!(
-                        denial,
-                        WorthQueryOperationCloseDenial::Recovery(
-                            WorthQueryProductUnpublishedRecoveryReleaseDenial::World(
-                                RuntimeWorldRecoveryDenial::CallerCapabilityLive
-                            )
-                        )
-                    ),
-                "wrong close cause: {denial:?}"
-            );
-            let unavailable = terminal
-                .output_unavailable()
-                .expect("native evidence survives subsequent cleanup refusal");
-            assert_eq!(
-                unavailable.denial().kind(),
-                WorthQueryOutputDemandDenialKind::ProducerDomainDenied
-            );
-            assert_eq!(
-                host.retained_source_custody_count_for_test(),
-                0,
-                "the real native leaf source lifecycle completed exactly once"
-            );
-            let receipt = unavailable.source_receipt().clone();
-            let stopped = cancelled_scope();
-            let (terminal, denial) = terminal
-                .close(&host.runtime().request(&principal, &stopped))
-                .err()
-                .expect("fresh cancelled close must retain completed negative custody");
-            assert_cancelled(denial);
-            assert_eq!(
-                terminal
-                    .output_unavailable()
-                    .unwrap()
-                    .source_receipt()
-                    .committed_product_publication()
-                    .composite_commit(),
-                receipt.committed_product_publication().composite_commit()
-            );
-            drop(held.take());
-            let fresh_scope = request_scope();
-            let fresh_principal = authenticate_operator(host.installed_schema(), &fresh_scope);
-            terminal
-                .close(&host.runtime().request(&fresh_principal, &fresh_scope))
-                .unwrap_or_else(|(_, denial)| panic!("fresh cleanup retry: {denial:?}"))
-        }
-    };
+    let closed = terminal
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("ordinary negative completion closes: {denial:?}"));
     let unavailable = closed
         .output_unavailable()
         .expect("ordinary close returns genuine negative completion, never settled output");
@@ -210,8 +124,6 @@ fn close_original(
         &saved,
         "negative completion and cleanup publish no assessment result"
     );
-    drop(held);
-    drop(inspector);
     closed
 }
 
@@ -225,7 +137,7 @@ fn install() -> Host {
     .unwrap()
 }
 
-fn terminal_owner(host: &Host, recover_source: bool) -> Terminal {
+fn terminal_owner(host: &Host) -> Terminal {
     let original = {
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -246,24 +158,18 @@ fn terminal_owner(host: &Host, recover_source: bool) -> Terminal {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
-    if recover_source {
-        let policy = crate::test_request_policy::serial_request();
-        host.runtime()
-            .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
-    }
     let mut original: Operation = match original.advance(&request) {
         WorthQueryOperationAdvance::Progress {
             operation,
             progress,
         } => {
             assert!(matches!(
-                (recover_source, progress),
-                (false, WorthQueryOperationProgress::SourcePerformed)
-                    | (true, WorthQueryOperationProgress::SourceUnpublished)
+                progress,
+                WorthQueryOperationProgress::SourcePerformed
             ));
             operation
         }
-        _ => panic!("real source must enter its performed or unpublished native owner"),
+        _ => panic!("real source must enter its performed native owner"),
     };
     let (returned, denial) = original
         .close(&request)

@@ -17,8 +17,7 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
             let held: super::super::HeldRequiredSuccessor = Box::new(row.clone());
             assert!(registry
                 .hold_required_successor(held, |held| held
-                    .downcast_ref::<WorthQueryOutputDemandKey>()
-                    .unwrap())
+                    .downcast_ref::<WorthQueryOutputDemandKey>())
                 .is_none());
             assert!(matches!(
                 registry.row_stage(&first),
@@ -90,4 +89,24 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
             }
         }
     });
+}
+
+#[test]
+fn an_erased_successor_without_a_row_key_is_returned_without_effects() {
+    let registry = WorthQueryOutputDemandRegistry::default();
+    let held = registry
+        .hold_required_successor(Box::new(7_u32), |held| {
+            held.downcast_ref::<WorthQueryOutputDemandKey>()
+        })
+        .expect("an invalid successor is returned to its owner");
+    assert_eq!(*held.downcast::<u32>().unwrap(), 7);
+    assert_eq!(
+        registry
+            .state
+            .lock()
+            .unwrap()
+            .records
+            .publication_count_for_test(),
+        0
+    );
 }

@@ -65,7 +65,11 @@ impl PublishedSnapshotCapacityOwner {
 
     pub(crate) fn release(&self) {
         let previous = self.occupied_handles.fetch_sub(1, Ordering::AcqRel);
-        debug_assert!(previous > 0, "published snapshot capacity underflow");
+        debug_assert!(
+            /* Proof: PublishedSnapshotSlotReservation increments capacity only after successful admission and transfers or releases its single non-Clone slot exactly once; Drop is disarmed after transfer. */
+            previous > 0,
+            "published snapshot capacity underflow"
+        );
     }
 }
 

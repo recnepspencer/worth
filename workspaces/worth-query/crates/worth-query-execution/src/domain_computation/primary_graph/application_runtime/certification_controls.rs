@@ -1,3 +1,6 @@
+// Certification-only faults/backstops: only the sealed *_for_test doors arm
+// these controls. The boundary guard closes ordinary callers; their intentional
+// panic reports a violated test scenario, never an ordinary product refusal.
 mod actor_retention;
 mod correction_history_indexes;
 mod managed_cleanup;
@@ -159,7 +162,7 @@ where
         self.primary_provider
             .graph
             .with_runtime_mut(request_execution, |runtime| {
-                let active = runtime.retention().inspect_plan().active_snapshot_count;
+                let active = runtime.retention().active_snapshot_count();
                 let identity = runtime
                     .branch_identity(self.relational_branch_identity.branch_id())
                     .expect("the application branch remains owner registered");
@@ -341,18 +344,6 @@ where
         });
         drop(application_basis);
         Ok(candidate)
-    }
-
-    #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(
-        &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) {
-        self.primary_provider
-            .graph
-            .with_runtime_mut(request_execution, |runtime| {
-                runtime.fail_next_durable_append_for_test()
-            });
     }
 
     #[cfg(test)]

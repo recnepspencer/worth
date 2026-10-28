@@ -279,13 +279,14 @@ pub(super) fn propagate_protected_subtrees(
         for entry in node.entries() {
             if let Some(child) = inventory.fact_mut(entry.record()) {
                 child.protected = true;
-                if matches!(child.blob, SelectedBlobFact::Tree { .. }) {
-                    if !stack.contains(&child.record) && !expanded.contains(&child.record) {
-                        if stack.len() == capacity {
-                            return Err(BlobReclaimFailure::ScanBoundExhausted);
-                        }
-                        stack.push(child.record);
+                if matches!(child.blob, SelectedBlobFact::Tree { .. })
+                    && !stack.contains(&child.record)
+                    && !expanded.contains(&child.record)
+                {
+                    if stack.len() == capacity {
+                        return Err(BlobReclaimFailure::ScanBoundExhausted);
                     }
+                    stack.push(child.record);
                 }
             }
         }

@@ -120,11 +120,13 @@ pub(super) fn refuse_late_claim() {
         .release_snapshot(&committed.snapshot)
         .unwrap();
     admit(execution, &runtime, &installed, outputs, true).unwrap();
-    let saved = capture(&runtime);
-    let decoded =
-        crate::durability::log::native_file_codec::decode_checkpoint(execution, saved.bytes())
-            .unwrap()
-            .checkpoint;
+    let saved = capture(execution, &runtime);
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        saved.bytes(),
+    )
+    .unwrap()
+    .checkpoint;
     // The unmodified, genuinely independent reference remains admissible cold.
     let (cold, installed) = restore(execution, &saved);
     admit(execution, &cold, &installed, outputs, true).unwrap();
@@ -183,7 +185,7 @@ pub(super) fn refuse_late_claim() {
                 envelope.required_output_origin = Some(std::sync::Arc::new(origin));
             });
         }
-        let (bytes, _) = crate::durability::log::native_file_codec::encode_checkpoint(
+        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &forged,
             execution.allocation_policy(),
         )
@@ -197,7 +199,7 @@ pub(super) fn refuse_late_claim() {
             .unwrap();
         let (cold, installed) = restore(execution, &untrusted);
         let selected = basis(&cold);
-        let before = capture(&cold);
+        let before = capture(execution, &cold);
         let denied = admit(execution, &cold, &installed, outputs, true).unwrap_err();
         assert!(
             format!("{denied:?}").contains(if forged_birth_endpoint {
@@ -208,7 +210,7 @@ pub(super) fn refuse_late_claim() {
             "{denied:?}"
         );
         assert!(selected.is_current());
-        assert_eq!(capture(&cold), before);
+        assert_eq!(capture(execution, &cold), before);
         assert_eq!(
             relation_payload(&cold, edge),
             relation_payload(&runtime, edge)

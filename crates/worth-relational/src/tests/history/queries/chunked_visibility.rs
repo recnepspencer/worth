@@ -9,16 +9,24 @@ fn chunked_storage_summary_tracks_visibility_boundaries() {
     let first = create_entity_outcome(execution, &runtime, "e0");
     let entity_a = changed_entities(&first)[0];
     let _second = create_entity_outcome(execution, &runtime, "e1");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let _third = create_entity_outcome(execution, &runtime, "e2");
     let _update = update_entity(execution, &runtime, entity_a, "e0-updated");
 
     let summary_before_update = runtime
         .storage_access()
-        .chunked_storage_summary(snapshot.version_id);
+        .chunked_storage_summary(execution, snapshot.version_id)
+        .unwrap();
     let summary_current = runtime
         .storage_access()
-        .chunked_storage_summary(runtime.history().latest_commit().unwrap().version_id);
+        .chunked_storage_summary(
+            execution,
+            runtime.history().latest_commit().unwrap().version_id,
+        )
+        .unwrap();
 
     assert_eq!(summary_before_update.entity_chunks.len(), 2);
     assert_eq!(summary_before_update.entity_chunks[0].visible_records, 2);
@@ -37,7 +45,10 @@ fn chunk_diagnostics_and_packet_plans_are_public_and_stable() {
     let second = create_entity_outcome(execution, &runtime, "e1");
     let entity_a = changed_entities(&first)[0];
     let entity_b = changed_entities(&second)[0];
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let packet = explicit_query_packet(
         &runtime,
         &snapshot,
@@ -51,7 +62,8 @@ fn chunk_diagnostics_and_packet_plans_are_public_and_stable() {
         .unwrap();
     let diagnostics = runtime
         .storage_access()
-        .chunk_diagnostics(snapshot.version_id);
+        .chunk_diagnostics(execution, snapshot.version_id)
+        .unwrap();
 
     assert_eq!(plan.target_count, 2);
     assert_eq!(plan.entity_chunk_indexes, vec![0]);

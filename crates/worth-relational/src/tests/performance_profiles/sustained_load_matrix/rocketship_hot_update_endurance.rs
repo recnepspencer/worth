@@ -47,7 +47,10 @@ pub(super) fn certify_rocketship_hot_update_endurance(
                 max_update_micros = max_update_micros.max(update_micros);
 
                 if index % 16 == 0 {
-                    let snapshot = runtime.visibility_authority().snapshot();
+                    let snapshot = runtime
+                        .visibility_authority()
+                        .snapshot()
+                        .expect("current snapshot fixture is admitted");
                     let explicit_targets = seeded
                         .mixed_query_targets
                         .iter()

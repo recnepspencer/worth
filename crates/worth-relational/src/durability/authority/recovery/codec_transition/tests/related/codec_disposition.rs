@@ -54,11 +54,13 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         .unwrap()
         .into_parts();
     recovered.admit_basis(basis(&target)).unwrap();
-    let saved = capture(&target);
-    let decoded =
-        crate::durability::log::native_file_codec::decode_checkpoint(execution, saved.bytes())
-            .unwrap()
-            .checkpoint;
+    let saved = capture(execution, &target);
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        saved.bytes(),
+    )
+    .unwrap()
+    .checkpoint;
     let mut hidden_write = decoded
         .envelopes
         .iter()
@@ -97,8 +99,9 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
                 .patch
                 .authoritative_record_patches
                 .push(hidden_write.clone());
-            let required =
+            let mut required =
                 crate::symbols::data::required_commit_symbols(&entry.merged_plan, &entry.patch);
+            required.extend(entry.revision_symbol_references.iter().copied());
             // Keep the hostile claim structurally current: its actual source
             // values retain their original native symbol meanings.
             entry.envelope_mut_for_test().symbol_texts.entries = required
@@ -115,7 +118,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
                 .collect();
         }
         assert!(entry.codec_retirement_headers_valid());
-        let (bytes, _) = crate::durability::log::native_file_codec::encode_checkpoint(
+        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &changed,
             execution.allocation_policy(),
         )
@@ -135,7 +138,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             .readmit_recovered_initial_schema_installation(receipt)
             .unwrap();
         let (_, installed) = receipt.issue_application_publication_owner();
-        let before = capture(&cold);
+        let before = capture(execution, &cold);
         let eligibility = cold.readmit_required_output_route_absence(
             execution,
             &installed,
@@ -147,13 +150,14 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
                 eligibility.is_err(),
                 "a malformed sibling or hidden write must deny the valid route"
             );
-            assert_eq!(capture(&cold), before);
+            assert_eq!(capture(execution, &cold), before);
         } else {
             assert!(eligibility.unwrap().is_some());
             assert!(!basis(&cold)
                 .inner
                 .root
                 .partition_state(sibling.partition_id)
+                .unwrap()
                 .unwrap()
                 .entity_arena
                 .get(&sibling)
@@ -167,7 +171,7 @@ pub(super) fn cold_retired_route(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     target: &RelationalRuntime,
 ) {
-    let saved = capture(target);
+    let saved = capture(execution, target);
     let (mut cold, receipt) = installed(2);
     cold.durability_recovery()
         .restore_native_checkpoint(execution, &saved)
@@ -197,10 +201,12 @@ pub(super) fn cold_retired_route(
         crate::history::data::CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
     ));
 
-    let decoded =
-        crate::durability::log::native_file_codec::decode_checkpoint(execution, saved.bytes())
-            .unwrap()
-            .checkpoint;
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        saved.bytes(),
+    )
+    .unwrap()
+    .checkpoint;
     let foreign = decoded
         .envelopes
         .iter()
@@ -228,7 +234,7 @@ pub(super) fn cold_retired_route(
         } else {
             event.publication = foreign;
         }
-        let (bytes, _) = crate::durability::log::native_file_codec::encode_checkpoint(
+        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &changed,
             execution.allocation_policy(),
         )
@@ -249,7 +255,7 @@ pub(super) fn cold_retired_route(
             .readmit_recovered_initial_schema_installation(receipt)
             .unwrap();
         let (_, installed) = receipt.issue_application_publication_owner();
-        let before = capture(&rejected);
+        let before = capture(execution, &rejected);
         let denied = rejected
             .readmit_required_output_route_absence(
                 execution,
@@ -264,7 +270,7 @@ pub(super) fn cold_retired_route(
             "no installed producer publication"
         };
         assert!(format!("{denied:?}").contains(expected), "{denied:?}");
-        assert_eq!(capture(&rejected), before);
+        assert_eq!(capture(execution, &rejected), before);
     }
 }
 

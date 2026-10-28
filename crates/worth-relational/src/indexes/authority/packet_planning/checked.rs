@@ -148,7 +148,7 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
     );
     match outcome {
         ScanOutcome::Complete { mut prefixes, .. } => {
-            Ok(prefixes.pop().expect("one index planning output"))
+            Ok(prefixes.pop().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one index planning output"))
         }
         ScanOutcome::Stopped {
             boundary, reason, ..

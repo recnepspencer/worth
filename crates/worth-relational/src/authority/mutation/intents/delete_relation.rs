@@ -18,7 +18,7 @@ pub(super) fn apply(
             }
             return Err(error);
         }
-        delete_relation(context.state, version_id, intent.relation_id, &mut outcome);
+        delete_relation(context.state, version_id, intent.relation_id, &mut outcome)?;
         Ok::<(), CommitConflict>(())
     })?;
     Ok(outcome)

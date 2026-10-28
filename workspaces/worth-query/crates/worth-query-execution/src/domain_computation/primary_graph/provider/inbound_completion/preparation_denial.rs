@@ -64,7 +64,8 @@ fn commit_denial(error: &Error, stage: Stage, ordinary: Denial) -> Denial {
         | Error::PublicationDenied { .. }
         | Error::PublicationDeferred { .. }
         | Error::PublicationFailed { .. }
-        | Error::PerformedButDurabilityDeferred { .. } => ordinary,
+        // Preparation stops before publication, so no durable fate is pending.
+        | Error::DurabilityUnresolved { .. } => ordinary,
     }
 }
 

@@ -110,6 +110,13 @@ impl PhysicalRecordReader {
         self.current_root.latest_blob_publication()
     }
 
+    /// The record anchors selected by this reader's protected root.
+    pub(in crate::physical_runtime) const fn selected_record_anchors(
+        &self,
+    ) -> worth_store_physical_format::RecordAnchorTable {
+        self.current_root.record_anchors()
+    }
+
     pub(in crate::physical_runtime) const fn selected_latest_blob_quarantine(
         &self,
     ) -> Option<worth_store_physical_format::PersistedRecordIdentity> {
@@ -349,14 +356,14 @@ impl PhysicalRecordReader {
         if let Some(runtime) = self.runtime.upgrade() {
             runtime.health.observe_read_denial(denial);
         }
-        if let RecordReadDenial::ResidencyUnavailable(reason) = denial {
-            if let Some(pressure) = super::super::PhysicalRecordPressureEvidence::from_failure(
+        if let RecordReadDenial::ResidencyUnavailable(reason) = denial
+            && let Some(pressure) = super::super::PhysicalRecordPressureEvidence::from_failure(
                 reason,
                 self.generation,
                 basis,
-            ) {
-                return RecordReadError::from_pressure(pressure, observation);
-            }
+            )
+        {
+            return RecordReadError::from_pressure(pressure, observation);
         }
         RecordReadError::new(denial, observation)
     }

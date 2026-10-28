@@ -21,7 +21,12 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
         .schema_authority()
         .entity_aspect_plan(KindId(1))
         .unwrap();
-    let partition = basis.inner.root.partition_state(id.partition_id).unwrap();
+    let partition = basis
+        .inner
+        .root
+        .partition_state(id.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
     let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
     assert!(validate(execution, original, id, plan, Some(payload)).is_ok());
@@ -164,7 +169,12 @@ fn birth_field_clear_refuses_with_the_selected_struct_operation_summary() {
         .schema_authority()
         .entity_aspect_plan(KindId(1))
         .unwrap();
-    let partition = basis.inner.root.partition_state(id.partition_id).unwrap();
+    let partition = basis
+        .inner
+        .root
+        .partition_state(id.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
     let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
     let mut envelope = result.publication().envelope.as_ref().clone();

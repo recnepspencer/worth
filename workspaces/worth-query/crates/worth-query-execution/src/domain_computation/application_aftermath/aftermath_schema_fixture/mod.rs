@@ -69,6 +69,7 @@ where
 pub(crate) fn transfer() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<Transfer>()
 }
+
 pub(crate) fn freeze_account() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<FreezeAccount>()
 }
@@ -78,6 +79,7 @@ pub(crate) fn freeze_account_fields() -> WorthQueryInstalledAftermathContract {
 pub(crate) fn notify_death() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<NotifyDeath>()
 }
+
 pub(crate) fn freeze_note() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<FreezeNote>()
 }

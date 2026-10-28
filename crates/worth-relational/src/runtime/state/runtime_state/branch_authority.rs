@@ -44,7 +44,7 @@ impl RelationalRuntime {
     /// used by named branches.
     pub fn main_branch_identity(&self) -> RelationalBranchIdentity {
         self.branch_identity(&self.config.history.main_branch)
-            .expect("configured main branch must remain registered")
+            .expect(/* Proof: Construction validates and registers the configured main branch; branch deletion explicitly refuses MainBranch and runtime rebind preserves this cell. */ "configured main branch must remain registered")
     }
 
     /// Assemble owner-private validation input for one exact admitted basis.

@@ -41,7 +41,10 @@ fn stale_native_contract_basis_denies_without_mutating_truth() {
             ..
         }
     ));
-    let latest = runtime.visibility_authority().snapshot();
+    let latest = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let read = runtime
         .read_truth()
         .read_snapshot(&latest, execution)

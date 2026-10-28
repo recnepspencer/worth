@@ -7,9 +7,8 @@ use crate::runtime::{WorthQueryMergeAuthorityValidationError, WorthQueryWorkspac
 use super::{
     WorthQueryBranchMergeAftermath, WorthQueryBranchMergeCompletion,
     WorthQueryBranchMergeControlStopped, WorthQueryBranchMergeDeferred,
-    WorthQueryBranchMergeOutcome, WorthQueryBranchMergeRequest,
-    WorthQueryBranchMergeSettlementDeferred, WorthQueryBranchMergeStop,
-    WorthQueryBranchMergeStopSource,
+    WorthQueryBranchMergeDurabilityUnresolved, WorthQueryBranchMergeOutcome,
+    WorthQueryBranchMergeRequest, WorthQueryBranchMergeStop, WorthQueryBranchMergeStopSource,
 };
 
 impl WorthQueryBranchMergeRequest {
@@ -156,12 +155,12 @@ impl WorthQueryBranchMergeRequest {
                     WorthQueryBranchMergeControlStopped::new(kind, message, counters),
                 );
             }
-            Err(crate::runtime::WorthQueryOrdinaryMergeExecutionError::SettlementDeferred {
+            Err(crate::runtime::WorthQueryOrdinaryMergeExecutionError::DurabilityUnresolved {
                 message,
-                settlement,
+                unresolved,
             }) => {
-                return WorthQueryBranchMergeOutcome::SettlementDeferred(
-                    WorthQueryBranchMergeSettlementDeferred::new(message, settlement, counters),
+                return WorthQueryBranchMergeOutcome::DurabilityUnresolved(
+                    WorthQueryBranchMergeDurabilityUnresolved::new(message, unresolved, counters),
                 );
             }
         };

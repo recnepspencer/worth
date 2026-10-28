@@ -159,7 +159,7 @@ impl EffectLifecycleCounters {
         }
     }
 
-    pub(crate) fn publication_settlement_deferred(
+    pub(crate) fn durability_unresolved(
         effect_support_row_count: usize,
         effect_lowering_width: usize,
         effect_executor_rediscovery_count: usize,
@@ -175,7 +175,7 @@ impl EffectLifecycleCounters {
             effect_lowering_width,
             effect_executor_rediscovery_count,
             executed_effect_count: 1,
-            publication_settlement_deferred_count: 1,
+            durability_unresolved_count: 1,
             effect_execution_width,
             effect_support_row_count,
             ..Self::default()

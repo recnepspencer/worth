@@ -1,11 +1,11 @@
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::storage::data::{RecordLifecycleState, RelationReadRecord};
+use crate::storage::data::RelationReadRecord;
 use crate::storage::overlay::PartitionState;
 use crate::storage::substrate::HistoricalMetadata;
 
 use super::super::visibility::{
-    historical_created_at, historical_lifecycle, historical_retired_at, lifecycle_storage_visible,
-    relation_visible_in_partition_at_version, visible_relation_metadata,
+    historical_created_at, historical_relation_lifecycle, historical_retired_at,
+    lifecycle_storage_visible, relation_visible_in_partition_at_version, visible_relation_metadata,
 };
 pub(crate) fn materialize_current_authoritative_relation_record(
     registry: &RelationalSchemaRegistry,
@@ -32,7 +32,7 @@ pub(crate) fn materialize_current_authoritative_relation_record(
         created_at_version: partition
             .relation_arena
             .created_at_for_slot(slot)
-            .expect("visible relation slot has creation metadata"),
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "visible relation slot has creation metadata"),
         retired_at_version: relation_slot.retired_at(),
         source: endpoints.source,
         target: endpoints.target,
@@ -62,18 +62,7 @@ pub(crate) fn materialize_authoritative_relation_record_at_version(
             metadata.generation,
         ),
         kind,
-        lifecycle: if retired_at.is_some()
-            && partition
-                .relation_arena
-                .get_slot(slot)
-                .is_some_and(|slot_view| {
-                    slot_view.generation() == metadata.generation
-                        && slot_view.lifecycle() == RecordLifecycleState::RetainedDanglingForAudit
-                }) {
-            RecordLifecycleState::RetainedDanglingForAudit
-        } else {
-            historical_lifecycle(retired_at, version_id)
-        },
+        lifecycle: historical_relation_lifecycle(partition, slot, metadata, version_id),
         created_at_version: historical_created_at(
             history,
             metadata,

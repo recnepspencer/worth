@@ -12,7 +12,7 @@ use crate::indexes::data::{
     DerivedIndexId, DerivedIndexKind,
 };
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
+use crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis;
 
 use super::entity_field_collection::{collect, EntityFieldCollectionRead};
 
@@ -21,7 +21,7 @@ use super::entity_field_collection::{collect, EntityFieldCollectionRead};
 pub struct PreparedEntityFieldLookup {
     runtime_identity: u64,
     instrumentation: crate::runtime::RuntimeInstrumentation,
-    basis: VisibilitySnapshotBasis,
+    basis: ResidentVisibilitySnapshotBasis,
     definition: Arc<DerivedIndexDefinition>,
     generation: Arc<DerivedIndexGeneration>,
     kind: KindId,
@@ -39,7 +39,10 @@ impl PreparedEntityFieldLookup {
     }
     pub fn field_locator(&self) -> &AspectFieldLocator {
         let DerivedIndexKind::EntityField { field_locator } = &self.definition.kind else {
-            unreachable!("prepared field definition was checked at admission")
+            unreachable!(
+                /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
+                "prepared field definition was checked at admission"
+            )
         };
         field_locator
     }
@@ -50,7 +53,7 @@ impl std::fmt::Debug for PreparedEntityFieldLookup {
         formatter
             .debug_struct("PreparedEntityFieldLookup")
             .field("runtime_identity", &self.runtime_identity)
-            .field("root_identity", &self.basis.root_id())
+            .field("root_identity", &self.basis.root().id())
             .field("index_id", &self.index_id())
             .field("generation_id", &self.generation.generation_id)
             .finish()
@@ -67,7 +70,10 @@ impl PreparedEntityFieldLookup {
             .consult()
             .map_err(|cause| denied(Denial::Execution(cause.into()), self.index_id()))?;
         let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
-            unreachable!("prepared generation is an entity field index")
+            unreachable!(
+                /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
+                "prepared generation is an entity field index"
+            )
         };
         Ok(entries.is_empty())
     }
@@ -107,7 +113,10 @@ impl PreparedEntityFieldLookup {
         let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
         super::prepared_lookup_admission::admit(execution, self.index_id(), &mut admission)?;
         let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
-            unreachable!("prepared generation is an entity field index")
+            unreachable!(
+                /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
+                "prepared generation is an entity field index"
+            )
         };
         let mut read = PreparedCollectionRead {
             prepared: self,
@@ -194,6 +203,21 @@ pub(super) fn denied(kind: Denial, index: DerivedIndexId) -> BoundedEntityFieldL
 impl crate::visibility::materialization::read_records::ProjectionRecordSource
     for PreparedEntityFieldLookup
 {
+    // Construction already admitted and retained the complete immutable source.
+    // Reading an accepted pin checks request life, without reacquiring cold truth.
+    fn demand_all_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)
+    }
+    fn demand_regions_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)
+    }
     fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
         Some(self.basis.root())
     }
@@ -218,7 +242,7 @@ impl PreparedEntityFieldLookup {
     }
     pub(crate) fn pin(
         runtime_identity: u64,
-        basis: VisibilitySnapshotBasis,
+        basis: ResidentVisibilitySnapshotBasis,
         definition: Arc<DerivedIndexDefinition>,
         kind: KindId,
         locator: &AspectFieldLocator,

@@ -3,22 +3,24 @@ use super::{AttemptDenialCause, WorthQueryApplicationAttemptDenial};
 use worth_execution::ChargedBytes;
 impl ChargedBytes for WorthQueryApplicationAttemptDenial {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self {
-            kind: _kind,
-            subject,
-            cause,
-        } = self;
-        let nested = match cause {
+        (self.subject.capacity() as u64).saturating_add(
+            self.cause()
+                .map_or(0, ChargedBytes::additional_charged_bytes),
+        )
+    }
+}
+
+impl ChargedBytes for AttemptDenialCause {
+    fn additional_charged_bytes(&self) -> u64 {
+        match self {
+            AttemptDenialCause::SourceDisclosureParameters(cause)=>(std::mem::size_of_val(cause.as_ref()) as u64).saturating_add(cause.owned_allocation_capacity_bytes() as u64),
             AttemptDenialCause::UnobservedWrite(cause) => (std::mem::size_of_val(cause.as_ref()) as u64)
                 .saturating_add(cause.owned_allocation_capacity_bytes() as u64),
-            AttemptDenialCause::SourceDisclosureParameters(cause) => {
-                (std::mem::size_of_val(cause.as_ref()) as u64).saturating_add(cause.owned_allocation_capacity_bytes() as u64)
-            }
             AttemptDenialCause::IndexedLookup(_) => std::mem::size_of::<
                 worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
             >() as u64,
             AttemptDenialCause::OutputObservation(_) => std::mem::size_of::<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>() as u64,
-            AttemptDenialCause::None | AttemptDenialCause::RelationalExecution(_) => 0,
+            AttemptDenialCause::None => 0,
             // Native query stops contain only inline reports, identities and enums.
             AttemptDenialCause::NativeQueryRead(_) => std::mem::size_of::<
                 worth_relational::facade::runtime::QueryReadExecutionStop,
@@ -55,7 +57,6 @@ impl ChargedBytes for WorthQueryApplicationAttemptDenial {
                 (std::mem::size_of::<worth_foundational::expression_api::ExpressionDenial>() as u64)
                     .saturating_add(text)
             }
-        };
-        (subject.capacity() as u64).saturating_add(nested)
+        }
     }
 }

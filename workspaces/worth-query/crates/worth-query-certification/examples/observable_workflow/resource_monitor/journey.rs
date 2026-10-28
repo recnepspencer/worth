@@ -95,8 +95,7 @@ pub fn run() {
         .store(true, Ordering::SeqCst);
     let failed = resources
         .close_for_effect_recovery(&mut monitor, &authority)
-        .err()
-        .expect("real provider cleanup pending");
+        .expect_err("real provider cleanup pending");
     let (none, cause) = failed.into_parts();
     assert!(
         none.is_none(),

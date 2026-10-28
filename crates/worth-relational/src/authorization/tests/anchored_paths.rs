@@ -90,7 +90,10 @@ fn observe_anchored_path(
             anchor,
         )]);
     let plan = RelationalAuthorizationObservationPlan::try_new(
-        runtime.visibility_authority().snapshot(),
+        runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted"),
         principal,
         scope,
         ENTITY_KIND,

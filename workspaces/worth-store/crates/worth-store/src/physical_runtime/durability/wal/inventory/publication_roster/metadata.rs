@@ -39,8 +39,7 @@ pub(super) fn decode_metadata(
     let entry_envelope = entry_size
         .checked_mul(18)
         .ok_or(PhysicalWalOpenFailure::CounterOverflow)?;
-    let available_entries =
-        available_bytes.checked_sub(payload_copies).unwrap_or(0) / entry_envelope;
+    let available_entries = available_bytes.saturating_sub(payload_copies) / entry_envelope;
     let bounded = available_entries.min(encoded_bytes);
     // Rewrite v2 is a fixed descriptor with no decoded entry vectors or
     // candidate payload copy; only the retained roster member is charged.

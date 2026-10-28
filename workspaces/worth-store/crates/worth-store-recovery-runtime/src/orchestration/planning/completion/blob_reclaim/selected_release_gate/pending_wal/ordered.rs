@@ -202,9 +202,7 @@ pub(super) fn admit_roster(
             .unwrap_or(u64::MAX);
         let decoded_manifest =
             u64::try_from(std::mem::size_of_val(release.manifest.dropped())).unwrap_or(u64::MAX);
-        let decode_window = encoding_peak
-            .checked_add(decoded_manifest)
-            .unwrap_or(u64::MAX);
+        let decode_window = encoding_peak.saturating_add(decoded_manifest);
         if resident.transient(decode_window).is_err() || resident.bytes(decoded_manifest).is_err() {
             return Err(resident_block(context, basis, resident));
         }

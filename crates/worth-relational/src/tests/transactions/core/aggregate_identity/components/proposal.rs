@@ -22,7 +22,8 @@ fn component_proposed_and_committed_rule_reads_share_sealed_identity_and_last_dr
         .schema_registry(registry)
         .custom_invariant(registration(10, ReadMode::Both, None, &control))
         .custom_invariant(registration(11, ReadMode::Both, None, &control))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let born = commit(execution, &runtime, birth());
     let ids = ids(&born);
     let old = read(execution, &runtime, &born.snapshot, false, ids[1]);

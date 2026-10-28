@@ -8,8 +8,8 @@ fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {
 
     let mut runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "branch-local-publication-anchor");
-    fork_publication_branch(&mut runtime, "storm");
-    fork_publication_branch(&mut runtime, "maintenance");
+    fork_publication_branch(execution, &mut runtime, "storm");
+    fork_publication_branch(execution, &mut runtime, "maintenance");
 
     let storm = prepare_publication(execution, &mut runtime, "storm", "storm-publication");
     let storm_cell = storm.publication_cell_for_test();
@@ -165,12 +165,16 @@ fn prepare_publication(
         .expect("publication candidate prepares")
 }
 
-fn fork_publication_branch(runtime: &mut crate::facade::runtime::RelationalRuntime, branch: &str) {
+fn fork_publication_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut crate::facade::runtime::RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .expect("publication branch fork succeeds");
 }
 

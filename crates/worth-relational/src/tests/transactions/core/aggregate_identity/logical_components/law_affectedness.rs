@@ -55,6 +55,7 @@ fn runtime(minimum: bool) -> RelationalRuntime {
                 .unwrap(),
         )
         .build()
+        .expect("valid native runtime configuration")
 }
 fn delete(relation: crate::identity::data::RelationId) -> MutationIntent {
     MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {

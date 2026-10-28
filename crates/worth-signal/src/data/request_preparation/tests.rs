@@ -41,3 +41,35 @@ fn omitted_limit_still_refuses_counter_overflow_without_changing_the_ticket() {
     ));
     assert_eq!(budget.memory.bytes(), u64::MAX);
 }
+
+#[test]
+fn nested_scratch_release_preserves_diagnostic_custody() {
+    let mut budget = SignalPreparationBudget::new(Some(1024));
+    budget.claim_retained(16).unwrap();
+    let epoch = budget.checkpoint();
+    budget.reserve_diagnostics(512).unwrap();
+    let scratch = budget.checkpoint();
+    budget.claim(64).unwrap();
+    budget.release(scratch);
+    assert_eq!(budget.memory.bytes(), 528);
+    budget.claim(400).unwrap();
+    assert_eq!(budget.memory.bytes(), 928);
+    budget.claim_diagnostics(512).unwrap();
+    budget.release(epoch);
+    assert_eq!(budget.memory.bytes(), 16);
+}
+
+#[test]
+fn diagnostics_custody_cannot_be_consumed_by_unrelated_preparation() {
+    let mut budget = SignalPreparationBudget::new(Some(1024));
+    let epoch = budget.checkpoint();
+    budget.reserve_diagnostics(512).unwrap();
+    budget.claim(256).unwrap();
+    assert_eq!(budget.memory.bytes(), 768);
+    assert_eq!(budget.remaining(), Some(256));
+    budget.claim_diagnostics(512).unwrap();
+    assert_eq!(budget.memory.bytes(), 768);
+    assert_eq!(budget.remaining(), Some(256));
+    budget.release(epoch);
+    assert_eq!(budget.memory.bytes(), 0);
+}

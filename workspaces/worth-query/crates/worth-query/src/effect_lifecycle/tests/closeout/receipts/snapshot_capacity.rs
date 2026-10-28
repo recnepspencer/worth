@@ -19,6 +19,7 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         &mut runtime,
         BranchId("batch-receipt-capacity".to_string()),
         &BranchId("main".to_string()),
@@ -26,7 +27,8 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
     .unwrap();
     let baseline = runtime
         .storage_access()
-        .storage_stats()
+        .storage_stats(request_execution)
+        .unwrap()
         .published_snapshot_handle_count;
     assert_eq!(baseline, 0);
 
@@ -72,7 +74,8 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(request_execution)
+            .unwrap()
             .published_snapshot_handle_count,
         baseline
     );

@@ -193,7 +193,9 @@ mod tests {
         let partition = PartitionId::main();
         let kind = KindId::new(18);
         let mut symbols = StringInterner::default();
-        let symbol = symbols.intern("symbol-created-record");
+        let symbol = symbols
+            .intern("symbol-created-record")
+            .expect("symbol fixture has identity capacity");
         let created = CreatedEntityRef {
             partition_id: partition,
             kind_id: kind,
@@ -229,7 +231,9 @@ mod tests {
         let partition = PartitionId::main();
         let kind = KindId::new(19);
         let mut source_symbols = StringInterner::default();
-        let symbol = source_symbols.intern("foreign-symbol-created-record");
+        let symbol = source_symbols
+            .intern("foreign-symbol-created-record")
+            .expect("symbol fixture has identity capacity");
         let created = CreatedEntityRef {
             partition_id: partition,
             kind_id: kind,

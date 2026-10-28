@@ -34,10 +34,10 @@ fn facade_namespaces_expose_domain_groupings() {
     let _config = facade::config::RelationalRuntimeProfile::CertificationCore;
     let runtime = facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(facade::schema::RelationalSchemaRegistry::new())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let _txn_options =
         crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime);
-    let _durability_mode = facade::durability::DurabilityMode::InMemoryCanonical;
     let _diagnostics_scope = facade::diagnostics::DiagnosticsScope::Transaction;
     let _patch_mode = facade::publication::PatchPublicationMode::CommitNative;
     let _snapshot_policy = facade::snapshots::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation;
@@ -130,7 +130,7 @@ fn main_movement_does_not_change_an_inherited_child_observation() {
         .expect("main exposes an owner-issued fork basis");
     let child_id = facade::history::BranchId("observation-child".to_owned());
     runtime
-        .fork_branch(child_id.clone(), source_basis)
+        .fork_branch(execution, child_id.clone(), source_basis)
         .expect("child retains the inherited immutable root");
     crate::tests::support::create_entity_outcome(execution, &runtime, "main-advances");
     let child = runtime.branch_identity(&child_id).unwrap();

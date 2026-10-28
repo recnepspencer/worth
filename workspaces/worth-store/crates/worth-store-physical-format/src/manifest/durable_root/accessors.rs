@@ -58,4 +58,7 @@ impl DurablePhysicalRootManifest {
     pub const fn last_inline_segment(&self) -> Option<SegmentGenerationCell> {
         self.last_inline_segment
     }
+    pub const fn record_anchors(&self) -> RecordAnchorTable {
+        self.record_anchors
+    }
 }

@@ -14,7 +14,6 @@ pub enum BankApplicationQueryInstallationDenialKind {
     BindingQueryNotInstalled,
     BindingResultLimitIsZero,
     BindingScopeMeaningChanged,
-    BindingWorkLimitIsZero,
     InvalidBindingIdentity,
     QueryNotInstalled,
     QueryMeaningChanged,
@@ -22,12 +21,7 @@ pub enum BankApplicationQueryInstallationDenialKind {
     LiveEffectNotInstalled,
     LiveScopeIdentityNotInstalled,
     LiveTargetIdentityNotInstalled,
-    RootNotInstalled,
-    ProjectionNotInstalled,
     RelationNotInstalled,
-    PredicateNotInstalled,
-    OrderingNotInstalled,
-    ResultShapeDisconnected,
     ForeignRuntime,
     StaleGeneration,
     SchemaMeaningChanged,
@@ -37,6 +31,9 @@ pub enum BankApplicationQueryInstallationDenialKind {
     CanonicalEncodedByteBudgetExceeded,
     CanonicalDigestSlotRejected,
     InvalidGraphObligationContract,
+    InvalidInspectionDefinition,
+    InspectionBindingMeaningChanged,
+    InspectionUnavailable,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -82,7 +79,6 @@ pub(super) const fn query_installation(
         QueryInstallation::BindingQueryNotInstalled => Bank::BindingQueryNotInstalled,
         QueryInstallation::BindingResultLimitIsZero => Bank::BindingResultLimitIsZero,
         QueryInstallation::BindingScopeMeaningChanged => Bank::BindingScopeMeaningChanged,
-        QueryInstallation::BindingWorkLimitIsZero => Bank::BindingWorkLimitIsZero,
         QueryInstallation::InvalidBindingIdentity => Bank::InvalidBindingIdentity,
         QueryInstallation::QueryNotInstalled => Bank::QueryNotInstalled,
         QueryInstallation::QueryMeaningChanged => Bank::QueryMeaningChanged,
@@ -90,12 +86,7 @@ pub(super) const fn query_installation(
         QueryInstallation::LiveEffectNotInstalled => Bank::LiveEffectNotInstalled,
         QueryInstallation::LiveScopeIdentityNotInstalled => Bank::LiveScopeIdentityNotInstalled,
         QueryInstallation::LiveTargetIdentityNotInstalled => Bank::LiveTargetIdentityNotInstalled,
-        QueryInstallation::RootNotInstalled => Bank::RootNotInstalled,
-        QueryInstallation::ProjectionNotInstalled => Bank::ProjectionNotInstalled,
         QueryInstallation::RelationNotInstalled => Bank::RelationNotInstalled,
-        QueryInstallation::PredicateNotInstalled => Bank::PredicateNotInstalled,
-        QueryInstallation::OrderingNotInstalled => Bank::OrderingNotInstalled,
-        QueryInstallation::ResultShapeDisconnected => Bank::ResultShapeDisconnected,
         QueryInstallation::ForeignRuntime => Bank::ForeignRuntime,
         QueryInstallation::StaleGeneration => Bank::StaleGeneration,
         QueryInstallation::SchemaMeaningChanged => Bank::SchemaMeaningChanged,
@@ -107,6 +98,9 @@ pub(super) const fn query_installation(
         }
         QueryInstallation::CanonicalDigestSlotRejected => Bank::CanonicalDigestSlotRejected,
         QueryInstallation::InvalidGraphObligationContract => Bank::InvalidGraphObligationContract,
+        QueryInstallation::InvalidInspectionDefinition => Bank::InvalidInspectionDefinition,
+        QueryInstallation::InspectionBindingMeaningChanged => Bank::InspectionBindingMeaningChanged,
+        QueryInstallation::InspectionUnavailable => Bank::InspectionUnavailable,
     }
 }
 

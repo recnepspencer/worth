@@ -43,7 +43,7 @@ pub(crate) fn evaluate_invariant_packet_checked<'state>(
         return Err(failure);
     }
     if !budget.ensure_result_total(envelope.owned_allocation_capacity_bytes()) {
-        return Err(budget.take_failure().expect("result claim recorded stop"));
+        return Err(budget.take_failure().expect(/* Proof: A rejected result claim stores its typed budget stop before returning false; this branch follows that false result on the same meter. */ "result claim recorded stop"));
     }
     Ok(envelope)
 }
@@ -56,6 +56,7 @@ fn evaluate_invariant_packet_inner<'state>(
 ) -> InvariantWorkerEnvelope {
     let preparation_failures = invariant_packet_failures(packet);
     debug_assert!(
+        /* Proof: Planned packets carry the exact prepared inputs issued by their profile planner; the worker executes only that sealed plan and does not re-resolve an external packet or accept missing preparation evidence. */
         preparation_failures.is_empty(),
         "planned invariant packet violated preparation proof contract: {:?}",
         preparation_failures

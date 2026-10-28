@@ -45,7 +45,8 @@ fn unrelated_lease_through_public_commit() {
             use worth_relational::facade::transactions::CommitExecutionDenialKind;
             let runtime = RelationalRuntimeApi::builder()
                 .schema_registry(schema())
-                .build();
+                .build()
+                .expect("valid native runtime configuration");
             let before = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .unwrap()
@@ -73,7 +74,20 @@ fn unrelated_lease_through_public_commit() {
                 *captured.lock().unwrap() = Some(denial);
                 Ok::<_, MapKernelFailure<()>>(((), ()))
             });
-            assert!(matches!(outcome, ScanOutcome::Stopped { .. }));
+            // A typed inner refusal cannot acknowledge the original request's
+            // stop at handoff. Preserve both the outer stop and inner cause.
+            assert!(matches!(
+                outcome,
+                ScanOutcome::Stopped {
+                    reason: worth_execution::MapStop::Failure {
+                        cause: MapKernelFailure::Stop(
+                            worth_execution::MapKernelStop::NestedStopped
+                        ),
+                        ..
+                    },
+                    ..
+                }
+            ));
             let denial = captured
                 .into_inner()
                 .unwrap()

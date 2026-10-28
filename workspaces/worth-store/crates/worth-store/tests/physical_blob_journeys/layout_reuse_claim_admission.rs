@@ -195,7 +195,6 @@ fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
     );
     assert_eq!(selected_blob_records(&serving).len(), before);
     drop(destination);
-    drop(blobs);
     serving.close();
 }
 

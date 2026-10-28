@@ -5,32 +5,28 @@ use super::super::{
 };
 use super::*;
 
-pub(in crate::domain_computation::primary_graph::application_resource) fn drain_candidate<
-    Schema,
-    Binding,
->(
+pub(in crate::domain_computation::primary_graph::application_resource) fn drain_candidate<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     row: &mut ResourceRowLease,
 ) -> Result<(), ResourceCause>
 where
     Schema: ApplicationSchema,
-    Binding: ApplicationResourceBinding<Schema>,
 {
     let occurrence = row.occurrence_mut();
     let Some(candidate) = occurrence.candidate.as_mut() else {
         return Ok(());
     };
-    if let Some(admission) = candidate.admission.as_ref() {
-        if admission.report().denied_completion().is_some() {
-            let ResourceLifecycle::Live { owner, .. } = &occurrence.lifecycle else {
-                return Err(ResourceCause::Unavailable);
-            };
-            runtime
-                .bridge
-                .conditional()
-                .release_process_local_completion_denial(owner, admission)
-                .map_err(ResourceCause::Managed)?;
-        }
+    if let Some(admission) = candidate.admission.as_ref()
+        && admission.report().denied_completion().is_some()
+    {
+        let ResourceLifecycle::Live { owner, .. } = &occurrence.lifecycle else {
+            return Err(ResourceCause::Unavailable);
+        };
+        runtime
+            .bridge
+            .conditional()
+            .release_process_local_completion_denial(owner, admission)
+            .map_err(ResourceCause::Managed)?;
     }
     if matches!(candidate.queue, ResourceCandidateQueue::Admitted(_)) {
         let ResourceLifecycle::Live { owner, .. } = &occurrence.lifecycle else {
@@ -87,16 +83,12 @@ where
     Ok(())
 }
 
-pub(in crate::domain_computation::primary_graph::application_resource) fn finish_native<
-    Schema,
-    Binding,
->(
+pub(in crate::domain_computation::primary_graph::application_resource) fn finish_native<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     row: &mut ResourceRowLease,
 ) -> Result<(), ResourceCause>
 where
     Schema: ApplicationSchema,
-    Binding: ApplicationResourceBinding<Schema>,
 {
     let occurrence = row.occurrence_mut();
     let ResourceLifecycle::Live { owner, completion } = &mut occurrence.lifecycle else {
@@ -109,14 +101,14 @@ where
             .finish_managed_owned_async_wake_cleanup(owner)
             .map_err(ResourceCause::Managed)?;
     }
-    if let Some(completion) = completion.as_mut() {
-        if !completion.timeout_cleanup_complete() {
-            runtime
-                .bridge
-                .conditional()
-                .finish_owned_async_completion_timeout_cleanup(completion)
-                .map_err(ResourceCause::Completion)?;
-        }
+    if let Some(completion) = completion.as_mut()
+        && !completion.timeout_cleanup_complete()
+    {
+        runtime
+            .bridge
+            .conditional()
+            .finish_owned_async_completion_timeout_cleanup(completion)
+            .map_err(ResourceCause::Completion)?;
     }
     if owner.has_pending_retry() {
         runtime
@@ -172,8 +164,8 @@ where
     if row.occurrence().recovery.is_some() && !recovery_handoff {
         return Err(ResourceCause::RecoveryHandoffRequired);
     }
-    drain_candidate::<Schema, Binding>(runtime, row)?;
+    drain_candidate(runtime, row)?;
     close_provider(execution, installed, row)?;
-    finish_native::<Schema, Binding>(runtime, row)?;
+    finish_native(runtime, row)?;
     row.finish_native_slot().map_err(ResourceCause::Storage)
 }

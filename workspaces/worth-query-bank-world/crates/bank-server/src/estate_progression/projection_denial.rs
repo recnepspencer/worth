@@ -23,6 +23,10 @@ pub enum BankInvariantProjectionTraversalDenial {
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
+    DerivedSource(worth_query_host::facade::primary_graph::StructuralWalkDenialKind),
+    ComponentSetNotInstalled,
+    InvalidComponent,
+    ComponentOutsideScope,
     RelationNotInstalled,
     NotOrbitRelation,
     InvalidOrbit,
@@ -64,6 +68,10 @@ impl BankInvariantProjectionTraversalDenial {
         match self {
             Self::ReadExecution(_) => "execution-request",
             Self::ExecutionRequest(_) => "execution-request",
+            Self::DerivedSource(_) => "derived-source",
+            Self::ComponentSetNotInstalled => "component-set-not-installed",
+            Self::InvalidComponent => "invalid-component",
+            Self::ComponentOutsideScope => "component-outside-scope",
             Self::RelationNotInstalled => "relation-not-installed",
             Self::NotOrbitRelation => "not-orbit-relation",
             Self::InvalidOrbit => "invalid-orbit",
@@ -87,6 +95,10 @@ impl BankInvariantProjectionTraversalDenial {
         match kind {
             QueryTraversal::ReadExecution(cause) => Self::ReadExecution(cause),
             QueryTraversal::ExecutionRequest(cause) => Self::ExecutionRequest(cause),
+            QueryTraversal::DerivedSource(cause) => Self::DerivedSource(cause),
+            QueryTraversal::ComponentSetNotInstalled => Self::ComponentSetNotInstalled,
+            QueryTraversal::InvalidComponent => Self::InvalidComponent,
+            QueryTraversal::ComponentOutsideScope => Self::ComponentOutsideScope,
             QueryTraversal::RelationNotInstalled => Self::RelationNotInstalled,
             QueryTraversal::NotOrbitRelation => Self::NotOrbitRelation,
             QueryTraversal::InvalidOrbit => Self::InvalidOrbit,

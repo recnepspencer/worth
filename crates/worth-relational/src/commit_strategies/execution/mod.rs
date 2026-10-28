@@ -12,5 +12,4 @@ pub use error::StrategyExecutionError;
 pub(crate) use registry::FrozenCommitStrategyExecutorRegistry;
 pub(crate) use strategy_invocation::execute_bound_strategy;
 
-#[cfg(test)]
-pub(super) use registry::CommitStrategyExecutionRegistryError;
+pub use registry::CommitStrategyExecutionRegistryError;

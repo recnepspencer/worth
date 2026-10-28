@@ -320,12 +320,12 @@ pub(in crate::physical_runtime) fn collect_selected_blob_authority<'runtime>(
             return Err(LayoutRebuildFailure::PublicationWithoutDeclaration);
         }
     }
-    if let Some(latest) = latest {
-        if !publications.iter().any(|selected| {
+    if let Some(latest) = latest
+        && !publications.iter().any(|selected| {
             selected.record == latest.record() && selected.frame_digest == latest.encoded_digest()
-        }) {
-            return Err(LayoutRebuildFailure::LatestPublicationMissing);
-        }
+        })
+    {
+        return Err(LayoutRebuildFailure::LatestPublicationMissing);
     }
     let mut quarantined_keys = BTreeSet::new();
     for selected in &quarantines {
@@ -359,7 +359,7 @@ pub(in crate::physical_runtime) fn collect_selected_blob_authority<'runtime>(
         quarantined_keys
             .insert(DedupeIndexKey::from_digest(claim.scope(), claim.disputed_digest()).bytes());
     }
-    if latest_quarantine.is_some() != !quarantines.is_empty()
+    if latest_quarantine.is_some() == quarantines.is_empty()
         || latest_quarantine
             .is_some_and(|latest| !quarantines.iter().any(|selected| selected.record == latest))
     {

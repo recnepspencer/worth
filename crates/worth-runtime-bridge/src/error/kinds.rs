@@ -72,6 +72,7 @@ pub type BridgeDeliveryError = BridgeTypedError<BridgeDeliveryErrorKind>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeReplayErrorKind {
+    ObservationRead(worth_relational::facade::change_source::RelationalObservationReadDenial),
     ReplayArtifactsDisabled,
     CanonicalArtifactCoherenceFailure,
     StructuralReplayBasisTruncated,
@@ -112,6 +113,7 @@ pub type BridgeStreamError = BridgeTypedError<BridgeStreamErrorKind>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeContinuityErrorKind {
+    ObservationRead(worth_relational::facade::change_source::RelationalObservationReadDenial),
     MissingLineageContext,
     MissingLineageSource,
     UnsupportedContinuityClass,
@@ -171,6 +173,7 @@ pub type BridgeWritebackError = BridgeTypedError<BridgeWritebackErrorKind>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeLineageSourceErrorKind {
+    ObservationRead(worth_relational::facade::change_source::RelationalObservationReadDenial),
     UnsupportedContinuityClass,
     HistoricalResolutionFailure,
     DuplicateResolvedLineageIdentities,

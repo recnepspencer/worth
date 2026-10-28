@@ -258,9 +258,6 @@ fn managed_cleanup_discharge_does_not_settle_uncertain_business_outcome() {
     assert_eq!(read_retention(host.runtime(), host.current_world()), 19);
 }
 
-#[path = "managed_cleanup/unpublished.rs"]
-mod unpublished;
-
 #[test]
 fn managed_failure_abandonment_transfers_actual_collection_and_installed_keepalive() {
     let host = install();

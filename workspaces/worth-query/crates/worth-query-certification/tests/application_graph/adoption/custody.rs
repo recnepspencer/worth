@@ -66,6 +66,14 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
                 .any(|requirement| action_binding(requirement.subject()) == Some(binding)),
             "the removal target retires {binding}"
         );
+        assert_eq!(
+            removed_operations
+                .iter()
+                .filter(|requirement| action_binding(requirement.subject()) == Some(binding))
+                .count(),
+            1,
+            "each removed binding owns one continuation obligation: {binding}"
+        );
     }
     assert!(removed_operations
         .iter()

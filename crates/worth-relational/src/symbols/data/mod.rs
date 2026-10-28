@@ -1,3 +1,5 @@
+mod exhausted;
+pub use exhausted::RelationalSymbolExhausted;
 mod client_key;
 mod client_key_symbol_policy;
 mod interned_string;

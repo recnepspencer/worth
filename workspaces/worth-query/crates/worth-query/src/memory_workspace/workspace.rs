@@ -108,7 +108,9 @@ impl WorthQueryMemoryWorkspace {
         let invalidation_resources =
             worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new();
         let runtime = WorthQueryRelationalSourceOwner::new(
-            runtime_builder.build(),
+            runtime_builder
+                .build()
+                .map_err(|denial| WorthQueryWorkspaceError::new(denial.to_string()))?,
             "model",
             invalidation_resources,
         )

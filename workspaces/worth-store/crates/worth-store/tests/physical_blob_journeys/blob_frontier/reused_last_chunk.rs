@@ -35,7 +35,6 @@ fn unfinished_session_whose_sixty_fourth_chunk_is_reused_observes_clean() {
     }
     assert_eq!(ingest.frontier().next_chunk_ordinal(), 64);
     drop(ingest);
-    drop(blobs);
     serving.close();
 
     let reopened = serving_from_open(directory.path());

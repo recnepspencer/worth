@@ -6,13 +6,13 @@ pub mod branch;
 mod runtime_validation_exports;
 pub mod config {
     pub use crate::config::data::{
-        AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CheckpointPolicy,
-        CommitStrategiesConfig, CompiledLanePolicy, ConfigProvenance, ConfigProvenanceEntry,
-        ConfigValueSource, CrossContextPolicy, DiagnosticsBoundary, DurabilityPolicy,
-        DurableLogPolicy, DurableLogRetentionMode, MvccConfig, PublicationConfig,
-        RelationalConfigOverride, RelationalRuntimeProfile, RetentionBackend, RetentionPolicy,
-        RuntimeExecutionLane, RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy,
-        StorageLayoutConfig, VisibilityCachePolicy,
+        AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CommitStrategiesConfig,
+        CompiledLanePolicy, ConfigProvenance, ConfigProvenanceEntry, ConfigValueSource,
+        CrossContextPolicy, DiagnosticsBoundary, DurabilityPolicy, DurableLogPolicy,
+        DurableLogRetentionMode, MvccConfig, PublicationConfig, RelationalConfigOverride,
+        RelationalRuntimeProfile, RetentionBackend, RetentionPolicy, RuntimeExecutionLane,
+        RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy, StorageLayoutConfig,
+        VisibilityCachePolicy,
     };
 }
 pub mod commit_strategies {
@@ -48,7 +48,10 @@ pub mod commit_strategies {
         ReplicaConvergenceAction, ReplicaConvergenceInput, ReplicaConvergenceOutput,
         ReplicaConvergenceStrategy,
     };
-    pub use crate::commit_strategies::{FrozenCommitStrategyRegistry, StrategyExecutionError};
+    pub use crate::commit_strategies::{
+        CommitStrategyExecutionRegistryError, DuplicateCommitStrategyRegistration,
+        FrozenCommitStrategyRegistry, StrategyExecutionError,
+    };
 }
 
 #[path = "facade/change_source.rs"]
@@ -63,29 +66,8 @@ pub mod diagnostics {
     };
 }
 
-pub mod durability {
-    pub use crate::durability::data::{
-        CheckpointAllocatorInspection, CheckpointCoverage, CheckpointRecordFrontier,
-        CheckpointRecordIdentity, CheckpointReservationAdvanceDenial, CheckpointRestoreWork,
-        CompactionOutcome, CompactionPlan, CompactionPolicy, DurabilityError, DurabilityMode,
-        DurableCheckpoint, DurableCheckpointId, DurableCheckpointManifest, DurableIntegrityStatus,
-        DurableSegmentId, DurableSegmentManifest, DurableStore, DurableStoreLayout,
-        NativeCheckpointModelBytes, NativeCheckpointSectionBytes, PartitionCheckpointImage,
-        RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch,
-        RecoveryAuthorityParity, RecoveryCoverage, RecoveryCursor, RecoveryFailureClass,
-        RecoveryIntegrityReport, RecoveryPlan, RecoveryVerificationMode,
-        RecoveryVerificationOutcome, RecoveryVerificationPlan, RelationIntegrityContractFamily,
-        RelationalCheckpointInspection, RelationalNativeCheckpoint,
-        RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop, SegmentRetentionClass,
-    };
-    pub use crate::durability::{
-        DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
-        RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
-        RecoveredCheckpointTransitionRepairError, RecoveredRelationalBranchBasis,
-        RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
-    };
-    pub use crate::history::data::RecordAllocationClass;
-}
+#[path = "facade/durability.rs"]
+pub mod durability;
 
 pub mod errors {
     pub use crate::errors::{
@@ -104,7 +86,8 @@ pub mod history {
         LineageAspectHistoryQueryResult, LineageAspectResolutionDigest, MergeConflictRecord,
         MergeInspection, OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
         RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
-        RelationalMergeBranchBasisDenial, RelationalTouchAdjacencyDirection, VersionGraphPolicy,
+        RelationalMergeBranchBasisDenial, RelationalReplayRetentionDenial,
+        RelationalTouchAdjacencyDirection, VersionGraphPolicy,
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
@@ -233,20 +216,20 @@ pub mod runtime {
         RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
         RelationalAdjacencyVisit, RelationalAspectPresenceSupportDenial,
         RelationalBorrowedRecordReadDenial, RelationalCandidateInputCounters,
-        RelationalEntityMetadata, RelationalEntityRetirement,
+        RelationalEntityMetadata, RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
         RelationalFieldSupportComparisonDenial, RelationalInitialSchemaInstallation,
         RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
         RelationalInitialSchemaInstallationReceipt, RelationalPatchPositionReservationCounters,
-        RelationalPhase4ReferenceCostCounters, RelationalPinnedRead,
-        RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
-        RelationalRelationMetadata, RelationalReplayRecord, RelationalRetentionPassProgress,
-        RelationalRetentionPassStop, RelationalRuntime, RelationalRuntimeConfig,
-        RelationalRuntimeForkDenial, RelationalSchemaTransitionAdmissionDenial,
-        RelationalSchemaTransitionAdmissionDenialKind, RelationalSnapshotPositionAdmissionStop,
-        RelationalStoppedRetentionPass, ReplaySchemaVersion, RuntimeComplexityCounters,
-        SimulationAccess, SimulationAuthority, SnapshotGuard, SnapshotPositionDenial,
-        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
-        VisibilityRetentionAuthority,
+        RelationalPhase4ReferenceCostCounters, RelationalPinnedEntityMetadata,
+        RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
+        RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
+        RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
+        RelationalRuntimeConfig, RelationalRuntimeConstructionDenial, RelationalRuntimeForkDenial,
+        RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
+        RelationalSnapshotPositionAdmissionStop, RelationalStoppedRetentionPass,
+        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
+        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
+        VisibilityReadContext, VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
@@ -267,6 +250,10 @@ pub mod runtime {
         ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
         ProjectionAspectScope, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
     };
+    pub use crate::visibility::materialization::read_records::{
+        ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,
+    };
+    pub use crate::visibility::snapshot_states::HistoricalVisibilityDenial;
 }
 
 #[cfg(test)]
@@ -287,9 +274,8 @@ pub mod publication {
         SubscriberStreamFailureClass,
     };
     pub use crate::publication::data::{
-        DeferredPublicationSettlement, DeferredPublicationSettlementError,
         PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
-        PublicationObservationSnapshot,
+        PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,
@@ -351,10 +337,12 @@ pub mod storage {
         authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
         AuthoritativeFieldComparisonKeyDecodeDenial,
         AuthoritativeFieldComparisonKeyDecodeDenialKind, RecordLifecycleState,
+        RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
     };
 }
 
 pub mod symbols {
+    pub use crate::symbols::data::RelationalSymbolExhausted;
     pub use crate::symbols::data::{
         ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldText,
         RelationalFieldTextAdmissionDenial, StoredSymbolText, StringInterner, Symbol,

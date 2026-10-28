@@ -9,8 +9,16 @@ impl<'runtime> LineageAccess<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: LineageGraphRequest,
-    ) -> LineageGraphSnapshot {
-        let mut nodes = self.branch_nodes_snapshot(execution, &request.branch_id);
+    ) -> Result<LineageGraphSnapshot, crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
+        let _events = self.runtime.lineage.demand_event_pages(
+            execution,
+            None,
+            Some(&std::collections::BTreeSet::from([request
+                .branch_id
+                .clone()])),
+        )?;
+        let mut nodes = self.branch_nodes_snapshot(execution, &request.branch_id)?;
         nodes.sort_by_key(|node| node.lineage_id);
         let mut events = self.branch_events_snapshot(&request.branch_id);
         events.sort_by_key(|event| event.event_id);
@@ -26,7 +34,7 @@ impl<'runtime> LineageAccess<'runtime> {
             events.iter().map(|event| event.event_id).collect(),
             LineageGraphDigestMode::ExactDigestCanonicalOrder,
         );
-        LineageGraphSnapshot::new(
+        Ok(LineageGraphSnapshot::new(
             request.branch_id.clone(),
             nodes,
             events,
@@ -36,6 +44,6 @@ impl<'runtime> LineageAccess<'runtime> {
                 node_count,
                 event_count,
             },
-        )
+        ))
     }
 }

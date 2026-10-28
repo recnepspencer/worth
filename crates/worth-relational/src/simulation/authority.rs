@@ -29,11 +29,13 @@ impl<'runtime> SimulationAuthority<'runtime> {
 
     pub fn compile_execution_artifact(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: CommitId,
         partition_ids: Vec<PartitionId>,
     ) -> Result<CompiledExecutionArtifact, CompiledArtifactError> {
+        crate::execution::check_request(execution).map_err(source_read_refused)?;
         ensure_compiled_lane_enabled(self.runtime)?;
-        let envelope = source_commit_envelope(self.runtime, commit_id)?;
+        let envelope = source_commit_envelope(execution, self.runtime, commit_id)?;
         let artifact = build_compiled_execution_artifact(
             self.runtime.services.next_compiled_artifact_id(),
             commit_id,
@@ -57,16 +59,27 @@ fn ensure_compiled_lane_enabled(runtime: &RelationalRuntime) -> Result<(), Compi
 }
 
 fn source_commit_envelope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     commit_id: CommitId,
-) -> Result<CanonicalCommitEnvelope, CompiledArtifactError> {
+) -> Result<std::sync::Arc<CanonicalCommitEnvelope>, CompiledArtifactError> {
     runtime
         .history()
-        .commit_envelope(commit_id)
+        .demand_commit_envelope(execution, commit_id)
+        .map_err(source_read_refused)?
         .ok_or_else(|| CompiledArtifactError {
             authority_status: CompiledArtifactAuthorityStatus::MissingSourceCommit,
             detail: format!("missing source commit {}", commit_id.0),
         })
+}
+
+fn source_read_refused(
+    cause: crate::execution::RelationalExecutionDenialCause,
+) -> CompiledArtifactError {
+    CompiledArtifactError {
+        authority_status: CompiledArtifactAuthorityStatus::ReadRequest(cause),
+        detail: format!("compiled source read refused: {cause:?}"),
+    }
 }
 
 fn build_compiled_execution_artifact(

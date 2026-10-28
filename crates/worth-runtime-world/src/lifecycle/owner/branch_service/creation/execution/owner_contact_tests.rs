@@ -54,7 +54,15 @@ fn settled_creation_counters(
         branch,
         incarnation,
     };
-    match execute_creation(&owner, attempt, &destination, &cancellation.token()) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    match execute_creation(
+        &owner,
+        execution,
+        attempt,
+        &destination,
+        &cancellation.token(),
+    ) {
         BranchCreationExecution::Settled { attempt, .. } => contacts(&attempt),
         BranchCreationExecution::NoEffect(denial) => {
             panic!("an admitted creation must reach its owner terminal: {denial:?}")

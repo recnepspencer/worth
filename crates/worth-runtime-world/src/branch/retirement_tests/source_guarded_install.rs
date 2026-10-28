@@ -51,10 +51,17 @@ fn creation_interrupted_before_install(
     let (finished_tx, finished_rx) = mpsc::sync_channel(1);
     let worker_owner = Arc::clone(owner);
     let worker = std::thread::spawn(move || {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let cancellation = RuntimeWorldCancellationSource::new();
         let outcome = RuntimeWorldBranchService::create_product_branch(
             worker_owner.as_ref(),
-            RuntimeWorldBranchCreationRequest::new(source, intent, &cancellation.token()),
+            RuntimeWorldBranchCreationRequest::new(
+                execution,
+                source,
+                intent,
+                &cancellation.token(),
+            ),
         );
         finished_tx
             .send(outcome)
@@ -325,6 +332,8 @@ fn assert_fork_retained_nothing_else(owner: &TestOwner, branches: usize) {
 
 #[test]
 fn creation_from_a_retired_source_is_named_retired_on_every_route() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (_fixture, owner, root) = setup_with_relational_source(3);
     let child = create_reused_branch(&owner, &root, reuse_intent("retired-source"));
     let report = RuntimeWorldBranchService::retire_product_branch(&owner, &child)
@@ -348,7 +357,12 @@ fn creation_from_a_retired_source_is_named_retired_on_every_route() {
         let cancellation = RuntimeWorldCancellationSource::new();
         let denial = RuntimeWorldBranchService::create_product_branch(
             &owner,
-            RuntimeWorldBranchCreationRequest::new(child.clone(), intent, &cancellation.token()),
+            RuntimeWorldBranchCreationRequest::new(
+                execution,
+                child.clone(),
+                intent,
+                &cancellation.token(),
+            ),
         )
         .expect_err("a retired source cannot be the source of a creation");
         assert_eq!(

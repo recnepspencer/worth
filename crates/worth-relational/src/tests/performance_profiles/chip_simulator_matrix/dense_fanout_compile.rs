@@ -63,6 +63,7 @@ pub(super) fn certify_dense_fanout_compile_wave(
         let artifact = runtime
             .compiled_artifacts_authority()
             .compile_execution_artifact(
+                execution,
                 commit.commit_id,
                 vec![
                     PartitionId(7),
@@ -79,7 +80,8 @@ pub(super) fn certify_dense_fanout_compile_wave(
         let adjacency_started_at = Instant::now();
         let outgoing_relations = runtime
             .storage_access()
-            .outgoing_relations_for_entity(source, commit.version_id);
+            .outgoing_relations_for_entity(execution, source, commit.version_id)
+            .expect("funded adjacency read succeeds");
         let adjacency_micros = adjacency_started_at.elapsed().as_micros();
 
         let counters = runtime.performance_access().counters();

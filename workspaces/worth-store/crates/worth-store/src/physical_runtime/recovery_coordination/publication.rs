@@ -10,6 +10,7 @@ use super::{
 };
 
 mod execution;
+pub use execution::{RecoveryStagingResidueDenial, RecoveryStagingResidueOutcome};
 mod resident_storage;
 
 mod candidate;
@@ -139,6 +140,8 @@ pub enum PhysicalRecoveryPublicationCommandStage {
     CandidateSynchronization,
     RootProtocolReplacement,
     RecordNamespaceSynchronization,
+    /// Removal of stale root-protocol candidates after recovery publication.
+    StagingResidueRemoval,
 }
 
 impl PhysicalRecoveryPublicationCommand {

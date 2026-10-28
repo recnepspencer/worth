@@ -25,7 +25,10 @@ pub(super) fn enforce_commit_boundary_phase(
         None => runtime
             .invariant_authority()
             .enforce_commit_boundary_for_selected_branch(
-                selected_branch_state,
+                &crate::branch::SelectedRelationalBranchRead::in_round(
+                    selected_branch_state,
+                    selected_branch_state,
+                ),
                 proposed_working_state,
                 proposed_version_id,
                 merged_plan,
@@ -46,7 +49,7 @@ pub(super) fn enforce_snapshot_publication_phase(
     runtime: &RelationalPreparationRuntime,
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
-    selected_branch_state: &crate::branch::SelectedRelationalBranchState,
+    selected_branch_state: &crate::branch::SelectedRelationalBranchRead<'_>,
     working_state: &crate::storage::overlay::WorkingState,
     created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
     version_id: VersionId,

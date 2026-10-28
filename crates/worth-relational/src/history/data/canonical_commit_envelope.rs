@@ -21,10 +21,12 @@ use crate::transactions::data::{
 };
 
 mod authored_index_writes;
-#[path = "canonical_commit_envelope/checkpoint_encoding.rs"]
-mod checkpoint_encoding;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
-pub(crate) use checkpoint_encoding::CheckpointCanonicalEnvelopeRef;
+mod authoritative_artifact_encoding;
+mod embedded_checkpoint;
+mod payload_digest;
+pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
+pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
 mod required_output_codec_retirement;
@@ -75,6 +77,8 @@ pub struct CanonicalCommitEnvelope {
     pub schema_authority: SchemaAuthoritySnapshot,
     pub merged_plan: MergedCommitPlan,
     pub(crate) symbol_texts: crate::symbols::data::SymbolTableSnapshot,
+    /// Exact dictionary references made by native aspect and field revision stamps.
+    pub(crate) revision_symbol_references: Vec<crate::symbols::data::Symbol>,
     #[serde(default)]
     pub(crate) record_allocations: Vec<crate::history::data::CanonicalRecordAllocation>,
     pub patch: CanonicalAuthoritativePatch,
@@ -145,6 +149,7 @@ impl CanonicalCommitEnvelope {
             merged_plan,
             record_allocations: Vec::new(),
             symbol_texts: Default::default(),
+            revision_symbol_references: Vec::new(),
             patch,
             descriptive_touches,
             diagnostics_summary,
@@ -235,6 +240,15 @@ impl CanonicalCommitEnvelope {
     /// indexes have distinct lifecycle lanes and cannot perturb commit-byte
     /// accounting.
     pub(crate) fn encode_authoritative_payload(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
+        let mut bytes = Vec::new();
+        self.write_authoritative_payload(&mut bytes)?;
+        Ok(bytes)
+    }
+
+    fn write_authoritative_payload<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), rmp_serde::encode::Error> {
         let identity_and_authority = (
             &self.commit,
             &self.branch_context,
@@ -261,13 +275,16 @@ impl CanonicalCommitEnvelope {
             &self.descriptor_semantics_version,
         );
         if self.authored_index_writes.is_unavailable() {
-            rmp_serde::to_vec_named(&(identity_and_authority, canonical_semantics))
+            rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
         } else {
-            rmp_serde::to_vec_named(&(
-                identity_and_authority,
-                canonical_semantics,
-                &self.authored_index_writes,
-            ))
+            rmp_serde::encode::write_named(
+                writer,
+                &(
+                    identity_and_authority,
+                    canonical_semantics,
+                    &self.authored_index_writes,
+                ),
+            )
         }
     }
 

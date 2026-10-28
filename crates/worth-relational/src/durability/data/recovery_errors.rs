@@ -11,14 +11,28 @@ use crate::schema::data::{
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecoveryFailureClass {
     SchemaMismatch,
+    /// The runtime declares a schema registry other than the one its
+    /// recovered main branch head records (D5). Only a durable schema
+    /// transition changes the schema a home serves.
+    DeclaredSchemaMismatch,
     ProfileMismatch,
     RuntimeNameMismatch,
     CorruptCheckpoint,
-    CorruptSegment,
+    /// A canonical commit artifact a medium returned did not readmit.
+    CorruptCanonicalArtifact,
+    /// A medium's tail skipped or repeated a position after the checkpoint.
+    NonContiguousCanonicalTail,
+    /// A branch transition artifact a medium returned did not readmit.
+    CorruptBranchTransitionArtifact,
+    /// A medium's branch transition tail skipped or repeated a sequence after
+    /// the checkpoint, or a transition follows a position out of order or
+    /// beyond the recovered commit head.
+    NonContiguousBranchTransitionTail,
     UnsupportedLegacySemantics,
     MissingAuthoritativeParentClosure,
     ReplayFailure,
     DurableIoFailure,
+    ColdStorageUnavailable,
     CheckpointPublicationInFlight,
     PerformedPublicationRequiresSettlement,
     CheckpointSizeOverflow,
@@ -198,6 +212,7 @@ pub struct DurabilityError {
     pub detail: String,
     pub history_drift_class: Option<HistoryDriftClass>,
     pub authority_continuity_mismatch: Option<RecoveryAuthorityContinuityMismatch>,
+    pub storage_unavailable: Option<crate::storage::data::RelationalStorageUnavailable>,
     pub context: ErrorContext,
 }
 
@@ -210,7 +225,8 @@ impl DurabilityError {
             _ => Some(SuggestedFix::RepairDurableStore),
         };
         let operation = match class {
-            RecoveryFailureClass::DurableIoFailure => ErrorOperation::ReadDurableStore,
+            RecoveryFailureClass::DurableIoFailure
+            | RecoveryFailureClass::ColdStorageUnavailable => ErrorOperation::ReadDurableStore,
             RecoveryFailureClass::CheckpointPublicationInFlight
             | RecoveryFailureClass::PerformedPublicationRequiresSettlement
             | RecoveryFailureClass::CheckpointSizeOverflow
@@ -219,11 +235,15 @@ impl DurabilityError {
                 ErrorOperation::WriteDurableStore
             }
             RecoveryFailureClass::CorruptCheckpoint
-            | RecoveryFailureClass::CorruptSegment
+            | RecoveryFailureClass::CorruptCanonicalArtifact
+            | RecoveryFailureClass::NonContiguousCanonicalTail
+            | RecoveryFailureClass::CorruptBranchTransitionArtifact
+            | RecoveryFailureClass::NonContiguousBranchTransitionTail
             | RecoveryFailureClass::UnsupportedLegacySemantics
             | RecoveryFailureClass::MissingAuthoritativeParentClosure
             | RecoveryFailureClass::ReplayFailure
             | RecoveryFailureClass::SchemaMismatch
+            | RecoveryFailureClass::DeclaredSchemaMismatch
             | RecoveryFailureClass::ProfileMismatch
             | RecoveryFailureClass::RuntimeNameMismatch => ErrorOperation::Recover,
         };
@@ -234,6 +254,7 @@ impl DurabilityError {
             detail: detail.into(),
             history_drift_class: None,
             authority_continuity_mismatch: None,
+            storage_unavailable: None,
             context,
         }
     }
@@ -250,5 +271,16 @@ impl DurabilityError {
         self.detail = format!("{}: {}", self.detail, mismatch.summary());
         self.authority_continuity_mismatch = Some(mismatch);
         self
+    }
+}
+
+impl From<crate::storage::data::RelationalStorageUnavailable> for DurabilityError {
+    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+        let mut error = Self::new(
+            RecoveryFailureClass::ColdStorageUnavailable,
+            format!("committed storage unavailable: {failure:?}"),
+        );
+        error.storage_unavailable = Some(failure);
+        error
     }
 }

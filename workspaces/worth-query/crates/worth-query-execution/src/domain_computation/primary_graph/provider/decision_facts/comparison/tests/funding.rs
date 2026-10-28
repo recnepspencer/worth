@@ -1,6 +1,6 @@
 //! An uncharged resident table still needs a genuine metered capture grant.
 use super::*;
-use worth_execution::{ExecutionAllocationDenialKind, ExecutionResourceLease, LeaseDenial};
+use worth_execution::{ExecutionAllocationDenialKind, LeaseDenial};
 
 pub(super) fn assert_full_capture_funding(
     provider: &WorthQueryPrimaryGraphProvider,
@@ -8,22 +8,18 @@ pub(super) fn assert_full_capture_funding(
     authority: &WorthQuerySessionReadAuthority<'_>,
     request: &WorthQueryRequestScope,
     table: &crate::domain_computation::primary_graph::ApplicationFactTable,
-    caller: &ExecutionResourceLease<'_>,
 ) {
     // The actual registered fixture selected SystemAllocation. Its complete
     // original-fact path must retain the quote independently of that policy.
     assert!(table.closed_prefix().is_none());
     let bytes = table.full_capture_bytes().unwrap();
     assert!(bytes > 0);
-    // `caller` funds the open call; leave it one byte short of the quote.
-    let room = caller.available_memory_bytes().unwrap();
-    let tight = caller.reserve_memory(room - (bytes - 1)).unwrap();
-    let working = caller.charged_memory_bytes();
+    let tight = crate::test_request_policy::memory_child(*execution, bytes - 1);
     let refused = provider
         .capture_application_read_set(
             execution,
             authority,
-            StorageControl::new(ExecutionAllocationPolicy::Execution(caller), Some(request)),
+            StorageControl::new(ExecutionAllocationPolicy::Execution(&tight), Some(request)),
         )
         .err()
         .expect("original-fact capture must admit its full copy quote first");
@@ -33,19 +29,18 @@ pub(super) fn assert_full_capture_funding(
         refusal.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(_))
     ));
-    assert_eq!(caller.charged_memory_bytes(), working);
-    drop(tight);
+    assert_eq!(tight.charged_memory_bytes(), 0);
 
-    let working = caller.charged_memory_bytes();
+    let funded = crate::test_request_policy::memory_child(*execution, 64 << 20);
     let receipt = provider
         .capture_application_read_set(
             execution,
             authority,
-            StorageControl::new(ExecutionAllocationPolicy::Execution(caller), Some(request)),
+            StorageControl::new(ExecutionAllocationPolicy::Execution(&funded), Some(request)),
         )
         .unwrap();
     assert_eq!(receipt.fact_count(), table.len());
-    assert!(caller.charged_memory_bytes() >= working + bytes);
+    assert!(funded.charged_memory_bytes() >= bytes);
     drop(receipt);
-    assert_eq!(caller.charged_memory_bytes(), working);
+    assert_eq!(funded.charged_memory_bytes(), 0);
 }

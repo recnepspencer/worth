@@ -34,7 +34,7 @@ fn rows_after(frames: &[ChildExpectation], outcome: &Outcome) -> Vec<Selected> {
 fn a_record_whose_manifest_or_first_frame_was_not_read_keeps_a_row_with_that_outcome() {
     for unread in [frame(UNROUTED, 0), manifest(UNROUTED)] {
         for outcome in [aliased(), bound(), damage(Cause::ChecksumMismatch)] {
-            let rows = rows_after(&[unread.clone()], &outcome);
+            let rows = rows_after(std::slice::from_ref(&unread), &outcome);
             assert_eq!(rows.len(), 1, "{unread:?} {outcome:?}");
             assert_eq!(rows[0].record, UNROUTED);
             assert!(rows[0].fact.is_none());

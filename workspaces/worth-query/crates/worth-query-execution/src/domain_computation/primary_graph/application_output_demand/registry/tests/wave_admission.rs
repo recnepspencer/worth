@@ -1,9 +1,12 @@
 //! A native-current read cannot admit compute before managed delivery commits.
 use super::*;
+use crate::domain_computation::execution_runtime::WorthQueryInvalidationResources;
+use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 #[test]
 fn uncommitted_upstream_never_admits_a_prepared_member() {
     use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
     let registry = WorthQueryOutputDemandRegistry::default();
+    let _owner = SourceInvalidationOwner::new(WorthQueryInvalidationResources::new(), 1);
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,

@@ -4,15 +4,15 @@ use super::{
 };
 use crate::branch::RelationalBranchRoot;
 use crate::identity::data::VersionId;
-use crate::storage::overlay::{relation_partition_source_for_slot, PartitionAccess};
-use crate::storage::partition::{adjacency_queries, AdjacencyDirection};
+use crate::storage::overlay::{current_relation_partition_source_for_slot, CurrentPartitionAccess};
+use crate::storage::partition::AdjacencyDirection;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate(
-    incidence: &dyn PartitionAccess,
-    state: &dyn PartitionAccess,
+    incidence: &dyn CurrentPartitionAccess,
+    state: &dyn CurrentPartitionAccess,
     root: &RelationalBranchRoot,
     origin: &CanonicalRequiredOutputOrigin,
     current: Option<&CanonicalCommitEnvelope>,
@@ -23,8 +23,13 @@ pub(super) fn validate(
     for output in &origin.outputs {
         charge(context, 1)?;
         for direction in [AdjacencyDirection::Outgoing, AdjacencyDirection::Incoming] {
-            let ids =
-                adjacency_queries::relation_candidates_from_state(incidence, *output, direction);
+            let ids = incidence
+                .get_current_partition(output.partition_id)
+                .map(|partition| match direction {
+                    AdjacencyDirection::Outgoing => partition.outgoing_candidates(*output),
+                    AdjacencyDirection::Incoming => partition.incoming_candidates(*output),
+                })
+                .unwrap_or_default();
             let mut memory = None;
             let mut iterator = ids.try_iter(|work, bytes| {
                 context
@@ -47,11 +52,14 @@ pub(super) fn validate(
                     4 + (usize::BITS - origin.relations.len().leading_zeros()) as usize
                         + 2 * (usize::BITS - origin.outputs.len().leading_zeros()) as usize,
                 )?;
-                let (_, partition) =
-                    relation_partition_source_for_slot(state, id.partition_id, id.slot_index())
-                        .ok_or("incident relation partition absent")?;
+                let (_, partition) = current_relation_partition_source_for_slot(
+                    state,
+                    id.partition_id,
+                    id.slot_index(),
+                )
+                .ok_or("incident relation partition absent")?;
                 let row = partition
-                    .relation_arena
+                    .relation_arena()
                     .get(id)
                     .ok_or("incident relation generation absent")?;
                 if !row.is_live() {

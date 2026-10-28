@@ -1,7 +1,7 @@
 use super::world::{commit_through_services, empty_runtime, fork_through_services};
 use worth_relational::facade::branch::{
     RelationalBranchArchiveDenial, RelationalBranchBasisDenial, RelationalBranchDeleteDenial,
-    RelationalOwnerLifecycleObservation,
+    RelationalBranchTransitionStop, RelationalOwnerLifecycleObservation,
 };
 use worth_relational::facade::mvcc::RelationalOperationControl;
 
@@ -14,7 +14,7 @@ fn surviving_bundle_is_weak_and_reports_exact_owner_unavailable_postures() {
     let runtime = empty_runtime();
     let services = runtime.owner_component_services();
     commit_through_services(execution, &runtime, &services, "owner-loss-world");
-    let identity = fork_through_services(&services, "owner-loss")
+    let identity = fork_through_services(execution, &services, "owner-loss")
         .target_identity()
         .clone();
     let (descriptor, basis) = services.basis_port().observe_branch(&identity).unwrap();
@@ -57,12 +57,20 @@ fn surviving_bundle_is_weak_and_reports_exact_owner_unavailable_postures() {
         Err(RelationalBranchBasisDenial::OwnerUnavailable)
     ));
     assert!(matches!(
-        services.lifecycle_port().archive_branch(&identity),
-        Err(RelationalBranchArchiveDenial::OwnerUnavailable)
+        services
+            .lifecycle_port()
+            .archive_branch(execution, &identity),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalBranchArchiveDenial::OwnerUnavailable
+        ))
     ));
     assert!(matches!(
-        services.lifecycle_port().delete_branch(&identity),
-        Err(RelationalBranchDeleteDenial::OwnerUnavailable)
+        services
+            .lifecycle_port()
+            .delete_branch(execution, &identity),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalBranchDeleteDenial::OwnerUnavailable
+        ))
     ));
     let release = services
         .basis_port()

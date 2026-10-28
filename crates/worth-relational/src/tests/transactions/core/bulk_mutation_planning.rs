@@ -2,7 +2,7 @@ use crate::facade::transactions::{EntitySpec, MutationIntent};
 use crate::tests::support::*;
 
 #[test]
-fn bulk_mutation_plan_normalizes_client_keys_and_tracks_locality() {
+fn bulk_mutation_plan_uses_owned_preview_symbols_and_tracks_locality() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -52,6 +52,25 @@ fn bulk_mutation_plan_normalizes_client_keys_and_tracks_locality() {
     )
     .expect("test staging stays within configured resource budgets");
 
+    let frontier = runtime
+        .services
+        .symbols
+        .with_read(|symbols| symbols.identity_frontier());
+    let authored = txn.plan_bulk_mutation_batch(&runtime).unwrap().unwrap();
+    assert!(authored
+        .naming
+        .normalized_client_keys
+        .iter()
+        .all(|key| key.as_symbol().is_none()));
+    assert_eq!(
+        runtime
+            .services
+            .symbols
+            .with_read(|symbols| symbols.identity_frontier()),
+        frontier,
+        "a pure bulk description cannot mint identities in a cloned interner"
+    );
+    txn.prepare_merged_plan(execution, &runtime).unwrap();
     let plan = txn
         .plan_bulk_mutation_batch(&runtime)
         .expect("planning succeeds")
@@ -78,6 +97,8 @@ fn bulk_mutation_plan_normalizes_client_keys_and_tracks_locality() {
     );
     assert!(!plan.naming.naming_digest.is_empty());
     assert!(!plan.provenance.provenance_digest.is_empty());
+    assert_eq!(plan.locality, authored.locality);
+    assert_eq!(plan.provenance, authored.provenance);
     assert_eq!(plan.naming.normalized_client_keys.len(), 3);
     if runtime.config().identity.client_key_symbol_policy
         != crate::symbols::data::ClientKeySymbolPolicy::Disabled
@@ -87,6 +108,23 @@ fn bulk_mutation_plan_normalizes_client_keys_and_tracks_locality() {
             .normalized_client_keys
             .iter()
             .all(|value: &crate::symbols::data::ClientKey| value.as_symbol().is_some()));
+        for key in plan.naming.normalized_client_keys.iter() {
+            let symbol = key.as_symbol().unwrap();
+            assert!(txn
+                .pending_symbols
+                .as_ref()
+                .unwrap()
+                .interner()
+                .resolve(symbol)
+                .is_some());
+            assert!(
+                runtime
+                    .services
+                    .symbols
+                    .with_read(|symbols| symbols.resolve(symbol).is_none()),
+                "bulk metadata retains the preview's unpublished identity"
+            );
+        }
     }
 }
 

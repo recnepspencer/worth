@@ -99,7 +99,6 @@ pub(super) fn verify_edges(
         remaining,
         &mut storage,
     )?;
-    drop(storage);
     let mut media = discovery.finish();
     let mut generation = checkpoint_generation;
     let mut topology = first_topology;
@@ -186,7 +185,6 @@ pub(super) fn verify_edges(
         };
         let mut storage = HistoricalWalkStorage::new(window, resident, raw);
         fingerprint.extend_with_storage(part, &mut storage)?;
-        drop(storage);
         media = next;
         generation = generation.checked_add(1).ok_or(Denial::BoundExceeded)?;
         topology = edge.result_topology();

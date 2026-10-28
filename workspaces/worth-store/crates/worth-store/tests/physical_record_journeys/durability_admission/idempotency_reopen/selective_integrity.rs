@@ -166,7 +166,7 @@ fn add_binding_and_checkpoint(
     seed: u8,
 ) {
     add_binding(serving, seed);
-    let checkpoint = success_checkpoint(&serving, seed.wrapping_add(1));
+    let checkpoint = success_checkpoint(serving, seed.wrapping_add(1));
     assert!(checkpoint.binding_compaction().binding_count() > 0);
 }
 

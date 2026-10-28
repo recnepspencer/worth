@@ -249,7 +249,7 @@ fn insert_leaf(
 
 fn empty_commitment() -> [u8; 32] {
     use sha2::{Digest, Sha256};
-    Sha256::digest(b"worth.relational.branch-region.empty.v2\0").into()
+    Sha256::digest(b"worth.relational.branch-region.empty.v3\0").into()
 }
 
 fn node_commitment(
@@ -260,7 +260,7 @@ fn node_commitment(
 ) -> [u8; 32] {
     use sha2::{Digest, Sha256};
     let mut digest = Sha256::new();
-    digest.update(b"worth.relational.branch-region.node.v2\0");
+    digest.update(b"worth.relational.branch-region.node.v3\0");
     digest.update(depth.to_be_bytes());
     digest.update(zero.map_or_else(empty_commitment, |node| node.commitment));
     digest.update(one.map_or_else(empty_commitment, |node| node.commitment));
@@ -269,6 +269,8 @@ fn node_commitment(
             digest.update([1]);
             digest.update(region.0.partition_id.0.to_be_bytes());
             digest.update(region.0.content_digest);
+            digest.update(region.0.kind_commitment.head);
+            digest.update(region.0.kind_commitment.history);
         }
         Some(RelationalPersistentRegionLeaf::Removed(partition_id)) => {
             digest.update([2]);

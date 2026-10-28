@@ -80,6 +80,7 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
             .inner
             .root
             .partition_state(entity.partition_id)
+            .expect("fixture root has admitted Full custody")
             .unwrap();
         let record = partition.entity_arena.get(&entity).unwrap();
         let value = record

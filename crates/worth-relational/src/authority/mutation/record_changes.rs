@@ -4,7 +4,7 @@ use crate::config::data::CascadeDeletePolicy;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::WorkingState;
-use crate::storage::overlay::{PartitionAccess, PartitionState};
+use crate::storage::overlay::{CurrentPartitionAccess, PartitionState};
 use crate::storage::substrate::{
     EntityExtra, EntityRecordKind, RecordKind, RelationEndpoints, RelationExtra, RelationRecordKind,
 };
@@ -120,7 +120,15 @@ pub(super) fn delete_entity_with_cascade(
     .map_err(|denial| {
         CommitConflict::new(ConflictClass::EntityAuthoritativeAspectStateDenied { kind_id, denial })
     })?;
-    partition.entity_arena.retire(slot, version_id);
+    partition
+        .entity_arena
+        .retire(slot, version_id)
+        .ok_or_else(|| {
+            mutation_state_inconsistency(
+                "entity retirement lost its materialized slot",
+                entity_cascade_delete_missing(entity_id, EntityCascadeDeleteMissingState::Slot),
+            )
+        })?;
     outcome.record_change(RecordMutation::EntityDeleted {
         entity_id,
         kind_id,
@@ -136,10 +144,10 @@ pub(super) fn delete_entity_with_cascade(
     }
     for relation_id in attached {
         let cascade_policy = state
-            .get_partition(relation_id.partition_id)
+            .get_current_partition(relation_id.partition_id)
             .and_then(|partition| {
                 partition
-                    .relation_arena
+                    .relation_arena()
                     .get(&relation_id)
                     .and_then(|slot| slot.kind_id())
             })
@@ -152,10 +160,10 @@ pub(super) fn delete_entity_with_cascade(
             .unwrap_or(default_cascade_delete_policy);
         match cascade_policy {
             CascadeDeletePolicy::CascadeDeleteRelations => {
-                delete_relation(state, version_id, relation_id, outcome);
+                delete_relation(state, version_id, relation_id, outcome)?;
             }
             CascadeDeletePolicy::RetainDanglingForAudit => {
-                retain_relation_dangling_for_audit(state, version_id, relation_id, outcome);
+                retain_relation_dangling_for_audit(state, version_id, relation_id, outcome)?;
             }
         }
     }

@@ -12,13 +12,11 @@ fn durable_log_compaction_respects_checkpoint_policy() {
             max_in_memory_envelopes: 1,
             compact_after_checkpoint: true,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     create_entity(execution, &runtime, "first");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     create_entity(execution, &runtime, "second");
     create_entity(execution, &runtime, "third");
 

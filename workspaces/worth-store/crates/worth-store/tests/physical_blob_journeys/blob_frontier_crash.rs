@@ -26,7 +26,6 @@ fn durable_frontier_survives_kill_with_partial_next_chunk_absent() {
         blobs.resolve_publication(world.object, 1, &scope, limits),
         Err(BlobReadOpenFailure::PublicationNotFound)
     ));
-    drop(blobs);
 
     let selected = selected_blob_records(&serving)
         .into_iter()

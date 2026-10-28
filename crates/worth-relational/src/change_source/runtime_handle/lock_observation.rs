@@ -10,28 +10,32 @@ pub struct RelationalRuntimeLockObservationForTest {
     _listener: Arc<Listener>,
 }
 impl LockObservationSlot {
+    // A poisoned slot still contains a complete Weak. Listener callbacks run
+    // only after the guard is released; failed duplicate installation keeps it.
     pub(super) fn install(
         &self,
         acquired: impl Fn() + Send + Sync + 'static,
-    ) -> RelationalRuntimeLockObservationForTest {
+    ) -> Option<RelationalRuntimeLockObservationForTest> {
         let listener = Arc::new(Listener(Box::new(acquired)));
         let mut slot = self
             .0
             .get_or_init(|| Mutex::new(Weak::new()))
             .lock()
-            .expect("lock observer is available");
-        assert!(
-            slot.upgrade().is_none(),
-            "this runtime handle already has a lock observer"
-        );
-        *slot = Arc::downgrade(&listener);
-        RelationalRuntimeLockObservationForTest {
-            _listener: listener,
+            .unwrap_or_else(|error| error.into_inner());
+        if slot.upgrade().is_some() {
+            return None;
         }
+        *slot = Arc::downgrade(&listener);
+        Some(RelationalRuntimeLockObservationForTest {
+            _listener: listener,
+        })
     }
     pub(super) fn record(&self) {
         if let Some(slot) = self.0.get() {
-            let listener = slot.lock().expect("lock observer is available").upgrade();
+            let listener = slot
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .upgrade();
             if let Some(listener) = listener {
                 (listener.0)();
             }

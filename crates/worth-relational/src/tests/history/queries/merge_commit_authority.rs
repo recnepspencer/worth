@@ -16,6 +16,7 @@ fn merge_commit_uses_deterministic_parent_order_and_advances_target_branch() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -52,7 +53,9 @@ fn merge_commit_uses_deterministic_parent_order_and_advances_target_branch() {
     );
     let replay = runtime.replay();
     let envelope = replay
-        .canonical_commit_envelope(merge_outcome.commit.commit_id)
+        .canonical_commit_envelope(execution, merge_outcome.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     assert_eq!(
         envelope.merge_parent_branches,
@@ -135,6 +138,7 @@ fn merge_commit_rejects_stale_secondary_parent_binding_after_parent_moves() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -195,6 +199,7 @@ fn merge_inspection_reports_overlapping_authority() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -231,6 +236,7 @@ fn merge_commit_rejects_overlapping_authority_since_merge_base() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

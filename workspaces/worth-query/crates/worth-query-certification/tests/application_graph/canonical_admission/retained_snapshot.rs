@@ -121,10 +121,8 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
             );
             assert_eq!(
                 refused.kind(),
-                WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Checkpoint(
-                        worth_execution::MapKernelStop::WorkCeiling
-                    )
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted
                 )
             );
 

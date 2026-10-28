@@ -10,6 +10,8 @@ use worth_store_physical_format::{
 use super::inline_segment_plan::InlineSegmentAllocation;
 use crate::physical_runtime::record_serving::publication::append_observation::PublicationObservation;
 
+#[path = "prepared_root_projection/record_anchor.rs"]
+mod record_anchor;
 #[path = "prepared_root_projection/record_less.rs"]
 mod record_less;
 #[path = "prepared_root_projection/released_directory_rebinding.rs"]
@@ -75,6 +77,8 @@ pub(in crate::physical_runtime::record_serving) struct DerivedRootUpdates {
         Option<Option<PersistedRecordIdentity>>,
     pub(in crate::physical_runtime::record_serving) released_directory_rebinding:
         Option<crate::physical_runtime::record_serving::PreparedReleasedDirectoryRebinding>,
+    pub(in crate::physical_runtime::record_serving) record_anchor_advance:
+        Option<worth_store_physical_format::RecordAnchorAdvance>,
 }
 
 impl PreparedPhysicalRootProjection {
@@ -134,33 +138,29 @@ impl PreparedPhysicalRootProjection {
             // retirement proof makes those records unrouteable in this root;
             // do not reinsert their inherited placement before dropping them.
             // A newly submitted identity must still trip the group conflict.
-            if !self.records.contains(record) {
-                if let Some(placement @ CurrentPhysicalRecordPlacement::Inline(retired)) =
+            if !self.records.contains(record)
+                && let Some(placement @ CurrentPhysicalRecordPlacement::Inline(retired)) =
                     self.placements.remove(record)
-                {
-                    if self.placements.values().any(|current| {
-                        matches!(current, CurrentPhysicalRecordPlacement::Inline(live)
+                && self.placements.values().any(|current| {
+                    matches!(current, CurrentPhysicalRecordPlacement::Inline(live)
                             if live.page_cell() == retired.page_cell())
-                    }) {
-                        self.retired_inline_witnesses.insert(*record, placement);
-                    }
-                }
+                })
+            {
+                self.retired_inline_witnesses.insert(*record, placement);
             }
             self.drop_records.insert(*record);
         }
         if let Some(previous) = expected_previous {
             let record = previous.directory_record();
-            if !self.records.contains(&record) {
-                if let Some(placement @ CurrentPhysicalRecordPlacement::Inline(retired)) =
+            if !self.records.contains(&record)
+                && let Some(placement @ CurrentPhysicalRecordPlacement::Inline(retired)) =
                     self.placements.remove(&record)
-                {
-                    if self.placements.values().any(|current| {
-                        matches!(current, CurrentPhysicalRecordPlacement::Inline(live)
+                && self.placements.values().any(|current| {
+                    matches!(current, CurrentPhysicalRecordPlacement::Inline(live)
                             if live.page_cell() == retired.page_cell())
-                    }) {
-                        self.retired_inline_witnesses.insert(record, placement);
-                    }
-                }
+                })
+            {
+                self.retired_inline_witnesses.insert(record, placement);
             }
             self.drop_records.insert(record);
         }
@@ -366,19 +366,6 @@ fn tree_bytes(
         .saturating_add(branches.saturating_mul(block(branch_entry)))
 }
 
-#[cfg(test)]
-mod routing_bound_tests {
-    use super::routing_publication_bound;
-
-    #[test]
-    fn wide_publication_reserves_every_routing_node() {
-        // Capacity 2 and 32 records emit 16 leaves and 15 branches.
-        // Full record leaves are 264 bytes and branches 232, so record routing
-        // alone is 7704. Segment and free-space trees share that shape.
-        assert_eq!(routing_publication_bound(2, 32), 7_704 + 5_688 + 6_168);
-    }
-}
-
 fn canonical_publication_metadata_bytes() -> u64 {
     let header = worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES as u64;
     // The head-bearing schema includes the tier anchor and custody-tree
@@ -391,4 +378,17 @@ fn canonical_publication_metadata_bytes() -> u64 {
         .saturating_add(free_space)
         .saturating_add(selectors)
         .saturating_add(catalog)
+}
+
+#[cfg(test)]
+mod routing_bound_tests {
+    use super::routing_publication_bound;
+
+    #[test]
+    fn wide_publication_reserves_every_routing_node() {
+        // Capacity 2 and 32 records emit 16 leaves and 15 branches.
+        // Full record leaves are 264 bytes and branches 232, so record routing
+        // alone is 7704. Segment and free-space trees share that shape.
+        assert_eq!(routing_publication_bound(2, 32), 7_704 + 5_688 + 6_168);
+    }
 }

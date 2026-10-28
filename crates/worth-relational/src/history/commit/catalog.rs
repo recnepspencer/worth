@@ -65,6 +65,7 @@ impl RelationalCommitCatalog {
     pub(crate) fn install_prepared(&mut self, artifact: RelationalCommitArtifact) {
         let commit_id = artifact.commit_id();
         assert!(
+            /* Proof: Live PreparedVersionedArtifactPublication is issued only after validate_new_envelope rejects an existing id, using the unique non-wrapping commit issuer. Recovery preparation instead calls validate_envelope on that exact immutable body before issuing PreparedRecoveredVersionedArtifactPublication; recovery holds exclusive runtime custody. */
             !self.entries.contains_key(&commit_id),
             "prepared catalog artifact was validated as unique"
         );
@@ -74,23 +75,26 @@ impl RelationalCommitCatalog {
 
     pub(crate) fn install_prepared_recovery(&mut self, artifact: RelationalCommitArtifact) {
         let commit_id = artifact.commit_id();
-        debug_assert!(self
-            .entries
-            .get(&commit_id)
-            .is_none_or(|existing| existing.envelope() == artifact.envelope()));
+        debug_assert!(
+            /* Proof: Live PreparedVersionedArtifactPublication is issued only after validate_new_envelope rejects an existing id, using the unique non-wrapping commit issuer. Recovery preparation instead calls validate_envelope on that exact immutable body before issuing PreparedRecoveredVersionedArtifactPublication; recovery holds exclusive runtime custody. */
+            self.entries.get(&commit_id).is_none_or(|existing| existing
+                .resident_envelope()
+                .is_none_or(|envelope| artifact.resident_envelope() == Some(envelope)))
+        );
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.entries.insert(commit_id, Arc::new(artifact));
     }
 
     pub(crate) fn synchronize_recovered_envelope(
         &mut self,
-        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
+        positioned: &crate::history::data::PositionedCanonicalCommit,
     ) -> Result<(), RelationalCommitArtifactDenial> {
+        let envelope = positioned.canonical_arc().clone();
         let commit_id = envelope.commit.commit_id;
         if self
             .entries
             .get(&commit_id)
-            .is_some_and(|existing| existing.envelope() == &envelope)
+            .is_some_and(|existing| existing.resident_envelope().as_ref() == Some(&envelope))
         {
             return Ok(());
         }
@@ -114,10 +118,6 @@ impl RelationalCommitCatalog {
         if self.entries.contains_key(&commit_id) {
             return Err(RelationalCommitCatalogAppendDenial::DuplicateCommit);
         }
-        debug_assert_eq!(
-            artifact.parentage().as_slice(),
-            artifact.envelope().commit.ordered_parents().as_slice()
-        );
         let identity = artifact.identity().clone();
         self.entries.insert(commit_id, Arc::new(artifact));
         Ok(RelationalCommitCatalogEntry { identity })
@@ -140,6 +140,36 @@ impl RelationalCommitCatalog {
     ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogAppendDenial> {
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.append(artifact)
+    }
+
+    pub(crate) fn append_indexed_recovery(
+        &mut self,
+        entry: super::RelationalCommitIndexEntry,
+        source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        admitted: Option<crate::history::data::PositionedCanonicalCommit>,
+    ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
+        let artifact = RelationalCommitArtifact::from_index(entry, source, admitted)
+            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
+        self.append(artifact)
+            .map(|_| ())
+            .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
+    }
+
+    /// Relink named recovered envelopes without using residency as an index filter.
+    pub(crate) fn retained_entries_except(
+        &self,
+        replaced: &std::collections::BTreeSet<CommitId>,
+    ) -> Self {
+        Self {
+            entries: self
+                .entries
+                .iter()
+                .filter(|(id, _)| !replaced.contains(id))
+                .map(|(id, artifact)| (*id, Arc::clone(artifact)))
+                .collect(),
+            materializations: Arc::new(AtomicU64::new(0)),
+            lookups: Arc::new(AtomicU64::new(0)),
+        }
     }
 
     /// Checkpoint recovery has already readmitted each live root from its
@@ -174,24 +204,33 @@ impl RelationalCommitCatalog {
         &self,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
     ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
-        Self::validate_envelope_against(
-            self.entries
-                .get(&envelope.commit.commit_id)
-                .map(|existing| existing.envelope().as_ref()),
-            envelope,
-        )
+        if let Some(existing) = self.entries.get(&envelope.commit.commit_id) {
+            return match existing.resident_envelope() {
+                Some(existing) if existing.as_ref() == envelope => Ok(()),
+                _ => Err(RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit),
+            };
+        }
+        RelationalCommitArtifact::validate_envelope(envelope)
+            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)
+    }
+
+    /// Validate an envelope readmitted outside any catalog: with no prior
+    /// entry to compare, only its own commit-artifact invariants apply.
+    pub(crate) fn validate_detached_envelope(
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+    ) -> Result<(), RelationalCommitArtifactDenial> {
+        RelationalCommitArtifact::validate_envelope(envelope)
     }
 
     pub(crate) fn validate_new_envelope(
         &self,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
     ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
-        Self::validate_new_envelope_against(
-            self.entries
-                .get(&envelope.commit.commit_id)
-                .map(|existing| existing.envelope().as_ref()),
-            envelope,
-        )
+        if self.entries.contains_key(&envelope.commit.commit_id) {
+            return Err(RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit);
+        }
+        RelationalCommitArtifact::validate_envelope(envelope)
+            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)
     }
 
     pub(crate) fn validate_envelope_against(

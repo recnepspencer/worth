@@ -196,10 +196,10 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope>(
         }
         ApplicationQueryDisclosureSelector::Components(selection) => {
             let slot = selection.slot_key();
-            if !query
+            if query
                 .read_graph()
                 .component_selection()
-                .is_some_and(|expected| expected.slot_key() == slot)
+                .is_none_or(|expected| expected.slot_key() != slot)
                 || result_rules.insert(slot, installed).is_some()
             {
                 return Err(denial(selection.slot_type()));

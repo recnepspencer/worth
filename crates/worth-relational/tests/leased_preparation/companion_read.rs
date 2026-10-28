@@ -127,7 +127,8 @@ fn native_companion_read_image_rejects_replacement_and_admits_original_owner_ret
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let (_registration, publisher, other) = install(&runtime);
     for (ordinal, replacement) in [(0, 2), (1, 2)] {
         let observed = publisher.cell.read_image();
@@ -172,7 +173,8 @@ fn native_companion_read_image_rejects_replacement_and_admits_original_owner_ret
     );
     let foreign = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let (_foreign_registration, foreign_publisher, _) = install(&foreign);
     let mut prepared = candidate(execution, &runtime, "original-owner-positive");
     assert_eq!(

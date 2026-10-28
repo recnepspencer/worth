@@ -146,8 +146,6 @@ pub enum WorthQueryMandatoryReviewOutcome {
     Aborted(WorthQueryMandatoryReview),
     /// A capacity or lifetime limit stopped the attempt. Retry later.
     Deferred(super::WorthQueryApplicationCommitDeferred),
-    /// The branch moved, but settlement did not finish. Recover the settlement.
-    SettlementDeferred(super::WorthQueryApplicationSettlementDeferred),
     /// Whether the commit landed is unresolved. Do not retry blindly.
     Indeterminate,
 }
@@ -202,9 +200,6 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
         }
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
             WorthQueryMandatoryReviewOutcome::NoEffect(no_effect, binding.into_mandatory())
-        }
-        WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
-            WorthQueryMandatoryReviewOutcome::SettlementDeferred(deferred)
         }
         WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
             WorthQueryMandatoryReviewOutcome::CleanupRequired(cleanup)

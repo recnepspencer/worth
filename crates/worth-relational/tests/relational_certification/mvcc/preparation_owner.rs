@@ -16,7 +16,9 @@ fn production_preparation_port_observes_initial_schema_replacement() {
         crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = RelationalRuntimeApi::builder().build();
+    let mut runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let preparation = runtime.preparation_port();
     runtime
         .prepare_initial_schema_installation()

@@ -411,22 +411,22 @@ dependency.
 
 <!-- compiled: logical_relation_projection.rs -->
 ```rust
-let root = reader.entity_member(&face).unwrap();
-let cases = reader
-    .derived_member_relations_from(RootUses::reference(), &root)
-    .unwrap();
-let negative = cases
-    .iter()
-    .find(|pair| pair.to().case() == Some("Negative"))
-    .unwrap()
-    .to();
-let component = reader
-    .graph_component_of(
-        UseComponents::reference(),
-        UseSuccessor::reference(),
-        negative,
-    )
-    .unwrap();
+                        let root = reader.entity_member(&face).unwrap();
+                        let cases = reader
+                            .derived_member_relations_from(RootUses::reference(), &root)
+                            .unwrap();
+                        let negative = cases
+                            .iter()
+                            .find(|pair| pair.to().case() == Some("Negative"))
+                            .unwrap()
+                            .to();
+                        let component = reader
+                            .graph_component_of(
+                                UseComponents::reference(),
+                                UseSuccessor::reference(),
+                                negative,
+                            )
+                            .unwrap();
 ```
 
 The [logical composition court](../../../worth-query-certification/tests/application_graph/relation_laws/logical/committed.rs)

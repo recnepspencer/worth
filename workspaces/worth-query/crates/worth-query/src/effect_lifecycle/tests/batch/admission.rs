@@ -161,3 +161,19 @@ fn batch_admission_preserves_exact_deferred_denial_kind() {
         .expect("deferred batch denial should preserve exact deferred contract")
         .leaves_zero_operational_residue());
 }
+
+#[test]
+fn a_mutation_first_batch_still_refuses_a_later_merge_component() {
+    let denial = admit_effect_batch_components(vec![
+        admitted_mutation_effect(),
+        admitted_branch_merge_effect(),
+    ])
+    .expect_err("the first mutation cannot authorize a later merge component");
+    assert_eq!(
+        denial.denial_kind(),
+        &EffectBatchAdmissionDenialKind::UnsupportedBatchFamily(
+            crate::effect_lifecycle::EffectFamily::Merge
+        )
+    );
+    assert_eq!(denial.component_index(), Some(1));
+}

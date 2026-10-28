@@ -1,5 +1,5 @@
 use crate::authority::commit::phases::schema_continuity::validate_schema_continuity_publication;
-use crate::capabilities::{DiagnosticArtifactSink, DurabilityWrite, PublicationPolicySource};
+use crate::capabilities::{DiagnosticArtifactSink, PublicationPolicySource};
 use crate::diagnostics::data::{
     DiagnosticCode, DiagnosticsScope, RelationalDiagnosticFields, RelationalDiagnosticValue,
 };
@@ -96,47 +96,39 @@ pub(crate) fn canonical_commit_envelope(
         schema_continuity.schema_reconciliation_descriptor.clone(),
         schema_continuity.descriptor_semantics_version,
     );
+    envelope.revision_symbol_references = runtime.symbol_references.iter().copied().collect();
     envelope.symbol_texts = runtime
         .services
         .symbols
-        .with_read(|symbols| symbols.commit_texts(merged_plan, &envelope.patch))
+        .with_read(|symbols| {
+            symbols.commit_texts(
+                merged_plan,
+                &envelope.patch,
+                runtime.symbol_references.iter().copied(),
+            )
+        })
         .map_err(|detail| {
             TransactionCommitError::publication(PublicationError::new(
                 PublicationStage::BundleAssembly,
                 detail,
             ))
         })?;
+    // The envelope records process-local identities in the canonical runtime
+    // frame, so its bytes do not depend on which process produced it (D11).
+    envelope.merged_plan.transaction_id = crate::branch::CANONICAL_TRANSACTION_ID;
     envelope.branch_cell_checkpoint = runtime
         .history
         .branch_cell(branch_id)
-        .map(|cell| cell.checkpoint());
+        .map(|cell| cell.checkpoint().in_canonical_frame())
+        .transpose()
+        .map_err(|denial| {
+            TransactionCommitError::publication(PublicationError::new(
+                PublicationStage::BundleAssembly,
+                format!("branch cell cannot be recorded in the canonical frame: {denial:?}"),
+            ))
+        })?;
     validate_schema_continuity_publication(runtime, branch_id, schema_continuity, &envelope)?;
     Ok(envelope)
-}
-
-pub(crate) fn append_durable_commit(
-    runtime: &(impl DiagnosticArtifactSink + DurabilityWrite),
-    append_authority: crate::durability::authority::DurableAppendAuthority,
-    positioned_commit: &crate::history::data::PositionedCanonicalCommit,
-    durable_bytes: Option<&worth_execution::ExecutionImmutableBytes>,
-) -> Result<(), TransactionCommitError> {
-    let commit_id = append_authority.commit_id();
-    let branch_id = append_authority.branch_id().clone();
-    if let Err(error) =
-        runtime.append_durable_envelope(append_authority, positioned_commit, durable_bytes)
-    {
-        runtime.emit_failure_diagnostic(
-            DiagnosticsScope::History,
-            DiagnosticCode::DurableAppendFailed,
-            error.detail.clone(),
-            durable_append_failure_fields(commit_id, &branch_id),
-        );
-        return Err(TransactionCommitError::publication(PublicationError::new(
-            PublicationStage::DurableAppend,
-            error.detail,
-        )));
-    }
-    Ok(())
 }
 
 pub(crate) fn canonicalize_changed_records(records: &mut Vec<RecordRef>) {
@@ -173,23 +165,6 @@ fn lineage_branch_scope_mismatch_fields(
         (
             "artifact_branch_id",
             RelationalDiagnosticValue::string(artifact_branch.0.clone()),
-        ),
-    ])
-    .into()
-}
-
-fn durable_append_failure_fields(
-    commit_id: CommitId,
-    branch_id: &BranchId,
-) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        (
-            "commit_id",
-            RelationalDiagnosticValue::Unsigned(commit_id.0),
-        ),
-        (
-            "branch_id",
-            RelationalDiagnosticValue::string(branch_id.0.clone()),
         ),
     ])
     .into()

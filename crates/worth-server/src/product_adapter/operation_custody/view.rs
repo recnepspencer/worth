@@ -86,7 +86,6 @@ pub enum CommitPosture {
     Denied,
     Aborted,
     Deferred,
-    SettlementDeferred,
     Indeterminate,
 }
 
@@ -174,7 +173,6 @@ fn commit(posture: &Commit) -> CommitPosture {
         Commit::Denied(_) => CommitPosture::Denied,
         Commit::Aborted => CommitPosture::Aborted,
         Commit::Deferred(_) => CommitPosture::Deferred,
-        Commit::SettlementDeferred(_) => CommitPosture::SettlementDeferred,
         Commit::Indeterminate(_) => CommitPosture::Indeterminate,
     }
 }

@@ -66,7 +66,8 @@ fn relation_integrity_declaration_lowering_is_stable() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = runtime.relation_integrity_plan(KindId(2)).unwrap();
 
     assert_eq!(plan.kind_id, KindId(2));
@@ -108,7 +109,8 @@ fn relation_integrity_minimum_cardinality_lowering_is_publication_explicit() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = runtime.relation_integrity_plan(KindId(2)).unwrap();
     let minimum = &plan.cardinality_minimum_contracts[0];
 
@@ -219,7 +221,8 @@ fn schema_authority_recomputes_mutated_integrity_and_binds_map_key() {
     );
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(mutated.clone())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     assert_eq!(
         runtime
             .relation_integrity_plan(KindId(2))

@@ -30,6 +30,8 @@ mod output_publication;
 mod owner_allocation_ledger;
 #[path = "root_readmission.rs"]
 mod readmission;
+#[path = "root_region_access.rs"]
+mod region_access;
 #[path = "root_schema.rs"]
 mod schema;
 #[path = "root_schema_meaning.rs"]
@@ -50,6 +52,13 @@ pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RelationalBranchRootCaptureDenial {
     PublishedPartitionMissing(PartitionId),
+    DuplicateRegion(PartitionId),
+    InvalidAdjacencyProjection(PartitionId),
+    InvalidHistoryCoverage(PartitionId),
+    ContentEncoding(PartitionId),
+    AllocationAccountingOverflow(PartitionId),
+    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
+    SlotCountOverflow,
     CanonicalEnvelopeMismatch,
     StorageContentMismatch {
         descriptor_root: [u8; 32],
@@ -180,11 +189,11 @@ impl RelationalBranchRoot {
         let expected = registry.authority_snapshot();
         let schema_authority_id = issuer
             .issue_schema_authority_id()
-            .expect("empty root has schema authority capacity");
+            .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has schema authority capacity");
         Arc::new(Self {
             id: 0,
             regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
-                .expect("empty root has reachability capacity"),
+                .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has reachability capacity"),
             entity_slot_count: 0,
             relation_slot_count: 0,
             content_accumulator: [0; 32],
@@ -196,7 +205,7 @@ impl RelationalBranchRoot {
                 descriptor_semantics_version,
                 None,
             )
-            .expect("runtime schema plans match the runtime registry"),
+            .expect(/* Proof: Both runtime schema plans and this initial root are built from the same validated registry and current descriptor semantics policy. */ "runtime schema plans match the runtime registry"),
             committed: None,
         })
     }
@@ -207,7 +216,7 @@ impl RelationalBranchRoot {
         previous: Option<&Arc<Self>>,
         envelope: Arc<CanonicalCommitEnvelope>,
         registry: &crate::schema::data::RelationalSchemaRegistry,
-        symbols: &crate::symbols::data::StringInterner,
+        symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         capture_preparation::prepare(
             issuer,
@@ -304,49 +313,11 @@ impl RelationalBranchRoot {
         self.regions.materialization_unavailable_records() > 0
     }
 
-    pub(crate) fn partition_state(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.regions
-            .get(partition_id)
-            .map(|region| region.partition.as_ref())
-    }
-
-    pub(crate) fn visit_content_cache_allocations(
-        &self,
-        partition_id: PartitionId,
-        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
-    ) {
-        if let Some(region) = self.regions.get(partition_id) {
-            region.content_commitment.visit_allocations(visitor);
-        }
-    }
-
-    pub(crate) fn partition_ids(&self) -> Vec<PartitionId> {
-        self.regions.materialize().keys().copied().collect()
-    }
-
-    pub(crate) fn partition_ids_iter(&self) -> impl Iterator<Item = PartitionId> + '_ {
-        self.regions.partition_ids_iter()
-    }
-
-    pub(crate) fn try_visit_partitions<E>(
-        &self,
-        visit: impl FnMut(super::RelationalPartitionVisit) -> Result<(), E>,
-    ) -> Result<(), E> {
-        self.regions.try_visit_partitions(visit)
-    }
-
-    pub(crate) fn try_for_each_partition_id<E>(
-        &self,
-        visit: impl FnMut(PartitionId) -> Result<(), E>,
-    ) -> Result<(), E> {
-        self.regions.try_for_each_partition_id(visit)
-    }
-
     /// Logical authoritative partition payload bytes reachable from this root.
     pub(crate) fn logical_partition_payload_bytes(&self) -> u64 {
         self.regions
             .values()
-            .map(|region| region.allocation_inventory.authoritative_bytes)
+            .map(|region| region.allocation_inventory().authoritative_bytes)
             .sum()
     }
 

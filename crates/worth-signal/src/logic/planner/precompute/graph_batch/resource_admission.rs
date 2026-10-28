@@ -22,6 +22,7 @@ mod diagnostic_capacity;
 mod grant;
 mod lifecycle;
 mod node_selection;
+mod result_bounds;
 mod subscriber_sources;
 mod units;
 use crate::logic::planner::apply::workspace::ApplyMemberBasis;
@@ -30,6 +31,7 @@ pub(in crate::logic::planner) use grant::{CheckedApplyCapacity, CheckedEpochAdmi
 use units::{bytes, overflow};
 
 pub(super) struct ResourceAdmission<'lease, 'authority> {
+    result_bounds: result_bounds::ResultBounds,
     available: Option<u64>,
     fixed: u64,
     copies: u64,
@@ -44,7 +46,6 @@ pub(super) struct ResourceAdmission<'lease, 'authority> {
     cause_transition_count: usize,
     width: usize,
     result_grant_bytes: Option<u64>,
-    declared_result_minimum: u64,
     lease: worth_execution::ExecutionRequest<'lease, 'authority>,
     candidate_lease: Option<ExecutionResourceLease<'authority>>,
     apply_bases: Vec<ApplyMemberBasis>,
@@ -67,12 +68,9 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             .bounded_inputs
             .as_ref()
             .ok_or(SignalError::MissingBoundedInputsAtEpochAdmission { node: task.node })?;
-        let declared_result_minimum = self.declared_result_minimum.max(
-            contract
-                .execution
-                .max_checked_result_heap_bytes
-                .unwrap_or(0),
-        );
+        let result_bounds = self
+            .result_bounds
+            .with_node(contract.execution.max_checked_result_heap_bytes);
         let capture = PreparedDependencyCapture::checked_capture_heap_bound(declaration)
             .ok_or_else(overflow)?;
         let scope_heap = declaration
@@ -296,7 +294,8 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             fixed,
             all_copies,
             next_width,
-            declared_result_minimum,
+            result_bounds.minimum(),
+            result_bounds.maximum(),
             self.lease,
             self.candidate_lease.as_ref(),
             &self.apply_bases,
@@ -387,7 +386,7 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
         self.cause_transition_count = cause_transition_count;
         self.width = next_width;
         self.result_grant_bytes = grant;
-        self.declared_result_minimum = declared_result_minimum;
+        self.result_bounds = result_bounds;
         self.apply_bases.push(apply_basis);
         self.candidate_bases.push(candidate_basis);
         self.precompute_bases.push(precompute_basis);

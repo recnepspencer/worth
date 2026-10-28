@@ -1,6 +1,6 @@
 use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
 use crate::storage::substrate::{
-    RecordArena, RecordKind, SharedColumn, SharedMap, StorageAllocationVisitor,
+    HistoryAppendFrontier, RecordArena, RecordKind, SharedMap, StorageAllocationVisitor,
 };
 use crate::symbols::data::{StringInterner, Symbol};
 use std::collections::BTreeMap;
@@ -15,6 +15,65 @@ pub(super) struct RecordContentIndex {
 }
 
 impl RecordContentIndex {
+    pub(super) fn history_frontiers<K: RecordKind>(
+        &self,
+        arena: &RecordArena<K>,
+    ) -> Option<Vec<(u64, HistoryAppendFrontier)>>
+    where
+        K::Meta: serde::Serialize,
+    {
+        self.histories
+            .iter()
+            .map(|(&slot, history)| {
+                let metadata = arena.metadata_history_at(usize::try_from(slot).ok()?)?;
+                let last_value = metadata
+                    .len()
+                    .checked_sub(1)
+                    .and_then(|index| metadata.get(index))
+                    .map(|value| hash_value(b"metadata", value))
+                    .transpose()
+                    .ok()?;
+                Some((slot, history.append_frontier(last_value)?))
+            })
+            .collect()
+    }
+
+    pub(super) fn from_history_frontiers<K: RecordKind>(
+        frontiers: &[(u64, HistoryAppendFrontier)],
+        arena: &RecordArena<K>,
+    ) -> Option<Self>
+    where
+        K::Meta: serde::Serialize,
+    {
+        if !frontiers
+            .iter()
+            .map(|(slot, _)| *slot)
+            .eq(arena.occupied_slots_iter().map(|slot| slot as u64))
+        {
+            return None;
+        }
+        let mut result = Self::default();
+        for (slot, frontier) in frontiers {
+            let history = DigestIndex::from_append_frontier(frontier)?;
+            let metadata = arena.metadata_history_at(usize::try_from(*slot).ok()?)?;
+            if metadata.len() != usize::from(history.next_history_index()? > 0) {
+                return None;
+            }
+            let last = metadata
+                .get(0)
+                .map(|value| hash_value(b"metadata", value))
+                .transpose()
+                .ok()?;
+            history.append_frontier(last)?;
+            result.history_bytes += history.allocation_bytes();
+            if result.histories.contains_key(slot) {
+                return None;
+            }
+            result.histories.insert(*slot, history);
+        }
+        Some(result)
+    }
+
     pub(super) fn update<K: RecordKind>(
         &mut self,
         arena: &RecordArena<K>,
@@ -32,24 +91,20 @@ impl RecordContentIndex {
         for slot in slots {
             let physical = arena
                 .physical_index(slot)
-                .expect("journal-selected record exists");
-            let mut history = self
+                .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+            let carried_head = previous.is_none() && self.histories.contains_key(&(slot as u64));
+            let cached = self
                 .histories
                 .get(&(slot as u64))
                 .cloned()
                 .unwrap_or_default();
-            let old_bytes = history.allocation_bytes();
-            let empty = SharedColumn::default();
-            let old = previous
-                .and_then(|arena| arena.metadata_history_at(slot))
-                .unwrap_or(&empty);
-            arena.metadata_history[physical].visit_changed_values(old, &mut |index, value, _| {
-                history.set(
-                    index as u128,
-                    value.map(|value| hash_value(b"metadata", value)),
-                );
-                hashed_values += u64::from(value.is_some());
-            });
+            let old_bytes = cached.allocation_bytes();
+            let (history, hashed) = if carried_head {
+                (cached, 0)
+            } else {
+                super::record_history::update(arena, previous, slot, &cached)?
+            };
+            hashed_values += hashed;
             let versions = resolve_aspect_versions(&arena.aspect_versions[physical], symbols)?;
             let digest = hash_value(
                 b"record",
@@ -68,14 +123,14 @@ impl RecordContentIndex {
                     extra(&arena.extra[physical], symbols)?,
                     versions,
                 ),
-            );
+            )?;
             hashed_values += 1;
             self.history_bytes = self
                 .history_bytes
                 .checked_sub(old_bytes)
-                .unwrap()
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?
                 .checked_add(history.allocation_bytes())
-                .unwrap();
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
             if let Some(entries) = &mut cold_histories {
                 entries.push((slot as u64, history));
             } else {
@@ -84,7 +139,7 @@ impl RecordContentIndex {
             if let Some(entries) = &mut cold_records {
                 entries.push((slot as u128, digest));
             } else {
-                self.records.set(slot as u128, Some(digest));
+                self.records.set(slot as u128, Some(digest))?;
             }
         }
         if let Some(mut entries) = cold_records {
@@ -101,8 +156,10 @@ impl RecordContentIndex {
         {
             self.live_words.set(
                 word as u128,
-                value.map(|value| hash_value(b"live-word", &value)),
-            );
+                value
+                    .map(|value| hash_value(b"live-word", &value))
+                    .transpose()?,
+            )?;
             hashed_values += u64::from(value.is_some());
         }
         for (word, value) in arena
@@ -111,8 +168,10 @@ impl RecordContentIndex {
         {
             self.reclaimable_words.set(
                 word as u128,
-                value.map(|value| hash_value(b"reclaimable-word", &value)),
-            );
+                value
+                    .map(|value| hash_value(b"reclaimable-word", &value))
+                    .transpose()?,
+            )?;
             hashed_values += u64::from(value.is_some());
         }
         Ok(hashed_values)
@@ -126,7 +185,7 @@ impl RecordContentIndex {
                 self.live_words.digest(),
                 self.reclaimable_words.digest(),
             ),
-        )
+        ).expect(/* Proof: this hash serializes only a fixed tuple of three [u8; 32] arrays into the infallible Sha256Writer. No input-sized collection or custom serializer occurs in this concrete tuple's Serialize implementation. */ "fixed native digest tuple is serializable")
     }
     pub(super) fn allocation_bytes(&self) -> u64 {
         self.records.allocation_bytes()

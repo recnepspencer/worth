@@ -17,14 +17,19 @@ impl<'runtime> InspectionAccess<'runtime> {
         request: &GraphInspectionRequest,
     ) -> Result<GraphInspectionSummary, crate::execution::RelationalExecutionDenialCause> {
         crate::execution::check_request(execution)?;
+        let resident = if matches!(request.scope, InspectionScope::Current) {
+            Some(self.demand_mirror(execution)?)
+        } else {
+            None
+        };
         let read_view = match request.scope {
             InspectionScope::Current => None,
             _ => self.read_view_for_scope(execution, &request.scope)?,
         };
         Ok((|| {
             self.count_graph_summary_request();
-            if matches!(request.scope, InspectionScope::Current) {
-                return self.current_graph_summary(request);
+            if let Some(resident) = &resident {
+                return self.current_graph_summary(resident, request);
             }
             let version_id = self.scope_version_id(&request.scope);
             let Some(read_view) = read_view else {
@@ -175,7 +180,11 @@ impl<'runtime> InspectionAccess<'runtime> {
         })())
     }
 
-    fn current_graph_summary(&self, request: &GraphInspectionRequest) -> GraphInspectionSummary {
+    fn current_graph_summary(
+        &self,
+        resident: &crate::runtime::ResidentPartitionEdition,
+        request: &GraphInspectionRequest,
+    ) -> GraphInspectionSummary {
         let partition_scope = PartitionScopeFilter::from_scope(request.partition_scope.as_ref());
         let relation_kind_scope = KindScopeFilter::from_scope(request.relation_kind_scope.as_ref());
         let mut entity_count = 0_u64;
@@ -185,13 +194,10 @@ impl<'runtime> InspectionAccess<'runtime> {
         let mut touched_partitions = BTreeSet::new();
         let mut work_units = 0_u64;
 
-        for partition_id in self.current_partition_ids() {
+        for (partition_id, partition) in resident.entries() {
             if !partition_scope.allows(partition_id) {
                 continue;
             }
-            let Some(partition) = self.current_partition_state(partition_id) else {
-                continue;
-            };
             for slot in partition.entity_arena.live_bitset.iter_set_slots() {
                 let Some(slot_view) = partition.entity_arena.get_slot(slot) else {
                     continue;

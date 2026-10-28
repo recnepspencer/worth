@@ -47,71 +47,71 @@ pub(super) fn normalize_read_locus(
     read: RelationalTransactionReadLocus,
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
-) -> RelationalTransactionReadLocus {
-    match read {
+) -> Result<RelationalTransactionReadLocus, crate::symbols::data::RelationalSymbolExhausted> {
+    Ok(match read {
         RelationalTransactionReadLocus::CreatedEntity(created) => {
             RelationalTransactionReadLocus::CreatedEntity(normalize_created_entity(
                 created, interner, policy,
-            ))
+            )?)
         }
         RelationalTransactionReadLocus::CreatedRelation(created) => {
             RelationalTransactionReadLocus::CreatedRelation(normalize_created_relation(
                 created, interner, policy,
-            ))
+            )?)
         }
         other => other,
-    }
+    })
 }
 
 pub(super) fn normalize_write_locus(
     write: RelationalTransactionWriteLocus,
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
-) -> RelationalTransactionWriteLocus {
-    match write {
+) -> Result<RelationalTransactionWriteLocus, crate::symbols::data::RelationalSymbolExhausted> {
+    Ok(match write {
         RelationalTransactionWriteLocus::CreatedEntity(created) => {
             RelationalTransactionWriteLocus::CreatedEntity(normalize_created_entity(
                 created, interner, policy,
-            ))
+            )?)
         }
         RelationalTransactionWriteLocus::CreatedRelation(created) => {
             RelationalTransactionWriteLocus::CreatedRelation(normalize_created_relation(
                 created, interner, policy,
-            ))
+            )?)
         }
         other => other,
-    }
+    })
 }
 
 pub(super) fn normalize_created_entity(
     mut created: CreatedEntityRef,
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
-) -> CreatedEntityRef {
-    created.client_key = created.client_key.normalize_with(interner, policy);
-    created
+) -> Result<CreatedEntityRef, crate::symbols::data::RelationalSymbolExhausted> {
+    created.client_key = created.client_key.normalize_with(interner, policy)?;
+    Ok(created)
 }
 
 pub(super) fn normalize_created_relation(
     mut created: CreatedRelationRef,
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
-) -> CreatedRelationRef {
-    created.client_key = created.client_key.normalize_with(interner, policy);
-    created.source = normalize_entity_reference(created.source, interner, policy);
-    created.target = normalize_entity_reference(created.target, interner, policy);
-    created
+) -> Result<CreatedRelationRef, crate::symbols::data::RelationalSymbolExhausted> {
+    created.client_key = created.client_key.normalize_with(interner, policy)?;
+    created.source = normalize_entity_reference(created.source, interner, policy)?;
+    created.target = normalize_entity_reference(created.target, interner, policy)?;
+    Ok(created)
 }
 
 pub(super) fn normalize_entity_reference(
     reference: EntityReference,
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
-) -> EntityReference {
-    match reference {
+) -> Result<EntityReference, crate::symbols::data::RelationalSymbolExhausted> {
+    Ok(match reference {
         EntityReference::Created(created) => {
-            EntityReference::Created(normalize_created_entity(created, interner, policy))
+            EntityReference::Created(normalize_created_entity(created, interner, policy)?)
         }
         existing => existing,
-    }
+    })
 }

@@ -1,7 +1,7 @@
 use super::execution_artifacts::EffectMergeAuthority;
 pub use super::execution_artifacts::{
     EffectExecutionAuthority, EffectExecutionControlStopped, EffectExecutionDeferred,
-    EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionSettlementDeferred,
+    EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionDurabilityUnresolved,
     EffectExecutionStop, ExecutedEffectAuthorityArtifact, ExecutedEffectPlan,
 };
 use super::execution_bridge::execute_lowered_writeback;
@@ -76,23 +76,21 @@ pub(crate) fn execute_lowered_effect_plan_with_authority(
                     "lowered relational merge execution rejected bridge host override; the admitted lowered plan requires relational authority",
                 )));
             }
-            if !authority.has_relational_authority() {
-                return Err(EffectExecutionStop::Denied(EffectExecutionDenial::new(
+            let merge_authority = authority.merge_authority();
+            let runtime = authority.relational_runtime().ok_or_else(|| {
+                EffectExecutionStop::Denied(EffectExecutionDenial::new(
                     &lowered,
                     EffectExecutionDenialKind::MissingRelationalAuthority,
                     "lowered relational merge execution requires a relational runtime authority",
-                )));
-            }
-            if authority.merge_authority() == EffectMergeAuthority::RuntimeOwnerRequired {
+                ))
+            })?;
+            if merge_authority == EffectMergeAuthority::RuntimeOwnerRequired {
                 return Err(EffectExecutionStop::Denied(EffectExecutionDenial::new(
                     &lowered,
                     EffectExecutionDenialKind::MergeRequiresRuntimeOwner,
                     "a lent runtime may hold an application schema; run the merge through the backend that owns it",
                 )));
             }
-            let runtime = authority
-                .relational_runtime()
-                .expect("relational authority was checked above");
             let outcome = execute_lowered_merge(
                 execution,
                 runtime,
@@ -150,10 +148,10 @@ fn lower_relational_stop(
                 lowered, kind, message,
             ))
         }
-        RelationalEffectExecutionFailure::SettlementDeferred(deferred) => {
-            let (message, settlement) = deferred.into_parts();
-            EffectExecutionStop::SettlementDeferred(EffectExecutionSettlementDeferred::new(
-                lowered, message, settlement,
+        RelationalEffectExecutionFailure::DurabilityUnresolved(unresolved) => {
+            let (message, unresolved) = unresolved.into_parts();
+            EffectExecutionStop::DurabilityUnresolved(EffectExecutionDurabilityUnresolved::new(
+                lowered, message, unresolved,
             ))
         }
     }

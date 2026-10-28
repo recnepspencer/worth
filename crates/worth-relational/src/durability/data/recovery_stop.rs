@@ -21,9 +21,24 @@ pub enum RelationalRecoveryStop {
     Durability(DurabilityError),
 }
 
+impl From<RelationalExecutionDenialCause> for RelationalRecoveryStop {
+    fn from(cause: RelationalExecutionDenialCause) -> Self {
+        match cause {
+            RelationalExecutionDenialCause::StorageUnavailable(failure) => failure.into(),
+            cause => Self::Request(cause),
+        }
+    }
+}
+
 impl From<DurabilityError> for RelationalRecoveryStop {
     fn from(error: DurabilityError) -> Self {
         Self::Durability(error)
+    }
+}
+
+impl From<crate::storage::data::RelationalStorageUnavailable> for RelationalRecoveryStop {
+    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+        Self::Durability(failure.into())
     }
 }
 
@@ -42,6 +57,7 @@ impl std::error::Error for RelationalRecoveryStop {}
 impl From<super::RelationalNativeCheckpointCaptureDenial> for RelationalRecoveryStop {
     fn from(denial: super::RelationalNativeCheckpointCaptureDenial) -> Self {
         match denial {
+            super::RelationalNativeCheckpointCaptureDenial::Request(cause) => Self::Request(cause),
             super::RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
             super::RelationalNativeCheckpointCaptureDenial::Allocation(error) => {
                 crate::symbols::data::field_text_recovery_stop(

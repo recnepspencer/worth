@@ -31,7 +31,9 @@ fn empty_relational_targets_remain_runtime_affine_through_branch_identity() {
 
 #[test]
 fn owner_branch_identity_is_runtime_affine_without_a_public_target_constructor() {
-    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let identity = runtime.main_branch_identity();
     assert_eq!(identity.branch_id(), &BranchId("main".to_owned()));
 }

@@ -11,16 +11,16 @@ impl InvariantStateView<'_> {
         partition_id: PartitionId,
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<impl Iterator<Item = usize> + '_, Stop> {
-        let visible = self.state.get_partition(partition_id);
+        let visible = self.state.get_current_partition(partition_id);
         let base = self
             .state
-            .base_partition(partition_id)
-            .filter(|base| visible.is_none_or(|visible| !std::ptr::eq(*base, visible)));
+            .base_current_partition(partition_id)
+            .filter(|base| visible.is_none_or(|visible| !base.same_region_view(visible)));
         let visible = visible
-            .map(|partition| partition.entity_arena.try_occupied_slots(&mut prepare))
+            .map(|partition| partition.entity_arena().try_occupied_slots(&mut prepare))
             .transpose()?;
         let base = base
-            .map(|partition| partition.entity_arena.try_occupied_slots(&mut prepare))
+            .map(|partition| partition.entity_arena().try_occupied_slots(&mut prepare))
             .transpose()?;
         Ok(merge_slots(
             visible.into_iter().flatten(),
@@ -33,16 +33,16 @@ impl InvariantStateView<'_> {
         partition_id: PartitionId,
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<impl Iterator<Item = usize> + '_, Stop> {
-        let visible = self.state.get_partition(partition_id);
+        let visible = self.state.get_current_partition(partition_id);
         let base = self
             .state
-            .base_partition(partition_id)
-            .filter(|base| visible.is_none_or(|visible| !std::ptr::eq(*base, visible)));
+            .base_current_partition(partition_id)
+            .filter(|base| visible.is_none_or(|visible| !base.same_region_view(visible)));
         let visible = visible
-            .map(|partition| partition.relation_arena.try_occupied_slots(&mut prepare))
+            .map(|partition| partition.relation_arena().try_occupied_slots(&mut prepare))
             .transpose()?;
         let base = base
-            .map(|partition| partition.relation_arena.try_occupied_slots(&mut prepare))
+            .map(|partition| partition.relation_arena().try_occupied_slots(&mut prepare))
             .transpose()?;
         Ok(merge_slots(
             visible.into_iter().flatten(),

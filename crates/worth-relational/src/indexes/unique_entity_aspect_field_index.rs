@@ -117,7 +117,7 @@ fn collect_all_unique_entity_aspect_field_entries(
 > {
     let mut entries = Vec::new();
     let source = super::projected_field_values::IndexProjectionSource::exact(projection)
-        .expect("current unique-index projection must carry an exact basis");
+        .expect(/* Proof: The owner-admitted snapshot/current projection is built from an exact retained root; speculative projections do not reach this index entry point. */ "current unique-index projection must carry an exact basis");
     for field_locator in tracked_fields {
         entries.extend(
             build_entity_aspect_field_index(execution, &source, field_locator)?

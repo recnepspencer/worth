@@ -17,7 +17,7 @@ fn scalar_update_initializes_presence_with_only_an_exact_field_posting() {
         .read_truth()
         .project_snapshot(&created.snapshot)
         .unwrap();
-    assert!(!present(&before, entity));
+    assert!(!present(&before, &execution, entity));
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -39,7 +39,7 @@ fn scalar_update_initializes_presence_with_only_an_exact_field_posting() {
         .read_truth()
         .project_snapshot(&initialized.snapshot)
         .unwrap();
-    assert!(present(&after, entity));
+    assert!(present(&after, &execution, entity));
     assert_eq!(
         before
             .entity_aspect_presence_scalar_field(
@@ -264,8 +264,12 @@ fn create_empty(
     transaction.commit(&execution, runtime).unwrap()
 }
 
-fn present(view: &crate::facade::runtime::VisibilityProjectionView, entity: EntityId) -> bool {
-    view.with_exact_entity_state(entity, |_, state| {
+fn present(
+    view: &crate::facade::runtime::VisibilityProjectionView,
+    execution: &ExecutionRequest<'_, '_>,
+    entity: EntityId,
+) -> bool {
+    view.read_exact_entity_state(execution, entity, |_, state| {
         state.is_some_and(|state| state.get(&aspect_key("optional")).is_some())
     })
     .unwrap()

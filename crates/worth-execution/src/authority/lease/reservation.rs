@@ -122,26 +122,35 @@ impl ExecutionResourceLease<'_> {
         if let Some(bytes) = memory_bytes {
             ledger.charged_memory_bytes += bytes;
         }
-        for node in lineage.iter().filter(|node| {
-            memory_bytes.is_some_and(|bytes| bytes != 0) || worker_nodes.contains(&node.id)
-        }) {
+        // A node's usage exists only while something holds a non-zero charge
+        // on it, and any release that empties it removes it. A reservation
+        // therefore records only the nodes it actually charges: one naming a
+        // node it charged nothing would find it removed by another release.
+        let worker_nodes = if worker_count_per_node == 0 {
+            Vec::new()
+        } else {
+            worker_nodes
+        };
+        let charged_bytes = memory_bytes.filter(|bytes| *bytes != 0);
+        for node in lineage
+            .iter()
+            .filter(|node| charged_bytes.is_some() || worker_nodes.contains(&node.id))
+        {
             let usage = ledger.nodes.entry(node.id).or_default();
             if worker_nodes.contains(&node.id) {
                 usage.active_workers += worker_count_per_node;
             }
-            if let Some(bytes) = memory_bytes {
+            if let Some(bytes) = charged_bytes {
                 usage.charged_memory_bytes += bytes;
             }
         }
         Ok(ResourceReservation {
             authority: Arc::clone(&self.authority),
             memory: memory_bytes.map(|bytes| ReservedMemory {
-                // A zero-byte claim owns no ledger node. Another reservation may
-                // remove an otherwise idle node before this claim is dropped.
-                lineage: if bytes == 0 {
-                    Vec::new()
-                } else {
+                lineage: if charged_bytes.is_some() {
                     lineage.iter().map(|node| node.id).collect()
+                } else {
+                    Vec::new()
                 },
                 bytes,
             }),

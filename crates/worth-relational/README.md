@@ -141,9 +141,59 @@ If you find yourself reaching into crate internals instead of
 [`facade`](./src/facade.rs), you are probably leaving the intended public
 surface.
 
-The owner catalog, branch cells, roots, and retention accounting are currently
-memory-resident. Restart durability for this branch-owner model is deferred to
-Worth Store integration.
+## Durability
+
+A runtime is memory-only by default: its canonical history lives in an
+in-memory log and `durability().recovery_plan(..)` reconstructs from it.
+
+A durable runtime is built with `build_durable(Box::new(medium))`, where
+`medium` implements `RelationalDurableMedium` (Worth Store's Relational home
+is the production implementation). The medium is moved into exactly that one
+runtime: the builder never holds it, so cloning a builder cannot share it;
+recovery moves it into the rebuilt runtime, after which the old attachment
+refuses with `RelationalDurablePublicationRefusal::MediumMoved`; and a forked
+runtime never inherits it. Every commit is durable before it is live: the
+positioned commit is encoded as its `RelationalCanonicalCommitArtifact` and
+published to the medium inside the patch-position reservation, and only a
+`Committed` answer lets the cutover install the new head.
+
+- `ProvenNoEffect` is a pre-effect denial:
+  `TransactionCommitError::PublicationDenied` with
+  `RelationalPublicationDenial::DurablePublicationRefused`. Nothing moves and
+  the position is not consumed.
+- `Indeterminate` returns `TransactionCommitError::DurabilityUnresolved` with
+  the position, commit id and artifact digest. Nothing is installed, and the
+  runtime refuses every later publication the same way until it is reopened.
+
+To reopen, the medium's owner hands back its checkpoint and journal tail as a
+`RelationalDurableRecoverySource`; a fresh runtime built with a medium over
+the same storage calls `durability().recovery_plan_from_source(..)` and then
+`durability_recovery().recover(..)`. Every artifact is readmitted, the tail
+must continue exactly from the checkpoint's covered position, and any damage,
+gap or misfiled checkpoint refuses with a typed `RecoveryFailureClass` before
+service. A recovered runtime serves the schema its recovered main branch head
+records: the initial schema, or the target of the last durable schema
+transition. A runtime declaring any other registry, even identical contracts
+under another version label, refuses with
+`RecoveryFailureClass::DeclaredSchemaMismatch` before service. Recovery moves
+the medium into the rebuilt runtime only after replay, so replay never
+republishes. A recovered runtime publishes its next commit at the next
+position. These types are in `worth_relational::facade::durability`.
+
+The owner catalog, branch cells, roots, and retention accounting stay
+memory-resident working state derived from that history.
+
+Plan preview uses `transaction.prepare_merged_plan(execution, runtime)` and can
+return a typed storage refusal before publication. Strategy `lower_execution`
+and `lower_execution_with_input` likewise take the caller's execution request.
+The transaction or lowered plan owns any newly reserved client-key meanings;
+preview does not publish them into the runtime dictionary. Validation judges
+the same applied draft later prepared for publication. Dropping it spends its
+record and text identities without publishing their meanings. A successful
+commit publishes only the text carried by its canonical envelope.
+`plan_bulk_mutation_batch` describes the keys currently authored in the
+transaction. Prepare its merged plan first when bulk naming admission requires
+interned keys; the pure description itself issues no text identities.
 
 ## Validated transitions before recovered installation
 
@@ -178,12 +228,10 @@ receipt and recovery authority for the performed successor. Ordinary commits
 do not refresh recovery authority. Relational attests native lineage; the
 application still owns predecessor selection and target migration validation.
 
-Refusal returns the original authority. A durable append failure returns a
-linear deferred transition, which grants no successor authority. Pass it to
-`repair_checkpoint_transition(...)` to repair the existing native settlement
-route without publishing another commit. Failed repair returns the same custody
-for retry; successful repair carries the performed successor, even if current
-branch state has moved since that performance. These types are available through
+Refusal returns the original authority; a durable medium's refusal or unknown
+answer is such a refusal, because nothing was installed. The transition is
+durable before it is live, so a performed transition settles without deferral
+and acknowledges its successor. These types are available through
 `worth_relational::facade::durability`.
 
 ## Aspect-Precise Publication
