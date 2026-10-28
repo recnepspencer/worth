@@ -20,8 +20,8 @@ pub enum WorthQueryCorrectionRestoredSupportDenial {
     Storage(worth_execution::ExecutionOrderedMapDenial),
     Request(worth_execution::WorkCeilingDenial),
     Interrupted(worth_execution::MapKernelStop),
-    NativeRead(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     SizeOverflow,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
 }
 
 // Ordered keys are fixed CommitIds here. Admit the immutable AVL descent before
