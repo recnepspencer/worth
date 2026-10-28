@@ -13,7 +13,15 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), InspectionAdmissionDenial> {
         require_request(execution, self.request)?;
-        for governance in std::iter::once(&mut self.governance).chain(self.diagnostic.iter_mut()) {
+        for (target, governance) in std::iter::once((&self.target, &mut self.governance))
+            .chain(self.diagnostic.iter_mut().map(|v| (&self.target, v)))
+            .chain(self.source.iter_mut().flat_map(|source| {
+                [
+                    (&source.target, &mut source.governance),
+                    (&source.target, &mut source.diagnostic),
+                ]
+            }))
+        {
             if let Some(authorization) = governance.authorization_mut() {
                 self.runtime
                     .refresh_capability_authorization_for_graph_work(
@@ -26,8 +34,8 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             if !governance.authorization_belongs_to_session(self.session.identity())
                 || !governance.inspection_matches(
                     &self.session,
-                    &self.target,
-                    &self.target.parameters(),
+                    target,
+                    &target.parameters(),
                     self.principal,
                     self.scope.entity_id(),
                 )
@@ -38,7 +46,13 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         if !self
             .authorization
             .belongs_to_session(self.session.identity())
-            || self.target.before().is_some() != self.diagnostic.is_some()
+            || self.target.needs_diagnostic() != self.diagnostic.is_some()
+            || self.target.connection_source().is_some() != self.source.is_some()
+            || self.source.as_ref().is_some_and(|source| {
+                !source
+                    .authorization
+                    .belongs_to_session(self.session.identity())
+            })
         {
             return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
         }
@@ -80,8 +94,24 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                             self.runtime.authorization.bridge(),
                         )
                         .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
-                    for governance in
-                        std::iter::once(&self.governance).chain(self.diagnostic.iter())
+                    if let Some(source) = &self.source {
+                        source
+                            .authorization
+                            .validate_currentness_in(
+                                execution,
+                                relational,
+                                snapshot,
+                                self.runtime.authorization.bridge(),
+                            )
+                            .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
+                    }
+                    for governance in std::iter::once(&self.governance)
+                        .chain(self.diagnostic.iter())
+                        .chain(
+                            self.source
+                                .iter()
+                                .flat_map(|source| [&source.governance, &source.diagnostic]),
+                        )
                     {
                         if let Some(authorization) = governance.authorization() {
                             authorization

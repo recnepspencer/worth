@@ -35,7 +35,7 @@ impl WorthQueryApplicationQueryGovernance {
     ) -> bool {
         match self {
             Self::Public => graph_work.inspection_binding().is_some_and(|(actual, _)| {
-                Arc::ptr_eq(actual, target)
+                actual.admits_member(target)
                     && graph_work.principal() == principal
                     && graph_work.entity_access_context() == Some(scope)
             }),

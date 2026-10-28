@@ -1,4 +1,4 @@
-//! Original source interpretation must be exactly the currently admitted binding.
+//! Original source affinity consumes the separately admitted source when selected.
 use super::*;
 use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 pub(super) fn validate(
@@ -31,6 +31,20 @@ pub(super) fn validate(
         .ok_or(MapKernelFailure::Domain(
             Denial::SourceDisclosureUnavailable,
         ))?;
+    if let Some(target) = target.connection_source() {
+        let original = target
+            .source()
+            .ok_or(MapKernelFailure::Domain(Denial::SourceDisclosureMismatch))?;
+        if !original.changes.shares_original(source.committed_changes())
+            || !Arc::ptr_eq(&original.disclosure, &disclosure)
+            || original.runtime != source.authority_binding().runtime_authority().as_u64()
+            || source.authority_binding().original_mutation_binding()
+                != Some(disclosure.association().source_type())
+        {
+            return Err(MapKernelFailure::Domain(Denial::SourceDisclosureMismatch));
+        }
+        return Ok(disclosure);
+    }
     if disclosure.association().declaration().parts().query
         != target.contract().definition().parts().binding
         || disclosure.scope().subject() != original.source.model_root

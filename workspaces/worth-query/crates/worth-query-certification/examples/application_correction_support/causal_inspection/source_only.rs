@@ -129,7 +129,7 @@ pub fn source_metadata_is_independent_of_payload_and_query_metadata() {
         )
         .why_observed()
         .reference_only()
-        .execute()
+        .execute_governed(journey::access(&application, &principal, &scope))
         .unwrap()
         .close();
     assert!(
@@ -139,7 +139,7 @@ pub fn source_metadata_is_independent_of_payload_and_query_metadata() {
             .reference_only()
             .execute()
             .is_err(),
-        "the other binding's public metadata supplies no source admission"
+        "the other binding's admitted metadata supplies no source admission"
     );
     // Nor may the same original query observation bypass its own metadata gate.
     let original = result.receipt().inspect().observation().unwrap();

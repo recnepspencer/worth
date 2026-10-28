@@ -18,6 +18,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
     diagnostic: Option<WorthQueryApplicationQueryGovernance>,
+    source: Option<super::connected::SourceRead>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 }
 
@@ -37,6 +38,7 @@ impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Sc
             authorization: self.authorization,
             governance: self.governance,
             diagnostic: self.diagnostic,
+            source: self.source,
             memory: self.memory,
         })
     }
@@ -69,6 +71,7 @@ impl InspectionTerminal<'_> {
         drop(self.authorization);
         drop(self.governance);
         drop(self.diagnostic);
+        drop(self.source);
         drop(self.basis);
         require_request(execution, &self.request)?;
         Ok(CompletedInspection::from_terminal(completed, self.request))

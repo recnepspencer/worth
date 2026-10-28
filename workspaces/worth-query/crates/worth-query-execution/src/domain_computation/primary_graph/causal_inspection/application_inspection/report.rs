@@ -21,6 +21,8 @@ use worth_runtime_bridge::facade::{
     BridgeQueryObservationReportingStop,
 };
 
+mod connected;
+pub(super) use connected::{materialize_connected, FundedConnectedReport};
 mod comparison;
 pub(super) use comparison::{
     materialize_comparison, ComparisonReportPayload, FundedComparisonReport,

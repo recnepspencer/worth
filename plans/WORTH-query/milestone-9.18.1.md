@@ -1529,10 +1529,10 @@ The genuine positive performs Primary5-to-11, one producer contact and query
 `(11, 23)`, then checks the actual source/producer commits and declared output
 role. With 25 unaffected prior passes, the selected runtime union is 31/31;
 316 unchanged prior doctest passes carry without rerun. The earlier
-`SourceInputUnconnected` receipt remains preserved. Final evidence review
-remains required. The separate source-only path below addresses selection without
+`SourceInputUnconnected` receipt remains preserved. Reviewer043 cleared this
+prerequisite, committed as `8396646380`. The source-only path below addresses selection without
 paired queries.
-Independent source/query connection, absent-field joins, optional rich materialization,
+Broader independent source/query connections, absent-field joins, optional rich materialization,
 real equivalent-output suppression, evidence expiry and broader hostile/lifetime
 evidence remain open. Those obligations govern a concrete successor slice; this bounded
 connection is not Phase9 closure. Phases12/15 remain transferred to 9.19, and this
@@ -1554,7 +1554,7 @@ the existing source-completion program; a fixed-output action cannot use immedia
 source-only execution. The connected court's retained governed query uses the
 existing selected Host admission/execution owners, with genuine current capability
 access and the original retained observation. No approval or source revision is
-synthesized. Their Source is reviewer037-cleared; the final runtime/evidence packet still requires review.
+synthesized. Reviewer043 cleared their final Source/runtime evidence in prerequisite `8396646380`.
 
 The coordinate-qualified field repair follows the earlier failed candidate. The
 receiving owner is `schema_layout/field_coordinate.rs`, beside the existing
@@ -1588,12 +1588,72 @@ Source changed after reviewer037. Both acquisitions used Rust1.99.1, the isolate
 actual source/Fresh=false/executable hashes and exact lists were verified.
 Guidance/context regeneration and boundary/context checks passed with independently
 built, hashed tools; generation produced no content change. Every failed receipt
-is retained. The small fixture join and evidence wording require final persistent
-review before commit; this is not phase acceptance.
+is retained. Reviewer043 cleared the small fixture join and evidence wording;
+the prerequisite was committed as `8396646380`. This is not phase acceptance.
 
-This does not widen the first connection's same-binding/present-field semantics.
-Independent source-plus-query connection, absent shapes, actual suppression, rich
-materialization, optional evidence expiry and whole-Phase9 qualification remain open.
+**Independent source/query connection — focused qualification passed; final review pending.**
+The qualified source-only/coordinate prerequisite was reviewed and committed as
+`8396646380`. Its 31-case selected union, 316 carried doctests and normal gates
+remain historical evidence; they do not qualify this increment.
+
+The existing `request/connected` progression now selects an actual typed source
+with `why_observed().caused_by::<Disclosure>(&receipt).reference_only()`.
+`admission/policy` owns the common subject READ/metadata/diagnostic preparation;
+`admission/connected` prepares the two actual subjects, then the ordinary
+preparation owner starts one session on an immutable compound target. The
+source's original installed declaration/scope/parameters are separate from the
+query's. Query current admission precedes source-disclosure lookup; both subject
+policies precede protected discovery. Both sets of original authorization facts
+and governed capabilities are rechecked before the same consuming terminal.
+The governing binding owner admits only the exact root target or its one actual
+source member, with independent parameter digests; it accepts no arbitrary
+same-shaped target.
+
+`connection/overlap/input` resolves the genuine completed handler field and
+original source-created Native revision against actual installed binding/layout,
+then requires the canonical source occurrence on the source's admitted original
+full subject. A projected entity kind cannot admit a different input owner. It no
+longer searches for this input in the output query in this explicit mode. Output-role/revision/canonical
+publication checks are unchanged. `report/connected` and `result/connected` bind
+both actual originals and their verified connection through the existing Bridge
+assembler and terminal, preserving original payers and no Native reader/parent
+body. The paired original-comparison mode keeps its narrower contract.
+
+The public fixture adds a governed Calculated-only query with a genuine boolean
+predicate parameter and its own internal DiagnosticMask rule. Source metadata
+and output metadata use separate complete installed definitions. Existing paired
+fixture calls now provide actual source metadata as well as diagnostics rather
+than weakening that policy. Five new grouped cases exercise the ordinary source,
+performed producer and original observed Calculated field; real lease release;
+four foreign capability-role controls; wrong source/query binding/runtime;
+intervening equal rewrites; a genuine no-match parameter set; cancellation,
+expiry and principal revocation. Existing actual parameter-affinity and admission
+courts remain regression obligations after the shared policy extraction.
+
+This slice requires the same full subject/principal and branch occurrence. It
+supports present struct/field-set inputs and outputs; independent query/source
+parameters are bound separately, not compared for equality. No canonical absence
+or whole-aspect interpretation is necessary for this present-field journey, so
+that next slice remains explicit. Reviewer047 cleared the production Source.
+Application acquisition r1 ended101 on ambiguous observation imports and closure
+type inference; the preserved receipt has UUID
+`df12325d-6545-402f-a2da-0abd6abf391a`. Explicit fixture import/type annotations
+are the only post047 Rust changes. Retry source index
+`e046d0ce5cc0af877d3922a48a3d2e5958e7716c` passed all 12 selected application
+cases and seven Execution controls from actual source-owned Fresh=false artifacts.
+The affected Execution/Host doctests passed 122+111=233. Guidance/context generation,
+boundary-check (Road1 valid) and context-check passed with source/input/hash-verified
+own tools; generation produced no content change. All commands used Rust1.99.1,
+six Cargo jobs, 64MiB stack and isolated target `C:/worth-build-cache/targets/9181-phase9`.
+The final packet and all failed/successful receipts are retained at
+`C:/worth-build-cache/phase9-independent-bindings-20261028`. The fixture joins and
+evidence wording require final all-three review before commit. Signal
+suppression, rich materialization, optional evidence expiry and private consumer
+handoff remain unfinished; this is not whole-Phase9 acceptance.
+
+The independent-binding increment does not widen the present-field semantics.
+Final evidence review, absent shapes, actual suppression, rich materialization,
+optional evidence expiry, private handoff and whole-Phase9 qualification remain open.
 Request expiry is distinct from expiry of strongly retained immutable evidence.
 
 ### Requirements

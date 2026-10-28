@@ -20,13 +20,13 @@ original request separately admits diagnostic comparison of complete retained
 output trees, as described [below](#paired-original-comparison). Producer-chain
 assembly and richer field materialization remain unfinished. The bounded
 [source/producer connection](#sourceproducer-connection) below passes its focused
-ordinary source-to-producer-to-query journey. Final evidence review and broader
-Phase9 qualification remain open.
+ordinary source-to-producer-to-query journey. Reviewer043 cleared that prerequisite
+in commit `8396646380`; broader Phase9 qualification remains open.
 
 ### Source-only inspection
 
-The four focused source-only runtime cases pass; final review and whole-Phase9
-qualification remain open. A fresh
+The four focused source-only runtime cases pass in the reviewer043-cleared
+prerequisite `8396646380`; whole-Phase9 qualification remains open. A fresh
 Host request can select an actual committed source independently of a completed
 query, paired comparison or projected input field:
 
@@ -79,8 +79,84 @@ and canonical source/output writes. The complete positive journey and extended
 internal genuine-producer test now pass. Review033's guaranteed whole-locator
 mismatch was repaired; the first predicate of the earlier failure was never
 observed, so that finding alone does not establish its sole cause.
-Independently bound source-plus-query connection, absent-field joins, actual
-suppression and rich materialization remain unfinished.
+The independently admitted connection below now passes its focused qualification;
+final evidence review remains required.
+Absent-field joins, actual suppression and rich materialization remain unfinished.
+
+### Independently admitted source and query connection
+
+The same Inspection lifecycle admits an actual source and one original query
+under different installed bindings. Its focused runtime, affected doctests and
+normal gates pass; final evidence review remains required. The earlier qualified
+paired path remains available below.
+
+```rust,ignore
+let report = fresh.inspect::<CalculatedOnlyBinding>(&after)
+    .why_observed()
+    .caused_by::<EditDisclosure>(&source_receipt)
+    .reference_only()
+    .execute_governed(
+        query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics,
+    )?;
+let connection = report.producer_connection();
+assert_eq!(connection.source_commit(), source_receipt.commit_reference());
+report.close();
+```
+
+`EditDisclosure` is the source's actual `ApplicationSourceDisclosureBinding`.
+The source and query each supply their own original complete binding and captured
+parameters; their parameter values need not equal each other. The source query's
+admitted diagnostic fields must include the actual input being explained. That
+input need not appear in the observed query. Query diagnostics must independently
+admit the original output field and every predicate/influence used by that query.
+Public metadata uses `execute_with_diagnostics(query_diagnostics,
+source_diagnostics)`; it cannot admit a governed metadata contract.
+
+Current query READ, metadata and diagnostics precede source-disclosure lookup.
+The original source scope is independently re-resolved and its own READ, all six
+metadata facets and diagnostic contract are admitted before source facts or
+output links are examined. Both policies bind to their distinct immutable targets
+in one fresh Inspection session. The session rechecks both READ decisions and
+both sets of capabilities before publication. This bounded connection requires
+the same full subject, current principal and original branch occurrence; another
+subject or incarnation refuses. Original binding, parameter, runtime and schema
+identity cannot be supplied by a descriptor, a retained source-only report or an
+output query's projection.
+
+The producer's genuine completed handler read and original Native field revision
+must intersect the exact canonical source write on the admitted original full
+source subject. A projected entity kind does not authorize another entity's input. Installed coordinates resolve
+both original descriptors without changing their authority. The output still
+requires the actual full-generation role, producer canonical write and the
+query-observed Native revision. An empty output query, same-value source rewrite,
+plain head read or stable reuse supplies no replacement evidence. This remains a
+present-field struct/field-set path: absence and whole-aspect scalar support are
+not added here.
+
+The connected report carries its actual source/producer/role and original
+readonly Native backing through the existing Bridge report and consuming
+terminal. It retains neither mutable runtime authority nor a Native reader or
+parent fact body. `with_allocation_policy` uses the fresh request's actual lease;
+original evidence keeps its original payer. Closing the report releases the
+fresh reservation. Source-only inspection continues to report the actual source
+without inventing a producer.
+
+Five new grouped application cases cover the Calculated-only public positive,
+four independently admitted capability roles, wrong original bindings and owners,
+equal rewrites, genuine no-match query parameters, current revocation,
+cancellation/expiry and real lease release. All 12 selected application cases
+(five new and seven affected) and seven Execution admission/currentness controls
+pass from actual source-owned artifacts. The affected Execution/Host doctests
+pass 233/233; guidance/context generation and boundary/context checks pass with
+verified source-owned tools and no generated content change. Application acquisition
+r1 ended101 on ambiguous observation imports and an uninferred closure parameter;
+two explicit fixture annotations fixed those compiler joins without changing
+assertions or production behavior. The failed receipt is preserved. Final review
+of those joins and this evidence remains required before commit. Prior
+31-case/316-doctest evidence remains attached to prerequisite `8396646380`. Actual suppression,
+rich materialization, optional evidence expiry, private handoff and Phase9
+completion remain open.
 
 ### Source/producer connection
 
@@ -141,8 +217,8 @@ restoration do not manufacture a performed producer. `UnchangedResult` remains
 an output comparison; the actual readiness decision does not by itself establish
 equivalent-output suppression. Source-only admission has the separately exercised
 path above; it does not widen the connected journey's same-binding contract.
-Independently bound source/query connections, missing/absent field connections,
-richer materialization and full Phase9 qualification remain open. The [ordinary source court](../../../worth-query-certification/tests/application_graph/correction/causal_inspection.rs)
+The independent-binding candidate above remains unqualified. Missing/absent field
+connections, richer materialization and full Phase9 qualification remain open. The [ordinary source court](../../../worth-query-certification/tests/application_graph/correction/causal_inspection.rs)
 uses an installed arithmetic producer and a declared Calculated query through
 the two facades. Retained governed reads use the existing Host selected-query
 admission and one-shot execution owners; ordinary `execute_governed` rejects a

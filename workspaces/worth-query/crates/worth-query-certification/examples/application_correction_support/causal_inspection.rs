@@ -4,7 +4,9 @@ use worth_query_host::facade::declaration::{
     application_operation::*, application_query::*, application_schema::*,
 };
 pub mod capability;
+pub mod independent;
 pub mod journey;
+pub mod output_query;
 pub mod query;
 pub mod source_only;
 pub struct SourceOnlyDisclosure;
@@ -43,10 +45,8 @@ pub fn declare(
         .application_query_inspection(source_only::metadata())
         .application_query(query::definition())
         .application_query_binding::<query::Binding>()
-        .application_query_inspection(
-            ApplicationQueryInspectionDefinition::<NumericSchema, query::Binding>::new(
-                ApplicationQueryDisclosureContract::public(),
-            )
-            .unwrap(),
-        )
+        .application_query_inspection(independent::source_metadata())
+        .application_query(output_query::definition())
+        .application_query_binding::<output_query::Binding>()
+        .application_query_inspection(independent::output_metadata())
 }

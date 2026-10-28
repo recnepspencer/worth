@@ -1,4 +1,6 @@
 //! Descriptive results borrow originals and release the same actual session.
+mod connected;
+pub use connected::WorthQueryConnectedApplicationInspection;
 mod comparison;
 mod source;
 use super::super::{

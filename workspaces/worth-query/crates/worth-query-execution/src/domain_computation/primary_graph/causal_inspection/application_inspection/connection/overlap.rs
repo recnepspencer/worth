@@ -7,6 +7,8 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_execution::MapKernelContext;
 use worth_relational::facade::runtime::RelationalFieldPresence;
+mod input;
+
 type Denial = WorthQueryProducerConnectionDenial;
 type Stop = MapKernelFailure<Denial>;
 pub(super) struct ObservationConnection<'a, 'governance> {

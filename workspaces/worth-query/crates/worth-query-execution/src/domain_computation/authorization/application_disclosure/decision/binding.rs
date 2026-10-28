@@ -92,7 +92,7 @@ impl WorthQueryApplicationGovernanceBinding {
         scope: EntityId,
     ) -> Option<Self> {
         let (actual, basis) = graph_work.inspection_binding()?;
-        if !Arc::ptr_eq(actual, target)
+        if !actual.admits_member(target)
             || graph_work.principal() != principal
             || graph_work.entity_access_context() != Some(scope)
         {
@@ -100,7 +100,7 @@ impl WorthQueryApplicationGovernanceBinding {
         }
         Some(Self::bound(
             graph_work,
-            DisclosureSubject::Inspection(Arc::clone(actual)),
+            DisclosureSubject::Inspection(Arc::clone(target)),
             parameters,
             principal,
             scope,
@@ -124,7 +124,7 @@ impl WorthQueryApplicationGovernanceBinding {
             return false;
         };
         matches!(&self.subject, DisclosureSubject::Inspection(retained) if Arc::ptr_eq(retained, target))
-            && Arc::ptr_eq(actual, target)
+            && actual.admits_member(target)
             && basis == &self.basis
             && self.matches_session(graph_work)
             && &self.parameters == parameters

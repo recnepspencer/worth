@@ -81,6 +81,7 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
     target: &WorthQueryApplicationInspectionTarget,
     source: &WorthQueryApplicationCommitReceipt,
     diagnostic: &DiagnosticComparisonAdmission<'_>,
+    source_diagnostic: Option<&DiagnosticComparisonAdmission<'_>>,
     memory: &mut Option<ExecutionMemoryReservation>,
 ) -> Result<WorthQueryApplicationProducerConnection, CaptureStop<WorthQueryProducerConnectionDenial>>
 {
@@ -117,7 +118,24 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
             layout: &runtime.primary_provider.graph.layout,
             contracts: runtime.installed_schema().native_contracts(),
         };
-        observed.require_input(context, execution, source.committed_changes(), inputs)?;
+        if let Some(source_diagnostic) = source_diagnostic {
+            observed.require_independent_input(
+                context,
+                execution,
+                source.committed_changes(),
+                inputs,
+                source_diagnostic,
+                target
+                    .connection_source()
+                    .and_then(|target| target.source())
+                    .ok_or(MapKernelFailure::Domain(Denial::SourceDisclosureMismatch))?
+                    .disclosure
+                    .scope()
+                    .subject(),
+            )?;
+        } else {
+            observed.require_input(context, execution, source.committed_changes(), inputs)?;
+        }
         let role = observed.output_role(context, execution, changes, supplier.correspondence())?;
         Ok(WorthQueryApplicationProducerConnection {
             source: source.committed_changes().clone(),

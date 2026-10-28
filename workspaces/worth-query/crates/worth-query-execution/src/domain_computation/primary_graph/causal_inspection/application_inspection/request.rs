@@ -6,6 +6,10 @@ pub use source::{
     WorthQueryPerformedSourceInspectionRequest, WorthQuerySourceInspectionRequest,
     WorthQuerySourceReferenceOnlyInspectionRequest,
 };
+mod connected;
+pub use connected::{
+    WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest,
+};
 mod changed;
 pub use changed::{
     WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,

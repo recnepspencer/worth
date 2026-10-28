@@ -10,13 +10,14 @@ mod result;
 mod stop;
 pub use request::{
     WorthQueryApplicationInspectionRequest, WorthQueryChangedInspectionRequest,
-    WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryObservedInspectionRequest,
+    WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryConnectedInspectionRequest,
+    WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryObservedInspectionRequest,
     WorthQueryPerformedSourceInspectionRequest, WorthQueryReferenceOnlyInspectionRequest,
     WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
 };
 pub use result::{
-    WorthQueryComparedApplicationInspection, WorthQueryObservedApplicationInspection,
-    WorthQueryPerformedSourceInspection,
+    WorthQueryComparedApplicationInspection, WorthQueryConnectedApplicationInspection,
+    WorthQueryObservedApplicationInspection, WorthQueryPerformedSourceInspection,
 };
 pub use stop::{
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,

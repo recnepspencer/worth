@@ -51,7 +51,7 @@ pub fn connected_source_and_output() {
         .why_changed(&before)
         .caused_by(&source)
         .reference_only()
-        .execute_with_diagnostic(access(&application, &principal, &scope))
+        .execute_governed(access(&application, &principal, &scope),access(&application, &principal, &scope))
         .unwrap_or_else(|denial| {
             panic!(
                 "fresh connected inspection must admit: {denial:?}; source={expected_source:?}; producer={expected_producer:?}; connection={:?}; resource={:?}; canonical={:?}",
@@ -114,7 +114,10 @@ pub fn equal_values_and_head_reads_cannot_supply_a_cause() {
         .why_changed(&before)
         .caused_by(&earlier)
         .reference_only()
-        .execute_with_diagnostic(access(&application, &principal, &scope))
+        .execute_governed(
+            access(&application, &principal, &scope),
+            access(&application, &principal, &scope),
+        )
         .err()
         .expect("an equal value from another write is not the actual input occurrence");
     assert_eq!(
@@ -128,7 +131,10 @@ pub fn equal_values_and_head_reads_cannot_supply_a_cause() {
         .why_changed(&before)
         .caused_by(&source)
         .reference_only()
-        .execute_with_diagnostic(access(&application, &principal, &scope))
+        .execute_governed(
+            access(&application, &principal, &scope),
+            access(&application, &principal, &scope),
+        )
         .err()
         .expect("a same-looking head query cannot infer its supplier");
     assert_eq!(
@@ -142,7 +148,10 @@ pub fn equal_values_and_head_reads_cannot_supply_a_cause() {
         .why_changed(&before)
         .caused_by(&foreign_source)
         .reference_only()
-        .execute_with_diagnostic(access(&application, &principal, &scope))
+        .execute_governed(
+            access(&application, &principal, &scope),
+            access(&application, &principal, &scope),
+        )
         .err()
         .expect("a genuine foreign source has no local causal authority");
     assert_eq!(
@@ -159,6 +168,7 @@ pub fn current_admission_precedes_source_lookup() {
     let (source, _, observation) = perform(&application, 11, "causal-revocation-source");
     let (after, _) = read(&application, &principal, &scope, Some(&observation));
     let admitted = access(&application, &principal, &scope);
+    let metadata = access(&application, &principal, &scope);
     let request = application.runtime().request(&principal, &scope);
     request
         .advanced()
@@ -172,7 +182,7 @@ pub fn current_admission_precedes_source_lookup() {
         .why_changed(&before)
         .caused_by(&source)
         .reference_only()
-        .execute_with_diagnostic(admitted)
+        .execute_governed(metadata, admitted)
         .err()
         .expect("old payloads and capabilities cannot replace current READ");
     assert!(
@@ -210,7 +220,7 @@ fn read(
     )
 }
 
-fn perform(
+pub(super) fn perform(
     application: &host::OutputHost,
     value: u64,
     key: &str,

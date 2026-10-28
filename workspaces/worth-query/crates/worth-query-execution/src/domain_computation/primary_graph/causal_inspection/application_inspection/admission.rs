@@ -3,7 +3,9 @@ mod plan;
 pub(super) use plan::InspectionPlanDenial;
 mod subject;
 pub(super) use subject::InspectionSubject;
-mod preparation;
+pub(super) mod connected;
+pub(super) mod policy;
+pub(super) mod preparation;
 pub(super) use preparation::prepare;
 mod affinity;
 pub(super) use affinity::validate_original_affinity;
@@ -72,6 +74,7 @@ pub(super) struct InspectionRead<'a, 'storage, Schema, Scope> {
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
     diagnostic: Option<WorthQueryApplicationQueryGovernance>,
+    source: Option<connected::SourceRead>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 }
 

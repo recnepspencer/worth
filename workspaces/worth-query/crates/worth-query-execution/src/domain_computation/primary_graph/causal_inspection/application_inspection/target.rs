@@ -13,6 +13,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationInspectionCo
 pub(in crate::domain_computation) struct WorthQueryApplicationInspectionTarget {
     original: InspectionOriginal,
     contract: WorthQueryInstalledApplicationInspectionContract,
+    connection_source: Option<Arc<Self>>,
 }
 
 enum InspectionOriginal {
@@ -57,6 +58,7 @@ impl WorthQueryApplicationInspectionTarget {
                     before: before.cloned(),
                 },
                 contract,
+                connection_source: None,
             }))
         })
         .map_err(InspectionTargetDenial::Storage)
@@ -81,9 +83,37 @@ impl WorthQueryApplicationInspectionTarget {
             Ok(Arc::new(Self {
                 original: InspectionOriginal::Source(original.clone()),
                 contract,
+                connection_source: None,
             }))
         })
         .map_err(InspectionTargetDenial::Storage)
+    }
+    /// Only an actual admitted source becomes a direct member of this immutable target.
+    pub(super) fn capture_connection(
+        execution: &ExecutionRequest<'_, '_>,
+        original: &WorthQueryApplicationQueryObservation,
+        contract: WorthQueryInstalledApplicationInspectionContract,
+        source: Arc<Self>,
+        memory: &mut Option<ExecutionMemoryReservation>,
+    ) -> Result<Arc<Self>, InspectionTargetDenial> {
+        let mut target = Self::capture(execution, original, None, contract, memory)?;
+        Arc::get_mut(&mut target)
+            .expect("unpublished target")
+            .connection_source = Some(source);
+        Ok(target)
+    }
+    pub(in crate::domain_computation) fn admits_member(&self, target: &Arc<Self>) -> bool {
+        std::ptr::eq(self, target.as_ref())
+            || self
+                .connection_source
+                .as_ref()
+                .is_some_and(|source| Arc::ptr_eq(source, target))
+    }
+    pub(super) fn connection_source(&self) -> Option<&Arc<Self>> {
+        self.connection_source.as_ref()
+    }
+    pub(super) fn needs_diagnostic(&self) -> bool {
+        self.before().is_some() || self.connection_source.is_some()
     }
     pub(super) fn source(&self) -> Option<&super::source_original::SourceOriginal> {
         match &self.original {

@@ -30,10 +30,12 @@ pub mod application_inspection {
         WorthQueryApplicationInspectionStopKind, WorthQueryApplicationProducerConnection,
         WorthQueryApplicationQueryObservation, WorthQueryChangedInspectionRequest,
         WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryComparedApplicationInspection,
-        WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest,
-        WorthQueryPerformedSourceInspection, WorthQueryPerformedSourceInspectionRequest,
-        WorthQueryProducerConnectionDenial, WorthQueryReferenceOnlyInspectionRequest,
-        WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
+        WorthQueryConnectedApplicationInspection, WorthQueryConnectedInspectionRequest,
+        WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryObservedApplicationInspection,
+        WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspection,
+        WorthQueryPerformedSourceInspectionRequest, WorthQueryProducerConnectionDenial,
+        WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest,
+        WorthQuerySourceReferenceOnlyInspectionRequest,
     };
 }
 

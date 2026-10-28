@@ -1,16 +1,11 @@
 //! Fixed metadata policy is selected before the original target is sized or copied.
 use super::*;
 use crate::domain_computation::{
-    authorization::application_disclosure::{
-        compile_diagnostic_disclosure_contract, compile_inspection_disclosure_contract,
-        prepare_application_diagnostic_governance, prepare_application_inspection_governance,
-        WorthQueryPendingApplicationQueryGovernance,
-    },
+    authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
     primary_graph::{
         admitted_capture::{checkpoint, run_retained_stage, RetainedStorageDenial},
-        application_query::{SelectedIssuedAccessRoot, WorthQueryApplicationQueryAccessContext},
         WorthQueryIssuedSelectedPrincipal, WorthQueryIssuedSelectedScope,
-        WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
+        WorthQuerySelectedProductOperation,
     },
     provider_session::{
         WorthQueryGraphWorkAccessContextAffinity, WorthQueryPreparedProductReadSessionIdentity,
@@ -18,8 +13,7 @@ use crate::domain_computation::{
 };
 use worth_execution::MapKernelFailure;
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBinding, ApplicationQueryInspectionMetadataFacet as Facet,
-    ApplicationQueryScopeBinding,
+    ApplicationQueryBinding, ApplicationQueryScopeBinding,
 };
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
@@ -59,143 +53,71 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationQueryBinding<Schema>,
 {
-    require_request(execution, request)?;
-    let contract = original.validate(runtime, installed, selected, scope.scope().entity_id())?;
-    if let Some(comparison) = &comparison {
-        InspectionSubject::Query(comparison.before).validate(
+    let reserved = WorthQueryPreparedProductReadSessionIdentity::reserve()
+        .map_err(InspectionAdmissionDenial::Session)?;
+    let before = comparison.as_ref().map(|comparison| comparison.before);
+    if let Some(before) = before {
+        InspectionSubject::Query(before).validate(
             runtime,
             installed,
             selected,
             scope.scope().entity_id(),
         )?;
     }
-    let access = WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
-    let root = SelectedIssuedAccessRoot::from_issued(
+    let (contract, policy) = super::policy::prepare(
+        runtime,
+        execution,
+        installed,
         selected,
-        &access,
         principal,
         scope,
         request,
-        "application inspection",
+        original,
+        pending,
+        comparison.map(|v| v.pending),
+        &reserved,
+        memory,
+    )?;
+    let target = original.capture(execution, before, contract, memory)?;
+    start(
+        runtime,
+        execution,
+        selected,
+        principal.principal().principal_entity_id(),
+        scope.scope(),
+        request,
+        target,
+        policy,
+        reserved,
+        None,
+        memory,
     )
-    .map_err(InspectionAdmissionDenial::Authorization)?;
-    let reserved = WorthQueryPreparedProductReadSessionIdentity::reserve()
-        .map_err(InspectionAdmissionDenial::Session)?;
-    let (authorization, _) = runtime
-        .observe_issued_query_read_authorization(execution, installed.query(), &root, &reserved)
-        .map_err(InspectionAdmissionDenial::Authorization)?;
-    let disclosure = compile_inspection_disclosure_contract(&contract, execution, memory)
-        .map_err(InspectionAdmissionDenial::Storage)?;
-    let mut metadata = prepare_application_inspection_governance(disclosure, pending)
-        .map_err(InspectionAdmissionDenial::Governance)?;
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn start<
+    'a,
+    'storage,
+    Schema: ApplicationSchema,
+    Scope,
+>(
+    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    execution: &ExecutionRequest<'_, '_>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    principal: worth_relational::facade::identity::EntityId,
+    scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    request: &'a WorthQueryRequestScope,
+    target: Arc<WorthQueryApplicationInspectionTarget>,
+    policy: super::policy::PreparedInspectionPolicy,
+    reserved: WorthQueryPreparedProductReadSessionIdentity,
+    source: Option<super::policy::PreparedInspectionPolicy>,
+    memory: &'storage mut Option<ExecutionMemoryReservation>,
+) -> Result<InspectionRead<'a, 'storage, Schema, Scope>, InspectionAdmissionDenial> {
     let product = selected.product().read_lease();
-    if let Some(capability) = metadata.authorization_mut() {
-        runtime
-            .refresh_capability_authorization_for_prepared_read(
-                execution, capability, &reserved, &product,
-            )
-            .map_err(InspectionAdmissionDenial::Capability)?;
-    }
     let graph = runtime
         .runtime
         .primary_graph()
         .ok_or(InspectionAdmissionDenial::MissingGraph)?;
-    let security = runtime
-        .admit_product_security_basis(execution, &product)
-        .map_err(InspectionAdmissionDenial::Security)?;
-    let resolution = graph.retain_entity_resolution_context();
-    graph
-        .integration_handle()
-        .with_runtime_mut(execution, |relational| {
-            let snapshot = security.snapshot_handle();
-            authorization
-                .validate_currentness_in(
-                    execution,
-                    relational,
-                    snapshot,
-                    runtime.authorization.bridge(),
-                )
-                .map_err(|cause| InspectionAdmissionDenial::CurrentAuthorization(cause))?;
-            if let Some(capability) = metadata.authorization_mut() {
-                capability
-                    .validate_currentness_in(
-                        execution,
-                        relational,
-                        snapshot,
-                        runtime.authorization.bridge(),
-                    )
-                    .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
-            }
-            resolution
-                .at_snapshot(
-                    relational,
-                    snapshot,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .and_then(|truth| truth.validate_entity_freshness(execution, scope.scope()))
-                .map_err(InspectionAdmissionDenial::Scope)
-        })?;
-    // Observed requires its five fixed metadata facets. A paired comparison
-    // additionally requires DiagnosticFields before retaining either original;
-    // the separate diagnostic capability still owns payload comparison.
-    for (facet, slot) in Facet::ALL.iter().zip(contract.metadata_slots()) {
-        if matches!(
-            facet,
-            Facet::ObservationIdentity
-                | Facet::EvidenceLinks
-                | Facet::EvidenceCounts
-                | Facet::EvidenceAvailability
-                | Facet::Explanation
-        ) || comparison.is_some()
-        {
-            if !metadata.is_disclosed(slot) {
-                return Err(InspectionAdmissionDenial::FacetDenied);
-            }
-        }
-    }
-    require_request(execution, request)?;
-    let before = comparison.as_ref().map(|comparison| comparison.before);
-    let mut diagnostic = match comparison {
-        Some(comparison) => {
-            let contract = compile_diagnostic_disclosure_contract(
-                installed.query(),
-                &graph.layout,
-                execution,
-                memory,
-            )
-            .map_err(InspectionAdmissionDenial::DiagnosticContract)?;
-            let mut diagnostic = prepare_application_diagnostic_governance(
-                installed.query(),
-                contract,
-                comparison.pending,
-                execution,
-                memory,
-            )
-            .map_err(InspectionAdmissionDenial::DiagnosticPreparation)?;
-            if let Some(capability) = diagnostic.authorization_mut() {
-                runtime
-                    .refresh_capability_authorization_for_prepared_read(
-                        execution, capability, &reserved, &product,
-                    )
-                    .map_err(InspectionAdmissionDenial::Capability)?;
-                graph
-                    .integration_handle()
-                    .with_runtime_mut(execution, |relational| {
-                        capability
-                            .validate_currentness_in(
-                                execution,
-                                relational,
-                                security.snapshot_handle(),
-                                runtime.authorization.bridge(),
-                            )
-                            .map_err(InspectionAdmissionDenial::CurrentAuthorization)
-                    })?;
-            }
-            Some(diagnostic)
-        }
-        None => None,
-    };
-    let target = original.capture(execution, before, contract, memory)?;
     let plan = plan::admit(runtime, execution, target.contract(), memory)
         .map_err(InspectionAdmissionDenial::Plan)?;
     let basis_ref = selected.application_basis().identity();
@@ -224,8 +146,8 @@ where
                 Arc::clone(&target),
                 plan,
                 runtime.runtime.authority_identity(),
-                principal.principal().principal_entity_id(),
-                WorthQueryGraphWorkAccessContextAffinity::entity(scope.scope().entity_id()),
+                principal,
+                WorthQueryGraphWorkAccessContextAffinity::entity(scope.entity_id()),
                 basis_ref,
                 product,
                 runtime.graph_work_provider_identity(),
@@ -235,14 +157,19 @@ where
     })
     .map_err(InspectionAdmissionDenial::Storage)?;
     let mut session = session.map_err(InspectionAdmissionDenial::Session)?;
+    let super::policy::PreparedInspectionPolicy {
+        authorization,
+        metadata,
+        mut diagnostic,
+    } = policy;
     let binding = governance_binding::capture(
         execution,
         memory,
         &session,
         &target,
         target.parameters(),
-        principal.principal().principal_entity_id(),
-        scope.scope().entity_id(),
+        principal,
+        scope.entity_id(),
     )?;
     let governance = metadata
         .bind_inspection(binding)
@@ -256,16 +183,30 @@ where
                 &session,
                 &target,
                 target.parameters(),
-                principal.principal().principal_entity_id(),
-                scope.scope().entity_id(),
+                principal,
+                scope.entity_id(),
             )?;
             diagnostic
                 .bind_inspection(binding)
                 .map_err(InspectionAdmissionDenial::Governance)
         })
         .transpose()?;
+    let source = source
+        .map(|policy| {
+            super::connected::bind_source(
+                execution,
+                memory,
+                &session,
+                &target,
+                principal,
+                scope.entity_id(),
+                policy,
+            )
+        })
+        .transpose()?;
     session.set_retained_decision_facts(
-        authorization.exact_fact_count()
+        source.as_ref().map_or(0, |v| v.fact_count())
+            + authorization.exact_fact_count()
             + governance
                 .authorization()
                 .map_or(0, |capability| capability.exact_fact_count())
@@ -276,9 +217,9 @@ where
     );
     let mut admitted = InspectionRead {
         runtime,
-        scope: scope.scope(),
+        scope,
         request,
-        principal: principal.principal().principal_entity_id(),
+        principal: principal,
         basis,
         target,
         session,
@@ -286,6 +227,7 @@ where
         authorization,
         governance,
         diagnostic,
+        source,
         memory,
     };
     admitted.check(execution)?;

@@ -59,7 +59,7 @@ pub(super) fn identities<Stop>(
     let (actual, current) = session
         .inspection_binding()
         .ok_or(InspectionIdentityStop::ForeignSession)?;
-    if !Arc::ptr_eq(actual, target) {
+    if !actual.admits_member(target) {
         return Err(InspectionIdentityStop::ForeignSession);
     }
     if reference == InspectionOriginalReference::Source {
@@ -192,6 +192,39 @@ pub(super) fn comparison_identity<Stop>(
             Part::Text(after.report_identity()),
             Part::Text(reason.as_str()),
             Part::Text("reference-only"),
+        ],
+        admit,
+    )
+}
+
+pub(super) fn connected_identity<Stop>(
+    query: &super::report::InspectionReportPayload,
+    source: &Arc<WorthQueryApplicationInspectionTarget>,
+    session: &WorthQueryManagedGraphWorkSession,
+    connection: &super::connection::WorthQueryApplicationProducerConnection,
+    admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
+) -> Result<BridgeIdentityEvidence, InspectionIdentityStop<Stop>> {
+    let source = identities(source, session, InspectionOriginalReference::Source, admit)?;
+    compose(
+        "query.application-inspection.connected-observation.v1",
+        &[
+            Part::Text(query.report_identity()),
+            Part::Text(source.observation.terminal_projection_for_reporting()),
+            Part::Text(source.admission.terminal_projection_for_reporting()),
+            Part::Number(connection.source_commit().commit_id.0),
+            Part::Number(connection.source_commit().version_id.0),
+            Part::Number(connection.producer_commit().commit_id.0),
+            Part::Number(connection.producer_commit().version_id.0),
+            Part::Text(connection.output_role()),
+            Part::Text(
+                connection
+                    .native_observation()
+                    .lowering_projection()
+                    .label(),
+            ),
+            Part::Text(connection.native_observation().signal_projection().label()),
+            Part::Number(connection.native_observation().attempt()),
+            Part::Number(u64::from(connection.has_performed_invalidation())),
         ],
         admit,
     )
