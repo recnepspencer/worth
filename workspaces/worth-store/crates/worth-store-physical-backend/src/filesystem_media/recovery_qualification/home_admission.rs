@@ -27,8 +27,20 @@ impl QualifiedRecoveryParts {
             )
             .map_err(|_| RecoveryFilesystemQualificationError::RootUnavailable)
         };
+        let lock_name =
+            worth_store_physical_format::store_namespace::StoreNamespaceRelativeRole::MutationLock
+                .components()
+                .last()
+                .expect("the mutation lock has a fixed name");
+        let namespace_has_store = super::super::artifact_tree_effects::directory_has_other_entry(
+            &self.owner,
+            self.owner.namespace_directory().directory(),
+            lock_name,
+        )
+        .map_err(|_| RecoveryFilesystemQualificationError::RootUnavailable)?;
         Ok(
-            if has_entries(self.owner.families().handle())?
+            if namespace_has_store
+                || has_entries(self.owner.families().handle())?
                 || has_entries(self.owner.staging().handle())?
             {
                 RecoveryStorePresence::ExistingArtifacts

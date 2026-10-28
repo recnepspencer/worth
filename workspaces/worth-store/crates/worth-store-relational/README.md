@@ -3,7 +3,8 @@
 `RelationalStoreHome::open` owns physical recovery, descriptor admission and
 Relational readmission. It initializes a record family only when the lease
 holder proves it absent; existing partial or damaged stores are completed or
-refused, never overwritten. Competing writers receive the typed
+refused, never overwritten. A surviving namespace identity alone counts as
+an existing Store; losing its record family cannot reset incarnation. Competing writers receive the typed
 `RelationalStorePhysicalRefusalKind::MutationOwnerContended`.
 
 A recovery-to-serving handoff retains the same OS mutation lease throughout.

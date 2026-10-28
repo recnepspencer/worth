@@ -160,3 +160,25 @@ fn missing_record_family_with_other_store_residue_is_never_initialized() {
     assert!(!location.join("families/records").exists());
     assert_eq!(fs::read(residue.join("truth")).unwrap(), b"retained");
 }
+
+#[test]
+fn missing_record_family_with_only_namespace_identity_is_never_initialized() {
+    let parent = tempfile::tempdir().unwrap();
+    let location = parent.path().join("home");
+    let request = workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    open(&location, &execution).unwrap().close();
+    let identity = fs::read(location.join("namespace/identity")).unwrap();
+    // Identity is the only durable Store artifact left after losing the family.
+    // It cannot prove that this was an interrupted first initialization.
+    fs::remove_dir_all(location.join("families/records")).unwrap();
+    fs::remove_dir_all(location.join("staging/records")).unwrap();
+    assert_eq!(fs::read_dir(location.join("families")).unwrap().count(), 0);
+    assert_eq!(fs::read_dir(location.join("staging")).unwrap().count(), 0);
+    assert!(open(&location, &execution).is_err());
+    assert!(!location.join("families/records").exists());
+    assert_eq!(
+        fs::read(location.join("namespace/identity")).unwrap(),
+        identity
+    );
+}
