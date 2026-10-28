@@ -7,7 +7,10 @@ use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 
 use super::diagnostic_fields::retention_plan_inspection_fields;
 
+mod maintenance;
 mod partition_pass;
+pub use crate::storage::authority::RelationalRetentionPassStop;
+pub use maintenance::{RelationalRetentionPassProgress, RelationalStoppedRetentionPass};
 
 use partition_pass::{
     inspect_partition_retention, refresh_entity_retention_state, refresh_relation_retention_state,

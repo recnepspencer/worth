@@ -124,29 +124,6 @@ Bring a backend back when a real workload needs it: browser parallelism for a
 shipped web product, a computation that outgrows one machine, or a kernel that
 needs an accelerator.
 
-### Components (islands) plan shape in Query
-
-Spec: [milestone-9.17.6.3.md](WORTH-query/milestone-9.17.6.3.md), Slice 6.8
-and the isolation-and-reuse requirements.
-
-`worth-execution`'s `ComponentPartitioner` groups items into islands routed by
-their least current member. Removing that member changes the routing key;
-this key is not a persistent aggregate identity. Its incremental membership
-and checked runtime maintenance are proven there. Query plans route items by
-key only, so no Query declaration reaches islands, and Query makes no island
-claim. Milestone 9.18.1 Phase 5 must combine that maintenance with Phase 4's
-committed aggregate identity and lineage owner. Deferred:
-
-- a Components plan shape in Query, with its incremental maintenance;
-- the topology entry's differential extended with island merges and splits.
-
-Bring it back when a Query declaration needs connectivity-shaped partitions,
-such as islands of a topology.
-
-Planned: [milestone-9.18.1.md](WORTH-query/milestone-9.18.1.md), Phase 5. It
-also gives islands a persistent identity with lineage, so this entry is removed
-when Phase 5 ships.
-
 ## Worth Store
 
 The [Database Foundation Roadmap](database-foundation/roadmap.md) governs the

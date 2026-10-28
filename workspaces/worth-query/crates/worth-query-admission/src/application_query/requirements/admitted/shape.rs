@@ -99,8 +99,11 @@ pub(super) fn finish<Stop>(
     )
     .with_predicates(predicate_family, predicate_fields)
     .with_ordering(ordering_posture, ordering_fields)
-    .with_relationship_proof_required(inventory.relation_count() != 0)
-    .with_root_union_dedup_required(graph.root_union_dedup_required()))
+    .with_relationship_proof_required(
+        inventory.relation_count() != 0 || graph.component_selection().is_some(),
+    )
+    .with_root_union_dedup_required(graph.root_union_dedup_required())
+    .with_component_selection_required(graph.component_selection().is_some()))
 }
 
 fn predicate_fields<Stop>(

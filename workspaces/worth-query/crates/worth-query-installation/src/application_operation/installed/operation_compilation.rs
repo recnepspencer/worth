@@ -119,7 +119,16 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             )
         })?;
         let authored_program_width = program_width::resolve(portable_contract, operation)?;
-        if authored_program_width == 0 && decision_reads.is_empty() {
+        if authored_program_width == 0
+            && decision_reads.is_empty()
+            && !portable_contract.graph_reads().iter().any(|scope| {
+                matches!(
+                    scope,
+                    crate::package::WorthQueryPortableOperationGraphReadScope::Components { .. }
+                    | crate::package::WorthQueryPortableOperationGraphReadScope::DerivedSource { .. }
+                )
+            })
+        {
             return Err(operation_denial(
                 WorthQueryApplicationOperationInstallationDenialKind::MissingProgram,
                 operation,

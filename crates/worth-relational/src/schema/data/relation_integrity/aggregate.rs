@@ -11,14 +11,29 @@ pub struct AggregateIdentityStorage {
     pub lineage_kind: KindId,
     pub aggregate_aspect: AspectIdentity,
     pub lineage_aspect: AspectIdentity,
+    /// Absent keeps the original four-field storage shape and record grammar.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projected: Option<AggregateProjectedMemberStorage>,
 }
 
-/// Installed ownership of a stored homogeneous permutation's aggregate records.
-/// This is schema meaning, not a handle granting a caller metadata write access.
+/// Reserved grammar for projected coordinates and grouped carrier memberships.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct AggregateProjectedMemberStorage {
+    pub coordinate_aspect: AspectIdentity,
+    pub membership_aspect: AspectIdentity,
+}
+
+/// The installed physical or registered derived graph receiving persistent names.
+mod source;
+pub use source::AggregateIdentitySource;
+
+/// Installed ownership of a stored graph's aggregate records.
+/// This is schema meaning, not a handle granting a caller metadata write access.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct AggregateIdentityContractDeclaration {
     pub definition: AggregateDefinitionIdentity,
-    pub source_relation: KindId,
+    #[serde(rename = "source_relation")]
+    pub source: AggregateIdentitySource,
     pub member_kind: KindId,
     pub membership_kind: KindId,
     pub storage: AggregateIdentityStorage,
@@ -26,7 +41,7 @@ pub struct AggregateIdentityContractDeclaration {
 
 impl AggregateIdentityContractDeclaration {
     /// These kinds remain Native custody across authored payload suspension.
-    pub(crate) fn metadata_kinds(self) -> [KindId; 3] {
+    pub(crate) fn metadata_kinds(&self) -> [KindId; 3] {
         [
             self.storage.aggregate_kind,
             self.storage.lineage_kind,
@@ -37,8 +52,8 @@ impl AggregateIdentityContractDeclaration {
     pub(crate) fn canonical_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(68);
         bytes.extend_from_slice(self.definition.bytes());
+        self.source.write_canonical(&mut bytes);
         for kind in [
-            self.source_relation,
             self.member_kind,
             self.membership_kind,
             self.storage.aggregate_kind,
@@ -48,6 +63,11 @@ impl AggregateIdentityContractDeclaration {
         }
         bytes.extend_from_slice(&self.storage.aggregate_aspect.0.to_be_bytes());
         bytes.extend_from_slice(&self.storage.lineage_aspect.0.to_be_bytes());
+        if let Some(projected) = self.storage.projected {
+            bytes.extend_from_slice(b"WORTH_PROJECTED_AGGREGATE_STORAGE_V1\0");
+            bytes.extend_from_slice(&projected.coordinate_aspect.0.to_be_bytes());
+            bytes.extend_from_slice(&projected.membership_aspect.0.to_be_bytes());
+        }
         bytes
     }
 }

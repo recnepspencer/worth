@@ -5,6 +5,11 @@ pub(in crate::domain_computation::primary_graph) use output_availability_candida
 };
 mod admission_denial;
 mod aggregate;
+mod aggregate_read;
+mod component;
+mod graph_member;
+mod logical_projection;
+pub use component::WorthQueryInvariantProjectionComponent;
 pub(in crate::domain_computation::primary_graph) mod consumed_output;
 mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
@@ -21,12 +26,16 @@ mod operation_projection_denial;
 mod operation_reader;
 pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
 pub use operation_reader::{
+    WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
+    WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
+    WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,
 };
 mod realized_scope;
 mod relation_field;
 mod relation_identity;
+pub use relation_identity::WorthQueryInvariantRelation;
 mod traversal;
 mod walk;
 mod work;
@@ -46,7 +55,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue,
     WritePosture,
 };
-use worth_relational::facade::identity::{EntityId, KindId, RelationId, VersionId};
+use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use super::{
@@ -163,16 +172,6 @@ pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
     pub(in crate::domain_computation::primary_graph) admission_identity:
         crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
-}
-
-/// A relation observed by an invariant projection, with the identities of its
-/// source and target entities.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryInvariantRelation<Schema, Relation, From, To> {
-    relation_id: RelationId,
-    from: WorthQueryInvariantEntityIdentity<Schema, From>,
-    to: WorthQueryInvariantEntityIdentity<Schema, To>,
-    _relation: PhantomData<fn() -> Relation>,
 }
 
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>

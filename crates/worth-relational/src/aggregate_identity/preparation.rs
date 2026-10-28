@@ -3,17 +3,18 @@ use worth_execution::{ChargedBytes, ExecutionMemoryReservation};
 
 use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranchState};
 use crate::history::data::CommitId;
-use crate::identity::data::KindId;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{OverlayStateView, WorkingState};
 use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan, TransactionCommitError};
 use crate::validation::engine::state_view::InvariantStateView;
+use worth_foundational::facade::AggregateDefinitionIdentity;
 
 use super::changes::AggregateChanges;
 pub(super) use super::funding::{AggregateWork, BuildResult, PlanDenial};
 use super::projection::{AggregateProjection, DefinitionProjection, ProjectionData};
 use super::{cohorts, consequence_plan};
 use std::sync::Arc;
+pub(super) mod derived_laws;
 
 pub(crate) struct AggregateAdmission {
     pub(crate) plan: MergedCommitPlan,
@@ -28,6 +29,7 @@ pub(crate) struct PreparedConsequences {
 pub(super) struct PreparedAggregateArtifact {
     pub(super) projection: Arc<AggregateProjection>,
     pub(super) consequences: Option<PreparedConsequences>,
+    pub(super) reads: super::AggregateReadObservations,
 }
 struct PreparedValue {
     apply: AuthoritativeApplyPlan,
@@ -72,7 +74,18 @@ pub(super) fn prepare(
     let before = InvariantStateView::new(selected, selected.version_id());
     let overlay = OverlayStateView::new(selected, working);
     let after = InvariantStateView::new(&overlay, version);
-    let (value, retention) = super::funding::run(execution, budget, |work| {
+    let (value, retention, reads) = super::funding::run_observed(execution, budget, |work| {
+        // Canonical derived laws are independent of aggregate registrations and
+        // must name their real source failure before any identity allocation.
+        derived_laws::validate(
+            authority.registry(),
+            &before,
+            &after,
+            &effect.adjacency,
+            &effect.records,
+            derived_laws::LawStage::Business,
+            work,
+        )?;
         let mut plan = consequence_plan::ConsequencePlan::default();
         let mut projection = ProjectionData::default();
         let source_bytes = effect.retained_bytes();
@@ -83,22 +96,42 @@ pub(super) fn prepare(
             .registry()
             .relation_kinds
             .values()
-            .filter_map(|kind| kind.relation_integrity.aggregate_identity)
+            .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
         {
             work.checkpoint(1)?;
-            work.retain(super::retention_extent::tree_entry::<
-                KindId,
-                DefinitionProjection,
-            >())?;
-            let changed = match cohorts::collect(contract, &before, &after, effect, work)? {
+            work.retain(
+                super::retention_extent::tree_entry::<
+                    AggregateDefinitionIdentity,
+                    DefinitionProjection,
+                >()
+                .saturating_add(contract.source.owned_bytes()),
+            )?;
+            let changed = match cohorts::collect(
+                execution,
+                contract,
+                authority.registry(),
+                &before,
+                &after,
+                effect,
+                work,
+            )? {
                 Some(cohorts) => Some(consequence_plan::append(
-                    &mut plan, contract, occurrence, cohorts, &after, work,
+                    &mut plan,
+                    contract,
+                    authority.registry(),
+                    occurrence,
+                    cohorts,
+                    &after,
+                    work,
                 )?),
                 None => None,
             };
             projection.definitions.insert(
-                contract.source_relation,
-                DefinitionProjection { contract, changed },
+                contract.definition,
+                DefinitionProjection {
+                    contract: contract.clone(),
+                    changed,
+                },
             );
         }
         if plan.intents.is_empty() {
@@ -178,5 +211,6 @@ pub(super) fn prepare(
     Ok(PreparedAggregateArtifact {
         projection,
         consequences,
+        reads,
     })
 }

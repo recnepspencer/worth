@@ -321,4 +321,5 @@ fn declaration_description_survives_portable_readmission_and_binds_denial_identi
     assert_ne!(restored.identity(), changed.identity());
 }
 
+mod component_scope;
 mod portable_mutation;

@@ -1,11 +1,12 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-> **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
+> **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 accepted on 2026-10-27.
 > Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
 > Phases 13–14 and 16–18 remain required here, including Rust 1.99.x qualification.
+> Addendum 1 adds required P1 Phase 19: correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -484,8 +485,9 @@ links compiled projection, handler, query and privileged lineage examples.
 Proprietary's [CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md)
 records genuine sheet edits, holes, split/merge lineage and current-main
 qualification at `33278669079835d5f0f5c96556697784fa449eb9`, retaining SDK `b9cdf607`.
-Derived orbits remain Phase 6; governed and tracked lineage reads remain separate
-unavailable capabilities.
+The derived-orbit substrate and its private consumer gates are qualified under
+accepted Phase 6. Governed and tracked lineage reads remain separate unavailable
+capabilities.
 
 ### Requirements
 
@@ -519,7 +521,8 @@ unavailable capabilities.
   - the current identity that a retired identity's lineage leads to.
 - **Composing orbits.** An orbit relation may itself be a derived relation (Phase
   6), so a composed permutation becomes an orbit without new platform vocabulary.
-  Until Phase 6 lands, orbits are declared on stored relations.
+  The accepted Phase 6 substrate binds derived permutation sources and is
+  qualified through the private consumer gates.
 
 ### Tests That Prove It
 
@@ -598,14 +601,17 @@ and tracked lineage decisions remain separate unfinished capabilities.
 
 ## Phase 5: Components With Persistent Identity
 
+**Accepted, 2026-10-27.** The component identity, lineage and maintenance courts
+and the complete current-main CAD qualification recorded under Phase 6 accept
+this phase. The SDK remains `5b01312ed0048ad4591e6b4a50e08685ea6d77ba`.
+
 **Depends on:** Phase 4 (aggregate identity and lineage).
 
 ### Requirements
 
 - An application declares a component set over one or more relations, read as
   undirected coupling, for example components of a declared adjacency relation.
-- Query gains the plan shape that `plans/deferred-work.md` defers under
-  "Components (islands) plan shape in Query":
+- Query installs the component-set root and component-read plan shape:
   - it lowers onto `ComponentPartitioner` and its incremental maintenance
     (9.17.6.3 Slice 6.8);
   - it gives each component the Phase 4 aggregate identity, not the
@@ -642,6 +648,25 @@ and tracked lineage decisions remain separate unfinished capabilities.
   shell identity.
 - The feature guide documents component sets with compiled examples.
 
+The public [topology island consumer](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#public-topology-island-consumer)
+now uses complete component reads plus genuine ordered orbits. Its existing
+grouped topology target includes independent seeded union-find comparison across
+ordinary coupling edits and least-member replacement, and original business-read
+locality beside 10 and 10,000 unrelated rings. The Native component courts also
+audit actual cert-only replay after split/merge and compare complete published
+membership, identities, incident lineage and historical-name resolution across
+one, two and eight workers. Parallel runs require actual overlapping invariant
+readers and staged-parallel metadata; they do not claim parallel partition
+maintenance. See [component replay and worker determinism](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-replay-and-worker-determinism).
+**Accepted, 2026-10-27.** Installed CAD reads retain genuine Native shell
+components over derived face-use adjacency. The eleven focused Entry courts
+cover independent topology oracles, actual split/merge and least-member removal,
+whole-cohort context transfer, versioned ingress and tessellation consumption,
+typed side-anchor refusal, retained decisions and cache invalidation. Production
+reclamation reuses the original face slot with a higher generation while the
+original historical fields and retained component remain valid; a stale current
+seed refuses. The Components deferred-work entry is removed.
+
 ### Gaps To Watch
 
 - **The partitioner's name leaking.** Least-member names may serve internally as
@@ -656,18 +681,55 @@ and tracked lineage decisions remain separate unfinished capabilities.
 
 ### Target DX
 
-```rust,ignore
-schema.components::<Shells>(&[FaceAdjacency::reference()]);
+This is a component set of stored faces. CAD shells require the projected
+face-use member domain specified below; these face islands are not shells.
 
-let shell = reader.component_of(Shells::reference(), &face)?;
-let shell_identity = shell.identity();
-let faces = shell.members();
-let count = reader.component_count(Shells::reference())?;
+```rust,ignore
+schema.components::<FaceIslands>(&[FaceAdjacency::reference()]);
+
+let island = reader.component_of(FaceIslands::reference(), &face)?;
+let island_identity = island.identity();
+let faces = island.members();
+let count = reader.component_count(FaceIslands::reference())?;
 ```
 
 ---
 
 ## Phase 6: Derived Relations Readable By Rules
+
+**Accepted, 2026-10-27.** The public logical-source substrate is qualified by 35
+runtime courts and a Host compile-pass/compile-fail pair. Genuine Native sources
+feed proposed/committed rule reads, declared decisions, ordinary committed
+projection and framework-owned managed counts. The evidence covers derived
+laws, walks, orbits, complete component/census reads and Native identity/lineage;
+exact audience/posture/currentness, original-request refusal and retained
+material custody; cache invalidation/discard/rebuild; and the real grant-authority
+adversary. Legacy bytes, durable recovery, independent seeded membership/heir
+oracles, cert-only replay and actual one/two/eight-worker execution are qualified.
+The 10/10,000 courts compare actual maintenance and business-read acquisition
+category totals. Equal totals do not claim fixed work or an acquisition-identity
+roster. The public production-maintenance prerequisite is separately qualified
+at `5b01312ed004` by ten Native courts, one Query owner court and a Host example.
+The same SDK pin is adopted by the eleven focused CAD Entry courts. Actual
+region/exterior incidence supplies derived shell adjacency and retained decisions;
+malformed both/neither anchors refuse without publication. A retained guarded
+decision becomes stale before an unchanged physical-only twin commits in the
+same world, and a fresh guarded decision then commits. Cold/warm, unrelated-body
+and source-transition cache controls preserve their distinct causes. Combined
+public and private evidence accepts Phases 5–6; no derived value grants authority.
+
+The complete private qualification integrates incoming main `52b0fd370ee428f1`
+in merge `70aa8334bd8eb558bcbe589507152049b9805728`, retaining SDK
+`5b01312ed0048ad4591e6b4a50e08685ea6d77ba`. Its
+[CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/70aa8334bd8eb558bcbe589507152049b9805728/cad/docs/plans/query-9.18.1-adoption.md)
+records all 356 Entry tests passing with one existing ignored test, all 3,480
+workspace CI tests passing with 78 skipped, 62 cost tests passing, 213 doc tests
+passing, and an all-target check. The CI and cost lanes exclude only Entry, whose
+complete required lane ran separately. Oracle, determinism, repository Python,
+policy, dependency and line-cap gates also pass. The earlier Entry and CI failures
+remain recorded alongside their reviewed corrections and successful full retries.
+This qualification used Rust 1.98.0 (`88d9e12ae178fab0fb5cc050a94da85685d449ea`);
+it does not close Phase 18’s required Rust 1.99.x qualification.
 
 **Depends on:** Phase 3 (walk reads), and the existing derived-view owner.
 
@@ -729,6 +791,198 @@ schema.derived_relation::<FaceAdjacency>(
 
 let neighbours = reader.derived_relations_from(FaceAdjacency::reference(), &face)?;
 ```
+
+---
+
+## CAD Shell Member Domain
+
+This contract governs the CAD shell adoption accepted with Phases 5–6. The
+qualified public substrate supports finite carrier/case members through the same
+Native evaluator and aggregate coordinator, including actual logical component,
+lineage and committed-projection reads. Generic projected membership and public
+fixtures are insufficient evidence of CAD shell adoption.
+
+The finite projected-domain meaning prerequisite provides typed carrier/case
+declaration, canonical portable readmission and Archive tag44/v1 transport.
+Existing entity-domain member bytes and absent-domain schema identities remain
+unchanged; older Frame18 readers reject tag44 as an unsupported variant. Actual
+schema binding now resolves the registered Native domain/case owner; only a
+genuine selected view can issue member observations. See [declaration status and focused courts](../../workspaces/worth-query/crates/worth-query-decl/README.md#projected-member-domain-meaning).
+The installed CAD courts supply the consumer evidence below; public meaning and
+logical-source qualification alone do not establish CAD adoption.
+
+### Actual Consumer And Decisive Proof
+
+CAD's accepted cell-complex contract derives exactly two face uses per face:
+`(face, Negative)` and `(face, Positive)`, even when both sides have the same
+region. A shell is a maximal component of one region's boundary face uses joined
+through shared boundary vertices; shared-edge sectors are included in that
+connectivity. The exterior is selected by the actual side-to-body incidence,
+not a fabricated Region entity. Region-side incidence is source truth.
+
+A face-only or shared-edge-only implementation must fail these actual installed
+CAD journeys before acceptance:
+
+- A two-sided sheet has one exterior shell containing both uses of each face.
+  Self-edge exclusion compares complete face-use keys, never carrier faces.
+- Two boundary patches touching at a shared vertex join the appropriate shell
+  without inventing a shared edge. Disjoint patches remain separate.
+- A shared face between distinct regions contributes its two uses to the
+  distinct region boundaries. A route through another region cannot join them.
+  Interior sides in the same body that touch a shared vertex remain separate
+  when their regions differ; an unconditional face-to-body fallback must fail.
+- Actual source edits cut and join components, remove the least carrier, and
+  delete/recreate a carrier in a reused physical slot. Membership, persistent
+  names, retirement and split/merge continuations agree with independent
+  topology observations; a stale generation cannot select the new use.
+- A whole component transfers to another region with its use keys unchanged.
+  Its opaque Native identity survives without fabricated split/merge events;
+  current region changes, its old region-qualified address refuses current
+  resolution, and an authorized pinned historical read still observes the old
+  region. Reuse must observe the source edit even if adjacency endpoints match.
+- An absent stored-region side changes to a real region and back to its actual
+  exterior body. Proposed/committed rules, retained decisions and cached managed
+  results consume the changed positive and negative source facts. Endpoint
+  deduplication or Boolean recipe composition must not lose those dependencies.
+  Invalid both-anchor and neither-anchor edits retain the actual `SideAnchors`
+  refusal and publish no partial shell state.
+
+The public Native/Query courts additionally cover eviction and rebuild, exact
+fork/replay identity and lineage, and real differing-worker executions for this
+member domain. Read-only logical members cannot enter an entity writer, supply
+a mutation target or satisfy an authority/capability check. Negative cases need
+lawful actual-source counterparts. Reuse existing grouped targets; no new
+one-case Cargo targets, budget knobs or proof journals are required.
+
+### Product And Authority Decisions
+
+1. A declared projected member domain is a finite product of one stored carrier
+   entity kind and named cases. Its logical key contains the complete carrier
+   identity, including generation, and the canonical semantic case identity.
+   Case identity is independent of declaration/enumeration order. The domain
+   has no independently writable entity kind, allocated virtual EntityId or
+   RelationId. A declaration, copied key, digest or current least member grants
+   no observation or mutation authority.
+2. Native issues read-only logical member handles against the actual selected
+   schema/domain, carrier generation, immutable root and observation posture.
+   Query resolves the corresponding exact application binding. Preparation
+   admits the complete physical leaf closure and retains actual positive and
+   absence facts; evaluation consumes that frozen proof. Foreign domains,
+   roots, generations or narrower access audiences refuse before use. A
+   serialized selector needs fresh admission and cannot restore an old proof.
+3. Extend the existing derived-relation recipe/evaluator with carrier projection,
+   case-restricted carrier projection, homogeneous union and intersection.
+   These are closed typed meaning, not callbacks into application code. For
+   shells, derive face-use-to-vertex incidence, stored-region incidence and
+   explicit exterior-body incidence. CAD already stores `FaceNegative`,
+   `FacePositive`, `FaceNegativeExterior` and `FacePositiveExterior`; exactly
+   one stored-region or exterior anchor per side is enforced by its existing
+   `SideAnchors` invariant. Region incidence unions the Negative case/carrier
+   leg followed by `FaceNegative` with the Positive leg followed by
+   `FacePositive`. Exterior incidence instead follows the corresponding
+   explicit `FaceNegativeExterior`/`FacePositiveExterior` legs. It never falls
+   back to a face's owning body merely because no Region was observed. Shell
+   adjacency is shared-vertex incidence
+   intersected with the union of shared-region and shared-exterior incidence,
+   excluding equal complete logical keys. All branches retain their real
+   supporting and empty reads, including both explicit side-anchor rosters.
+   Replacing a stored-region side with an exterior side edits those actual
+   incidences; it is not a complement or application-defined fallback operator.
+   Native contains no CAD region, orientation or shell policy.
+4. The existing Native aggregate coordinator, partition maintenance and naming
+   policy own projected components. Complete logical member keys determine
+   heirs and name minting; routing keys and hashes never become identity.
+   Projected membership uses an explicit reserved Native metadata grammar for
+   logical coordinates, not fake business entities or physical relations.
+   Entity-domain records, meanings, canonical bytes and identities retain their
+   existing encoding when the projected-domain extension is absent. New domain
+   and recipe meaning participates in schema snapshots, digest, portability,
+   recovery and exact readmission before any runtime rebinding.
+5. Face-use identity does not contain region. A committed shell retains its
+   Native component identity across a whole-cohort region transfer under the
+   existing member-heir policy; region is separately observed current context.
+   A pure candidate's `(region, least face use)` is only a `ShellLocator`.
+   Committed CAD reads retain the real typed aggregate identity and current
+   region. Old representative `ShellName` bytes are never interpreted as Native
+   identities: current identity-bearing readmission refuses them as legacy
+   locators and directs a fresh source read. No stored carrier reference is
+   migrated through a guessed member or region.
+6. Domain projection, source evaluation, maintenance and retained proof use the
+   original request's work, memory and cancellation owners. Single-component
+   work is bounded by affected incidence and component membership, including
+   actual vertex-star fan-out and finite case multiplicity. Do not construct a
+   body-wide face Cartesian product or scan unrelated components. Full domain
+   census and reconstructive rebuild retain their explicit broader cost.
+
+### Target Contracts And Destination
+
+The declaration facade adds `ApplicationProjectedMemberDomainRef`,
+`ApplicationProjectedMemberDomainDefinition` and typed
+`ApplicationProjectedMemberCaseRef`. A domain reference cannot enter
+`schema.entity` or a stored relation endpoint. The existing component-set meaning
+gains an explicit projected-domain form; its typed `projected` constructor is
+distinct from the physical-entity constructor. Native and Query read-only
+projected identities remain distinct from physical entity identities. The common
+component read family accepts the corresponding typed binding/member pair;
+the actual Native aggregate owner remains singular.
+
+Target usage, after the declared domain/cases and set have been installed:
+
+```rust,ignore
+let use_ = reader.projected_member(FaceUses::reference(), &face, NegativeSide::reference())?;
+let shell = reader.component_of(Shells::reference(), &use_)?;
+let identity = shell.identity();
+let face_uses = shell.members();
+```
+
+Extend these existing authority axes; create populated responsibilities only:
+
+```text
+worth-query-declaration/src/application_schema/
+  projected_member_domain/{reference,definition,validation}.rs       create
+  component_set.rs; derived_relation/{expression,recipe,validation}.rs extend
+  canonical_identity/member/projected_member_domain.rs              create
+worth-query-package-archive/src/record/application_schema/member/
+  projected_member_domain.rs                                       create
+worth-relational/src/
+  projected_member_domain/{definition,key,admission,projection}.rs   create
+  derived_relation/{catalog,evaluation,proof,pinned}.rs              extend
+  aggregate_identity/{transition,projection,materialization,pinned}.rs extend
+worth-query-execution/src/domain_computation/primary_graph/
+  schema_layout/projected_member_domain.rs                          create
+  application_invariant/{typed_binding,prepared_scope,typed_view}/  extend
+  invariant_projection/component/; application_mutation/            extend
+worth-cad-entry/src/
+  schema/shells.rs; basis/live/shells.rs                             create
+worth-topology/src/
+  names/uses.rs; cells/{shell,uses}.rs                               change
+```
+
+Pure declaration/archive own meaning only; Native owns live admission, actual
+source evaluation and persistent metadata; Query carries their exact proofs
+through installed rules, decisions and result/disclosure owners. CAD owns face
+use, region and shell interpretation. The stable public facades remain Query
+Decl/Host and Native's runtime facade; do not add application deep imports,
+application callbacks, a second graph/view engine, writable FaceUse/Shell rows,
+or a private CAD partitioner for committed shell reads. Pure topology validation
+may retain candidate-local connectivity/locators and serves as an independent
+oracle; it does not mint committed identity.
+
+Implement in authority order within the existing phases: finite portable domain
+meaning and exact compatibility; Native source/domain admission and recipe
+evaluation; shared aggregate persistence and read handoffs; ordinary Query
+rule/decision/disclosure consumption; actual CAD adoption and removal of its
+representative-name publication path. Each reviewed slice is committed, but
+a slice alone never accepts a phase: its complete original obligations govern
+acceptance.
+
+The continuing CAD contract is `cad/docs/plans/query-9.18.1-adoption.md` with the
+cell-complex naming rules and general-modeling use-name contract updated in the
+same adoption. The public capability index must distinguish currently shipped
+entity-domain components from projected-member requirements. The existing
+relation-law/invariant guides gain real compiled domain/case examples, failure
+and source-affinity semantics, region transfer, compatibility and lifecycle
+before phase acceptance; target snippets above are not substitutes for them.
 
 ---
 
@@ -816,10 +1070,18 @@ worth-query-declaration/src/
   application_schema/value_binding/canonical/               E complete descriptive codec reference
   application_query/
     history/                                                N target/aspect selection
+    inspection/{definition,metadata,validation}.rs           N exact-binding inspection metadata meaning
+    canonical_basis/inspection.rs                           N portable metadata identity
+    disclosure_contract/inspection.rs                       N typed metadata rules
 worth-query-installation/src/
   application_resource/                                     N actual typed resource/provider correspondence
   application_query/
     history/                                                N schema/disclosure binding
+    inspection.rs                                           N validate exact compiled binding before issuer admission
+worth-query-package-archive/src/record/
+  application_schema/member/inspection.rs                   N additive member45/v1
+  application_query/disclosure/inspection.rs                N additive selector8/v1
+
 worth-query-admission/src/domain_computation/
   basis_lifecycle/                                          E original scoped inspection
 worth-query-execution/src/domain_computation/
@@ -1098,6 +1360,40 @@ Bridge/Signal/Relational evidence owners. Use Phase 8 evidence when inspecting a
 async resource; ordinary query/source inspection does not depend on Phase 8 or
 unfinished graph phases.
 
+The Native observation handoff prerequisite is implemented: output-readiness
+delivery privately retains the actual immutable Bridge/Signal observation rather
+than counters alone. Read-only custody preserves the actual invalidation backing
+and its original reservation while the unique performed receipt transfers once;
+it does not retain a snapshot reader or operational reentry core. See
+[Native custody](../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
+Fresh Host admission, connected producer-chain references and the application
+inspection journey remain required below; this prerequisite does not close Phase 9.
+
+Optional inspection meaning belongs to the existing ordinary query binding:
+`ApplicationQueryInspectionDefinition<Schema, Binding>` takes an explicit metadata
+disclosure contract, and `application_query_inspection` registers that binding's
+actual descriptor. There is no separate inspection marker or string-only binding
+registry. Both the definition and every metadata selector retain the complete
+fourteen-field `ApplicationQueryBindingReference`, including input, result, scope
+and principal meaning. The six closed facets are observation identity, evidence
+links, evidence counts, evidence availability, explanation and diagnostic fields.
+Governed contracts cover every facet exactly once: evidence counts require `Count`
+influence; the other five require `Explanation`. Mixed, duplicate, partial and
+foreign-binding selectors refuse. Public metadata requires an explicit public
+contract without rules; an installed-policy placeholder is insufficient.
+
+Metadata admission is independent of the original payload contract and never
+grants diagnostic field values. The eventual fresh Host issuer must separately
+check the current subject's `DiagnosticMask` before reading those fields, and
+must admit requested metadata before looking up family availability, links or
+counts. Installation validates every definition against the actual compiled
+query-binding catalog, after ordinary query/result, scope, principal and limits
+checks. Until the fresh issuer exists, valid inspection meaning returns typed
+`InspectionUnavailable`; malformed or foreign definitions refuse with their own
+cause before that unavailability outcome. Portable member45/v1 and selector8/v1
+are additive subgrammars and preserve unextended v18 schema identity and bytes;
+unknown versions refuse before payload fields or allocations.
+
 ### Requirements
 
 - A fresh application request can select an actual declared-query observation or
@@ -1324,10 +1620,24 @@ required scope in [9.19](milestone-9.19.md), whose final phase performs Propriet
 cutover after public qualification. Numbers 12 and 15 are retained as transfer
 references, not local implementation phases or claims of completion.
 
+**Addendum 1.** Partitioned computation with per-partition reuse is withdrawn as
+a gap: the existing managed-computation contract in
+[`docs/build-an-application.md` section 3.6](../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+already supplies declared partitions/keys, tracked gathering, pure partition
+computation, owner completion and reuse retained on the producer record at the
+reported SDK. The one-retained-computation-per-handler rule remains a consumer
+design constraint; this finding does not require another retained stage or a
+relaxed handler limit. This withdrawal names the reuse finding, not Phase 13's
+separate compiler-qualification refusal. The spatial finding remains required in
+9.19 on both committed preparation and candidate invariant readers. Consecutive
+same-field undo is a new P1 correction-derivation requirement in Phase 19 below;
+all other findings retain their scope and priority.
+
 | Priority | Finding | Required phase and owner |
 | --- | --- | --- |
 | P1 | Retained spatial range reads in preparation and candidate validation | 12 transferred to 9.19 — general managed-index extension; provider owns spatial mechanics |
 | P1 | Unqualified compiler reported as byte overflow | 13 — worth-foundational + Query Admission/Execution |
+| P1 | Consecutive undo refuses an earlier source after later overlapping sources are reversed | 19 — Query correction derivation and canonical correction lineage |
 | P2 | Unobserved field write loses its cause | 14 — worth-query-execution |
 | P2 | Scoped invariants must stay local on real large bodies | 15 transferred to 9.19 — public qualification followed by final Proprietary adoption |
 | P3, required | Cell-version storage and live-at-k cost | 16 — Relational + Query, with Proprietary CAD acceptance |
@@ -1585,6 +1895,140 @@ on 1.98 or treating qualification as a nice-to-have cannot close the milestone.
 Record the exact supported release/commit and upgrade procedure in existing
 toolchain/contributor documentation, including the typed unqualified outcome.
 
+---
+
+## Phase 19: Consecutive Undo After Verified Source Restoration
+
+**Status: unfinished; required. Priority: P1.**
+**Owner:** Query correction derivation, consuming existing canonical occurrence,
+footprint and correction-lineage owners. **Depends on:** 9.18's recorded source
+capture, ordinary correction binding, exact target ancestry and fresh admission.
+Independent of managed indexes, async resources and causal inspection. Schedule
+this correction fix ahead of the remaining P2/P3 findings; numbering does not
+make it a last-priority task.
+
+### Problem And Required Outcome
+
+For one authored parameter initially 3, let A write 7 and B write 8. After a
+performed reversal of B, the parameter is 7. An ordinary reversal of A must then
+be applicable and restore A's captured pre-image, 3. The reported implementation
+instead returns `Derivation(SourceDiverged)` because the source facts moved after
+A, without recognizing the later occurrence's completed reversal. Three successive
+authored writes followed by three selected reversals must similarly walk back
+to the original value. This is required multi-step undo through existing ordinary
+correction requests, not replay, rebasing or restoration of an old world head.
+
+The consumer-provided reproducer is
+`crates/worth-cad-entry/tests/operation_family/installed/correction/source_only_probe.rs`
+on Proprietary branch `codex/undo-redo-20261027`, commit `46304f85e`. It uses one
+bare setter through `ApplicationCorrectionBinding` and `request.corrections()`.
+The reference is supplied evidence to obtain and qualify, not a claim that this
+specification edit executed that private probe.
+
+### Requirements And Applicability Contract
+
+- Derive eligibility from the exact selected target's retained canonical source
+  occurrences, complete semantic dependency footprints and performed correction
+  lineage. An earlier source becomes applicable when every later overlapping
+  occurrence that blocks its recorded support has been lawfully reversed on that
+  target and the original support has been verified as restored. Include the
+  restorative writes of those reversals in this lineage reasoning; they cannot
+  themselves remain unexplained blockers. Append history normally and retain all
+  original occurrences, reversals and identities.
+- Value equality alone is insufficient. An ordinary write of the same bytes,
+  a live overlapping occurrence, or a performed reapplication remains divergence
+  until its own exact occurrence is reversed. Reapplication is a new occurrence;
+  reversing its predecessor does not cancel it. A still-live change to another
+  semantic dependency of A also retains `SourceDiverged`, even when A's written
+  field happens to match its after-image. Disjoint changes remain preserved.
+- Inspect/select the original B receipt, prepare/publish its ordinary reversal,
+  then freshly select the original A receipt on the resulting target and
+  prepare/publish A's reversal. This is the required user-visible call sequence.
+  Selecting the latest correction as redo is a distinct action and cannot be
+  presented as the only route for a second undo. Do not require a new application
+  inverse, custom setter, private undo stack or cert-only replay entrance.
+- Preserve exact entity generation, source/program compatibility, original
+  pre-image/input custody, current disclosure/principal/purpose and inverse
+  admission. A copied receipt, matching locator or caller assertion of restoration
+  cannot supply eligibility. A sibling reversal cannot cancel a blocker in the
+  selected ancestry; inherited ancestor corrections retain their real provenance.
+- The eligibility decision and prepared correction remain bound to the exact
+  current target. A subsequent conflicting publication must fail the existing
+  stale-target check. Equivalent retries retain the original performed outcome;
+  repeated reversal cannot publish a second inverse. Missing/expired evidence,
+  cancelled comparison and unavailable program support keep their typed refusal
+  before effects rather than being treated as successful restoration.
+- Scope is reversible recorded-source applicability. Compensation, reconciliation
+  and irreversible external effects keep their existing owners and effect posture;
+  none is implicitly cancelled by matching local field values. Required derived
+  outputs settle through ordinary demand after source publication.
+
+### Destination And Cost
+
+Extend the existing owner, with Query crate paths below rooted at
+`workspaces/worth-query/crates/`:
+
+```text
+worth-query-execution/src/domain_computation/primary_graph/product_operation/
+  correction_source/
+    compatibility.rs                  E consume correction-aware source eligibility
+    lineage.rs                        E exact reversal/reapplication association
+    restored_support/                 N interpret eligible restored support
+      overlap.rs                      N compare canonical dependency footprints
+      cancellation.rs                 N resolve performed correction relationships
+      eligibility.rs                  N produce the checked restoration result
+worth-query-certification/tests/application_graph/
+  correction/                         N consecutive-source regression scenarios
+```
+
+`E` extends existing production owners; `N` is populated by implementation, not
+created as an empty placeholder. Reuse the existing correction history/index and
+source-fact comparison owners; an auxiliary lookup is derived from canonical
+history and must rebuild without changing eligibility. It cannot become a second
+undo history or a process-local stack. Dependency direction remains from native
+history/source authority into Query's correction interpretation, never the reverse.
+The public facade remains `request.corrections()`.
+
+Ordinary edits incur no new correction-history scan or eager inverse work.
+Correction work follows relevant overlap and correction ancestry under existing
+request/history controls; unrelated fields, bodies and branches must not cause
+a whole-world scan. Exhaustion refuses honestly. Preserve original request and
+storage custody while walking or rebuilding relevant correction evidence.
+
+### Verification And Completion
+
+Use an actual installed bare setter and genuine performed receipts through only
+Decl/Host, with independently authored expected values and lineage observations:
+
+- `3 -> A:7 -> B:8 -> reverse(B):7 -> reverse(A):3` must perform both reversals.
+- `3 -> A:7 -> B:8 -> C:9`, reversed C, B, A, must produce 8, 7, 3 respectively.
+- Live B refuses A. Reversing B then reapplying its retained meaning also refuses
+  A; reverse that new occurrence before A can qualify. A later live equal-value
+  write and a changed independent handler dependency must not be laundered into
+  restoration by an after-image comparison.
+- Preserve a disjoint field edit, reject sibling/counterfeit restoration, and
+  preserve generation/current-authority checks. Exercise stale preparation,
+  duplicate request/reversal, missing lineage and request interruption with no
+  extra publication. Release/rebuild derived correction indexes and require the
+  same verdicts from retained canonical history. Compare a fixed overlap chain
+  beside increasing unrelated authored history without ordinary-edit tax.
+
+Extend the existing grouped correction certification target and real private
+`source_only_probe.rs`; do not add a parallel test binary or replace the setter
+with a test-only bypass. Review any prior court expecting `SourceDiverged` after
+verified reversal/restoration and replace only that obsolete expectation. Retain
+genuine live-write, independent-dependency and reapplication divergence controls.
+
+At implementation, revise
+`workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md`,
+`docs/build-an-application.md` and `docs/capability-index.md` with a compiled,
+pragmatic consecutive-undo sequence, explicit source selection versus redo,
+current authority and typed refusal/retry behavior. Consumer guides describe the
+available implementation when it ships, not this phase's progress or future API.
+This phase closes only after public qualification and the candidate-SDK private
+probe pass, reviewed corrections to the superseded expectation, and required
+repository checks. A plan change or a value-equality shortcut cannot close it.
+
 ## Documentation And Successor Handoff For The Added Phases
 
 - Revise `docs/capability-index.md` and `docs/build-an-application.md` for
@@ -1629,7 +2073,7 @@ specification change checks links, scope and path claims without compiling runti
 ## Closing The Milestone
 
 - 9.18.1 closes when every phase's "How We Know It's Done" list holds on master.
-- Phases 1–11, 13–14 and 16–18 are required here: sixteen implementation phases,
+- Phases 1–11, 13–14 and 16–19 are required here: seventeen implementation phases,
   with numbers 12 and 15 retained solely as transfer references to required 9.19
   scope. No transferred finding is marked completed. Phases 1–6 retain their
   original acceptance
@@ -1638,7 +2082,8 @@ specification change checks links, scope and path claims without compiling runti
   No added finding is satisfied by a raw re-export, a future-work note or an old
   lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
   The retained Proprietary findings include storage/acceptance qualification and
-  mandatory current Rust qualification. 9.19 owns the general index extension,
+  mandatory current Rust qualification, plus P1 consecutive source undo after
+  verified reversal/restoration. 9.19 owns the general index extension,
   both index readers and their final private locality cutover. Phase numbering
   does not impose serial execution:
   use each phase's actual dependencies.

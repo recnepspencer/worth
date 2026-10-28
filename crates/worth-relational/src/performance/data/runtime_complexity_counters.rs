@@ -242,4 +242,15 @@ pub struct RuntimeComplexityCounters {
     pub custom_invariant_candidate_touched_entity_slot_gathers: usize,
     #[serde(default)]
     pub custom_invariant_candidate_touched_relation_slot_gathers: usize,
+    /// Actual acquisitions in completed Native law/consequence preparation
+    /// stages, including private identity storage. A failed later stage leaves
+    /// only prefix diagnostics; these are not Query business reads or I/O.
+    #[serde(default)]
+    pub aggregate_maintenance_adjacency_lists: usize,
+    #[serde(default)]
+    pub aggregate_maintenance_entity_records: usize,
+    #[serde(default)]
+    pub aggregate_maintenance_relation_records: usize,
+    #[serde(default)]
+    pub aggregate_maintenance_aspect_states: usize,
 }

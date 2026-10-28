@@ -1,5 +1,14 @@
 # Causal Inspection
 
+> **Retained engine API, not the ordinary application SDK.** Operational causal
+> inspection lives in `worth-query-execution` under
+> `domain_computation/primary_graph/causal_inspection/`. The older engine translates
+> its supported receipts through that single owner. The examples below describe
+> that retained engine entrance; they do not authorize an application to import
+> Bridge or replace the planned fresh Decl/Host entrance. Current application
+> status and Native observation custody are documented in
+> [Cross-Runtime Causal Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md).
+
 Causal inspection answers questions like “why did this observation change?” from an existing `QueryObservationReceipt` and the Query-minted inspection basis that authorizes that scope.
 
 Before building a plan, callers can inspect the supported families and later-milestone debt:

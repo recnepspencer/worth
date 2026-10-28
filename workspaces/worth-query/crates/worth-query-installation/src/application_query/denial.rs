@@ -30,6 +30,9 @@ pub enum WorthQueryApplicationQueryInstallationDenialKind {
     CanonicalEncodedByteBudgetExceeded,
     CanonicalDigestSlotRejected,
     InvalidGraphObligationContract,
+    InvalidInspectionDefinition,
+    InspectionBindingMeaningChanged,
+    InspectionUnavailable,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

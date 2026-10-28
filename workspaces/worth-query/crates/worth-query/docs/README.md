@@ -45,6 +45,9 @@ Executable journeys:
 - [Record And Aspect History](./capabilities/record-and-aspect-history.md): capture disclosed record generations and page canonical changes at a pinned product with fresh independent metadata permission.
 - [Graph Read Access Planning](./authoring/graph-read-access-planning.md): how Query proves an installed read has the access structures and bounded cost it needs.
 - [Graph Touch Obligation Authority](./authoring/graph-touch-obligation-authority.md): the graph work an installed query or operation must perform.
+- [Relation Laws](./modeling/relation-laws.md): stored graph laws, persistent orbit/component identities, scoped reads, disclosure and compiled topology examples; remaining projected CAD shell requirements.
+- [Invariants and Read Observations](./foundations/invariants-and-read-observations.md): prepare and evaluate actual proposed-state reads with complete frozen dependencies.
+- [Complete Relation Walks](./foundations/invariant-walks.md): typed complete traversal, minimum distances, access and interruption semantics.
 - [Aspects And Authority Lanes](./modeling/aspects-and-authority-lanes.md): stable slices of domain meaning and which runtime may change them.
 - [Portable Query Packages](./portable-packages.md): bounded, store-neutral carriage of validated Query meaning.
 

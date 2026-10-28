@@ -30,6 +30,11 @@ pub(in crate::application_query) fn prepare_graph_basis(
             text("orbit.order", "anchor-forward-v1"),
         ]);
     }
+    if let Some(selection) = &meaning.component_selection {
+        selection.visit_canonical_parts(|key, value| {
+            entries.push(text(format!("components.{key}"), value))
+        });
+    }
     append_projections(&mut entries, &meaning.projections);
     append_root_paths(&mut entries, &meaning.root_paths);
     append_relations(&mut entries, &meaning.relations);

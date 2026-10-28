@@ -85,11 +85,17 @@ fn decode_rule(
     ))
 }
 
+mod inspection;
+
 fn write_selector(
     output: &mut dyn BinaryEncodingSink,
     selector: &ApplicationQueryDisclosureSelector,
 ) -> Result<(), Denial> {
     match selector {
+        ApplicationQueryDisclosureSelector::InspectionMetadata(metadata) => {
+            output.u16(8)?;
+            inspection::write(output, metadata)
+        }
         ApplicationQueryDisclosureSelector::Resource(meaning) => {
             output.u16(7)?;
             resource::write(output, meaning)
@@ -102,6 +108,10 @@ fn write_selector(
                 worth_query_declaration::facade::application_query::ApplicationHistoryMetadataFacet::Ancestry => 2,
                 worth_query_declaration::facade::application_query::ApplicationHistoryMetadataFacet::Continuation => 3,
             })
+        }
+        ApplicationQueryDisclosureSelector::Components(selection) => {
+            output.u16(6)?;
+            super::components::write(output, selection)
         }
         ApplicationQueryDisclosureSelector::Orbit(orbit) => {
             output.u16(4)?;
@@ -176,6 +186,8 @@ fn decode_selector(
 ) -> Result<ApplicationQueryDisclosureSelector, Denial> {
     Ok(match input.u16()? {
         7 => ApplicationQueryDisclosureSelector::Resource(resource::decode(input)?),
+        8 => ApplicationQueryDisclosureSelector::InspectionMetadata(inspection::decode(input)?),
+
         5 => {
             use worth_query_declaration::facade::application_query::{
                 ApplicationHistoryMetadataFacet as Facet, ApplicationHistoryMetadataMeaning,
@@ -191,6 +203,7 @@ fn decode_selector(
                 ApplicationHistoryMetadataMeaning::from_untrusted_fields(history, facet),
             )
         }
+        6 => ApplicationQueryDisclosureSelector::Components(super::components::decode(input)?),
         4 => ApplicationQueryDisclosureSelector::Orbit(super::orbit::decode(input)?),
         1 => ApplicationQueryDisclosureSelector::InternalField {
             entity: input.text()?.to_owned(),

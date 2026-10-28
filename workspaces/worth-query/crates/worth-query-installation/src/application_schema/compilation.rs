@@ -1,4 +1,5 @@
 use std::sync::Arc;
+mod derived_sources;
 
 use worth_foundational::facade::{CanonicalDigestDerivationDenial, CanonicalDigestId};
 use worth_query_declaration::facade::application_schema::{
@@ -37,6 +38,7 @@ pub(crate) enum ApplicationSchemaCompilationDenial {
     Query(WorthQueryApplicationQueryInstallationDenial),
     Operation(crate::application_operation::WorthQueryApplicationOperationInstallationDenial),
     ValueBinding(WorthQueryApplicationValueBindingInstallationDenial),
+    DerivedSourceUnavailable(String),
 }
 
 pub(crate) struct ApplicationSchemaCompilationInput<'a, Schema> {
@@ -76,6 +78,8 @@ where
 {
     validate_installed_contribution_members(input.declaration.erased())
         .map_err(ApplicationSchemaCompilationDenial::Contribution)?;
+    derived_sources::validate(input.declaration.erased().members())
+        .map_err(ApplicationSchemaCompilationDenial::DerivedSourceUnavailable)?;
     let binding_identity = ApplicationSchemaBindingIdentity::from_installed_parts(
         input.package_authority.runtime_ordinal,
         input.package_authority.generation.ordinal(),

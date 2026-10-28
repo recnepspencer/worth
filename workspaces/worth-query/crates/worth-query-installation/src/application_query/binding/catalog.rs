@@ -142,6 +142,7 @@ where
             return Err(denial(kind, descriptor.identity()));
         }
     }
+    crate::application_query::inspection::validate(schema, &bindings)?;
     Ok(WorthQueryInstalledApplicationQueryCatalog {
         histories: crate::application_query::history::compile(schema, &bindings)?,
         certification: CertificationQueryCatalog::new(queries.into_values().collect()),

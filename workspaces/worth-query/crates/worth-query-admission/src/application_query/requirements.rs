@@ -58,7 +58,8 @@ fn planning_input(
 > {
     let planning_graph_identity = *graph.canonical_planning_basis().digest();
     let relations = relations(graph);
-    let relationship_proof_required = !relations.is_empty();
+    let relationship_proof_required =
+        !relations.is_empty() || graph.component_selection().is_some();
     let fanout = fanout_posture(relations.len());
     let (access_shape_digest, access_work) = access_shape_digest(
         graph,
@@ -91,7 +92,8 @@ fn planning_input(
     .with_predicates(predicate_family(graph), predicate_fields(graph))
     .with_ordering(ordering_posture(graph, lane), ordering_fields(graph))
     .with_relationship_proof_required(relationship_proof_required)
-    .with_root_union_dedup_required(graph.root_union_dedup_required());
+    .with_root_union_dedup_required(graph.root_union_dedup_required())
+    .with_component_selection_required(graph.component_selection().is_some());
     Ok((
         WorthQueryCanonicalGraphReadPlanningInput::from_admitted_evidence(identity, shape)
             .with_maximum_cardinality(maximum_result_count)

@@ -13,6 +13,7 @@ use crate::facade::{
     SnapshotReadSource, TruthSnapshotIdentity, TruthSnapshotReader,
 };
 
+mod causal_retention;
 mod context_retention;
 
 #[derive(Default)]

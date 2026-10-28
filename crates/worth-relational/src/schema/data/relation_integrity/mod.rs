@@ -5,7 +5,10 @@ mod lowered_plan;
 mod plan_catalog;
 mod plan_revision;
 
-pub use aggregate::{AggregateIdentityContractDeclaration, AggregateIdentityStorage};
+pub use aggregate::{
+    AggregateIdentityContractDeclaration, AggregateIdentitySource, AggregateIdentityStorage,
+    AggregateProjectedMemberStorage,
+};
 pub use contract_id::ContractId;
 pub use declarations::{
     CardinalityContractDeclaration, EndpointDeletionIntegrityDeclaration,

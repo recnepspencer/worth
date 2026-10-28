@@ -3,6 +3,8 @@
 mod action_authorization;
 #[path = "resources/definition.rs"]
 mod definition;
+#[path = "resources/derived_evidence.rs"]
+mod derived_evidence;
 #[path = "resources/grant_status.rs"]
 pub(super) mod grant_status;
 #[path = "resources/journeys.rs"]
@@ -23,7 +25,7 @@ pub(super) fn declare(
 ) -> worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<
     super::schema::CapabilitySchema,
 > {
-    action_authorization::declare(lifecycle::declare(grant_status::declare(
-        metadata::declare(schema),
+    derived_evidence::declare(action_authorization::declare(lifecycle::declare(
+        grant_status::declare(metadata::declare(schema)),
     )))
 }

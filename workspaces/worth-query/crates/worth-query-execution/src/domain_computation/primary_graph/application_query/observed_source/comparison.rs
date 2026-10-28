@@ -54,6 +54,15 @@ pub(in crate::domain_computation::primary_graph::application_query) fn equal(
                     }
                     _ => return Ok(false),
                 }
+                match (&left.components, &right.components) {
+                    (None, None) => {}
+                    (Some(a), Some(b)) if a.meaning == b.meaning && a.binding == b.binding => {
+                        if !walks.equal_component(&a.body, &b.body, context, control)? {
+                            return Ok(false);
+                        }
+                    }
+                    _ => return Ok(false),
+                }
                 let left = left.walks.as_ref().map_or(&[][..], |w| w.values());
                 let right = right.walks.as_ref().map_or(&[][..], |w| w.values());
                 if left.len() != right.len() {

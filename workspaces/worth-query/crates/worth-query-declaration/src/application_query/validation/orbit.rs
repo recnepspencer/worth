@@ -5,7 +5,8 @@ pub(super) fn validate(definition: &WorthQueryPortableApplicationQueryParts) -> 
     let Some(orbit) = definition.orbit() else {
         return Ok(());
     };
-    if !orbit.query_identity().is_valid()
+    if definition.component_selection().is_some()
+        || !orbit.query_identity().is_valid()
         || !orbit.slot_identity().is_valid()
         || orbit.query_type() != definition.query_type()
         || orbit.relation().trim().is_empty()

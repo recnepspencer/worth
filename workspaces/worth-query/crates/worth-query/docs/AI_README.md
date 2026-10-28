@@ -386,6 +386,35 @@ incremental state, mark a row complete only from current contributor evidence
 observed through one retained request observation, and must reproduce the same
 rows on reconstruction.
 
+**Rule-readable derived endpoint sets (Phase 6 first vertical).** Declare an
+`ApplicationDerivedRelation` recipe, its actual typed collection association
+and each operation's `operation_read_derived_relation`. The supported runtime
+subset has unbounded endpoint-set laws and forbids cross-context traversal on
+every physical leaf; unsupported authored laws still return
+`DerivedSourceUnavailable`. Ordinary invariants prepare exact proposed and
+committed sources separately, then consume only their frozen view-issued proofs.
+Decisions require the declared operation/marker and issued physical read scopes.
+`setup.derived_relation_count` installs the framework's closed endpoint-count
+owner into the existing managed collection machinery. A custom computation with
+the same descriptive association cannot substitute for that owner.
+
+The existing derived-view registry retains the disposable count, physical and
+empty-adjacency dependencies, invalidation and reconstruction state. Every read
+first acquires a genuine Native source; a warm cache does not remove that proof
+work or grant authority. `runtime.discard_rule_readable_collections()` disposes
+only those projections. Source laws, walks, orbits, components, logical member
+domains and CAD adoption remain separate Phase 6 completion gates. See the
+[graph obligation guide](domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning).
+
+**Projected member domains (Phases 5–6 prerequisite).** Typed domain/case
+declarations describe finite read-only carrier/case meaning without declaring a
+stored entity. Fresh schema admission validates the actual stored carrier and
+canonical case roster; archive tag44/v1 preserves that meaning. Installation
+returns `ProjectedMemberDomainUnavailable` until Native can issue genuine
+members. Follow the [declaration contract](../../worth-query-decl/README.md#projected-member-domain-meaning)
+for current APIs and the [component guide](modeling/relation-laws.md#component-set-declarations)
+for available entity-domain reads and the remaining CAD shell boundary.
+
 Ordinary handlers return the installed owner's `decision_plan`, which carries
 that same request through preparation, computation and completion. Use
 `checkpoint.poll()` for a control-only safe point; `advance(work)` deliberately

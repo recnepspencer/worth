@@ -58,14 +58,30 @@ fn committed_reclaimed_reservation_is_consumed() {
     let partition_id = PartitionId(7);
     authority.restore_generation(RecordAllocationClass::Entity, partition_id, 2, 4);
     authority.restore_reusable(RecordAllocationClass::Entity, partition_id, 2);
+    let mut remaining = vec![
+        (RecordAllocationClass::Entity, PartitionId(6), 0),
+        (RecordAllocationClass::Entity, partition_id, 9),
+        (RecordAllocationClass::Relation, partition_id, 0),
+        (RecordAllocationClass::Entity, partition_id, 5),
+        (RecordAllocationClass::Entity, PartitionId(8), 0),
+    ];
+    for &(class, partition, slot) in &remaining {
+        authority.restore_reusable(class, partition, slot);
+    }
     let mut pending = PendingRecordAllocations::new(authority.clone(), None);
 
-    pending
+    let selected = pending
         .reserve(RecordAllocationClass::Entity, partition_id)
         .unwrap();
+    assert_eq!(
+        selected.slot, 2,
+        "lowest slot in the actual class and partition"
+    );
+    assert_eq!(selected.generation, 5);
     pending.commit();
 
-    assert!(authority.reusable_snapshot().is_empty());
+    remaining.sort();
+    assert_eq!(authority.reusable_snapshot(), remaining);
 }
 
 #[test]

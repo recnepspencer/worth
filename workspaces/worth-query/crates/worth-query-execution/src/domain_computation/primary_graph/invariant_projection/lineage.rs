@@ -27,9 +27,18 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         relation: ApplicationRelationRef<Schema, Relation, Entity, Entity>,
         identity: &WorthQueryAggregateIdentity<Schema, Relation>,
     ) -> Result<WorthQueryAggregateLineage<Schema, Relation>, Denial> {
+        let scope = self.lineage_selection(&relation, identity)?;
+        self.read_lineage(identity, scope, relation.name())
+    }
+
+    pub(super) fn read_lineage<Aggregate>(
+        &mut self,
+        identity: &WorthQueryAggregateIdentity<Schema, Aggregate>,
+        scope: PinnedAggregateLineageScope<'static>,
+        subject: &str,
+    ) -> Result<WorthQueryAggregateLineage<Schema, Aggregate>, Denial> {
         let execution = *self.execution;
         let result = execution.run_native_with_checkpoint(|_| {
-            let scope = self.lineage_selection(&relation, identity)?;
             let pin = self
                 .runtime
                 .read_truth()
@@ -37,9 +46,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 .map_err(|denial| match denial {
                     RelationalPinnedReadAdmissionDenial::Request(stop) => self.walk_stop(
                         worth_execution::WorkCeilingDenial::Stopped(stop).into(),
-                        relation.name(),
+                        subject,
                     ),
-                    _ => Denial::new(Kind::EndpointUnavailable, relation.name()),
+                    _ => Denial::new(Kind::EndpointUnavailable, subject),
                 })?;
             let read = pin.read_aggregate_lineage(self.execution, scope);
             if let Err(PinnedAggregateReadDenial {
@@ -55,9 +64,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             };
             if !usize::try_from(work).is_ok_and(|work| self.work_budget.consume(work)) {
                 self.work_budget.mark_exceeded();
-                return Err(Denial::new(Kind::WorkBudgetExceeded, relation.name()));
+                return Err(Denial::new(Kind::WorkBudgetExceeded, subject));
             }
-            let native = read.map_err(|denial| self.lineage_denial(denial, relation.name()))?;
+            let native = read.map_err(|denial| self.lineage_denial(denial, subject))?;
             Ok(WorthQueryAggregateLineage::new(
                 native,
                 identity.clone(),
@@ -66,7 +75,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         });
         match result {
             Ok((answer, _)) => answer,
-            Err(stop) => Err(self.walk_stop(Cause::from(stop), relation.name())),
+            Err(stop) => Err(self.walk_stop(Cause::from(stop), subject)),
         }
     }
 

@@ -19,11 +19,26 @@ mod canonical_operation_identity;
 mod capabilities;
 mod capability_identifier_validation;
 mod capability_member_closure;
+mod component_set;
 mod contribution;
 mod decision_read_authoring;
 mod declaration;
 mod declaration_denial;
 mod declared_operation;
+mod derived_component_set;
+mod derived_relation;
+pub use derived_component_set::{
+    ApplicationDerivedComponentSetDefinition, ApplicationDerivedComponentSetMeaning,
+};
+pub use derived_relation::{
+    application_derived_relation_physical_sources, application_derived_relation_source_closure,
+    ApplicationDerivedRelation, ApplicationDerivedRelationDefinitionDenial,
+    ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode,
+    ApplicationDerivedRelationOperand, ApplicationDerivedRelationRef,
+    ApplicationDerivedRelationSource, ApplicationDerivedRelationSourceClosure,
+    ApplicationDerivedRelationSourceKind, ApplicationRuleReadableCollectionAssociation,
+    ErasedApplicationDerivedRelationDefinition, WorthQueryPortableDerivedRelationParts,
+};
 mod effect_authoring;
 mod effect_binding;
 mod effect_marker_identity;
@@ -31,6 +46,8 @@ mod external_effect_correlation_family;
 mod external_effect_protocol;
 mod field_presence;
 mod field_reference;
+mod graph_member;
+pub use graph_member::{ApplicationGraphMemberMeaning, ApplicationGraphMemberSelector};
 mod identifier_validation;
 mod inbound_occurrence;
 mod invariant;
@@ -42,6 +59,7 @@ mod mutation_description_validation;
 mod mutation_intent_traits;
 mod mutation_precondition;
 mod mutation_precondition_authoring;
+mod operation_component_read;
 mod operation_contract_cardinality;
 mod operation_definition;
 mod operation_marker_identity;
@@ -51,6 +69,12 @@ mod operation_program;
 mod portable_schema;
 mod principal_binding_authoring;
 mod principal_binding_reference;
+mod projected_member_domain;
+pub use projected_member_domain::{
+    ApplicationProjectedMemberCaseRef, ApplicationProjectedMemberDomainDefinition,
+    ApplicationProjectedMemberDomainDefinitionDenial, ApplicationProjectedMemberDomainRef,
+    ErasedApplicationProjectedMemberDomainDefinition, WorthQueryPortableProjectedMemberDomainParts,
+};
 mod query_member_closure;
 mod read_authoring;
 mod references;
@@ -63,9 +87,13 @@ pub use relation_aspect::{
     ApplicationRelationFieldRef, ErasedApplicationRelationAspectDefinition,
     WorthQueryPortableRelationAspectParts,
 };
+pub use relation_integrity::ApplicationRelationGraphLaws;
+
+mod root_path_closure;
 pub(crate) use relation_integrity::ApplicationRelationLawMeaning;
 mod schema_identity;
 mod schema_member;
+mod schema_read_closure;
 mod shape;
 mod signing_provenance;
 mod signing_supersession;
@@ -141,6 +169,10 @@ pub use capabilities::{
     OperationExpectsVersion, OperationLinks, OperationReads, OperationRequiresAbility,
     OperationUnlinks, OperationWrites, ReadOnly, ReadWrite, WritableCapability, WritePosture,
 };
+pub use component_set::{
+    ApplicationComponentSetDefinition, ApplicationComponentSetMeaning, ApplicationComponentSetRef,
+    WorthQueryPortableApplicationComponentSetParts,
+};
 pub use contribution::{
     ApplicationSchemaComposition, ApplicationSchemaContribution,
     ApplicationSchemaContributionAuthoring, ApplicationSchemaContributionDenial,
@@ -182,6 +214,10 @@ pub use mutation_authoring::{
 pub use mutation_precondition::{
     ApplicationMutationPreconditionFamily, ApplicationMutationPreconditionTarget,
     TypedMutationPrecondition, TypedMutationPreconditions,
+};
+pub use operation_component_read::{
+    ApplicationOperationComponentReadDefinition, ApplicationOperationComponentReadMeaning,
+    WorthQueryPortableOperationComponentReadParts,
 };
 pub use operation_definition::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,

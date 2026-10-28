@@ -50,7 +50,11 @@ pub(crate) fn resolve_rule<Schema: TopologyModelBinding>(
     let undeclared = resolver
         .typed_relation(UndeclaredPlanarRelation::reference::<Schema>())
         .ok_or("missing undeclared-access probe relation")?;
+    let islands = resolver
+        .typed_component_set(PlanarIslands::reference())
+        .ok_or("missing planar island component access")?;
     Ok(PositiveTurnRule {
+        islands,
         successor,
         undeclared,
         x,
@@ -62,6 +66,7 @@ pub(crate) fn resolve_rule<Schema: TopologyModelBinding>(
 }
 
 pub struct PositiveTurnRule<Schema: TopologyModelBinding> {
+    islands: WorthQueryApplicationInvariantComponentSetBinding<Schema, PlanarIslands, Body>,
     successor: WorthQueryApplicationInvariantRelationBinding<Schema, PlanarSuccessor, Body, Body>,
     undeclared:
         WorthQueryApplicationInvariantRelationBinding<Schema, UndeclaredPlanarRelation, Body, Body>,

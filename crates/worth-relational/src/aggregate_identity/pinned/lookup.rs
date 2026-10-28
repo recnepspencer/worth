@@ -9,7 +9,7 @@ use worth_foundational::facade::AggregateIdentity;
 pub(super) fn find(
     root: &RelationalBranchRoot,
     view: &InvariantStateView<'_>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     identity: AggregateIdentity,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<StoredAggregate> {
@@ -52,7 +52,16 @@ pub(super) fn find(
                         return work.invalid(PlanDenial::InvalidStoredIdentity);
                     }
                     let entity = EntityId::new(partition_id, logical as u64, slot.generation());
-                    let row = super::super::stored_record::decode(view, entity, kind, work)?;
+                    let Some(row) = super::super::stored_record::decode(
+                        view,
+                        entity,
+                        contract,
+                        root.schema_authority().registry(),
+                        work,
+                    )?
+                    else {
+                        return Ok(());
+                    };
                     if row.definition == contract.definition
                         && row.identity == identity
                         && found

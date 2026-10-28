@@ -3,29 +3,32 @@ use std::sync::Arc;
 use worth_execution::{ExecutionRequest, MapKernelContext, WorkCeilingDenial};
 use worth_relational::facade::{
     identity::{EntityId, KindId},
-    runtime::{
-        PinnedAggregateRead, PinnedAggregateReadDenial, PinnedAggregateReadScope,
-        RelationalPinnedRead,
-    },
+    runtime::{PinnedAggregateRead, PinnedAggregateReadDenial, RelationalPinnedRead},
     snapshots::SnapshotHandle,
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
 mod key;
+mod member;
+pub(in crate::domain_computation::primary_graph) mod member_work;
+mod selection;
 pub(in crate::domain_computation::primary_graph) use key::AggregateKey;
+pub(in crate::domain_computation::primary_graph) use selection::AggregateSelection;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.
 #[derive(Debug)]
-pub(in crate::domain_computation) struct AggregateObservation {
-    key: AggregateKey,
-    native: PinnedAggregateRead,
+pub(in crate::domain_computation) struct AggregateObservation<Member = EntityId> {
+    key: AggregateKey<Member>,
+    native: PinnedAggregateRead<Member>,
     source: SnapshotHandle,
+    _allocation: Option<Arc<super::source_facts::SourceFactsAllocation>>,
 }
 pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
-    pub relation: &'a str,
+    pub allocation: Option<&'a Arc<super::source_facts::SourceFactsAllocation>>,
+    pub subject: &'a str,
     pub entity_kind: KindId,
-    pub relation_kind: KindId,
+    pub selection: AggregateSelection,
     pub member: EntityId,
     pub maximum_work: Option<u64>,
     pub control: Option<&'a dyn Fn() -> Result<(), Cause>>,
@@ -36,16 +39,18 @@ impl AggregateObservation {
         execution: &ExecutionRequest<'_, '_>,
         query: AggregateQuery<'_>,
     ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
-        let mut scope = PinnedAggregateReadScope::new(query.relation_kind, query.member)
+        let mut scope = query
+            .selection
+            .scope(query.member)
             .with_work_limit(query.maximum_work);
         if let Some(control) = query.control {
             scope = scope.with_control(control);
         }
         let native = pin.read_aggregate(execution, scope)?;
         let key = AggregateKey::new(
-            query.relation,
+            query.subject,
             query.entity_kind,
-            query.relation_kind,
+            query.selection,
             query.member,
             native.definition(),
         );
@@ -53,16 +58,8 @@ impl AggregateObservation {
             key,
             native,
             source: pin.snapshot().clone(),
+            _allocation: query.allocation.cloned(),
         }))
-    }
-    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &AggregateKey {
-        &self.key
-    }
-    pub(in crate::domain_computation::primary_graph) fn native(&self) -> &PinnedAggregateRead {
-        &self.native
-    }
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
-        &self.source
     }
     pub(in crate::domain_computation::primary_graph) fn same_truth_with_poll<E>(
         &self,
@@ -104,3 +101,17 @@ impl PartialEq for AggregateObservation {
     }
 }
 impl Eq for AggregateObservation {}
+
+impl<Member> AggregateObservation<Member> {
+    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &AggregateKey<Member> {
+        &self.key
+    }
+    pub(in crate::domain_computation::primary_graph) fn native(
+        &self,
+    ) -> &PinnedAggregateRead<Member> {
+        &self.native
+    }
+    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
+        &self.source
+    }
+}

@@ -23,6 +23,7 @@ pub(super) fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Opti
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
         | WorthQueryApplicationFactKey::StructuralWalk(_)
+        | WorthQueryApplicationFactKey::ComponentSelection(_)
         | WorthQueryApplicationFactKey::Aggregate(_) => None,
         WorthQueryApplicationFactKey::Entity { .. }
         | WorthQueryApplicationFactKey::Field { .. }
@@ -70,6 +71,7 @@ fn observe_fact_inner(
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
         | WorthQueryApplicationFactKey::StructuralWalk(_)
+        | WorthQueryApplicationFactKey::ComponentSelection(_)
         | WorthQueryApplicationFactKey::Aggregate(_) => Err(denial(
             WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
             "fresh source-query read required",

@@ -1,5 +1,6 @@
 use super::super::WorthQueryPrimaryGraphLayout;
 use super::*;
+mod components;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntimeInstaller;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::{
@@ -44,14 +45,16 @@ impl<const ORBIT: bool> ApplicationSchema for Schema<ORBIT> {
 }
 fn installed<const ORBIT: bool>() -> (WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry) {
     let declaration = Schema::<ORBIT>::declaration().unwrap();
-    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        Schema::<ORBIT>::OWNER,
-        1,
-        0,
-    ))
-    .application_schema(declaration.clone())
-    .validate()
-    .unwrap();
+    install_declaration(declaration)
+}
+fn install_declaration<S: ApplicationSchema>(
+    declaration: ApplicationSchemaDeclaration<S>,
+) -> (WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry) {
+    let package =
+        WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(S::OWNER, 1, 0))
+            .application_schema(declaration.clone())
+            .validate()
+            .unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("aggregate-proof", "local")
         .admit(package)
         .unwrap();
@@ -82,6 +85,7 @@ fn actual_orbit_declaration_installs_private_namespaced_native_owners_only_when_
         .unwrap()
         .relation_integrity
         .aggregate_identity
+        .as_ref()
         .is_none()));
     let contracts: Vec<_> = orbit
         .relation_kinds
@@ -92,11 +96,12 @@ fn actual_orbit_declaration_installs_private_namespaced_native_owners_only_when_
                 .unwrap()
                 .relation_integrity
                 .aggregate_identity
+                .as_ref()
         })
         .collect();
     assert_eq!(contracts.len(), 2);
     assert_ne!(contracts[0].definition, contracts[1].definition);
-    assert_ne!(contracts[0].source_relation, contracts[1].source_relation);
+    assert_ne!(contracts[0].source, contracts[1].source);
     assert_eq!(contracts[0].storage, contracts[1].storage);
     assert_eq!(orbit.entity_kinds.len(), ordinary.entity_kinds.len() + 1);
     assert_eq!(
@@ -107,6 +112,6 @@ fn actual_orbit_declaration_installs_private_namespaced_native_owners_only_when_
         assert!(!layout.is_application_entity_kind(contract.storage.aggregate_kind));
         assert!(!layout.is_application_relation_kind(contract.storage.lineage_kind));
         assert!(!layout.is_application_relation_kind(contract.membership_kind));
-        assert!(layout.is_application_relation_kind(contract.source_relation));
+        assert!(layout.is_application_relation_kind(contract.source.orbit_relation().unwrap()));
     }
 }

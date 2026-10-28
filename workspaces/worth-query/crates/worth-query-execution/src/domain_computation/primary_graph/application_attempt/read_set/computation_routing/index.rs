@@ -25,7 +25,11 @@ impl ComputationFactIndex {
         let mut structural_walk = false;
         let mut aggregate = false;
         for (key, fact) in facts {
-            aggregate |= matches!(key, WorthQueryApplicationFactKey::Aggregate(_));
+            aggregate |= matches!(
+                key,
+                WorthQueryApplicationFactKey::ComponentSelection(_)
+                    | WorthQueryApplicationFactKey::Aggregate(_)
+            );
             structural_walk |= matches!(key, WorthQueryApplicationFactKey::StructuralWalk(_));
             super::super::super::super::fact_verification_observation::sealed_computation_index();
             observation_work = observation_work.and_then(|work| {

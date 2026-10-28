@@ -36,6 +36,8 @@ type Callback<const O: bool> = dyn for<'a, 'b> Fn(
 pub(super) struct Probe<const O: bool = true> {
     armed: Arc<AtomicBool>,
     callback: Arc<Callback<O>>,
+    complete_components: bool,
+    expected_count: Option<usize>,
 }
 impl<const O: bool> Probe<O> {
     pub(super) fn new(
@@ -52,7 +54,18 @@ impl<const O: bool> Probe<O> {
         Self {
             armed: Arc::new(AtomicBool::new(false)),
             callback: Arc::new(callback),
+            complete_components: false,
+            expected_count: None,
         }
+    }
+    pub(super) fn complete_components(mut self) -> Self {
+        self.complete_components = true;
+        self
+    }
+    pub(super) fn require_count(mut self, expected: usize) -> Self {
+        self.complete_components = true;
+        self.expected_count = Some(expected);
+        self
     }
     pub(super) fn arm(&self) {
         self.armed.store(true, Ordering::SeqCst);
@@ -95,10 +108,14 @@ pub(super) fn definition<const O: bool>(
             [
                 ApplicationInvariantScopeTarget::Entity("Node".into()),
                 ApplicationInvariantScopeTarget::Relation("Next".into()),
+                ApplicationInvariantScopeTarget::Entity("Spare".into()),
+                ApplicationInvariantScopeTarget::Relation("SpareCoupling".into()),
             ],
             [
                 ApplicationInvariantScopeTarget::Entity("Node".into()),
                 ApplicationInvariantScopeTarget::Relation("Next".into()),
+                ApplicationInvariantScopeTarget::Entity("Spare".into()),
+                ApplicationInvariantScopeTarget::Relation("SpareCoupling".into()),
             ],
             "primary-relational-provider",
             ApplicationInvariantCostPosture::Touched,
@@ -109,6 +126,16 @@ pub(super) struct Rule<const O: bool> {
     pub(super) key: WorthQueryApplicationInvariantFieldBinding<OrbitSchema<O>, Node, u64>,
     pub(super) next:
         WorthQueryApplicationInvariantRelationBinding<OrbitSchema<O>, Next, Node, Node>,
+    pub(super) shells: WorthQueryApplicationInvariantComponentSetBinding<
+        OrbitSchema<O>,
+        super::decision::components::binding::Shells,
+        Node,
+    >,
+    pub(super) spares: WorthQueryApplicationInvariantComponentSetBinding<
+        OrbitSchema<O>,
+        super::component_invariants::declaration::Spares,
+        super::component_invariants::declaration::Spare,
+    >,
     observer: Probe<O>,
     observation: Observation,
     blocked: Vec<u64>,
@@ -120,6 +147,12 @@ pub(super) fn resolve<const O: bool>(
     blocked: Vec<u64>,
 ) -> Result<Rule<O>, String> {
     Ok(Rule {
+        shells: resolver
+            .typed_component_set(super::decision::components::binding::Shells::reference())
+            .ok_or("shells missing read/applicability")?,
+        spares: resolver
+            .typed_component_set(super::component_invariants::declaration::Spares::reference())
+            .ok_or("spares missing read/applicability")?,
         key: resolver
             .typed_field(NodeKey::reference())
             .ok_or("key missing")?,
@@ -136,6 +169,9 @@ impl<const O: bool> Rule<O> {
         &self,
         view: &WorthQueryApplicationInvariantReadView<'_, OrbitSchema<O>>,
     ) -> Result<Vec<(u64, Entity<O>)>, WorthQueryApplicationInvariantPreparationError> {
+        if self.observer.complete_components {
+            return super::component_invariants::preparation::nodes(view, self);
+        }
         let mut nodes = BTreeMap::new();
         let touched = view
             .touched_entities(&self.key)
@@ -231,6 +267,19 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
         self.observation.0[1].fetch_add(1, Ordering::SeqCst);
         if self.observer.armed.load(Ordering::SeqCst) {
             (self.observer.callback)(context, scope, self);
+        }
+        if let Some(expected) = self.observer.expected_count {
+            let actual = context
+                .proposed()
+                .component_count(&self.shells)
+                .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?;
+            if actual != expected {
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
+                    root: 0,
+                    blocked: actual as u64,
+                    ordinal: expected as u64,
+                }));
+            }
         }
         if O && let Some((_, root)) = scope.proposed.iter().find(|(key, _)| *key == 0) {
             let view = context.proposed();

@@ -232,7 +232,9 @@ fn register_relation_to_kinds_with_contracts(
         .map_err(relational_schema_denial)
 }
 
-fn lower_cross_context(value: ApplicationRelationCrossContextPolicy) -> CrossContextPolicy {
+pub(super) fn lower_cross_context(
+    value: ApplicationRelationCrossContextPolicy,
+) -> CrossContextPolicy {
     match value {
         ApplicationRelationCrossContextPolicy::AllowExplicit => CrossContextPolicy::AllowExplicit,
         ApplicationRelationCrossContextPolicy::SchemaControlled => {

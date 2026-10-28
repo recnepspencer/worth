@@ -26,6 +26,7 @@ mod aftermath_coverage;
 mod conditional_application_operation;
 pub(crate) use conditional_application_operation::complete_typed_package_fixture;
 mod declaration_provenance;
+mod derived_relation;
 mod effect_fixture;
 mod field_references;
 mod mutation_binding;
@@ -34,6 +35,7 @@ mod operation_contracts;
 mod package_schema_identity;
 mod portable_record_assertions;
 mod principal_binding;
+mod projected_member_domain;
 mod read_only_operations;
 mod value_bindings;
 

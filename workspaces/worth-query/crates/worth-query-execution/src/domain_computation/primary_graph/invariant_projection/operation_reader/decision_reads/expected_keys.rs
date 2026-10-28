@@ -7,6 +7,7 @@ use std::{collections::BTreeSet, sync::Arc};
 pub(in crate::domain_computation::primary_graph) struct ExpectedFactKeys {
     walks: super::structural_walks::IssuedWalkValues,
     aggregates: super::aggregates::IssuedAggregateValues,
+    components: super::components::IssuedComponentValues,
     handler: Arc<BTreeSet<Key>>,
     source_publications: Option<Arc<super::source_publications::IssuedSourcePublicationValues>>,
     // Last: retains original authoring payment until every authoring map drops.
@@ -19,6 +20,7 @@ impl ExpectedFactKeys {
         source_publications: Option<Arc<super::source_publications::IssuedSourcePublicationValues>>,
         walks: super::structural_walks::IssuedWalkValues,
         aggregates: super::aggregates::IssuedAggregateValues,
+        components: super::components::IssuedComponentValues,
     ) -> Self {
         Self {
             handler,
@@ -26,7 +28,21 @@ impl ExpectedFactKeys {
             source_publications,
             walks,
             aggregates,
+            components,
         }
+    }
+    pub(in crate::domain_computation::primary_graph) fn component(
+        &self,
+        key: &crate::domain_computation::primary_graph::component_selection::ComponentSelectionKey,
+        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        contracts: &Arc<
+            worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+        >,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Option<
+        &Arc<crate::domain_computation::primary_graph::component_selection::ComponentSelection>,
+    > {
+        self.components.get(key, admission, contracts, snapshot)
     }
     pub(in crate::domain_computation::primary_graph) fn aggregate(
         &self,

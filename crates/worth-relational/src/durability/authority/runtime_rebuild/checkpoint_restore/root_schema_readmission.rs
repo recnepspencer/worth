@@ -63,7 +63,7 @@ impl RootSchemaReadmissionCatalog {
             }
             return Ok(Arc::clone(authority));
         }
-        self.readmit_new_carrier(image, envelope)
+        self.readmit_new_carrier(restored, image, envelope)
     }
 
     fn readmit_legacy_root(
@@ -90,6 +90,7 @@ impl RootSchemaReadmissionCatalog {
 
     fn readmit_new_carrier(
         &mut self,
+        restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
     ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, DurabilityError> {
@@ -113,6 +114,29 @@ impl RootSchemaReadmissionCatalog {
                 image.commit_id.0
             )));
         }
+        // Carrier validation alone cannot substitute the configured source
+        // issuer. First bind the complete durable meaning to this envelope.
+        if registry.authority_snapshot() != envelope.schema_authority {
+            return Err(schema_mismatch(format!(
+                "branch-root image `{}` executable schema differs from its envelope",
+                image.commit_id.0
+            )));
+        }
+        let configured = &restored.config.schema.registry;
+        let registry = if (!envelope.schema_authority.derived_relations.is_empty()
+            || !envelope
+                .schema_authority
+                .projected_member_domains
+                .is_empty())
+            && configured.authority_snapshot() == envelope.schema_authority
+        {
+            // Installed typed rules/layouts already retain these genuine entry
+            // handles. Exact admitted meaning preserves their original issuer;
+            // a changed configured recipe must keep the carrier's own registry.
+            configured.clone()
+        } else {
+            registry
+        };
         let allocation_id = self.issue_authority_id()?;
         let authority = crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
             allocation_id,

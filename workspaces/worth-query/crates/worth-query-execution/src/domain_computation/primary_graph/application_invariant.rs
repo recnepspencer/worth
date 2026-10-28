@@ -34,11 +34,19 @@ pub use access_denial::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAcce
 pub(super) use program_selection::WorthQueryProgramRuleSelection;
 pub(super) use registration::ErasedApplicationInvariantRule;
 pub use typed_binding::{
+    WorthQueryApplicationInvariantComponentSetBinding,
+    WorthQueryApplicationInvariantDerivedRelationBinding,
     WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantProjectedCaseBinding,
     WorthQueryApplicationInvariantRelationBinding,
 };
 pub use typed_view::{
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
+    WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
+    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantDerivedMemberRelation,
+    WorthQueryApplicationInvariantDerivedOrbit, WorthQueryApplicationInvariantDerivedRelation,
+    WorthQueryApplicationInvariantDerivedWalk, WorthQueryApplicationInvariantDerivedWalkStep,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantGraphComponent,
+    WorthQueryApplicationInvariantGraphComponents, WorthQueryApplicationInvariantGraphMember,
     WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantReadView,
     WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantScopePlanner,
     WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,

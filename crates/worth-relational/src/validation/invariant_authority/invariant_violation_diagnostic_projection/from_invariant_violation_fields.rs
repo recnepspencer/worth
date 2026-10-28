@@ -7,6 +7,13 @@ impl<'a> InvariantViolationDiagnosticProjection<'a> {
         fields: &'a InvariantViolationFields,
     ) -> Self {
         match fields {
+            InvariantViolationFields::DerivedRelationGraph {
+                definition,
+                violation,
+            } => Self::DerivedRelationGraph {
+                definition,
+                violation,
+            },
             InvariantViolationFields::None => Self::None,
             InvariantViolationFields::MergedIntentLimit {
                 merged_intent_count,

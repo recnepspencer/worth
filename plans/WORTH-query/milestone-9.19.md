@@ -54,6 +54,15 @@ declared lifecycle permits it. An unavailable index never silently becomes stale
 truth. A custom derived relationship can use the extension's managed evidence,
 but does not thereby bypass graph-law, traversal or mutation contracts.
 
+Addendum 1's withdrawn partition-reuse finding is not scope to implement here.
+Query's existing partitioned managed computation already supplies declared keys,
+tracked gathering, pure `compute_partition`, owner completion and per-partition
+reuse retained on the producer record at the report's `ba86433627` SDK. The
+one-retained-computation-per-handler constraint is handled in the consumer's
+design. This milestone adds the missing managed-index lifecycle and both range
+read contexts; it does not replace that computation engine or require relaxing
+the handler limit. Pair discovery and retained pair certification remain distinct.
+
 ## Roadmap Placement
 
 The completed Milestone 9.17 umbrella and Milestone 9.18 settle exact composite

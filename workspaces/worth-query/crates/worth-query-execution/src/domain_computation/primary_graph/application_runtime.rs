@@ -51,11 +51,18 @@ pub(in crate::domain_computation) use inbound_publication::{
     WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome,
     WorthQueryPerformedInboundCompletion, WorthQueryUnpublishedInboundCompletion,
 };
+mod derived_relation;
 mod graph_participation;
+pub use derived_relation::WorthQueryRuleReadableCollectionLifecycleForTest;
 pub(in crate::domain_computation::primary_graph) mod installation;
 mod operation_control;
 mod publication_entry;
+mod storage_retention;
 pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
+pub use storage_retention::{
+    WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
+    WorthQueryStorageRetentionStop,
+};
 
 pub(in crate::domain_computation) use external_dispatch_attempt::{
     WorthQueryExternalDispatchAdmissionDenial, WorthQueryExternalDispatchAttemptOrdinal,

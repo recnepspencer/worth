@@ -165,6 +165,9 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope>(
         field,
     });
     match rule.selector() {
+        ApplicationQueryDisclosureSelector::InspectionMetadata(metadata) => {
+            return Err(denial(metadata.slot_type()))
+        }
         ApplicationQueryDisclosureSelector::Resource(meaning) => {
             return Err(denial(meaning.slot_type()))
         }
@@ -190,6 +193,17 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope>(
         }
         ApplicationQueryDisclosureSelector::Relation { .. } => {
             admit_result_rule(query, rule.selector(), installed, result_rules, false)?;
+        }
+        ApplicationQueryDisclosureSelector::Components(selection) => {
+            let slot = selection.slot_key();
+            if !query
+                .read_graph()
+                .component_selection()
+                .is_some_and(|expected| expected.slot_key() == slot)
+                || result_rules.insert(slot, installed).is_some()
+            {
+                return Err(denial(selection.slot_type()));
+            }
         }
         ApplicationQueryDisclosureSelector::Orbit(orbit) => {
             let slot = orbit.slot_key();
@@ -289,9 +303,11 @@ fn require_complete_result_shape<Schema, Query, Parameters, QueryResult, Scope>(
     rules: &BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
 ) -> Result<(), WorthQueryApplicationDisclosureContractDenial> {
     let orbit = query.read_graph().orbit();
+    let components = query.read_graph().component_selection();
     let expected = query.read_graph().projections().len()
         + query.read_graph().relations().len()
-        + usize::from(orbit.is_some());
+        + usize::from(orbit.is_some())
+        + usize::from(components.is_some());
     let exact = query
         .read_graph()
         .projections()
@@ -306,7 +322,8 @@ fn require_complete_result_shape<Schema, Query, Parameters, QueryResult, Scope>(
         )
         .all(|slot| rules.contains_key(slot.as_ref()));
     let orbit_exact = orbit.is_none_or(|orbit| rules.contains_key(&orbit.slot_key()));
-    (expected == rules.len() && exact && orbit_exact)
+    let components_exact = components.is_none_or(|meaning| rules.contains_key(&meaning.slot_key()));
+    (expected == rules.len() && exact && orbit_exact && components_exact)
         .then_some(())
         .ok_or_else(|| denial(query.name()))
 }

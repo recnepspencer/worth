@@ -1,4 +1,4 @@
-//! Shared portable query association for original-source disclosure purposes.
+//! Full portable query association; decoding never grants runtime authority.
 use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };
@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryScopeResolutionMode,
 };
 
-pub(super) fn write(
+pub(in crate::record) fn write(
     output: &mut dyn BinaryEncodingSink,
     disclosure: &ApplicationQueryBindingReference,
 ) -> Result<(), Denial> {
@@ -19,7 +19,7 @@ pub(super) fn write(
     Ok(())
 }
 
-pub(super) fn decode(
+pub(in crate::record) fn decode(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryBindingReference, Denial> {
     Ok(ApplicationQueryBindingReference::from_untrusted_parts(

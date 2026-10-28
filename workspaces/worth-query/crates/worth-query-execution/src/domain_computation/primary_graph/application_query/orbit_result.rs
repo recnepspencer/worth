@@ -39,7 +39,7 @@ pub(super) fn inspect<'a, Schema, Query, Slot, Relation, Entity, Row>(
         identity: WorthQueryAggregateIdentity::from_pinned_read(
             selected.aggregate.native(),
             selected.binding.clone(),
-            selected.aggregate.key().relation_kind(),
+            selected.aggregate.key().orbit_relation()?,
         ),
         members: rows,
         length: selected.aggregate.native().len(),

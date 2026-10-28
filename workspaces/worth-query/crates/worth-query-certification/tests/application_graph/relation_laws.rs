@@ -46,5 +46,10 @@ mod orbit;
 #[path = "relation_laws/payload.rs"]
 mod payload;
 
+#[path = "relation_laws/derived.rs"]
+mod derived;
 #[path = "relation_laws/history.rs"]
 mod history;
+
+#[path = "relation_laws/logical.rs"]
+mod logical;

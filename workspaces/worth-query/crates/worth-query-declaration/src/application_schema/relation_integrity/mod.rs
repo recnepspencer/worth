@@ -1,6 +1,9 @@
 mod cardinality;
 mod deletion;
 mod endpoints;
+mod graph;
+pub(crate) use graph::ApplicationRelationGraphLawRef;
+pub use graph::ApplicationRelationGraphLaws;
 mod law_meaning;
 mod minimum;
 mod record;
@@ -125,7 +128,7 @@ pub(super) fn validate_relation_integrity(
         matches!(
             member,
             ApplicationSchemaMember::Relation { integrity, from, to, .. }
-                if !integrity.cardinality.is_valid() || (integrity.orbit && from != to)
+                if !integrity.graph_laws().is_valid(from, to)
         )
     }) {
         Err(ApplicationSchemaDeclarationDenial::InvalidRelationIntegrity)

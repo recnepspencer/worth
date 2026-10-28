@@ -5,7 +5,7 @@ use super::observations::Acquisition;
 use super::record::{LineageRecord, LINEAGE_ASPECT};
 use super::{retention_extent as extent, AggregateLineageEvent, AggregateLineageKind};
 use crate::identity::data::RelationId;
-use crate::schema::data::AggregateIdentityContractDeclaration;
+use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::BTreeSet;
 use worth_execution::MapKernelFailure;
@@ -14,11 +14,12 @@ use worth_foundational::facade::{AspectKey, ContractValidatedAspectValueView};
 pub(super) fn read(
     view: &InvariantStateView<'_>,
     aggregate: &StoredAggregate,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
+    registry: &RelationalSchemaRegistry,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<BTreeSet<AggregateLineageEvent>> {
     let mut events = BTreeSet::new();
-    visit(view, aggregate, contract, work, |event, work| {
+    visit(view, aggregate, contract, registry, work, |event, work| {
         work.retain(extent::tree_entry::<AggregateLineageEvent, ()>())?;
         events.insert(event);
         Ok(())
@@ -26,7 +27,7 @@ pub(super) fn read(
     Ok(events)
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(super) struct MergeContinuation {
     pub(super) target: StoredAggregate,
     pub(super) event: AggregateLineageEvent,
@@ -35,7 +36,8 @@ pub(super) struct MergeContinuation {
 pub(super) fn visit(
     view: &InvariantStateView<'_>,
     aggregate: &StoredAggregate,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
+    registry: &RelationalSchemaRegistry,
     work: &mut AggregateWork<'_, '_, '_, '_>,
     mut emit: impl FnMut(AggregateLineageEvent, &mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<()>,
 ) -> BuildResult<Option<MergeContinuation>> {
@@ -69,8 +71,8 @@ pub(super) fn visit(
             continue;
         }
         let record = lineage_record(view, id, work)?;
-        let from = super::stored_record::read_scalar(view, edge.source, contract, work)?;
-        let to = super::stored_record::read_scalar(view, edge.target, contract, work)?;
+        let from = super::stored_record::read_scalar(view, edge.source, contract, registry, work)?;
+        let to = super::stored_record::read_scalar(view, edge.target, contract, registry, work)?;
         if from.identity == to.identity
             || (from.identity != aggregate.record.identity
                 && to.identity != aggregate.record.identity)

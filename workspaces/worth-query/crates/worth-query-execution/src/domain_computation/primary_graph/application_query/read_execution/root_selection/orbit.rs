@@ -1,20 +1,18 @@
 //! A complete single orbit retains Native anchor-forward order without path unions.
+use super::super::interruption::NativeReadInterruption;
 use super::path_union::traversal_denial;
 use super::*;
 use crate::domain_computation::primary_graph::{
-    aggregate_observation::{AggregateObservation, AggregateQuery},
+    aggregate_observation::AggregateQuery,
     application_query::observed_source::DeclaredOrbitSelection,
     structural_walk::{StructuralWalkDependencies, StructuralWalkObservation, StructuralWalkQuery},
     WorthQueryPrimaryGraphLayout,
 };
-use std::{cell::RefCell, collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_query::RelationDirection;
 use worth_relational::facade::{
-    runtime::{
-        PinnedAggregateReadDenialKind as AggregateDenial,
-        PinnedStructuralWalkDenialKind as WalkDenial, RelationalPinnedRead,
-    },
+    runtime::{PinnedStructuralWalkDenialKind as WalkDenial, RelationalPinnedRead},
     transactions::RelationalExecutionDenialCause as Cause,
 };
 
@@ -44,48 +42,23 @@ pub(super) fn select(
         return Err(traversal_denial(meaning.relation()));
     }
     let subject = meaning.relation();
-    let interruption = work.interruption;
-    let original_stop = RefCell::new(None);
-    let control = || match interruption.checkpoint(subject) {
-        Ok(()) => Ok(()),
-        Err(stop) => {
-            original_stop.borrow_mut().get_or_insert(stop);
-            Err(Cause::NestedStopped)
-        }
-    };
+    let interruption = NativeReadInterruption::new(work.interruption, subject);
+    let control = || interruption.checkpoint();
     let result = execution.run_native_with_checkpoint(|context| {
         work.checkpoint(subject)?;
-        let aggregate = AggregateObservation::read(
-            runtime,
-            execution,
+        let aggregate = super::aggregate::read(
+            execution, runtime, work,
             AggregateQuery {
-                relation: subject,
+                allocation: None,
+                subject,
                 entity_kind: relation.from,
-                relation_kind: relation.kind,
+                selection: crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection::OrbitRelation(relation.kind),
                 member: plan.root,
                 maximum_work: None,
-                control: Some(&control),
+                control: None,
             },
-        );
-        let units = match &aggregate {
-            Ok(body) => body.native().work_units(),
-            Err(stop) => stop.work,
-        };
-        let charged = charge_identity(work, units, subject);
-        if let Some(stop) = original_stop.borrow().clone() {
-            return Err(stop);
-        }
-        charged?;
-        let aggregate = aggregate.map_err(|stop| match stop.kind {
-            AggregateDenial::Read(cause) => {
-                super::super::denial::relational_read_denial(cause, subject)
-            }
-            AggregateDenial::WorkLimitExceeded => read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ),
-            _ => traversal_denial(subject),
-        })?;
+            &interruption,
+        )?;
         let walk = StructuralWalkObservation::read(
             runtime,
             execution,
@@ -105,7 +78,7 @@ pub(super) fn select(
             Err(stop) => (stop.reads, stop.work),
         };
         let charged = work.charge_walk(reads, units, subject);
-        if let Some(stop) = original_stop.borrow().clone() {
+        if let Some(stop) = interruption.denial() {
             return Err(stop);
         }
         charged?;
@@ -163,12 +136,11 @@ pub(super) fn select(
             predicate_index_generation: None,
             reads: work.reads,
             root_path_steps: None,
-            _source_allocation: None,
         })
     });
     // The outer execution handoff can itself refuse a nested callback stop.
     // Keep the first typed Query denial alive across that handoff.
-    if let Some(stop) = original_stop.into_inner() {
+    if let Some(stop) = interruption.denial() {
         return Err(stop);
     }
     work.checkpoint(subject)?;
@@ -179,27 +151,4 @@ pub(super) fn select(
             subject,
         )),
     }
-}
-
-fn charge_identity(
-    work: &mut RootSelectionWork<'_>,
-    units: u64,
-    subject: &str,
-) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    let units = usize::try_from(units).map_err(|_| {
-        read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-            subject,
-        )
-    })?;
-    work.work_units = work.work_units.checked_add(units).ok_or_else(|| {
-        read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-            subject,
-        )
-    })?;
-    if let Some(spent) = work.spent {
-        spent.charge(units, subject)?;
-    }
-    work.checkpoint(subject)
 }

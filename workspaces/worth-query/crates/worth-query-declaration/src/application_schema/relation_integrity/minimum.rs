@@ -31,15 +31,21 @@ pub(super) fn validate_minimum_kinds(
         })
         .collect();
     for minimum in minima() {
-        if minimum.minimum_reachable_targets == 0
-            || minimum.target_kinds.is_empty()
-            || minimum
-                .target_kinds
-                .iter()
-                .any(|kind| !entities.contains(kind.as_str()))
-        {
+        if !minimum_kinds_are_valid(minimum, &entities) {
             return Err(ApplicationSchemaDeclarationDenial::InvalidRelationIntegrity);
         }
     }
     Ok(())
+}
+
+pub(super) fn minimum_kinds_are_valid(
+    minimum: &super::ApplicationRelationMinimumReachabilityRecord,
+    entities: &std::collections::BTreeSet<&str>,
+) -> bool {
+    minimum.minimum_reachable_targets > 0
+        && !minimum.target_kinds.is_empty()
+        && minimum
+            .target_kinds
+            .iter()
+            .all(|kind| entities.contains(kind.as_str()))
 }

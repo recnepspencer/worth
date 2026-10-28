@@ -1,4 +1,5 @@
 //! Two genuinely authored schema types; publication rebinds the same declaration.
+use super::component_invariants::declaration::{Spare, SpareKey};
 use worth_query_declaration::{
     facade::{application_schema::*, authentication::*},
     *,
@@ -24,45 +25,47 @@ impl<const O: bool> ApplicationSchema for OrbitSchema<O> {
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
         super::declared_queries::declarations::declare(super::decision::binding::declare(
-            ApplicationSchemaDeclarationBuilder::for_schema()
-                .entity(ExternalMapping::reference())
-                .entity(Principal::reference())
-                .entity(Node::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .field(
-                    ExternalMapping::reference(),
-                    ExternalIdentityField::reference(),
-                )
-                .field(
-                    ExternalMapping::reference(),
-                    MappingStatusField::reference(),
-                )
-                .aspect(Principal::reference(), PrincipalFacts::reference())
-                .field(Principal::reference(), PrincipalKey::reference())
-                .aspect(Node::reference(), NodeData::reference())
-                .field(Node::reference(), NodeKey::reference())
-                .field(Node::reference(), Marked::reference())
-                .relation(
-                    MappingTarget::reference(),
-                    ExternalMapping::reference(),
-                    Principal::reference(),
-                )
-                .principal_binding(IdentityBinding::reference())
-                .relation(Next::reference(), Node::reference(), Node::reference())
-                .operation(
-                    ReplaceNext::reference()
-                        .definition()
-                        .no_external_effect()
-                        .no_aftermath()
-                        .finish(),
-                )
-                .operation_read_entity(ReplaceNext::reference(), Node::reference())
-                .operation_read_field(ReplaceNext::reference(), NodeKey::reference())
-                .operation_expected_fact(ReplaceNext::reference(), NodeKey::reference())
-                .operation_read_relation(ReplaceNext::reference(), Next::reference())
-                .operation_link(ReplaceNext::reference(), Next::reference())
-                .operation_unlink(ReplaceNext::reference(), Next::reference())
-                .invariant(super::probe::definition::<O>()),
+            super::component_invariants::declaration::declare(
+                ApplicationSchemaDeclarationBuilder::for_schema()
+                    .entity(ExternalMapping::reference())
+                    .entity(Principal::reference())
+                    .entity(Node::reference())
+                    .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
+                    .field(
+                        ExternalMapping::reference(),
+                        ExternalIdentityField::reference(),
+                    )
+                    .field(
+                        ExternalMapping::reference(),
+                        MappingStatusField::reference(),
+                    )
+                    .aspect(Principal::reference(), PrincipalFacts::reference())
+                    .field(Principal::reference(), PrincipalKey::reference())
+                    .aspect(Node::reference(), NodeData::reference())
+                    .field(Node::reference(), NodeKey::reference())
+                    .field(Node::reference(), Marked::reference())
+                    .relation(
+                        MappingTarget::reference(),
+                        ExternalMapping::reference(),
+                        Principal::reference(),
+                    )
+                    .principal_binding(IdentityBinding::reference())
+                    .relation(Next::reference(), Node::reference(), Node::reference())
+                    .operation(
+                        ReplaceNext::reference()
+                            .definition()
+                            .no_external_effect()
+                            .no_aftermath()
+                            .finish(),
+                    )
+                    .operation_read_entity(ReplaceNext::reference(), Node::reference())
+                    .operation_read_field(ReplaceNext::reference(), NodeKey::reference())
+                    .operation_expected_fact(ReplaceNext::reference(), NodeKey::reference())
+                    .operation_read_relation(ReplaceNext::reference(), Next::reference())
+                    .operation_link(ReplaceNext::reference(), Next::reference())
+                    .operation_unlink(ReplaceNext::reference(), Next::reference())
+                    .invariant(super::probe::definition::<O>()),
+            ),
         ))
         .build()
     }
@@ -130,7 +133,10 @@ pub struct ReplaceNextInput;
 worth_query_portable_type!(ReplaceNextInput => "worth.query.test.orbit-swap.v1");
 worth_query_structured_value_binding!(pub ReplaceNextInputBinding for ReplaceNextInput { identity: "worth.query.test.orbit-swap.v1" });
 worth_query_operation!(pub ReplaceNext for S: OrbitModel, input ReplaceNextInputBinding);
-worth_query_operation_reads!(ReplaceNext => [Node, NodeKey, Next]);
-worth_query_operation_expects_fact!(ReplaceNext => [NodeKey]);
+worth_query_operation_reads!(ReplaceNext => [Node, NodeKey, Next, Spare, SpareKey]);
+worth_query_operation_creates!(ReplaceNext => [Spare]);
+worth_query_operation_deletes!(ReplaceNext => [Spare]);
+worth_query_operation_writes!(ReplaceNext => [SpareKey]);
+worth_query_operation_expects_fact!(ReplaceNext => [NodeKey, SpareKey]);
 worth_query_operation_links!(ReplaceNext => [Next]);
 worth_query_operation_unlinks!(ReplaceNext => [Next]);

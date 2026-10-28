@@ -88,7 +88,7 @@ pub(super) fn assert_published(
             assert!(rows
                 .iter()
                 .any(|(_, row)| row.identity == aggregate.identity()
-                    && row.current_anchor == Some(aggregate.anchor())
+                    && row.current_anchor == Some(aggregate.anchor().into())
                     && row.retired.is_none()));
             observed_events.extend(aggregate.transition_lineage().map(|event| {
                 (

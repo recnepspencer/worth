@@ -1,7 +1,9 @@
 use std::{cell::Cell, mem::size_of};
 
 use crate::{
-    authority::{ExecutionResourceLease, LeaseDenial, ResourceReservation},
+    authority::{
+        ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial, ResourceReservation,
+    },
     backend::{
         run_admitting_scope, KernelContext, KernelFailure, MemoryActivityGuard, ScopeKernelFailure,
         ScopeStop,
@@ -43,8 +45,13 @@ pub(super) fn assert_offline_structural_edit(already_charged: bool) {
 /// successful edit releases excess charge; dropping the partitioner releases all.
 #[derive(Default)]
 pub(super) struct OwnedRetainedCharge {
-    reservation: Option<ResourceReservation>,
+    reservation: Option<RetainedReservation>,
     activity: Option<MemoryActivityGuard>,
+}
+
+enum RetainedReservation {
+    Leased(ResourceReservation),
+    Serial(ExecutionMemoryReservation),
 }
 
 impl OwnedRetainedCharge {
@@ -74,21 +81,75 @@ impl OwnedRetainedCharge {
             .ok_or_else(|| {
                 PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
             })?;
-        if let Some(reservation) = &mut self.reservation {
-            lease
+        match &mut self.reservation {
+            Some(RetainedReservation::Leased(reservation)) => lease
                 .rebind_retained_memory(reservation, bytes)
-                .map_err(PartitionUpdateDenial::Admission)?;
-        } else {
-            self.reservation = Some(
-                lease
-                    .reserve_retained_memory(bytes)
-                    .map_err(PartitionUpdateDenial::Admission)?,
-            );
+                .map_err(PartitionUpdateDenial::Admission)?,
+            Some(RetainedReservation::Serial(_)) => {
+                return Err(PartitionUpdateDenial::Admission(LeaseDenial::refused(
+                    LeaseDenial::UnrelatedNestedLease,
+                )));
+            }
+            None => {
+                self.reservation = Some(RetainedReservation::Leased(
+                    lease
+                        .reserve_retained_memory(bytes)
+                        .map_err(PartitionUpdateDenial::Admission)?,
+                ))
+            }
         }
         self.activity = None;
         self.activity = crate::backend::enter_retained_memory(bytes);
         Ok(())
     }
+
+    /// Use only the serial budget actually installed on the active request.
+    pub(super) fn admit_serial(&mut self, bytes: u64) -> Result<(), PartitionUpdateDenial> {
+        let bytes = bytes
+            .checked_add(size_of::<Self>() as u64 + 64)
+            .ok_or_else(|| {
+                PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+            })?;
+        let serial = crate::backend::active_serial_memory().ok_or_else(|| {
+            PartitionUpdateDenial::Admission(LeaseDenial::refused(
+                LeaseDenial::NoActiveExecutionScope,
+            ))
+        })?;
+        match &mut self.reservation {
+            Some(RetainedReservation::Serial(memory)) => memory
+                .take_over(None, Some(&serial), bytes)
+                .map_err(PartitionUpdateDenial::Admission)?,
+            Some(RetainedReservation::Leased(_)) => {
+                return Err(PartitionUpdateDenial::Admission(LeaseDenial::refused(
+                    LeaseDenial::UnrelatedNestedLease,
+                )));
+            }
+            None => {
+                self.reservation = Some(RetainedReservation::Serial(
+                    ExecutionMemoryReservation::reserve_in_scope(None, bytes)
+                        .map_err(PartitionUpdateDenial::Admission)?,
+                ));
+            }
+        }
+        self.activity = None;
+        self.activity = crate::backend::enter_retained_memory(bytes);
+        Ok(())
+    }
+}
+
+/// The request entry already owns the active context and its original funding.
+pub(super) fn request_edit(
+    context: &mut KernelContext<'_, '_>,
+    edit: impl FnOnce(&mut KernelContext<'_, '_>) -> Result<PartitionWork, PartitionUpdateDenial>,
+) -> Result<PartitionWork, PartitionUpdateDenial> {
+    if !context.is_active() {
+        return Err(PartitionUpdateDenial::Admission(
+            context.refuse_request(LeaseDenial::UnrelatedNestedLease),
+        ));
+    }
+    context.poll().map_err(PartitionUpdateDenial::Stop)?;
+    let _structural_edit = StructuralEditGuard::enter();
+    edit(context)
 }
 
 /// Bind a checked edit to both the invoking kernel and the supplied lease.

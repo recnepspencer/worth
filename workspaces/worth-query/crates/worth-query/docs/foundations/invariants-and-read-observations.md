@@ -326,7 +326,25 @@ See [invariant walks](invariant-walks.md) and the
 [orbit and lineage contracts](../modeling/relation-laws.md) for their exact
 reader, footprint, disclosure and retained-snapshot boundaries. Privileged
 snapshot lineage inspection does not supply a tracked publication dependency.
-Component identity and proposed-state derived-relation reads remain unfinished.
+Component sets carry Native persistent identity through privileged inspection,
+admitted operation/decision reads, ordinary invariant proposed/committed
+selection/enumeration/count and complete one-shot Query results. See
+[ordinary invariant component reads](../modeling/relation-laws.md#ordinary-invariant-component-reads)
+for factory read/applicability coverage, complete census cost and physical footprints,
+and [declared query component reads](../modeling/relation-laws.md#declared-component-query-contracts)
+for whole-slot disclosure and source currentness.
+The [public topology island consumer](../modeling/relation-laws.md#public-topology-island-consumer)
+uses these reads with actual coupling edits, independent seeded union-find
+identity/lineage comparison and 10/10,000 unrelated-ring business-read locality.
+Derived relations supply proposed/committed endpoint reads, tracked decisions
+and framework-owned managed counts; see
+[derived relation meaning](../domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning).
+Finite projected sources compose with laws, walks, orbits and components. The
+[privileged logical reader](../modeling/relation-laws.md#privileged-logical-component-inspection)
+retains actual sources and component bodies at a stored snapshot. Its members
+cannot enter entity writers or grant operation authority. Domain-specific
+connectivity and context must be declared through the actual source incidences;
+the generic component reader does not infer them from carrier identity.
 These counts describe Query boundary operations, not storage-engine I/O,
 allocation, elapsed time or unique entities.
 

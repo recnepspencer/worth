@@ -230,7 +230,8 @@ where
     where
         Value: WorthQueryManagedDerivedValue,
     {
-        self.checked_view_dependencies_for_query(view, product, source, &view.state.query)
+        let query = view.state.source.query().ok_or(Denial::ForeignQuery)?;
+        self.checked_view_dependencies_for_query(view, product, source, query)
     }
 
     fn checked_view_dependencies_for_query<ViewQuery, SourceQuery, Value>(

@@ -3,6 +3,27 @@ use crate::application_query::{ApplicationQueryBinding, ApplicationQueryDefiniti
 use super::{ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember};
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    /// Attach optional inspection metadata to the complete existing query binding.
+    pub fn application_query_inspection<Binding>(
+        mut self,
+        definition: crate::application_query::ApplicationQueryInspectionDefinition<Schema, Binding>,
+    ) -> Self
+    where
+        Schema: super::ApplicationSchema,
+        Binding: ApplicationQueryBinding<Schema>,
+    {
+        let descriptor = Binding::descriptor();
+        if !self
+            .member_provenance
+            .query_bindings()
+            .contains(&descriptor)
+        {
+            self.member_provenance.register_query_binding(descriptor);
+        }
+        self.push_member(ApplicationSchemaMember::ApplicationQueryInspection {
+            definition: definition.into_erased(),
+        })
+    }
     /// Register separate history meaning and its exact original SubjectRead binding.
     pub fn application_history_query<History>(
         mut self,

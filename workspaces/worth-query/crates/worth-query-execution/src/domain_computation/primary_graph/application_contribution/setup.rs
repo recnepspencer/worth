@@ -1,4 +1,5 @@
 mod collection;
+mod derived_relation;
 mod feature;
 mod resource;
 

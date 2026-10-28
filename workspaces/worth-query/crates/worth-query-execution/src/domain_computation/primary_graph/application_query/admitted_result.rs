@@ -132,6 +132,24 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
         }
     }
 
+    /// Inspect the complete component slot already disclosed by this result.
+    pub fn components<Schema, Slot, Set, Entity>(
+        &self,
+        reference: worth_query_declaration::facade::application_query::ApplicationQueryComponentRef<
+            Schema,
+            Query,
+            Slot,
+            Set,
+            Entity,
+        >,
+    ) -> Option<super::WorthQueryApplicationQueryComponents<'_, Schema, Set, QueryResult>> {
+        super::component_result::inspect(
+            &self.rows,
+            self.result_set_observation.as_ref()?,
+            reference,
+        )
+    }
+
     /// Inspect the exact whole-orbit slot already disclosed by this result.
     pub fn orbit<Schema, Slot, Relation, Entity>(
         &self,
@@ -186,6 +204,35 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
 }
 
 impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
+    /// Retains the actual completed query's source, parameters and observation
+    /// for a later freshly governed inspection. Receipt display fields cannot
+    /// manufacture this carrier.
+    pub fn retain_inspection_observation(
+        &self,
+    ) -> Option<super::super::causal_inspection::WorthQueryApplicationQueryObservation> {
+        super::super::causal_inspection::WorthQueryApplicationQueryObservation::from_disclosed_source(
+            self,
+        )
+    }
+
+    /// Inspect the complete component slot already disclosed by this result.
+    pub fn components<Schema, Slot, Set, Entity>(
+        &self,
+        reference: worth_query_declaration::facade::application_query::ApplicationQueryComponentRef<
+            Schema,
+            Query,
+            Slot,
+            Set,
+            Entity,
+        >,
+    ) -> Option<super::WorthQueryApplicationQueryComponents<'_, Schema, Set, QueryResult>> {
+        super::component_result::inspect(
+            &self.rows,
+            self.disclosure.result_set_observation.as_ref()?,
+            reference,
+        )
+    }
+
     /// Inspect the exact whole-orbit slot already disclosed by this result.
     pub fn orbit<Schema, Slot, Relation, Entity>(
         &self,
@@ -201,17 +248,6 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
             &self.rows,
             self.disclosure.result_set_observation.as_ref()?,
             reference,
-        )
-    }
-
-    /// Retains the actual completed query's source, parameters and observation
-    /// for a later freshly governed inspection. Receipt display fields cannot
-    /// manufacture this carrier.
-    pub fn retain_inspection_observation(
-        &self,
-    ) -> Option<super::super::causal_inspection::WorthQueryApplicationQueryObservation> {
-        super::super::causal_inspection::WorthQueryApplicationQueryObservation::from_disclosed_source(
-            self,
         )
     }
 

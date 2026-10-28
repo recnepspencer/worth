@@ -2,7 +2,11 @@ use crate::runtime::PartitionEdition;
 use crate::storage::overlay::{OverlayStateView, PartitionAccess, WorkingState};
 use serde::{Deserialize, Serialize};
 
+mod affinity;
 mod custom_semantics;
+mod identity;
+pub(crate) use affinity::InvariantSourceAffinity;
+pub(crate) use identity::InvariantObservationIdentity;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum InvariantObservationKind {
@@ -21,6 +25,7 @@ impl InvariantObservationKind {
 
 #[derive(Clone)]
 pub(crate) struct CommittedInvariantView<'runtime> {
+    identity: InvariantObservationIdentity,
     committed: CommittedInvariantState<'runtime>,
     enforcement: Option<OverlayStateView<'runtime, WorkingState>>,
     enforcement_version_id: Option<crate::identity::data::VersionId>,
@@ -37,6 +42,7 @@ enum CommittedInvariantState<'runtime> {
 impl<'runtime> CommittedInvariantView<'runtime> {
     pub(crate) fn new(state: PartitionEdition) -> Self {
         Self {
+            identity: InvariantObservationIdentity::issue(),
             committed: CommittedInvariantState::Runtime(state),
             enforcement: None,
             enforcement_version_id: None,
@@ -52,6 +58,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     ) -> Self {
         Self {
+            identity: InvariantObservationIdentity::issue(),
             committed: CommittedInvariantState::Branch(state),
             enforcement: Some(OverlayStateView::new(state, proposed_working_state)),
             enforcement_version_id: Some(proposed_version_id),
@@ -62,6 +69,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
 
     pub(crate) fn from_branch(state: &'runtime crate::branch::RelationalBranchRootState) -> Self {
         Self {
+            identity: InvariantObservationIdentity::issue(),
             committed: CommittedInvariantState::Branch(state),
             enforcement: None,
             enforcement_version_id: None,
@@ -106,6 +114,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
 
 #[derive(Clone)]
 pub(crate) struct SpeculativeInvariantView<'runtime> {
+    identity: InvariantObservationIdentity,
     state: OverlayStateView<'runtime, WorkingState>,
     before_image_version_id: crate::identity::data::VersionId,
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
@@ -121,6 +130,7 @@ impl<'runtime> SpeculativeInvariantView<'runtime> {
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     ) -> Self {
         Self {
+            identity: InvariantObservationIdentity::issue(),
             state,
             before_image_version_id,
             proposal_identity,
@@ -145,6 +155,12 @@ pub(crate) enum InvariantObservation<'runtime> {
 }
 
 impl<'runtime> InvariantObservation<'runtime> {
+    pub(crate) fn observation_identity(&self) -> InvariantObservationIdentity {
+        match self {
+            Self::Committed(view) => view.identity.clone(),
+            Self::Speculative(view) => view.identity.clone(),
+        }
+    }
     pub(crate) fn with_aggregate(
         mut self,
         source: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,

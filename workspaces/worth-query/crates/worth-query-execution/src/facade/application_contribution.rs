@@ -1,8 +1,8 @@
 //! Contribution-owned application handler and invariant configuration.
 pub use crate::domain_computation::primary_graph::{
-    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
-    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
-    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
+    WorthQueryDerivedRelationCountOwner, WorthQueryFeatureConfiguration,
+    WorthQueryFeatureDefinition, WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime,
+    WorthQueryFeatureRuntime, WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 
 pub use crate::domain_computation::primary_graph::{

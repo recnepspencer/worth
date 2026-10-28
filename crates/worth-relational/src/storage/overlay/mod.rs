@@ -5,6 +5,8 @@ mod partition_allocation_walk;
 mod partition_content;
 mod partition_symbols;
 mod publication;
+mod result_partition_ids;
+pub(crate) use result_partition_ids::partition_ids_in_result_memory;
 mod slot_resolution;
 mod working_state;
 pub(crate) use slot_resolution::{

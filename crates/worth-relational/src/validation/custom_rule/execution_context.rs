@@ -122,14 +122,16 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
                 .with_aggregate(
                     observation.aggregate_invocation(),
                     observation.custom_uses_suspension_source(),
-                );
+                )
+                .with_structural_source(runtime, observation, false);
         let committed_relations = StructuralRelationView::new(
             committed_state_view.clone(),
             execution,
             work.clone(),
             access.clone(),
         )
-        .with_aggregate(observation.aggregate_invocation(), true);
+        .with_aggregate(observation.aggregate_invocation(), true)
+        .with_structural_source(runtime, observation, true);
         let counts = StructuralCountView::from_touched_scope(&touched);
         let traversal = BoundedStructuralTraversal::new(
             runtime.performance_access(),

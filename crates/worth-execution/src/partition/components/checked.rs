@@ -5,9 +5,9 @@ use std::{
 
 use worth_foundational::PartitionIdentity;
 
-use super::ComponentPartitioner;
+use super::{request::ComponentFunding, ComponentPartitioner};
 use crate::{
-    authority::{ExecutionResourceLease, LeaseDenial},
+    authority::LeaseDenial,
     backend::KernelContext,
     partition::{PartitionItemId, PartitionUpdateDenial, PartitionWork},
 };
@@ -28,21 +28,19 @@ impl ComponentPartitioner {
     /// each retained map and its singleton membership/adjacency BTree nodes.
     pub(super) fn upsert_item_structural_checked(
         &mut self,
-        lease: &ExecutionResourceLease<'_>,
+        funding: &ComponentFunding<'_, '_>,
         context: &mut KernelContext<'_, '_>,
         item: PartitionItemId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
-        context.checkpoint(0).map_err(PartitionUpdateDenial::Stop)?;
+        funding.checkpoint(context, 0)?;
         if self.routes.contains_key(&item) {
             return Ok(PartitionWork::default());
         }
         let bytes = u64::try_from(MEMBER_SCRATCH_BYTES)
             .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow()))?;
-        let _reservation = lease
-            .reserve_retained_memory(bytes)
-            .map_err(PartitionUpdateDenial::Admission)?;
-        let _activity = crate::backend::enter_retained_memory(bytes);
-        context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+        let _reservation = funding.scratch(bytes)?;
+        let _activity = funding.activity(bytes);
+        funding.checkpoint(context, 1)?;
         Ok(self.upsert_item(item))
     }
 
@@ -50,12 +48,12 @@ impl ComponentPartitioner {
     /// before either adjacency or route changes.
     pub(super) fn add_edge_structural_checked(
         &mut self,
-        lease: &ExecutionResourceLease<'_>,
+        funding: &ComponentFunding<'_, '_>,
         context: &mut KernelContext<'_, '_>,
         a: PartitionItemId,
         b: PartitionItemId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
-        context.checkpoint(0).map_err(PartitionUpdateDenial::Stop)?;
+        funding.checkpoint(context, 0)?;
         self.check_edge(a, b)
             .map_err(PartitionUpdateDenial::Components)?;
         if self.adjacent[&a].contains(&b) {
@@ -80,14 +78,12 @@ impl ComponentPartitioner {
             .ok_or_else(|| {
                 PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
             })?;
-        let _reservation = lease
-            .reserve_retained_memory(bytes)
-            .map_err(PartitionUpdateDenial::Admission)?;
-        let _activity = crate::backend::enter_retained_memory(bytes);
-        context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+        let _reservation = funding.scratch(bytes)?;
+        let _activity = funding.activity(bytes);
+        funding.checkpoint(context, 1)?;
         if moved != 0 {
             for _ in &self.members[&losing] {
-                context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+                funding.checkpoint(context, 1)?;
             }
         }
         // The final merge cannot stop between route rewrites and membership
@@ -102,9 +98,7 @@ impl ComponentPartitioner {
             .ok_or_else(|| {
                 PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
             })?;
-        context
-            .checkpoint(commit_units)
-            .map_err(PartitionUpdateDenial::Stop)?;
+        funding.checkpoint(context, commit_units)?;
         let mut work = self
             .add_edge(a, b)
             .map_err(PartitionUpdateDenial::Components)?;
@@ -120,19 +114,19 @@ impl ComponentPartitioner {
     /// candidate; denial leaves the retained graph and routes unchanged.
     pub(super) fn remove_edge_structural_checked(
         &mut self,
-        lease: &ExecutionResourceLease<'_>,
+        funding: &ComponentFunding<'_, '_>,
         context: &mut KernelContext<'_, '_>,
         a: PartitionItemId,
         b: PartitionItemId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
-        context.checkpoint(0).map_err(PartitionUpdateDenial::Stop)?;
+        funding.checkpoint(context, 0)?;
         self.check_edge(a, b)
             .map_err(PartitionUpdateDenial::Components)?;
         if !self.adjacent[&a].contains(&b) {
             return Ok(PartitionWork::default());
         }
         let identity = self.routes[&a];
-        let work = self.rebuild_checked(lease, context, identity, None, Some((a, b)))?;
+        let work = self.rebuild_checked(funding, context, identity, None, Some((a, b)))?;
         self.adjacent.get_mut(&a).unwrap().remove(&b);
         self.adjacent.get_mut(&b).unwrap().remove(&a);
         self.edge_count -= 1;
@@ -143,15 +137,15 @@ impl ComponentPartitioner {
     /// renaming and splits affect only the old island.
     pub(super) fn remove_item_structural_checked(
         &mut self,
-        lease: &ExecutionResourceLease<'_>,
+        funding: &ComponentFunding<'_, '_>,
         context: &mut KernelContext<'_, '_>,
         item: PartitionItemId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
-        context.checkpoint(0).map_err(PartitionUpdateDenial::Stop)?;
+        funding.checkpoint(context, 0)?;
         let Some(&identity) = self.routes.get(&item) else {
             return Ok(PartitionWork::default());
         };
-        let mut work = self.rebuild_checked(lease, context, identity, Some(item), None)?;
+        let mut work = self.rebuild_checked(funding, context, identity, Some(item), None)?;
         let neighbors = self.adjacent.remove(&item).unwrap();
         self.edge_count -= neighbors.len();
         for neighbor in neighbors {
@@ -164,7 +158,7 @@ impl ComponentPartitioner {
 
     fn rebuild_checked(
         &mut self,
-        lease: &ExecutionResourceLease<'_>,
+        funding: &ComponentFunding<'_, '_>,
         context: &mut KernelContext<'_, '_>,
         identity: PartitionIdentity,
         excluded_item: Option<PartitionItemId>,
@@ -174,7 +168,7 @@ impl ComponentPartitioner {
         let mut work = PartitionWork::default();
         let mut degrees = 0_usize;
         for item in old {
-            context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+            funding.checkpoint(context, 1)?;
             work.members_visited += 1;
             degrees = degrees
                 .checked_add(self.adjacent[item].len())
@@ -196,17 +190,15 @@ impl ComponentPartitioner {
                     crate::authority::LeaseDenial::charged_bytes_overflow(),
                 )
             })?;
-        let _reservation = lease
-            .reserve_retained_memory(bytes)
-            .map_err(PartitionUpdateDenial::Admission)?;
-        let _activity = crate::backend::enter_retained_memory(bytes);
+        let _reservation = funding.scratch(bytes)?;
+        let _activity = funding.activity(bytes);
 
         let mut parent: BTreeMap<_, _> = BTreeMap::new();
         for item in old {
             if Some(*item) == excluded_item {
                 continue;
             }
-            context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+            funding.checkpoint(context, 1)?;
             work.members_visited += 1;
             parent.insert(*item, *item);
         }
@@ -215,7 +207,7 @@ impl ComponentPartitioner {
                 continue;
             }
             for neighbor in &self.adjacent[item] {
-                context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+                funding.checkpoint(context, 1)?;
                 work.edges_visited += 1;
                 if Some(*neighbor) == excluded_item
                     || !old.contains(neighbor)
@@ -226,7 +218,7 @@ impl ComponentPartitioner {
                 {
                     continue;
                 }
-                checked_union(&mut parent, *item, *neighbor, context, &mut work)?;
+                checked_union(&mut parent, *item, *neighbor, funding, context, &mut work)?;
             }
         }
         let mut rebuilt: BTreeMap<PartitionIdentity, BTreeSet<PartitionItemId>> = BTreeMap::new();
@@ -235,10 +227,11 @@ impl ComponentPartitioner {
             if Some(*item) == excluded_item {
                 continue;
             }
-            context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+            funding.checkpoint(context, 1)?;
             work.members_visited += 1;
-            let next =
-                PartitionIdentity::new(checked_root(&mut parent, *item, context, &mut work)?.0);
+            let next = PartitionIdentity::new(
+                checked_root(&mut parent, *item, funding, context, &mut work)?.0,
+            );
             if self.routes[item] != next {
                 work.items_rerouted += 1;
             }
@@ -264,9 +257,7 @@ impl ComponentPartitioner {
             .ok_or_else(|| {
                 PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
             })?;
-        context
-            .checkpoint(commit_units)
-            .map_err(PartitionUpdateDenial::Stop)?;
+        funding.checkpoint(context, commit_units)?;
         work.members_visited += members * 2;
         work.edges_visited += cleanup_edges;
         // No cancellation, admission, or fallible allocation check follows.
@@ -280,18 +271,19 @@ impl ComponentPartitioner {
 fn checked_root(
     parent: &mut BTreeMap<PartitionItemId, PartitionItemId>,
     item: PartitionItemId,
+    funding: &ComponentFunding<'_, '_>,
     context: &mut KernelContext<'_, '_>,
     work: &mut PartitionWork,
 ) -> Result<PartitionItemId, PartitionUpdateDenial> {
     let mut root = item;
     while parent[&root] != root {
-        context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+        funding.checkpoint(context, 1)?;
         work.members_visited += 1;
         root = parent[&root];
     }
     let mut cursor = item;
     while parent[&cursor] != root {
-        context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
+        funding.checkpoint(context, 1)?;
         work.members_visited += 1;
         let next = parent[&cursor];
         parent.insert(cursor, root);
@@ -304,11 +296,12 @@ fn checked_union(
     parent: &mut BTreeMap<PartitionItemId, PartitionItemId>,
     a: PartitionItemId,
     b: PartitionItemId,
+    funding: &ComponentFunding<'_, '_>,
     context: &mut KernelContext<'_, '_>,
     work: &mut PartitionWork,
 ) -> Result<(), PartitionUpdateDenial> {
-    let a = checked_root(parent, a, context, work)?;
-    let b = checked_root(parent, b, context, work)?;
+    let a = checked_root(parent, a, funding, context, work)?;
+    let b = checked_root(parent, b, funding, context, work)?;
     if a != b {
         let (least, other) = if a < b { (a, b) } else { (b, a) };
         parent.insert(other, least);

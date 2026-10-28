@@ -20,6 +20,11 @@ pub(in crate::application_query) fn prepare_planning_basis(
         text("root-entity", graph.root_entity()),
         text("cardinality", cardinality_name(graph.cardinality())),
     ];
+    if let Some(selection) = graph.component_selection() {
+        selection.visit_canonical_parts(|key, value| {
+            entries.push(text(format!("components.{key}"), value))
+        });
+    }
     append_projections(&mut entries, graph);
     append_relations(&mut entries, graph);
     entries.push(text(

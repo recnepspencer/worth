@@ -22,7 +22,7 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    let configuration = (TopologyConfiguration {
+    let configuration = TopologyConfiguration {
         final_feature: crate::planar_final_feature_runtime(),
         setup_calls: Arc::new(AtomicUsize::new(0)),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
@@ -31,7 +31,30 @@ where
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
         producer_domain_denial: domain_denial,
         producer_contacts,
-    },);
+    };
+    install_configured::<Program>(checkpoint, profile, limits, seed, configuration)
+}
+
+/// The same installer accepts the contribution's actual observer configuration.
+pub(super) fn install_configured<Program>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryInMemoryApplicationLimits,
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+    configuration: TopologyConfiguration,
+) -> Result<
+    application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
+    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    let configuration = (configuration,);
     let declaration = CheckpointSchema::declaration().expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<CheckpointSchema, Program>::begin()
         .with_schema(&declaration)

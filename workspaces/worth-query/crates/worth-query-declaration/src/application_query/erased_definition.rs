@@ -90,6 +90,12 @@ impl ErasedApplicationQueryDefinition {
         &self.parts.result_shape
     }
 
+    pub fn component_selection(
+        &self,
+    ) -> Option<&crate::application_query::ApplicationQueryComponentMeaning> {
+        self.parts.component_selection.as_ref()
+    }
+
     pub fn orbit(&self) -> Option<&crate::application_query::ApplicationQueryOrbitMeaning> {
         self.parts.orbit.as_ref()
     }

@@ -146,6 +146,10 @@ pub(super) enum InvariantViolationDiagnosticProjection<'a> {
         reachable_target_count: usize,
         minimum_reachable_targets: u32,
     },
+    DerivedRelationGraph {
+        definition: &'a crate::derived_relation::DerivedRelationIdentity,
+        violation: &'a crate::derived_relation::DerivedRelationLawViolation,
+    },
 }
 
 #[derive(Debug)]

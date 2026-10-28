@@ -20,6 +20,12 @@ enum ApplicationQueryResultSlotContract {
         facet: super::ApplicationHistoryMetadataFacet,
     },
     /// Identity, full membership/length and anchor-forward order are one result.
+    Components {
+        set: String,
+        member: String,
+        selection: super::ApplicationQueryComponentSelection,
+        output_name: String,
+    },
     Orbit {
         relation: String,
         from: String,
@@ -43,6 +49,10 @@ enum ApplicationQueryResultSlotContract {
         output_name: String,
         cardinality: ApplicationQueryCardinality,
     },
+    InspectionMetadata {
+        binding: super::ApplicationQueryBindingReference,
+        facet: super::ApplicationQueryInspectionMetadataFacet,
+    },
 }
 
 pub(super) struct ApplicationQueryResultFieldSlotContract<'contract> {
@@ -65,6 +75,16 @@ pub(super) struct ApplicationQueryResultRelationSlotContract<'contract> {
 }
 
 impl ApplicationQueryResultSlotKey {
+    pub(super) fn inspection_metadata(
+        binding: super::ApplicationQueryBindingReference,
+        facet: super::ApplicationQueryInspectionMetadataFacet,
+    ) -> Self {
+        Self {
+            query: binding.parts().query.clone(),
+            slot: WorthQueryPortableTypeIdentity::declared(facet.name()),
+            contract: ApplicationQueryResultSlotContract::InspectionMetadata { binding, facet },
+        }
+    }
     pub(crate) fn resource(
         resource: WorthQueryPortableTypeIdentity,
         facet: crate::application_resource::ApplicationResourceDisclosureFacet,
@@ -85,6 +105,20 @@ impl ApplicationQueryResultSlotKey {
             contract: ApplicationQueryResultSlotContract::HistoryMetadata { facet },
         }
     }
+
+    pub(super) fn components(meaning: &super::ApplicationQueryComponentMeaning) -> Self {
+        Self {
+            query: meaning.query_identity(),
+            slot: meaning.slot_identity(),
+            contract: ApplicationQueryResultSlotContract::Components {
+                set: meaning.set().into(),
+                member: meaning.member().into(),
+                selection: meaning.selection(),
+                output_name: meaning.output_name().into(),
+            },
+        }
+    }
+
     pub(super) fn orbit(
         query: WorthQueryPortableTypeIdentity,
         slot: WorthQueryPortableTypeIdentity,

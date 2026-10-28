@@ -10,13 +10,20 @@ use worth_relational::facade::{
     runtime::{AggregateRead, PinnedAggregateLineageScope, PinnedAggregateRead},
 };
 
-/// Persistent aggregate name within an installed relation binding. This value
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+enum AggregateSource {
+    Orbit(KindId),
+    Component,
+    DerivedOrbit,
+}
+
+/// Persistent aggregate name within an installed definition binding. This value
 /// grants no observation, write authority, or permission to disclose history.
 pub struct WorthQueryAggregateIdentity<Schema, Relation> {
     definition: AggregateDefinitionIdentity,
     identity: AggregateIdentity,
     binding: ApplicationSchemaBindingIdentity,
-    relation: KindId,
+    source: AggregateSource,
     _marker: PhantomData<fn() -> (Schema, Relation)>,
 }
 impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
@@ -25,26 +32,84 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
         binding: ApplicationSchemaBindingIdentity,
         relation: KindId,
     ) -> Self {
-        Self::new(native.definition(), native.identity(), binding, relation)
+        Self::new(
+            native.definition(),
+            native.identity(),
+            binding,
+            AggregateSource::Orbit(relation),
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn from_pinned_read(
         native: &PinnedAggregateRead,
         binding: ApplicationSchemaBindingIdentity,
         relation: KindId,
     ) -> Self {
-        Self::new(native.definition(), native.identity(), binding, relation)
+        Self::new(
+            native.definition(),
+            native.identity(),
+            binding,
+            AggregateSource::Orbit(relation),
+        )
     }
+    pub(in crate::domain_computation::primary_graph) fn from_component_read<Member>(
+        native: &PinnedAggregateRead<Member>,
+        binding: ApplicationSchemaBindingIdentity,
+    ) -> Self {
+        Self::new(
+            native.definition(),
+            native.identity(),
+            binding,
+            AggregateSource::Component,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn from_invariant_component_read<Member>(
+        native: &AggregateRead<Member>,
+        binding: ApplicationSchemaBindingIdentity,
+    ) -> Self {
+        Self::new(
+            native.definition(),
+            native.identity(),
+            binding,
+            AggregateSource::Component,
+        )
+    }
+    pub(in crate::domain_computation::primary_graph) fn from_invariant_derived_orbit_read<
+        Member,
+    >(
+        native: &AggregateRead<Member>,
+        binding: ApplicationSchemaBindingIdentity,
+    ) -> Self {
+        Self::new(
+            native.definition(),
+            native.identity(),
+            binding,
+            AggregateSource::DerivedOrbit,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn component_lineage_selection(
+        &self,
+        binding: &ApplicationSchemaBindingIdentity,
+        definition: AggregateDefinitionIdentity,
+    ) -> Option<PinnedAggregateLineageScope<'static>> {
+        (self.binding == *binding
+            && self.source == AggregateSource::Component
+            && self.definition == definition)
+            .then(|| PinnedAggregateLineageScope::for_definition(self.definition, self.identity))
+    }
+
     fn new(
         definition: AggregateDefinitionIdentity,
         identity: AggregateIdentity,
         binding: ApplicationSchemaBindingIdentity,
-        relation: KindId,
+        source: AggregateSource,
     ) -> Self {
         Self {
             definition,
             identity,
             binding,
-            relation,
+            source,
             _marker: PhantomData,
         }
     }
@@ -58,18 +123,13 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
         binding: &ApplicationSchemaBindingIdentity,
         relation: KindId,
     ) -> Option<PinnedAggregateLineageScope<'static>> {
-        (self.binding == *binding && self.relation == relation)
+        (self.binding == *binding && self.source == AggregateSource::Orbit(relation))
             .then(|| PinnedAggregateLineageScope::new(relation, self.definition, self.identity))
     }
 
     // Only the lineage body owner qualifies endpoints returned by Native.
     pub(super) fn related(&self, identity: AggregateIdentity) -> Self {
-        Self::new(
-            self.definition,
-            identity,
-            self.binding.clone(),
-            self.relation,
-        )
+        Self::new(self.definition, identity, self.binding.clone(), self.source)
     }
 }
 impl<Schema, Relation> Clone for WorthQueryAggregateIdentity<Schema, Relation> {
@@ -78,7 +138,7 @@ impl<Schema, Relation> Clone for WorthQueryAggregateIdentity<Schema, Relation> {
             definition: self.definition,
             identity: self.identity,
             binding: self.binding.clone(),
-            relation: self.relation,
+            source: self.source,
             _marker: PhantomData,
         }
     }
@@ -88,7 +148,7 @@ impl<Schema, Relation> PartialEq for WorthQueryAggregateIdentity<Schema, Relatio
         self.definition == other.definition
             && self.identity == other.identity
             && self.binding == other.binding
-            && self.relation == other.relation
+            && self.source == other.source
     }
 }
 impl<Schema, Relation> Eq for WorthQueryAggregateIdentity<Schema, Relation> {}
@@ -97,7 +157,7 @@ impl<Schema, Relation> Hash for WorthQueryAggregateIdentity<Schema, Relation> {
         self.definition.hash(state);
         self.identity.hash(state);
         self.binding.hash(state);
-        self.relation.hash(state);
+        self.source.hash(state);
     }
 }
 impl<Schema, Relation> std::fmt::Debug for WorthQueryAggregateIdentity<Schema, Relation> {

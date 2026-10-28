@@ -46,6 +46,19 @@ fn append_rule(
 ) {
     let path = format!("disclosure.rule[{index}]");
     let selector = rule.selector();
+    if let crate::application_query::ApplicationQueryDisclosureSelector::InspectionMetadata(
+        metadata,
+    ) = selector
+    {
+        entries.push(text(format!("{path}.kind"), "inspection-metadata-v1"));
+        for (name, value) in metadata.binding().canonical_fields() {
+            entries.push(text(format!("{path}.inspection.binding.{name}"), value));
+        }
+        entries.push(text(
+            format!("{path}.inspection.facet"),
+            metadata.facet().name(),
+        ));
+    }
     entries.extend([
         text(format!("{path}.query-type"), selector.query_type()),
         text(format!("{path}.slot-type"), selector.slot_type()),
@@ -88,6 +101,14 @@ fn append_rule(
             text(format!("{path}.history"), metadata.history_type()),
             text(format!("{path}.facet"), metadata.facet().name()),
         ]);
+    }
+    if let crate::application_query::ApplicationQueryDisclosureSelector::Components(selection) =
+        selector
+    {
+        entries.push(text(format!("{path}.kind"), "components"));
+        selection.visit_canonical_parts(|key, value| {
+            entries.push(text(format!("{path}.components.{key}"), value))
+        });
     }
     if let crate::application_query::ApplicationQueryDisclosureSelector::Resource(meaning) =
         selector

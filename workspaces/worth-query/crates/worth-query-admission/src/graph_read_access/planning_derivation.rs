@@ -36,6 +36,7 @@ enum RowSpec<'a> {
     Predicate,
     Ordering,
     RootUnionDedup,
+    ComponentSelection,
     Proof,
     Lifecycle,
     LiveMaintenance,
@@ -128,6 +129,9 @@ fn visit_specs<'a, S: RowSink<'a>>(
                 })?;
             }
         }
+    }
+    if input.shape().component_selection_required() {
+        sink.row(RowSpec::ComponentSelection)?;
     }
     sink.row(RowSpec::ResultBuffer)?;
     if input.shape().predicate_family() != &WorthQueryGraphReadPredicateFamily::None

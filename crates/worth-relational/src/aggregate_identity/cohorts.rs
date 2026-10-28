@@ -1,13 +1,21 @@
-//! Complete affected permutation cohorts using Native frontier mechanics.
+//! Complete affected graph cohorts using Native frontier mechanics.
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::changes::AggregateChanges;
 use crate::authority::mutation::AdjacencyDeltaKind;
+use crate::graph_member::NativeMemberKey as Member;
 use crate::identity::data::{EntityId, RelationId};
-use crate::schema::data::AggregateIdentityContractDeclaration;
+use crate::schema::data::{
+    AggregateIdentityContractDeclaration, AggregateIdentitySource, RelationalSchemaRegistry,
+};
+mod checked_components;
+mod components;
+mod derived;
+mod stored;
 use crate::structural_traversal::{walk as walk_native_breadth_first, BreadthFirstRead};
 use crate::transactions::data::RecordRef;
 use crate::validation::engine::state_view::InvariantStateView;
+pub(super) use stored::read_stored_group;
 use worth_foundational::facade::AggregateIdentity;
 
 use super::observations::Acquisition;
@@ -16,30 +24,35 @@ use super::record::AggregateRecord;
 use super::retention_extent as extent;
 use super::PriorAggregate;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(super) struct StoredAggregate {
     pub(super) entity: EntityId,
     pub(super) record: AggregateRecord,
 }
 pub(super) struct CollectedCohorts {
     pub(super) prior: Vec<PriorAggregate>,
-    pub(super) proposed: Vec<BTreeSet<EntityId>>,
+    pub(super) proposed: Vec<BTreeSet<Member>>,
     pub(super) rows: BTreeMap<AggregateIdentity, StoredAggregate>,
-    pub(super) memberships: BTreeMap<EntityId, (RelationId, AggregateIdentity)>,
+    pub(super) memberships: BTreeMap<Member, (RelationId, AggregateIdentity)>,
 }
 
 pub(super) fn collect(
-    contract: AggregateIdentityContractDeclaration,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    contract: &AggregateIdentityContractDeclaration,
+    registry: &RelationalSchemaRegistry,
     before: &InvariantStateView<'_>,
     after: &InvariantStateView<'_>,
     effect: &AggregateChanges,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<Option<CollectedCohorts>> {
+    if contract.source.derived_relation().is_some() {
+        return derived::collect(execution, contract, registry, before, after, effect, work);
+    }
     let mut seeds = BTreeSet::new();
     let mut additions: BTreeMap<EntityId, BTreeSet<RelationId>> = BTreeMap::new();
     for delta in &effect.adjacency {
         work.checkpoint(1)?;
-        if delta.kind_id != contract.source_relation {
+        if !contract.source.contains_stored_relation(delta.kind_id) {
             continue;
         }
         let (source, target) = match delta.kind {
@@ -68,10 +81,11 @@ pub(super) fn collect(
         if new.is_some() {
             work.acquired(Acquisition::Entity)?;
         }
-        if old.is_none() != new.is_none()
-            && old
+        if old
+            .as_ref()
+            .is_some_and(|entry| entry.kind_id == contract.member_kind)
+            != new
                 .as_ref()
-                .or(new.as_ref())
                 .is_some_and(|entry| entry.kind_id == contract.member_kind)
         {
             work.retain(extent::seed())?;
@@ -89,7 +103,27 @@ pub(super) fn collect(
             seeds.insert(member);
         }
     }
-    let proposed = groups(&seeds, after, contract, &additions, work)?;
+    let proposed = match contract.source {
+        AggregateIdentitySource::Orbit(_) => groups(&seeds, after, contract, &additions, work)?,
+        AggregateIdentitySource::Components { .. } => components::maintain(
+            execution,
+            &seeds,
+            &prior_groups,
+            before,
+            after,
+            contract,
+            effect,
+            work,
+        )?,
+        AggregateIdentitySource::DerivedOrbit { .. }
+        | AggregateIdentitySource::DerivedComponents { .. } => {
+            return work.invalid(PlanDenial::DefinitionUnavailable)
+        }
+    };
+    let proposed = proposed
+        .into_iter()
+        .map(|group| tagged_group(group, work))
+        .collect::<BuildResult<Vec<_>>>()?;
     let mut collected = CollectedCohorts {
         prior: Vec::new(),
         proposed,
@@ -97,8 +131,15 @@ pub(super) fn collect(
         memberships: BTreeMap::new(),
     };
     for members in prior_groups {
-        let stored =
-            read_stored_group(before, &members, contract, &mut collected.memberships, work)?;
+        let members = tagged_group(members, work)?;
+        let stored = read_stored_group(
+            before,
+            &members,
+            contract,
+            registry,
+            &mut collected.memberships,
+            work,
+        )?;
         if collected.rows.contains_key(&stored.record.identity) {
             return work.invalid(PlanDenial::InvalidStoredIdentity);
         }
@@ -111,68 +152,57 @@ pub(super) fn collect(
     Ok(Some(collected))
 }
 
-/// One strict committed membership/row decoder, shared by collection and reads.
-pub(super) fn read_stored_group(
-    view: &InvariantStateView<'_>,
-    members: &BTreeSet<EntityId>,
-    contract: AggregateIdentityContractDeclaration,
-    memberships: &mut BTreeMap<EntityId, (RelationId, AggregateIdentity)>,
+/// Physical discovery keeps its fixed-width source path. Only the common
+/// coordinator receives tagged keys; no projected case is coerced to EntityId.
+fn tagged_group(
+    group: BTreeSet<EntityId>,
     work: &mut AggregateWork<'_, '_, '_, '_>,
-) -> BuildResult<StoredAggregate> {
-    let Some(&first) = members.first() else {
-        return work.invalid(PlanDenial::InvalidPermutation);
-    };
-    let (_, entity) = membership(view, first, contract.membership_kind, work)?;
-    let row = super::stored_record::read(view, entity, contract, work)?;
-    if row.current_anchor != Some(first) || row.retired.is_some() {
-        return work.invalid(PlanDenial::InvalidStoredIdentity);
-    }
-    for &member in members {
-        let (relation, owner) = membership(view, member, contract.membership_kind, work)?;
-        if owner != entity {
-            return work.invalid(PlanDenial::IncompleteStoredMembership);
-        }
-        work.retain(extent::membership())?;
-        memberships.insert(member, (relation, row.identity));
-    }
-    Ok(StoredAggregate {
-        entity,
-        record: row,
-    })
+) -> BuildResult<BTreeSet<Member>> {
+    work.retain(
+        (group.len() as u64)
+            .checked_mul(extent::tree_entry::<Member, ()>())
+            .ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded)?,
+    )?;
+    Ok(group.into_iter().map(Member::Entity).collect())
 }
 
-fn membership(
+pub(super) fn member_groups(
+    seeds: &BTreeSet<Member>,
     view: &InvariantStateView<'_>,
-    member: EntityId,
-    kind: crate::identity::data::KindId,
+    contract: &AggregateIdentityContractDeclaration,
+    registry: &RelationalSchemaRegistry,
     work: &mut AggregateWork<'_, '_, '_, '_>,
-) -> BuildResult<(RelationId, EntityId)> {
-    let mut binding = None;
-    for relation in outgoing(view, member, work)? {
-        work.checkpoint(1)?;
-        let Some(edge) = view.relation_metadata(relation) else {
-            continue;
-        };
-        work.acquired(Acquisition::Relation)?;
-        if edge.kind_id != kind {
-            continue;
-        }
-        if binding.replace((relation, edge.target)).is_some() {
-            return work.invalid(PlanDenial::IncompleteStoredMembership);
-        }
+) -> BuildResult<Vec<BTreeSet<Member>>> {
+    if contract.source.derived_relation().is_some() {
+        return derived::groups(registry, contract, seeds, view, work);
     }
-    binding.ok_or(worth_execution::MapKernelFailure::Domain(
-        PlanDenial::IncompleteStoredMembership,
-    ))
+    let mut physical = BTreeSet::new();
+    for member in seeds {
+        let Some(entity) = member.entity() else {
+            return work.invalid(PlanDenial::WrongMemberKind);
+        };
+        work.retain(extent::seed())?;
+        physical.insert(entity);
+    }
+    groups(&physical, view, contract, &BTreeMap::new(), work)?
+        .into_iter()
+        .map(|group| tagged_group(group, work))
+        .collect()
 }
 
 pub(super) fn groups(
     seeds: &BTreeSet<EntityId>,
     view: &InvariantStateView<'_>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     additions: &BTreeMap<EntityId, BTreeSet<RelationId>>,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<Vec<BTreeSet<EntityId>>> {
+    if contract.source.stored_relations().is_none() {
+        return work.invalid(PlanDenial::DefinitionUnavailable);
+    }
+    if matches!(contract.source, AggregateIdentitySource::Components { .. }) {
+        return components::groups(seeds, view, contract, work);
+    }
     let mut visited = BTreeSet::new();
     let mut groups = Vec::new();
     for &seed in seeds {
@@ -205,7 +235,7 @@ pub(super) fn groups(
 
 struct OrbitRead<'a, 'state, 'work, 'scope, 'authority, 'memory> {
     view: &'a InvariantStateView<'state>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &'a AggregateIdentityContractDeclaration,
     additions: &'a BTreeMap<EntityId, BTreeSet<RelationId>>,
     work: &'a mut AggregateWork<'work, 'scope, 'authority, 'memory>,
 }
@@ -242,7 +272,8 @@ impl BreadthFirstRead for OrbitRead<'_, '_, '_, '_, '_, '_> {
                 continue;
             };
             self.work.acquired(Acquisition::Relation)?;
-            if edge.kind_id == self.contract.source_relation && edge.source == entity {
+            if Some(edge.kind_id) == self.contract.source.orbit_relation() && edge.source == entity
+            {
                 self.work.retain(extent::successor_edge())?;
                 edges.insert((id, edge.target));
             }
@@ -254,20 +285,36 @@ impl BreadthFirstRead for OrbitRead<'_, '_, '_, '_, '_, '_> {
     }
 }
 
-fn outgoing(
+pub(super) fn outgoing(
     view: &InvariantStateView<'_>,
     entity: EntityId,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<Vec<RelationId>> {
-    let count = view.relation_candidate_count(entity, true) as u64;
+    adjacency(view, entity, true, work)
+}
+
+pub(super) fn adjacency(
+    view: &InvariantStateView<'_>,
+    entity: EntityId,
+    outgoing: bool,
+    work: &mut AggregateWork<'_, '_, '_, '_>,
+) -> BuildResult<Vec<RelationId>> {
+    let count = view.relation_candidate_count(entity, outgoing) as u64;
     work.retain(
         count
             .saturating_mul(extent::relation_candidate())
             .saturating_add(extent::empty_candidate()),
     )?;
     work.checkpoint(count.saturating_mul(8).saturating_add(1))?;
-    let ids = view
-        .outgoing_relations_for_entity_observed(entity, || work.acquired(Acquisition::Relation))?;
+    let ids = if outgoing {
+        view.outgoing_relations_for_entity_observed(entity, || {
+            work.acquired(Acquisition::Relation)
+        })?
+    } else {
+        view.incoming_relations_for_entity_observed(entity, || {
+            work.acquired(Acquisition::Relation)
+        })?
+    };
     work.acquired(Acquisition::Adjacency)?;
     Ok(ids)
 }

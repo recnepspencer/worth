@@ -7,6 +7,12 @@ use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
 pub(super) struct InvariantReadObservation(Cell<WorthQueryInvariantProjectionWork>);
 
 impl InvariantReadObservation {
+    pub(super) fn derived(&self, reads: worth_relational::facade::runtime::DerivedRelationReads) {
+        self.record(|work| {
+            work.record_adjacencies(reads.adjacency_lists, reads.relation_records);
+            work.record_endpoints(reads.entity_records);
+        });
+    }
     pub(super) fn from_preparation(reads: WorthQueryInvariantProjectionWork) -> Self {
         Self(Cell::new(reads))
     }

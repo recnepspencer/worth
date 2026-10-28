@@ -9,6 +9,7 @@ use worth_execution::ExecutionRequest;
 use worth_execution::{ExecutionMemoryReservation, MapKernelContext};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
+mod components;
 type WalkPair = (
     Arc<StructuralWalkObservation>,
     Arc<StructuralWalkObservation>,
@@ -19,6 +20,14 @@ pub(in crate::domain_computation::primary_graph) struct SourceReadEquivalence {
     completed: BTreeMap<(usize, usize), WalkPair>,
     aggregates:
         BTreeMap<(usize, usize), (Arc<AggregateObservation>, Arc<AggregateObservation>, bool)>,
+    components: BTreeMap<
+        (usize, usize),
+        (
+            Arc<super::component_selection::ComponentSelection>,
+            Arc<super::component_selection::ComponentSelection>,
+            bool,
+        ),
+    >,
     bytes: u64,
     _memory: Option<ExecutionMemoryReservation>,
 }

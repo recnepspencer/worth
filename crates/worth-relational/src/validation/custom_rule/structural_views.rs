@@ -79,6 +79,10 @@ impl<'runtime> StructuralAspectStateView<'runtime> {
 
 #[derive(Clone)]
 pub struct StructuralRelationView<'runtime> {
+    pub(crate) structural_source: Option<(
+        crate::schema::SchemaRegistryCustody,
+        crate::validation::engine::InvariantSourceAffinity,
+    )>,
     state_view: InvariantStateView<'runtime>,
     execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     work: super::CustomInvariantWorkMeter,
@@ -128,7 +132,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
         super::CustomInvariantReadBudget::new(self.execution, &self.work)
     }
 
-    pub(super) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
+    pub(crate) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
         self.work.clone()
     }
 
@@ -143,6 +147,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
             execution,
             work,
             access,
+            structural_source: None,
             aggregate: None,
             #[cfg(test)]
             walk_observer: None,

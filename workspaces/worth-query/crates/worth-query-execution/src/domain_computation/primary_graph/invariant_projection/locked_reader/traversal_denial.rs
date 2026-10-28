@@ -2,6 +2,8 @@
 /// projection was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionTraversalDenialKind {
+    /// The actual pinned logical source refused without returning partial data.
+    DerivedSource(worth_relational::facade::runtime::StructuralWalkDenialKind),
     /// The caller's read request stopped.
     ReadExecution(
         Result<
@@ -14,6 +16,12 @@ pub enum WorthQueryInvariantProjectionTraversalDenialKind {
     RelationNotInstalled,
     /// The actual installed relation does not declare the orbit law.
     NotOrbitRelation,
+    /// The selected component set is not installed in this schema.
+    ComponentSetNotInstalled,
+    /// Native component membership and physical coupling topology disagree.
+    InvalidComponent,
+    /// A complete Native cohort has a member outside the admitted root selection.
+    ComponentOutsideScope,
     /// Stored aggregate membership and complete successor topology disagree.
     InvalidOrbit,
     /// The selected snapshot does not contain this aggregate definition.

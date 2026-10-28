@@ -120,7 +120,10 @@ fn source_fact_count<Query>(
                 .len()
                 .checked_add(selection.aspects.len())
                 .and_then(|n| n.checked_add(selection.adjacencies.len()))
-                .and_then(|n| n.checked_add(usize::from(selection.orbit.is_some())))
+                .and_then(|n| {
+                    n.checked_add(usize::from(selection.orbit.is_some()))
+                        .and_then(|n| n.checked_add(usize::from(selection.components.is_some())))
+                })
                 .and_then(|n| {
                     n.checked_add(
                         selection
@@ -185,6 +188,11 @@ impl<Query> PreparedSourceFactMaterialization<'_, Query> {
             if let Some(orbit) = &selection.orbit {
                 facts.push(Fact::Aggregate {
                     observation: std::sync::Arc::clone(&orbit.aggregate),
+                });
+            }
+            if let Some(components) = &selection.components {
+                facts.push(Fact::ComponentSelection {
+                    observation: std::sync::Arc::clone(&components.body),
                 });
             }
             facts.extend(

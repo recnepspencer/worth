@@ -84,7 +84,7 @@ impl Drop for RecordSlotReservation {
         if exact {
             state.pending.remove(&key);
             if self.origin == ReservationOrigin::Reclaimed {
-                state.reusable.insert(key);
+                state.reusable.insert(key, ());
             }
         }
     }

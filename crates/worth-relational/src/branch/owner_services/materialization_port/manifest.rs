@@ -14,7 +14,7 @@ pub(super) fn source_generated_manifest(
         .registry()
         .relation_kinds
         .values()
-        .filter_map(|kind| kind.relation_integrity.aggregate_identity)
+        .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
         .flat_map(|contract| contract.metadata_kinds())
         .collect::<BTreeSet<_>>();
     let generated = generated_entities.iter().copied().collect::<BTreeSet<_>>();

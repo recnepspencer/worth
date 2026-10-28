@@ -125,7 +125,7 @@ pub(in crate::domain_computation::primary_graph::tests::application_attempt::inv
 ) -> ApplicationSchemaDeclarationBuilder<OrbitSchema<O>> {
     // The negative profile really lacks the orbit law and therefore these queries.
     if O {
-        super::capability::declare(schema)
+        super::components::declare(super::capability::declare(schema))
             .application_query(definition::<OrbitSchema<O>>())
             .application_query(super::metadata_only::definition::<OrbitSchema<O>>())
             .application_query(

@@ -17,8 +17,10 @@ pub(crate) mod state_view;
 mod tests;
 
 pub(crate) use engine::{check_live as check_invariant_request, InvariantEngine};
-pub(crate) use observation::InvariantObservation;
 pub use observation::InvariantObservationKind;
+pub(crate) use observation::{
+    InvariantObservation, InvariantObservationIdentity, InvariantSourceAffinity,
+};
 #[cfg(test)]
 pub use profile::HarnessAuditMode;
 pub(crate) use profile::InvariantRequestProfile;

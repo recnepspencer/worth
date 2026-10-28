@@ -3,6 +3,7 @@ use super::observations::{Acquisition, AggregateReadObservations};
 use crate::transactions::data::TransactionCommitError;
 use worth_execution::{ChargedBytes, ExecutionMemoryReservation, MapKernelFailure, ScopeStop};
 mod failure;
+mod navigation;
 pub(super) use failure::{FundingFailure, PlanDenial};
 #[cfg(test)]
 mod tests;
@@ -77,6 +78,32 @@ pub(super) fn run<T: ChargedBytes>(
     build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
 ) -> Result<(T, Option<ExecutionMemoryReservation>), TransactionCommitError> {
     run_core(execution, budget, &mut |_| Ok(()), None, build).map_err(FundingFailure::into_commit)
+}
+
+/// Report successful acquisitions from one completed preparation stage. A
+/// stopped stage returns its original error, never a purported complete report.
+pub(super) fn run_observed<T: ChargedBytes>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    budget: Option<&crate::execution::RequestWorkBudget>,
+    build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
+) -> Result<
+    (
+        T,
+        Option<ExecutionMemoryReservation>,
+        AggregateReadObservations,
+    ),
+    TransactionCommitError,
+> {
+    let mut observations = AggregateReadObservations::default();
+    run_core(
+        execution,
+        budget,
+        &mut |_| Ok(()),
+        Some(&mut observations),
+        build,
+    )
+    .map(|(value, retention)| (value, retention, observations))
+    .map_err(FundingFailure::into_commit)
 }
 
 pub(super) fn run_custom_read<T: ChargedBytes>(

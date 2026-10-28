@@ -98,6 +98,12 @@ impl PartitionEdition {
         let copied = Arc::get_mut(&mut self.partitions).is_none();
         (Arc::make_mut(&mut self.partitions), copied)
     }
+
+    /// Explicit try-maintenance never copies a spine observed by a live edition.
+    /// Historical branch roots own their independent partition observations.
+    pub(super) fn unobserved_map_mut(&mut self) -> Option<&mut PartitionMap> {
+        Arc::get_mut(&mut self.partitions)
+    }
 }
 
 impl PartitionAccess for PartitionEdition {

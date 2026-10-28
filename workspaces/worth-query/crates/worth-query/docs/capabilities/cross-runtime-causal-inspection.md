@@ -24,6 +24,44 @@ permission. The ordinary Decl/Host inspection entrance and fresh governed
 disclosure remain unfinished in milestone 9.18.1 Phase 9. The older diagnostic
 builder described here does not provide that application admission.
 
+Output-readiness delivery also privately retains the actual Native conditional
+observation. Its immutable Bridge backing preserves the real Signal decision,
+semantic observations, admitted snapshot identity and Signal-issued invalidation
+observation, without keeping the operational snapshot reader or reentry seed.
+The unique performed invalidation receipt still transfers only once; the
+read-only observer shares its original funded backing and grants no execution or
+disclosure authority. This retention does not yet connect the complete producer
+chain to an application inspection entrance. See
+[Native observation custody](../../../../../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody)
+for ownership, funding and release details.
+
+### Optional Query Inspection Metadata Meaning
+
+The declaration facade exposes
+`ApplicationQueryInspectionDefinition<Schema, QueryBinding>::new(metadata_contract)`
+and the schema builder's `application_query_inspection(definition)`. This attaches
+optional metadata meaning to the existing complete query binding; it requires no
+additional inspection marker. See the
+[typed declaration and installation court](../../../worth-query-installation/src/application_principal_binding_tests/inspection.rs).
+
+`ApplicationQueryInspectionMetadataRef<Schema, QueryBinding>` selects one of six
+closed facets: `ObservationIdentity`, `EvidenceLinks`, `EvidenceCounts`,
+`EvidenceAvailability`, `Explanation` and `DiagnosticFields`. A governed contract
+uses `disclose_inspection_metadata_by` for every facet exactly once. Counts need
+`Count` influence and the other facets need `Explanation`. Each rule belongs to
+the full binding, including its input, query, result, scope and principal meaning;
+matching names cannot transfer a rule to another binding. Explicit public metadata
+uses `ApplicationQueryDisclosureContract::public()` without rules.
+
+This is portable meaning only. Installation resolves every definition against the
+actual compiled query bindings, then returns typed `InspectionUnavailable` until
+the fresh Host issuer is implemented. The ordinary binding without this optional
+definition continues to install. Payload disclosure grants no metadata access,
+and a diagnostic-fields metadata rule grants no field values: those still require
+the separately admitted current subject's diagnostic mask. The Archive encoding
+adds member45/v1 and selector8/v1 without changing unextended schema bytes or
+identity. These declarations do not complete the Host inspection entrance.
+
 An application mutation may independently declare its original source-disclosure
 meaning with `ApplicationSourceDisclosureBinding<Schema>` and the mutation macro's
 `inspection_disclosure Binding,` clause. The binding names the actual source and

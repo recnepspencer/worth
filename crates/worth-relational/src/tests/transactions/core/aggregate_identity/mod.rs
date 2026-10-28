@@ -1,6 +1,8 @@
 mod admission;
+mod components;
 mod fixtures;
 mod lifecycle;
+mod logical_components;
 mod maintenance;
 mod materialization;
 mod merge_gap;

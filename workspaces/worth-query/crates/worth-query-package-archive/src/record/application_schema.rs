@@ -18,7 +18,7 @@ mod authorization_path;
 mod canonical_value_reference;
 mod contribution;
 mod member;
-mod query_binding_reference;
+pub(in crate::record) mod query_binding_reference;
 pub(in crate::record) mod wire_vocabulary;
 
 const CONTRIBUTION_EXTENSION_MARKER: &[u8; 4] = b"WQAS";

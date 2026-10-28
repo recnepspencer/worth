@@ -145,6 +145,15 @@ pub(super) fn append_operation_member(
     member: &ApplicationSchemaMember,
 ) {
     match member {
+        ApplicationSchemaMember::OperationComponentRead { definition } => {
+            append_operation_header(
+                basis,
+                prefix,
+                "operation-component-read",
+                definition.operation(),
+            );
+            basis.text(format!("{prefix}.scope"), &definition.canonical_record());
+        }
         ApplicationSchemaMember::Operation {
             operation,
             input_type,

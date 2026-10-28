@@ -52,7 +52,7 @@ impl AggregateObservation {
             poll()?;
             return Ok(true);
         }
-        let mut scope = PinnedAggregateReadScope::new(self.key.relation_kind(), self.key.member());
+        let mut scope = self.key.native_scope();
         if let Some(control) = control {
             scope = scope.with_control(control);
         }

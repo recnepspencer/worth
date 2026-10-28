@@ -34,6 +34,9 @@ fn validate_root_selection(
             orbit.output_name(),
         ])?;
     }
+    if let Some(selection) = definition.component_selection() {
+        validate_identifiers([selection.set(), selection.member(), selection.output_name()])?;
+    }
     for path in definition.root_paths() {
         validate_identifiers([path.start_entity(), path.terminal_entity()])?;
         for step in path.steps() {
@@ -143,4 +146,20 @@ fn validate_identifiers<'a>(
         validate_simple_identifier(identifier)?;
     }
     Ok(())
+}
+
+// These metadata definitions validate their own closed portable grammar.
+pub(super) fn validate_metadata(
+    member: &crate::application_schema::ApplicationSchemaMember,
+) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    use crate::application_schema::ApplicationSchemaMember as Member;
+    match member {
+        Member::ApplicationQueryInspection { definition } => definition
+            .validate()
+            .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationQueryInspection),
+        Member::ApplicationHistoryQuery { definition } => definition
+            .validate()
+            .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationHistoryQuery),
+        _ => unreachable!("metadata identifier routing selects only metadata definitions"),
+    }
 }

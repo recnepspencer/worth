@@ -1,11 +1,13 @@
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
+mod derived_relation;
 
 /// Borrowed, application-only view used while lowering one invariant factory.
 pub struct WorthQueryApplicationInvariantSchemaResolver<'layout, Schema> {
     pub(super) _schema: PhantomData<fn() -> Schema>,
     pub(super) layout: &'layout super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    pub(super) descriptor: &'layout worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
 }
 
@@ -29,6 +31,72 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
                 entity_kind,
                 _marker: PhantomData,
             }
+        })
+    }
+
+    /// Resolve a component set only when both declared reads and applicability
+    /// cover its member kind and every physical coupling relation. This includes
+    /// create/delete scheduling when an earlier complete census was empty.
+    pub fn typed_component_set<Set, Entity>(
+        &self,
+        set: worth_query_declaration::facade::application_schema::ApplicationComponentSetRef<
+            Schema,
+            Set,
+            Entity,
+        >,
+    ) -> Option<
+        super::super::application_invariant::WorthQueryApplicationInvariantComponentSetBinding<
+            Schema,
+            Set,
+            Entity,
+        >,
+    > {
+        use worth_query_declaration::facade::application_schema::ApplicationInvariantScopeTarget as Target;
+        let layout = self.layout.component_set(set.name())?;
+        let member_domain = self.layout.member_binding(set.member_selector())?;
+        let member_kind = match &member_domain {
+            super::super::schema_layout::MemberDomainBinding::Entity(kind) => *kind,
+            super::super::schema_layout::MemberDomainBinding::Projected(domain) => {
+                domain.parts().carrier
+            }
+        };
+        if layout.member.as_ref() != set.member() || member_kind != layout.member_kind {
+            return None;
+        }
+        let covered = |target: Target| {
+            self.descriptor.read_closure().contains(&target)
+                && self.descriptor.applicability().contains(&target)
+        };
+        let member_name = self.layout.entity_name(member_kind)?;
+        if !covered(Target::Entity(member_name.to_owned()))
+            || layout
+                .sources
+                .iter()
+                .any(|(name, _)| !covered(Target::Relation(name.to_string())))
+        {
+            return None;
+        }
+        if layout
+            .carriers
+            .iter()
+            .any(|(name, _)| !covered(Target::Entity(name.to_string())))
+        {
+            return None;
+        }
+        if let Some(source) = &layout.source {
+            for (_, from, to) in source.physical_sources() {
+                if !covered(Target::Entity(self.layout.entity_name(*from)?.to_owned()))
+                    || !covered(Target::Entity(self.layout.entity_name(*to)?.to_owned()))
+                {
+                    return None;
+                }
+            }
+        }
+        Some(super::super::application_invariant::WorthQueryApplicationInvariantComponentSetBinding {
+            binding_identity: self.binding_identity.clone(),
+            definition: layout.definition, member_kind: layout.member_kind,
+            member_domain, source: layout.source.clone(),
+            sources: layout.sources.clone(), _marker: PhantomData,
         })
     }
 
@@ -104,3 +172,6 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
             })
     }
 }
+
+#[cfg(test)]
+mod tests;

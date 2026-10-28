@@ -35,6 +35,21 @@ pub(super) type Application = application_installation::WorthQueryProgramApplica
 
 pub(super) const DEFAULT_RETAINED_COMMITS: u64 = 32;
 
+pub(super) fn install_configured_seed(
+    configuration: TopologyConfiguration,
+    limits: WorthQueryInMemoryApplicationLimits,
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> Application {
+    installation::install_configured::<CheckpointProgram>(
+        None,
+        Default::default(),
+        limits,
+        seed,
+        configuration,
+    )
+    .expect("the configured checkpoint source installs")
+}
+
 pub(super) fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
 ) -> Application {

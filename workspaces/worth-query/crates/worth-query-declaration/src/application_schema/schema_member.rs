@@ -119,6 +119,25 @@ pub enum ApplicationSchemaMember {
     RelationAspect {
         definition: super::ErasedApplicationRelationAspectDefinition,
     },
+    DerivedRelation {
+        definition: super::ErasedApplicationDerivedRelationDefinition,
+    },
+    RuleReadableCollection {
+        association: super::ApplicationRuleReadableCollectionAssociation,
+    },
+    OperationDerivedRead {
+        operation: String,
+        relation: String,
+    },
+    ComponentSet {
+        definition: super::ApplicationComponentSetMeaning,
+    },
+    DerivedComponentSet {
+        definition: super::ApplicationDerivedComponentSetMeaning,
+    },
+    OperationComponentRead {
+        definition: super::ApplicationOperationComponentReadMeaning,
+    },
     PrincipalBinding {
         binding: String,
         mapping_entity: String,
@@ -138,6 +157,9 @@ pub enum ApplicationSchemaMember {
     },
     ApplicationHistoryQuery {
         definition: ErasedApplicationHistoryQueryDefinition,
+    },
+    ApplicationQueryInspection {
+        definition: crate::application_query::ErasedApplicationQueryInspectionDefinition,
     },
     ApplicationCapability {
         contract: ErasedApplicationCapabilityContract,
@@ -234,5 +256,8 @@ pub enum ApplicationSchemaMember {
     Effect {
         effect: String,
         payload_type: WorthQueryPortableTypeIdentity,
+    },
+    ProjectedMemberDomain {
+        definition: super::ErasedApplicationProjectedMemberDomainDefinition,
     },
 }

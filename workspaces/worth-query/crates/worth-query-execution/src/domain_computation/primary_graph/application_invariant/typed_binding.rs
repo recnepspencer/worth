@@ -12,6 +12,49 @@ pub struct WorthQueryApplicationInvariantEntityBinding<Schema, Entity> {
     pub(in crate::domain_computation::primary_graph) _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
+/// Exact installed recipe with complete physical read/applicability coverage.
+pub struct WorthQueryApplicationInvariantDerivedRelationBinding<Schema, Relation, From, To> {
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) definition:
+        worth_relational::facade::schema::DerivedRelationHandle,
+    pub(in crate::domain_computation::primary_graph) from:
+        super::super::schema_layout::MemberDomainBinding,
+    pub(in crate::domain_computation::primary_graph) to:
+        super::super::schema_layout::MemberDomainBinding,
+    pub(in crate::domain_computation::primary_graph) orbit_definition:
+        Option<worth_foundational::facade::AggregateDefinitionIdentity>,
+    pub(in crate::domain_computation::primary_graph) _marker:
+        PhantomData<fn() -> (Schema, Relation, From, To)>,
+}
+
+/// An actual installed domain case, with complete carrier access coverage.
+pub struct WorthQueryApplicationInvariantProjectedCaseBinding<Schema, Domain, Carrier, Case> {
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) case:
+        worth_relational::facade::schema::ProjectedMemberCaseHandle,
+    pub(in crate::domain_computation::primary_graph) _marker:
+        PhantomData<fn() -> (Schema, Domain, Carrier, Case)>,
+}
+
+/// Installed component definition with complete declared read and applicability coverage.
+pub struct WorthQueryApplicationInvariantComponentSetBinding<Schema, Set, Entity> {
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) definition:
+        worth_foundational::facade::AggregateDefinitionIdentity,
+    pub(in crate::domain_computation::primary_graph) member_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) member_domain:
+        super::super::schema_layout::MemberDomainBinding,
+    pub(in crate::domain_computation::primary_graph) source:
+        Option<worth_relational::facade::schema::DerivedRelationHandle>,
+    pub(in crate::domain_computation::primary_graph) sources:
+        std::sync::Arc<[(std::sync::Arc<str>, KindId)]>,
+    pub(in crate::domain_computation::primary_graph) _marker:
+        PhantomData<fn() -> (Schema, Set, Entity)>,
+}
+
 /// Installed field access for one exact application schema binding.
 pub struct WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value> {
     pub(in crate::domain_computation::primary_graph) binding_identity:

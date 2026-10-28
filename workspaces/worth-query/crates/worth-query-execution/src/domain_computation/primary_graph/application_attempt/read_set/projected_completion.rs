@@ -1,3 +1,5 @@
+mod key_scope;
+use key_scope::key_entities_are_in_scope;
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_installation::facade::{ApplicationRelationRef, OperationReads};
 
@@ -135,6 +137,19 @@ impl<Schema, Operation, Input, Scope>
         ),
         WorthQueryApplicationAttemptDenial,
     > {
+        if let WorthQueryApplicationFactKey::ComponentSelection(key) = key {
+            return super::components::observe(
+                execution,
+                &self.admission,
+                &self.lease,
+                &self.read_scope,
+                self.expected_facts
+                    .as_ref()
+                    .expect("projected completion owns its expected keys"),
+                key,
+                None,
+            );
+        }
         if let WorthQueryApplicationFactKey::Aggregate(key) = key {
             return super::aggregate::observe(
                 execution,
@@ -198,6 +213,20 @@ impl<Schema, Operation, Input, Scope>
         key: &WorthQueryApplicationFactKey,
         scope: super::InstalledScopePosition,
     ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+        if let WorthQueryApplicationFactKey::ComponentSelection(key) = key {
+            return super::components::observe(
+                execution,
+                &self.admission,
+                &self.lease,
+                &self.read_scope,
+                self.expected_facts
+                    .as_ref()
+                    .expect("projected completion owns its expected keys"),
+                key,
+                Some(scope),
+            )
+            .map(|(_, fact)| fact);
+        }
         if let WorthQueryApplicationFactKey::Aggregate(key) = key {
             return super::aggregate::observe(
                 execution,
@@ -365,25 +394,5 @@ impl<Schema, Operation, Input, Scope>
             from.entity_id(),
             to.entity_id(),
         )
-    }
-}
-
-fn key_entities_are_in_scope(
-    key: &WorthQueryApplicationFactKey,
-    scope: &super::super::read_scope::WorthQueryApplicationReadScope,
-) -> bool {
-    match key {
-        WorthQueryApplicationFactKey::Aggregate(key) => scope.admits(key.member()),
-        WorthQueryApplicationFactKey::StructuralWalk(key) => {
-            key.roots().iter().all(|id| scope.admits(*id))
-        }
-        WorthQueryApplicationFactKey::SourcePublication(_) => false,
-        WorthQueryApplicationFactKey::Entity { entity_id, .. }
-        | WorthQueryApplicationFactKey::AspectPresence { entity_id, .. }
-        | WorthQueryApplicationFactKey::Field { entity_id, .. } => scope.admits(*entity_id),
-        WorthQueryApplicationFactKey::Relation { from, to, .. } => {
-            scope.admits(*from) && scope.admits(*to)
-        }
-        WorthQueryApplicationFactKey::Adjacency { anchor, .. } => scope.admits(*anchor),
     }
 }

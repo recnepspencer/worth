@@ -92,6 +92,9 @@ fn aggregate_denial(cause: AggregateReadDenial) -> WorthQueryInvariantAccessDeni
         AggregateReadDenial::WrongMemberKind => Kind::WrongEntityKind,
         AggregateReadDenial::PreparationRefused => Kind::AggregatePreparationRefused,
         AggregateReadDenial::Execution(cause) => Kind::Execution(cause),
+        AggregateReadDenial::Derived(cause) => {
+            return super::derived_relation::native_denial(cause)
+        }
     };
     denial(kind, "orbit identity")
 }

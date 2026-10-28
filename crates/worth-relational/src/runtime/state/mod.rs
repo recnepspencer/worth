@@ -33,7 +33,8 @@ pub(crate) use subsystems::{
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
     ReplayRetentionState, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
     SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    TryPartitionMutationDenied, ValidatedLineageEventBatch, VisibilityResidency,
+    VisibilitySubsystem,
 };
 pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalPatchPositionReservationCounters,

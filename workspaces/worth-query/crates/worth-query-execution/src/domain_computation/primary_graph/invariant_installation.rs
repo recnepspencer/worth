@@ -175,6 +175,7 @@ where
                 .expect("checked factory remains present");
             let resolver = WorthQueryApplicationInvariantSchemaResolver {
                 layout,
+                descriptor: &installed,
                 binding_identity: self.binding_identity.clone(),
                 _schema: PhantomData,
             };
