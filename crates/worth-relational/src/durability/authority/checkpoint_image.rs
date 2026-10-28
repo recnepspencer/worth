@@ -106,7 +106,7 @@ impl CapturedCheckpointBasis {
             aspect_contracts: mirror_contracts.portable_contracts(),
             lineage: LineageCheckpointArtifact::new(lineage_basis, lineage_nodes),
             index_definitions,
-            index_generation_frontier: index_state.next_generation_id,
+            index_generation_frontier: index_state.published_generation_frontier,
             derived_index_artifacts: crate::indexes::data::DerivedIndexArtifacts::default(),
             derived_index_checkpoint: Some(derived_index_checkpoint),
             derived_index_checkpoint_format:

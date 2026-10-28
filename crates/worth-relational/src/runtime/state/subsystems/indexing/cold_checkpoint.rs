@@ -64,6 +64,7 @@ impl DeferredIndexImage {
             }
             let mut state = IndexingState::default();
             state.next_generation_id = self.directory.manifest.index_generation_frontier;
+            state.published_generation_frontier = state.next_generation_id;
             for definition in &self.directory.manifest.index_definitions {
                 state.insert_definition(definition.clone());
             }
@@ -116,6 +117,7 @@ impl IndexingSubsystem {
             })?;
         let mut state = IndexingState::default();
         state.next_generation_id = directory.manifest.index_generation_frontier;
+        state.published_generation_frontier = state.next_generation_id;
         for definition in &directory.manifest.index_definitions {
             state.insert_definition(definition.clone());
         }
