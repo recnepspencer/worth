@@ -19,6 +19,22 @@ pub(in crate::application_query) fn prepare_graph_basis(
         text("root-entity", &meaning.root_entity),
         text("cardinality", cardinality_name(meaning.cardinality)),
     ];
+    if let Some(orbit) = &meaning.orbit {
+        entries.extend([
+            text("orbit.query-type", orbit.query_type()),
+            text("orbit.slot-type", orbit.slot_type()),
+            text("orbit.relation", orbit.relation()),
+            text("orbit.from", orbit.from()),
+            text("orbit.to", orbit.to()),
+            text("orbit.output", orbit.output_name()),
+            text("orbit.order", "anchor-forward-v1"),
+        ]);
+    }
+    if let Some(selection) = &meaning.component_selection {
+        selection.visit_canonical_parts(|key, value| {
+            entries.push(text(format!("components.{key}"), value))
+        });
+    }
     append_projections(&mut entries, &meaning.projections);
     append_root_paths(&mut entries, &meaning.root_paths);
     append_relations(&mut entries, &meaning.relations);

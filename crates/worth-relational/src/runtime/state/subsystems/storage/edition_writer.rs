@@ -319,3 +319,6 @@ impl ResidentTargetEditor for PartitionEditionWriter<'_> {
             .partition_mut()
     }
 }
+
+mod try_maintenance;
+pub(crate) use try_maintenance::TryPartitionMutationDenied;

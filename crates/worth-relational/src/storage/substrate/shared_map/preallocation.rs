@@ -2,6 +2,18 @@
 use super::{node::MapNode, SharedMap};
 use crate::storage::substrate::StorageAllocation;
 
+impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
+    /// Adoption shares V. At each AVL level a detached ancestor and up to
+    /// two rotation pivots coexist; allow a new leaf and one root level too.
+    pub(crate) fn adoption_allocation_bound(&self) -> Option<u64> {
+        let nodes = self
+            .navigation_work_bound()
+            .checked_add(1)?
+            .checked_mul(3)?;
+        StorageAllocation::<MapNode<K, V>>::layout_bytes().checked_mul(nodes as u64)
+    }
+}
+
 impl<K: Ord + Copy, V: Copy> SharedMap<K, V> {
     /// Every insertion creates a value owner. A shared ancestor's copy makes
     /// its selected children shared too. Rotation pivots are on that same path;

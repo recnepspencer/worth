@@ -34,6 +34,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DecisionDependencyMismatch,
     /// Required original correction interpretation could not be retained.
     CorrectionCaptureDenied,
+    SourceDisclosureCaptureDenied,
     DecisionFactBudgetExceeded,
     /// Fresh inline payload backing was refused by its allocation owner.
     AllocationDenied,

@@ -18,6 +18,7 @@ pub(super) fn resolve_authoritative_history_phase(
     transaction_id: TransactionId,
     validation_input: &RelationalTransactionValidationInput,
     version_id: VersionId,
+    commit_id: crate::history::data::CommitId,
     merge_history_plan: Option<&MergeCommitMutationPlan>,
 ) -> Result<ResolvedCommitHistory, TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::HistoryResolution);
@@ -25,9 +26,11 @@ pub(super) fn resolve_authoritative_history_phase(
     let history = match merge_history_plan {
         None => {
             let _ = transaction_id;
-            resolve_commit_history(execution, runtime, validation_input, version_id)
+            resolve_commit_history(execution, runtime, validation_input, version_id, commit_id)
         }
-        Some(plan) => resolve_commit_history_for_merge(runtime, validation_input, plan, version_id),
+        Some(plan) => {
+            resolve_commit_history_for_merge(runtime, validation_input, plan, version_id, commit_id)
+        }
     }
     .map_err(|error| attach_rejection(commit_log, CommitPhase::HistoryResolution, error))?;
     let history_summary = history.summary();

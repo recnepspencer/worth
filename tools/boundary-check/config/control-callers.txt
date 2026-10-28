@@ -1,4 +1,18 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/derived/court.rs
+# Logical source court observes only real closed-count retention lifecycle.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/logical/court.rs
+# Closed Resource source comparison; actual Host actions retain ordinary admission.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys/source_binding.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow/resource_monitor/source_binding.rs
+# Exact native resource-cell wake observations; no application control audience.
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/native.rs
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/bridge.rs
+crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/bridge.rs
+crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/owned_async/wake_observation_for_test.rs
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/initial_custody.rs
+crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/initial_custody.rs
+
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/history_reapplication.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_adoption.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_cleanup.rs
@@ -348,6 +362,8 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_start_intent.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/document_retention_model/workflow/governed_read/court.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/history/court.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/history/custody.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery.rs
 
@@ -380,3 +396,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 # 9.18: exact family/locality courts observe native owner work and selected roots.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/correction.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/locality.rs
+
+# Native inherited-accounting refusal leaves exactly the SDK-owned outer frame.
+crates/worth-execution/ crates/worth-relational/src/tests/transactions/core/snapshot_and_retention/request_owned.rs

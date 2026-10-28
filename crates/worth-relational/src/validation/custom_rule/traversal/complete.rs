@@ -2,7 +2,7 @@
 use crate::identity::data::{EntityId, KindId};
 
 use super::super::StructuralReadError;
-use super::breadth_first::{self, BreadthFirstRead};
+use crate::structural_traversal::{self as breadth_first, BreadthFirstRead};
 mod retention_extent;
 use super::complete_result::*;
 use super::{StructuralRelationView, TraversalDirection};

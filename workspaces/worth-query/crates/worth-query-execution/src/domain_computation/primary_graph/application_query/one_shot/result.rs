@@ -5,6 +5,36 @@ use super::super::{
 use super::WorthQueryApplicationOneShotResult;
 
 impl<Query, QueryResult> WorthQueryApplicationOneShotResult<Query, QueryResult> {
+    /// Inspect the complete component slot already disclosed by this result.
+    pub fn components<Schema, Slot, Set, Entity>(
+        &self,
+        reference: worth_query_declaration::facade::application_query::ApplicationQueryComponentRef<
+            Schema,
+            Query,
+            Slot,
+            Set,
+            Entity,
+        >,
+    ) -> Option<super::super::WorthQueryApplicationQueryComponents<'_, Schema, Set, QueryResult>>
+    {
+        super::super::component_result::inspect(&self.rows, &self.result_set_observation, reference)
+    }
+
+    /// Inspect the exact whole-orbit slot already disclosed by this result.
+    pub fn orbit<Schema, Slot, Relation, Entity>(
+        &self,
+        reference: worth_query_declaration::facade::application_query::ApplicationQueryOrbitRef<
+            Schema,
+            Query,
+            Slot,
+            Relation,
+            Entity,
+        >,
+    ) -> Option<super::super::WorthQueryApplicationQueryOrbit<'_, Schema, Relation, QueryResult>>
+    {
+        super::super::orbit_result::inspect(&self.rows, &self.result_set_observation, reference)
+    }
+
     pub fn rows(&self) -> &[QueryResult] {
         &self.rows
     }

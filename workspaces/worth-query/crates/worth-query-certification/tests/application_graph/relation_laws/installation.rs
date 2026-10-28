@@ -161,6 +161,7 @@ impl<L: LawPolicy> World<L> {
             in_context,
             link,
             backlink: false,
+            self_cycle: false,
         })
     }
     pub fn create_with(

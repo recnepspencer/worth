@@ -49,7 +49,11 @@ pub(super) fn basis<E>(
             CanonicalBasisEntryKind::Locator,
             text(fact.locator_identity()),
         );
-        append_fact(&mut entries, &prefix, fact);
+        if let Fact::Aggregate { observation } = fact {
+            super::aggregate::append(&mut entries, &prefix, observation, &mut before_fact)?;
+        } else {
+            append_fact(&mut entries, &prefix, fact);
+        }
     }
     let rule = if facts
         .iter()

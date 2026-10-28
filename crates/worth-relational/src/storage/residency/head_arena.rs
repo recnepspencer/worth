@@ -62,6 +62,26 @@ impl<'lease, K: RecordKind> RelationalRecordHeadArenaView<'lease, K> {
         self.arena.live_bitset.count_ones()
     }
 
+    pub(crate) fn try_visit_occupied<Stop>(
+        &self,
+        visit: impl FnMut(crate::storage::substrate::RecordSlotVisit<'_, K>) -> Result<(), Stop>,
+    ) -> Result<(), Stop> {
+        self.arena.try_visit_occupied(visit)
+    }
+
+    pub(crate) fn try_occupied_slots<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        std::iter::Map<
+            crate::storage::substrate::SharedMapIter<'lease, u64, usize>,
+            fn((&u64, &usize)) -> usize,
+        >,
+        Stop,
+    > {
+        self.arena.try_occupied_slots(prepare)
+    }
+
     pub(crate) fn occupied_slots_iter(
         &self,
     ) -> impl Iterator<Item = usize> + 'lease + use<'lease, K> {

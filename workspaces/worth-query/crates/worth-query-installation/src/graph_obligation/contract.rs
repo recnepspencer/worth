@@ -40,6 +40,9 @@ impl WorthQueryInstalledGraphCapabilityRequirement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledGraphObligationResourcePosture {
+    ApplicationResource {
+        maximum_authorization_facts: usize,
+    },
     ApplicationQuery {
         maximum_traversal_depth: usize,
         maximum_result_count: usize,

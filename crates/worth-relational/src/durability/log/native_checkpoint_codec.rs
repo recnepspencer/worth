@@ -35,3 +35,6 @@ pub(crate) struct DecodedNativeCheckpoint {
 mod kind_authentication_tests;
 #[cfg(test)]
 mod tests;
+
+mod inspection;
+pub(crate) use inspection::inspect as inspect_checkpoint;

@@ -4,11 +4,18 @@ use crate::application_schema::ApplicationSchemaMember;
 mod aftermath;
 mod authorization;
 mod capability;
+mod derived_relation;
 mod field;
 mod invariant;
 mod mutation_description;
 mod operation;
 mod principal_binding;
+mod projected_member_domain;
+mod relation_aspect;
+mod relation_graph;
+mod resource;
+
+pub(super) use relation_aspect::append_relation_field;
 mod schema;
 mod vocabulary;
 
@@ -19,6 +26,21 @@ pub(super) fn append_member(
 ) {
     let prefix = format!("member[{index}]");
     match member {
+        ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
+            projected_member_domain::append(basis, &prefix, definition)
+        }
+        ApplicationSchemaMember::DerivedRelation { .. }
+        | ApplicationSchemaMember::DerivedComponentSet { .. }
+        | ApplicationSchemaMember::RuleReadableCollection { .. }
+        | ApplicationSchemaMember::OperationDerivedRead { .. } => {
+            derived_relation::append(basis, &prefix, member)
+        }
+        ApplicationSchemaMember::ApplicationResource { definition } => {
+            resource::append(basis, &prefix, definition)
+        }
+        ApplicationSchemaMember::RelationAspect { definition } => {
+            relation_aspect::append(basis, &prefix, definition)
+        }
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::append(basis, &prefix, description)
         }
@@ -29,10 +51,13 @@ pub(super) fn append_member(
         | ApplicationSchemaMember::Aspect { .. }
         | ApplicationSchemaMember::Field { .. }
         | ApplicationSchemaMember::Relation { .. }
+        | ApplicationSchemaMember::ComponentSet { .. }
         | ApplicationSchemaMember::PrincipalBinding { .. } => {
             schema::append_schema_member(basis, &prefix, member)
         }
         ApplicationSchemaMember::ApplicationQuery { .. }
+        | ApplicationSchemaMember::ApplicationHistoryQuery { .. }
+        | ApplicationSchemaMember::ApplicationQueryInspection { .. }
         | ApplicationSchemaMember::ApplicationCapability { .. }
         | ApplicationSchemaMember::ApplicationCapabilityContext { .. }
         | ApplicationSchemaMember::ApplicationCapabilityContextEntitySlot { .. }
@@ -40,6 +65,7 @@ pub(super) fn append_member(
             capability::append_capability_member(basis, &prefix, member)
         }
         ApplicationSchemaMember::Operation { .. }
+        | ApplicationSchemaMember::OperationComponentRead { .. }
         | ApplicationSchemaMember::OperationProgram { .. }
         | ApplicationSchemaMember::OperationDecisionRead { .. }
         | ApplicationSchemaMember::OperationMutationPrecondition { .. }

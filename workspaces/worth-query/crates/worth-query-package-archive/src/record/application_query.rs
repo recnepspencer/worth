@@ -20,9 +20,12 @@ use super::decode_budget::RecordDecodeAttempt;
 use super::foundational_aspect;
 use super::sequence::{decode_sequence, write_sequence};
 
-mod controls;
-mod disclosure;
-mod result_shape;
+mod aggregate_selection;
+mod components;
+pub(in crate::record) mod controls;
+pub(in crate::record) mod disclosure;
+mod orbit;
+pub(in crate::record) mod result_shape;
 mod root_selection;
 pub(in crate::record) use root_selection::{
     decode_path as decode_root_path, write_path as write_root_path,
@@ -32,6 +35,7 @@ pub(super) fn require_nesting_depth(
     definition: &ErasedApplicationQueryDefinition,
     maximum_depth: u32,
 ) -> Result<(), Denial> {
+    aggregate_selection::require_exclusive(definition.parts())?;
     result_shape::require_nesting_depth(definition.result_shape(), maximum_depth)
 }
 
@@ -40,6 +44,7 @@ pub(super) fn write(
     definition: &ErasedApplicationQueryDefinition,
 ) -> Result<(), Denial> {
     let parts = definition.parts();
+    aggregate_selection::require_exclusive(parts)?;
     output.text(parts.name())?;
     for identity in [
         &parts.query_type,
@@ -54,6 +59,7 @@ pub(super) fn write(
     write_sequence(output, parts.parameters(), write_parameter)?;
     result_shape::write(output, parts.result_shape())?;
     write_sequence(output, parts.root_paths(), root_selection::write_path)?;
+    aggregate_selection::write(output, parts)?;
     controls::write_cardinality(output, parts.cardinality())?;
     write_sequence(output, parts.predicates(), write_predicate)?;
     write_sequence(output, parts.ordering(), write_ordering)?;
@@ -94,6 +100,7 @@ fn decode_with_shape_depth(
     let parameters = decode_sequence(input, budget, 10, |input, _| decode_parameter(input))?;
     let result_shape = result_shape::decode_at_depth(input, budget, depth)?;
     let root_paths = decode_sequence(input, budget, 12, root_selection::decode_path)?;
+    let (orbit, component_selection) = aggregate_selection::decode(input)?;
     let cardinality = controls::decode_cardinality(input)?;
     let predicates = decode_sequence(input, budget, 18, |input, _| decode_predicate(input))?;
     let ordering = decode_sequence(input, budget, 28, |input, _| decode_ordering(input))?;
@@ -115,6 +122,8 @@ fn decode_with_shape_depth(
             parameters,
             result_shape,
             root_paths,
+            orbit,
+            component_selection,
             cardinality,
             predicates,
             ordering,
@@ -299,3 +308,6 @@ fn decode_live_cause(
         },
     ))
 }
+
+#[cfg(test)]
+mod tests;

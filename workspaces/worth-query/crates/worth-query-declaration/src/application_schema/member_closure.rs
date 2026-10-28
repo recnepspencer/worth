@@ -42,6 +42,15 @@ pub(super) fn validate_member_closure(
     super::mutation_description_validation::validate_dependencies(members)?;
     super::operation_definition::validate_operation_bodies(members)?;
     validate_application_query_members(members)?;
+    super::resource_member_closure::validate(members)?;
+    super::relation_aspect::validate_closure(members)?;
+    super::projected_member_domain::validate_closure(members, &index.entities)?;
+    super::derived_relation::validate_closure(
+        members,
+        &index.entities,
+        &index.relations,
+        &index.operations,
+    )?;
     validate_application_capability_members(members)?;
     validate_projection_work_budgets(members, &index.operations)?;
     Ok(())
@@ -83,6 +92,13 @@ impl<'a> ClosureIndex<'a> {
         member: &ApplicationSchemaMember,
     ) -> Result<(), ApplicationSchemaDeclarationDenial> {
         match member {
+            ApplicationSchemaMember::DerivedComponentSet { definition } => definition.validate_closure(self.members),
+            ApplicationSchemaMember::ComponentSet { definition } => {
+                super::component_set::validate_closure(definition, &self.entities, &self.relations)
+            }
+            ApplicationSchemaMember::OperationComponentRead { definition } => {
+                super::operation_component_read::validate_closure(definition, self.members)
+            }
             ApplicationSchemaMember::Aspect { entity, .. }
                 if !self.entities.contains(entity.as_str()) =>
             {
@@ -162,7 +178,7 @@ impl<'a> ClosureIndex<'a> {
             }
             ApplicationSchemaMember::OperationProgram { operation, target }
                 if !self.operations.contains(operation.as_str())
-                    || !self.program_target_exists(target) =>
+                    || !self.program_target_exists(operation, target) =>
             {
                 Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
                     operation: operation.clone(), dependency: Locus::ProgramTarget(target.clone()),

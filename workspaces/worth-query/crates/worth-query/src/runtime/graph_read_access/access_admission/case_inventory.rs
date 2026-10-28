@@ -164,7 +164,8 @@ fn access_case_posture_and_owner(
     WorthQueryGraphReadRequiredCapabilityOwner,
 ) {
     match requirement_kind {
-        WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency
+        WorthQueryGraphReadAccessRequirementKind::AggregateSelection
+        | WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency
         | WorthQueryGraphReadAccessRequirementKind::ReverseAdjacency
         | WorthQueryGraphReadAccessRequirementKind::TraversalWorkset
         | WorthQueryGraphReadAccessRequirementKind::VisitedSet

@@ -40,8 +40,8 @@ pub(crate) fn resolve_commit_history(
     runtime: &RelationalPreparationRuntime,
     options: &RelationalTransactionValidationInput,
     version_id: VersionId,
+    commit_id: CommitId,
 ) -> Result<ResolvedCommitHistory, TransactionCommitError> {
-    let commit_id = reserve_commit_id(runtime)?;
     let branch_basis = options.basis().clone();
     let branch_id = branch_basis.identity().branch_id().clone();
     if !branch_basis.is_current() {
@@ -189,12 +189,14 @@ pub(crate) fn resolve_commit_history_for_merge(
     options: &RelationalTransactionValidationInput,
     merge_plan: &MergeCommitMutationPlan,
     version_id: VersionId,
+    commit_id: CommitId,
 ) -> Result<ResolvedCommitHistory, TransactionCommitError> {
     resolve_commit_history_for_runtime(
         runtime,
         options,
         Some(merge_plan),
         version_id,
+        commit_id,
         |_branch_id| {
             Ok((
                 merge_plan.parent_commits.clone_inner(),
@@ -209,6 +211,7 @@ fn resolve_commit_history_for_runtime<F>(
     options: &RelationalTransactionValidationInput,
     merge_plan: Option<&MergeCommitMutationPlan>,
     version_id: VersionId,
+    commit_id: CommitId,
     resolve_parents: F,
 ) -> Result<ResolvedCommitHistory, TransactionCommitError>
 where
@@ -217,7 +220,6 @@ where
     )
         -> Result<(Vec<CommitId>, Vec<CommitId>), crate::transactions::data::CommitConflict>,
 {
-    let commit_id = reserve_commit_id(runtime)?;
     let branch_id = merge_plan
         .map(|plan| plan.target_branch.clone())
         .unwrap_or_else(|| options.target_branch().clone());
@@ -322,15 +324,4 @@ fn merge_parent_resolution_failure_fields(
         ),
     ])
     .into()
-}
-
-fn reserve_commit_id(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-) -> Result<CommitId, TransactionCommitError> {
-    runtime.history.reserve_commit_id().ok_or_else(|| {
-        TransactionCommitError::publication(crate::publication::data::PublicationError::new(
-            crate::publication::bundle::PublicationStage::BundleAssembly,
-            "canonical commit identity capacity exhausted",
-        ))
-    })
 }

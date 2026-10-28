@@ -53,7 +53,17 @@ fn install_observing(
     support::install_program_with_limits::<program::ChainProgram>(
         checkpoint,
         profile,
-        support::limits_with_room(4_096, observations, 512, support::invalidation()),
+        // This world retains up to 4096 composite entries. Its two-component
+        // publication metadata measured 1967 bytes per reservation; give the
+        // fixture 2 KiB per retained entry. The small default's 512 KiB cannot
+        // hold the hundred-ring population and its retained output history.
+        support::limits_with_history_room(
+            4_096,
+            observations,
+            512,
+            support::invalidation(),
+            4_096 * 2_048,
+        ),
         seed,
     )
 }

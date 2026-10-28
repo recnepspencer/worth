@@ -6,8 +6,9 @@ pub use canonical::{
     decode_application_document, decode_canonical_value, decode_canonical_value_with_admission,
     decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
     encode_application_document, encode_canonical_value, encode_delegated_canonical_value,
-    ApplicationCanonicalValueContract, CanonicalDocumentCodec, CanonicalValue, ValueCodecDenial,
-    ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+    ApplicationCanonicalValueContract, ApplicationCanonicalValueReference,
+    ApplicationCanonicalValueReferenceParts, CanonicalDocumentCodec, CanonicalValue,
+    ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
 };
 pub use worth_foundational::facade::{
     value_decode_error, ArrayDelegate, BoxDelegate, CanonicalValueSeed, DelegatedValueSeed,
@@ -37,8 +38,8 @@ pub use primitive::{
     StringApplicationValueBinding, U64ApplicationValueBinding,
 };
 pub use recipe::{
-    ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe, ErasedApplicationValueEncode,
-    ErasedApplicationValueValidation,
+    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,
+    ErasedApplicationValueEncode, ErasedApplicationValueValidation,
 };
 pub use representation_identity::{ApplicationFrameIdentity, ApplicationUnitIdentity};
 pub use scalar::{

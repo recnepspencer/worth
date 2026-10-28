@@ -2,6 +2,7 @@ use worth_foundational::facade::{AspectContractRevision, AspectIdentity, ScalarA
 
 use crate::application_aftermath::PortableApplicationAftermathContract;
 use crate::application_capability::ErasedApplicationCapabilityContract;
+use crate::application_query::ErasedApplicationHistoryQueryDefinition;
 use crate::application_query::ErasedApplicationQueryDefinition;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -27,6 +28,13 @@ pub enum ApplicationOperationProgramTarget {
         relation: String,
         from: String,
         to: String,
+    },
+    InitializeRelationField {
+        relation: String,
+        from: String,
+        to: String,
+        aspect: String,
+        field: String,
     },
     Unlink {
         relation: String,
@@ -57,6 +65,9 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    ApplicationResource {
+        definition: crate::application_resource::ErasedApplicationResourceDefinition,
+    },
     ApplicationMutation {
         description: crate::application_operation::ApplicationMutationDescription,
     },
@@ -105,6 +116,28 @@ pub enum ApplicationSchemaMember {
         to: String,
         integrity: ApplicationRelationIntegrityRecord,
     },
+    RelationAspect {
+        definition: super::ErasedApplicationRelationAspectDefinition,
+    },
+    DerivedRelation {
+        definition: super::ErasedApplicationDerivedRelationDefinition,
+    },
+    RuleReadableCollection {
+        association: super::ApplicationRuleReadableCollectionAssociation,
+    },
+    OperationDerivedRead {
+        operation: String,
+        relation: String,
+    },
+    ComponentSet {
+        definition: super::ApplicationComponentSetMeaning,
+    },
+    DerivedComponentSet {
+        definition: super::ApplicationDerivedComponentSetMeaning,
+    },
+    OperationComponentRead {
+        definition: super::ApplicationOperationComponentReadMeaning,
+    },
     PrincipalBinding {
         binding: String,
         mapping_entity: String,
@@ -121,6 +154,12 @@ pub enum ApplicationSchemaMember {
     },
     ApplicationQuery {
         definition: ErasedApplicationQueryDefinition,
+    },
+    ApplicationHistoryQuery {
+        definition: ErasedApplicationHistoryQueryDefinition,
+    },
+    ApplicationQueryInspection {
+        definition: crate::application_query::ErasedApplicationQueryInspectionDefinition,
     },
     ApplicationCapability {
         contract: ErasedApplicationCapabilityContract,
@@ -217,5 +256,8 @@ pub enum ApplicationSchemaMember {
     Effect {
         effect: String,
         payload_type: WorthQueryPortableTypeIdentity,
+    },
+    ProjectedMemberDomain {
+        definition: super::ErasedApplicationProjectedMemberDomainDefinition,
     },
 }

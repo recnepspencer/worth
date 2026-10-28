@@ -44,3 +44,9 @@ pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,
     RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
 };
+
+pub use subsystems::{
+    RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
+};
+
+pub(crate) use subsystems::TryPartitionMutationDenied;

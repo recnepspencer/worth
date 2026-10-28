@@ -82,13 +82,45 @@ fn previous_record_grammar_is_refused_before_payload_or_work() {
         decoded.record(),
         &WorthQueryPortablePackageRecord::ApplicationSchema(record)
     );
-    frame[..2].copy_from_slice(&13_u16.to_be_bytes());
+    frame[..2].copy_from_slice(&15_u16.to_be_bytes());
     let mut old = WorthQueryPackageArchiveRecordDecoder::new(Limits::DEFAULT);
     assert_eq!(
         old.decode_frame(&frame).unwrap_err().kind(),
         Kind::UnsupportedRecordVersion
     );
     assert_eq!(old.work(), WorthQueryPackageArchiveDecodeWork::default());
+}
+
+#[test]
+fn orbit_survives_real_records_and_cross_kind_records_refuse_fresh_readmission() {
+    let make = |orbit, to: &str| Member::Relation {
+        relation: "Successor".into(),
+        from: "From".into(),
+        to: to.into(),
+        integrity: if orbit {
+            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit()
+        } else {
+            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
+        }
+        .into(),
+    };
+    let orbit = make(true, "From");
+    let decoded = decode_member(&encode_member(&orbit));
+    assert_eq!(decoded, orbit);
+    let admitted = readmit(schema(decoded)).unwrap();
+    assert_eq!(
+        admitted.identity(),
+        readmit(schema(orbit)).unwrap().identity()
+    );
+    assert_ne!(
+        admitted.identity(),
+        readmit(schema(make(false, "From"))).unwrap().identity()
+    );
+    let hostile = make(true, &target_name());
+    assert_eq!(
+        readmit(schema(decode_member(&encode_member(&hostile)))).unwrap_err(),
+        ApplicationSchemaDeclarationDenial::InvalidRelationIntegrity
+    );
 }
 
 #[test]

@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
 
 use worth_relational::facade::identity::{EntityId, RelationId};
@@ -6,17 +6,36 @@ use worth_relational::facade::runtime::CustomInvariantReadBudget;
 
 use super::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind};
 
+mod component_census;
+mod derived_relation;
+pub(super) use component_census::PreparedComponentCensus;
 mod retention_extent;
 
 #[derive(Default)]
 pub(super) struct PlanningAdmission {
     entities: BTreeSet<EntityId>,
     relations: BTreeSet<RelationId>,
+    censuses: HashMap<
+        worth_relational::facade::runtime::AggregateCensusReadIdentity,
+        PreparedComponentCensus,
+    >,
+    derived: HashMap<
+        worth_relational::facade::runtime::DerivedRelationReadIdentity,
+        worth_relational::facade::runtime::PreparedDerivedRelationRead,
+    >,
 }
 
 pub(super) struct ApplicationInvariantAdmission {
     entities: BTreeSet<EntityId>,
     relations: BTreeSet<RelationId>,
+    censuses: HashMap<
+        worth_relational::facade::runtime::AggregateCensusReadIdentity,
+        PreparedComponentCensus,
+    >,
+    derived: HashMap<
+        worth_relational::facade::runtime::DerivedRelationReadIdentity,
+        worth_relational::facade::runtime::PreparedDerivedRelationRead,
+    >,
 }
 
 #[derive(Clone)]
@@ -51,11 +70,15 @@ impl ApplicationInvariantAdmissionAccess {
             .claim_retained(retention_extent::frozen_bytes(
                 admission.entities.len(),
                 admission.relations.len(),
+                admission.derived.len(),
+                admission.censuses.len(),
             ))
             .map_err(retention_denial)?;
         Ok(Arc::new(ApplicationInvariantAdmission {
             entities: admission.entities.clone(),
             relations: admission.relations.clone(),
+            derived: admission.derived.clone(),
+            censuses: admission.censuses.clone(),
         }))
     }
 

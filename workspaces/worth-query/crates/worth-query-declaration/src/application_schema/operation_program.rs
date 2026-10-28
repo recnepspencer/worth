@@ -10,6 +10,7 @@ use super::{
     ApplicationOperationProgramTarget, ApplicationSchemaDeclarationBuilder,
     ApplicationSchemaMember, DeclaredApplicationFieldValue,
 };
+mod relation_initialization;
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     pub fn operation_create<Operation, Input, Entity>(

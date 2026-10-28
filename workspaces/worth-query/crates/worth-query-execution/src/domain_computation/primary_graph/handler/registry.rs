@@ -48,6 +48,8 @@ where
 pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
     computations: HashMap<TypeId, InstalledManagedComputationOwner>,
+    // Locates a typed setup owner; seal still verifies that owner's actual binding.
+    rule_readable_owners: BTreeMap<worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation, TypeId>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -61,6 +63,7 @@ impl<Schema> Default for PendingMutationHandlerRegistry<Schema> {
         Self {
             entries: BTreeMap::new(),
             computations: HashMap::new(),
+            rule_readable_owners: BTreeMap::new(),
             _schema: PhantomData,
         }
     }
@@ -138,6 +141,7 @@ where
             }
         }
         self.require_operation_body_coverage(installed_schema)?;
+        self.validate_rule_readable_collections(installed_schema)?;
         Ok(InstalledMutationHandlerRegistry {
             entries: self.entries.clone(),
             _schema: PhantomData,

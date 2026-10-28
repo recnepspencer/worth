@@ -54,6 +54,14 @@ handles, and pending cleanup are memory-resident. Process loss releases those
 capabilities. Restart durability belongs to Store and requires fresh owner
 readmission; Query does not serialize live authority.
 
+Installed record/aspect history captures genuine disclosed record generations
+and pages canonical changes at a pinned product through fresh SubjectRead and
+independent history metadata decisions. See the
+[Decl/Host capture and paging guide](./crates/worth-query/docs/capabilities/record-and-aspect-history.md)
+for finite work/storage limits, typed retired gaps and release. The compiled
+facade audit qualifies public and governed history, including current-security
+revocation while truth stays pinned.
+
 An ordinary root or dependent demand can transfer its actual native owner with
 `handle.into_continuation()`. The returned
 `WorthQueryApplicationOutputDemandContinuation<Schema, Demand>` retains the same

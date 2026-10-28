@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraph;
 
 pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes;
 
-pub(in crate::domain_computation::primary_graph::application_query) fn ensure_selected_read_indexes_admitted<
+pub(in crate::domain_computation::primary_graph::application_query) fn ensure_query_truth_and_security_indexes_admitted<
     Schema,
     Query,
     Parameters,
@@ -24,24 +24,42 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
-    basis: &AdmittedRelationalBranchBasis,
+    truth: &AdmittedRelationalBranchBasis,
+    security: &AdmittedRelationalBranchBasis,
 ) -> Result<PreparedSelectedReadIndexes, WorthQueryApplicationQueryAdmissionDenial> {
-    ensure_selected_read_indexes_admitted_with_native_access(
+    ensure_query_truth_and_security_indexes_admitted_with_native_access(
         execution,
         graph,
         query,
-        basis,
+        truth,
+        security,
         &mut super::super::ApplicationQueryNativeAccess::acquire(),
     )
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) fn ensure_selected_read_indexes_admitted_with_native_access<
+pub(in crate::domain_computation::primary_graph::application_query) fn ensure_query_truth_and_security_indexes_admitted_with_native_access<
     Schema,
     Query,
     Parameters,
     QueryResult,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &WorthQueryPrimaryGraph,
+    query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    truth: &AdmittedRelationalBranchBasis,
+    security: &AdmittedRelationalBranchBasis,
+    native: &mut super::super::ApplicationQueryNativeAccess<'_>,
+) -> Result<PreparedSelectedReadIndexes, WorthQueryApplicationQueryAdmissionDenial> {
+    let truth_indexes = prepare_selected_basis(execution, graph, query, truth, native)?;
+    if truth.admission_identity() == security.admission_identity() {
+        Ok(truth_indexes)
+    } else {
+        prepare_selected_basis(execution, graph, query, security, native)
+    }
+}
+
+fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
@@ -68,8 +86,8 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
             selected_field_id(graph, (field.entity(), field.aspect(), field.field()))
         })
         .transpose()?;
-    // One Arc pin plus the two permitted owner-pointer/atomic checks: initial
-    // Query authorization and its one-shot read. Later reuse fails closed.
+    // The actual admitted basis pins currency; current security is still
+    // selected and checked by the existing World/session owner on each read.
 
     let retained_basis = basis.clone();
     native.with_runtime_mut(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {

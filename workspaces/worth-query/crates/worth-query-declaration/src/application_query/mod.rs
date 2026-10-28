@@ -2,6 +2,11 @@ mod authorization_requirement;
 mod basis_support;
 mod binding;
 mod canonical_basis;
+mod component_selection;
+pub use component_selection::{
+    ApplicationQueryComponentMeaning, ApplicationQueryComponentRef,
+    ApplicationQueryComponentSelection, WorthQueryPortableApplicationQueryComponentParts,
+};
 mod continuation;
 mod definition;
 mod dependency_equivalence;
@@ -9,10 +14,17 @@ mod derived_view;
 mod disclosure_contract;
 mod erased_definition;
 mod expression_snapshot;
+mod history;
+mod inspection;
 mod lane_eligibility;
 mod live_cause;
 mod marker_identity;
+mod orbit;
 mod ordering;
+pub use orbit::{
+    ApplicationQueryOrbitMeaning, ApplicationQueryOrbitRef,
+    WorthQueryPortableApplicationQueryOrbitParts,
+};
 mod parameters;
 mod reference;
 mod result_field_selector;
@@ -27,7 +39,8 @@ pub use authorization_requirement::ApplicationQueryAuthorizationRequirement;
 pub use basis_support::ApplicationQueryBasisSupport;
 pub use binding::{
     ApplicationLiveQueryIntent, ApplicationQueryBinding, ApplicationQueryBindingDescriptor,
-    ApplicationQueryBindingLimits, ApplicationQueryFieldScope, ApplicationQueryIntent,
+    ApplicationQueryBindingLimits, ApplicationQueryBindingReference,
+    ApplicationQueryBindingReferenceParts, ApplicationQueryFieldScope, ApplicationQueryIntent,
     ApplicationQueryPrincipalBindingContract, ApplicationQueryPrincipalScope,
     ApplicationQueryScopeBinding, ApplicationQueryScopeContract, ApplicationQueryScopeResolution,
     ApplicationQueryScopeResolutionMode,
@@ -55,6 +68,20 @@ pub use erased_definition::{
     ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryParts,
 };
 pub use expression_snapshot::ApplicationQueryExpressionSnapshot;
+pub use history::{
+    ApplicationHistoryAspectSelection, ApplicationHistoryMetadataFacet,
+    ApplicationHistoryMetadataMeaning, ApplicationHistoryMetadataRef,
+    ApplicationHistoryQueryBinding, ApplicationHistoryQueryDefinition,
+    ApplicationHistoryQueryDefinitionBuilder, ApplicationHistoryQueryDefinitionDenial,
+    ApplicationHistoryTarget, ErasedApplicationHistoryQueryDefinition,
+    WorthQueryPortableApplicationHistoryQueryParts,
+};
+pub use inspection::{
+    ApplicationQueryInspectionDefinition, ApplicationQueryInspectionDefinitionDenial,
+    ApplicationQueryInspectionMetadataFacet, ApplicationQueryInspectionMetadataMeaning,
+    ApplicationQueryInspectionMetadataRef, ErasedApplicationQueryInspectionDefinition,
+    WorthQueryPortableApplicationQueryInspectionParts,
+};
 pub use lane_eligibility::ApplicationQueryLaneEligibility;
 pub use live_cause::{
     ApplicationQueryLiveCauseBinding, ApplicationQueryLiveCauseContract,

@@ -29,6 +29,7 @@ enum AttemptDenialMeaning {
 /// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
+    SourceDisclosureParameters(Box<worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial>),
     IndexedLookup(Box<worth_relational::facade::indexes::BoundedEntityFieldLookupDenial>),
     OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
     None,
@@ -221,6 +222,7 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
 }
 
 mod output_observation;
+mod source_disclosure;
 
 impl std::error::Error for WorthQueryApplicationAttemptDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {

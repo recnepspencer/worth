@@ -413,7 +413,10 @@ cross-feature proof gates before final certification:
   experiment without creating a Query-owned history stack
 - `Milestone 9.18.1` gives applications Relational's structural laws, graph walks,
   orbit and component reads, rule-readable derived relations and persistent
-  aggregate identity with lineage, through Query declarations and readers
+  aggregate identity with lineage, through Query declarations and readers; its
+  runtime follow-through repairs async source identity, carries managed async
+  resources and causal inspection through the current application SDK, adds
+  bounded record/aspect audit history, and batches obsolete catalog/alias cleanup
 - `Milestones 9.19` through `9.22` add advanced generic computation through
   the same front door: managed access and verified footprints, correlated and
   set-oriented execution, governed decision evidence, and occurrence-safe
@@ -5744,23 +5747,73 @@ authored lifecycle, family regeneration and 10/1,000-entry locality journeys are
 acceptance gates. Private CAD/Studio adoption belongs to a separate consumer
 milestone, as defined by the governing 9.18 specification.
 
-## Milestone 9.18.1: Structural Graph Laws, Walks And Persistent Aggregate Identity
+## Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-**Progress, 2026-10-26:** Phases 1–3 are accepted: actual-read observations,
+**Progress, 2026-10-27:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
-query closure steps and qualified Proprietary history-reader adoption. The
-[Phase 3 closeout](milestone-9.18.1-implementation.md#phase-3-closeout) records
-owner-specific evidence, merged consumer qualification and integration status.
-Phases 4–6 remain unfinished; orbit relations and persistent aggregate identity
-are next.
+query closure steps, stored orbits, persistent aggregate identity/lineage and
+qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6 are
+accepted on 2026-10-27: public component/logical-source qualification covers 35
+runtime courts and a Host compile-pass/compile-fail pair; production maintenance
+at SDK `5b01312ed004` adds eleven runtime courts and a Host example. Eleven focused
+private CAD Entry courts complete derived shell reads, identity and lineage,
+region/exterior transfer, retained-decision and cache controls, tessellation
+consumption, typed refusal and genuine generation reuse with valid old truth.
+Complete private qualification at merge `70aa8334bd8eb558bcbe589507152049b9805728`
+includes incoming main `52b0fd370ee428f1`: all 356 Entry tests pass (one existing
+ignored), all 3,480 workspace CI tests pass (78 skipped), 62 cost tests and 213
+doc tests pass, and the all-target, oracle, determinism and policy gates pass.
+The CI and cost lanes exclude only Entry, qualified separately in full. SDK
+`5b01312ed0048ad4591e6b4a50e08685ea6d77ba` is unchanged. Actual Rust 1.98.0
+qualification leaves Phase 18’s Rust 1.99.x requirement open.
+The 2026-10-26 runtime audit adds required Phases 7–11: exact async
+source commit identity, application managed async resources, receipt-rooted causal
+inspection, bounded record/aspect history, and one batch for both cleanup findings.
+Phase 7 is accepted: the existing World/Bridge request route binds the actual
+native source commit, refuses empty sources before Signal admission and preserves
+request custody through completion and revalidation. Phase 11 is accepted: the
+three obsolete Relational planning catalogs and three hidden Bridge facade aliases
+are removed, preserving actual identity issuance and the standalone root facade.
+Phase 10 is accepted on 2026-10-27: entity/relation history captures
+disclosed exact generations and pages canonical changes through genuine World
+ancestry with fresh SubjectRead and independent metadata admission at current
+security. Its facade audit covers equal writes, fork/sibling exclusion,
+ordered/filtered physical relations, replacement, retired gaps, cancellation and
+final custody release. The Native ten/10,000 retained-change court preserves
+identical finite page limits and actual per-page work maxima while traversing every
+unrelated prefix. Phase 8 is accepted on 2026-10-27: installed typed resources
+use the ordinary Decl/Host start, fresh inspection, progression and close path,
+with finite provider/ingress/result custody and genuine owned-effect recovery.
+Its combined workflow qualifies populated forks, burned prepared adoptions and
+sibling publications against the actual Native source. Phase 9 remains unfinished.
+These additions do not reopen the original phases. The 2026-10-27 Proprietary
+report against SDK `ba86433627` adds compiler and unobserved-write refusals,
+cell-version/live-at-k qualification, fresh ordinary proposal acceptance and
+mandatory current Rust qualification. Index implementation and its dependent CAD
+locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
+Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
+19 for consecutive source undo after verified correction/restoration.
+Seventeen implementation phases remain required in 9.18.1, preserving the other
+numbers; the report's pin is provenance, not a pin update.
 
 ### Goal
 
 Give applications the structural machinery Relational and Execution already
 have: declared relation laws, multi-hop walks, orbit and component reads,
 derived relations that rules can read, and a persistent identity with lineage
-for derived aggregates. All of it is domain-neutral and reached through Query
-declarations and readers, never through raw handles.
+for derived aggregates. Carry the existing asynchronous resource and causal
+inspection machinery into the current application audience, repair exact async
+source identity, expose bounded native record/aspect history, and remove the two
+identified obsolete catalog/alias surfaces in one cleanup batch. All of it is
+domain-neutral and reached through Query declarations and ordinary governed
+requests, never through raw runtime handles or receipt-reconstructed authority.
+The retained Proprietary follow-through adds honest failure causes, measured
+cell-version/history cost, fresh proposal acceptance and current stable Rust
+qualification. The general index extension and spatial-dependent locality are
+governed by 9.19 with its final integrated private cutover.
+P1 correction follow-through makes an earlier source reversible again once all
+later overlapping occurrences have been genuinely reversed; live or reapplied
+overlap still refuses, regardless of coincidentally equal field values.
 
 ### Specification
 
@@ -5779,6 +5832,26 @@ The governing milestone spec is
 - derived relations readable by rules at the proposed state
 - one documented read-count surface, and deletion of consumer workarounds in
   the public fixtures and WORTH Proprietary
+- async admission/revalidation bound to the actual selected native commit,
+  including forks, allocator gaps and an explicit empty-source refusal
+- one declared, installed asynchronous resource lifecycle through Decl/Host,
+  with genuine request ownership, completion, timeout/retry and cleanup
+- causal inspection rooted in actual application query/source receipts, with
+  fresh disclosure, typed availability and demand-driven materialization
+- record/aspect history through ordinary typed queries, with native bounded
+  source traversal, owner-bound continuation and retained product ancestry
+- one cleanup batch deleting the three stale Relational identity catalogs and
+  Bridge's unused `everyday`, `advanced` and `specialist` facade aliases; surviving
+  identity authority and standalone Bridge APIs remain supported
+- typed compiler-qualification and unobserved-field-write causes preserved to
+  ordinary callers instead of accounting overflow or cause-erased rejection
+- cell-version/storage/live-at-k evidence at 1, 100 and 10,000 features, without
+  private platform workarounds; spatial-dependent locality is required in 9.19
+- proposal acceptance reissuing fresh ordinary requests with replay kept cert-only
+- mandatory exact-release Rust 1.99.x sort qualification and current qualified
+  stable workspace/CI/Proprietary toolchains
+- P1 consecutive source undo through ordinary correction requests: reverse B then
+  A on one field, preserving genuine live/reapplied divergence and fresh admission
 
 ### Acceptance Evidence
 
@@ -5788,13 +5861,40 @@ sequences, replay and branches. Footprint and proposed-state mutants prove that
 no rule goes stale. WORTH Proprietary builds against the candidate with its hand
 walks, cycle checks and private counters deleted.
 
+For the added runtime work, a populated-fork async request must name the actual
+selected commit; stale/duplicate completion cannot fulfill a successor. Compiled
+two-facade journeys acquire genuine receipts/resources, freshly govern inspection
+and continuation, preserve refusal/cleanup custody, and release native retention.
+Independent authored events agree with paged audit history, including empty
+incomplete pages, large commits, sibling isolation and reverse publication order.
+The eager-scan/truncate and branch-version-as-commit mutants must fail the disputed
+assertions. Exact caller/export inventory qualifies the single cleanup batch.
+Reuse existing grouped targets; a spec-only revision checks links and path claims.
+
+The retained installed write and compiler probes preserve their exact causes;
+proposal acceptance refuses revoked/stale authority through ordinary
+admission. Exact official Rust release/commit qualification preserves canonical
+ordering, work/storage bounds and versioned digest meaning; adding an allowlist
+entry or retaining Rust 1.98 alone cannot satisfy this milestone.
+
+Phases 7–11 consume the completed composite-world/request and inbound contracts
+without delaying the original graph dependencies. Existing 9.4 async and older
+causal-inspection implementations move into the split owners; they are not rebuilt
+as parallel engines. 9.18 keeps correction/pre-image authority, 9.21 keeps new
+decision attachments/summaries, and Store-backed archives/restart remain successor
+work. All seventeen retained implementation phases must close before 9.18.1 closes;
+the index/locality transfer references do not require completion of 9.19 first.
+
 ## Milestone 9.19: Managed Advanced Access And Verified Footprints
 
 ### Goal
 
-Add installed-query-bound managed search and access products, complete positive
-and negative membership, exact refinement, and verified realized footprints
-through the existing Milestone 9.10 and 9.16 authority paths.
+Let applications install their own typed managed indexes and access providers
+through the existing 9.10/9.16 authority paths. Query owns exact-basis lifecycle,
+candidate staging, dependency routing and verified footprints; providers own
+their data structures and algorithms. Geometry boxes and nonspatial name-prefix
+queries must use the same extension. Real CAD adoption follows public qualification
+in one final cutover, rather than a private SDK refactor after each phase.
 
 ### Specification
 
@@ -5803,19 +5903,35 @@ The governing milestone spec is
 
 ### Must Ship
 
-- provider-backed access-product lifecycle with honest memory and work evidence
-- typed search and spatial strategies bound to the existing graph-read plan
+- one general declared/installed provider extension with honest memory/work
+  evidence, extending the existing managed-view and graph-read owners
+- committed preparation reads and isolated candidate invariant reads, maintained
+  incrementally and published with matching graph truth
 - complete membership across insertion, deletion, motion, maintenance,
   rebuild, eviction, authorization, and disclosure change
 - verified footprints that narrow but never widen declared authority
-- bank/compliance and geometry public-facade adoption, executable docs,
-  independent full-scan/resource courts, and workaround deletion
+- local source-to-index and index-to-query dependency routing, including empty
+  results and later entrants; no scan-all-source or scan-all-query workaround
+- six self-contained required phases: provider lifecycle; incremental/candidate
+  roots; complete membership/refinement/disclosure; verified footprints; public
+  consumer/facade qualification; final Proprietary cutover and CAD acceptance
+- bank/compliance, public geometry and nonspatial provider qualification with
+  executable docs and independent full-scan/resource courts before private cutover
+- one final SDK adoption deleting displaced CAD discovery/validation paths and
+  qualifying 1,000/2,000-vertex and 50,000-face locality on the actual installation
 
 ### Acceptance Evidence
 
 Independent oracles expose incomplete candidates, protected-fact leaks,
 underreported resource work, stale lifecycle use, and lying footprints while
 alternate providers converge on canonical semantics.
+Both providers use both read contexts without provider-specific framework
+branches. Final CAD acceptance exposes stale roots, missing incident/absence
+dependencies, global scope work and refusal leaks. The transferred 9.18.1 Phase
+12/15 findings remain required here. Public phase closure does not claim private
+or milestone closure; no repeated private cutover is required in public phases.
+Partitioned managed computation with per-partition reuse already exists; its
+handler-retention constraint remains consumer design, not another platform gap.
 
 ## Milestone 9.20: Correlated Paths And Conflict-Proof Set Execution
 
@@ -6171,7 +6287,7 @@ answer is "store-gated" or "shared with another subsystem."
 | Observable workflow truth | Milestone 9.17.6.5; successor to 9.17.6.4 | Governed discovery/re-acquisition, exact-basis observation, required canonical actor roles, positive occurrence-bound capability requirements, awaiting-proposal outcome, owning capability commands and consumer guidance | No legacy fallback, second status/actor store, observation-as-authority, constructible or serializable live ref, implicit current-world read, catalog exposure of platform kinds, unrelated-population scan, ungated disclosure, caller-asserted actor or missing-actor success | Current-checkpoint restore and intact predecessor refusal; cross-request, exact-basis, disclosure, fork/migration, deferred attribution, actor/replay, native command recovery, bounded lookup and rebuildability proofs; compiled mixed workflow and zero consumer fence debt |
 | Inbound occurrences and external effect completion | Milestone 9.17.7 | Installed inbound protocols; authenticated bounded immutable occurrences; exact dispatch/branch correlation; external-effect-owner consumption; workflow posture delivery | Raw callback, payload, status, transport acknowledgement or workflow command cannot complete an effect; fork, duplicate and redispatch races cannot duplicate consumption | Static Bank death-notice process court, publication-gap/custody owner court and approved-payment workflow reconstruction; real CAD remote effects require a later adoption court |
 | Tree-based semantic undo and redo | Milestone 9.18 | Exact source composite commit and target product branch/head, explicit per-component correction posture, installed inverse/compensation/reconciliation/reapplication contracts, applicability against intervening history, fresh Query admission, owner-local preparation, Runtime World coordinated publication, correction causality, and typed next actions | Reversal and reapplication create new composite commits; unchanged components retain exact bases; Signal reconciliation remains Signal-owned; history and alternatives remain intact; copied receipts and prior authority open no door; stale/conflicting divergence is typed before effects; external effects retain honest compensation/irreversibility posture; Query owns no history head | Milestone 9.18 composite-divergence, stale-head, component-basis, Signal-reconciliation, authority, compensation, external-effect, partial-preparation, zero-ordinary-work, facade, documentation, and residue certification + later cross-runtime merge/rebase/recovery suites |
-| Structural graph laws, walks and aggregate identity | Milestone 9.18.1 | Declared acyclic/symmetric/unique/connectivity/partition laws, walk/reachability/closure reads and declared-query step, orbit relations, Components plan shape, rule-readable derived relations, persistent aggregate identity and lineage, one read-count surface | Laws judge the proposed commit for every writer; interrupted evaluation refuses; walks never truncate silently; read footprints are complete; identity survives anchor removal and follows split/merge lineage deterministically; derived values never grant authority; no domain types in the platform | Milestone 9.18.1 seeded model differentials, footprint/proposed-state mutants, replay/branch identity, growth, facade, documentation and WORTH Proprietary adoption |
+| Structural graphs and application runtime integration | Milestone 9.18.1 | Declared laws, walks, orbits, components, rule-readable derived relations, persistent aggregate identity/lineage and read observations; exact async source identity, application async resources, receipt-rooted causal inspection, bounded record/aspect history and batched obsolete catalog/alias deletion | Original proposed-state, complete-footprint and deterministic identity guarantees remain; native commit identity never comes from branch counters; fresh disclosure, genuine resource/receipt custody and bounded history continuation survive the application boundary; no duplicate engines or authority from evidence | Original graph differential, replay, growth and Proprietary adoption courts; populated-fork async identity, two-facade resource/inspection/history journeys, bounded-page and disclosure mutants, native cleanup and exact deletion inventory |
 | Managed advanced access and verified footprints | Milestone 9.19 | Installed-query-bound search and access products, Milestone 9.10 requirement/inventory/plan extensions, lifecycle products, coverage/membership witnesses, exact refinement, and verified realized footprints | Search preserves capability, purpose, exact composite product-world basis, disclosure, cursor, recovery, and aftermath; membership remains complete under negative-space change; protected candidates do not leak; footprints narrow but never widen authority | Milestone 9.19 bank/geometry search, disclosure, no-N+1, membership, footprint, lifecycle, memory, alternate-provider, facade/docs, and prohibition certification + Milestone 13 parity |
 | Correlated paths and set execution | Milestone 9.20 | Typed heterogeneous path programs, admitted provider lowering, complete path dependencies, installed conflict relations, verified partitions, provider set operations, canonical reductions, and structural-cost evidence | Paths remain bounded and schema-typed; correlated reads consume one admitted graph plan; partitions are complete and conflict-free; bulk work is truly set-oriented; planning is not quadratic; unauthorized members are not processed or leaked | Milestone 9.20 chip/geometry/bank interpreter, no-N+1, partition-parity, slope, authority, facade/docs, and prohibition certification + Milestone 13 parity |
 | Governed decision evidence | Milestone 9.21 | Schema-bound attachments, exact execution/occurrence binding, nested governance, retention/deletion, derived incremental summaries, typed omissions, and rebuild evidence | Attachments and summaries preserve classification, disclosure, purpose, capability, review, and deletion while opening no graph, operation, branch, correction, approval, or recovery authority | Milestone 9.21 bank/research privacy, deletion, invalidation, rebuild, stale-summary, authority, facade/docs, and prohibition certification + Milestone 13 parity |

@@ -20,6 +20,11 @@ pub(in crate::application_query) fn prepare_planning_basis(
         text("root-entity", graph.root_entity()),
         text("cardinality", cardinality_name(graph.cardinality())),
     ];
+    if let Some(selection) = graph.component_selection() {
+        selection.visit_canonical_parts(|key, value| {
+            entries.push(text(format!("components.{key}"), value))
+        });
+    }
     append_projections(&mut entries, graph);
     append_relations(&mut entries, graph);
     entries.push(text(
@@ -89,10 +94,14 @@ fn append_relations(
             cardinality_name(relation.cardinality),
             relation.depth,
             relation.complete_closure,
+            relation.aggregate_selection,
         )
     });
     for (index, relation) in relations.into_iter().enumerate() {
         let path = format!("relation[{index}]");
+        if relation.aggregate_selection {
+            entries.push(text(format!("{path}.aggregate-selection"), "whole-orbit"));
+        }
         if relation.complete_closure {
             entries.push(text(format!("{path}.traversal"), "closure"));
         }

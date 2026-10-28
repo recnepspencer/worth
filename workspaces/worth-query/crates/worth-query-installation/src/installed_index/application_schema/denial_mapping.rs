@@ -13,6 +13,14 @@ pub(super) fn map_compilation_denial(
     denial: ApplicationSchemaCompilationDenial,
 ) -> WorthQueryInstalledApplicationSchemaDenial {
     let (kind, subject) = match denial {
+        ApplicationSchemaCompilationDenial::DerivedSourceUnavailable(subject) => (
+            WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable,
+            subject,
+        ),
+        ApplicationSchemaCompilationDenial::Resource(denial) => (
+            WorthQueryInstalledApplicationSchemaDenialKind::ResourceInstallationDenied,
+            denial.subject().to_string(),
+        ),
         ApplicationSchemaCompilationDenial::Capability(denial) => {
             let kind = match denial.kind() {
                 crate::application_capability::WorthQueryApplicationCapabilityInstallationDenialKind::CanonicalEntryLimitExceeded => {
@@ -67,6 +75,9 @@ pub(super) fn map_compilation_denial(
         ),
         ApplicationSchemaCompilationDenial::Query(denial) => {
             let kind = match denial.kind() {
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::InvalidInspectionDefinition => WorthQueryInstalledApplicationSchemaDenialKind::InvalidInspectionDefinition,
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::InspectionBindingMeaningChanged => WorthQueryInstalledApplicationSchemaDenialKind::InspectionBindingMeaningChanged,
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::InspectionUnavailable => WorthQueryInstalledApplicationSchemaDenialKind::InspectionUnavailable,
                 crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalEntryBudgetExceeded => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalEntryBudgetExceeded,
                 crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalEncodedByteBudgetExceeded => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalEncodedByteBudgetExceeded,
                 crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalDigestSlotRejected => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalDigestSlotRejected,
@@ -182,7 +193,8 @@ pub(in crate::installed_index) fn map_catalog_denial_to_index_denial(
         | CatalogDenialKind::InvalidFieldKey
         | CatalogDenialKind::InvalidAspectShape
         | CatalogDenialKind::ProjectionMaskRejected
-        | CatalogDenialKind::CanonicalContractRejected => {
+        | CatalogDenialKind::CanonicalContractRejected
+        | CatalogDenialKind::UnsupportedRecordBinding => {
             WorthQueryInstalledPackageIndexDenialKind::ApplicationSchemaInvalidAspectContract
         }
     };

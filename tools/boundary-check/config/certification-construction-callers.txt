@@ -84,3 +84,6 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 
 # Slice5b ruling: installed closure metadata; ordinary/admitted requirements and support matching.
 installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/complete_closure.rs
+
+# Ruled metadata-only lookup for real declared-orbit principal/scope admission and Native reads.
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/read.rs

@@ -32,7 +32,7 @@ pub fn estimate_graph_read_access_cost(
         supported,
         counters,
         attribution_rows,
-        requirements.rows().iter().any(|row| row.traversal_operator() == Some(&crate::graph_read_access::WorthQueryGraphReadTraversalOperator::CompleteClosure)),
+        requirements.rows().iter().any(has_unbounded_extent),
     )
 }
 
@@ -129,7 +129,8 @@ fn supported_contribution(
         WorthQueryGraphReadAccessRequirementKind::TraversalWorkset => {
             memory.add_frontier_bytes(frontier_memory_bytes(row));
         }
-        WorthQueryGraphReadAccessRequirementKind::VisitedSet => {
+        WorthQueryGraphReadAccessRequirementKind::VisitedSet
+        | WorthQueryGraphReadAccessRequirementKind::AggregateSelection => {
             memory.add_visited_bytes(set_memory_bytes(row));
         }
         WorthQueryGraphReadAccessRequirementKind::DedupSet => {
@@ -227,7 +228,8 @@ fn intermediate_set_pressure(row: &WorthQueryGraphReadAccessRequirementRow) -> u
     match row.kind() {
         WorthQueryGraphReadAccessRequirementKind::TraversalWorkset
         | WorthQueryGraphReadAccessRequirementKind::VisitedSet
-        | WorthQueryGraphReadAccessRequirementKind::DedupSet => {
+        | WorthQueryGraphReadAccessRequirementKind::DedupSet
+        | WorthQueryGraphReadAccessRequirementKind::AggregateSelection => {
             planning_extent_unit(row) * UNKNOWN_RELATION_TOUCH_UNIT
         }
         _ => 0,
@@ -266,11 +268,17 @@ fn result_memory_bytes(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
 // Complete traversal has no ordinal-derived size bound. These existing unknown
 // units remain heuristic placeholders, never capacity quotes or read ceilings.
 fn planning_extent_unit(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
-    if row.traversal_operator()
-        == Some(&crate::graph_read_access::WorthQueryGraphReadTraversalOperator::CompleteClosure)
-    {
+    if has_unbounded_extent(row) {
         1
     } else {
         row.relation_depth().unwrap_or(1).max(1)
     }
+}
+
+fn has_unbounded_extent(row: &WorthQueryGraphReadAccessRequirementRow) -> bool {
+    use crate::graph_read_access::WorthQueryGraphReadTraversalOperator as Operator;
+    matches!(
+        row.traversal_operator(),
+        Some(Operator::CompleteClosure | Operator::AggregateSelection)
+    )
 }

@@ -11,8 +11,7 @@ use crate::application_query::{
     ApplicationQueryOrderingDirection, WorthQueryPortableApplicationQueryParts,
 };
 
-mod disclosure;
-use disclosure::append_disclosure;
+use super::disclosure::append_disclosure;
 
 pub(in crate::application_query) fn prepare_definition_basis(
     definition: &WorthQueryPortableApplicationQueryParts,
@@ -20,12 +19,28 @@ pub(in crate::application_query) fn prepare_definition_basis(
     let mut entries = definition_header(definition);
     append_parameters(&mut entries, definition);
     append_root_paths(&mut entries, definition);
+    if let Some(orbit) = definition.orbit() {
+        entries.extend([
+            text("orbit.query", orbit.query_type()),
+            text("orbit.slot", orbit.slot_type()),
+            text("orbit.relation", orbit.relation()),
+            text("orbit.from", orbit.from()),
+            text("orbit.to", orbit.to()),
+            text("orbit.output", orbit.output_name()),
+            text("orbit.order", "anchor-forward-v1"),
+        ]);
+    }
+    if let Some(selection) = definition.component_selection() {
+        selection.visit_canonical_parts(|key, value| {
+            entries.push(text(format!("components.{key}"), value))
+        });
+    }
     append_result_shape(&mut entries, definition.result_shape(), "result");
     append_predicates(&mut entries, definition);
     append_ordering(&mut entries, definition);
     append_continuation(&mut entries, definition);
     append_authorization(&mut entries, definition);
-    append_disclosure(&mut entries, definition);
+    append_disclosure(&mut entries, definition.disclosure());
     append_live_cause(&mut entries, definition);
     append_controls(&mut entries, definition);
     prepare_artifact(entries)

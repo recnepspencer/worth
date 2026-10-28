@@ -74,6 +74,133 @@ basis.
 
 ## How It Executes
 
+### Derived relation meaning
+
+A derived endpoint set is named with
+`ApplicationDerivedRelationRef` and builds its recipe with
+`ApplicationDerivedRelation`. Recipes compose actual stored or named-derived
+references, reverse direction, and optionally exclude self edges. Completed
+schema validation checks the named dependency DAG and exact endpoint kinds.
+`ApplicationRelationGraphLaws` describes endpoint-set graph obligations; stored
+edge deletion and physical uniqueness remain with stored relations.
+
+`rule_readable_collection` records the existing Feature, Collection, Computation,
+output artifact and completeness identities. `operation_read_derived_relation`
+records an operation's declared source read. These associations grant no read,
+publication or capability authority. Installed endpoint-set laws are enforced by
+the actual Native source evaluator, including proposed-state changes to physical
+support. The closed managed count requires a genuine Entity-rooted input.
+
+Ordinary invariant setup resolves a typed derived relation against its actual
+installed physical leaf roster. Preparation admits the complete source under
+the genuine proposed or committed observation; evaluation consumes that frozen
+proof with the same observation, root generation, posture, definition and access
+contract. Proposed reads cannot borrow a committed proof or cached endpoint set.
+Decision readers additionally require the actual operation's declared derived
+read and issued physical scopes. They record every physical entity and explored
+adjacency, including empty adjacency and distinct paths with equal endpoints;
+a failed source read vetoes the decision even if a handler swallows its error.
+
+For a count projection, contribution setup uses `derived_relation_count` with
+the same declared recipe and actual collection traits. Its computation declares
+`ApplicationDerivedRelationCountPartition`, the built-in deterministic one-bucket
+key, and `DeterministicPartitioned` execution. The closed framework owner feeds
+the existing partitioned computation and collection completion.
+Installation refuses a custom owner that only repeats the descriptive collection
+association. The existing derived-view registry retains the disposable count and
+its reverse dependency index under the actual Product branch/incarnation/commit.
+Physical changes invalidate it even when the derived endpoint set stays equal.
+Every count first acquires its Native source, so warm retention is not a promise
+of avoiding physical proof work. `discard_rule_readable_collections()` removes
+these projections; later reads can reconstruct them without changing truth or
+ordinary Query views.
+
+The [facade journey](../../../worth-query-certification/tests/application_graph/relation_laws/derived/court.rs)
+uses an authenticated action, real proposed-state rule, negative-adjacency edit,
+physical rewire and discard/rebuild. The [Native audience court](../../../worth-query-execution/src/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience.rs)
+checks that a broad proof cannot lend its physical source access to a narrower
+reader on the same observation. The [logical composition journey](../../../worth-query-certification/tests/application_graph/relation_laws/logical/court.rs)
+uses the same source owners for laws, walks, orbits and components. The
+[grant-revocation journey](../../../worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs)
+keeps a derived value available while actual grant revocation denies the action
+before provider access; a derived value cannot replace that grant.
+
+### Finite projected sources and composition
+
+`ApplicationProjectedMemberDomainDefinition` declares a real carrier kind and
+finite named cases. `ApplicationDerivedRelation::carrier_case`, reversal,
+composition, union and intersection use the same registered evaluator. Complete
+physical and empty-adjacency support survives endpoint deduplication. A logical
+coordinate includes domain, full carrier generation and case; it grants no access.
+
+In the [public logical fixture](../../../worth-query-certification/tests/application_graph/relation_laws/logical.rs),
+Uses has Negative and Positive cases over Node. The `successor()` helper is the
+forward Negative-lift inverse -> Precedes -> Positive-lift leg. These actual
+builder-chain lines register its union with the reverse as an orbit, then bind
+an explicit component set:
+
+<!-- compiled: logical_relation_source.rs -->
+```rust
+        .derived_relation(
+            UseSuccessor::reference(),
+            successor::<L>().union(successor::<L>().reversed()),
+            ApplicationRelationGraphLaws::unbounded().orbit(),
+        )
+        .derived_components(ApplicationDerivedComponentSetDefinition::new(
+            UseComponents::reference(),
+            UseSuccessor::reference(),
+        ))
+```
+
+The real Precedes permutation induces two-member cycles Negative(i) and
+Positive(successor(i)); physical support-record count is not orbit length. This
+fixture demonstrates logical composition, not the CAD shell model. CAD must
+supply its actual incidence and qualification recipe.
+
+An invariant resolves `typed_projected_case`, `typed_derived_relation` and
+`typed_component_set` against its actual read and applicability closure. A genuine
+carrier observation supplies `view.projected_member(..)`. Here `negative` is that
+issued member and `self.source` is the resolved UseSuccessor binding:
+
+<!-- compiled: logical_relation_rule.rs -->
+```rust
+        let walk = view.derived_walk(&self.source, RelationDirection::Forward, &negative)?;
+```
+
+Preparation and evaluation call the same APIs on their own proposed or committed
+view. `graph_component_of` retains the actual Native identity and complete cohort;
+`derived_orbit` uses genuine permutation order. `graph_components` consumes a
+whole-census proof even with no carriers. That explicit enumeration can grow with
+the universe; local rules need not request it. Prepared adjacency, direction,
+reachability, component and census interpretations are distinct.
+
+Keep changing context in the source's actual incidences, outside the carrier/case
+coordinate. A whole-cohort context transfer with the same complete member keys
+retains its Native identity without split or merge events. Actual membership
+changes follow the existing surviving-member heir and lineage rules. The
+[logical lifecycle court](../../../../../../crates/worth-relational/src/tests/transactions/core/aggregate_identity/logical_components/lifecycle.rs)
+exercises these cases. A retired carrier generation cannot select a replacement
+member; retained observations keep their original selected source. See the
+[domain compatibility contract](../../../worth-query-decl/README.md#projected-member-domain-meaning)
+for portable meaning and fresh admission.
+
+Operations declare `operation_read_derived_relation` plus the actual typed
+`OperationReads` marker. Extended recipes and derived component/orbit consumers
+receive an installed composite DerivedSource scope beside their full physical
+and carrier scopes. `DecisionReader::entity_member` and
+`derived_member_relations_from` issue local observations; `derived_walk` and
+`graph_component_of(set, relation, member)` retain the actual source and answer.
+An equal result does not erase source dependencies: rewriting and restoring
+physical support must stale an older candidate. A projected graph member cannot
+be passed to `mutation_target`; the Host [compile-time fence](../../../worth-query-host/src/logical_member_contract.rs)
+keeps the genuine Entity-identity counterpart explicit.
+
+The closed managed count retains its Entity-identity input. Entity-to-Projected
+recipes are supported; logical-root counts refuse installation until a genuine
+input owner exists. Arbitrary cached collection values remain descriptive.
+Every count acquires fresh Native proof. These rule and operation APIs add no
+ordinary disclosed logical query rows, capability, approval or publication grant.
+
 Read-only application work follows one path:
 
 ```text

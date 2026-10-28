@@ -10,7 +10,7 @@ mod components;
 mod keyed;
 
 pub use bisection::{Bisection, BisectionDenial, BisectionQuality, WeightedEdge, WeightedItem};
-pub use components::{ComponentDenial, ComponentPartitioner};
+pub use components::{ComponentDenial, ComponentEdit, ComponentPartitioner};
 pub use keyed::{KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner};
 
 use crate::{

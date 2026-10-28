@@ -35,12 +35,10 @@ impl<Schema, Operation, Input, Scope>
         self.admission
             .validate_current_authority()
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        let (keys, (computations, retained)) = projection.facts.into_expected().map_err(|key| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-                format!("{key:?}"),
-            )
-        })?;
+        let (keys, (computations, retained)) = projection
+            .facts
+            .into_expected(execution)
+            .map_err(|failed| failed.into_attempt_denial(self.admission.operation()))?;
         // The installed scalar body has no partitioned computation completion.
         // Do not silently discard a future compute-producing extension here.
         if !matches!(computations, ObservedComputationInputs::None)
@@ -57,6 +55,32 @@ impl<Schema, Operation, Input, Scope>
         );
         let mut facts = Vec::new();
         for key in keys.iter() {
+            if let super::super::WorthQueryApplicationFactKey::ComponentSelection(key) = key {
+                let (_, fact) = super::components::observe(
+                    execution,
+                    &self.admission,
+                    &self.lease,
+                    &scope,
+                    &keys,
+                    key,
+                    None,
+                )?;
+                facts.push(fact);
+                continue;
+            }
+            if let super::super::WorthQueryApplicationFactKey::Aggregate(key) = key {
+                let (_, fact) = super::aggregate::observe(
+                    execution,
+                    &self.admission,
+                    &self.lease,
+                    &scope,
+                    &keys,
+                    key,
+                    None,
+                )?;
+                facts.push(fact);
+                continue;
+            }
             if let super::super::WorthQueryApplicationFactKey::StructuralWalk(key) = key {
                 let (_, fact) = super::structural_walk::observe(
                     execution,

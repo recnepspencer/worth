@@ -28,73 +28,30 @@ fn collect_state_view_entities(
         if !context.checkpoint(1) {
             return;
         }
-        let Some(partition) = state_view.state().get_current_partition(partition_id) else {
-            continue;
-        };
-        if state_view.version_id() == context.current_version_id() {
-            collect_current_version_entities(context, kind_ids, partition_id, partition, entities);
-        } else {
-            collect_selected_root_entities(context, kind_ids, partition_id, partition, entities);
-        }
-    }
-}
-
-fn collect_current_version_entities(
-    context: &InvariantExecutionContext<'_, '_>,
-    kind_ids: &[crate::identity::data::KindId],
-    partition_id: crate::identity::data::PartitionId,
-    partition: crate::storage::residency::RelationalRegionHeadView<'_>,
-    entities: &mut Vec<EntityReference>,
-) {
-    for slot in partition.entity_arena().live_slots() {
-        if !context.checkpoint(1) {
+        let slots = state_view.try_entity_slots(partition_id, |work, bytes| {
+            if context.checkpoint(work) && context.claim_scratch(bytes) {
+                Ok(())
+            } else {
+                Err(())
+            }
+        });
+        let Ok(slots) = slots else {
             return;
-        }
-        context.metrics().count_entity_slot_scans(1);
-        let Some(slot_view) = partition.entity_arena().get_slot(slot) else {
-            continue;
         };
-        let Some(kind_id) = slot_view.kind_id() else {
-            continue;
-        };
-        if contract_candidate_kind_matches(kind_id, kind_ids) {
-            if !context.claim_scratch(std::mem::size_of::<EntityReference>() as u64) {
+        for slot in slots {
+            if !context.checkpoint(1) {
                 return;
             }
-            entities.push(EntityReference::Existing(
-                crate::identity::data::EntityId::new(
-                    partition_id,
-                    slot as u64,
-                    slot_view.generation(),
-                ),
-            ));
-        }
-    }
-}
-
-fn collect_selected_root_entities(
-    context: &InvariantExecutionContext<'_, '_>,
-    kind_ids: &[crate::identity::data::KindId],
-    partition_id: crate::identity::data::PartitionId,
-    partition: crate::storage::residency::RelationalRegionHeadView<'_>,
-    entities: &mut Vec<EntityReference>,
-) {
-    let state_view = context.state_view();
-    for slot in partition.entity_arena().occupied_slots_iter() {
-        if !context.checkpoint(1) {
-            return;
-        }
-        let Some(metadata) =
-            state_view.entity_metadata_at(&partition.entity_arena(), partition_id, slot)
-        else {
-            continue;
-        };
-        context.metrics().count_entity_slot_scans(1);
-        if contract_candidate_kind_matches(metadata.kind_id, kind_ids) {
-            if !context.claim_scratch(std::mem::size_of::<EntityReference>() as u64) {
-                return;
+            context.metrics().count_entity_slot_scans(1);
+            let Some(metadata) = state_view.entity_metadata_for_slot(partition_id, slot) else {
+                continue;
+            };
+            if contract_candidate_kind_matches(metadata.kind_id, kind_ids) {
+                if !context.claim_scratch(std::mem::size_of::<EntityReference>() as u64) {
+                    return;
+                }
+                entities.push(EntityReference::Existing(metadata.entity_id));
             }
-            entities.push(EntityReference::Existing(metadata.entity_id));
         }
     }
 }
@@ -131,24 +88,22 @@ fn collect_planned_entities(
             }
             crate::transactions::data::MutationIntent::Create(
                 crate::transactions::data::CreateIntent::BulkEntities(spec),
-            ) => {
-                if contract_candidate_kind_matches(spec.kind_id, kind_ids) {
-                    for client_key in &spec.client_keys {
-                        if !context.checkpoint(1) {
-                            return;
-                        }
-                        if !context.claim_scratch(
-                            (std::mem::size_of::<EntityReference>() as u64)
-                                .saturating_add(client_key.owned_allocation_capacity_bytes()),
-                        ) {
-                            return;
-                        }
-                        entities.push(EntityReference::Created(CreatedEntityRef {
-                            partition_id: spec.partition_id,
-                            kind_id: spec.kind_id,
-                            client_key: client_key.clone(),
-                        }));
+            ) if contract_candidate_kind_matches(spec.kind_id, kind_ids) => {
+                for client_key in &spec.client_keys {
+                    if !context.checkpoint(1) {
+                        return;
                     }
+                    if !context.claim_scratch(
+                        (std::mem::size_of::<EntityReference>() as u64)
+                            .saturating_add(client_key.owned_allocation_capacity_bytes()),
+                    ) {
+                        return;
+                    }
+                    entities.push(EntityReference::Created(CreatedEntityRef {
+                        partition_id: spec.partition_id,
+                        kind_id: spec.kind_id,
+                        client_key: client_key.clone(),
+                    }));
                 }
             }
             _ => {}

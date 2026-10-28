@@ -84,6 +84,8 @@ fn installed_atomic_read_count(contract: &WorthQueryOperationGraphReadContract) 
         .iter()
         .flat_map(|role| role.read_scopes())
         .try_fold(0usize, |count, scope| match scope {
+            WorthQueryOperationGraphReadScope::Components(_)
+            | WorthQueryOperationGraphReadScope::DerivedSource(_) => None,
             WorthQueryOperationGraphReadScope::Entity(_)
             | WorthQueryOperationGraphReadScope::Relation(_) => count.checked_add(1),
             WorthQueryOperationGraphReadScope::NativeProjection(scope) => {
@@ -165,6 +167,23 @@ fn touch_scope_admits_target(
             WorthQueryOperationTouchScope::UnlinkRelation(scope),
             ApplicationOperationProgramTarget::Unlink { relation, from, to },
         ) => scope.relation() == relation && scope.from() == from && scope.to() == to,
+        (
+            WorthQueryOperationTouchScope::InitializeRelationField(scope),
+            ApplicationOperationProgramTarget::InitializeRelationField {
+                relation,
+                from,
+                to,
+                aspect,
+                field,
+            },
+        ) => {
+            scope.relation().relation() == relation
+                && scope.relation().from() == from
+                && scope.relation().to() == to
+                && scope.contract().key().as_str() == aspect
+                && scope.field_path().fields().len() == 1
+                && scope.field_path().fields()[0].as_str() == field
+        }
         _ => false,
     }
 }

@@ -1,4 +1,6 @@
 //! Genuine sealed structural inputs force fresh owner calls in both postures.
+mod aggregate;
+mod aggregate_model;
 mod attempt;
 mod model;
 use super::super::{

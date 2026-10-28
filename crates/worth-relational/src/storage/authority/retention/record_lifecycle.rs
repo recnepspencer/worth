@@ -16,7 +16,18 @@ impl StorageAuthority<'_> {
             return;
         };
         let arena = K::arena_mut(partition);
-        let lifecycle = match self.runtime.config.storage.retention.backend {
+        let lifecycle = self.retention_lifecycle::<K>(arena, slot, retired_at, retention_fence);
+        arena.set_lifecycle_for_slot(slot, lifecycle);
+    }
+
+    pub(in crate::storage::authority) fn retention_lifecycle<K: RecordKind>(
+        &self,
+        arena: &crate::storage::substrate::RecordArena<K>,
+        slot: usize,
+        retired_at: Option<VersionId>,
+        retention_fence: VersionId,
+    ) -> RecordLifecycleState {
+        match self.runtime.config.storage.retention.backend {
             crate::config::data::RetentionBackend::PinTrackedRetention => {
                 if arena.snapshot_pin_count(slot).unwrap_or(0) > 0 {
                     RecordLifecycleState::PinnedBySnapshot
@@ -41,8 +52,7 @@ impl StorageAuthority<'_> {
                     RecordLifecycleState::PinnedBySnapshot
                 }
             }
-        };
-        arena.set_lifecycle_for_slot(slot, lifecycle);
+        }
     }
 
     pub(crate) fn reclaim_record_if_reclaimable<K: RecordKind>(

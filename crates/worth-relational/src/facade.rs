@@ -91,6 +91,12 @@ pub mod history {
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
+        RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
+        RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
+        RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
+        RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,
+    };
+    pub use crate::history::{
         RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
         RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,
         RelationalCommitParentageDenial, RelationalCommitRootDescriptor,
@@ -209,9 +215,10 @@ pub mod runtime {
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
         RelationalPinnedEntityMetadata, RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
         RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
-        RelationalRuntime, RelationalRuntimeConfig, RelationalRuntimeConstructionDenial,
-        RelationalRuntimeForkDenial, RelationalSchemaTransitionAdmissionDenial,
-        RelationalSchemaTransitionAdmissionDenialKind, RelationalSnapshotPositionAdmissionStop,
+        RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
+        RelationalRuntimeConfig, RelationalRuntimeConstructionDenial, RelationalRuntimeForkDenial,
+        RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
+        RelationalSnapshotPositionAdmissionStop, RelationalStoppedRetentionPass,
         ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
         SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
         VisibilityReadContext, VisibilityRetentionAuthority,
@@ -300,40 +307,8 @@ pub mod replay {
     };
 }
 
-pub mod schema {
-    pub use crate::schema::data::{
-        AcyclicityContractDeclaration, AllowedCycleClass, AspectBinding,
-        AspectContractPlanRevision, AspectDeclarationTrace, AspectDeclarationTraceRow,
-        AspectLoweringTrace, AspectLoweringTraceRow, CardinalityContractDeclaration,
-        ConnectivityMinimumContractDeclaration, ConnectivityMinimumEnforcement, ContractId,
-        DeclaredAspectContractBinding, DescriptorCanonicalBasisSupportPolicy,
-        DescriptorCanonicalBasisVersion, DescriptorSemanticsSupportPolicy,
-        DescriptorSemanticsVersion, DirectedTraversalKind, EndpointDeletionIntegrityDeclaration,
-        EndpointDeletionIntegrityMode, EndpointKindContractDeclaration, EntityKindRegistration,
-        FreeFormSchemaDiffIntent, HistoricalInterpretationSensitivity,
-        KindAspectContractDeclarations, KindResolution, LoweredAcyclicityContract,
-        LoweredAspectContractBinding, LoweredAspectContractPlan, LoweredCardinalityMaximumContract,
-        LoweredCardinalityMinimumContract, LoweredConnectivityMinimumContract,
-        LoweredEndpointDeletionIntegrityContract, LoweredEndpointKindContract,
-        LoweredPartitionIsolationContract, LoweredRelationIntegrityPlan,
-        LoweredSchemaTransitionPlan, LoweredSymmetryContract, LoweredUniquenessContract,
-        MinimumCardinalityEnforcement, PairMinimumSemantics, PartitionIsolationContractDeclaration,
-        PartitionIsolationMode, ProposedSchemaTransition, RelationIntegrityDeclarations,
-        RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision, RelationKindRegistration,
-        RelationalAspectChangeKind, RelationalSchemaRegistry, SchemaAuthoritySnapshot,
-        SchemaBoundaryFingerprint, SchemaBridgeDescriptor, SchemaBridgeabilityClassification,
-        SchemaContinuationAdmissionObservation, SchemaContinuationClassification,
-        SchemaContinuationDescriptor, SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind,
-        SchemaElementRef, SchemaId, SchemaLineageArtifact, SchemaLineageOrderingSemantics,
-        SchemaPublicationImpact, SchemaReconciliationClassification,
-        SchemaReconciliationDescriptor, SchemaReconciliationOrderingMode,
-        SchemaReconciliationPolicy, SchemaRegistryError, SchemaRegistryErrorClass, SchemaStratum,
-        SchemaSubscriberImpact, SchemaTransitionArtifact, SchemaTransitionBarrier,
-        SchemaTransitionSummary, SchemaVersionId, SubscriberBoundaryVisibility,
-        SymmetryContractDeclaration, SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
-        ValidatedSchemaTransition,
-    };
-}
+#[path = "facade/schema.rs"]
+pub mod schema;
 
 pub mod snapshots {
     pub use crate::snapshots::data::{

@@ -6,6 +6,7 @@ use crate::authority::commit::phases::applied_mutation::{
 use crate::authority::mutation::MutationApplyOutcome;
 use crate::storage::overlay::WorkingState;
 
+mod aggregate_consequences;
 mod telemetry;
 
 pub(super) struct MutatedCommitExecution {
@@ -14,6 +15,8 @@ pub(super) struct MutatedCommitExecution {
     pub(super) invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     pub(super) outcome: MutationApplyOutcome,
     pub(super) mutation_identities: PendingMutationIdentities,
+    pub(super) aggregate: Option<crate::aggregate_identity::AggregateProposal>,
+    pub(super) aggregate_admission: Option<crate::aggregate_identity::AggregateAdmission>,
 }
 
 impl MutatedCommitExecution {
@@ -37,6 +40,7 @@ pub(super) fn mutate_commit_execution(
             state: working_state,
             outcome,
             identities: mutation_identities,
+            aggregate,
         },
     ) = prepared.into_parts();
     let selected = prepared.selected_branch_state().clone();
@@ -58,6 +62,12 @@ pub(super) fn mutate_commit_execution(
                 version,
                 merged_plan,
                 Some(&prepared.proposal_identity),
+                aggregate.as_ref().map(|owner| {
+                    owner.borrow(
+                        &working_state,
+                        crate::branch::SelectedRelationalBranchRead::in_round(&selected, &selected),
+                    )
+                }),
                 execution,
                 control,
             )
@@ -79,5 +89,7 @@ pub(super) fn mutate_commit_execution(
         invariant_executions,
         outcome,
         mutation_identities,
+        aggregate,
+        aggregate_admission: None,
     })
 }

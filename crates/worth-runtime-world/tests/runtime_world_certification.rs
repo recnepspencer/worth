@@ -4,6 +4,8 @@ mod basis_history;
 mod bridge;
 #[path = "runtime_world_certification/court/mod.rs"]
 mod court;
+#[path = "runtime_world_certification/owned_async.rs"]
+mod owned_async;
 #[path = "runtime_world_certification/reference.rs"]
 mod reference;
 #[path = "runtime_world_certification/retention.rs"]
@@ -192,6 +194,12 @@ impl RuntimeWorldClockSource for FixedClock {
 fn clock_is_explicit_and_only_reports_deadline_time() {
     let clock = RuntimeWorldClock::from_source(FixedClock);
     assert_eq!(clock.now().ticks(), 42);
+}
+
+#[test]
+fn owned_async_progression_requires_actual_cleanup_custody() {
+    let tests = trybuild::TestCases::new();
+    tests.compile_fail("tests/ui/owned_async_progression_requires_custody.rs");
 }
 
 #[test]

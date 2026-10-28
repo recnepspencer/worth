@@ -11,7 +11,7 @@ use crate::denial::{
 
 use crate::record::foundational_value;
 
-pub(super) fn write_cardinality(
+pub(in crate::record) fn write_cardinality(
     output: &mut dyn BinaryEncodingSink,
     value: ApplicationQueryCardinality,
 ) -> Result<(), Denial> {
@@ -22,7 +22,7 @@ pub(super) fn write_cardinality(
     })
 }
 
-pub(super) fn decode_cardinality(
+pub(in crate::record) fn decode_cardinality(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryCardinality, Denial> {
     match input.u16()? {
@@ -33,7 +33,7 @@ pub(super) fn decode_cardinality(
     }
 }
 
-pub(super) fn write_authorization(
+pub(in crate::record) fn write_authorization(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationQueryAuthorizationRequirement,
 ) -> Result<(), Denial> {
@@ -50,7 +50,7 @@ pub(super) fn write_authorization(
     }
 }
 
-pub(super) fn decode_authorization(
+pub(in crate::record) fn decode_authorization(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryAuthorizationRequirement, Denial> {
     match input.u16()? {

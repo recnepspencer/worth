@@ -3,9 +3,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 use super::super::read_terminal::WorthQueryGraphReadCompletionParts;
-use super::{
-    WorthQueryGraphWorkBasis, WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSession,
-};
+use super::{WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSession};
 use crate::domain_computation::provider_session::{
     WorthQueryGraphReadCompletion, WorthQueryGraphReadDependencyEvidence,
     WorthQueryObservedGraphReadWork, WorthQuerySessionGraphReadProof,
@@ -29,9 +27,7 @@ impl WorthQueryManagedGraphWorkSession {
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionGraphReadProof), WorthQueryManagedGraphReadDenial> {
-        let WorthQueryGraphWorkBasis::Query { identity, port, .. } = &self.basis else {
-            return Err(WorthQueryManagedGraphReadDenial::MutationSession);
-        };
+        let super::ProductReadBasis { identity, port, .. } = self.query_read_basis()?;
         if identity != basis || !self.branch.admits_query_basis(basis) {
             return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
         }
@@ -54,12 +50,9 @@ impl WorthQueryManagedGraphWorkSession {
         observed: WorthQueryObservedGraphReadWork,
         basis_release: WorthQueryApplicationBasisReleaseReceipt,
     ) -> Result<WorthQueryGraphReadCompletion, WorthQueryManagedGraphReadDenial> {
-        let WorthQueryGraphWorkBasis::Query {
+        let super::ProductReadBasis {
             identity: basis, ..
-        } = &self.basis
-        else {
-            return Err(WorthQueryManagedGraphReadDenial::MutationSession);
-        };
+        } = self.query_read_basis()?;
         if proof.session != self.identity
             || proof.plan != self.plan.identity()
             || proof.basis != *basis
@@ -73,9 +66,9 @@ impl WorthQueryManagedGraphWorkSession {
             WorthQueryGraphReadDependencyEvidence::bind(self.graph_read_review(), observed);
         let session = self.identity;
         let managed_run = self.managed_run;
+        let basis = basis.clone();
         let binding = self.binding;
         let obligation = self.obligation;
-        let basis = basis.clone();
         let (plan, review, release) = self
             .plan
             .complete_application_query()
@@ -115,9 +108,7 @@ impl WorthQueryManagedGraphWorkSession {
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionGraphReadProof), WorthQueryManagedGraphReadDenial> {
-        let WorthQueryGraphWorkBasis::Query { identity, port, .. } = &self.basis else {
-            return Err(WorthQueryManagedGraphReadDenial::MutationSession);
-        };
+        let super::ProductReadBasis { identity, port, .. } = self.query_read_basis()?;
         if identity != basis || !self.branch.admits_query_basis(basis) {
             return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
         }

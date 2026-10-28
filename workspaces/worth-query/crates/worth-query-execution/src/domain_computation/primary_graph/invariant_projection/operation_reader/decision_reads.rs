@@ -2,7 +2,9 @@
 //! partitioned computation read in which owner call.
 
 use std::collections::BTreeSet;
+mod aggregates;
 mod aspect_presence;
+mod components;
 mod computation_inputs;
 mod expected_keys;
 mod source_publications;
@@ -43,13 +45,34 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     deposit: Option<ComputationDeposit>,
     // Last: authoring collections must drop before their original reservation.
     walks: structural_walks::IssuedWalkValues,
+    aggregates: aggregates::IssuedAggregateValues,
     failed_walk: bool,
+    components: components::IssuedComponentValues,
+    failed_component: bool,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum FailedDecisionRead {
     Key(WorthQueryApplicationFactKey),
     StructuralWalk,
+    ComponentSelection,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+}
+
+impl FailedDecisionRead {
+    pub(in crate::domain_computation::primary_graph) fn into_attempt_denial(
+        self,
+        operation: &str,
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryApplicationAttemptDenial as Denial,
+            WorthQueryApplicationAttemptDenialKind as Kind,
+        };
+        match self {
+            Self::Execution(cause) => Denial::relational_read_stopped(cause, operation),
+            failed => Denial::new(Kind::MissingAuthoritativeFact, format!("{failed:?}")),
+        }
+    }
 }
 
 /// A reader either has no producer, owns the handed prior, or has consumed it.
@@ -144,6 +167,7 @@ impl DecisionReads {
     /// re-observe: the key of the first failed read is returned instead.
     pub(in crate::domain_computation::primary_graph) fn into_expected(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         (
             ExpectedFactKeys,
@@ -152,22 +176,31 @@ impl DecisionReads {
         FailedDecisionRead,
     > {
         let Self {
-            handler,
+            mut handler,
             source_publications,
             failed,
             mut computation,
             runs,
             deposit,
             mut walks,
+            aggregates,
             failed_walk,
+            components,
+            failed_component,
             ..
         } = self;
         if let Some(failed) = failed {
             return Err(FailedDecisionRead::Key(failed));
         }
+        if failed_component {
+            return Err(FailedDecisionRead::ComponentSelection);
+        }
         if failed_walk {
             return Err(FailedDecisionRead::StructuralWalk);
         }
+        computation
+            .normalize_adjacencies(&mut handler, execution)
+            .map_err(FailedDecisionRead::Execution)?;
         computation.retain_walk_memory(walks.take_memory());
         let handler = std::sync::Arc::new(handler);
         computation.retain_handler(std::sync::Arc::clone(&handler));
@@ -177,6 +210,8 @@ impl DecisionReads {
             std::sync::Arc::clone(&computation),
             source_publications,
             walks,
+            aggregates,
+            components,
         );
         let result = match runs {
             ComputationRuns::None => (
@@ -284,65 +319,4 @@ impl<Schema, Operation>
 }
 
 #[cfg(test)]
-mod tests {
-    use worth_relational::facade::identity::{EntityId, PartitionId};
-
-    use super::{DecisionReadOutcome, DecisionReads, FailedDecisionRead};
-    use crate::domain_computation::primary_graph::application_attempt::{
-        ComputationRead, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
-    };
-
-    fn adjacency(slot: u64) -> WorthQueryApplicationFactKey {
-        WorthQueryApplicationFactKey::Adjacency {
-            relation: "owner".to_owned(),
-            anchor: EntityId::new(PartitionId::main(), slot, 1),
-            direction: WorthQueryApplicationAdjacencyDirection::Incoming,
-            maximum_work_units: 2,
-        }
-    }
-
-    #[test]
-    fn a_failed_read_an_owner_call_swallowed_seals_nothing() {
-        let mut reads = DecisionReads::default();
-        reads.record(adjacency(1), DecisionReadOutcome::Observed);
-        reads.reading = Some(ComputationRead::Membership);
-        reads.record(adjacency(2), DecisionReadOutcome::Failed);
-        reads.reading = None;
-        reads.record(adjacency(3), DecisionReadOutcome::Failed);
-        assert_eq!(
-            reads.into_expected().err(),
-            Some(FailedDecisionRead::Key(adjacency(2)))
-        );
-    }
-
-    #[test]
-    fn observed_reads_seal_every_key() {
-        let mut reads = DecisionReads::default();
-        reads.record(adjacency(1), DecisionReadOutcome::Observed);
-        let (keys, _) = reads.into_expected().ok().unwrap();
-        assert_eq!(keys.iter().cloned().collect::<Vec<_>>(), [adjacency(1)]);
-    }
-
-    #[test]
-    fn shared_handler_and_computation_reads_keep_exact_keys_not_just_cardinality() {
-        let mut reads = DecisionReads::default();
-        reads.record(adjacency(1), DecisionReadOutcome::Observed);
-        reads.record(adjacency(3), DecisionReadOutcome::Observed);
-        reads.reading = Some(ComputationRead::Membership);
-        reads.record(adjacency(1), DecisionReadOutcome::Observed);
-        reads.record(adjacency(2), DecisionReadOutcome::Observed);
-        reads.record(adjacency(2), DecisionReadOutcome::Observed);
-        let (keys, _) = reads.into_expected().ok().unwrap();
-        let actual = [adjacency(1), adjacency(2), adjacency(3)];
-        assert!(
-            actual.iter().eq(keys.iter()),
-            "shared key occurs once in order"
-        );
-        let wrong = [adjacency(1), adjacency(2), adjacency(4)];
-        assert_eq!(wrong.len(), keys.iter().count());
-        assert!(
-            !wrong.iter().eq(keys.iter()),
-            "same count cannot close another key set"
-        );
-    }
-}
+mod tests;

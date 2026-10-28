@@ -238,6 +238,8 @@ fn installed_contracts_group_exact_reads_and_retain_every_typed_graph_touch() {
                 Some(scope)
             }
             crate::facade::WorthQueryOperationGraphReadScope::Entity(_)
+            | crate::facade::WorthQueryOperationGraphReadScope::Components(_)
+            | crate::facade::WorthQueryOperationGraphReadScope::DerivedSource(_)
             | crate::facade::WorthQueryOperationGraphReadScope::Relation(_) => None,
         })
         .unwrap();

@@ -20,6 +20,7 @@ mod court;
 #[path = "governed_read/grants.rs"]
 mod grants;
 pub(in super::super) use grants::seed;
+pub(in super::super) use grants::seed_grant;
 
 worth_query_capability_context!(pub WorkflowReadContext in DocumentRetentionSchema);
 worth_query_capability_provenance!(pub WorkflowReadProvenance in DocumentRetentionSchema);
@@ -46,6 +47,18 @@ trait ReadCapability: ApplicationCapabilityMarkerIdentity<Schema = DocumentReten
 }
 impl ReadCapability for SubjectReadCapability {
     const ACTION: &'static str = "read-workflow-subject";
+}
+
+/// The same actual subject grant can bind another installed operation's full input.
+pub(crate) fn subject_contract<C, O, Input>(
+    capability: ApplicationCapabilityRef<DocumentRetentionSchema, C>,
+    operation: ApplicationOperationRef<DocumentRetentionSchema, O, Input>,
+) -> ApplicationCapabilityContract<DocumentRetentionSchema, C, O, Input>
+where
+    O: ApplicationOperationMarkerIdentity<DocumentRetentionSchema>,
+    O::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+{
+    contract::for_input(capability, operation, "read-workflow-subject")
 }
 impl ReadCapability for DefinitionReadCapability {
     const ACTION: &'static str = "enumerate-workflow-definition";
@@ -186,12 +199,7 @@ pub(super) fn declare(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 512)
         .operation_read_field(op, DocumentIdentityField::reference())
-        .capability(
-            contract::read::<SubjectReadCapability, SubjectReadOperation>(
-                SubjectReadCapability::reference(),
-                op,
-            ),
-        );
+        .capability(subject_contract(SubjectReadCapability::reference(), op));
     let op = DefinitionReadOperation::reference();
     let schema = schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())

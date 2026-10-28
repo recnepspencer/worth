@@ -5,17 +5,32 @@ use worth_query_admission::facade::graph_read_access::{
 };
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationContinuationContract, WorthQueryInstalledApplicationLiveContract,
+    WorthQueryInstalledGraphReadContract,
 };
 
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 
 fn runtime_supports(
     layout: &WorthQueryPrimaryGraphLayout,
+    contract: &WorthQueryInstalledGraphReadContract,
     continuation: Option<&WorthQueryInstalledApplicationContinuationContract>,
     live: Option<&WorthQueryInstalledApplicationLiveContract>,
     requirement: &WorthQueryGraphReadAccessRequirementRow,
 ) -> bool {
     match requirement.kind() {
+        WorthQueryGraphReadAccessRequirementKind::AggregateSelection => {
+            match requirement.relation_name() {
+                Some(name) => layout
+                    .relation(name)
+                    .is_some_and(|relation| relation.orbit && relation.from == relation.to),
+                None => contract.component_selection().is_some_and(|meaning| {
+                    layout.component_set(meaning.set()).is_some_and(|set| {
+                        set.member.as_ref() == meaning.member()
+                            && layout.entity_kind(meaning.member()) == Some(set.member_kind)
+                    })
+                }),
+            }
+        }
         WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency
         | WorthQueryGraphReadAccessRequirementKind::ReverseAdjacency => {
             let Some(relation) = requirement.relation_name() else {
@@ -81,6 +96,7 @@ fn runtime_supports(
 }
 
 pub(in crate::domain_computation::primary_graph) fn primary_graph_support_inventory(
+    contract: &WorthQueryInstalledGraphReadContract,
     layout: &WorthQueryPrimaryGraphLayout,
     continuation: Option<&WorthQueryInstalledApplicationContinuationContract>,
     live: Option<&WorthQueryInstalledApplicationLiveContract>,
@@ -89,7 +105,7 @@ pub(in crate::domain_computation::primary_graph) fn primary_graph_support_invent
     let mut rows = Vec::new();
     rows.try_reserve_exact(requirements.rows().len())?;
     for requirement in requirements.rows() {
-        if runtime_supports(layout, continuation, live, requirement) {
+        if runtime_supports(layout, contract, continuation, live, requirement) {
             rows.push(WorthQueryGraphIndexSupportRow::for_supported_requirement(
                 requirement,
             ));

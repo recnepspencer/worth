@@ -1,10 +1,10 @@
 use super::authority_context::PreparedAuthorityScope;
 use super::draft_preparation_phase::record_draft_preparation_phase;
-use super::execution_admission::AdmittedCommitExecution;
+use super::execution_admission::{AdmittedCommitExecution, AdmittedCommitState};
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 
 pub(super) struct PreparedCommitState {
-    pub(super) admitted: AdmittedCommitExecution,
+    pub(super) admitted: AdmittedCommitState,
     pub(super) public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     pub(super) proposal_identity: crate::mvcc::RelationalMutationProposalIdentity,
 }
@@ -27,16 +27,21 @@ impl PreparedCommitExecution {
     pub(super) fn boundary_parts(
         &mut self,
     ) -> (
-        &mut AdmittedCommitExecution,
+        &mut AdmittedCommitState,
         &crate::storage::overlay::WorkingState,
         crate::identity::data::VersionId,
         &crate::mvcc::RelationalMutationProposalIdentity,
+        Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     ) {
         (
             &mut self.state.admitted,
             self.mutation.state(),
             self.state.proposal_identity.proposed_version_id(),
             &self.state.proposal_identity,
+            self.mutation
+                .aggregate
+                .as_ref()
+                .map(|owner| owner.borrow_retained(self.mutation.state())),
         )
     }
 
@@ -52,16 +57,17 @@ impl PreparedCommitExecution {
 pub(super) fn prepare_commit_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut admitted: AdmittedCommitExecution,
+    admitted: AdmittedCommitExecution,
 ) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Draft)?;
+    let (mut admitted, prepared_scope) = admitted.into_parts();
     let PreparedAuthorityScope {
         structural_summary,
         working_state,
         mutation_proposal: (proposal_identity, mutation),
         phase_timing: prepared_timing,
         ..
-    } = match admitted.take_prepared_scope() {
+    } = match prepared_scope {
         Some(scope) => scope,
         None => {
             let draft = super::merge_draft::prepare_merge_draft(execution, runtime, &admitted)?;

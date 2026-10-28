@@ -1,5 +1,7 @@
 mod facade;
 pub use facade::*;
+mod aggregate_identity;
+mod aggregate_observation;
 mod aggregate_projection;
 pub(crate) mod application_attempt;
 mod application_branch;
@@ -18,6 +20,7 @@ pub(in crate::domain_computation) use application_output_demand::RequiredOutputD
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputExecution;
 mod application_program;
 pub(crate) mod application_query;
+pub(crate) mod application_resource;
 mod application_runtime;
 pub(crate) mod authenticated_principal;
 mod authentication_clock;
@@ -47,6 +50,9 @@ mod live_delivery;
 mod managed_bridge;
 mod merge_unique_values;
 mod read_observation;
+mod source_facts;
+mod source_read_equivalence;
+mod source_read_verification;
 mod structural_walk;
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod fact_verification_observation;
@@ -73,10 +79,12 @@ pub(in crate::domain_computation) use application_attempt::retained_decision_fac
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
+mod component_selection;
 mod request_local;
 mod resolution;
 mod resolution_denial;
 mod root;
+mod root_path_selection;
 mod schema_layout;
 mod typed_bootstrap;
 mod value_decode;
@@ -180,3 +188,9 @@ pub use observations::principal_target_reads_on_this_thread_for_test;
 
 pub use application_runtime::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation) mod selected_read_indexes;
+
+mod admitted_capture;
+pub(crate) mod causal_inspection;
+mod record_reservations;
+
+pub(in crate::domain_computation) mod source_disclosure;

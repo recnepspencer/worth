@@ -3,13 +3,19 @@ use worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial;
 use super::{WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure};
 
 impl WorthQueryApplicationObservedFact {
-    pub(super) fn comparison(
+    pub(in crate::domain_computation::primary_graph) fn comparison(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, WorthQuerySourceCurrentnessFailure> {
         match self {
+            Self::ComponentSelection { observation } => {
+                observation.remains_equal(runtime, execution, snapshot, None)
+            }
+            Self::Aggregate { observation } => {
+                observation.remains_equal(runtime, execution, snapshot, None)
+            }
             Self::StructuralWalk { observation } => {
                 observation.remains_equal(runtime, execution, snapshot)
             }

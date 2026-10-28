@@ -79,10 +79,18 @@ impl<'runtime> StructuralAspectStateView<'runtime> {
 
 #[derive(Clone)]
 pub struct StructuralRelationView<'runtime> {
+    pub(crate) structural_source: Option<(
+        crate::schema::SchemaRegistryCustody,
+        crate::validation::engine::InvariantSourceAffinity,
+    )>,
     state_view: InvariantStateView<'runtime>,
     execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     work: super::CustomInvariantWorkMeter,
     access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+    aggregate: Option<(
+        crate::aggregate_identity::AggregateInvocation<'runtime>,
+        bool,
+    )>,
     #[cfg(test)]
     walk_observer: Option<std::sync::Arc<dyn Fn(StructuralWalkEventForTest) + Send + Sync>>,
 }
@@ -94,11 +102,37 @@ pub(super) enum StructuralWalkEventForTest {
 }
 
 impl<'runtime> StructuralRelationView<'runtime> {
+    pub fn aggregates(&self) -> crate::aggregate_identity::AggregateReadPort<'_, 'runtime> {
+        crate::aggregate_identity::AggregateReadPort::new(self)
+    }
+
+    pub(crate) fn with_aggregate(
+        mut self,
+        source: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
+        committed: bool,
+    ) -> Self {
+        self.aggregate = source.map(|source| (source, committed));
+        self
+    }
+
+    pub(crate) fn aggregate_read_parts(
+        &self,
+    ) -> (
+        &InvariantStateView<'runtime>,
+        worth_execution::ExecutionRequest<'runtime, 'runtime>,
+        Option<(
+            crate::aggregate_identity::AggregateInvocation<'runtime>,
+            bool,
+        )>,
+    ) {
+        (&self.state_view, self.execution, self.aggregate)
+    }
+
     pub fn read_budget(&self) -> super::CustomInvariantReadBudget<'_> {
         super::CustomInvariantReadBudget::new(self.execution, &self.work)
     }
 
-    pub(super) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
+    pub(crate) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
         self.work.clone()
     }
 
@@ -113,6 +147,8 @@ impl<'runtime> StructuralRelationView<'runtime> {
             execution,
             work,
             access,
+            structural_source: None,
+            aggregate: None,
             #[cfg(test)]
             walk_observer: None,
         }

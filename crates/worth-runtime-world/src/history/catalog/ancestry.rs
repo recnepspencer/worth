@@ -1,4 +1,4 @@
-//! Exact ancestor selection through the retained owner parent chain.
+//! One ancestry walker with explicit exact or retained parent evidence.
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
@@ -28,7 +28,9 @@ impl RetainedCompositeAncestor {
         &self.target
     }
 
-    /// Parent links traversed from the selected target to this source.
+    /// Parent edges traversed under the selected exact or retained path.
+    /// In retained selection a retirement splice is one edge; its intermediate
+    /// contents are not selected or disclosed.
     /// The source and target admission lookups are separate from this count.
     pub const fn parent_links_followed(&self) -> usize {
         self.parent_links_followed
@@ -38,8 +40,8 @@ impl RetainedCompositeAncestor {
 /// Why a retained source could not be established on the target's ancestry.
 /// `NotAncestor` establishes a different lineage; `SelectionLimitReached`
 /// means the requested work ended before that question was resolved.
-/// Unavailable entries and retired gaps require retained history to be present
-/// before selection can succeed.
+/// Unavailable endpoints or unproven parent gaps refuse. Owner-recorded
+/// retirement splices prove ancestry without granting retired contents.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompositeAncestorSelectionDenial {
     SourceUnavailable,
@@ -47,6 +49,8 @@ pub enum CompositeAncestorSelectionDenial {
     NotAncestor,
     SelectionLimitReached,
     RetiredHistoryGap,
+    Allocation(worth_execution::ExecutionAllocationDenial),
+    Request(worth_execution::WorkCeilingDenial),
     Catalog(CompositeHistoryCatalogDenial),
 }
 
@@ -56,11 +60,19 @@ impl From<CompositeHistoryCatalogDenial> for CompositeAncestorSelectionDenial {
     }
 }
 
+#[derive(Clone, Copy)]
+pub(crate) enum AncestorSelectionPath {
+    Exact,
+    Retained,
+}
+
 impl CompositeHistoryCatalog {
-    /// O(parent links from target to source or retained root) time, O(1) space.
-    /// Exact catalog lookups follow only this ancestry, including fork parents.
-    pub(crate) fn select_retained_ancestor(
+    /// O(visited ancestry positions) time, O(1) space. Exact selection follows
+    /// raw parents and refuses retired gaps. Retained selection may use only
+    /// owner-recorded splices, proving endpoint ancestry without missing contents.
+    pub(crate) fn select_ancestor(
         &self,
+        path: AncestorSelectionPath,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &CompositeCommitIdentity,
         source: &CompositeCommitIdentity,
@@ -111,9 +123,18 @@ impl CompositeHistoryCatalog {
             visited = visited
                 .checked_add(1)
                 .ok_or(CompositeHistoryCatalogDenial::ArithmeticOverflow)?;
-            current = effective_parent(&state, entry.commit())
-                .map(|(parent, _)| parent)
-                .ok_or(CompositeAncestorSelectionDenial::NotAncestor)?;
+            let parent = match path {
+                AncestorSelectionPath::Exact => match entry.commit().parent() {
+                    crate::history::CompositeCommitParent::Ordinary(parent) => {
+                        Some(parent.commit().clone())
+                    }
+                    crate::history::CompositeCommitParent::Root => None,
+                },
+                AncestorSelectionPath::Retained => {
+                    effective_parent(&state, entry.commit()).map(|p| p.0)
+                }
+            };
+            current = parent.ok_or(CompositeAncestorSelectionDenial::NotAncestor)?;
         }
     }
 }

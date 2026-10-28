@@ -19,9 +19,9 @@
 
 pub use worth_query_declaration::facade::{
     application_aftermath, application_capability, application_operation, application_program,
-    application_query, application_schema, authentication, authoring, binding, branch,
-    canonicalization, collection, diagnostics, identity, identity_authority, portable_identity,
-    schema_view, typed, validation, view_declaration,
+    application_query, application_resource, application_schema, authentication, authoring,
+    binding, branch, canonicalization, collection, diagnostics, identity, identity_authority,
+    portable_identity, schema_view, typed, validation, view_declaration,
 };
 pub use worth_query_declaration::{
     worth_query_ability, worth_query_application, worth_query_application_contribution,
@@ -35,8 +35,8 @@ pub use worth_query_declaration::{
     worth_query_operation_reads, worth_query_operation_requires, worth_query_operation_unlinks,
     worth_query_operation_writes, worth_query_policy, worth_query_portable_type,
     worth_query_principal_binding, worth_query_query_binding, worth_query_relation,
-    worth_query_structured_value_binding, worth_query_unit, worth_query_value_binding,
-    worth_query_workflow,
+    worth_query_relation_field, worth_query_structured_value_binding, worth_query_unit,
+    worth_query_value_binding, worth_query_workflow,
 };
 
 /// Canonical proof-carrying query artifact for declaration consumers.

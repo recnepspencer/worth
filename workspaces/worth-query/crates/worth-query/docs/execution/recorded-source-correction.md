@@ -15,6 +15,10 @@ secondary to `19`, and reverses the first operation. Readback becomes primary
 `5` and secondary `19`. Its fork and authority courts use the same installed
 application and ordinary request API.
 
+[Record and aspect audit history](../capabilities/record-and-aspect-history.md)
+reports canonical changes to disclosed record generations. This correction route
+owns declared inverse/reapplication meaning and the publication of those actions.
+
 ## Declare the corrective action and disclosure query
 
 Implement `decl::application_aftermath::ApplicationCorrectionBinding<Schema>`
@@ -92,7 +96,9 @@ example permits one result because its query addresses one unique number.
 Choose bounds from the application's history and query contracts.
 
 Selection requires current disclosure plus retained native ancestry and source
-material. A copied receipt identifies the same performed source in its owning
+material. The ancestry proof may follow owner-recorded retirement splices
+between retained endpoints; this grants no access to retired intermediate
+contents, and exact history pages still refuse missing raw parents. A copied receipt identifies the same performed source in its owning
 runtime. Keep the returned source selection alive for the correction and its
 retries: it owns the source's history pin while operation owners can close
 normally. Each preparation observes the target again and checks current authority.

@@ -96,7 +96,8 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
         "../../../../worth-query-execution/src/domain_computation/primary_graph/application_attempt/precondition_binding/canonical_identity.rs"
     );
     let evidence_slot =
-        include_str!("../../../../worth-query/src/evidence_identity/foundational.rs");
+        include_str!("../../../../worth-query-execution/src/domain_computation/evidence_identity/foundational.rs");
+
     let capability = concat!(
         include_str!(
             "../../../../worth-query/src/domain_capabilities/payloads/invariant_capability/mod.rs"
@@ -266,6 +267,46 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         // semantic identities; keep this exception tied to its exact domain.
         assert!(source.contains("worth-query:root-selection-source:v2"));
         assert!(!source.contains("prepare_canonical_basis_sequence"));
+        return;
+    }
+    for (owner, domain) in [
+        (
+            "application_query/observed_source/root_selection/orbit.rs",
+            "declared-whole-orbit:v1",
+        ),
+        (
+            "application_query/observed_source/root_selection/components.rs",
+            "declared-components:v1",
+        ),
+    ] {
+        if !path.ends_with(Path::new(owner)) {
+            continue;
+        }
+        // These children only append descriptors to their parent's observation
+        // witness. They may not derive semantic identities or another digest.
+        assert!(source.contains(domain));
+        assert!(source.contains("fn append_descriptor(&self, digest: &mut Sha256)"));
+        for forbidden in [
+            "Sha256::new",
+            ".finalize(",
+            "prepare_canonical_basis_sequence",
+            "hash_parts",
+            "digest_hash_parts",
+            "execution_digest",
+            "admission_digest",
+            "publication_digest",
+            "checkpoint_source_identity",
+            "for_sequence_with_budget",
+            "canonicalization().digest().derive",
+            ".render_support_hex()",
+            ".render_hex()",
+        ] {
+            assert!(
+                !source.contains(forbidden),
+                "{} derived an identity instead of appending observation evidence: {forbidden}",
+                path.display()
+            );
+        }
         return;
     }
     for forbidden in [

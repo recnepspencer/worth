@@ -85,6 +85,7 @@ fn native_reference_without_matching_output_entry_is_refused() {
         client_key: ClientKey::raw("missing-entry"),
     });
     let effects = [Effect::CreateRelation {
+        fields: Default::default(),
         kind: layout.workflow().operation_output.target,
         key: "native-target".into(),
         from: entry.clone(),

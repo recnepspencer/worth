@@ -9,11 +9,11 @@ use super::{
 };
 use crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
 
-mod closure;
+mod aggregate;
+mod components;
 mod evidence;
-mod guards;
+mod orbit;
 mod path_union;
-mod source_allocation;
 mod step_reads;
 
 use evidence::RootPathSourceBuilder;
@@ -37,9 +37,6 @@ pub(super) struct BoundedRootSelection {
     pub(super) reads: WorthQueryInvariantProjectionWork,
     pub(super) root_path_steps:
         Option<std::sync::Arc<super::super::access_receipt::RootPathReadEvidence>>,
-    // Last: every candidate/root map drops before its original metadata grant.
-    pub(super) _source_allocation:
-        Option<std::sync::Arc<super::super::observed_source::RootPathAllocation>>,
 }
 
 mod work;
@@ -58,6 +55,14 @@ pub(super) fn select_bounded_roots(
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     interruption.checkpoint(plan.name)?;
     let contract = plan.contract;
+    if contract.component_selection().is_some() {
+        let mut work = RootSelectionWork::new(interruption, spent);
+        return components::select(execution, runtime, graph, plan, &mut work);
+    }
+    if contract.orbit().is_some() {
+        let mut work = RootSelectionWork::new(interruption, spent);
+        return orbit::select(execution, runtime, graph, plan, &mut work);
+    }
     if !contract.root_paths().is_empty() {
         return path_union::select_root_path_union(
             execution,
@@ -94,7 +99,6 @@ pub(super) fn select_bounded_roots(
                 predicate_index_generation: None,
                 reads: WorthQueryInvariantProjectionWork::default(),
                 root_path_steps: None,
-                _source_allocation: None,
             })
         }
         [predicate] => select_scoped_root(
@@ -222,6 +226,5 @@ fn select_scoped_root(
         predicate_index_generation: None,
         reads: work.reads,
         root_path_steps: work.take_steps(),
-        _source_allocation: work.source_allocation.clone(),
     })
 }

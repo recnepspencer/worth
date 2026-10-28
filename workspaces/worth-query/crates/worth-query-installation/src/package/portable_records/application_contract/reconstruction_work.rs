@@ -3,6 +3,7 @@
 use worth_foundational::facade::{AspectContract, AspectShape};
 
 use super::*;
+mod component_scope;
 mod external_emission;
 mod observations;
 mod query_context;
@@ -223,6 +224,15 @@ fn observe_graph_read(
 ) {
     work.observe_fixed(1);
     match scope {
+        WorthQueryPortableOperationGraphReadScope::DerivedSource { schema, relation } => {
+            work.observe_fixed(1); // Closed transport version.
+            work.observe_text(schema);
+            work.observe_text(relation);
+        }
+        WorthQueryPortableOperationGraphReadScope::Components { schema, definition } => {
+            work.observe_text(schema);
+            work.observe_component_scope(definition);
+        }
         WorthQueryPortableOperationGraphReadScope::Entity { schema, entity } => {
             work.observe_text(schema);
             work.observe_text(entity);
@@ -264,6 +274,22 @@ fn observe_touch(
 ) {
     work.observe_fixed(1);
     match scope {
+        WorthQueryPortableOperationTouchScope::InitializeRelationField {
+            schema,
+            relation,
+            from,
+            to,
+            contract,
+            field_path,
+        } => {
+            for text in [schema, relation, from, to] {
+                work.observe_text(text);
+            }
+            work.observe_contract(contract);
+            for field in field_path.fields() {
+                work.observe_text(field.as_str());
+            }
+        }
         WorthQueryPortableOperationTouchScope::CreateEntity { schema, entity }
         | WorthQueryPortableOperationTouchScope::DeleteEntity { schema, entity } => {
             work.observe_text(schema);

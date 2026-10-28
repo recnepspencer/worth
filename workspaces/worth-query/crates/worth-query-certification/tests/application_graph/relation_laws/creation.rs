@@ -18,8 +18,9 @@ pub struct CreateNodeInput {
     pub in_context: bool,
     pub link: bool,
     pub backlink: bool,
+    pub self_cycle: bool,
 }
-worth_query_structured_value_binding!(pub CreateNodeInputBinding for CreateNodeInput { identity: "worth.query.relation-laws.create-node.v2" });
+worth_query_structured_value_binding!(pub CreateNodeInputBinding for CreateNodeInput { identity: "worth.query.relation-laws.create-node.v3" });
 use super::operation::{Edited, EditedBinding, GraphDenial, GraphDenialBinding};
 
 pub struct CreateNode;
@@ -66,7 +67,7 @@ impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for CreateBinding<
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     type SourceExpectation = NoApplicationMutationSource;
     const IDENTITY: &'static str = "worth.query.relation-laws.create-binding.v1";
-    const HANDLER_IDENTITY: &'static str = "worth.query.relation-laws.create-handler.v2";
+    const HANDLER_IDENTITY: &'static str = "worth.query.relation-laws.create-handler.v3";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.relation-laws.create-command.v1";
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
@@ -140,6 +141,14 @@ impl<L: LawPolicy> OperationHandler<GraphSchema<L>, CreateBinding<L>> for Create
                 writer.create_entity(Node::reference(), key)?
             };
             writer.initialize_field(&target, NodeKey::reference(), input.key)?;
+            if input.self_cycle {
+                writer.link(
+                    Precedes::reference(),
+                    format!("self-edge-{}", input.key),
+                    &target,
+                    &target,
+                )?;
+            }
             if input.link {
                 writer.link(
                     Precedes::reference(),

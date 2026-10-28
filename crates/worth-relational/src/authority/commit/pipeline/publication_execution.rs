@@ -10,7 +10,7 @@ use preparation::{
 };
 
 pub(crate) struct PublishedCommitExecution {
-    admitted: super::execution_admission::AdmittedCommitExecution,
+    admitted: super::execution_admission::AdmittedCommitState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     version_id: crate::identity::data::VersionId,
@@ -30,7 +30,7 @@ impl PublishedCommitExecution {
     pub(super) fn into_parts(
         self,
     ) -> (
-        super::execution_admission::AdmittedCommitExecution,
+        super::execution_admission::AdmittedCommitState,
         crate::transactions::data::CommitStructuralSummary,
         Vec<crate::validation::engine::InvariantExecutionResult>,
         crate::identity::data::VersionId,
@@ -225,7 +225,7 @@ fn publish_prepared_trace_diagnostics(
 }
 
 pub(crate) struct PreparedCommitPublicationExecution {
-    admitted: super::execution_admission::AdmittedCommitExecution,
+    admitted: super::execution_admission::AdmittedCommitState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     version_id: crate::identity::data::VersionId,
@@ -241,7 +241,7 @@ pub(crate) struct PreparedCommitPublicationExecution {
 }
 
 pub(crate) struct PreparedCommitPublicationCompletion {
-    admitted: super::execution_admission::AdmittedCommitExecution,
+    admitted: super::execution_admission::AdmittedCommitState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     version_id: crate::identity::data::VersionId,

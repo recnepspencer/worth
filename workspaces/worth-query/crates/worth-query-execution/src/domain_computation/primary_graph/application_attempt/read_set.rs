@@ -58,6 +58,8 @@ pub(in crate::domain_computation::primary_graph) use decision_reuse::{
 pub(in crate::domain_computation::primary_graph) use fact_observation::observe_admitted_fact;
 mod handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
+mod aggregate;
+mod components;
 mod observation_admission;
 mod observations;
 mod projected_completion;
@@ -344,13 +346,9 @@ where
             projection.into_lease_and_realized_scope();
         // A read whose failure the decision swallowed left an outcome its fact
         // does not hold, so no fact can stand for it.
-        let (expected_facts, computation_reads) =
-            decision_reads.into_expected().map_err(|failed| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-                    format!("{failed:?}"),
-                )
-            })?;
+        let (expected_facts, computation_reads) = decision_reads
+            .into_expected(execution)
+            .map_err(|failed| failed.into_attempt_denial(admission.operation()))?;
         let mut admission = admission;
         let admitted_source_facts = validate_source_facts(execution, &mut admission, &lease)?;
         let source_facts = merge_source_facts(

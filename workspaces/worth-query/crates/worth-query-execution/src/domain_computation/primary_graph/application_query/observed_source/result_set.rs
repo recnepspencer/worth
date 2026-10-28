@@ -33,6 +33,29 @@ impl<Query> WorthQueryObservedResultSet<Query> {
         &self.source
     }
 
+    pub(in crate::domain_computation::primary_graph::application_query) fn declared_orbit(
+        &self,
+    ) -> Option<&super::DeclaredOrbitSelection> {
+        self.source
+            .source_meaning
+            .footprint()
+            .root_selection
+            .as_ref()?
+            .orbit
+            .as_ref()
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn declared_components(
+        &self,
+    ) -> Option<&super::DeclaredComponentSelection> {
+        self.source
+            .source_meaning
+            .footprint()
+            .root_selection
+            .as_ref()?
+            .components
+            .as_ref()
+    }
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn selection_for_test(
         &self,

@@ -10,6 +10,15 @@ pub(super) fn invariant_violation_witness_key(
     fields: &InvariantViolationFields,
 ) -> InvariantWitnessKey {
     let key = match fields {
+        InvariantViolationFields::DerivedRelationGraph {
+            definition,
+            violation,
+        } => format!(
+            "derived_graph:{definition:?}:{}:{:?}:{:?}",
+            violation.law.as_str(),
+            violation.member,
+            violation.counterpart
+        ),
         InvariantViolationFields::None => format!("none:{code:?}"),
         InvariantViolationFields::MergedIntentLimit {
             merged_intent_count,

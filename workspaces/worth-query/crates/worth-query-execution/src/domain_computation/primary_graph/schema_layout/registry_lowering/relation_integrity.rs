@@ -21,6 +21,11 @@ pub(super) fn lower_relation_integrity(
     integrity: &ApplicationRelationIntegrityRecord,
     entity_kinds: Option<&BTreeMap<String, KindId>>,
 ) -> Result<RelationIntegrityDeclarations, super::WorthQueryPrimaryGraphInstallationDenial> {
+    if integrity.orbit && to_kinds.as_slice() != [from_kind] {
+        return Err(super::super::installation_primitives::invalid_member(
+            relation,
+        ));
+    }
     let endpoints = vec![EndpointKindContractDeclaration {
         contract_id: ContractId::new(format!("{relation}:endpoints")),
         allowed_source_kinds: vec![from_kind],
@@ -51,7 +56,20 @@ pub(super) fn lower_relation_integrity(
     let minimum = lower_minimum(relation, from_kind, integrity, entity_kinds)?;
     Ok(RelationIntegrityDeclarations::new(
         endpoints,
-        cardinality.into_iter().collect(),
+        cardinality
+            .into_iter()
+            .chain(integrity.orbit.then(|| CardinalityContractDeclaration {
+                contract_id: ContractId::new(format!("{relation}:orbit")),
+                source_min: Some(1),
+                source_max: Some(1),
+                target_min: Some(1),
+                target_max: Some(1),
+                pair_min: None,
+                pair_max: None,
+                pair_min_semantics: PairMinimumSemantics::ObservedDirectedPairs,
+                minimum_enforcement: MinimumCardinalityEnforcement::CommitBoundary,
+            }))
+            .collect(),
         integrity
             .unique
             .map(|scope| UniquenessContractDeclaration {

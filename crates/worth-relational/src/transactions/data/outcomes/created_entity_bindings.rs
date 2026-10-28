@@ -23,6 +23,35 @@ pub(crate) struct CommitCreatedEntityBindings {
 }
 
 impl CommitCreatedEntityBindings {
+    /// Adopt correspondence minted by the same commit's private consequence apply.
+    pub(crate) fn append_owned(
+        &mut self,
+        mut generated: Self,
+    ) -> Result<(), crate::transactions::data::CommitConflict> {
+        if generated
+            .by_exact_reference
+            .keys()
+            .any(|key| self.by_exact_reference.contains_key(key))
+            || generated
+                .by_stable_reference
+                .keys()
+                .any(|key| self.by_stable_reference.contains_key(key))
+        {
+            return Err(crate::transactions::data::CommitConflict::new(
+                crate::transactions::data::ConflictClass::KindSchemaMismatch {
+                    detail:
+                        "Native consequence create correspondence collides with an earlier apply"
+                            .into(),
+                },
+            ));
+        }
+        self.by_exact_reference
+            .append(&mut generated.by_exact_reference);
+        self.by_stable_reference
+            .append(&mut generated.by_stable_reference);
+        Ok(())
+    }
+
     pub(crate) fn from_owner_map(
         by_create_reference: BTreeMap<CreatedEntityRef, EntityId>,
         symbols: &StringInterner,

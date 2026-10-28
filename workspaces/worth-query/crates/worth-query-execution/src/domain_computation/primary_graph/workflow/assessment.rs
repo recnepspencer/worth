@@ -154,6 +154,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_assessment_fa
     })?;
     dependency::visit_dependency_facts(layout, &evidence, meaning, &mut emit)?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.transition_assessment_evidence_relation,
         key: "transition-assessment-evidence".to_owned(),
         from: EntityReference::Created(transition.clone()),

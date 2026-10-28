@@ -14,11 +14,11 @@ use super::{
 };
 
 impl RecordIdentitySubsystem {
-    /// Release checkpoint-restored reservations that no replayed canonical
-    /// allocation consumed. Reconstructing the reservation capabilities and
-    /// dropping them preserves the ordinary origin-sensitive RAII behavior:
-    /// reclaimed slots return to reuse while append-frontier gaps stay burned.
-    pub(crate) fn release_unconsumed_restored_reservations(&self) {
+    /// Release copied/restored pending entries without a live owning handle.
+    /// A detached fork calls this on its own copied state; recovery calls it
+    /// after replay consumed its canonical reservations. Ordinary origin-sensitive
+    /// RAII returns reclaimed slots while append-frontier gaps stay burned.
+    pub(crate) fn release_unowned_reservations(&self) {
         let reservations = {
             let state = self.lock();
             state
@@ -78,7 +78,7 @@ impl RecordIdentitySubsystem {
     }
 
     pub(crate) fn reusable_snapshot(&self) -> Vec<RecordSlotKey> {
-        self.lock().reusable.iter().copied().collect()
+        self.lock().reusable.iter().map(|(key, ())| *key).collect()
     }
 
     pub(crate) fn frontier_snapshot(&self) -> Vec<(RecordAllocationClass, PartitionId, usize)> {
@@ -188,7 +188,7 @@ impl RecordIdentitySubsystem {
                 }
             }
             RecordAllocationOrigin::Reclaimed { .. } => {
-                if state.reusable.contains(&key) {
+                if state.reusable.contains_key(&key) {
                     return Err("durable reclaimed reservation is also reusable");
                 }
             }
@@ -254,7 +254,7 @@ impl RecordIdentitySubsystem {
         }
         let reservation_origin = match origin {
             RecordAllocationOrigin::Reclaimed { .. } => {
-                if !state.reusable.remove(&(class, partition_id, slot)) {
+                if !state.reusable.remove(&(class, partition_id, slot)).0 {
                     return Err(RecordAllocationDenial::ReplaySlotUnavailable {
                         ordinal,
                         class,
@@ -296,6 +296,7 @@ impl RecordIdentitySubsystem {
             (class, partition_id, slot),
             PendingRecordReservation { generation, origin },
         );
+        super::observation::reserved(&self.state, class, partition_id, slot, generation);
         Ok(RecordSlotReservation::new(
             Arc::clone(&self.state),
             class,

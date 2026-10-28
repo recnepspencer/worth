@@ -46,6 +46,7 @@ mod workflow_macro;
 #[macro_use]
 mod feature_spec_macro;
 mod application_query;
+mod application_resource;
 #[macro_use]
 mod application_contribution_macro;
 #[macro_use]
@@ -65,6 +66,8 @@ mod application_capability_macro;
 mod application_schema_macro;
 #[macro_use]
 mod application_field_macro;
+#[macro_use]
+mod application_relation_field_macro;
 #[macro_use]
 mod application_relation_macro;
 #[macro_use]

@@ -45,6 +45,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let (parameters, controls) =
             self.prepare_application_query_source_readmission(query, access, retained, controls)?;
-        self.finish_application_query_readmission(execution, query, access, parameters, controls)
+        self.finish_application_query_readmission(
+            execution, query, access, parameters, controls, None,
+        )
     }
 }

@@ -95,7 +95,9 @@ fn decode_hex(value: String) -> Result<Vec<u8>, Denial> {
     }
     value
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             let text = std::str::from_utf8(pair).map_err(|_| Denial::Malformed)?;
             u8::from_str_radix(text, 16).map_err(|_| Denial::Malformed)

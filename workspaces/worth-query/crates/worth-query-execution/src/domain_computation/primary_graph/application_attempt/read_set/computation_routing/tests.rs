@@ -48,6 +48,45 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
         partitions(&[7, 9]),
         "a consumed fact's reverse index must retain every consuming partition"
     );
+    let adjacency = |limit| WorthQueryApplicationFactKey::Adjacency {
+        relation: "owner".into(),
+        anchor: entity(1),
+        direction: super::super::super::WorthQueryApplicationAdjacencyDirection::Incoming,
+        maximum_work_units: limit,
+    };
+    let mut attribution = ComputationFactAttribution::default();
+    attribution.record(adjacency(2), ComputationRead::Membership);
+    attribution.record(adjacency(5), item(11));
+    attribution.record(adjacency(9), partition(7));
+    attribution.record(adjacency(3), partition(9));
+    let mut handler = std::collections::BTreeSet::from([adjacency(4)]);
+    let host = crate::test_request_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    attribution
+        .normalize_adjacencies(&mut handler, &execution)
+        .unwrap();
+    assert_eq!(handler, std::collections::BTreeSet::from([adjacency(9)]));
+    let observed = BTreeMap::from([(
+        adjacency(9),
+        WorthQueryApplicationObservedFact::Adjacency {
+            relation_kind: KindId::new(3),
+            anchor: entity(1),
+            direction: super::super::super::WorthQueryApplicationAdjacencyDirection::Incoming,
+            maximum_work_units: 9,
+            relations: Vec::new(),
+        },
+    )]);
+    let sealed = SealedComputationFacts::at_seal(attribution, &observed);
+    let (_, _, readers) = sealed.facts().next().unwrap();
+    assert_eq!(
+        readers.reads().collect::<Vec<_>>(),
+        [
+            ComputationRead::Membership,
+            item(11),
+            partition(7),
+            partition(9),
+        ]
+    );
 }
 
 /// Seals the facts over the keys `1..=count`, each observed as an entity of

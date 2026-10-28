@@ -43,6 +43,8 @@ pub struct WorthQueryReadGraphRelationView<'a> {
     /// Repeats the endorelation until its frontier is exhausted. `depth`
     /// remains authored/planning metadata and never bounds this closure.
     pub complete_closure: bool,
+    /// Selects a complete Native aggregate by the admitted scope member.
+    pub aggregate_selection: bool,
     pub cardinality: ApplicationQueryCardinality,
     pub depth: usize,
 }
@@ -90,6 +92,12 @@ pub trait WorthQueryReadGraphPlanningContract {
     fn projection(&self, index: usize) -> Option<WorthQueryReadGraphProjectionView<'_>>;
     fn relation_count(&self) -> usize;
     fn relation(&self, index: usize) -> Option<WorthQueryReadGraphRelationView<'_>>;
+    fn component_selection(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_query::ApplicationQueryComponentMeaning>
+    {
+        None
+    }
     fn root_union_dedup_required(&self) -> bool {
         false
     }
@@ -146,6 +154,12 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphPlanningPre
         relation(self.meaning, index)
     }
 
+    fn component_selection(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_query::ApplicationQueryComponentMeaning>
+    {
+        self.meaning.component_selection.as_deref()
+    }
     fn root_union_dedup_required(&self) -> bool {
         !self.meaning.root_paths.is_empty()
     }
@@ -208,6 +222,12 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphReadContrac
         relation(self.meaning(), index)
     }
 
+    fn component_selection(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_query::ApplicationQueryComponentMeaning>
+    {
+        self.component_selection()
+    }
     fn root_union_dedup_required(&self) -> bool {
         !self.root_paths().is_empty()
     }

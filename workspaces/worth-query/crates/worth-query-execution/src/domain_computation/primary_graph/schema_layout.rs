@@ -10,23 +10,31 @@ use worth_relational::facade::schema::RelationalSchemaRegistry;
 
 use super::WorthQueryPrimaryGraphInstallationDenial;
 
+mod aggregate_identity;
+pub(in crate::domain_computation::primary_graph) use aggregate_identity::ComponentSetLayout;
 mod application_layout_lowering;
 mod authorization_selectors;
 mod capability_grant_join;
 mod continuation_ordering;
+mod derived_relation;
 mod equality_fields;
 mod field_optionality;
 mod installation_primitives;
+mod kind_lookup;
+mod member_domain;
+pub(in crate::domain_computation::primary_graph) use member_domain::MemberDomainBinding;
 mod native_outputs;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
 mod principal_binding;
 mod program_activation;
+mod projected_member_domain;
 mod provider_aftermath_causality;
 mod provider_dispatch_outbox;
 mod provider_idempotency;
 mod provider_inbound_completion;
 mod registry_lowering;
+mod relation_payload;
 mod signed_entities;
 mod signing_lifecycle;
 mod support_admission;
@@ -60,7 +68,7 @@ pub(super) use provider_idempotency::WorthQueryProviderIdempotencyLayout;
 pub(in crate::domain_computation::primary_graph) use provider_inbound_completion::WorthQueryInboundCompletionLayout;
 use registry_lowering::{
     lower_application_contract_bindings, lower_kind_ids, next_provider_kind_id,
-    relational_schema_basis,
+    register_application_relation, relational_schema_basis,
 };
 pub(in crate::domain_computation::primary_graph) use registry_lowering::{
     register_entity, register_relation, register_relation_to_kinds,
@@ -72,12 +80,16 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,
     entity_kinds: BTreeMap<String, KindId>,
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
+    component_sets: BTreeMap<String, ComponentSetLayout>,
+    derived_relations: BTreeMap<String, derived_relation::DerivedRelationLayout>,
+    projected_domains: BTreeMap<String, projected_member_domain::ProjectedMemberDomainLayout>,
     application_entity_kinds: BTreeSet<KindId>,
     signing: signed_entities::SignedEntityLayout,
     pub(in crate::domain_computation::primary_graph) signing_lifecycle:
         signing_lifecycle::SigningLifecycleLayout,
     application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
+    relation_payload: relation_payload::ApplicationRelationPayloadLayout,
     unique_fields: unique_fields::WorthQueryUniqueFieldNames,
     aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>>,
     equality_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
@@ -99,6 +111,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryRelationLayout {
     pub(in crate::domain_computation) from: KindId,
     pub(in crate::domain_computation) to: KindId,
     pub(in crate::domain_computation) source_max: Option<u64>,
+    pub(in crate::domain_computation) orbit: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -124,7 +137,10 @@ impl WorthQueryPrimaryGraphLayout {
         let mut aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>> =
             BTreeMap::new();
         let lowered_contracts = lower_application_contract_bindings(native_contracts);
+        let relation_payload =
+            relation_payload::ApplicationRelationPayloadLayout::lower(native_contracts)?;
         let mut contracts_by_entity = lowered_contracts.by_entity;
+        let mut contracts_by_relation = lowered_contracts.by_relation;
 
         for (entity, kind_id) in &entity_kinds {
             let aspects = contracts_by_entity.remove(entity).unwrap_or_default();
@@ -153,7 +169,7 @@ impl WorthQueryPrimaryGraphLayout {
             else {
                 continue;
             };
-            registry = register_relation(
+            registry = register_application_relation(
                 registry,
                 &schema_id,
                 schema_version_id,
@@ -162,7 +178,8 @@ impl WorthQueryPrimaryGraphLayout {
                 required_kind(&entity_kinds, from)?,
                 required_kind(&entity_kinds, to)?,
                 integrity,
-                Some(&entity_kinds),
+                &entity_kinds,
+                contracts_by_relation.remove(relation).unwrap_or_default(),
             )?;
         }
         let provider_kind = next_provider_kind_id(
@@ -179,6 +196,29 @@ impl WorthQueryPrimaryGraphLayout {
             entity_kinds.values().copied().collect(),
         )?;
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
+        let (registry, projected_domains) = projected_member_domain::lower(
+            registry,
+            schema,
+            (&schema_id, schema_version_id),
+            &entity_kinds,
+        )?;
+        let (registry, derived_relations) = derived_relation::lower(
+            registry,
+            schema,
+            (&schema_id, schema_version_id),
+            &entity_kinds,
+            &relation_kinds,
+            &projected_domains,
+        )?;
+        let (registry, component_sets) = aggregate_identity::lower(
+            registry,
+            schema,
+            native_contracts,
+            &schema_id,
+            schema_version_id,
+            &entity_kinds,
+            &relation_kinds,
+        )?;
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
         let application_entity_kinds = entity_kinds.values().copied().collect();
         let signing = signed_entities::lower(schema, &entity_kinds)?;
@@ -209,11 +249,15 @@ impl WorthQueryPrimaryGraphLayout {
                 authorization_selectors,
                 entity_kinds,
                 relation_kinds: relation_layouts,
+                component_sets,
+                derived_relations,
+                projected_domains,
                 application_entity_kinds,
                 signing,
                 signing_lifecycle,
                 application_relation_kinds,
                 fields,
+                relation_payload,
                 unique_fields,
                 aspect_contracts,
                 equality_field_keys,
@@ -232,10 +276,6 @@ impl WorthQueryPrimaryGraphLayout {
         ))
     }
 
-    pub(in crate::domain_computation) fn entity_kind(&self, entity: &str) -> Option<KindId> {
-        self.entity_kinds.get(entity).copied()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn application_relation_kinds(
         &self,
     ) -> impl Iterator<Item = KindId> + '_ {
@@ -246,26 +286,6 @@ impl WorthQueryPrimaryGraphLayout {
         &self,
     ) -> impl Iterator<Item = KindId> + '_ {
         self.application_entity_kinds.iter().copied()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn entity_kind_lookup_work(
-        &self,
-        entity: &str,
-    ) -> Option<u64> {
-        let entries = self.entity_kinds.len();
-        let levels = usize::BITS as usize - entries.max(1).leading_zeros() as usize;
-        let comparisons = entries.min(11).checked_mul(levels)?.checked_add(1)?;
-        let bytes_per_comparison = entity.len().checked_add(1)?;
-        u64::try_from(comparisons.checked_mul(bytes_per_comparison)?).ok()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn entity_name(
-        &self,
-        kind: KindId,
-    ) -> Option<&str> {
-        self.entity_kinds
-            .iter()
-            .find_map(|(name, candidate)| (*candidate == kind).then_some(name.as_str()))
     }
 
     pub(in crate::domain_computation) fn relation(

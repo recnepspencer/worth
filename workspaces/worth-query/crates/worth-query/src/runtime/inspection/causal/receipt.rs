@@ -20,8 +20,42 @@ use super::receipt_helpers::{
 };
 use super::receipt_types::{
     CausalObservationBasisPosture, CausalObservationEvidenceIdentity, CausalObservationOutcome,
-    ObservationReceiptParts, QueryObservationReceipt, QueryObservationReceiptFamily,
+    ObservationReceiptParts, QueryObservationReceiptFamily,
 };
+
+/// Directional adapter from supported engine receipts to the one causal core.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct QueryObservationReceipt(
+    worth_query_execution::facade::causal_inspection::QueryObservationReceipt,
+);
+impl QueryObservationReceipt {
+    fn from_parts(parts: ObservationReceiptParts) -> Self {
+        Self(
+            worth_query_execution::facade::causal_inspection::QueryObservationReceipt::from_parts(
+                parts,
+            ),
+        )
+    }
+    #[cfg(test)]
+    pub(in crate::runtime) fn inspection_basis_for_test(
+        &self,
+    ) -> crate::basis_lifecycle::ScopedInspectionBasis {
+        self.0.inspection_basis().clone()
+    }
+}
+impl std::ops::Deref for QueryObservationReceipt {
+    type Target = worth_query_execution::facade::causal_inspection::QueryObservationReceipt;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl From<QueryObservationReceipt>
+    for worth_query_execution::facade::causal_inspection::QueryObservationReceipt
+{
+    fn from(receipt: QueryObservationReceipt) -> Self {
+        receipt.0
+    }
+}
 
 impl QueryObservationReceipt {
     #[cfg(test)]

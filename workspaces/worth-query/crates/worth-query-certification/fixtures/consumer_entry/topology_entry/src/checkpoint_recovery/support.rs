@@ -35,6 +35,21 @@ pub(super) type Application = application_installation::WorthQueryProgramApplica
 
 pub(super) const DEFAULT_RETAINED_COMMITS: u64 = 32;
 
+pub(super) fn install_configured_seed(
+    configuration: TopologyConfiguration,
+    limits: WorthQueryInMemoryApplicationLimits,
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> Application {
+    installation::install_configured::<CheckpointProgram>(
+        None,
+        Default::default(),
+        limits,
+        seed,
+        configuration,
+    )
+    .expect("the configured checkpoint source installs")
+}
+
 pub(super) fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
 ) -> Application {
@@ -243,6 +258,25 @@ pub(super) fn limits_with_room(
         active_observations,
         unique_exact_component_pins,
         invalidation,
+        execution_policy::CHECKPOINT_EXECUTION_POLICY,
+    )
+}
+
+/// Explicit history byte room for a bounded large-world courtroom. Ordinary
+/// small fixtures retain their existing fixed metadata ceiling.
+pub(super) fn limits_with_history_room(
+    retained_composite_commits: u64,
+    active_observations: u64,
+    unique_exact_component_pins: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+    history_metadata_bytes: u64,
+) -> WorthQueryInMemoryApplicationLimits {
+    limits_with_history_and_policy(
+        retained_composite_commits,
+        active_observations,
+        unique_exact_component_pins,
+        invalidation,
+        history_metadata_bytes,
         execution_policy::CHECKPOINT_EXECUTION_POLICY,
     )
 }

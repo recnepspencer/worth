@@ -15,6 +15,8 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaDeclarationBuilder, NoApplicationUnit, ReadWrite, U64ApplicationValueBinding,
 };
+#[path = "optional_output_binding/source_disclosure.rs"]
+mod source_disclosure;
 
 /// Which output roles the handler binds.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
@@ -92,6 +94,7 @@ worth_query_declaration::worth_query_mutation_binding!(
     decision OptionalOutputInput,
     denial OptionalOutputInputBinding,
     handler identity "worth.query.test.optional-output-handler.v1",
+    inspection_disclosure source_disclosure::OptionalOutputDisclosure,
     outputs OptionalOutputs,
     principal IdentityBinding,
         mapping ExternalMapping,

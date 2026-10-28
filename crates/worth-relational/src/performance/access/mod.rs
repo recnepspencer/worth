@@ -61,3 +61,5 @@ impl<'runtime> PerformanceAccess<'runtime> {
         self.counters.snapshot()
     }
 }
+
+mod aggregate_counters;

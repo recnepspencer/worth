@@ -57,6 +57,92 @@ World close does not close component owners.
 See [history](COMPOSITE_HISTORY.md), [publication](COORDINATED_PUBLICATION.md),
 and [retention/recovery](RETENTION_AND_RECOVERY.md) for exact contracts.
 
+## Exact retained product history
+
+`observation_port().open_exact_product_history(execution, &observation)` retains
+that genuine product occurrence. `prepare_exact_product_history_page` follows
+one authoritative parent step and retains its exact component bases, including
+inherited fork ancestry. It reads no current head or reconstructed historical
+branch generation. Missing/retired raw parents return a typed history gap;
+exact pages never substitute retirement splices for missing raw commits.
+`select_product_branch_ancestor` likewise requires the complete raw-parent path.
+The explicit `select_retained_product_branch_ancestor` selector can instead follow
+owner-recorded splices to prove ancestry between retained endpoints. It discloses
+no retired contents and grants no exact-history page. Both selectors retain the
+source under the original request and bound the visited ancestry positions;
+`parent_links_followed` counts the selected raw or retained edges separately.
+
+Accept the prepared page through its originating cursor to receive `(page,
+successor)` under the stored original request. The original cursor stays intact
+until the composition owner installs the complete successor state. Drop a staged
+page or uninstalled successor to decline advancement. Opening performs one catalog
+admission; each page inspects one product-parent step with constant additional
+position storage. Opening and new retained positions reserve memory through the
+original request's effective serial or ancestor context before allocation;
+the actual retained owners keep those reservations until final drop.
+Pages, cursors and their pinned source observations release
+their genuine history/component custody on drop. Component publication evidence
+distinguishes new native changes from `RetainExact` reuse; this owner does not
+invent a native event for every product occurrence. See the
+[exact history courts](tests/runtime_world_certification/court/exact_history.rs).
+The declared application history query and fresh disclosure are available through
+[Query Host](../../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md).
+
+## Owned async source binding
+
+`RuntimeWorldOwner::admit_managed_owned_async_request` first checks the World owner and
+the exact retained Bridge source observation. It derives the source commit from
+that admitted Relational observation's immutable reference target. A populated
+fork may have branch truth version zero while still selecting a committed source;
+branch versions and global issuance counters never substitute for that commit.
+Sibling publication and discarded prepared occurrences do not move this binding.
+
+An empty target returns `RuntimeWorldOwnedAsyncRequestAdmissionDenial::NoCommittedSource`
+before Signal request admission. Revalidation has the corresponding
+`RuntimeWorldOwnedAsyncRevalidationDenial::NoCommittedSource`; refusal keeps the
+original request available for completion or retirement. Bridge and Signal own
+the remaining lifecycle, including exact-request completion, timeout/retry and
+cleanup. The grouped
+[owned async court](tests/runtime_world_certification/owned_async.rs) exercises
+the native reference equality, empty/committed twins and active-request release.
+The returned managed admission preserves genuine Bridge custody, including
+post-admission refusal. The application resource entry uses its own installed
+provider and fresh action/disclosure contract through
+[Query Host](../../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md).
+
+`admit_unqueued_owned_async_request` is the custody-preserving internal engine
+route. It applies the same exact World source validation and returns the genuine
+Bridge custodian even when its later descriptive handoff refuses. Queue mode
+comes from the installed declaration; queued declarations cannot enter this door.
+Initial supersession retains and retires the displaced timeout, while the created
+request keeps its own timeout. This lower route grants no application permission.
+
+For a read-only source, `admit_unqueued_owned_async_request_at_branch_head`
+selects the genuine observed head snapshot through the same World/Relational
+affinity checks. Its retained `BranchHead` basis carries no commit identity or
+claim of fresh currentness. The UI presentation backend uses this posture because
+it owns no product writes. It cannot substitute for an authoritative committed
+source; the committed entrance still refuses an empty target.
+
+Queued Bridge declarations may opt into `with_process_local_retention` before
+installation. The genuine installed Signal descriptor selects this posture;
+legacy producers retain their existing policy. Exact release requires a terminal
+occurrence, an empty queue, no pending retry/wake cleanup, and the genuine commit
+owner for fulfillment. A refusal returns both custodians; success returns released
+evidence without a live request capability. Exact predecessor, retry, denial and
+retired-wake disposal uses the existing retention owners and omission summaries,
+leaving other producers untouched. Fulfilled process-local requests release their
+completion first and enter again through fresh Start rather than revalidation.
+A pending retry can be explicitly aborted before due through its genuine
+custodian, retiring that exact backoff without advancing the clock; its actual
+schedule and retirement evidence remain in a fixed released slot.
+The stored occurrence enforces this custody protocol: raw Native timeout, retry
+and revalidation entrances refuse ProcessLocal occurrences before effects.
+Legacy queued occurrences keep their original behavior. Releasing a predecessor
+preserves the generation charge selected by its genuine current custodian,
+including pending retries hidden by a newer same-node index entry.
+These operations do not supply Query provider storage, authorization or restart.
+
 This crate has no Query, Store, persistence, replay, codec or physical-runtime
 dependency. It does not provide durable restart, multi-parent history, rollback,
 or Query public completion. Query already consumes this crate through

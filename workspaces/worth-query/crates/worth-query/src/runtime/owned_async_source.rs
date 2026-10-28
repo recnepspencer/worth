@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
 use worth_runtime_bridge::facade::{
-    BridgeAsyncCompletionRejection, BridgeAsyncRequestIdentityRejection,
     BridgeOwnedAsyncCompletionAdmission, BridgeOwnedAsyncRequestAdmission,
 };
 
@@ -67,11 +66,9 @@ impl WorthQueryOwnedAsyncRequestDeclaration {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledOwnedAsyncDeclaration {
-    runtime_provenance: super::WorthQueryRuntimeProvenance,
-    signal_graph_instance: u64,
+    source: worth_query_execution::facade::resource_custody::WorthQueryInstalledOwnedAsyncSource,
     identity: crate::application::WorthQueryAsyncResourceRequestIdentity,
     clause: crate::application::WorthQueryAsyncDeclarationClause,
-    lowered: worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
 }
 
 impl WorthQueryInstalledOwnedAsyncDeclaration {
@@ -82,41 +79,16 @@ impl WorthQueryInstalledOwnedAsyncDeclaration {
         &self.clause
     }
     pub fn runtime_provenance(&self) -> super::WorthQueryRuntimeProvenance {
-        self.runtime_provenance
+        super::WorthQueryRuntimeProvenance::from_authority(self.source.runtime_authority())
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryOwnedAsyncRuntimeDenial {
-    ForeignRuntime,
-    SuccessorRuntime,
-    ProductSelectionMismatch,
-    Request(BridgeAsyncRequestIdentityRejection),
-    Completion(BridgeAsyncCompletionRejection),
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryOwnedAsyncRuntimeTopology {
-    signal_graph_instance: u64,
-    installed_conditional_nodes: usize,
-    installed_async_declarations: usize,
-    active_signal_nodes: usize,
-}
-
-impl WorthQueryOwnedAsyncRuntimeTopology {
-    pub const fn signal_graph_instance(self) -> u64 {
-        self.signal_graph_instance
-    }
-    pub const fn installed_conditional_nodes(self) -> usize {
-        self.installed_conditional_nodes
-    }
-    pub const fn installed_async_declarations(self) -> usize {
-        self.installed_async_declarations
-    }
-    pub const fn active_signal_nodes(self) -> usize {
-        self.active_signal_nodes
-    }
-}
+use worth_query_execution::facade::resource_custody::WorthQueryOwnedAsyncRuntimeServices;
+pub use worth_query_execution::facade::resource_custody::{
+    WorthQueryOwnedAsyncRequestCustody, WorthQueryOwnedAsyncRuntimeCause,
+    WorthQueryOwnedAsyncRuntimeDenial, WorthQueryOwnedAsyncRuntimeStop,
+    WorthQueryOwnedAsyncRuntimeTopology,
+};
 
 pub(super) fn install_owned_async_registry(
     authority: worth_query_execution::facade::runtime::WorthQueryRuntimeAuthorityIdentity,
@@ -126,27 +98,38 @@ pub(super) fn install_owned_async_registry(
         worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
     )>,
 ) -> Result<BTreeMap<String, WorthQueryInstalledOwnedAsyncDeclaration>, WorthQueryRuntimeError> {
-    if declarations.is_empty() {
-        return Ok(BTreeMap::new());
-    }
-    let signal_graph_instance = product.conditional.owned_signal_graph_instance_id();
-    Ok(declarations
+    let services =
+        WorthQueryOwnedAsyncRuntimeServices::new(authority, &product.world, &product.conditional);
+    declarations
         .into_iter()
         .map(|(declaration, lowered)| {
-            let key = declaration.identity.canonical_identity().to_owned();
-            let installed = WorthQueryInstalledOwnedAsyncDeclaration {
-                runtime_provenance: super::WorthQueryRuntimeProvenance::from_authority(authority),
-                signal_graph_instance,
-                identity: declaration.identity,
-                clause: declaration.clause,
-                lowered,
-            };
-            (key, installed)
+            let source = services.installed_source(lowered).map_err(|cause| {
+                WorthQueryRuntimeError::InvariantRegistration {
+                    stage: "owned_async_source_installation",
+                    message: format!("{cause:?}"),
+                }
+            })?;
+            Ok((
+                declaration.identity.canonical_identity().to_owned(),
+                WorthQueryInstalledOwnedAsyncDeclaration {
+                    source,
+                    identity: declaration.identity,
+                    clause: declaration.clause,
+                },
+            ))
         })
-        .collect())
+        .collect()
 }
 
 impl WorthQueryRuntime {
+    pub(super) fn owned_async_services(&self) -> WorthQueryOwnedAsyncRuntimeServices<'_> {
+        WorthQueryOwnedAsyncRuntimeServices::new(
+            self.authority_identity,
+            &self.installed_product.world,
+            &self.installed_product.conditional,
+        )
+    }
+
     pub fn installed_owned_bridge_async_declaration(
         &self,
         identity: &crate::application::WorthQueryAsyncResourceRequestIdentity,
@@ -160,30 +143,33 @@ impl WorthQueryRuntime {
         &self,
         declaration: &WorthQueryInstalledOwnedAsyncDeclaration,
         selected: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
-    ) -> Result<BridgeOwnedAsyncRequestAdmission, WorthQueryOwnedAsyncRuntimeDenial> {
-        if declaration.runtime_provenance != self.runtime_provenance() {
-            return Err(WorthQueryOwnedAsyncRuntimeDenial::ForeignRuntime);
-        }
-        let product = &self.installed_product;
-        if declaration.signal_graph_instance != product.conditional.owned_signal_graph_instance_id()
-        {
-            return Err(WorthQueryOwnedAsyncRuntimeDenial::SuccessorRuntime);
-        }
-        product
-            .validate_selected_source(selected, None)
-            .map_err(|_| WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch)?;
-        product
-            .world
-            .admit_owned_async_request(&product.conditional, &declaration.lowered, selected)
-            .map_err(|denial| match denial {
-                worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner
-                | worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRequestAdmissionDenial::RelationalSourceMismatch => {
-                    WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch
-                }
-                worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge(
-                    denial,
-                ) => WorthQueryOwnedAsyncRuntimeDenial::Request(denial),
-            })
+    ) -> Result<WorthQueryOwnedAsyncRequestCustody, WorthQueryOwnedAsyncRuntimeStop> {
+        self.owned_async_services()
+            .admit(&declaration.source, selected)
+    }
+
+    /// Uses the actual observed branch-head snapshot without claiming a commit.
+    pub fn admit_owned_bridge_async_request_at_branch_head(
+        &self,
+        declaration: &WorthQueryInstalledOwnedAsyncDeclaration,
+        selected: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+    ) -> Result<WorthQueryOwnedAsyncRequestCustody, WorthQueryOwnedAsyncRuntimeStop> {
+        self.owned_async_services()
+            .admit_at_branch_head(&declaration.source, selected)
+    }
+
+    pub fn cleanup_owned_bridge_async_entry(
+        &self,
+        owner: &mut WorthQueryOwnedAsyncRequestCustody,
+    ) -> Result<(), WorthQueryOwnedAsyncRuntimeCause> {
+        self.owned_async_services().cleanup(owner)
+    }
+
+    pub fn cancel_custodied_owned_bridge_async_request(
+        &self,
+        owner: &WorthQueryOwnedAsyncRequestCustody,
+    ) -> Result<(), WorthQueryOwnedAsyncRuntimeCause> {
+        self.owned_async_services().cancel(owner)
     }
 
     pub fn admit_owned_bridge_async_completion(
@@ -191,34 +177,22 @@ impl WorthQueryRuntime {
         request: &BridgeOwnedAsyncRequestAdmission,
         raw: worth_signal::facade::RawCompletionEnvelope,
     ) -> Result<BridgeOwnedAsyncCompletionAdmission, WorthQueryOwnedAsyncRuntimeDenial> {
-        let runtime = &self.installed_product.conditional;
-        let validated = runtime
-            .validate_owned_async_completion_envelope(request, raw)
-            .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)?;
-        runtime
-            .admit_owned_async_completion(request, &validated)
-            .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)
+        self.owned_async_services().admit_completion(request, raw)
     }
 
     pub fn admit_owned_bridge_async_effects_indeterminate(
         &self,
         observation: worth_runtime_bridge::facade::BridgeAsyncEffectsIndeterminateObservation,
     ) -> Result<BridgeOwnedAsyncCompletionAdmission, WorthQueryOwnedAsyncRuntimeDenial> {
-        self.installed_product
-            .conditional
-            .admit_owned_async_effects_indeterminate(observation)
-            .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)
+        self.owned_async_services()
+            .admit_effects_indeterminate(observation)
     }
 
     pub fn retire_owned_bridge_async_request(
         &self,
         request: &BridgeOwnedAsyncRequestAdmission,
     ) -> Result<(), WorthQueryOwnedAsyncRuntimeDenial> {
-        self.installed_product
-            .conditional
-            .retire_owned_async_request(request)
-            .map(|_| ())
-            .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)
+        self.owned_async_services().retire_witness(request)
     }
 
     pub fn order_owned_bridge_async_completion(
@@ -228,23 +202,13 @@ impl WorthQueryRuntime {
         worth_runtime_bridge::facade::BridgeMixedCauseOrdering,
         WorthQueryOwnedAsyncRuntimeDenial,
     > {
-        self.installed_product
-            .conditional
-            .order_owned_async_completion_report(completion)
-            .map_err(WorthQueryOwnedAsyncRuntimeDenial::Completion)
+        self.owned_async_services().order_completion(completion)
     }
 
     pub fn owned_async_runtime_topology(&self) -> Option<WorthQueryOwnedAsyncRuntimeTopology> {
-        let product = &self.installed_product;
-        product
-            .conditional
-            .owned_signal_active_node_count()
-            .ok()
-            .map(|active_signal_nodes| WorthQueryOwnedAsyncRuntimeTopology {
-                signal_graph_instance: product.conditional.owned_signal_graph_instance_id(),
-                installed_conditional_nodes: self.conditional_execution_registry.len(),
-                installed_async_declarations: self.installed_owned_async_declarations.len(),
-                active_signal_nodes,
-            })
+        self.owned_async_services().topology(
+            self.conditional_execution_registry.len(),
+            self.installed_owned_async_declarations.len(),
+        )
     }
 }

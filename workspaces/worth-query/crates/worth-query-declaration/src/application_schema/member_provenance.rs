@@ -53,6 +53,8 @@ pub struct ApplicationSchemaMemberProvenance {
     body_external_effects: Vec<super::ApplicationOperationBodyExternalEffectRecipe>,
     mutation_bindings: Vec<ApplicationMutationBindingDescriptor>,
     query_bindings: Vec<ApplicationQueryBindingDescriptor>,
+    histories: Vec<DeclaredApplicationMemberMarker>,
+    resources: Vec<crate::application_resource::ApplicationResourceBindingDescriptor>,
 }
 
 impl ApplicationSchemaMemberProvenance {
@@ -89,6 +91,8 @@ impl ApplicationSchemaMemberProvenance {
             && self.body_external_effects.is_empty()
             && self.mutation_bindings.is_empty()
             && self.query_bindings.is_empty()
+            && self.histories.is_empty()
+            && self.resources.is_empty()
     }
 
     pub(super) fn register_entity<Entity: 'static>(&mut self, name: &'static str) {
@@ -136,6 +140,40 @@ impl ApplicationSchemaMemberProvenance {
         self.query_bindings.push(descriptor);
     }
 
+    pub(super) fn register_resource(
+        &mut self,
+        descriptor: crate::application_resource::ApplicationResourceBindingDescriptor,
+    ) {
+        self.resources.push(descriptor);
+    }
+
+    pub fn resource_bindings(
+        &self,
+    ) -> &[crate::application_resource::ApplicationResourceBindingDescriptor] {
+        &self.resources
+    }
+
+    pub(super) fn register_history<History: 'static, SubjectRead: 'static>(
+        &mut self,
+        name: &'static str,
+        identity: WorthQueryPortableTypeIdentity,
+    ) {
+        self.histories
+            .push(DeclaredApplicationMemberMarker::of::<History, SubjectRead>(
+                name, identity,
+            ));
+    }
+
+    pub fn admits_history<History: 'static, SubjectRead: 'static>(
+        &self,
+        name: &str,
+        identity: &WorthQueryPortableTypeIdentity,
+    ) -> bool {
+        self.histories
+            .iter()
+            .any(|member| member.matches::<History, SubjectRead>(name, identity))
+    }
+
     pub(super) fn register_mutation_binding(
         &mut self,
         descriptor: ApplicationMutationBindingDescriptor,
@@ -154,6 +192,9 @@ impl ApplicationSchemaMemberProvenance {
         };
         self.operations.sort_by(order);
         self.effects.sort_by(order);
+        self.histories.sort_by(order);
+        self.resources
+            .sort_by(|left, right| left.identity().cmp(right.identity()));
         self.field_bindings
             .sort_by(|left, right| left.locus().cmp(right.locus()));
         self.query_bindings

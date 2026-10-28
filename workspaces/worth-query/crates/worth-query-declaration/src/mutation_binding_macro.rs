@@ -14,6 +14,7 @@ macro_rules! worth_query_mutation_binding {
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
         $(workflow_requirements $workflow_requirements:expr_2021,)?
+        $(inspection_disclosure $InspectionDisclosure:ty,)?
         outputs $Output:ty,
         source $SourceExpectation:ty,
         principal binding $principal_binding:expr_2021,
@@ -66,6 +67,10 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
 
+            fn visit_source_disclosure<Visitor: $crate::facade::application_operation::ApplicationSourceDisclosureVisitor<$Schema, Self>>(visitor: Visitor) -> Visitor::Output {
+                $crate::worth_query_mutation_binding!(@inspection_disclosure visitor; $($InspectionDisclosure)?)
+            }
+
             fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
                 $Schema, $Scope, $Aspect, $Field, $Value, $Write,
                 $crate::facade::application_schema::EqualityPredicate, $Unit,
@@ -111,6 +116,7 @@ macro_rules! worth_query_mutation_binding {
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
         $(workflow_requirements $workflow_requirements:expr_2021,)?
+        $(inspection_disclosure $InspectionDisclosure:ty,)?
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -128,6 +134,7 @@ macro_rules! worth_query_mutation_binding {
             program $($program_requirement)?,
             workflow_authority $($workflow_authority)?,
             workflow_requirements $($workflow_requirements)?,
+            inspection_disclosure $($InspectionDisclosure)?,
             outputs $Output,
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
@@ -169,6 +176,7 @@ macro_rules! worth_query_mutation_binding {
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
         $(workflow_requirements $workflow_requirements:expr_2021,)?
+        $(inspection_disclosure $InspectionDisclosure:ty,)?
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -185,6 +193,7 @@ macro_rules! worth_query_mutation_binding {
             program $($program_requirement)?,
             workflow_authority $($workflow_authority)?,
             workflow_requirements $($workflow_requirements)?,
+            inspection_disclosure $($InspectionDisclosure)?,
             outputs $Output,
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
@@ -222,6 +231,7 @@ macro_rules! worth_query_mutation_binding {
         program $($program_requirement:ident)?,
         workflow_authority $($workflow_authority:ident)?,
         workflow_requirements $($workflow_requirements:expr_2021)?,
+        inspection_disclosure $($InspectionDisclosure:ty)?,
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
         principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -267,6 +277,10 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
 
+            fn visit_source_disclosure<Visitor: $crate::facade::application_operation::ApplicationSourceDisclosureVisitor<$Schema, Self>>(visitor: Visitor) -> Visitor::Output {
+                $crate::worth_query_mutation_binding!(@inspection_disclosure visitor; $($InspectionDisclosure)?)
+            }
+
             fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
                 $Schema, $Scope, $Aspect, $Field, $Value, $Write,
                 $crate::facade::application_schema::EqualityPredicate, $Unit,
@@ -282,6 +296,8 @@ macro_rules! worth_query_mutation_binding {
             }
         }
     };
+    (@inspection_disclosure $visitor:ident; $Disclosure:ty) => { $visitor.declared::<$Disclosure>() };
+    (@inspection_disclosure $visitor:ident;) => { $visitor.unavailable() };
     (@admission $Admission:ty) => { $Admission };
     (@admission) => { $crate::facade::application_operation::ApplicationConventionalAdmission };
     (@workflow_requirements [required] []) => {

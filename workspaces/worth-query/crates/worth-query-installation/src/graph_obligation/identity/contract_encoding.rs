@@ -149,6 +149,15 @@ pub(super) fn encode_resources(
                 *maximum_authorization_facts,
             )?;
         }
+        WorthQueryInstalledGraphObligationResourcePosture::ApplicationResource {
+            maximum_authorization_facts,
+        } => {
+            basis.text("resources.kind", "application-resource")?;
+            basis.unsigned_usize(
+                "resources.maximum-authorization-facts",
+                *maximum_authorization_facts,
+            )?;
+        }
         WorthQueryInstalledGraphObligationResourcePosture::ApplicationOperation(contract) => {
             basis.text("resources.kind", "application-operation")?;
             basis.text("resources.contract", contract.canonical_identity())?;
@@ -186,6 +195,19 @@ fn encode_read_scope(
     scope: &WorthQueryOperationGraphReadScope,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match scope {
+        WorthQueryOperationGraphReadScope::DerivedSource(scope) => {
+            basis.text(format!("{prefix}.kind"), "derived-source-v1")?;
+            encode_binding(basis, prefix, scope.schema())?;
+            basis.text(format!("{prefix}.relation"), scope.relation())?;
+        }
+        WorthQueryOperationGraphReadScope::Components(scope) => {
+            basis.text(format!("{prefix}.kind"), "components")?;
+            encode_binding(basis, prefix, scope.schema())?;
+            basis.text(
+                format!("{prefix}.definition"),
+                scope.meaning().canonical_record(),
+            )?;
+        }
         WorthQueryOperationGraphReadScope::Entity(entity) => {
             basis.text(format!("{prefix}.kind"), "entity")?;
             encode_binding(basis, prefix, entity.schema())?;
@@ -225,6 +247,21 @@ fn encode_touch_scope(
     scope: &WorthQueryOperationTouchScope,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match scope {
+        WorthQueryOperationTouchScope::InitializeRelationField(field) => {
+            basis.text(format!("{prefix}.kind"), "initialize-relation-field")?;
+            let relation = field.relation();
+            encode_binding(basis, prefix, relation.schema())?;
+            basis.text(format!("{prefix}.relation"), relation.relation())?;
+            basis.text(format!("{prefix}.from"), relation.from())?;
+            basis.text(format!("{prefix}.to"), relation.to())?;
+            basis.embedded_basis(
+                &format!("{prefix}.contract"),
+                field.canonical_contract_basis(),
+            )?;
+            for (index, part) in field.field_path().fields().iter().enumerate() {
+                basis.text(format!("{prefix}.field[{index}]"), part.as_str())?;
+            }
+        }
         WorthQueryOperationTouchScope::CreateEntity(entity)
         | WorthQueryOperationTouchScope::DeleteEntity(entity) => {
             let kind = if matches!(scope, WorthQueryOperationTouchScope::CreateEntity(_)) {

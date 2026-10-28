@@ -20,6 +20,7 @@ use row_construction::build_row;
 enum RelationRequirementBasis {
     DirectionalAdjacency,
     ReverseAdjacency,
+    AggregateSelection,
     TraversalWorkset,
 }
 
@@ -35,6 +36,7 @@ enum RowSpec<'a> {
     Predicate,
     Ordering,
     RootUnionDedup,
+    ComponentSelection,
     Proof,
     Lifecycle,
     LiveMaintenance,
@@ -56,6 +58,15 @@ fn visit_specs<'a, S: RowSink<'a>>(
         sink.visit()?;
         for operator in relation.operators() {
             sink.visit()?;
+            if *operator == WorthQueryGraphReadTraversalOperator::AggregateSelection {
+                sink.row(RowSpec::Relation {
+                    relation,
+                    operator,
+                    kind: super::WorthQueryGraphReadAccessRequirementKind::AggregateSelection,
+                    basis: RelationRequirementBasis::AggregateSelection,
+                })?;
+                continue;
+            }
             let forward = RowSpec::Relation {
                 relation,
                 operator,
@@ -76,6 +87,7 @@ fn visit_specs<'a, S: RowSink<'a>>(
                     sink.row(forward)?;
                     sink.row(reverse)?;
                 }
+                WorthQueryGraphReadTraversalOperator::AggregateSelection => {}
                 WorthQueryGraphReadTraversalOperator::DeclarationTraversal
                 | WorthQueryGraphReadTraversalOperator::CompleteClosure
                 | WorthQueryGraphReadTraversalOperator::DirectEdge => match relation.direction() {
@@ -117,6 +129,9 @@ fn visit_specs<'a, S: RowSink<'a>>(
                 })?;
             }
         }
+    }
+    if input.shape().component_selection_required() {
+        sink.row(RowSpec::ComponentSelection)?;
     }
     sink.row(RowSpec::ResultBuffer)?;
     if input.shape().predicate_family() != &WorthQueryGraphReadPredicateFamily::None

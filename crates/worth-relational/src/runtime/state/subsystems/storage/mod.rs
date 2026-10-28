@@ -133,3 +133,5 @@ impl RuntimeSubsystem for StorageSubsystem {
         }
     }
 }
+
+pub(crate) use edition_writer::TryPartitionMutationDenied;

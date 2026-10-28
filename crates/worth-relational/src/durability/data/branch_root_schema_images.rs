@@ -12,8 +12,9 @@ use crate::schema::data::{
 };
 
 const ROOT_SCHEMA_IMAGE_VERSION: u16 = 1;
+mod encoding;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub(crate) struct DurableBranchRootSchemaImage {
     format_version: u16,
     carrier_digest: [u8; 32],
@@ -22,6 +23,11 @@ pub(crate) struct DurableBranchRootSchemaImage {
     entity_registrations: Vec<DurableEntitySchemaRegistration>,
     relation_registrations: Vec<DurableRelationSchemaRegistration>,
     retained_aspect_contracts: Vec<PortableAspectContract>,
+    // Appended optional tail preserves physical-only sequence and map encodings.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    derived_relations: Vec<crate::derived_relation::DerivedRelationDefinitionParts>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    projected_member_domains: Vec<crate::projected_member_domain::ProjectedMemberDomainParts>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -80,6 +86,8 @@ impl DurableBranchRootSchemaImage {
             descriptor_semantics_version: authority.descriptor_semantics_version(),
             entity_registrations,
             relation_registrations,
+            derived_relations: registry.derived_parts(),
+            projected_member_domains: registry.projected_domain_parts(),
             retained_aspect_contracts: authority
                 .retained_aspect_contracts()
                 .iter()
@@ -139,10 +147,28 @@ impl DurableBranchRootSchemaImage {
                 .register_entity_kind(registration.readmit()?)
                 .map_err(|error| format!("entity schema readmission denied: {error:?}"))?;
         }
-        for registration in &self.relation_registrations {
-            registry = registry
-                .register_relation_kind(registration.readmit()?)
-                .map_err(|error| format!("relation schema readmission denied: {error:?}"))?;
+        registry = registry
+            .register_projected_member_domains(self.projected_member_domains.clone())
+            .map_err(|error| format!("projected domain readmission denied: {error:?}"))?;
+        if registry.projected_domain_parts() != self.projected_member_domains {
+            return Err("branch-root projected domains are not canonical".to_owned());
+        }
+        let relations = self
+            .relation_registrations
+            .iter()
+            .map(DurableRelationSchemaRegistration::readmit)
+            .collect::<Result<Vec<_>, _>>()?;
+        registry = crate::schema::source_catalog::install(
+            registry,
+            relations,
+            self.derived_relations
+                .iter()
+                .cloned()
+                .map(crate::schema::source_catalog::DerivedCatalogEntry::Meaning),
+        )
+        .map_err(|denial| format!("source catalog readmission denied: {denial:?}"))?;
+        if registry.derived_parts() != self.derived_relations {
+            return Err("branch-root derived definitions are not canonical".to_owned());
         }
         if registry.authority_digest_bytes() != self.schema_root {
             return Err("branch-root schema authority digest mismatch".to_owned());
@@ -171,6 +197,11 @@ impl DurableBranchRootSchemaImage {
         let mut digest = Sha256::new();
         digest.update(b"worth.relational.branch-root-schema-image.v1\0");
         digest.update(encoded);
+        crate::derived_relation::canonical::update_digest(&mut digest, &self.derived_relations);
+        crate::projected_member_domain::canonical::update_digest(
+            &mut digest,
+            &self.projected_member_domains,
+        );
         Ok(digest.finalize().into())
     }
 }

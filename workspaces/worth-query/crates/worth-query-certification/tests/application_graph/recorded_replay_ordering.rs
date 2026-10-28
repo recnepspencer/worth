@@ -2,7 +2,7 @@
 //! every fresh-preparing lane resolves its key in the World's placement first,
 //! and only a miss opens the funded call, whose refusal is the original one.
 use std::num::NonZeroUsize;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };

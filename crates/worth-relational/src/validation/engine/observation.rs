@@ -2,7 +2,11 @@ use crate::runtime::PartitionEdition;
 use crate::storage::overlay::{CurrentPartitionAccess, OverlayStateView, WorkingState};
 use serde::{Deserialize, Serialize};
 
+mod affinity;
 mod custom_semantics;
+mod identity;
+pub(crate) use affinity::InvariantSourceAffinity;
+pub(crate) use identity::InvariantObservationIdentity;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum InvariantObservationKind {
@@ -21,10 +25,12 @@ impl InvariantObservationKind {
 
 #[derive(Clone)]
 pub(crate) struct CommittedInvariantView<'runtime> {
+    identity: InvariantObservationIdentity,
     committed: CommittedInvariantState<'runtime>,
     enforcement: Option<OverlayStateView<'runtime, WorkingState>>,
     enforcement_version_id: Option<crate::identity::data::VersionId>,
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    aggregate: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
 }
 
 #[derive(Clone)]
@@ -36,10 +42,12 @@ enum CommittedInvariantState<'runtime> {
 impl<'runtime> CommittedInvariantView<'runtime> {
     pub(crate) fn new(state: PartitionEdition) -> Self {
         Self {
+            identity: InvariantObservationIdentity::issue(),
             committed: CommittedInvariantState::Runtime(state),
             enforcement: None,
             enforcement_version_id: None,
             proposal_identity: None,
+            aggregate: None,
         }
     }
 
@@ -50,19 +58,23 @@ impl<'runtime> CommittedInvariantView<'runtime> {
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     ) -> Self {
         Self {
+            identity: InvariantObservationIdentity::issue(),
             committed: CommittedInvariantState::Branch(state),
             enforcement: Some(OverlayStateView::new(state, proposed_working_state)),
             enforcement_version_id: Some(proposed_version_id),
             proposal_identity,
+            aggregate: None,
         }
     }
 
     pub(crate) fn from_branch(state: &'runtime dyn CurrentPartitionAccess) -> Self {
         Self {
+            identity: InvariantObservationIdentity::issue(),
             committed: CommittedInvariantState::Branch(state),
             enforcement: None,
             enforcement_version_id: None,
             proposal_identity: None,
+            aggregate: None,
         }
     }
 
@@ -102,11 +114,13 @@ impl<'runtime> CommittedInvariantView<'runtime> {
 
 #[derive(Clone)]
 pub(crate) struct SpeculativeInvariantView<'runtime> {
+    identity: InvariantObservationIdentity,
     state: OverlayStateView<'runtime, WorkingState>,
     before_image_version_id: crate::identity::data::VersionId,
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     applied_created_entities:
         Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings>,
+    aggregate: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
 }
 
 impl<'runtime> SpeculativeInvariantView<'runtime> {
@@ -116,10 +130,12 @@ impl<'runtime> SpeculativeInvariantView<'runtime> {
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     ) -> Self {
         Self {
+            identity: InvariantObservationIdentity::issue(),
             state,
             before_image_version_id,
             proposal_identity,
             applied_created_entities: None,
+            aggregate: None,
         }
     }
 
@@ -145,6 +161,35 @@ pub(crate) enum InvariantObservation<'runtime> {
 }
 
 impl<'runtime> InvariantObservation<'runtime> {
+    pub(crate) fn observation_identity(&self) -> InvariantObservationIdentity {
+        match self {
+            Self::Committed(view) => view.identity.clone(),
+            Self::Speculative(view) => view.identity.clone(),
+            Self::Probed { meaning, .. } => meaning.observation_identity(),
+        }
+    }
+    pub(crate) fn with_aggregate(
+        mut self,
+        source: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
+    ) -> Self {
+        match &mut self {
+            Self::Committed(view) => view.aggregate = source,
+            Self::Speculative(view) => view.aggregate = source,
+            Self::Probed { .. } => {
+                unreachable!("aggregate meaning is attached before residency probing")
+            }
+        }
+        self
+    }
+    pub(crate) fn aggregate_invocation(
+        &self,
+    ) -> Option<crate::aggregate_identity::AggregateInvocation<'runtime>> {
+        match self {
+            Self::Committed(view) => view.aggregate,
+            Self::Speculative(view) => view.aggregate,
+            Self::Probed { meaning, .. } => meaning.aggregate_invocation(),
+        }
+    }
     pub(crate) fn with_probed_sources<'round>(
         &'round self,
         [committed, enforcement, before_image]: [&'round dyn CurrentPartitionAccess; 3],

@@ -92,7 +92,7 @@ where
         Contributions,
     >(&installed, configuration, contracts)
     .map_err(Denial::Contributions)?;
-    let (mut invariants, handlers, producers, conditionals) =
+    let (mut invariants, handlers, producers, conditionals, resources) =
         configured.into_parts().map_err(Denial::Contributions)?;
     conditionals
         .validate_target_coverage(
@@ -171,6 +171,7 @@ where
         ));
     }
     graph.mutation_handlers = handlers;
+    graph.resources = resources;
     graph.program_activation = admitted_program_support
         .as_ref()
         .map(|_| activation.clone());

@@ -130,13 +130,13 @@ Walk metadata does not provide an explicit relation-pair observation for link or
 unlink authoring. Keep those operations' existing recorded pair reads. Field
 reads through returned identities also retain their own field dependencies.
 
-A partitioned computation that previously used a structural walk currently runs
-fresh under the current admission, in both accounted and unaccounted execution.
-With an unchanged computation basis, its reported full-run cause is
-`StructuralWalkRead`; an existing basis-drift cause retains priority. Carrying
-those old values between live invocations remains unqualified. Live structural
-facts are also deliberately unsupported for checkpoint reuse; decoding cannot reconstruct an
-issued observation from copied metadata.
+A partitioned computation that uses a structural walk runs fresh under the
+current admission, in both accounted and unaccounted execution. With an
+unchanged computation basis, its reported full-run cause is
+`StructuralWalkRead`; an existing basis-drift cause retains priority. Each live
+invocation reacquires its structural-walk values. Checkpoint reuse of live
+structural facts is unsupported: decoding cannot reconstruct an issued
+observation from copied metadata.
 
 ## Preparing the rule's read scope
 
@@ -189,6 +189,17 @@ Native traversal enforces visibility, kind access and the original request's
 work and memory limits. Query records actual acquisitions and accounts for its
 prepared-scope storage with the original invariant budget. Checked callbacks
 must also account for their own computation and owned storage.
+
+An executed complete step in a declared query root path also funds its copied
+source facts, intermediate frontiers and retained Query witnesses from the
+original request. Later steps and observer copies keep that metadata payment.
+It is independent of the Native walk body's payment: retaining the body alone
+does not retain Query's source metadata. Paths that execute no complete step
+keep their ordinary funding posture. Complete material component selections
+explicitly use the same original-request storage owner for their source metadata
+and material containers; retained selection answers keep that custody alive. The
+[source lifetime court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/resources.rs)
+checks both payments through their real last owners.
 
 A returned walk owns its native result and retains its allocation payer.
 Borrowed iteration creates typed values without another graph read or another

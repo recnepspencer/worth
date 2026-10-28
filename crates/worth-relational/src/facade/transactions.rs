@@ -29,6 +29,6 @@ pub use crate::transactions::data::{
 pub use crate::validation::data::{
     CustomInvariantFailureIdentity, CustomInvariantFailurePhase, CustomInvariantRuleId,
     CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion, InvariantViolation,
-    InvariantViolationFields, ResultCustomInvariantFailureKind,
+    InvariantViolationFields, RelationCardinalityBoundary, ResultCustomInvariantFailureKind,
 };
 pub use worth_foundational::facade::AspectFieldLocator;

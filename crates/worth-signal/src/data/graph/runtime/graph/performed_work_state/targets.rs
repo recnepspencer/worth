@@ -27,9 +27,10 @@ impl PerformedWorkCaptureState {
         )?;
         let charge = Charge::capacity::<NodeId>(count)
             .and_then(|charge| {
-                charge.checked_add(Charge::capacity::<
-                    crate::data::proof::SignalInvalidationExecutionReceipt,
-                >(1)?)
+                charge.checked_add(
+                    crate::data::proof::SignalInvalidationExecutionReceipt::retained_header_charge(
+                    )?,
+                )
             })
             .map_err(super::super::map_node_edit_accounting)?;
         let custody = ledger
@@ -59,8 +60,9 @@ impl PerformedTargetSnapshot {
         work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Self, SignalError> {
         work.reserve(Some(1))?;
-        let charge = Charge::capacity::<crate::data::proof::SignalInvalidationExecutionReceipt>(1)
-            .map_err(super::super::map_node_edit_accounting)?;
+        let charge =
+            crate::data::proof::SignalInvalidationExecutionReceipt::retained_header_charge()
+                .map_err(super::super::map_node_edit_accounting)?;
         let custody = ledger
             .map(|ledger| ledger.reserve(0, charge))
             .transpose()

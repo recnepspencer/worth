@@ -7,6 +7,7 @@ mod draft_preparation_phase;
 mod execution;
 mod execution_admission;
 mod history_binding;
+mod history_preparation;
 mod history_resolution_phase;
 mod invariant_phase;
 mod merge_draft;

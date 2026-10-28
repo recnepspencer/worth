@@ -57,6 +57,7 @@ pub(super) fn lower_relation_layouts(
                     from: required_kind(entity_kinds, from)?,
                     to: required_kind(entity_kinds, to)?,
                     source_max: integrity.cardinality.source_max,
+                    orbit: integrity.orbit,
                 },
             ))
         })

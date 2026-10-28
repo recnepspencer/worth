@@ -1,6 +1,6 @@
 //! An independent merge abandons its entire applied draft on any read miss.
 use super::authority_context::PreparedAuthorityScope;
-use super::execution_admission::AdmittedCommitExecution;
+use super::execution_admission::AdmittedCommitState;
 use crate::authority::commit::phases::applied_mutation::apply_mutation_draft;
 use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
 use crate::branch::SelectedRelationalBranchRead;
@@ -18,7 +18,7 @@ pub(super) struct AcceptedMergeDraft {
 pub(super) fn prepare_merge_draft(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    admitted: &AdmittedCommitExecution,
+    admitted: &AdmittedCommitState,
 ) -> Result<AcceptedMergeDraft, TransactionCommitError> {
     let basis = admitted.validation_input().basis();
     let selected = admitted.selected_branch_state();
@@ -67,7 +67,7 @@ pub(super) fn prepare_merge_draft(
 fn prepare_symbol_round(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    admitted: &AdmittedCommitExecution,
+    admitted: &AdmittedCommitState,
     selected: SelectedRelationalBranchRead<'_>,
 ) -> Result<AcceptedMergeDraft, TransactionCommitError> {
     let input = admitted.validation_input();
@@ -91,7 +91,7 @@ fn prepare_symbol_round(
                     parent_count,
                     Some(input.footprint()),
                 );
-            let mutation = apply_mutation_draft(
+            let mut mutation = apply_mutation_draft(
                 execution,
                 round,
                 &selected,
@@ -100,6 +100,7 @@ fn prepare_symbol_round(
                 input.schema_authority(),
                 &identity,
                 symbols,
+                input.intent().materialization_mode(),
             )?;
             let candidate = round.with_candidate_symbols(mutation.candidate_symbols());
             let invariants = candidate.invariant_authority();
@@ -114,6 +115,7 @@ fn prepare_symbol_round(
                 identity.proposed_version_id(),
                 admitted.merged_plan(),
                 Some(&identity),
+                mutation.aggregate_source(selected),
                 execution,
                 &control,
             )?;
@@ -123,6 +125,7 @@ fn prepare_symbol_round(
                 identity.proposed_version_id(),
                 admitted.merged_plan(),
                 Some(&identity),
+                mutation.aggregate_source(selected),
                 execution,
                 &control,
             )?;
@@ -133,9 +136,11 @@ fn prepare_symbol_round(
                 identity.proposed_version_id(),
                 admitted.merged_plan(),
                 Some(&identity),
+                mutation.aggregate_source(selected),
                 execution,
                 &control,
             )?;
+            mutation.prepare_aggregate(execution, round, selected, admitted.merged_plan())?;
             Ok(AcceptedMergeDraft {
                 scope: PreparedAuthorityScope {
                     selected_branch_state: selected.selected().clone(),

@@ -533,3 +533,39 @@ Milestone 2 is complete when:
    in the product or the test, never by deleting or ignoring a test.
 7. An independent reviewer certifies the work against this specification and
    the roadmap.
+
+## Closeout (2026-10-28)
+
+Milestone 2 is complete. The final integration joins the fully checked
+`15b072b8840eecea0f98cb8f8347986d556467a9` implementation with master
+`bd68c7b5c675266963b89ec37962e274e8b413dc`. Store is the sole durable path;
+Relational retains canonical graph, transaction, schema and history meaning.
+
+The full baseline matrix was followed by fresh merged Relational, Signal,
+Bridge, World, Execution, Foundational, Server, Query, Bank, UI, external
+consumer and documentation lanes. All failures are closed by recorded passing
+retries. Strict clippy for the affected workspaces, normal boundary-check,
+agent-context, formatting and scoped line caps pass. The independent reviewer
+certified the source against this specification and the roadmap.
+
+The fresh merged Store relational-home oracle passed all 45 cases. Subsequent
+changes separate diagnostic allocator facts and shorten consumed commit-phase
+lifetimes; Store's implementation is unchanged. A final 86-case owner pass
+covers aggregate identity, cold recovery, maintenance, canonical history and
+checkpoint inspection. The original Windows MVCC example also passes on its
+default 1 MiB stack, without adding heap allocation or raising a budget.
+
+Aggregate integration carries the exact applied business draft through its
+consequences and final validation. Cold read failures remain typed refusals,
+including retention admission, and abandoned rounds cannot publish tentative
+names or caches. Checkpoint comparisons preserve exact model bytes while
+separately validating record and symbol allocation facts. Current-master
+archive protocol expectations use the existing frozen version-18 vectors;
+preserved version-15 payloads prove unsupported-version refusal.
+
+The preserved local `target/lane-evidence/FINAL_MATRIX.md` records baseline
+coverage, and `target/lane-evidence/MERGED_MATRIX.md` records integration
+coverage, command provenance and failure-to-retry mapping. Original failed and
+interrupted logs remain available. Existing ignored weekly scale/timing cases
+and tools' self-tests are outside this run and are not claimed as passing.
+Milestone 3's host-opened durable application journey remains the next boundary.

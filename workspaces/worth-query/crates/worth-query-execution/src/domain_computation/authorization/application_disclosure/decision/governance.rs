@@ -202,13 +202,9 @@ impl WorthQueryApplicationQueryGovernance {
     ) -> bool {
         match self {
             Self::Public => true,
-            Self::Governed { computation, .. } => {
-                computation.binding.runtime == runtime
-                    && &computation.binding.query == query
-                    && &computation.binding.parameters == parameters
-                    && computation.binding.principal == principal
-                    && computation.binding.scope == scope
-            }
+            Self::Governed { computation, .. } => computation
+                .binding
+                .readmission_matches(runtime, query, parameters, principal, scope),
         }
     }
 }

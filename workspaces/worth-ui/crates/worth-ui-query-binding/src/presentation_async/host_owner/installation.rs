@@ -32,6 +32,15 @@ pub enum WorthUiPresentationAsyncInstallationError {
     Installation(String),
     Runtime(Box<runtime::WorthQueryRuntimeError>),
     OperatingWorld(Box<worth_query::facade::installed::WorthQueryOperatingWorldEntryDenial>),
+    NativeSourceConstruction(
+        Box<worth_relational::facade::runtime::RelationalRuntimeConstructionDenial>,
+    ),
+    NativeSourceBasis(Box<worth_relational::facade::branch::RelationalBranchBasisDenial>),
+    NativeSourceAdmission(
+        Box<worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial>,
+    ),
+    NativeSourceStaging(Box<worth_relational::facade::mvcc::RelationalTransactionStagingDenial>),
+    NativeSourcePublication(Box<worth_relational::facade::transactions::TransactionCommitError>),
     MissingOwnedAsyncSource,
 }
 
@@ -47,7 +56,7 @@ impl WorthUiPresentationAsyncHostPlan {
         let builder = super::super::install_worth_ui_presentation_async_runtime(builder).map_err(
             |error| WorthUiPresentationAsyncInstallationError::AspectContract(Box::new(error)),
         )?;
-        let builder = super::super::backend::configure(builder);
+        let builder = super::super::backend::configure(builder)?;
         let plan = builder.prepare_host_installation();
         let (request, completion) = plan.into_parts();
         Ok(Self {

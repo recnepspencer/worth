@@ -11,6 +11,7 @@ mod foundational_value;
 mod frame;
 mod native_aspect_contract;
 mod operation_body;
+mod operation_component_read;
 mod package_root;
 mod protocol;
 mod sequence;

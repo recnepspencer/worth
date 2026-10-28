@@ -113,6 +113,16 @@ fn concurrent_read_pressure_keeps_cache_diagnostics_coherent() {
     let _ = create_entity_outcome(execution, &runtime, "churn-1");
     let _ = create_entity_outcome(execution, &runtime, "churn-2");
     let _ = create_entity_outcome(execution, &runtime, "churn-3");
+    // All cold readers can miss concurrently. Establish the cached truth this
+    // court intends to exercise before measuring the concurrent reuse phase.
+    let warm = runtime
+        .read_truth()
+        .read_version(execution, created_version_id)
+        .expect("warm historical request remains live");
+    assert_eq!(
+        read_entity_name(warm.get_entity(entity).unwrap()).unwrap(),
+        "baseline"
+    );
     runtime.performance_access().reset_counters();
     let runtime = Arc::new(runtime);
 
@@ -155,7 +165,10 @@ fn concurrent_read_pressure_keeps_cache_diagnostics_coherent() {
     });
 
     let counters = runtime.performance_access().counters();
-    assert!(counters.visibility_cache_hits > 0);
+    assert!(
+        counters.visibility_cache_hits >= 6,
+        "each concurrent historical read reuses the warmed cache: {counters:?}"
+    );
 }
 
 #[test]

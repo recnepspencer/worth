@@ -16,10 +16,15 @@ pub struct RelationalMutationProposalIdentity {
     branch_observation: RelationalBranchReferenceObservation,
     branch_version: RelationalBranchVersion,
     proposed_version_id: VersionId,
+    commit_id: crate::history::data::CommitId,
     suspension_source_version: Option<VersionId>,
 }
 
 impl RelationalMutationProposalIdentity {
+    pub(crate) const fn commit_id(&self) -> crate::history::data::CommitId {
+        self.commit_id
+    }
+
     /// Only owner-admitted suspension leaves logical truth unchanged while
     /// removing physical payloads. Ordinary and reconstruction proposals have
     /// no source-view permission.
@@ -75,6 +80,14 @@ impl crate::runtime::RelationalPreparationRuntime {
                 ),
             )
         })?;
+        let commit_id = self.history.reserve_commit_id().ok_or_else(|| {
+            crate::transactions::data::TransactionCommitError::publication(
+                crate::publication::data::PublicationError::new(
+                    crate::publication::bundle::PublicationStage::BundleAssembly,
+                    "canonical commit identity capacity exhausted",
+                ),
+            )
+        })?;
         let suspension_source_version = matches!(
             validation_input.intent().materialization_mode(),
             Some(crate::mvcc::RelationalMaterializationTransactionMode::Suspend)
@@ -87,6 +100,7 @@ impl crate::runtime::RelationalPreparationRuntime {
             branch_observation: validation_input.basis().reference().clone(),
             branch_version: validation_input.basis().truth_version(),
             proposed_version_id,
+            commit_id,
             suspension_source_version,
         })
     }

@@ -39,3 +39,20 @@ impl<'runtime> InspectionAccess<'runtime> {
         Self { runtime }
     }
 }
+
+impl InspectionAccess<'_> {
+    /// Observe this runtime's actual reservations on the current thread. The
+    /// explicit bound and allocation policy apply only to diagnostic evidence.
+    pub fn observe_record_reservations(
+        &self,
+        maximum_records: usize,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        crate::runtime::RecordReservationObservation,
+        crate::runtime::RecordReservationObservationDenial,
+    > {
+        self.runtime
+            .record_identity
+            .observe_reservations(maximum_records, policy)
+    }
+}

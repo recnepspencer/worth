@@ -1,11 +1,18 @@
 mod canonical_contract;
+mod component_scope;
+mod component_set;
 mod correction_binding;
+mod derived_relation;
 mod fixture;
+mod history;
+mod inspection;
 mod invariant;
 mod mutation_description;
 mod operation_body;
+mod projected_member_domain;
 mod query_context;
 mod relation_integrity;
+mod resource;
 mod resource_path;
 mod retired_fact_budget;
 

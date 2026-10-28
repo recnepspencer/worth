@@ -7,6 +7,7 @@
 
 use std::cmp::Ordering;
 use std::sync::Arc;
+mod logical_size;
 mod retained_size;
 
 use crate::expressions::denial::{ExpressionDenial, ExpressionDenialDetail, ExpressionResult};
@@ -327,7 +328,14 @@ impl ExpressionValue {
     /// Map entries in canonical key order.
     pub fn map_entries(&self) -> Option<impl ExactSizeIterator<Item = (&Self, &Self)>> {
         match &self.0 {
-            Repr::Map(parts) => Some(parts.items.chunks_exact(2).map(|pair| (&pair[0], &pair[1]))),
+            Repr::Map(parts) => Some(
+                parts
+                    .items
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
+                    .map(|pair| (&pair[0], &pair[1])),
+            ),
             _ => None,
         }
     }
@@ -349,26 +357,6 @@ impl ExpressionValue {
                 unknown,
             } => Some((*width, value, unknown)),
             _ => None,
-        }
-    }
-
-    /// The logical size charged for reading, retaining, or emitting a value.
-    pub fn logical_bytes(&self) -> u64 {
-        match &self.0 {
-            Repr::Bool(_) | Repr::None => 1,
-            Repr::Enum(_) => 4,
-            Repr::Float32(_) => 4,
-            Repr::Float64(_) | Repr::Quantity(_) => 8,
-            Repr::Integer(_) => 16,
-            Repr::Decimal { .. } => 17,
-            Repr::String(text) => text.len() as u64,
-            Repr::Bytes(bytes) | Repr::Id(bytes) => bytes.len() as u64,
-            Repr::Bits { limbs, .. } => limbs.len() as u64 * 8,
-            Repr::Logic4 { value, .. } => value.len() as u64 * 16,
-            Repr::Some(inner) => inner.logical_bytes().saturating_add(1),
-            Repr::List(parts) | Repr::Map(parts) | Repr::Record(parts) | Repr::Entry(parts) => {
-                parts.bytes
-            }
         }
     }
 }

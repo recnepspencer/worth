@@ -14,6 +14,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoweredRelationIntegrityPlan {
+    pub aggregate_identity: Option<super::AggregateIdentityContractDeclaration>,
     pub kind_id: KindId,
     pub plan_revision: RelationIntegrityPlanRevision,
     pub endpoint_kind_contracts: Vec<LoweredEndpointKindContract>,
@@ -29,7 +30,8 @@ pub struct LoweredRelationIntegrityPlan {
 
 impl LoweredRelationIntegrityPlan {
     pub fn contract_count(&self) -> usize {
-        self.endpoint_kind_contracts.len()
+        usize::from(self.aggregate_identity.is_some())
+            + self.endpoint_kind_contracts.len()
             + self.cardinality_maximum_contracts.len()
             + self.cardinality_minimum_contracts.len()
             + self.uniqueness_contracts.len()

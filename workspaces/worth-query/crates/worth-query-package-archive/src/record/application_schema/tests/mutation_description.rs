@@ -1,4 +1,5 @@
 use super::{decode_member, encode_member, try_decode_member};
+mod source_disclosure;
 use crate::facade::WorthQueryPackageArchiveDenialKind;
 use worth_query_declaration::facade::{
     application_operation::*, application_schema::ApplicationSchemaMember,
@@ -43,7 +44,7 @@ fn current_mutation_archive_refuses_omitted_or_displaced_requirements() {
     );
     let current = encode_member(&member);
     let requirement_bytes = "2:not-applicable".len();
-    let mut prefix = current[..current.len() - 4 - requirement_bytes].to_vec();
+    let mut prefix = current[..current.len() - 2 - 4 - requirement_bytes].to_vec();
     assert_eq!(
         try_decode_member(&prefix).unwrap_err().kind(),
         WorthQueryPackageArchiveDenialKind::Truncated
@@ -153,6 +154,7 @@ fn mutation_member(
     ApplicationSchemaMember::ApplicationMutation {
         description: ApplicationMutationDescription::from_untrusted_parts(
             ApplicationMutationDescriptionParts {
+                inspection_disclosure: None,
                 workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
                 binding_identity: identity("worth.archive.mutation.v1"),
                 operation: "Publish".to_owned(),

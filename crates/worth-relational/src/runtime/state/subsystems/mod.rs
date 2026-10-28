@@ -66,3 +66,9 @@ pub(crate) use visibility::{
     PublishedSnapshotSlotReservation, SnapshotHandleBinding, VisibilityResidency,
     VisibilitySubsystem,
 };
+
+pub use record_identity::{
+    RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
+};
+
+pub(crate) use storage::TryPartitionMutationDenied;

@@ -1,3 +1,5 @@
+mod component_scope;
+mod derived_scope;
 mod fixture;
 mod operation_body;
 
@@ -17,8 +19,16 @@ use crate::record::frame::{RecordFrameEncoding, WorthQueryPackageArchiveRecordDe
 fn complete_operation_contract_round_trips_every_payload_family_with_exact_work() {
     let record = fixture::complete_record();
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
-    // Displaced protocols are refused before payload decoding; protocol 15 is current.
+    // Displaced protocols are refused before payload decoding; protocol 18 is current.
     for (version, displaced_hex) in [
+        (
+            17_u16,
+            include_str!("tests/application_operation_contract_v17.hex"),
+        ),
+        (
+            16_u16,
+            include_str!("tests/application_operation_contract_v16.hex"),
+        ),
         (
             6_u16,
             include_str!("tests/application_operation_contract_v6.hex"),
@@ -43,6 +53,10 @@ fn complete_operation_contract_round_trips_every_payload_family_with_exact_work(
             14_u16,
             include_str!("tests/application_operation_contract_v14.hex"),
         ),
+        (
+            15_u16,
+            include_str!("tests/application_operation_contract_v15.hex"),
+        ),
     ] {
         let original = decode_hex(displaced_hex.trim());
         let mut old_decoder =
@@ -56,9 +70,9 @@ fn complete_operation_contract_round_trips_every_payload_family_with_exact_work(
         );
         assert_eq!(original, decode_hex(displaced_hex.trim()));
     }
-    let frozen_hex = include_str!("tests/application_operation_contract_v15.hex").trim();
+    let frozen_hex = include_str!("tests/application_operation_contract_v18.hex").trim();
     assert_eq!(encode_hex(&bytes), frozen_hex);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 15);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 18);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 12);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
@@ -199,8 +213,14 @@ fn duplicate_operation_contract_loci_fail_without_normalization() {
 
 #[test]
 fn unknown_scope_tags_and_invalid_external_protocols_fail_closed() {
-    assert_scope_tag_denied(true, 4);
-    assert_scope_tag_denied(false, 6);
+    for graph_read in [true, false] {
+        for tag in [0, u16::MAX] {
+            assert_scope_tag_denied(graph_read, tag, Kind::UnsupportedRecordVariant);
+        }
+    }
+    // Tag 6 now denotes relation-field initialization; its absent payload is
+    // truncated, while an unrecognized tag is still a distinct refusal.
+    assert_scope_tag_denied(false, 6, Kind::Truncated);
 
     let invalid_identity = effect_bytes("Invalid.protocol", 1);
     assert_eq!(
@@ -291,7 +311,7 @@ fn assert_untrusted_parts_decode_kind(
     assert_decode_kind(&bytes, expected);
 }
 
-fn assert_scope_tag_denied(graph_read: bool, tag: u16) {
+fn assert_scope_tag_denied(graph_read: bool, tag: u16, expected: Kind) {
     let bytes = tag.to_be_bytes();
     let mut input = BinaryInput::new(&bytes);
     let mut attempt = RecordDecodeAttempt::begin(
@@ -305,7 +325,7 @@ fn assert_scope_tag_denied(graph_read: bool, tag: u16) {
     } else {
         super::touch::decode(&mut input, &mut attempt).unwrap_err()
     };
-    assert_eq!(denial.kind(), Kind::UnsupportedRecordVariant);
+    assert_eq!(denial.kind(), expected);
 }
 
 fn effect_bytes(protocol_identity: &str, protocol_version: u32) -> Vec<u8> {

@@ -31,6 +31,9 @@ pub enum BankApplicationQueryInstallationDenialKind {
     CanonicalEncodedByteBudgetExceeded,
     CanonicalDigestSlotRejected,
     InvalidGraphObligationContract,
+    InvalidInspectionDefinition,
+    InspectionBindingMeaningChanged,
+    InspectionUnavailable,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -95,6 +98,9 @@ pub(super) const fn query_installation(
         }
         QueryInstallation::CanonicalDigestSlotRejected => Bank::CanonicalDigestSlotRejected,
         QueryInstallation::InvalidGraphObligationContract => Bank::InvalidGraphObligationContract,
+        QueryInstallation::InvalidInspectionDefinition => Bank::InvalidInspectionDefinition,
+        QueryInstallation::InspectionBindingMeaningChanged => Bank::InspectionBindingMeaningChanged,
+        QueryInstallation::InspectionUnavailable => Bank::InspectionUnavailable,
     }
 }
 

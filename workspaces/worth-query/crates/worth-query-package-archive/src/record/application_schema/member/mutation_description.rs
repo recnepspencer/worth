@@ -68,7 +68,7 @@ pub(super) fn write(
         let requirements = &description.parts().workflow_execution_requirements;
         output.text(&requirements.persistence_identity())?;
     }
-    Ok(())
+    super::source_disclosure::write(output, description.inspection_disclosure())
 }
 
 pub(super) fn decode(
@@ -146,6 +146,7 @@ pub(super) fn decode_description(
             output_roles,
             output_role_families,
             workflow_execution_requirements,
+            inspection_disclosure: super::source_disclosure::decode(input)?,
         },
     ))
 }

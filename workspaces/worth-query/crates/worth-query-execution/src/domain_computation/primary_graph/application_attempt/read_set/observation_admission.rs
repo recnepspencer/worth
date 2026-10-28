@@ -108,6 +108,18 @@ pub(super) fn graph_read_scope_matches_key(
 ) -> bool {
     match (scope, key) {
         (
+            WorthQueryOperationGraphReadScope::DerivedSource(scope),
+            WorthQueryApplicationFactKey::ComponentSelection(key),
+        ) => key.matches_derived_scope(scope),
+        (
+            WorthQueryOperationGraphReadScope::Components(scope),
+            WorthQueryApplicationFactKey::ComponentSelection(key),
+        ) => key.matches_scope(scope),
+        (
+            WorthQueryOperationGraphReadScope::Relation(scope),
+            WorthQueryApplicationFactKey::Aggregate(key),
+        ) => key.orbit_relation().is_some() && scope.relation() == key.subject(),
+        (
             WorthQueryOperationGraphReadScope::Relation(scope),
             WorthQueryApplicationFactKey::StructuralWalk(key),
         ) => scope.relation() == key.relation(),
@@ -148,6 +160,17 @@ pub(super) fn graph_reads_exactly_cover_fact_keys<'key>(
     let mut expected = 0usize;
     for scope in contract.roles().iter().flat_map(|role| role.read_scopes()) {
         let atomic_count = match scope {
+            WorthQueryOperationGraphReadScope::Components(_)
+            | WorthQueryOperationGraphReadScope::DerivedSource(_) => {
+                let count = keys
+                    .clone()
+                    .filter(|key| graph_read_scope_matches_key(scope, key))
+                    .count();
+                if count == 0 {
+                    return false;
+                }
+                count
+            }
             WorthQueryOperationGraphReadScope::Entity(_)
             | WorthQueryOperationGraphReadScope::Relation(_) => 1,
             WorthQueryOperationGraphReadScope::NativeProjection(scope) => {

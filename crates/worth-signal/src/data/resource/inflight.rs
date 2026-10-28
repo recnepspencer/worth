@@ -52,6 +52,10 @@ pub struct InFlightResourceRequest {
     superseded_by: Option<ResourceRequestHandle>,
     #[serde(default)]
     managed_queue: Option<ResourceManagedQueueState>,
+    // Runtime custody only: diagnostic Serde values cannot be installed into
+    // ResourceRuntimeState. Genuine state clones/rekeying preserve this bit.
+    #[serde(skip)]
+    process_local: bool,
 }
 
 impl InFlightResourceRequest {
@@ -92,11 +96,20 @@ impl InFlightResourceRequest {
             revalidation_policy_decision_digest: None,
             superseded_by: None,
             managed_queue: None,
+            process_local: false,
         }
     }
 
     pub(crate) fn attach_timeout_wake(&mut self, wake_id: TemporalWakeId) {
         self.timeout_wake_id = Some(wake_id);
+    }
+
+    pub(crate) fn mark_process_local(&mut self) {
+        self.process_local = true;
+    }
+
+    pub(crate) fn is_process_local(&self) -> bool {
+        self.process_local
     }
 
     pub(crate) fn attach_revalidation_freshness(

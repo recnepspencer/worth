@@ -6,7 +6,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::admission::permission::PreparedApplicationQueryPermission;
 use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 
-use crate::domain_computation::provider_session::WorthQueryPreparedQuerySessionIdentity;
+use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Consume exactly the same fresh principal, scope, selected Product and
@@ -121,7 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             graph,
             disclosure,
         )?;
-        let indexes = crate::domain_computation::primary_graph::application_query::basis::ensure_selected_read_indexes_admitted_with_native_access(execution, graph, query, basis.selected_product().relational_basis(), native)?;
+        let indexes = crate::domain_computation::primary_graph::application_query::basis::ensure_query_truth_and_security_indexes_admitted_with_native_access(execution, graph, query, basis.selected_product().relational_basis(), security_product.relational_basis(), native)?;
         let index_posture = WorthQueryQueryIndexPosture::SelectedInstalled(indexes);
         validate_admission_request(controls.request_scope(), query.name())?;
         let graph_work = start_prepared_query_session(
@@ -180,7 +180,7 @@ fn start_prepared_query_session<
     Scope,
 >(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    reserved: WorthQueryPreparedQuerySessionIdentity,
+    reserved: WorthQueryPreparedProductReadSessionIdentity,
     plan: WorthQueryAdmittedGraphWorkPlan,
     obligation: &WorthQueryInstalledGraphObligationSetIdentity,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
@@ -211,7 +211,7 @@ where
         basis.retained_product(),
         security_product,
         application.graph_work_provider_identity(),
-        graph.query_session_port(),
+        graph.product_read_session_port(),
     )
     .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))
 }

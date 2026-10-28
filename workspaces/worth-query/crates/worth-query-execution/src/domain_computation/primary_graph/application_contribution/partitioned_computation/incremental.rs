@@ -189,14 +189,18 @@ where
         return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
     }
     if let Ok(retained) = &prior.retained
-        && retained.facts.has_structural_walk()
+        && (retained.facts.has_aggregate() || retained.facts.has_structural_walk())
     {
         if let Some(cause) = basis.drift(&retained.basis) {
             return full(basis, cause);
         }
         return full(
             basis,
-            WorthQueryPartitionedComputationFullCause::StructuralWalkRead,
+            if retained.facts.has_aggregate() {
+                WorthQueryPartitionedComputationFullCause::AggregateRead
+            } else {
+                WorthQueryPartitionedComputationFullCause::StructuralWalkRead
+            },
         );
     }
     let changes = reader.computation_changes(&COMPARATOR, &prior);

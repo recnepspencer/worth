@@ -178,6 +178,8 @@ decision is recorded before Milestone 2 or 3 code depends on it.
 
 ## Milestone 2: Relational cutover to Store
 
+Completed 2026-10-28. See the [closeout evidence](milestone-2.md#closeout-2026-10-28).
+
 Relational uses Store for durable committed state while retaining graph
 meaning, transaction validation, identity and MVCC. Its ordinary transactions
 and reads use this integration directly.

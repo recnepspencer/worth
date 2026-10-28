@@ -107,7 +107,9 @@ WorthUiPresentationAsyncHostPlan::prepare()
 ```
 
 The authored source owns application Query progression. The presentation
-installation contains no second status source. The host audience remains the
+installation publishes its own Native initialization event through ordinary
+transaction admission and compare-and-publish before binding owned async work.
+It creates no status records or replacement application source. The host audience remains the
 Query progression boundary; Worth UI does not emulate it or reach into the raw
 engine.
 

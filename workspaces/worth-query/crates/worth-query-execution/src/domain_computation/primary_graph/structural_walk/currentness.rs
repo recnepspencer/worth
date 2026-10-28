@@ -37,7 +37,7 @@ impl StructuralWalkObservation {
         }
     }
 
-    pub(super) fn remains_equal_at(
+    pub(in crate::domain_computation::primary_graph) fn remains_equal_at(
         &self,
         pin: &RelationalPinnedRead,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

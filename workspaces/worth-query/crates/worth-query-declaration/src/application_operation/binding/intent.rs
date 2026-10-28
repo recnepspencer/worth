@@ -81,6 +81,16 @@ where
     /// refused, and the ordinary mutation lane refuses the binding.
     const WORKFLOW_CONTROL: bool = false;
 
+    /// Explicit inspection meaning for this source's original retained input.
+    /// Execute and correction permission do not supply inspection disclosure.
+    fn visit_source_disclosure<
+        Visitor: super::super::ApplicationSourceDisclosureVisitor<Schema, Self>,
+    >(
+        visitor: Visitor,
+    ) -> Visitor::Output {
+        visitor.unavailable()
+    }
+
     /// Explicit workflow applicability. Guarded bindings must choose occurrence
     /// or approval evidence; a direct/control binding declares NotApplicable.
     fn workflow_execution_requirements() -> super::ApplicationWorkflowExecutionRequirements;
@@ -143,6 +153,9 @@ where
             Self::REQUIRES_WORKFLOW_AUTHORITY,
             Self::WORKFLOW_CONTROL,
             Self::workflow_execution_requirements(),
+            Self::visit_source_disclosure(
+                super::super::source_disclosure::DescribeSourceDisclosure::<Schema, Self>::new(),
+            ),
         )
     }
 }

@@ -22,6 +22,7 @@
 #![forbid(unsafe_code)]
 #![deny(unreachable_patterns)]
 
+mod aggregate_identity;
 mod aspect_wire;
 mod authority;
 mod authorization;
@@ -31,10 +32,12 @@ mod capabilities;
 mod change_source;
 mod commit_strategies;
 mod config;
+mod derived_relation;
 mod diagnostics;
 mod durability;
 mod errors;
 mod execution;
+mod graph_member;
 mod history;
 mod identity;
 mod identity_authority;
@@ -45,6 +48,7 @@ mod merge;
 mod mvcc;
 mod performance;
 mod presentation;
+mod projected_member_domain;
 mod publication;
 mod query;
 mod replay;
@@ -53,6 +57,7 @@ mod schema;
 mod simulation;
 mod snapshots;
 mod storage;
+mod structural_traversal;
 mod symbols;
 mod transactions;
 mod validation;

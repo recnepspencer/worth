@@ -327,6 +327,13 @@ fn registry_for_snapshot(
     available: &RelationalSchemaRegistry,
     expected: &SchemaAuthoritySnapshot,
 ) -> Option<RelationalSchemaRegistry> {
+    // Descriptor rebinding of physical kinds cannot substitute a different
+    // executable recipe, even when all physical registrations still match.
+    if available.derived_parts() != expected.derived_relations
+        || available.projected_domain_parts() != expected.projected_member_domains
+    {
+        return None;
+    }
     if available.authority_snapshot() == *expected {
         return Some(available.clone());
     }

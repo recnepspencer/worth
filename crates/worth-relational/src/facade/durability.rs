@@ -31,3 +31,9 @@ pub use crate::durability::{
     RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
 };
 pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
+
+pub use crate::durability::data::{
+    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
+    CheckpointReservationAdvanceDenial, NativeCheckpointModelBytes, RelationalCheckpointInspection,
+};
+pub use crate::history::data::RecordAllocationClass;

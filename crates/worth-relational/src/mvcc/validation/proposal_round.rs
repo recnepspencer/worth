@@ -117,7 +117,7 @@ impl RelationalPreparationRuntime {
                     };
                     let validation_input =
                         RelationalTransactionValidationInput::from_transaction(transaction);
-                    let mutation = apply_mutation_draft(
+                    let mut mutation = apply_mutation_draft(
                         execution,
                         &runtime,
                         &selected,
@@ -126,6 +126,7 @@ impl RelationalPreparationRuntime {
                         prepared.schema_authority.as_ref(),
                         &identity,
                         symbols,
+                        validation_input.intent().materialization_mode(),
                     )?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
                     let control =
@@ -142,6 +143,7 @@ impl RelationalPreparationRuntime {
                             identity.proposed_version_id(),
                             &prepared.merged_plan,
                             Some(&identity),
+                            mutation.aggregate_source(selected),
                             execution,
                             &control,
                         )?;
@@ -156,6 +158,12 @@ impl RelationalPreparationRuntime {
                             execution,
                             &control,
                         )?;
+                    mutation.prepare_aggregate(
+                        execution,
+                        round,
+                        selected,
+                        &prepared.merged_plan,
+                    )?;
                     Ok(PreparedProposalRound {
                         prepared,
                         mutation,

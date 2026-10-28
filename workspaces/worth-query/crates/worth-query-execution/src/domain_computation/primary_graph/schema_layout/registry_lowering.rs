@@ -163,6 +163,58 @@ pub(in crate::domain_computation::primary_graph) fn register_relation_to_kinds(
     integrity: &ApplicationRelationIntegrityRecord,
     entity_kinds: Option<&BTreeMap<String, KindId>>,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
+    register_relation_to_kinds_with_contracts(
+        registry,
+        schema_id,
+        schema_version_id,
+        relation,
+        kind_id,
+        from_kind,
+        to_kinds,
+        integrity,
+        entity_kinds,
+        Vec::new(),
+    )
+}
+
+pub(super) fn register_application_relation(
+    registry: RelationalSchemaRegistry,
+    schema_id: &SchemaId,
+    schema_version_id: SchemaVersionId,
+    relation: &str,
+    kind_id: KindId,
+    from_kind: KindId,
+    to_kind: KindId,
+    integrity: &ApplicationRelationIntegrityRecord,
+    entity_kinds: &BTreeMap<String, KindId>,
+    aspects: Vec<DeclaredAspectContractBinding>,
+) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
+    register_relation_to_kinds_with_contracts(
+        registry,
+        schema_id,
+        schema_version_id,
+        relation,
+        kind_id,
+        from_kind,
+        vec![to_kind],
+        integrity,
+        Some(entity_kinds),
+        aspects,
+    )
+}
+
+fn register_relation_to_kinds_with_contracts(
+    registry: RelationalSchemaRegistry,
+    schema_id: &SchemaId,
+    schema_version_id: SchemaVersionId,
+    relation: &str,
+    kind_id: KindId,
+    from_kind: KindId,
+    to_kinds: Vec<KindId>,
+    integrity: &ApplicationRelationIntegrityRecord,
+    entity_kinds: Option<&BTreeMap<String, KindId>>,
+    aspects: Vec<DeclaredAspectContractBinding>,
+) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
     let cross_context_policy = lower_cross_context(integrity.endpoints.cross_context_policy);
     let relation_integrity =
         lower_relation_integrity(relation, from_kind, to_kinds, integrity, entity_kinds)?;
@@ -174,13 +226,15 @@ pub(in crate::domain_computation::primary_graph) fn register_relation_to_kinds(
             schema_version_id,
             cross_context_policy,
             cascade_delete_policy: lower_cascade_delete(integrity.deletion),
-            aspect_contract_declarations: KindAspectContractDeclarations::default(),
+            aspect_contract_declarations: KindAspectContractDeclarations::new(aspects),
             relation_integrity,
         })
         .map_err(relational_schema_denial)
 }
 
-fn lower_cross_context(value: ApplicationRelationCrossContextPolicy) -> CrossContextPolicy {
+pub(super) fn lower_cross_context(
+    value: ApplicationRelationCrossContextPolicy,
+) -> CrossContextPolicy {
     match value {
         ApplicationRelationCrossContextPolicy::AllowExplicit => CrossContextPolicy::AllowExplicit,
         ApplicationRelationCrossContextPolicy::SchemaControlled => {
@@ -201,20 +255,33 @@ fn lower_cascade_delete(value: ApplicationRelationDeletionPolicy) -> CascadeDele
 
 pub(super) struct LoweredApplicationContractBindings {
     pub by_entity: BTreeMap<String, Vec<DeclaredAspectContractBinding>>,
+    pub by_relation: BTreeMap<String, Vec<DeclaredAspectContractBinding>>,
 }
 
 pub(super) fn lower_application_contract_bindings(
     catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
 ) -> LoweredApplicationContractBindings {
     let mut by_entity = BTreeMap::<String, Vec<DeclaredAspectContractBinding>>::new();
+    let mut by_relation = BTreeMap::<String, Vec<DeclaredAspectContractBinding>>::new();
     for installed in catalog.contracts() {
-        by_entity
-            .entry(installed.locus().entity().to_string())
+        let owners = match installed.locus().owner_kind() {
+            worth_query_installation::facade::ApplicationFieldBindingOwnerKind::Entity => {
+                &mut by_entity
+            }
+            worth_query_installation::facade::ApplicationFieldBindingOwnerKind::Relation => {
+                &mut by_relation
+            }
+        };
+        owners
+            .entry(installed.locus().record_name().to_string())
             .or_default()
             .push(DeclaredAspectContractBinding {
                 binding: installed.binding().clone(),
                 contract: installed.contract().clone(),
             });
     }
-    LoweredApplicationContractBindings { by_entity }
+    LoweredApplicationContractBindings {
+        by_entity,
+        by_relation,
+    }
 }

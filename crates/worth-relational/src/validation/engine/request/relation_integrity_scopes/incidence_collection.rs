@@ -125,7 +125,13 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
             return Ok(());
         }
         for partition_id in self.state_view.state().partition_ids() {
-            for slot in self.state_view.relation_slots(partition_id) {
+            // Complete scope preparation keeps its existing allocation policy;
+            // the state-view owner enumerates actual logical coordinates.
+            let control = self.control;
+            let slots = self
+                .state_view
+                .try_relation_slots(partition_id, |_, _| control.check())?;
+            for slot in slots {
                 self.check_live()?;
                 let Some(metadata) = self
                     .state_view

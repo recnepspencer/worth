@@ -204,7 +204,8 @@ where
     let scope_entity_name = access.resource_entity_name().to_string();
     let authentication_valid_until = access.authentication_valid_until;
     let request_scope = access.request_scope.clone();
-    let original_scope = retain_original_scope(access.resolved.resource(), operation.contracts());
+    let original_scope =
+        retain_original_scope(execution, access.resolved.resource(), operation.contracts())?;
     let super::WorthQueryAdmittedApplicationCapabilityAccess {
         input,
         governed_input_identity,
@@ -259,6 +260,7 @@ where
         authorization: Some(revalidated.authorization),
         governed_input_identity,
         original_input: None,
+        original_inspection_disclosure: None,
         original_scope,
         authorization_basis: WorthQueryOperationAuthorizationBasis::Capability { input },
         graph_work: revalidated.graph_work,

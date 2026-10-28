@@ -3,7 +3,9 @@ use std::collections::BTreeSet;
 use super::{ApplicationQueryResultShape, WorthQueryPortableApplicationQueryParts};
 
 mod canonical_ordering;
+mod components;
 mod disclosure;
+mod orbit;
 mod result_shape;
 use result_shape::{
     contains_entity as shape_contains_entity, continuation_parent_path_is_exact,
@@ -41,6 +43,8 @@ pub enum ApplicationQueryDefinitionDenial {
     ContinuationRequiresSingleRoot,
     ContinuationRequiresSingleManyCollection,
     InvalidRootPath,
+    InvalidOrbitShape,
+    InvalidComponentShape,
     PreviewLaneWithoutBasisSupport,
     LiveLaneWithoutCauseContract,
     LiveCauseContractWithoutLane,
@@ -57,6 +61,8 @@ pub(crate) fn validate_portable_application_query_freshly(
     }
     validate_portable_identities(definition)?;
     validate_result_and_root_selection(definition)?;
+    orbit::validate(definition)?;
+    components::validate(definition)?;
     validate_parameter_names(definition)?;
     if !canonical_ordering::is_canonical(definition) {
         return Err(ApplicationQueryDefinitionDenial::InvalidCanonicalOrdering);
@@ -128,21 +134,10 @@ fn validate_result_and_root_selection(
         return Err(ApplicationQueryDefinitionDenial::ResultRootMismatch);
     }
     if definition.root_paths().iter().any(|path| {
-        path.steps().is_empty()
-            || path.steps().iter().any(|step| {
-                step.traversal() == super::ApplicationQueryRootPathTraversal::Closure
-                    && step.from() != step.to()
-            })
+        (path.steps().is_empty() && definition.component_selection().is_none())
+            || !path.is_well_formed()
             || path.start_entity() != definition.scope_entity()
             || path.terminal_entity() != definition.root_entity()
-            || path
-                .steps()
-                .windows(2)
-                .any(|pair| pair[0].child_entity() != pair[1].parent_entity())
-            || path.guards().iter().any(|guard| {
-                guard.after_step() > path.steps().len()
-                    || root_path_entity_after_step(path, guard.after_step()) != Some(guard.entity())
-            })
     }) {
         return Err(ApplicationQueryDefinitionDenial::InvalidRootPath);
     }
@@ -152,6 +147,14 @@ fn validate_result_and_root_selection(
         return Err(ApplicationQueryDefinitionDenial::ResultQueryMismatch);
     }
     let mut slots = BTreeSet::new();
+    if let Some(orbit) = definition.orbit() {
+        slots.insert(orbit.slot_type());
+    }
+    if let Some(components) = definition.component_selection()
+        && !slots.insert(components.slot_type())
+    {
+        return Err(ApplicationQueryDefinitionDenial::DuplicateResultSlot);
+    }
     if !shape_slots_are_unique(definition.result_shape(), &mut slots) {
         return Err(ApplicationQueryDefinitionDenial::DuplicateResultSlot);
     }
@@ -223,19 +226,6 @@ fn validate_ordering(
         }
     }
     Ok(())
-}
-
-fn root_path_entity_after_step(
-    path: &super::ApplicationQueryRootPathMeaning,
-    after_step: usize,
-) -> Option<&str> {
-    if after_step == 0 {
-        Some(path.start_entity())
-    } else {
-        path.steps()
-            .get(after_step - 1)
-            .map(super::ApplicationQueryRootPathStep::child_entity)
-    }
 }
 
 fn validate_live_cause(

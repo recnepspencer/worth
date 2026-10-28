@@ -1,10 +1,6 @@
 use super::artifact_execution::assemble_commit_artifacts;
 use super::authority_context::AuthoritativeCommitContext;
-use super::boundary_validation::validate_commit_boundary;
-use super::draft_execution::prepare_commit_execution;
-use super::execution_admission::admit_commit_execution;
-use super::history_binding::bind_commit_history;
-use super::mutation_execution::mutate_commit_execution;
+use super::history_preparation::prepare_bound_history;
 use super::publication_execution::prepare_commit_publication_execution;
 use super::snapshot_validation::validate_snapshot_publication;
 use crate::transactions::data::{CommitResult, TransactionCommitError};
@@ -57,14 +53,9 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         })?
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
-    let admitted = admit_commit_execution(runtime, context)?;
-    let prepared = prepare_commit_execution(execution, runtime, admitted)?;
-    let round_runtime = runtime.with_candidate_symbols(prepared.candidate_symbols());
-    let runtime = &round_runtime;
-    let boundary_validated =
-        validate_commit_boundary(execution, runtime, prepared, &scope_control)?;
-    let mutated = mutate_commit_execution(execution, runtime, boundary_validated, &scope_control)?;
-    let history_bound = bind_commit_history(execution, runtime, mutated)?;
+    let history_bound = prepare_bound_history(execution, runtime, context, &scope_control)?;
+    let final_runtime = runtime.with_candidate_symbols(history_bound.candidate_symbols());
+    let runtime = &final_runtime;
     let snapshot_validated =
         validate_snapshot_publication(execution, runtime, history_bound, &scope_control)?;
     let assembled = assemble_commit_artifacts(execution, runtime, snapshot_validated)?;

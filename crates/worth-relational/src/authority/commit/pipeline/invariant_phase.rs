@@ -13,6 +13,7 @@ pub(super) fn enforce_commit_boundary_phase(
     proposed_version_id: crate::identity::data::VersionId,
     merged_plan: &MergedCommitPlan,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+    aggregate_source: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     prevalidated_commit_boundary: Option<InvariantExecutionResult>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
@@ -32,6 +33,7 @@ pub(super) fn enforce_commit_boundary_phase(
                 proposed_version_id,
                 merged_plan,
                 proposal_identity,
+                aggregate_source,
                 execution,
                 control,
             )
@@ -47,12 +49,13 @@ pub(super) fn enforce_snapshot_publication_phase(
     runtime: &RelationalPreparationRuntime,
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
-    selected_branch_state: &crate::branch::SelectedRelationalBranchState,
+    selected_branch_state: &crate::branch::SelectedRelationalBranchRead<'_>,
     working_state: &crate::storage::overlay::WorkingState,
     created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
     version_id: VersionId,
     merged_plan: &MergedCommitPlan,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+    aggregate_source: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     prevalidated_snapshot_publication: Option<InvariantExecutionResult>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
@@ -64,15 +67,13 @@ pub(super) fn enforce_snapshot_publication_phase(
         None => runtime
             .invariant_authority()
             .enforce_snapshot_publication_for_working_state(
-                &crate::branch::SelectedRelationalBranchRead::in_round(
-                    selected_branch_state,
-                    selected_branch_state,
-                ),
+                selected_branch_state,
                 working_state,
                 created_entities,
                 version_id,
                 merged_plan,
                 proposal_identity,
+                aggregate_source,
                 execution,
                 control,
             )

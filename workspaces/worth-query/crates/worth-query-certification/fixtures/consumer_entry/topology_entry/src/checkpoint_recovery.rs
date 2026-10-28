@@ -22,6 +22,7 @@ use worth_query_host::facade::{
 use super::*;
 mod advancement_currentness;
 mod clean_reuse;
+mod component_islands;
 pub(crate) mod computation_partition;
 mod contribution;
 mod current_family_output;

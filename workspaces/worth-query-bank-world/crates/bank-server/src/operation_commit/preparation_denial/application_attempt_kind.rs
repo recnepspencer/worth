@@ -18,6 +18,9 @@ pub(super) const fn application_attempt_kind(
         }
         Query::CurrentAuthorityDenied => BankApplicationAttemptDenialKind::CurrentAuthorityDenied,
         Query::CorrectionCaptureDenied => BankApplicationAttemptDenialKind::CorrectionCaptureDenied,
+        Query::SourceDisclosureCaptureDenied => {
+            BankApplicationAttemptDenialKind::SourceDisclosureCaptureDenied
+        }
         Query::OutsideRealizedReadScope => {
             BankApplicationAttemptDenialKind::OutsideRealizedReadScope
         }

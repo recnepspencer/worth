@@ -1,12 +1,13 @@
 use super::authorization_policy::ApplicationAuthorizationPath;
 use super::capability_identifier_validation::validate_capability_identifiers;
 use super::declaration_denial::ApplicationSchemaDeclarationDenial;
-use super::schema_member::{
-    ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
-    ApplicationSchemaMember,
-};
+use super::schema_member::ApplicationSchemaMember;
 
 mod application_query;
+mod operation_targets;
+use operation_targets::{
+    validate_decision_read_target_identifiers, validate_program_target_identifiers,
+};
 
 pub(super) fn validate_schema_header(
     owner: &str,
@@ -40,6 +41,15 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
+                super::projected_member_domain::validate_member_identifiers(definition)?;
+            }
+            ApplicationSchemaMember::DerivedRelation { .. }
+            | ApplicationSchemaMember::DerivedComponentSet { .. }
+            | ApplicationSchemaMember::RuleReadableCollection { .. }
+            | ApplicationSchemaMember::OperationDerivedRead { .. } => {
+                super::derived_relation::validate_member_identifiers(member)?;
+            }
             ApplicationSchemaMember::OperationBody { operation, body } => {
                 validate_simple_identifier(operation)?;
                 for step in body.scope_fields() {
@@ -141,6 +151,12 @@ pub(super) fn validate_member_identifiers(
             } => {
                 validate_identifiers([relation, from, to])?;
             }
+            ApplicationSchemaMember::ComponentSet { definition } => {
+                super::component_set::validate_identifiers(definition)?;
+            }
+            ApplicationSchemaMember::OperationComponentRead { definition } => {
+                super::operation_component_read::validate_identifiers(definition)?;
+            }
             ApplicationSchemaMember::PrincipalBinding {
                 binding,
                 mapping_entity,
@@ -167,6 +183,20 @@ pub(super) fn validate_member_identifiers(
             ])?,
             ApplicationSchemaMember::ApplicationQuery { definition } => {
                 application_query::validate(definition)?;
+            }
+            ApplicationSchemaMember::ApplicationResource { definition } => {
+                definition
+                    .validate()
+                    .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationResource)?;
+            }
+            ApplicationSchemaMember::ApplicationQueryInspection { .. }
+            | ApplicationSchemaMember::ApplicationHistoryQuery { .. } => {
+                application_query::validate_metadata(member)?;
+            }
+            ApplicationSchemaMember::RelationAspect { definition } => {
+                definition.validate().map_err(|_| {
+                    ApplicationSchemaDeclarationDenial::InvalidApplicationRelationAspect
+                })?;
             }
             ApplicationSchemaMember::ApplicationCapability { contract } => {
                 validate_capability_identifiers(contract)?;
@@ -317,45 +347,6 @@ pub(super) fn validate_authorization_path(
         validate_simple_identifier(predicate.field())?;
     }
     Ok(())
-}
-
-fn validate_decision_read_target_identifiers(
-    target: &ApplicationOperationDecisionReadTarget,
-) -> Result<(), ApplicationSchemaDeclarationDenial> {
-    match target {
-        ApplicationOperationDecisionReadTarget::Entity { entity } => {
-            validate_simple_identifier(entity)
-        }
-        ApplicationOperationDecisionReadTarget::Field {
-            entity,
-            aspect,
-            field,
-        } => validate_identifiers([entity, aspect, field]),
-        ApplicationOperationDecisionReadTarget::Relation { relation, from, to } => {
-            validate_identifiers([relation, from, to])
-        }
-    }
-}
-
-fn validate_program_target_identifiers(
-    target: &ApplicationOperationProgramTarget,
-) -> Result<(), ApplicationSchemaDeclarationDenial> {
-    match target {
-        ApplicationOperationProgramTarget::Create { entity }
-        | ApplicationOperationProgramTarget::Delete { entity } => {
-            validate_simple_identifier(entity)
-        }
-        ApplicationOperationProgramTarget::Write {
-            entity,
-            aspect,
-            field,
-        } => validate_identifiers([entity, aspect, field]),
-        ApplicationOperationProgramTarget::Link { relation, from, to }
-        | ApplicationOperationProgramTarget::Unlink { relation, from, to } => {
-            validate_identifiers([relation, from, to])
-        }
-        ApplicationOperationProgramTarget::Emit { effect } => validate_simple_identifier(effect),
-    }
 }
 
 fn validate_identifiers<'a>(

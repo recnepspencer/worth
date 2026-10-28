@@ -13,56 +13,58 @@ pub(super) fn evaluate_max_snapshot_entities(
 ) -> Option<InvariantViolation> {
     let state_view = context.state_view();
     let mut visible_entities = 0;
-    if state_view.version_id() == context.current_version_id() {
-        for partition_id in state_view.state().partition_ids_iter() {
-            if !context.checkpoint(1) {
-                return None;
-            }
-            let Some(partition) = state_view.state().get_current_partition(partition_id) else {
-                return Some(storage_inconsistency_violation(
-                    class,
-                    format!(
-                        "partition {:?} missing during snapshot entity count",
-                        partition_id
-                    ),
-                    StorageInconsistencyContext::default()
-                        .with_partition_id(partition_id)
-                        .with_scan(StorageInconsistencyScan::MaxSnapshotEntities),
-                ));
-            };
+    for partition_id in state_view.state().partition_ids_iter() {
+        if !context.checkpoint(1) {
+            return None;
+        }
+        let Some(partition) = state_view.state().get_current_partition(partition_id) else {
+            return Some(storage_inconsistency_violation(
+                class,
+                format!(
+                    "partition {:?} missing during snapshot entity count",
+                    partition_id
+                ),
+                StorageInconsistencyContext::default()
+                    .with_partition_id(partition_id)
+                    .with_scan(if state_view.version_id() == context.current_version_id() {
+                        StorageInconsistencyScan::MaxSnapshotEntities
+                    } else {
+                        StorageInconsistencyScan::HistoricalMaxSnapshotEntities
+                    }),
+            ));
+        };
+        if state_view.version_id() == context.current_version_id()
+            && state_view
+                .state()
+                .base_current_partition(partition_id)
+                .is_none()
+        {
             if !context.checkpoint(partition.entity_arena().slot_count() as u64) {
                 return None;
             }
             visible_entities += partition.entity_arena().live_count();
+            continue;
         }
-    } else {
-        for partition_id in state_view.state().partition_ids_iter() {
+        let slots = state_view.try_entity_slots(partition_id, |work, bytes| {
+            if context.checkpoint(work) && context.claim_scratch(bytes) {
+                Ok(())
+            } else {
+                Err(())
+            }
+        });
+        let Ok(slots) = slots else {
+            return None;
+        };
+        for slot in slots {
             if !context.checkpoint(1) {
                 return None;
             }
-            let Some(partition) = state_view.state().get_current_partition(partition_id) else {
-                return Some(storage_inconsistency_violation(
-                    class,
-                    format!(
-                        "partition {:?} missing during historical entity scan",
-                        partition_id
-                    ),
-                    StorageInconsistencyContext::default()
-                        .with_partition_id(partition_id)
-                        .with_scan(StorageInconsistencyScan::HistoricalMaxSnapshotEntities),
-                ));
-            };
-            context
-                .metrics()
-                .count_entity_slot_scans(partition.entity_arena().slot_count());
-            for slot in partition.entity_arena().occupied_slots_iter() {
-                if !context.checkpoint(1) {
-                    return None;
-                }
-                visible_entities += usize::from(
-                    state_view.entity_visible_at_version(&partition.entity_arena(), slot),
-                );
-            }
+            context.metrics().count_entity_slot_scans(1);
+            visible_entities += usize::from(
+                state_view
+                    .entity_metadata_for_slot(partition_id, slot)
+                    .is_some(),
+            );
         }
     }
     if visible_entities > limit {

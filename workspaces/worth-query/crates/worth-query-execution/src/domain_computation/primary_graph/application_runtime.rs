@@ -51,11 +51,18 @@ pub(in crate::domain_computation) use inbound_publication::{
     WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome,
     WorthQueryPerformedInboundCompletion, WorthQueryUnpublishedInboundCompletion,
 };
+mod derived_relation;
 mod graph_participation;
+pub use derived_relation::WorthQueryRuleReadableCollectionLifecycleForTest;
 pub(in crate::domain_computation::primary_graph) mod installation;
 mod operation_control;
 mod publication_entry;
+mod storage_retention;
 pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
+pub use storage_retention::{
+    WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
+    WorthQueryStorageRetentionStop,
+};
 
 pub(in crate::domain_computation) use external_dispatch_attempt::{
     WorthQueryExternalDispatchAdmissionDenial, WorthQueryExternalDispatchAttemptOrdinal,
@@ -174,6 +181,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) signing_owners: std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
+    pub(super) installed_resources:
+        super::application_resource::installation::InstalledResourceRegistry<Schema>,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:
         super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
 }
@@ -236,7 +245,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn authentication_is_expired(
+    pub(in crate::domain_computation) fn authentication_is_expired(
         &self,
         valid_until: std::time::Instant,
     ) -> bool {

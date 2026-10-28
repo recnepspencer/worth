@@ -51,7 +51,9 @@ impl<Query> WorthQueryObservedSource<Query> {
             let key = (
                 adjacency.anchor,
                 adjacency.relation_kind,
-                super::super::adjacency_direction_rank(adjacency.direction),
+                crate::domain_computation::primary_graph::source_facts::adjacency_direction_rank(
+                    adjacency.direction,
+                ),
             );
             if let Some(previous) = adjacencies.insert(key, adjacency.native_revision)
                 && previous != adjacency.native_revision

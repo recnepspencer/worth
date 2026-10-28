@@ -1,3 +1,15 @@
+pub use crate::aggregate_identity::{
+    AggregateCensusRead, AggregateCensusReadIdentity, AggregateRead, AggregateReadCollection,
+    AggregateReadDenial, AggregateReadLineageEvent, AggregateReadObservations, AggregateReadPort,
+    PinnedAggregateLineageRead, PinnedAggregateLineageScope, PinnedAggregateRead,
+    PinnedAggregateReadDenial, PinnedAggregateReadDenialKind, PinnedAggregateReadScope,
+    PreparedAggregateCensus,
+};
+pub use crate::derived_relation::{
+    DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial,
+    DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationReads,
+    DerivedRelationWalkStep, PinnedDerivedRelationRead, PreparedDerivedRelationRead,
+};
 pub use crate::validation::data::{
     CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,
     CustomInvariantExecutionContext, CustomInvariantExecutionError, CustomInvariantInterruption,
@@ -16,3 +28,5 @@ pub use crate::validation::data::{
 pub use crate::validation::engine::InvariantExecutionResult;
 
 pub use crate::validation::DuplicateCustomInvariantRegistration;
+
+pub use worth_foundational::facade::AggregateLineageKind;

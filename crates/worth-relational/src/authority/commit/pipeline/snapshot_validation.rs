@@ -2,7 +2,7 @@ use super::history_binding::HistoryBoundCommitExecution;
 use super::invariant_phase::enforce_snapshot_publication_phase;
 
 pub(super) struct SnapshotValidatedCommitExecution {
-    admitted: super::execution_admission::AdmittedCommitExecution,
+    admitted: super::execution_admission::AdmittedCommitState,
     selected_branch_state: crate::branch::SelectedRelationalBranchState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     working_state: crate::storage::overlay::WorkingState,
@@ -26,7 +26,7 @@ impl SnapshotValidatedCommitExecution {
     pub(super) fn into_parts(
         self,
     ) -> (
-        super::execution_admission::AdmittedCommitExecution,
+        super::execution_admission::AdmittedCommitState,
         crate::branch::SelectedRelationalBranchState,
         crate::transactions::data::CommitStructuralSummary,
         crate::storage::overlay::WorkingState,
@@ -86,23 +86,79 @@ fn enforce_snapshot_invariant(
     let selected_branch_state = mutated.prepared.selected_branch_state().clone();
     let proposal_identity = mutated.prepared.proposal_identity.clone();
     let admitted = &mut mutated.prepared.admitted;
+    let basis = admitted.validation_input().basis().clone();
     let working_state = &mut mutated.working_state;
+    let aggregate_plan = mutated
+        .aggregate_admission
+        .as_ref()
+        .map(|admission| &admission.plan);
     let prevalidated_snapshot_publication = admitted.take_prevalidated_snapshot_publication();
     let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
-    let invariant = enforce_snapshot_publication_phase(
-        runtime,
-        commit_log,
-        phase_timing,
-        &selected_branch_state,
-        working_state,
-        &mutated.outcome.created_entities,
-        version_id,
-        merged_plan,
-        Some(&proposal_identity),
-        prevalidated_snapshot_publication,
-        execution,
-        control,
-    )?;
+    let merged_plan = aggregate_plan.unwrap_or(merged_plan);
+    let (final_mutation, invariant, accepted_log, accepted_timing) =
+        crate::storage::residency::probe_head(
+            execution,
+            &selected_branch_state.with_symbol_admission(&runtime.services.symbols),
+            |partitions| {
+                let selected = crate::branch::SelectedRelationalBranchRead::in_round(
+                    &selected_branch_state,
+                    partitions,
+                );
+                let aggregate_source = mutated
+                    .aggregate
+                    .as_ref()
+                    .map(|owner| owner.borrow(working_state, selected));
+                let mut round_log = commit_log.clone();
+                let mut round_timing = phase_timing.clone();
+                let final_mutation = if aggregate_plan.is_some() {
+                    let answer = runtime
+                        .invariant_authority()
+                        .enforce_mutation_sensitive_for_working_state(
+                            &selected,
+                            working_state,
+                            version_id,
+                            merged_plan,
+                            Some(&proposal_identity),
+                            aggregate_source,
+                            execution,
+                            control,
+                        )?;
+                    round_log.record_invariant_outcomes(&answer);
+                    Some(answer)
+                } else {
+                    None
+                };
+                let invariant = enforce_snapshot_publication_phase(
+                    runtime,
+                    &mut round_log,
+                    &mut round_timing,
+                    &selected,
+                    working_state,
+                    &mutated.outcome.created_entities,
+                    version_id,
+                    merged_plan,
+                    Some(&proposal_identity),
+                    aggregate_source,
+                    prevalidated_snapshot_publication.clone(),
+                    execution,
+                    control,
+                )?;
+                Ok::<_, crate::transactions::data::TransactionCommitError>((
+                    final_mutation,
+                    invariant,
+                    round_log,
+                    round_timing,
+                ))
+            },
+        )
+        .map_err(|failure| {
+            crate::authority::commit::preparation::storage_read_denial(&basis, failure)
+        })??;
+    *commit_log = accepted_log;
+    *phase_timing = accepted_timing;
+    if let Some(final_mutation) = final_mutation {
+        mutated.invariant_executions.push(final_mutation);
+    }
     mutated.invariant_executions.push(invariant);
     Ok(())
 }
@@ -120,6 +176,8 @@ fn into_snapshot_validated_execution(
         invariant_executions,
         outcome,
         mutation_identities,
+        aggregate: _,
+        aggregate_admission: _,
     } = mutated;
     let super::draft_execution::PreparedCommitState {
         admitted,

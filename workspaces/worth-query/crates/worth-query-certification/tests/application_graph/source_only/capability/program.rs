@@ -30,6 +30,10 @@ impl ApplicationProgramDefinition<CapabilitySchema> for Program {
         vec![ApplicationFeatureSpec::root::<CapabilitySchema, Feature>()
             .action::<SetRetentionBinding, Completion>()
             .finish_action()
+            .native_action::<super::resources::lifecycle::Binding>()
+            .finish_action()
+            .native_action::<super::resources::grant_status::Binding>()
+            .finish_action()
             .operation::<RevokeGrant>()
             .finish()]
     }

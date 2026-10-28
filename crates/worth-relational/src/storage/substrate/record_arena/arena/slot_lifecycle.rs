@@ -233,7 +233,7 @@ impl<K: RecordKind> RecordArena<K> {
         let Some(physical) = self.physical_index(slot) else {
             return false;
         };
-        self.lifecycle[physical] = lifecycle;
+        self.lifecycle.set(physical, lifecycle);
         true
     }
 }

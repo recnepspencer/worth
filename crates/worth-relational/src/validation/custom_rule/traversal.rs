@@ -6,7 +6,7 @@ use crate::identity::data::EntityId;
 use super::structural_views::StructuralRelationView;
 use crate::validation::data::{CustomInvariantTraversalError, TouchedStructuralSet};
 
-mod breadth_first;
+use crate::structural_traversal as breadth_first;
 mod complete;
 mod complete_result;
 pub use complete_result::{

@@ -20,6 +20,10 @@ impl HistoryBoundCommitExecution {
         &mut self.mutated
     }
 
+    pub(super) fn candidate_symbols(&self) -> &crate::runtime::PendingSymbolMeanings {
+        &self.mutated.mutation_identities.symbols
+    }
+
     pub(super) fn into_parts(
         self,
     ) -> (
@@ -51,6 +55,7 @@ pub(super) fn bind_commit_history(
 ) -> Result<HistoryBoundCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::History)?;
     let version_id = mutated.version_id();
+    let commit_id = mutated.prepared.proposal_identity.commit_id();
     let admitted = &mut mutated.prepared.admitted;
     let merge_diagnostics_plan = admitted.merge_execution_diagnostics_plan().cloned();
     let (transaction_id, validation_input, _, merge_plan, commit_log, phase_timing) =
@@ -63,6 +68,7 @@ pub(super) fn bind_commit_history(
         transaction_id,
         validation_input,
         version_id,
+        commit_id,
         merge_plan,
     )?;
     let additional_diagnostics_entries = merge_plan
@@ -99,6 +105,7 @@ pub(super) fn bind_commit_history(
         &schema_continuity,
     ));
     let merge_parent_branches = validation_input.merge_parent_branch_ids();
+    mutated.bind_aggregate_consequences(execution, runtime, history.commit_id)?;
     Ok(HistoryBoundCommitExecution {
         mutated,
         history,

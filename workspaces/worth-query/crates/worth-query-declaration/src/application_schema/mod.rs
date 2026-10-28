@@ -4,6 +4,7 @@ mod application_capability_authoring;
 mod application_correction_authoring;
 mod application_mutation_authoring;
 mod application_query_authoring;
+mod application_resource_authoring;
 mod aspect_contract_identity;
 mod authoring_context;
 mod authorization_path_components;
@@ -18,11 +19,26 @@ mod canonical_operation_identity;
 mod capabilities;
 mod capability_identifier_validation;
 mod capability_member_closure;
+mod component_set;
 mod contribution;
 mod decision_read_authoring;
 mod declaration;
 mod declaration_denial;
 mod declared_operation;
+mod derived_component_set;
+mod derived_relation;
+pub use derived_component_set::{
+    ApplicationDerivedComponentSetDefinition, ApplicationDerivedComponentSetMeaning,
+};
+pub use derived_relation::{
+    application_derived_relation_physical_sources, application_derived_relation_source_closure,
+    ApplicationDerivedRelation, ApplicationDerivedRelationDefinitionDenial,
+    ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode,
+    ApplicationDerivedRelationOperand, ApplicationDerivedRelationRef,
+    ApplicationDerivedRelationSource, ApplicationDerivedRelationSourceClosure,
+    ApplicationDerivedRelationSourceKind, ApplicationRuleReadableCollectionAssociation,
+    ErasedApplicationDerivedRelationDefinition, WorthQueryPortableDerivedRelationParts,
+};
 mod effect_authoring;
 mod effect_binding;
 mod effect_marker_identity;
@@ -30,6 +46,8 @@ mod external_effect_correlation_family;
 mod external_effect_protocol;
 mod field_presence;
 mod field_reference;
+mod graph_member;
+pub use graph_member::{ApplicationGraphMemberMeaning, ApplicationGraphMemberSelector};
 mod identifier_validation;
 mod inbound_occurrence;
 mod invariant;
@@ -41,6 +59,7 @@ mod mutation_description_validation;
 mod mutation_intent_traits;
 mod mutation_precondition;
 mod mutation_precondition_authoring;
+mod operation_component_read;
 mod operation_contract_cardinality;
 mod operation_definition;
 mod operation_marker_identity;
@@ -50,13 +69,31 @@ mod operation_program;
 mod portable_schema;
 mod principal_binding_authoring;
 mod principal_binding_reference;
+mod projected_member_domain;
+pub use projected_member_domain::{
+    ApplicationProjectedMemberCaseRef, ApplicationProjectedMemberDomainDefinition,
+    ApplicationProjectedMemberDomainDefinitionDenial, ApplicationProjectedMemberDomainRef,
+    ErasedApplicationProjectedMemberDomainDefinition, WorthQueryPortableProjectedMemberDomainParts,
+};
 mod query_member_closure;
 mod read_authoring;
 mod references;
+mod relation_aspect;
 mod relation_integrity;
+mod resource_member_closure;
+pub use relation_aspect::{
+    ApplicationRelationAspectDefinition, ApplicationRelationAspectDefinitionBuilder,
+    ApplicationRelationAspectDefinitionDenial, ApplicationRelationFieldDefinition,
+    ApplicationRelationFieldRef, ErasedApplicationRelationAspectDefinition,
+    WorthQueryPortableRelationAspectParts,
+};
+pub use relation_integrity::ApplicationRelationGraphLaws;
+
+mod root_path_closure;
 pub(crate) use relation_integrity::ApplicationRelationLawMeaning;
 mod schema_identity;
 mod schema_member;
+mod schema_read_closure;
 mod shape;
 mod signing_provenance;
 mod signing_supersession;
@@ -132,6 +169,10 @@ pub use capabilities::{
     OperationExpectsVersion, OperationLinks, OperationReads, OperationRequiresAbility,
     OperationUnlinks, OperationWrites, ReadOnly, ReadWrite, WritableCapability, WritePosture,
 };
+pub use component_set::{
+    ApplicationComponentSetDefinition, ApplicationComponentSetMeaning, ApplicationComponentSetRef,
+    WorthQueryPortableApplicationComponentSetParts,
+};
 pub use contribution::{
     ApplicationSchemaComposition, ApplicationSchemaContribution,
     ApplicationSchemaContributionAuthoring, ApplicationSchemaContributionDenial,
@@ -173,6 +214,10 @@ pub use mutation_authoring::{
 pub use mutation_precondition::{
     ApplicationMutationPreconditionFamily, ApplicationMutationPreconditionTarget,
     TypedMutationPrecondition, TypedMutationPreconditions,
+};
+pub use operation_component_read::{
+    ApplicationOperationComponentReadDefinition, ApplicationOperationComponentReadMeaning,
+    WorthQueryPortableOperationComponentReadParts,
 };
 pub use operation_definition::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
@@ -245,26 +290,28 @@ pub use value_binding::{
     decode_application_document, decode_canonical_value, decode_canonical_value_with_admission,
     decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
     encode_application_document, encode_canonical_value, encode_delegated_canonical_value,
-    value_decode_error, ApplicationCanonicalValueContract, ApplicationEncodedScalarValue,
-    ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe, ApplicationFrameIdentity,
-    ApplicationIdentityScalarValueBinding, ApplicationNativeInputAdmissionDenial,
-    ApplicationNativeInputDecodeProfile, ApplicationNativeInputDecodeResources,
-    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
-    ApplicationSignedAggregateValueBinding, ApplicationStructuredValueBinding,
-    ApplicationUnitIdentity, ApplicationValueDecodeAvailable, ApplicationValueDecodeDenial,
-    ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable, ApplicationValueEncodeDenial,
-    ApplicationValueIdentityPosture, ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
-    ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregatePosture,
-    ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial, ArrayDelegate,
-    BoolApplicationValueBinding, BoxDelegate, CanonicalDocumentCodec, CanonicalValue,
-    CanonicalValueSeed, DelegatedValueSeed, ErasedApplicationSignedAggregateDecode,
-    ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
-    ErasedApplicationValueEncode, ErasedApplicationValueValidation, I64ApplicationValueBinding,
-    InternedStringApplicationValueBinding, OptionalDelegate, PairDelegate, SequenceDelegate,
-    StringApplicationValueBinding, U64ApplicationValueBinding, UsizeDelegate, ValueCodecDenial,
-    ValueDecodeAdmission, ValueDecodeBounds, ValueDelegate, ValueFieldDefinition, ValuePrimitive,
-    ValueSeedDelegate, ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeEdge,
-    ValueTaggedVariantDefinition, ValueVariantDefinition, WorthValue,
+    value_decode_error, ApplicationCanonicalValueContract, ApplicationCanonicalValueReference,
+    ApplicationCanonicalValueReferenceParts, ApplicationEncodedScalarValue,
+    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,
+    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
+    ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
+    ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
+    ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,
+    ApplicationStructuredValueBinding, ApplicationUnitIdentity, ApplicationValueDecodeAvailable,
+    ApplicationValueDecodeDenial, ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable,
+    ApplicationValueEncodeDenial, ApplicationValueIdentityPosture, ApplicationValueIsIdentity,
+    ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
+    ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
+    ApplicationValueValidationDenial, ArrayDelegate, BoolApplicationValueBinding, BoxDelegate,
+    CanonicalDocumentCodec, CanonicalValue, CanonicalValueSeed, DelegatedValueSeed,
+    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
+    ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
+    I64ApplicationValueBinding, InternedStringApplicationValueBinding, OptionalDelegate,
+    PairDelegate, SequenceDelegate, StringApplicationValueBinding, U64ApplicationValueBinding,
+    UsizeDelegate, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueDelegate,
+    ValueFieldDefinition, ValuePrimitive, ValueSeedDelegate, ValueShape, ValueShapeBody,
+    ValueShapeDefinition, ValueShapeEdge, ValueTaggedVariantDefinition, ValueVariantDefinition,
+    WorthValue,
 };
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,

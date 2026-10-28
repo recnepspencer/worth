@@ -4,7 +4,7 @@ use worth_query_host::facade::primary_graph::RelationalStorageUnavailable;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use worth_query_host::facade::runtime::ExecutionAllocationDenial;
+use worth_query_host::facade::runtime::{ExecutionAllocationDenial, WorkCeilingDenial};
 
 mod application_attempt_kind;
 use application_attempt_kind::application_attempt_kind;
@@ -15,6 +15,7 @@ pub enum BankApplicationAttemptDenialKind {
     ForeignPhase,
     StorageUnavailable,
     ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
+    EffectExecution(WorkCeilingDenial),
     Cancelled,
     DeadlineExceeded,
     ForeignApplication,
@@ -31,6 +32,7 @@ pub enum BankApplicationAttemptDenialKind {
     AllocationDenied,
     RetainedSourceStorageDenied,
     CorrectionCaptureDenied,
+    SourceDisclosureCaptureDenied,
     MutationPreconditionMismatch,
     SourceRetired,
     SourceChanged,

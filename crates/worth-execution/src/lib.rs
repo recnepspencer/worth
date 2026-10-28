@@ -24,9 +24,9 @@ pub use authority::{
     ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter,
     ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes,
     ExecutionLeaseStatus, ExecutionMemoryReservation, ExecutionPhysicalAllocationDenialKind,
-    ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease, ExecutionResultMemory,
-    LeaseDenial, LeaseRequest, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget,
-    SerialRequest,
+    ExecutionPolicyDenial, ExecutionRequest, ExecutionRequestArrayBuilder,
+    ExecutionRequestArrayDenial, ExecutionResourceLease, ExecutionResultMemory, LeaseDenial,
+    LeaseRequest, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 
@@ -37,9 +37,9 @@ pub use backend::{
     ExecutionRetainedResult, NestedComputationStop, ScopeOutcome, ScopeStop,
 };
 pub use partition::{
-    Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
-    KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId,
-    PartitionUpdateDenial, PartitionWork, WeightedEdge, WeightedItem,
+    Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentEdit,
+    ComponentPartitioner, KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner,
+    PartitionItemId, PartitionUpdateDenial, PartitionWork, WeightedEdge, WeightedItem,
 };
 pub use pattern::{
     BackInput, DecomposeCertificationFailure, DecomposeComplete, DecomposeFailure,

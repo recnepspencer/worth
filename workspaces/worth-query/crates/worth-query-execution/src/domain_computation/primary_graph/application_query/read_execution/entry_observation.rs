@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use worth_relational::facade::identity::EntityId;
 
 thread_local! {
+    static COMPONENT_NATIVE_ACQUISITIONS: Cell<u64> = const { Cell::new(0) };
     static KERNEL_ENTRIES: Cell<u64> = const { Cell::new(0) };
     static ROOT_ENTRIES: RefCell<BTreeMap<EntityId, u64>> = const { RefCell::new(BTreeMap::new()) };
 }
@@ -84,5 +85,26 @@ thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::
 fn clear_observations() {
     CLEANUP_REGISTERED.with(|registered| registered.set(false));
     KERNEL_ENTRIES.with(|entries| entries.set(0));
+    COMPONENT_NATIVE_ACQUISITIONS.with(|entries| entries.set(0));
     ROOT_ENTRIES.with(|entries| entries.borrow_mut().clear());
+}
+
+/// Passive entry count into the actual Native component reader in this owned scope.
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) fn component_native_acquisitions_on_this_thread_for_test(
+) -> u64 {
+    COMPONENT_NATIVE_ACQUISITIONS.with(Cell::get)
+}
+pub(super) fn record_component_native_acquisition() {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    COMPONENT_NATIVE_ACQUISITIONS.with(|entries| {
+        entries.set(
+            entries
+                .get()
+                .checked_add(1)
+                .expect("component acquisition counter overflow"),
+        )
+    });
 }

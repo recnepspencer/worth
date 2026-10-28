@@ -15,11 +15,15 @@ mod authorization;
 mod correction_disclosure;
 mod denial;
 mod finish;
+mod funded_parameters;
+pub(in crate::domain_computation::primary_graph) use funded_parameters::capture_parameters;
+pub(in crate::domain_computation) use funded_parameters::CapturedApplicationQueryParameters;
 mod governed_access;
 mod live_readmission;
 mod permission;
 mod source_readmission;
 mod work_limit;
+pub(in crate::domain_computation::primary_graph::application_query) use governed_access::governance_denial;
 pub(in crate::domain_computation::primary_graph::application_query) use governed_access::prepare_governed_access;
 pub(in crate::domain_computation::primary_graph::application_query) use permission::SelectedIssuedAccessRoot;
 pub(in crate::domain_computation::primary_graph) use permission::{
@@ -130,7 +134,8 @@ where
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
-        let pending = prepare_governed_access(self, query, access, capability, &controls)?;
+        let pending =
+            prepare_governed_access(self, query, access, capability, controls.request_scope())?;
         let (parameters, controls) =
             self.prepare_application_query_admission(query, access, parameters, controls)?;
         self.finish_application_query_admission(

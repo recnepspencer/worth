@@ -81,6 +81,9 @@ pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Sc
     pub(super) parameters: Vec<ApplicationQueryParameterDefinition>,
     pub(super) result_shape: ApplicationQueryResultShape,
     pub(super) root_paths: Vec<ApplicationQueryRootPathMeaning>,
+    pub(super) component_selection:
+        Option<crate::application_query::ApplicationQueryComponentMeaning>,
+    pub(super) orbit: Option<super::ApplicationQueryOrbitMeaning>,
     pub(super) cardinality: ApplicationQueryCardinality,
     pub(super) predicates: Vec<ApplicationQueryPredicate>,
     pub(super) ordering: Vec<ApplicationQueryOrderingTerm>,
@@ -146,6 +149,16 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub fn result_shape(&self) -> &ApplicationQueryResultShape {
         &self.result_shape
+    }
+
+    pub fn component_selection(
+        &self,
+    ) -> Option<&crate::application_query::ApplicationQueryComponentMeaning> {
+        self.component_selection.as_ref()
+    }
+
+    pub fn orbit(&self) -> Option<&crate::application_query::ApplicationQueryOrbitMeaning> {
+        self.orbit.as_ref()
     }
 
     pub fn root_paths(&self) -> &[ApplicationQueryRootPathMeaning] {

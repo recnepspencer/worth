@@ -110,6 +110,8 @@ impl<Schema, Operation, Input, Scope>
                     !matches!(
                         fact,
                         super::super::WorthQueryApplicationObservedFact::StructuralWalk { .. }
+                            | super::super::WorthQueryApplicationObservedFact::ComponentSelection {..}
+                            | super::super::WorthQueryApplicationObservedFact::Aggregate { .. }
                     )
                 })
                 .any(|fact| fact.touches_entity(target.entity_id));
@@ -149,6 +151,8 @@ impl<Schema, Operation, Input, Scope>
                     !matches!(
                         fact,
                         super::super::WorthQueryApplicationObservedFact::StructuralWalk { .. }
+                            | super::super::WorthQueryApplicationObservedFact::ComponentSelection {..}
+                            | super::super::WorthQueryApplicationObservedFact::Aggregate { .. }
                     )
                 })
                 .any(|fact| fact.touches_entity(identity.entity_id()));

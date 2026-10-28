@@ -42,7 +42,7 @@ pub(super) fn declare<Schema: TopologyModelBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     use super::*;
-    schema
+    super::planar_islands::declare(schema)
         .entity(Body::reference::<Schema>())
         .unit(Metre::reference::<Schema>())
         .aspect(Body::reference::<Schema>(), Geometry::reference::<Schema>())

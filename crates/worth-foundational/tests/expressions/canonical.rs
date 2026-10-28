@@ -116,6 +116,7 @@ fn function_identity_excludes_parameter_names_and_includes_bodies() {
     };
     let function_identity = |parameter: &str, body: &str| {
         let catalog = catalog(parameter, body);
+
         catalog
             .functions()
             .next()

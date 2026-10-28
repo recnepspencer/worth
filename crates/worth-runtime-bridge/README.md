@@ -8,7 +8,7 @@ branches, history, or writeback across that boundary without giving either
 side the other side’s authority.
 
 For Query-installed conditional operations, application and domain code starts
-at `worth_query::facade::domain`. Query runtime construction supplies the
+at `worth_query_decl::facade` and `worth_query_host::facade`. Query runtime construction supplies the
 Bridge, Signal graph, semantic correspondences, and volatile providers. Domain
 packages do not call Bridge APIs directly.
 
@@ -56,6 +56,8 @@ use worth_runtime_bridge::facade::*;
 
 The facade exposes both the standard standalone Bridge workflow and the exact
 installation surfaces Query uses. Do not import implementation modules.
+Standard routing, explicit controls, and replay/certification capabilities all
+use this same root import. Those usage categories are documentation groupings.
 
 ## Standard Standalone Path
 
@@ -137,6 +139,30 @@ At execution, the Bridge obtains semantic observations from the exact snapshot,
 invokes Signal’s installed conditional contract, and returns
 `BridgeConditionalDecisionEvidence`. The Bridge does not reinterpret or
 restamp Signal’s decision.
+
+### Read-Only Native Observation Custody
+
+`BridgeConditionalDecisionEvidence::retain_causal_observation()` shares the
+actual immutable decision, semantic observations, admitted snapshot identity and
+performed Signal invalidation observation. `BridgeConditionalCausalObservation`
+retains neither the admitted snapshot reader nor the operational reentry core.
+It provides no source-read, execution, continuation or disclosure permission.
+The operational seed remains the only retained conditional reentry entrance.
+
+Bridge reserves the decision and observation headers before provider callbacks.
+Signal funds its immutable invalidation backing at its existing post-execution
+receipt-preparation boundary, preserving that boundary's typed failure posture.
+Sharing an already-issued observation is infallible. Its original reservations
+remain until the last corresponding share drops; no second ledger is created.
+The unique performed receipt still transfers once to the delivery binder, and
+reentry never reports a newly performed invalidation.
+
+Query output-readiness delivery privately carries this actual Native observation
+instead of retaining counters alone. This is an engine prerequisite: fresh
+ordinary Decl/Host causal inspection remains unfinished in
+[milestone 9.18.1 Phase 9](../../plans/WORTH-query/milestone-9.18.1.md#phase-9-causal-inspection-from-ordinary-application-receipts).
+The [Native custody court](src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention.rs)
+checks reader release, original retention custody and the single receipt transfer.
 
 ## One Signal Graph
 

@@ -1,3 +1,4 @@
+mod consequence_materialization;
 mod mutation_clone;
 use super::ResidentRegion;
 use crate::identity::data::{EntityId, RelationId};
@@ -57,6 +58,10 @@ impl<'lease> RelationalRegionHeadView<'lease> {
     pub(crate) fn from_owned_partition(partition: &'lease PartitionState) -> Self {
         Self { partition }
     }
+    pub(crate) fn same_region_view(&self, other: Self) -> bool {
+        std::ptr::eq(self.partition, other.partition)
+    }
+
     pub(crate) fn entity_arena(
         &self,
     ) -> super::RelationalRecordHeadArenaView<'lease, EntityRecordKind> {

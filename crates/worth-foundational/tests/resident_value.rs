@@ -10,6 +10,11 @@ struct Record {
     // The boxed Vec is the subject: its box allocation is resident capacity.
     #[allow(clippy::box_collection)]
     #[serde(skip)]
+    // This adversarial shape must count the boxed Vec header and spare capacity.
+    #[expect(
+        clippy::box_collection,
+        reason = "the court verifies both nested heap owners, including a serde-skipped field"
+    )]
     cache: Option<Box<Vec<String>>>,
 }
 

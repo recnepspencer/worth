@@ -1,11 +1,162 @@
 use super::*;
 
 impl BridgeSealedRuntimeAssembly {
+    pub fn advance_managed_owned_async_request_to_timeout(
+        &self,
+        owner: &mut crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        coordinate: u64,
+    ) -> Result<
+        crate::facade::BridgeOwnedAsyncTimeoutAdmission,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime
+            .advance_managed_owned_async_request_to_timeout(owner, coordinate)
+    }
+
+    pub fn schedule_managed_owned_async_retry(
+        &self,
+        owner: &mut crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        timeout: &crate::facade::BridgeOwnedAsyncTimeoutAdmission,
+    ) -> Result<
+        crate::facade::BridgeOwnedAsyncRetrySchedule,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime
+            .schedule_managed_owned_async_retry(owner, timeout)
+    }
+
+    pub fn advance_managed_owned_async_retry(
+        &self,
+        owner: &mut crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        schedule: &crate::facade::BridgeOwnedAsyncRetrySchedule,
+        coordinate: u64,
+    ) -> Result<crate::facade::BridgeAsyncRetryLineage, crate::facade::BridgeOwnedAsyncManagedDenial>
+    {
+        self.runtime
+            .advance_managed_owned_async_retry(owner, schedule, coordinate)
+    }
+
+    pub fn finish_managed_owned_async_wake_cleanup(
+        &self,
+        owner: &mut crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+    ) -> Result<(), crate::facade::BridgeOwnedAsyncManagedDenial> {
+        self.runtime.finish_managed_owned_async_wake_cleanup(owner)
+    }
+
+    /// Lower composition door; World qualifies the genuine product source first.
+    #[doc(hidden)]
+    pub fn revalidate_managed_owned_async_request(
+        &self,
+        owner: &mut crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+        truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
+    ) -> Result<
+        crate::facade::BridgeOwnedAsyncManagedRevalidation,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime
+            .revalidate_managed_owned_async_request(owner, signal_basis, truth_basis)
+    }
+
+    pub fn observe_managed_owned_async_safe_point(
+        &self,
+        request: &crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+    ) -> Result<
+        worth_signal::facade::ResourceSafePointObservationReport,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime.observe_managed_owned_async_safe_point(request)
+    }
+
+    pub fn admit_managed_owned_async_request_identity(
+        &self,
+        declaration: &crate::facade::LoweredBridgeAsyncSourceDeclaration,
+        signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+        truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
+    ) -> Result<
+        crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        crate::facade::BridgeAsyncRequestIdentityRejection,
+    > {
+        self.runtime.admit_managed_owned_async_request_identity(
+            declaration,
+            signal_basis,
+            truth_basis,
+        )
+    }
+
+    pub fn commit_owned_async_completion(
+        &self,
+        request: &super::super::BridgeOwnedAsyncRequestAdmission,
+        completion: &super::super::BridgeOwnedAsyncCompletionAdmission,
+    ) -> Result<
+        crate::facade::BridgeOwnedAsyncCommittedCompletion,
+        crate::facade::BridgeAsyncCompletionRejection,
+    > {
+        self.runtime
+            .commit_owned_async_completion(request, completion)
+    }
+
+    pub fn finish_owned_async_completion_timeout_cleanup(
+        &self,
+        committed: &mut crate::facade::BridgeOwnedAsyncCommittedCompletion,
+    ) -> Result<(), crate::facade::BridgeAsyncCompletionRejection> {
+        self.runtime
+            .finish_owned_async_completion_timeout_cleanup(committed)
+    }
+
+    pub fn enqueue_managed_owned_async_queue(
+        &self,
+        request: &crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        width: u64,
+    ) -> Result<
+        worth_signal::facade::ResourceManagedQueueMutationReport,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime
+            .enqueue_managed_owned_async_queue(request, width)
+    }
+
+    pub fn dequeue_managed_owned_async_queue(
+        &self,
+        request: &crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        width: u64,
+    ) -> Result<
+        worth_signal::facade::ResourceManagedQueueMutationReport,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime
+            .dequeue_managed_owned_async_queue(request, width)
+    }
+
+    pub fn cancel_managed_owned_async_request(
+        &self,
+        request: &crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+    ) -> Result<
+        worth_signal::facade::ResourceCancellationReport,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime.cancel_managed_owned_async_request(request)
+    }
+
     pub fn installed_owned_async_declaration(
         &self,
         identity: &str,
     ) -> Option<crate::facade::LoweredBridgeAsyncSourceDeclaration> {
         self.runtime.installed_owned_async_declaration(identity)
+    }
+
+    pub fn advance_owned_async_source_clock(
+        &self,
+        declaration: &crate::facade::LoweredBridgeAsyncSourceDeclaration,
+        basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+        truth: crate::facade::BridgeAsyncRequestTruthViewBasis,
+        coordinate: u64,
+    ) -> Result<
+        worth_signal::facade::TemporalClockAdvanceSummary,
+        crate::facade::BridgeAsyncRequestIdentityRejection,
+    > {
+        self.runtime
+            .advance_owned_async_source_clock(declaration, basis, truth, coordinate)
     }
 
     /// Admit through Bridge's lower Signal/truth basis contract.
@@ -14,19 +165,6 @@ impl BridgeSealedRuntimeAssembly {
     /// before calling this operation; this operation claims only Bridge and
     /// Signal request authority.
     #[doc(hidden)]
-    pub fn admit_owned_async_request_identity(
-        &self,
-        declaration: &crate::facade::LoweredBridgeAsyncSourceDeclaration,
-        signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
-        truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncRequestAdmission,
-        crate::facade::BridgeAsyncRequestIdentityRejection,
-    > {
-        self.runtime
-            .admit_owned_async_request_identity(declaration, signal_basis, truth_basis)
-    }
-
     pub fn validate_owned_async_completion_envelope(
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,
@@ -69,57 +207,8 @@ impl BridgeSealedRuntimeAssembly {
         self.runtime.retire_owned_async_request(request)
     }
 
-    pub fn advance_owned_async_request_to_timeout(
-        &self,
-        request: &super::super::BridgeOwnedAsyncRequestAdmission,
-        coordinate: u64,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncTimeoutAdmission,
-        crate::facade::BridgeAsyncCompletionRejection,
-    > {
-        self.runtime
-            .advance_owned_async_request_to_timeout(request, coordinate)
-    }
-
-    pub fn schedule_owned_async_retry(
-        &self,
-        request: &super::super::BridgeOwnedAsyncRequestAdmission,
-        timeout: &super::super::BridgeOwnedAsyncTimeoutAdmission,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncRetrySchedule,
-        crate::facade::BridgeAsyncCompletionRejection,
-    > {
-        self.runtime.schedule_owned_async_retry(request, timeout)
-    }
-
-    pub fn advance_owned_async_retry(
-        &self,
-        request: &super::super::BridgeOwnedAsyncRequestAdmission,
-        schedule: &super::super::BridgeOwnedAsyncRetrySchedule,
-        coordinate: u64,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncRetryAdmission,
-        crate::facade::BridgeAsyncCompletionRejection,
-    > {
-        self.runtime
-            .advance_owned_async_retry(request, schedule, coordinate)
-    }
-
     /// Revalidate through Bridge's lower Signal/truth basis contract.
     #[doc(hidden)]
-    pub fn revalidate_owned_async_request(
-        &self,
-        request: &super::super::BridgeOwnedAsyncRequestAdmission,
-        signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
-        truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncRevalidationAdmission,
-        crate::facade::BridgeAsyncCompletionRejection,
-    > {
-        self.runtime
-            .revalidate_owned_async_request(request, signal_basis, truth_basis)
-    }
-
     pub fn owned_async_active_request_count(
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,

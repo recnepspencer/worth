@@ -17,11 +17,10 @@ pub(super) use completion_progress::WorthUiPresentationCompletionProgress;
 mod owned_source;
 pub(super) use owned_source::installed_presentation_owned_async_source;
 pub(crate) use owned_source::presentation_owned_async_source_declaration;
-#[path = "runtime_bridge/request_admission.rs"]
-mod request_admission;
 
 pub struct WorthUiPresentationRuntimeAdmission {
-    request: worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+    request: std::sync::Arc<worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission>,
+    custody: runtime::WorthQueryOwnedAsyncRequestCustody,
     effects_indeterminate_issuer:
         worth_runtime_bridge::facade::BridgeOwnedAsyncEffectsIndeterminateIssuer,
     view: PresentationLiveView,
@@ -40,7 +39,7 @@ pub enum WorthUiPresentationCompletionDenial {
 
 #[derive(Debug)]
 pub(crate) enum WorthUiPresentationRuntimeAdmissionDenial {
-    QueryOwned(Box<runtime::WorthQueryOwnedAsyncRuntimeDenial>),
+    QueryCustody(Box<runtime::WorthQueryOwnedAsyncRuntimeCause>),
     QueryLive(Box<runtime::WorthQueryRuntimeError>),
     MissingAsyncResultState,
     MissingSemanticRuntime,
@@ -53,11 +52,11 @@ pub(crate) enum WorthUiPresentationRuntimeAdmissionDenial {
 
 #[derive(Debug)]
 pub(crate) enum WorthUiPresentationRuntimeCleanupDenial {
-    Query(Box<runtime::WorthQueryOwnedAsyncRuntimeDenial>),
+    Query(Box<runtime::WorthQueryOwnedAsyncRuntimeCause>),
 }
 
 pub(crate) struct WorthUiPresentationRuntimeCleanup {
-    request: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission>,
+    request: Option<runtime::WorthQueryOwnedAsyncRequestCustody>,
     request_retired: bool,
 }
 
@@ -68,18 +67,27 @@ impl WorthUiPresentationRuntimeAdmission {
         query_declaration: &runtime::WorthQueryInstalledOwnedAsyncDeclaration,
         product: &worth_query::facade::product::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthUiPresentationRuntimeAdmissionDenial> {
-        let request_admission = match request_admission::admit_presentation_owned_request(
-            workspace,
-            query_declaration,
-            product,
-        ) {
+        let custody = match workspace
+            .admit_owned_bridge_async_request_at_branch_head(query_declaration, product)
+        {
             Ok(request) => request,
             Err(denial) => {
+                let (cause, custody) = denial.into_parts();
                 return Err(cleanup_after_admission_failure(
                     workspace,
-                    None,
-                    WorthUiPresentationRuntimeAdmissionDenial::QueryOwned(denial),
+                    custody,
+                    WorthUiPresentationRuntimeAdmissionDenial::QueryCustody(Box::new(cause)),
                 ));
+            }
+        };
+        let request_admission = match custody.retained_witness() {
+            Ok(request) => request,
+            Err(cause) => {
+                return Err(cleanup_after_admission_failure(
+                    workspace,
+                    Some(custody),
+                    WorthUiPresentationRuntimeAdmissionDenial::QueryCustody(Box::new(cause)),
+                ))
             }
         };
         let effects_indeterminate_issuer = request_admission.effects_indeterminate_issuer();
@@ -103,13 +111,14 @@ impl WorthUiPresentationRuntimeAdmission {
             Err(denial) => {
                 return Err(cleanup_after_admission_failure(
                     workspace,
-                    Some(request_admission),
+                    Some(custody),
                     WorthUiPresentationRuntimeAdmissionDenial::QueryLive(denial),
                 ));
             }
         };
         Ok(Self {
             request: request_admission,
+            custody,
             effects_indeterminate_issuer,
             view,
         })
@@ -169,9 +178,9 @@ impl WorthUiPresentationRuntimeAdmission {
     ) -> Result<runtime::WorthQueryLiveViewCloseReceipt, WorthUiPresentationRuntimeAdmissionDenial>
     {
         workspace
-            .retire_owned_bridge_async_request(&self.request)
+            .cancel_custodied_owned_bridge_async_request(&self.custody)
             .map_err(|error| {
-                WorthUiPresentationRuntimeAdmissionDenial::QueryOwned(Box::new(error))
+                WorthUiPresentationRuntimeAdmissionDenial::QueryCustody(Box::new(error))
             })?;
         workspace
             .close_owned_bridge_async_live_view(&self.view)
@@ -201,7 +210,7 @@ impl WorthUiPresentationRuntimeAdmission {
 
 fn cleanup_after_admission_failure(
     workspace: &mut runtime::WorthQueryWorkspace,
-    request: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission>,
+    request: Option<runtime::WorthQueryOwnedAsyncRequestCustody>,
     denial: WorthUiPresentationRuntimeAdmissionDenial,
 ) -> WorthUiPresentationRuntimeAdmissionDenial {
     let mut recovery = WorthUiPresentationRuntimeCleanup {
@@ -234,9 +243,9 @@ impl WorthUiPresentationRuntimeCleanup {
         workspace: &mut runtime::WorthQueryWorkspace,
     ) -> Result<(), WorthUiPresentationRuntimeCleanupDenial> {
         if !self.request_retired {
-            if let Some(request) = self.request.as_ref() {
+            if let Some(request) = self.request.as_mut() {
                 workspace
-                    .retire_owned_bridge_async_request(request)
+                    .cleanup_owned_bridge_async_entry(request)
                     .map_err(|denial| {
                         WorthUiPresentationRuntimeCleanupDenial::Query(Box::new(denial))
                     })?;
@@ -284,7 +293,7 @@ impl std::fmt::Display for WorthUiPresentationCompletionDenial {
 impl std::fmt::Display for WorthUiPresentationRuntimeAdmissionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::QueryOwned(denial) => write!(formatter, "Query-owned admission: {denial:?}"),
+            Self::QueryCustody(denial) => write!(formatter, "Query-owned custody: {denial:?}"),
             Self::QueryLive(denial) => write!(formatter, "Query live-view admission: {denial:?}"),
             Self::MissingAsyncResultState => formatter.write_str("missing async result state"),
             Self::MissingSemanticRuntime => formatter.write_str("missing semantic runtime"),

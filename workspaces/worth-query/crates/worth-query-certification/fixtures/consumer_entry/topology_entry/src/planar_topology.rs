@@ -53,7 +53,8 @@ impl PlanarSuccessor {
                 ),
                 ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations,
             )
-            .reaches_at_least(2, const { &[Body::reference::<Schema>().name()] }),
+            .reaches_at_least(2, const { &[Body::reference::<Schema>().name()] })
+            .orbit(),
         )
     }
 }
@@ -142,8 +143,13 @@ where
             [
                 ApplicationInvariantScopeTarget::Entity("Body".to_owned()),
                 ApplicationInvariantScopeTarget::Relation("PlanarSuccessor".to_owned()),
+                ApplicationInvariantScopeTarget::Relation("PlanarCoupling".to_owned()),
             ],
-            [ApplicationInvariantScopeTarget::Entity("Body".to_owned())],
+            [
+                ApplicationInvariantScopeTarget::Entity("Body".to_owned()),
+                ApplicationInvariantScopeTarget::Relation("PlanarSuccessor".to_owned()),
+                ApplicationInvariantScopeTarget::Relation("PlanarCoupling".to_owned()),
+            ],
             "primary-relational-provider",
             ApplicationInvariantCostPosture::Touched,
         ),

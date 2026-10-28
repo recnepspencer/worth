@@ -1,4 +1,5 @@
 mod authoritative_delivery;
+mod causal_observation;
 mod compatibility;
 mod contract;
 mod decision_evidence;
@@ -55,6 +56,7 @@ mod signal_port;
 mod source_projection;
 mod successor_reconstitution;
 
+pub use causal_observation::BridgeConditionalCausalObservation;
 pub use compatibility::{
     BridgeConditionalComparisonWork, BridgeConditionalContinuityDenial,
     BridgeConditionalContinuityMismatch, BridgeConditionalExecutionAffinity,
@@ -97,7 +99,12 @@ pub use managed_time::{
     BridgeManagedTemporalIntentReconciliationParts,
 };
 pub use managed_wake_execution::BridgeManagedConditionalExecutionRequest;
-pub use owned_async::BridgeOwnedAsyncRequestResponseDeclaration;
+pub use owned_async::{
+    BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncManagedDenial,
+    BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,
+    BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncRequestResponseDeclaration,
+    BridgeOwnedAsyncResourceReleaseRefusal,
+};
 pub use owned_async_observation::{
     BridgeAsyncEffectsIndeterminateObservation, BridgeOwnedAsyncCompletionAdmission,
     BridgeOwnedAsyncEffectsIndeterminateIssuer, BridgeOwnedAsyncRequestAdmission,

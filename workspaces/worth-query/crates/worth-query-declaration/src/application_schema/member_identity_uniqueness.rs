@@ -10,14 +10,26 @@ pub(super) fn validate_member_identity_uniqueness(
     let mut operations = BTreeMap::<&str, &WorthQueryPortableTypeIdentity>::new();
     let mut effects = BTreeMap::<&str, &WorthQueryPortableTypeIdentity>::new();
     let mut query_types = BTreeSet::<&str>::new();
+    let mut resource_names = BTreeSet::new();
+    let mut resource_types = BTreeSet::new();
     let mut capability_names = BTreeSet::<&str>::new();
     let mut capability_types = BTreeSet::<WorthQueryPortableTypeIdentity>::new();
     let mut context_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
     let mut slot_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
     let mut provenance_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
     let mut invariants = BTreeSet::new();
+    let mut component_sets = BTreeSet::new();
+    let mut component_reads = BTreeSet::new();
     for member in members {
         let duplicate = match member {
+            ApplicationSchemaMember::DerivedComponentSet { definition } => {
+                !component_sets.insert(definition.name.as_str())
+            }
+            ApplicationSchemaMember::ComponentSet { definition } => {
+                !component_sets.insert(definition.name())
+            }
+            ApplicationSchemaMember::OperationComponentRead { definition } => !component_reads
+                .insert((definition.operation(), definition.set(), definition.root())),
             ApplicationSchemaMember::ApplicationMutation { description } => {
                 !mutations.insert(description.binding_identity())
             }
@@ -36,6 +48,13 @@ pub(super) fn validate_member_identity_uniqueness(
             } => effects.insert(effect, payload_type).is_some(),
             ApplicationSchemaMember::ApplicationQuery { definition } => {
                 !query_types.insert(definition.query_type())
+            }
+            ApplicationSchemaMember::ApplicationResource { definition } => {
+                !resource_names.insert(definition.parts().name.as_str())
+                    || !resource_types.insert(&definition.parts().resource_type)
+            }
+            ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
+                !query_types.insert(definition.parts().history_type.as_str())
             }
             ApplicationSchemaMember::ApplicationCapability { contract } => {
                 !capability_names.insert(contract.name())

@@ -29,18 +29,28 @@ mod read_observation;
 mod registration;
 mod typed_binding;
 mod typed_view;
+pub use super::aggregate_identity::WorthQueryAggregateIdentity;
 pub use access_denial::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind};
 pub(super) use program_selection::WorthQueryProgramRuleSelection;
 pub(super) use registration::ErasedApplicationInvariantRule;
 pub use typed_binding::{
+    WorthQueryApplicationInvariantComponentSetBinding,
+    WorthQueryApplicationInvariantDerivedRelationBinding,
     WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantProjectedCaseBinding,
     WorthQueryApplicationInvariantRelationBinding,
 };
 pub use typed_view::{
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantReadView, WorthQueryApplicationInvariantRelation,
-    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantWalk,
-    WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
+    WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
+    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantDerivedMemberRelation,
+    WorthQueryApplicationInvariantDerivedOrbit, WorthQueryApplicationInvariantDerivedRelation,
+    WorthQueryApplicationInvariantDerivedWalk, WorthQueryApplicationInvariantDerivedWalkStep,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantGraphComponent,
+    WorthQueryApplicationInvariantGraphComponents, WorthQueryApplicationInvariantGraphMember,
+    WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantReadView,
+    WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantScopePlanner,
+    WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
+    WorthQueryApplicationInvariantWalkStep,
 };
 
 /// Supplies domain validation without supplying its own installation authority.

@@ -10,20 +10,60 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 mod authorization;
 mod capability;
+mod component_set;
+mod derived_component_set;
+mod derived_relation;
+mod history;
+mod inspection;
 mod invariant;
 mod mutation_description;
 mod operation;
+mod projected_member_domain;
+mod relation_aspect;
+mod relation_graph;
+mod resource;
+mod resource_value;
+
 mod schema;
+mod source_disclosure;
 mod vocabulary;
+
+fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
+    projected_member_domain::require_shape(member)?;
+    inspection::require_shape(member)?;
+    derived_relation::require_shape(member)?;
+    if let ApplicationSchemaMember::DerivedComponentSet { definition } = member {
+        derived_component_set::require_shape(definition)?;
+    }
+    schema::require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::RelationAspect { definition } = member {
+        relation_aspect::require_supported_field_codec(definition)?;
+    }
+    Ok(())
+}
 
 pub(super) fn require_encoding_contract(
     member: &ApplicationSchemaMember,
     maximum_depth: u32,
 ) -> Result<(), Denial> {
-    schema::require_supported_field_codec(member)?;
+    require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::ApplicationResource { definition } = member {
+        resource::require_encoding_contract(definition)?;
+    }
+    if matches!(
+        member,
+        ApplicationSchemaMember::OperationComponentRead { .. }
+    ) {
+        super::super::operation_component_read::require_nesting_depth(maximum_depth)?;
+    }
     if matches!(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
+            | ApplicationSchemaMember::ProjectedMemberDomain { .. }
+            | ApplicationSchemaMember::ApplicationQueryInspection { .. }
+            | ApplicationSchemaMember::DerivedRelation { .. }
+            | ApplicationSchemaMember::ComponentSet { .. }
+            | ApplicationSchemaMember::DerivedComponentSet { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
             | ApplicationSchemaMember::OperationBody { .. }
             | ApplicationSchemaMember::Relation { integrity: worth_query_declaration::facade::application_schema::ApplicationRelationIntegrityRecord { reaches_at_least: Some(_), .. }, .. }
@@ -47,11 +87,43 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     member: &ApplicationSchemaMember,
 ) -> Result<(), Denial> {
-    schema::require_supported_field_codec(member)?;
+    require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::ApplicationResource { definition } = member {
+        resource::require_encoding_contract(definition)?;
+    }
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::DerivedComponentSet { definition } => {
+            derived_component_set::write(output, definition)
+        }
+        ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
+            projected_member_domain::write(output, definition)
+        }
+        ApplicationSchemaMember::DerivedRelation { .. }
+        | ApplicationSchemaMember::RuleReadableCollection { .. }
+        | ApplicationSchemaMember::OperationDerivedRead { .. } => {
+            derived_relation::write(output, member)
+        }
+        ApplicationSchemaMember::OperationComponentRead { definition } => {
+            super::super::operation_component_read::write(output, definition)
+        }
+        ApplicationSchemaMember::ComponentSet { definition } => {
+            component_set::write(output, definition)
+        }
+        ApplicationSchemaMember::ApplicationResource { definition } => {
+            resource::write(output, definition)
+        }
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
+        }
+        ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
+            history::write(output, definition)
+        }
+        ApplicationSchemaMember::ApplicationQueryInspection { definition } => {
+            inspection::write(output, definition)
+        }
+        ApplicationSchemaMember::RelationAspect { definition } => {
+            relation_aspect::write(output, definition)
         }
         ApplicationSchemaMember::OperationBody { operation, body } => {
             output.text(operation)?;
@@ -93,6 +165,22 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        46 => derived_component_set::decode(input, budget),
+        47 => derived_relation::decode(47, input, budget),
+        45 => inspection::decode(input, budget),
+        44 => projected_member_domain::decode(input, budget),
+        tag @ 41..=43 => derived_relation::decode(tag, input, budget),
+        39 => resource::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::ApplicationResource { definition }),
+
+        36 => history::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::ApplicationHistoryQuery { definition }),
+        37 => relation_aspect::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::RelationAspect { definition }),
+        40 => Ok(ApplicationSchemaMember::OperationComponentRead {
+            definition: super::super::operation_component_read::decode(input, budget)?,
+        }),
+        38 => component_set::decode(input, budget),
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input, budget),
         tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
         tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30 | 35) => {
@@ -112,6 +200,18 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,
+        ApplicationSchemaMember::ApplicationQueryInspection { .. } => 45,
+        ApplicationSchemaMember::DerivedRelation { definition } => if definition.is_legacy_shape() { 41 } else { 47 },
+        ApplicationSchemaMember::DerivedComponentSet { .. } => 46,
+        ApplicationSchemaMember::RuleReadableCollection { .. } => 42,
+        ApplicationSchemaMember::OperationDerivedRead { .. } => 43,
+        ApplicationSchemaMember::ApplicationResource { .. } => 39,
+
+        ApplicationSchemaMember::ApplicationHistoryQuery { .. } => 36,
+        ApplicationSchemaMember::RelationAspect { .. } => 37,
+        ApplicationSchemaMember::OperationComponentRead { .. } => 40,
+        ApplicationSchemaMember::ComponentSet { .. } => 38,
         ApplicationSchemaMember::ApplicationMutation { .. } => 31,
         ApplicationSchemaMember::ApplicationInvariant { maximum_work_units: None, .. } => 34,
         ApplicationSchemaMember::ApplicationInvariant { .. } => 27,

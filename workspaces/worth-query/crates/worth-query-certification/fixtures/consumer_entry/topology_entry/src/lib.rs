@@ -37,8 +37,10 @@ pub use membership::*;
 mod mutation;
 mod owning_entry;
 pub use owning_entry::capture_original;
+mod island_coupling;
 mod planar_edit;
 mod planar_invariant;
+mod planar_islands;
 mod planar_output_read;
 mod planar_read;
 mod planar_topology;
@@ -54,9 +56,11 @@ pub use vertex_replacement::*;
 
 pub use discovery_read::*;
 pub use handler::*;
+pub use island_coupling::*;
 pub use mutation::*;
 pub use planar_edit::*;
 pub use planar_invariant::*;
+pub use planar_islands::*;
 pub use planar_output_read::*;
 pub use planar_read::*;
 pub use planar_topology::*;
@@ -78,6 +82,7 @@ worth_query_application_contribution! {
             #[cfg(test)]
             let schema = checkpoint_recovery::required_chain::declare(schema);
             let schema = alternate_output::declare_alternate_output(schema);
+            let schema = island_coupling::declare(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
             let schema = <PlanarSourceFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);

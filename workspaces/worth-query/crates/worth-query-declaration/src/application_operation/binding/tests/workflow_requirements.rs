@@ -24,6 +24,7 @@ macro_rules! guarded_binding {
             decision RenameDecision, denial RenameDenialBinding, handler identity "worth.query.test.rename-handler.v1",
             program , workflow_authority required,
             workflow_requirements $($requirements)?,
+            inspection_disclosure ,
             outputs RenameOutputs,
             principal PrincipalBinding, mapping ExternalMapping, principal_entity Account,
             principal_identity u64, identity_binding crate::application_schema::U64ApplicationValueBinding,

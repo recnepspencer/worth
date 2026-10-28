@@ -10,6 +10,13 @@ pub(super) struct InstalledCollection {
     collection_type: TypeId,
     completeness_type: TypeId,
     value_type: TypeId,
+    rule_readable: Option<RuleReadableCount>,
+}
+
+#[derive(Clone, Copy)]
+struct RuleReadableCount {
+    relation:&'static str,
+    association:fn(&str)->worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
 }
 
 impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
@@ -28,7 +35,56 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
             value_type: TypeId::of::<
                 <Collection::Completeness as ApplicationCollectionCompleteness>::Value,
             >(),
+            rule_readable: None,
         });
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn bind_rule_readable_count<
+        Feature,
+        Collection,
+    >(
+        &mut self,
+        relation: &'static str,
+    ) where
+        Feature: ApplicationFeature<Schema>,
+        Collection: ApplicationDerivedCollection<Schema, Feature>,
+    {
+        self.computations.get_mut(&TypeId::of::<Collection::Computation>())
+            .and_then(|owner|owner.collection.as_mut()).expect("closed count just installed its collection")
+            .rule_readable=Some(RuleReadableCount { relation,
+                association:worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation::of::<Schema,Feature,Collection>,
+            });
+        let association = worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation::of::<Schema, Feature, Collection>(relation);
+        self.rule_readable_owners
+            .insert(association, TypeId::of::<Collection::Computation>());
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn validate_rule_readable_collections(
+        &self,
+        schema: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        for member in schema.installed_declaration().members() {
+            let worth_query_installation::facade::ApplicationSchemaMember::RuleReadableCollection {
+                association,
+            } = member
+            else {
+                continue;
+            };
+            if self
+                .rule_readable_owners
+                .get(association)
+                .and_then(|identity| self.computations.get(identity))
+                .and_then(|owner| owner.collection)
+                .and_then(|collection| collection.rule_readable)
+                .is_none_or(|owner| (owner.association)(owner.relation) != *association)
+            {
+                return Err(denial(
+                    DenialKind::CollectionOwnerMeaningMismatch,
+                    &association.collection,
+                ));
+            }
+        }
+        Ok(())
     }
 }
 

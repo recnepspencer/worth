@@ -8,7 +8,7 @@ use phase::{assemble_authoritative_publication_phase, ArtifactAssemblyInput};
 use preparation::PublicationPreparation;
 
 pub(super) struct AssembledCommitExecution {
-    admitted: super::execution_admission::AdmittedCommitExecution,
+    admitted: super::execution_admission::AdmittedCommitState,
     selected_branch_state: crate::branch::SelectedRelationalBranchState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     working_state: crate::storage::overlay::WorkingState,
@@ -31,7 +31,7 @@ impl AssembledCommitExecution {
     pub(super) fn into_parts(
         self,
     ) -> (
-        super::execution_admission::AdmittedCommitExecution,
+        super::execution_admission::AdmittedCommitState,
         crate::branch::SelectedRelationalBranchState,
         crate::transactions::data::CommitStructuralSummary,
         crate::storage::overlay::WorkingState,

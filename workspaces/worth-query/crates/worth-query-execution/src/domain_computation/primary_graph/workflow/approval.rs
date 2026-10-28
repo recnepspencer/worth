@@ -223,12 +223,14 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_approval_fact
         ),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.transition_approval_relation,
         key: "transition-approval".to_owned(),
         from: EntityReference::Created(transition.clone()),
         to: EntityReference::Created(approval.clone()),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.approval_proposal_relation,
         key: "approval-proposal".to_owned(),
         from: EntityReference::Created(approval.clone()),
@@ -236,6 +238,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_approval_fact
     })?;
     for (index, evidence) in meaning.evidence.iter().enumerate() {
         emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: layout.approval_evidence_relation,
             key: format!("approval-evidence-{index}"),
             from: EntityReference::Created(approval.clone()),

@@ -70,12 +70,14 @@ pub(super) fn emit<E>(
             partition: WorthQueryApplicationCreationPartition::Context(parent.partition_id),
         })?;
         emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: l.membership,
             key: format!("proposal-input-{index}"),
             from: EntityReference::Created(parent.clone()),
             to: EntityReference::Created(entity.clone()),
         })?;
         emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: l.resource,
             key: format!("input-resource-{index}"),
             from: EntityReference::Created(entity),

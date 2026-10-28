@@ -9,6 +9,8 @@ use worth_query_host::facade::{declaration::application_operation::*, primary_gr
 pub struct Contacts {
     decision: AtomicUsize,
     candidate: AtomicUsize,
+    pub resource: Arc<super::resources::ProducerState>,
+    pub resource_clock: Arc<super::resources::ClockSource>,
 }
 impl Contacts {
     pub fn counts(&self) -> (usize, usize) {

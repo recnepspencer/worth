@@ -3,11 +3,14 @@ use super::WorthQueryApplicationEntityIdentity;
 use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::EntityId;
+mod funding;
 
 pub(in crate::domain_computation) struct WorthQueryObservedScopeSelector {
     locator: AspectFieldLocator,
     value: AspectValue,
     subject: EntityId,
+    // Last to drop: the original request remains charged through the final share.
+    _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl WorthQueryObservedScopeSelector {
@@ -30,6 +33,7 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
             locator: self.identity_locator().clone(),
             value: self.identity_value().clone(),
             subject: self.entity_id(),
+            _funding: None,
         })
     }
 }

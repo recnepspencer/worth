@@ -141,14 +141,21 @@ pub(super) fn publish_effects(
                 key,
                 from,
                 to,
-            } => MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                partition_id: partition,
-                kind_id: kind,
-                client_key: ClientKey::raw(key),
-                source: context_reference(from, partition),
-                target: context_reference(to, partition),
-                fields: AspectFieldPatch::default(),
-            })),
+                fields,
+            } => {
+                assert!(
+                    fields.is_empty(),
+                    "this fixture's relation grammar has no payload initialization"
+                );
+                MutationIntent::Create(CreateIntent::Relation(RelationSpec {
+                    partition_id: partition,
+                    kind_id: kind,
+                    client_key: ClientKey::raw(key),
+                    source: context_reference(from, partition),
+                    target: context_reference(to, partition),
+                    fields: AspectFieldPatch::default(),
+                }))
+            }
             _ => panic!("this definition/start fixture emits only creations"),
         };
         batch.intents.push(intent);

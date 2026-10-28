@@ -56,6 +56,7 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
         <OccurrenceSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <ExplicitReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <CorrectableRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
+        <crate::document_retention_model::ReaffirmRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
     ];
     assert_eq!(removed_operations.len(), removed_bindings.len());
     for binding in removed_bindings {

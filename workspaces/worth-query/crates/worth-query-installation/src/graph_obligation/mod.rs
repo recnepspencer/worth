@@ -1,5 +1,7 @@
 mod adoption;
+mod capability_binding;
 mod contract;
+pub(crate) use capability_binding::install_disclosure_capabilities;
 mod denial;
 mod identity;
 mod installed_set;
@@ -7,6 +9,7 @@ mod kind;
 mod operation_binding;
 mod owner;
 mod query_binding;
+mod resource_binding;
 mod selection_index;
 
 pub use adoption::{
@@ -38,6 +41,7 @@ pub(crate) use operation_binding::{
 };
 pub use owner::WorthQueryInstalledGraphObligationOwner;
 pub(crate) use query_binding::bind_query_obligations;
+pub(crate) use resource_binding::bind_resource_obligations;
 
 #[cfg(test)]
 mod tests;

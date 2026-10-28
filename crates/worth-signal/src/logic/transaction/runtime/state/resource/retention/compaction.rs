@@ -143,12 +143,7 @@ impl ResourceRuntimeState {
         counts: &mut LifecycleCompactionCounts,
     ) {
         for request_id in selected.iter().copied() {
-            self.terminal_in_flight_by_request.remove(&request_id);
-            let Some(in_flight) = self
-                .in_flight_by_request
-                .remove(&request_id)
-                .filter(|in_flight| in_flight.lifecycle().is_terminal())
-            else {
+            let Some(in_flight) = self.take_terminal_record(request_id) else {
                 continue;
             };
             counts.reclaimed_in_flight_count = counts.reclaimed_in_flight_count.saturating_add(1);

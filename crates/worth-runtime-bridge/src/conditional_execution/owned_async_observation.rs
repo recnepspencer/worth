@@ -19,6 +19,7 @@ pub struct BridgeOwnedAsyncSupersessionAdmission<'a> {
 pub struct BridgeOwnedAsyncCompletionAdmission {
     authority: Arc<()>,
     report: crate::facade::BridgeAsyncCompletionAdmissionReport,
+    native: worth_signal::facade::branch::SignalOwnedAsyncCompletionAdmission,
 }
 
 pub struct BridgeOwnedAsyncTimeoutAdmission {
@@ -124,15 +125,23 @@ impl BridgeOwnedAsyncCompletionAdmission {
     pub(super) fn new(
         authority: &Arc<()>,
         report: crate::facade::BridgeAsyncCompletionAdmissionReport,
+        native: worth_signal::facade::branch::SignalOwnedAsyncCompletionAdmission,
     ) -> Self {
         Self {
             authority: Arc::clone(authority),
             report,
+            native,
         }
     }
 
     pub fn report(&self) -> &crate::facade::BridgeAsyncCompletionAdmissionReport {
         &self.report
+    }
+
+    pub(super) fn native_admission(
+        &self,
+    ) -> &worth_signal::facade::branch::SignalOwnedAsyncCompletionAdmission {
+        &self.native
     }
 
     pub(super) fn is_owned_by(&self, authority: &Arc<()>) -> bool {
@@ -203,13 +212,6 @@ impl BridgeOwnedAsyncRetrySchedule {
 }
 
 impl BridgeOwnedAsyncRetryAdmission {
-    pub(super) fn new(
-        request: BridgeOwnedAsyncRequestAdmission,
-        lineage: crate::facade::BridgeAsyncRetryLineage,
-    ) -> Self {
-        Self { request, lineage }
-    }
-
     pub fn request(&self) -> &BridgeOwnedAsyncRequestAdmission {
         &self.request
     }
@@ -224,13 +226,6 @@ impl BridgeOwnedAsyncRetryAdmission {
 }
 
 impl BridgeOwnedAsyncRevalidationAdmission {
-    pub(super) fn new(
-        request: BridgeOwnedAsyncRequestAdmission,
-        lineage: crate::facade::BridgeAsyncRevalidationLineage,
-    ) -> Self {
-        Self { request, lineage }
-    }
-
     pub fn request(&self) -> &BridgeOwnedAsyncRequestAdmission {
         &self.request
     }

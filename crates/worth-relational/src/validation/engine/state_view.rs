@@ -5,8 +5,8 @@ use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 use std::sync::Arc;
 
 mod aspect_state;
+mod logical_slots;
 pub(crate) mod slot_resolution;
-mod slot_traversal;
 mod structural_adjacency;
 
 #[derive(Clone)]
@@ -165,17 +165,6 @@ impl<'state> InvariantStateView<'state> {
             return None;
         }
         self.entity_metadata_at(&partition.entity_arena(), entity_id.partition_id, slot)
-    }
-
-    pub(crate) fn entity_visible_at_version(
-        &self,
-        arena: &RelationalRecordHeadArenaView<'state, EntityRecordKind>,
-        slot: usize,
-    ) -> bool {
-        arena
-            .current_metadata_at(slot)
-            .filter(|metadata| self.metadata_is_visible(*metadata))
-            .is_some()
     }
 
     pub(crate) fn entity_metadata_at(

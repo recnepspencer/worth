@@ -1,7 +1,12 @@
 mod prepared_operation;
+mod resource_read;
 pub use prepared_operation::{
     admit_prepared_application_operation_graph_work, prepare_application_operation_graph_work,
     WorthQueryPreparedApplicationOperationGraphWork,
+};
+pub use resource_read::{
+    admit_prepared_resource_read_graph_work, prepare_resource_read_graph_work,
+    WorthQueryPreparedResourceReadGraphWork,
 };
 
 use worth_query_declaration::facade::domain_computation::WorthQueryExecutionResourceRequest;
@@ -136,7 +141,11 @@ pub fn admit_application_operation_graph_work(
     request: &WorthQueryExecutionResourceRequest,
     support: WorthQueryExecutionResourceSupportSnapshot,
 ) -> Result<WorthQueryAdmittedGraphWorkPlan, WorthQueryGraphWorkAdmissionDenial> {
-    if selected.intent().kind() == WorthQueryGraphWorkIntentKind::ApplicationQueryRead {
+    if !matches!(
+        selected.intent().kind(),
+        WorthQueryGraphWorkIntentKind::ApplicationOperationRead
+            | WorthQueryGraphWorkIntentKind::ApplicationOperationMutation
+    ) {
         return Err(WorthQueryGraphWorkAdmissionDenial::IntentMismatch);
     }
     validate_owner_requirements(&selected)?;
@@ -251,7 +260,8 @@ fn operation_resource_contract(
             WorthQueryInstalledGraphObligationResourcePosture::ApplicationOperation(contract) => {
                 Some(contract)
             }
-            WorthQueryInstalledGraphObligationResourcePosture::ApplicationQuery { .. } => None,
+            WorthQueryInstalledGraphObligationResourcePosture::ApplicationQuery { .. }
+            | WorthQueryInstalledGraphObligationResourcePosture::ApplicationResource { .. } => None,
         })
         .ok_or(WorthQueryGraphWorkAdmissionDenial::IntentMismatch)
 }

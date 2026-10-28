@@ -5,8 +5,31 @@ use worth_query_host::facade::declaration::{application_schema::*, authenticatio
 
 pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
     const INTEGRITY: ApplicationRelationIntegrity;
+    const RELATION_PAYLOAD: bool = false;
+    const DERIVED_RELATIONS: bool = false;
+    const LOGICAL_RELATIONS: bool = false;
+    const LOGICAL_CENSUS: bool = true;
+    fn logical_read_observer() -> Option<
+        std::sync::Arc<
+            dyn Fn(
+                    bool,
+                    worth_query_host::facade::application_invariants::WorthQueryInvariantProjectionWork,
+                ) + Send
+                + Sync
+                + std::panic::UnwindSafe
+                + std::panic::RefUnwindSafe,
+        >,
+    >{
+        None
+    }
+    const CUSTOM_DERIVED_OWNER: bool = false;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+    fn observation_members(
+        schema: ApplicationSchemaDeclarationBuilder<GraphSchema<Self>>,
+    ) -> ApplicationSchemaDeclarationBuilder<GraphSchema<Self>> {
+        schema
+    }
 }
 #[derive(Clone, Debug)]
 pub struct Acyclic;
@@ -22,6 +45,22 @@ pub struct Unrestricted;
 impl LawPolicy for Unrestricted {
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+}
+
+#[derive(Clone, Debug)]
+pub struct Orbit;
+impl LawPolicy for Orbit {
+    // compiled-orbit-example: begin
+    const INTEGRITY: ApplicationRelationIntegrity =
+        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit();
+    // compiled-orbit-example: end
+}
+#[derive(Clone, Debug)]
+pub struct NoSelfOrbit;
+impl LawPolicy for NoSelfOrbit {
+    const INTEGRITY: ApplicationRelationIntegrity =
+        ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling()
+            .orbit();
 }
 
 #[derive(Clone, Debug)]
@@ -150,3 +189,7 @@ impl Feeds {
 #[path = "schema/minimum.rs"]
 mod minimum;
 pub use minimum::{LeafAndPrincipalMinimumTwo, LeafMinimumTwo, MinimumTwo};
+
+#[path = "schema/payload.rs"]
+mod payload;
+pub use payload::{EdgeFacts, EdgeWeight, Payload};

@@ -239,13 +239,12 @@ let charged = computed.charged_work();
                         projection,
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )
-                    .unwrap()
-                    .complete_projected_dependencies(
+                    .map_err(|_| ())
+                    .and_then(|attempt| attempt.complete_projected_dependencies(
                         &phase_custody.phase_for_application(&world.application),
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                    )
+                    ).map_err(|_| ()))
                     .map(|_| SealedComputationRun::kept_in_test())
-                    .map_err(|_| ())
             } else {
                 Err(())
             };

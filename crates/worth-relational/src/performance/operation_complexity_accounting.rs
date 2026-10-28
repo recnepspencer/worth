@@ -295,4 +295,8 @@ complexity_operations!(
     live_relation_history_entries_trimmed,
     forward_adjacency_updates,
     reverse_adjacency_updates,
+    aggregate_maintenance_adjacency_lists,
+    aggregate_maintenance_entity_records,
+    aggregate_maintenance_relation_records,
+    aggregate_maintenance_aspect_states,
 );

@@ -4,8 +4,9 @@ mod direct_attempt;
 mod execution_attempt_identity;
 mod graph_obligation;
 pub(in crate::domain_computation) use graph_obligation::{
-    WorthQueryManagedGraphReadDenial, WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion,
-    WorthQueryPreparedSessionRead,
+    WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
+    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryResourceReadCompletion, WorthQuerySessionResourceReadProof,
 };
 pub(crate) mod graph_provider;
 mod protocol;
@@ -33,7 +34,7 @@ pub use graph_obligation::{
 pub(in crate::domain_computation) use graph_obligation::{
     WorthQueryGraphReadOwnerPort, WorthQueryGraphWorkAccessContextAffinity,
     WorthQueryManagedGraphWorkSession, WorthQueryMutationRunBinding,
-    WorthQueryObservedGraphReadWork, WorthQueryPreparedQuerySessionIdentity,
+    WorthQueryObservedGraphReadWork, WorthQueryPreparedProductReadSessionIdentity,
     WorthQueryProviderSessionBoundMutationRun, WorthQuerySessionGraphReadProof,
 };
 pub use graph_provider::*;

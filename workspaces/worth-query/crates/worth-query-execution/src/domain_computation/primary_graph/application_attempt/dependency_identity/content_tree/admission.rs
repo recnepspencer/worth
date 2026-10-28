@@ -34,6 +34,11 @@ pub(super) fn leaf(
     // constructing the basis Vec. List elements produce <=8 entries; native
     // field paths and variable text are counted separately from inline data.
     let (elements, shared_text) = match fact {
+        Fact::ComponentSelection { .. } => (0, 0),
+        Fact::Aggregate { observation } => (
+            observation.native().len(),
+            observation.key().subject().len(),
+        ),
         Fact::StructuralWalk { observation } => (
             observation
                 .key()

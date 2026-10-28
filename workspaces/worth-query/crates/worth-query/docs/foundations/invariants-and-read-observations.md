@@ -35,7 +35,7 @@ installed rule APIs through `worth_query_host::facade::application_invariants`.
 | Bind the installed schema once | `setup.invariant(marker, execution_point, resolver_callback)`; `resolver.typed_field(..)` and `resolver.typed_relation(..)` |
 | Prepare the read scope | `WorthQueryApplicationInvariantRule::prepare_scope` or its checked counterpart; `planner.proposed()`, `planner.committed()`, `planner.reads()` |
 | Evaluate that scope | `evaluate` or `evaluate_checked`; `context.proposed()`, `context.committed()`, `context.reads()` |
-| Read through a typed view | `touched_entities`, `field`, `relations_from`, `relations_to`, `walk`, `reaches`, `closure`; entity and relation handles retain their native identity and view affinity |
+| Read through a typed view | `touched_entities`, `field`, `relations_from`, `relations_to`, `walk`, `reaches`, `closure`, `reobserve_entity`; entity and relation handles retain their native identity and view affinity |
 | Inspect a normal query result | `rows.receipt().inspect().read_work().reads()`; the lower host query receipt also exposes `receipt.reads()` |
 | Inspect a snapshot projection | `WorthQueryCompletedInvariantProjection::work()` or `into_parts()` |
 
@@ -73,6 +73,16 @@ still reject an unchecked custom kernel before either stage runs.
 side of that validation. Handles carry schema binding, proposal and view
 posture: a handle obtained from one view cannot be reinterpreted as a handle for
 the other. Obtain the needed entities through the appropriate view.
+
+When preparation follows old incidence to a surviving owner, use
+`proposed.reobserve_entity(&owner_binding, &committed_owner)` to acquire that
+physical owner freshly in the target view. The selector must be an issued entity
+from this exact proposal and installation. The target's declared kind, original
+controls and prepared scope still govern both presence and absence. A removed
+target returns `None`; undeclared access and stale/foreign selectors refuse.
+The returned handle belongs to the target posture, while ordinary reads still
+reject the original cross-view handle. The compiled [reobservation court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/reobservation.rs)
+covers an untouched incidence-reached survivor and actual creation/deletion.
 
 Each planner owns one observation value shared by all its views. Each evaluation
 starts from the immutable preparation observation and adds that evaluation's
@@ -188,20 +198,17 @@ fn compare_complete_reads(
     let complete: Vec<_> = events
         .iter()
         .filter_map(|event| match event {
-            PlanarInvariantReadEvent::CompleteWalk {
+            PlanarInvariantReadEvent::CompleteOrbit {
                 before,
                 after,
                 visited,
                 physical_relations,
+                ..
             } => Some((*before, *after, *visited, *physical_relations)),
             _ => None,
         })
         .collect();
-    assert_eq!(
-        complete.len(),
-        1,
-        "one Native closure, not one traversal per triple"
-    );
+    assert_eq!(complete.len(), 1, "one Native orbit read per affected ring");
     let (before, after, visited, physical_relations) = complete[0];
     assert_eq!(
         (visited, physical_relations),
@@ -210,19 +217,14 @@ fn compare_complete_reads(
     );
     let complete_adjacencies = after.adjacency_lists_read() - before.adjacency_lists_read();
     let complete_edges = after.adjacency_edges_inspected() - before.adjacency_edges_inspected();
-    assert_eq!(complete_adjacencies, visited);
+    assert!(complete_adjacencies >= visited);
     assert!(
         complete_edges >= physical_relations,
         "actual acquisitions include every physical successor"
     );
-    assert_eq!(
-        query.adjacency_lists_read(),
-        2,
-        "the query keeps its fixed projection"
-    );
     assert!(
-        complete_adjacencies > query.adjacency_lists_read(),
-        "the complete read is distinct from two projected hops"
+        query.adjacency_lists_read() > 0,
+        "the actual query acquires its relation projection"
     );
     let prepared: Vec<_> = events
         .iter()
@@ -318,10 +320,33 @@ retain observations made before that stop.
 
 ## Current Limits
 
-The installed read view exposes declared fields and one-hop relations. It does
-not currently expose transitive closure, orbit/component identity or derived
-relations as proposed-state reads. These counts describe Query boundary
-operations, not storage-engine I/O, allocation, elapsed time or unique entities.
+The installed read view exposes declared fields, one-hop relations, complete
+walks and closures, and stored-relation orbits with persistent aggregate identity.
+See [invariant walks](invariant-walks.md) and the
+[orbit and lineage contracts](../modeling/relation-laws.md) for their exact
+reader, footprint, disclosure and retained-snapshot boundaries. Privileged
+snapshot lineage inspection does not supply a tracked publication dependency.
+Component sets carry Native persistent identity through privileged inspection,
+admitted operation/decision reads, ordinary invariant proposed/committed
+selection/enumeration/count and complete one-shot Query results. See
+[ordinary invariant component reads](../modeling/relation-laws.md#ordinary-invariant-component-reads)
+for factory read/applicability coverage, complete census cost and physical footprints,
+and [declared query component reads](../modeling/relation-laws.md#declared-component-query-contracts)
+for whole-slot disclosure and source currentness.
+The [public topology island consumer](../modeling/relation-laws.md#public-topology-island-consumer)
+uses these reads with actual coupling edits, independent seeded union-find
+identity/lineage comparison and 10/10,000 unrelated-ring business-read locality.
+Derived relations supply proposed/committed endpoint reads, tracked decisions
+and framework-owned managed counts; see
+[derived relation meaning](../domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning).
+Finite projected sources compose with laws, walks, orbits and components. The
+[privileged logical reader](../modeling/relation-laws.md#privileged-logical-component-inspection)
+retains actual sources and component bodies at a stored snapshot. Its members
+cannot enter entity writers or grant operation authority. Domain-specific
+connectivity and context must be declared through the actual source incidences;
+the generic component reader does not infer them from carrier identity.
+These counts describe Query boundary operations, not storage-engine I/O,
+allocation, elapsed time or unique entities.
 
 The runnable observer example uses serial requests and one explicit edit per
 observation window. Concurrent applications must correlate their own diagnostic
@@ -330,6 +355,8 @@ windows; an event stream does not create invocation or publication authority.
 ## Related Docs
 
 - [Ordinary application entry](ordinary-application-front-door.md)
+- [Complete invariant walks and closures](invariant-walks.md)
+- [Relation laws, orbits and lineage](../modeling/relation-laws.md)
 - [Typed invariant refusal](../../../../../../docs/build-an-application.md#typed-refusal-from-installed-invariants)
 - [Program adoption](programs-and-adoption.md)
 - [Execution resources and managed runs](../domain-capabilities/execution-resource-admission-and-managed-runs.md)

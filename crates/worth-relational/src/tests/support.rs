@@ -70,6 +70,7 @@ mod durability;
 mod durable_medium;
 #[path = "support/history.rs"]
 mod history;
+mod history_snapshot;
 #[path = "support/inspection.rs"]
 mod inspection;
 #[path = "support/records.rs"]
@@ -89,6 +90,7 @@ pub(crate) use aspect_field_patches::*;
 pub(crate) use durability::*;
 pub(crate) use durable_medium::*;
 pub(crate) use history::*;
+pub(crate) use history_snapshot::demand_canonical_history_snapshot;
 pub(crate) use inspection::*;
 pub(crate) use records::*;
 pub(crate) use relation_integrity::*;

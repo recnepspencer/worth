@@ -3,7 +3,8 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::ContractId;
 use worth_relational::facade::schema::{SymmetryMode, UniquenessScope};
 use worth_relational::facade::transactions::{
-    ConflictClass, EntityReference, InvariantViolationFields, TransactionCommitError,
+    ConflictClass, EntityReference, InvariantViolationFields, RelationCardinalityBoundary,
+    TransactionCommitError,
 };
 
 /// The relation law and typed identities that refused a proposed commit.
@@ -14,6 +15,15 @@ use worth_relational::facade::transactions::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryRelationLawDenial<'a> {
+    /// A member has too few or too many physical incident edges on this side.
+    Cardinality {
+        contract_id: &'a ContractId,
+        relation_kind_id: KindId,
+        member: &'a EntityReference,
+        boundary: RelationCardinalityBoundary,
+        count: usize,
+        limit: u64,
+    },
     /// The relation's endpoint policy forbids this original self edge.
     SelfEdge {
         contract_id: &'a ContractId,
@@ -66,6 +76,21 @@ pub enum WorthQueryRelationLawDenial<'a> {
 impl<'a> WorthQueryRelationLawDenial<'a> {
     pub(crate) fn from_fields(fields: &'a InvariantViolationFields) -> Option<Self> {
         match fields {
+            InvariantViolationFields::RelationCardinalityEndpoint {
+                contract_id,
+                relation_kind_id,
+                entity_id,
+                boundary,
+                count,
+                limit,
+            } => Some(Self::Cardinality {
+                contract_id,
+                relation_kind_id: *relation_kind_id,
+                member: entity_id,
+                boundary: *boundary,
+                count: *count,
+                limit: *limit,
+            }),
             InvariantViolationFields::RelationEndpointKindSelfEdge {
                 contract_id,
                 relation_kind_id,

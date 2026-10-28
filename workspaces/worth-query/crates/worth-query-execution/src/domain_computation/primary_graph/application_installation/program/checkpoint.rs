@@ -80,3 +80,47 @@ where
         None,
     )
 }
+
+/// Restore while retaining privileged, read-only invariant projection authority.
+///
+/// Only the composition root performing restoration receives this authority.
+/// The checkpoint remains the sole model source: this grants no bootstrap writes.
+/// The returned authority belongs to the restored installation and its current
+/// program activation, exactly like authority retained during initial install.
+pub fn in_memory_program_from_checkpoint_with_projection<Schema, Program>(
+    program: ValidatedApplicationProgram<Schema, Program>,
+    declaration: ApplicationSchemaDeclaration<Schema>,
+    configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
+    limits: WorthQueryInMemoryApplicationLimits,
+    checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
+) -> Result<
+    (
+        WorthQueryProgramApplicationRuntime<Schema, Program>,
+        crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority<
+            Schema,
+        >,
+    ),
+    WorthQueryInMemoryApplicationDenial,
+>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema>,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+{
+    let runtime = in_memory_program_from_checkpoint(
+        program,
+        declaration,
+        configuration,
+        build_identity,
+        limits,
+        checkpoint,
+    )?;
+    let projection = runtime
+        .runtime()
+        .mutation_projection
+        .retain_for_installation();
+    Ok((runtime, projection))
+}

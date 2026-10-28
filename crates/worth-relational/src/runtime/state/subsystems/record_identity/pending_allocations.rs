@@ -10,6 +10,9 @@ use super::record_ref::{record_generation, record_partition, record_slot};
 use super::reservation::RecordSlotReservation;
 use super::RecordIdentitySubsystem;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ReservedRecordAllocation {
     pub(crate) slot: usize,

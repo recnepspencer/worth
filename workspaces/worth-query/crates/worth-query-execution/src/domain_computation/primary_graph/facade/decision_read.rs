@@ -1,4 +1,7 @@
 //! Public decision-reader and native observation contracts.
+pub use super::super::aggregate_identity::{
+    WorthQueryAggregateIdentity, WorthQueryAggregateLineage, WorthQueryAggregateLineageEvent,
+};
 pub use super::super::invariant_projection::{
     VerificationCapacityStop, WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
@@ -10,9 +13,13 @@ pub use super::super::invariant_projection::{
     WorthQueryCurrentOutputSelection, WorthQueryInspectedOperationInvariantProjection,
     WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
     WorthQueryInvariantAggregateDenialKind, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionDenial,
-    WorthQueryInvariantProjectionDenialKind, WorthQueryInvariantProjectionTraversalDenial,
+    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantDerivedMemberRelation,
+    WorthQueryInvariantDerivedRelation, WorthQueryInvariantDerivedWalk,
+    WorthQueryInvariantDerivedWalkStep, WorthQueryInvariantEntityIdentity,
+    WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
+    WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionComponent,
+    WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
+    WorthQueryInvariantProjectionOrbit, WorthQueryInvariantProjectionTraversalDenial,
     WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWalk,
     WorthQueryInvariantProjectionWalkIter, WorthQueryInvariantProjectionWalkStep,
     WorthQueryInvariantProjectionWork, WorthQueryInvariantRelation,

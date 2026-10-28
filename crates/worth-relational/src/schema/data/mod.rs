@@ -2,6 +2,7 @@ mod aspect_contracts;
 mod aspect_traces;
 mod authority_snapshot;
 mod continuity;
+mod extension;
 mod registry_errors;
 mod relation_integrity;
 mod structural_invariants;
@@ -42,14 +43,15 @@ pub use continuity::{
 pub use registry_errors::{SchemaRegistryError, SchemaRegistryErrorClass};
 pub(crate) use relation_integrity::derive_relation_integrity_plan_revision;
 pub use relation_integrity::{
-    CardinalityContractDeclaration, ContractId, EndpointDeletionIntegrityDeclaration,
-    EndpointDeletionIntegrityMode, EndpointKindContractDeclaration,
-    LoweredCardinalityMaximumContract, LoweredCardinalityMinimumContract,
-    LoweredEndpointDeletionIntegrityContract, LoweredEndpointKindContract,
-    LoweredRelationIntegrityPlan, LoweredSymmetryContract, LoweredUniquenessContract,
-    MinimumCardinalityEnforcement, PairMinimumSemantics, RelationIntegrityDeclarations,
-    RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision, SymmetryContractDeclaration,
-    SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
+    AggregateIdentityContractDeclaration, AggregateIdentitySource, AggregateIdentityStorage,
+    AggregateProjectedMemberStorage, CardinalityContractDeclaration, ContractId,
+    EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
+    EndpointKindContractDeclaration, LoweredCardinalityMaximumContract,
+    LoweredCardinalityMinimumContract, LoweredEndpointDeletionIntegrityContract,
+    LoweredEndpointKindContract, LoweredRelationIntegrityPlan, LoweredSymmetryContract,
+    LoweredUniquenessContract, MinimumCardinalityEnforcement, PairMinimumSemantics,
+    RelationIntegrityDeclarations, RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision,
+    SymmetryContractDeclaration, SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
 };
 pub use structural_invariants::{
     AcyclicityContractDeclaration, AllowedCycleClass, ConnectivityMinimumContractDeclaration,
@@ -97,6 +99,17 @@ pub struct KindResolution {
 pub struct RelationalSchemaRegistry {
     pub(crate) entity_kinds: BTreeMap<KindId, EntityKindRegistration>,
     pub(crate) relation_kinds: BTreeMap<KindId, RelationKindRegistration>,
+    /// Compiled only from accepted aggregate contracts; absent from all wire
+    /// and authority encodings because the contracts already own its meaning.
+    pub(crate) aggregate_private_kinds: std::collections::BTreeSet<KindId>,
+    pub(crate) derived_relations: BTreeMap<
+        crate::derived_relation::DerivedRelationIdentity,
+        std::sync::Arc<crate::derived_relation::definition::RegisteredDerivedRelation>,
+    >,
+    pub(crate) projected_member_domains: BTreeMap<
+        crate::projected_member_domain::ProjectedMemberDomainIdentity,
+        std::sync::Arc<crate::projected_member_domain::RegisteredProjectedMemberDomain>,
+    >,
 }
 
 impl RelationalSchemaRegistry {
@@ -138,23 +151,16 @@ impl RelationalSchemaRegistry {
             ));
         }
         let registration = crate::schema::canonicalize_relation_registration(registration)?;
+        crate::schema::aggregate_identity::validate_binding(&self, &registration)?;
+        if let Some(contract) = &registration.relation_integrity.aggregate_identity {
+            self.aggregate_private_kinds.extend([
+                contract.storage.aggregate_kind,
+                contract.storage.lineage_kind,
+                contract.membership_kind,
+            ]);
+        }
         self.relation_kinds
             .insert(registration.kind_id, registration);
-        Ok(self)
-    }
-
-    /// Extends this registry without allowing an existing kind authority to be
-    /// replaced by the incoming registry.
-    pub fn extend(
-        mut self,
-        additions: RelationalSchemaRegistry,
-    ) -> Result<Self, SchemaRegistryError> {
-        for registration in additions.entity_kinds.into_values() {
-            self = self.register_entity_kind(registration)?;
-        }
-        for registration in additions.relation_kinds.into_values() {
-            self = self.register_relation_kind(registration)?;
-        }
         Ok(self)
     }
 
@@ -347,6 +353,7 @@ impl RelationalSchemaRegistry {
                     &registration
                         .relation_integrity
                         .connectivity_minimum_contracts,
+                    registration.relation_integrity.aggregate_identity.as_ref(),
                 ),
                 cross_context_policy: registration.cross_context_policy,
                 cascade_delete_policy: registration.cascade_delete_policy,
@@ -358,6 +365,8 @@ impl RelationalSchemaRegistry {
             primary_schema_version_id,
             entity_kinds,
             relation_kinds,
+            derived_relations: self.derived_parts(),
+            projected_member_domains: self.projected_domain_parts(),
         }
     }
 

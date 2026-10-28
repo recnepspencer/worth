@@ -24,6 +24,18 @@ fn original_pre_actor_all_family_package_is_unsupported_intact_without_a_candida
         WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
     );
     assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
-    assert_eq!(WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION, 15);
+    assert_eq!(WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION, 18);
     assert_eq!(submitted, original.as_slice());
+}
+
+#[test]
+fn retained_version_fifteen_package_is_refused_intact() {
+    let bytes = super::decode_hex(include_str!("archive_v2_record_v15.hex").trim());
+    let denial =
+        decode_package_archive(&bytes, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 15);
 }

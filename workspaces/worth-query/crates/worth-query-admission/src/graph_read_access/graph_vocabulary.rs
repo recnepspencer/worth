@@ -38,6 +38,7 @@ pub enum WorthQueryGraphReadRootPosture {
 pub enum WorthQueryGraphReadTraversalOperator {
     DirectEdge,
     CompleteClosure,
+    AggregateSelection,
     SuccessorWalk,
     BoundedAncestor,
     BoundedDescendant,
@@ -115,6 +116,7 @@ string_vocabulary!(WorthQueryGraphReadRootPosture, {
 string_vocabulary!(WorthQueryGraphReadTraversalOperator, {
     WorthQueryGraphReadTraversalOperator::DirectEdge => "direct_edge",
     WorthQueryGraphReadTraversalOperator::CompleteClosure => "complete_closure",
+    WorthQueryGraphReadTraversalOperator::AggregateSelection => "aggregate_selection",
     WorthQueryGraphReadTraversalOperator::SuccessorWalk => "successor_walk",
     WorthQueryGraphReadTraversalOperator::BoundedAncestor => "bounded_ancestor",
     WorthQueryGraphReadTraversalOperator::BoundedDescendant => "bounded_descendant",

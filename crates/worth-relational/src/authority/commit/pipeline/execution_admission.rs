@@ -8,14 +8,30 @@ use crate::transactions::data::{
     TransactionCommitError, TransactionId,
 };
 
+/// Admission owns the exact draft only until the consuming Draft handoff.
 pub(super) struct AdmittedCommitExecution {
+    prepared_scope: Option<super::authority_context::PreparedAuthorityScope>,
+    state: AdmittedCommitState,
+}
+impl AdmittedCommitExecution {
+    pub(super) fn into_parts(
+        self,
+    ) -> (
+        AdmittedCommitState,
+        Option<super::authority_context::PreparedAuthorityScope>,
+    ) {
+        (self.state, self.prepared_scope)
+    }
+}
+
+/// Metadata that remains live after the exact draft leaves admission.
+pub(super) struct AdmittedCommitState {
     transaction_id: TransactionId,
     validation_input: RelationalTransactionValidationInput,
     selected_branch_state: crate::branch::SelectedRelationalBranchState,
     phase_timing: CommitPhaseTiming,
     commit_log: CommitLog,
     authority_input: super::authority_context::CommitAuthorityInput,
-    prepared_scope: Option<super::authority_context::PreparedAuthorityScope>,
     merge_execution_accounting: Option<super::authority_context::MergeExecutionAccounting>,
     merge_execution_diagnostics_plan: Option<crate::merge::data::MergeExecutionDiagnosticsPlan>,
     prevalidated_commit_boundary: Option<crate::validation::engine::InvariantExecutionResult>,
@@ -63,7 +79,7 @@ impl<'a> AdmittedCommitPhaseView<'a> {
     }
 }
 
-impl AdmittedCommitExecution {
+impl AdmittedCommitState {
     pub(super) fn transaction_id(&self) -> TransactionId {
         self.transaction_id
     }
@@ -94,12 +110,6 @@ impl AdmittedCommitExecution {
 
     pub(super) fn release_transaction_retention(&mut self) {
         self.validation_input.release_transaction_retention();
-    }
-
-    pub(super) fn take_prepared_scope(
-        &mut self,
-    ) -> Option<super::authority_context::PreparedAuthorityScope> {
-        self.prepared_scope.take()
     }
 
     pub(super) fn accept_merge_draft(
@@ -239,22 +249,24 @@ pub(super) fn admit_commit_execution(
             .record_retained_history_head_lookup(context.validation_input.target_branch());
     }
     Ok(AdmittedCommitExecution {
-        transaction_id: context.transaction_id,
-        validation_input: context.validation_input,
-        selected_branch_state,
-        phase_timing: context.phase_timing,
-        commit_log: CommitLog::new(),
-        authority_input: context.authority_input,
         prepared_scope: context.prepared_scope,
-        merge_execution_accounting: context.merge_execution_accounting,
-        merge_execution_diagnostics_plan: context.merge_execution_diagnostics_plan,
-        prevalidated_commit_boundary: context.prevalidated_commit_boundary,
-        prevalidated_mutation_sensitive: context.prevalidated_mutation_sensitive,
-        prevalidated_snapshot_publication: context.prevalidated_snapshot_publication,
-        strategy_commit_artifacts: context.strategy_commit_artifacts,
-        diagnostics: Vec::new(),
-        complexity_before,
-        prior_complexity_delta: context.prior_complexity_delta,
+        state: AdmittedCommitState {
+            transaction_id: context.transaction_id,
+            validation_input: context.validation_input,
+            selected_branch_state,
+            phase_timing: context.phase_timing,
+            commit_log: CommitLog::new(),
+            authority_input: context.authority_input,
+            merge_execution_accounting: context.merge_execution_accounting,
+            merge_execution_diagnostics_plan: context.merge_execution_diagnostics_plan,
+            prevalidated_commit_boundary: context.prevalidated_commit_boundary,
+            prevalidated_mutation_sensitive: context.prevalidated_mutation_sensitive,
+            prevalidated_snapshot_publication: context.prevalidated_snapshot_publication,
+            strategy_commit_artifacts: context.strategy_commit_artifacts,
+            diagnostics: Vec::new(),
+            complexity_before,
+            prior_complexity_delta: context.prior_complexity_delta,
+        },
     })
 }
 

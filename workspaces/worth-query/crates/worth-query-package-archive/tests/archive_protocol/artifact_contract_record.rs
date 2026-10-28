@@ -11,6 +11,30 @@ use fixture::artifact_package;
 
 #[test]
 fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
+    let retained16 =
+        decode_hex(include_str!("artifact_contract_record/artifact_contract_v16.hex").trim());
+    let denial =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+            .decode_frame(&retained16)
+            .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 16);
+
+    let retained17 =
+        decode_hex(include_str!("artifact_contract_record/artifact_contract_v17.hex").trim());
+    let denial =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+            .decode_frame(&retained17)
+            .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 17);
+
     let source = artifact_package();
     let exported = source.export_typed_records().unwrap();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
@@ -52,7 +76,7 @@ fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
 }
 
 #[test]
-fn version_fifteen_artifact_contract_frame_matches_the_frozen_vector() {
+fn version_eighteen_artifact_contract_frame_matches_the_frozen_vector() {
     let original =
         decode_hex(include_str!("artifact_contract_record/artifact_contract_v6.hex").trim());
     let denial =
@@ -92,25 +116,28 @@ fn version_fifteen_artifact_contract_frame_matches_the_frozen_vector() {
     );
     assert_eq!(denial.compatibility().unwrap().observed_version(), 13);
 
-    let retired_fourteen =
+    let retained =
         decode_hex(include_str!("artifact_contract_record/artifact_contract_v14.hex").trim());
-    let denial =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-            .decode_frame(&retired_fourteen)
-            .unwrap_err();
+    let mut old_decoder =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
+    let refusal = old_decoder.decode_frame(&retained).unwrap_err();
     assert_eq!(
-        denial.kind(),
+        refusal.kind(),
         WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
     );
-    assert_eq!(denial.compatibility().unwrap().observed_version(), 14);
+    assert_eq!(refusal.compatibility().unwrap().observed_version(), 14);
+    assert_eq!(
+        old_decoder.work(),
+        WorthQueryPackageArchiveDecodeWork::default()
+    );
 
     let source = artifact_package();
     let exported = source.export_typed_records().unwrap();
     let artifact = artifact_view(&exported);
     let bytes = encode_record_frame(artifact, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let golden = include_str!("artifact_contract_record/artifact_contract_v15.hex").trim();
+    let golden = include_str!("artifact_contract_record/artifact_contract_v18.hex").trim();
     assert_eq!(encode_hex(&bytes), golden);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 15);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 18);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 7);
     assert_eq!(
         u32::from_be_bytes(bytes[4..8].try_into().unwrap()),
@@ -286,4 +313,22 @@ fn decode_hex(encoded: &str) -> Vec<u8> {
         .chunks_exact(2)
         .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
         .collect()
+}
+
+#[test]
+fn retained_version_fifteen_is_refused_before_record_work() {
+    let bytes =
+        decode_hex(include_str!("artifact_contract_record/artifact_contract_v15.hex").trim());
+    let mut decoder =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
+    let denial = decoder.decode_frame(&bytes).unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 15);
+    assert_eq!(
+        decoder.work(),
+        WorthQueryPackageArchiveDecodeWork::default()
+    );
 }

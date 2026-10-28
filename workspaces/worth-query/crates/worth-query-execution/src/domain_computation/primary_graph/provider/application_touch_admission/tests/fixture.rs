@@ -6,6 +6,7 @@ use worth_query_decl::facade::{
     worth_query_operation_writes,
 };
 use worth_query_installation::facade::*;
+pub(super) mod relation;
 
 worth_query_entity!(pub(super) Node for TouchSchema);
 worth_query_entity!(pub(super) RequiredNode for TouchSchema);
@@ -35,7 +36,7 @@ worth_query_application_schema! {
         members: |schema| {
             let one = OnlyA::reference();
             let both = Both::reference();
-            schema.entity(Node::reference()).entity(RequiredNode::reference())
+            let schema = schema.entity(Node::reference()).entity(RequiredNode::reference())
                 .aspect(Node::reference(), Identity::reference())
                 .field(Node::reference(), Key::reference())
                 .optional_aspect(Node::reference(), Notes::reference())
@@ -51,7 +52,8 @@ worth_query_application_schema! {
                 .operation_read_entity(both, Node::reference())
                 .operation_read_entity(both, RequiredNode::reference())
                 .operation_write(both, A::reference()).operation_write(both, B::reference())
-                .operation_write(both, RequiredA::reference()).operation_write(both, RequiredB::reference())
+                .operation_write(both, RequiredA::reference()).operation_write(both, RequiredB::reference());
+            relation::declare(schema)
         }
     }
 }

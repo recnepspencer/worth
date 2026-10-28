@@ -46,7 +46,7 @@ pub struct ApplicationNativeInputDecodeResources {
 
 /// Conservative cost of decoding a native scalar, expressed without a callback.
 /// Each per-byte term applies to the scalar's owned allocation capacity.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationNativeInputDecodeProfile {
     work_base: u64,
     work_per_byte: u64,
@@ -55,6 +55,19 @@ pub struct ApplicationNativeInputDecodeProfile {
 }
 
 impl ApplicationNativeInputDecodeProfile {
+    pub const fn work_base(self) -> u64 {
+        self.work_base
+    }
+    pub const fn work_per_byte(self) -> u64 {
+        self.work_per_byte
+    }
+    pub const fn peak_memory_base(self) -> u64 {
+        self.peak_memory_base
+    }
+    pub const fn peak_memory_per_byte(self) -> u64 {
+        self.peak_memory_per_byte
+    }
+
     pub const fn new(
         work_base: u64,
         work_per_byte: u64,

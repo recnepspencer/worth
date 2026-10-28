@@ -8,6 +8,30 @@ pub use worth_query_declaration::worth_query_application_contribution as __worth
 #[doc(hidden)]
 pub use worth_query_declaration::worth_query_feature_spec;
 
+/// Canonical diagnostic evidence protocol shared by the internal Query engine.
+/// These identities describe evidence; they grant no execution or inspection authority.
+#[doc(hidden)]
+pub mod evidence_identity {
+    pub use crate::domain_computation::evidence_identity::*;
+}
+
+/// Operational causal inspection owner; application entry still requires native receipts.
+#[doc(hidden)]
+pub mod causal_inspection {
+    pub use crate::domain_computation::primary_graph::causal_inspection::*;
+}
+
+/// Directional integration for retained legacy request occurrences.
+#[doc(hidden)]
+pub mod resource_custody {
+    pub use crate::domain_computation::primary_graph::application_resource::legacy_bridge::{
+        WorthQueryInstalledOwnedAsyncSource, WorthQueryOwnedAsyncRequestCustody,
+        WorthQueryOwnedAsyncRuntimeCause, WorthQueryOwnedAsyncRuntimeDenial,
+        WorthQueryOwnedAsyncRuntimeServices, WorthQueryOwnedAsyncRuntimeStop,
+        WorthQueryOwnedAsyncRuntimeTopology,
+    };
+}
+
 pub mod domain_computation {
     pub use super::primary_graph::*;
     pub use crate::domain_computation::artifact_owner::*;

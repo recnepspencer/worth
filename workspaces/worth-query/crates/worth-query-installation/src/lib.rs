@@ -14,6 +14,7 @@ mod application_operation;
 mod application_principal_binding;
 mod application_program;
 mod application_query;
+mod application_resource;
 mod application_schema;
 mod authority_cryptography;
 mod canonical_digest_derivation;
@@ -80,6 +81,12 @@ mod package_validation_tests;
 /// Inspection accessors describe retained installed meaning; they do not grant
 /// execution, correction, recovery, or external-effect authority.
 pub mod facade {
+    pub use crate::application_resource::{
+        WorthQueryApplicationResourceInstallationDenial,
+        WorthQueryApplicationResourceInstallationDenialKind,
+        WorthQueryInstalledApplicationResource, WorthQueryInstalledResourceAccessContract,
+        WorthQueryResourceAccessPurpose,
+    };
     pub use worth_foundational::facade::{
         AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision, AspectEvolutionPolicy,
         AspectIdentity, AspectKey, AspectMask, AspectValue, AuthoritativeAspectChangeKind,
@@ -92,12 +99,13 @@ pub mod facade {
     pub use worth_query_declaration::facade::application_schema::{
         ApplicationAuthorizationPath, ApplicationAuthorizationPathEffect,
         ApplicationAuthorizationPredicate, ApplicationAuthorizationTraversal,
-        ApplicationAuthorizationTraversalDirection, ApplicationEntityRef, ApplicationFieldPresence,
-        ApplicationFieldRef, ApplicationFieldUnit, ApplicationIdentityScalarValueBinding,
+        ApplicationAuthorizationTraversalDirection, ApplicationEntityRef,
+        ApplicationFieldBindingOwnerKind, ApplicationFieldPresence, ApplicationFieldRef,
+        ApplicationFieldUnit, ApplicationIdentityScalarValueBinding,
         ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
         ApplicationReadableScalarValueBinding, ApplicationRelationCardinality,
         ApplicationRelationCrossContextPolicy, ApplicationRelationDeletionPolicy,
-        ApplicationRelationEndpoints, ApplicationRelationIntegrity,
+        ApplicationRelationEndpoints, ApplicationRelationFieldRef, ApplicationRelationIntegrity,
         ApplicationRelationIntegrityRecord, ApplicationRelationMinimumReachabilityRecord,
         ApplicationRelationRef, ApplicationRelationUniquenessScope, ApplicationScalarValueBinding,
         ApplicationSchema, ApplicationSchemaBindingIdentity, ApplicationSchemaMember,
@@ -149,7 +157,7 @@ pub mod facade {
         WorthQueryInstalledApplicationCapabilityPlanSource,
     };
     pub use crate::application_operation::{
-        WorthQueryApplicationConditionalOperationBinding,
+        InstalledSourceDisclosureBinding, WorthQueryApplicationConditionalOperationBinding,
         WorthQueryApplicationOperationInstallationDenial,
         WorthQueryApplicationOperationInstallationDenialKind,
         WorthQueryCompiledApplicationOperationContracts,
@@ -207,12 +215,13 @@ pub mod facade {
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryAdmittedReadGraphPlanningInventory,
-        WorthQueryApplicationCanonicalArtifact, WorthQueryApplicationQueryCanonicalWorkPolicy,
+        WorthQueryApplicationCanonicalArtifact, WorthQueryApplicationHistoryInstallationDenial,
+        WorthQueryApplicationQueryCanonicalWorkPolicy,
         WorthQueryApplicationQueryInstallationDenial,
         WorthQueryApplicationQueryInstallationDenialKind, WorthQueryApplicationQueryLimitDenial,
         WorthQueryInstalledApplicationContinuationContract,
-        WorthQueryInstalledApplicationLiveContract, WorthQueryInstalledApplicationQuery,
-        WorthQueryInstalledApplicationQueryAuthorization,
+        WorthQueryInstalledApplicationHistoryQuery, WorthQueryInstalledApplicationLiveContract,
+        WorthQueryInstalledApplicationQuery, WorthQueryInstalledApplicationQueryAuthorization,
         WorthQueryInstalledApplicationQueryBinding, WorthQueryInstalledApplicationQueryIdentity,
         WorthQueryInstalledApplicationQueryLimits, WorthQueryInstalledApplicationReadFamilyBinding,
         WorthQueryInstalledBoundPrincipal, WorthQueryInstalledBoundQuery,

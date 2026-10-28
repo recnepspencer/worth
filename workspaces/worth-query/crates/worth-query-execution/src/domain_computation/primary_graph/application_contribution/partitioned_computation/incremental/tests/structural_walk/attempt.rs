@@ -103,3 +103,92 @@ pub(super) fn run(
     );
     SealedComputationRun::kept_in_test().expect("the real completed read sealed the owner run")
 }
+
+pub(super) fn run_aggregate(
+    world: &crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::World,
+    installed: &super::aggregate_model::Installed,
+    prior: Option<ComputationPrior>,
+    accounted: bool,
+    cause: Cause,
+) -> SealedComputationRun {
+    let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            let execution = host
+                .execution_request_for(world.application.product_runtime())
+                .unwrap();
+            crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::authorize(
+                world, &phase, &execution, &request, 0,
+                crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::ReplaceNext::reference(),
+            )
+            .0
+        })
+        .unwrap();
+    let policy = if accounted {
+        ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+        )
+    } else {
+        ExecutionRequestPolicy::for_workers(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            std::num::NonZeroUsize::MIN,
+        )
+    };
+    let execution =
+        QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Serial(policy), &request);
+    assert_eq!(
+        execution.has_accounting(),
+        accounted,
+        "the real computation request uses the tested posture"
+    );
+    let native = execution.execution_request().unwrap();
+    assert_eq!(native.has_accounting(), accounted);
+    super::super::super::observed::partitioned_computation_runs_on_this_thread_for_test();
+    ComputationPrior::hand_in_test(prior);
+    SealedComputationRun::keep_in_test(None);
+    let completed = world
+        .invariant
+        .project_admitted_operation_with_request(
+            &native,
+            &admission,
+            |reader, root| {
+                let prepared = installed.prepare_through(reader, &execution, root).unwrap();
+                let computed = prepared
+                    .compute(WorthQueryManagedComputationExecution::new(&execution))
+                    .unwrap();
+                assert_eq!(computed.complete().unwrap(), 3);
+            },
+            Allocation::SystemAllocation,
+        )
+        .unwrap();
+    ComputationPrior::hand_in_test(None);
+    let (_, projection, _) = completed.into_parts();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    Allocation::SystemAllocation,
+                )
+                .unwrap()
+                .complete_projected_dependencies(&phase, Allocation::SystemAllocation)
+                .unwrap();
+        })
+        .unwrap();
+    let runs =
+        super::super::super::observed::partitioned_computation_runs_on_this_thread_for_test();
+    assert!(
+        matches!(runs.as_slice(),[(Run::Full(actual),_)] if *actual==cause),
+        "the actual comparator chose the required full cause: {runs:?}"
+    );
+    SealedComputationRun::kept_in_test().expect("the real completed read sealed the owner run")
+}

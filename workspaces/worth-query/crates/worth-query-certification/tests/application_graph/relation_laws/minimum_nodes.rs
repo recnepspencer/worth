@@ -65,6 +65,7 @@ fn isolated_created_sources_refuse_and_a_return_edge_makes_the_same_creation_law
         in_context: true,
         link: true,
         backlink: true,
+        self_cycle: false,
     }));
     let after = read::committed(&world);
     assert!(after.edges.contains(&(0, 3)) && after.edges.contains(&(3, 0)));

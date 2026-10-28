@@ -53,7 +53,13 @@ impl RelationalMaterializationPort {
                 &basis.inner.root,
                 &runtime.services.symbols,
             ),
-            |state| source_generated_manifest(state, generated_entities),
+            |state| {
+                source_generated_manifest(
+                    state,
+                    basis.inner.root.schema_authority().registry(),
+                    generated_entities,
+                )
+            },
         )
         .map_err(|failure| RelationalMaterializationError::Read(failure.into()))??;
         let (producer_publications, producer_records, producer_memory) =

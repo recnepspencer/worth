@@ -28,6 +28,7 @@ pub(super) fn validate_proposed_state(
             proposed_version,
             &prepared.merged_plan,
             proposal_identity,
+            proposed.aggregate_source(*selected),
             execution,
             control,
         )?;
@@ -40,6 +41,7 @@ pub(super) fn validate_proposed_state(
             proposed_version,
             &prepared.merged_plan,
             proposal_identity,
+            proposed.aggregate_source(*selected),
             execution,
             control,
         )?;

@@ -3,6 +3,7 @@ mod ancestry;
 mod counters;
 mod denial;
 mod entry;
+mod exact_position;
 mod history_retirement;
 mod metadata;
 mod publication;
@@ -30,10 +31,12 @@ use super::retention::{
 };
 use super::{CompositeCommitParent, CompositeRuntimeWorldCommit, PublicationRevision};
 
+pub(crate) use ancestry::AncestorSelectionPath;
 pub use ancestry::{CompositeAncestorSelectionDenial, RetainedCompositeAncestor};
 pub use counters::HistoryCatalogCounters;
 pub use denial::CompositeHistoryCatalogDenial;
 pub(crate) use entry::CompositeHistoryCatalogEntry;
+pub(crate) use exact_position::RetainedExactHistoryPosition;
 pub(crate) use history_retirement::RetiredHistoryEntries;
 pub use metadata::HistoryMetadataLedger;
 pub(super) use metadata::HistoryReservationMetadata;

@@ -37,6 +37,11 @@ Use `.same_partition_endpoints()` to declare endpoint partition isolation, and
 entity reference with `.name()`, or use its declared name directly. The completed
 schema rejects zero minima, empty kind sets and unknown entity names.
 
+Use `.orbit()` on a stored homogeneous relation to require exactly one
+successor and one predecessor for every live member of that kind. The completed
+schema rejects different source and target kinds. The law remains conjunctive
+with the relation's endpoint, cardinality and deletion policies.
+
 For refusals, use `worth_query_host::facade::primary_graph`:
 `WorthQueryApplicationCommitDenial::relation_law()` returns an optional borrowed
 `WorthQueryRelationLawDenial`. Bootstrap publication refusals expose the same
@@ -91,6 +96,421 @@ kind or changing the minimum does.
 Law meaning participates in canonical schema and program identity. Changing
 the law is a schema/program change; reusing the same names does not authorize
 an installed application to acquire different meaning on restore.
+
+An orbit is a permutation, so initial publication must include every member's
+successor and predecessor. An isolated new member refuses; creating it with a
+self-edge is lawful when the independently declared endpoint policy allows
+self-edges. Duplicate physical edges violate the exactly-one constraint even
+when they connect the same pair. Rewire all affected successors in one mutation
+to split or merge cycles. These changes preserve the permutation law.
+
+The stored orbit law also enables platform-owned committed aggregate identity
+and lineage records. Birth identity depends on the definition, commit occurrence
+and least member at birth; removing that member does not rename a whole orbit.
+On a split, the part containing the least surviving old member keeps its identity.
+On a merge, the participant with the least current anchor keeps its identity.
+Mixed rewiring conceptually splits first, then compares the incoming old fragments.
+If the winning fragment does not contain its old identity's least surviving member,
+the result gets a newly minted final identity; it cannot take the keeper part's
+identity. Split and merge events name the actual final identities and commit
+occurrence. Applications cannot write these private records.
+
+Installed invariant planner/context views expose `orbit(&binding, &member)` and
+`orbit_of(&binding, &member)` for the actual declared orbit relation. The orbit
+retains Native identity truth and complete business topology; `members()` yields
+successor order from its current least member, `len()` reports its size, and
+`identity()` returns its persistent typed name. Both methods admit every member
+and physical successor edge through the ordinary prepared scope. A name's bytes
+grant no read or write access.
+
+The compiled [topology invariant](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant/preparation.rs)
+selects each affected `PlanarIslands` component once, then uses ordered orbit
+windows once per ring. `PlanarSuccessor` supplies order; authored `PlanarCoupling`
+joins otherwise separate rings without changing their successor law. Its former
+successor lookup is deleted. Application read observations describe business
+walk/field acquisitions; private Native identity preparation is outside them.
+Ordinary projection readers also expose `reader.orbit(Next::reference(), &member)`
+and `orbit_of(..)`. The result retains actual Native aggregate and complete walk
+owners from the selected snapshot. `members()`, `member(index)`, `relations()`,
+`identity()` and `len()` borrow that materialized result without graph reads.
+Operation readers require `OperationReads` for the relation and admit every
+returned member through the original projection's realized scope. These are
+inspection reads; they do not record publication decision dependencies. The
+compiled [projection examples](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/projection.rs)
+exercise ordinary and operation readers, including a retained basis after an edit.
+Handler `DecisionReader::orbit` / `orbit_of` and computation readers record two
+original Native facts: persistent identity with complete canonical membership,
+and the complete successor walk with physical edges. Lower-level admitted
+operation readers call `decision_orbit` / `decision_orbit_of`. Both values remain
+bound to their original admission, installed contracts and realized scope; a
+selector alone cannot reconstruct them at sealing. Fresh comparison detects
+identity changes even when membership is restored by later edits. Incidental
+stored lineage is outside orbit-answer equality. The compiled
+[handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs)
+and [currentness court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/currentness.rs)
+exercise this path. Aggregate inputs currently require full verification and a
+fresh computation; live fact bodies cannot be reconstructed from checkpoints.
+
+A declared `Many` query can select one complete orbit with
+`builder.orbit(ApplicationQueryOrbitRef::new("loop", NextFin::reference()))`.
+The query's root and scope must be the same entity kind. Its returned rows stay
+in successor order from the Native anchor. `result.orbit(loop_slot())` returns
+the exact declared slot's `identity()`, `len()` and borrowed `members()`; the
+getter performs no graph read and survives conversion into a disclosed result
+or output-demand source. The selector has schema, query, slot, relation and
+entity marker types; see the compiled [query declaration and result court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries.rs).
+
+Whole-orbit metadata is one disclosure slot. A governed contract must provide
+`orbit_by(slot, disclosure_value, influence)` for identity, length, membership
+and order together; member fields keep their own disclosure rules. An omitted
+orbit slot refuses before group selection. Filtering, root-path unions,
+explicit ordering, continuation and live lanes cannot turn a complete orbit
+into a partial answer. Row and result-set sources retain the original Native
+aggregate and complete walk; portable record grammar 18 preserves this meaning
+and refuses older record grammars.
+
+Privileged snapshot projections can inspect a retained name with
+`reader.lineage(NextFin::reference(), &loop_identity)`. The operation-specific
+inspection reader additionally requires the relation's `OperationReads`
+contract. The installation-minted projection authority and freshly selected
+snapshot authorize the read; the name is only a selector. This performs a Native
+schema/occupied-slot scan followed by incident-lineage visits along merge hops.
+An admitted handler can use `reader.reader().lineage(..)` through that same
+operation inspection reader; the compiled
+[handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs)
+does so alongside its tracked orbit reads. The raw reader marks opaque context
+and therefore cannot qualify the handler for completed decision reuse.
+
+The owned `WorthQueryAggregateLineage` retains that actual Native result.
+`events()` borrows incident split and merge records; `resolution_steps()`
+borrows the ordered merge path. Each exposes the original commit `occurrence()`,
+`kind()` and typed `from()`/`to()` names. `latest_identity()` follows merges only:
+a split keeper remains current, and a retired terminal without a successor
+returns `None`. An identity absent from the selected snapshot instead refuses
+with `AggregateIdentityUnavailable`. `version()` describes the selected source
+and cannot rebind the retained body. See the compiled [lineage inspection court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/lineage.rs).
+
+These inspection reads grant no governed history disclosure and record no
+publication decision dependencies. A typed name can be retained across edits
+inside its installation; this API does not restore arbitrary portable names
+after a fresh installation. Scoped/governed lineage reads and tracked lineage
+decisions are unavailable through these inspection APIs.
+Generic Native branch reconciliation has separate existing execution limitations
+and retains its typed refusal.
+The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
+exercises native refusals and atomic lawful mutations through the ordinary
+authenticated program.
+
+An orbit's cardinality refusal exposes
+`WorthQueryRelationLawDenial::Cardinality` with the original `member`,
+`boundary`, `count`, `limit` and `contract_id` (`relation:orbit`).
+`RelationCardinalityBoundary` is available through the host's
+`application_invariants` facade. Another independent policy may refuse first
+and retains its original cause, such as `SelfEdge` for a forbidden singleton.
+
+## Component Set Declarations
+
+Declare a set over one or more stored homogeneous relations through
+`worth_query_decl::facade::application_schema`. Different relation markers may
+couple the same entity type:
+
+The compiled [topology declaration](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_islands.rs)
+defines `ApplicationComponentSetRef<S, PlanarIslands, Body>` and adds
+`ApplicationComponentSetDefinition::new(PlanarIslands::reference())` through
+`schema.components`. Its `.coupled_by(PlanarSuccessor::reference())` and
+`.coupled_by(PlanarCoupling::reference())` calls join bodies through two actual
+stored relations. The complete [installed program example](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/examples/invariant_reads.rs)
+uses this declaration and its ordinary invariant reads through Decl/Host.
+
+These are stored-entity islands. CAD shells require read-only Face×Side members
+with actual region/exterior context.
+The [projected-domain meaning](../../../worth-query-decl/README.md#projected-member-domain-meaning)
+binds actual Native domain/case handles through the logical-source evaluator.
+The [privileged logical reader](#privileged-logical-component-inspection) reads
+those actual sources. A component of stored faces does not supply the shell contract.
+
+The completed schema validates the actual declared relation endpoints, rejects
+empty or missing sources and duplicate set names, and normalizes source order
+and duplicates. Fresh portable readmission applies the same validation; record
+grammar 18 carries component member tag 38 through the existing archive codec.
+Each set lowers into the existing Native aggregate identity owner. Orbit and
+component definitions share its private storage, with separate membership
+relations. A component definition includes the set's member and normalized source
+meaning; changing the source roster selects a different definition.
+
+The compiled [installation courts](../../../worth-query-execution/src/domain_computation/primary_graph/schema_layout/aggregate_identity/tests/components.rs)
+exercise this typed builder and the shared Native storage boundary.
+
+### Operation Component Scope Declarations
+
+`schema.operation_component_read(ApplicationOperationComponentReadDefinition::new(
+operation_ref, set_ref, path))` declares a complete union of typed paths from an
+operation's mutation scope to component members. Add paths with `.also_path(path)`.
+The set marker must implement `OperationReads<Operation>`. Authoring sorts and
+deduplicates the union; fresh portable admission refuses a raw duplicate or
+unordered union, missing operation/set, wrong mutation root, inconsistent path
+endpoints or a guard outside the actual field/type inventory. A zero-step path
+selects the admitted root itself when root and member kinds agree.
+
+This is installed descriptive scope meaning, separate from Native component
+identity. It changes canonical schema/operation meaning and uses record grammar
+18 member tag 40 and operation graph scope tag 4. Restoring a contract recomputes
+the actual schema's expected operation closure; a portable scope alone grants
+no permission. Atomic entity/field/relation reads cannot consume this grant.
+
+The [mutation-scope declaration tests](../../../worth-query-declaration/src/application_operation/binding/tests/component_scope.rs)
+exercise typed authoring and fresh schema admission using a real mutation
+binding. Admitted readers consume these installed paths through the scoped
+component methods below. A descriptive declaration alone grants no read.
+
+### Ordinary Invariant Component Reads
+
+Resolve `resolver.typed_component_set(Set::reference())` in the installed invariant
+factory. The binding names the actual installed definition, member kind and every
+physical coupling source. Factory resolution requires the member entity and all
+source relations in **both** the invariant's declared read closure and applicability.
+Missing coverage refuses installation, including a missing create/delete trigger
+for a previously empty set.
+
+Both `planner.proposed()` / `planner.committed()` and the evaluation context's
+matching views expose `component_of(&binding, &member)`, `components(&binding)` and
+`component_count(&binding)`. A selected component retains Native identity and
+complete members; `identity()`, `members()`, `len()` and `is_empty()` perform no
+new graph acquisition. A full collection has `len()`, `is_empty()` and `iter()` in
+Native aggregate identity order; each member iterator uses canonical Native entity
+order. Proposed reads include the genuine commit proposal, while committed reads
+use its before-image. Handles retain their original view/schema affinity.
+
+`component_of` selects one actual Native cohort without a census of unrelated
+components. Complete enumeration/count deliberately scan the exact-view entity
+inventory, including isolated members, untouched components and a genuinely empty
+universe. That work can grow with Native partitions and slots; count has no fixed
+cost promise. All acquisition and retained backing use the original Native request
+and existing payer. A stop refuses the whole read and cannot seal a passing commit.
+
+Preparation admits every actual member and physical coupling edge. Evaluation
+cannot widen those frozen admissions. Entity creation/deletion and coupling edits
+schedule fresh rule preparation through the declared applicability, including after
+an empty census. Counts may decide an ordinary invariant verdict; they add no new
+relation law. The [installed component rule courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/census.rs)
+exercise proposed/committed merges and splits, an untouched isolated component,
+genuine count-based commit refusal and prepared-scope widening. The
+[empty-set CRUD court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/lifecycle.rs)
+creates and deletes a real member through an ordinary admitted operation.
+
+### Public Topology Island Consumer
+
+The [public topology declaration](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_islands.rs)
+defines `PlanarIslands` over both `PlanarSuccessor` and the authored physical
+`PlanarCoupling` relation. Component coupling is undirected; this does not declare
+stored symmetry or change successor order. The ordinary `PlanarIslandCoupling`
+mutation uses the existing principal, program admission, whole-adjacency decision
+facts and candidate writer to link or unlink one actual pair. Coupling deletion
+cascades when its endpoint is retired.
+
+The planar invariant resolves the installed set in its factory and declares both
+physical sources in read closure and applicability. Preparation selects complete
+affected components, then obtains genuine Native orbits for geometric windows.
+Only triples touching edited vertices reach the unchanged determinant rule.
+`CompleteComponent` and `CompleteOrbit` observer events retain fixed identity,
+cardinality and common business-read counts; diagnostics add no graph reads.
+
+The [seeded public differential](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/component_islands/differential.rs)
+submits real installed-program coupling edits and least-member replacement. Its
+independent union-find consumes client-authored live edges, including retirement's
+cascade. The model predicts retained heirs and split/merge causes before querying
+component identities. New opaque names bind once after historical freshness and
+live uniqueness checks. Fresh privileged SDK projections check actual generation
+membership, counts, incident lineage and merge resolution; they grant no ordinary
+publication authority.
+
+The [locality court](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/component_islands/locality.rs)
+performs the same coupling-only split beside 10 and 10,000 real unrelated rings.
+It compares the original ordinary invariant's preparation/evaluation business
+reads; privileged oracle acquisition occurs afterwards. Native private metadata
+preparation and bootstrap work are outside that measurement.
+The fixture funds both populations with the same original accounted request
+policy so real bulk construction can finish; that ceiling is not a locality claim.
+The existing compiled
+`invariant_reads` example still exercises the real geometry and access refusals.
+
+### Component Replay And Worker Determinism
+
+The existing [Native component recovery court](../../../../../../crates/worth-relational/src/tests/transactions/core/aggregate_identity/components.rs)
+separately checks checkpoint-plus-tail recovery and actual
+`ReplayAuthority::replay_commit` audits after split and merge. Audit recovery must
+compare the Snapshot surface without failure or mismatch. That surface includes
+all authoritative entity aspects, including aggregate names and lineage rows,
+and all physical relations, including membership. Nonempty split/merge events
+are first observed through genuine pinned aggregate reads. The replay Lineage
+surface concerns branch/schema history and does not replace these component
+facts. Replay remains a certification concern; ordinary application readers do
+not gain a replay import.
+
+The [Native worker court](../../../../../../crates/worth-relational/src/tests/transactions/core/aggregate_identity/components/workers.rs)
+submits identical birth, split, least-member removal and merge commits under
+actual one-, two- and eight-worker leases. It compares both declared sets' full
+published membership, opaque names and incident lineage, plus retirement and
+merge continuation for every issued name. Parallel cases require real
+staged-parallel metadata and bounded overlap of genuine invariant readers on
+distinct worker threads. Prepared proposed/committed reads must agree with the
+corresponding publication. This proves stable publication under parallel
+invariant execution; it makes no claim that partition maintenance is parallel.
+
+### Privileged Component Inspection
+
+The installation-owned `WorthQueryApplicationInvariantProjectionReader` exposes
+`component_of(set_ref, &member)`. Its complete result has `identity()`, `members()`,
+`len()` and `is_empty()`. Membership follows Native canonical entity order, with
+undirected coupling across every declared source. Self edges do not join other
+members. Native ordinary adjacency excludes audit-retained relations after an
+endpoint retires. The read admits each member and acquires every source's incoming and
+outgoing physical adjacency at the same immutable snapshot. Retained results keep
+the original Native request custody; iterating members performs no graph reads.
+
+`component_lineage(set_ref, &identity)` reads Native incident lineage and merge
+continuations at that reader's snapshot, including identities that have retired.
+The set must match the name's installed definition. A name grants no read, write,
+history-disclosure or publication authority. Missing sets, foreign member
+identities, inconsistent membership and original request stops return typed
+traversal refusals. This broad installation inspection issues no publication
+decision facts and is not forwarded to ordinary operation readers.
+
+The compiled [component inspection courts](../../../worth-query-execution/src/domain_computation/primary_graph/invariant_projection/component/tests.rs)
+exercise the actual installed bootstrap and reader. Their independently issued
+same-product snapshot court checks definition-qualified reselection. A real
+World publication retires a coupled member, then checks ordinary coupling
+exclusion, the surviving component and rejection of the old membership. Coupling
+changes that preserve membership are covered by the scoped decision example below.
+
+### Privileged Logical Component Inspection
+
+The same installation-owned reader exposes `entity_member`,
+`derived_member_relations_from` and `graph_component_of` for finite projected
+domains. A declared carrier lift supplies actual cases of the selected carrier;
+a reverse lift supplies observed physical Entity selectors. Case coordinates
+cannot be used as mutation targets. Each member retains its issuing snapshot,
+projection authority and exact installed domain. A member from another
+projection authority or snapshot refuses before source acquisition.
+
+`graph_component_of(set, relation, member)` requires the set's actual installed
+derived source and member domain. It reads the complete source, including empty
+physical support, before acquiring Native's persistent aggregate identity, then
+checks that both complete cohorts agree. The result retains the original source,
+Native aggregate and material-container grants. Cloning a member preserves its
+original source/name payment after the component drops. No operation decision
+facts or mutation authority are issued by this broad inspection.
+
+`component_lineage(set, identity)` also accepts a logical set. It validates the
+installed member domain and the identity's exact definition/binding, then reads
+Native's actual stored lineage at the selected snapshot. A retired identity
+does not need a currently live member. A stored-entity selector cannot stand in
+for a projected-domain selector with the same text. This historical inspection
+keeps the existing complete lineage traversal cost and supplies no publication
+dependency.
+
+<!-- compiled: logical_relation_projection.rs -->
+```rust
+                        let root = reader.entity_member(&face).unwrap();
+                        let cases = reader
+                            .derived_member_relations_from(RootUses::reference(), &root)
+                            .unwrap();
+                        let negative = cases
+                            .iter()
+                            .find(|pair| pair.to().case() == Some("Negative"))
+                            .unwrap()
+                            .to();
+                        let component = reader
+                            .graph_component_of(
+                                UseComponents::reference(),
+                                UseSuccessor::reference(),
+                                negative,
+                            )
+                            .unwrap();
+```
+
+The [logical composition court](../../../worth-query-certification/tests/application_graph/relation_laws/logical/committed.rs)
+compares this reader's genuine component with the ordinary tracked decision and
+checks refusal of a foreign projection's member beside a lawful local read.
+This reader observes the selected stored snapshot. A feature-history-prefix
+component view requires its own source selection and is unavailable here.
+
+### Scoped Component Decision Reads
+
+An admitted operation projection reader and the ordinary handler `DecisionReader`
+expose `component_of(set_ref, &member)`, `components(set_ref)` and
+`component_count(set_ref)`. The set needs `OperationReads<Operation>` and an actual
+installed component scope for that operation, schema, set and mutation root.
+An operation-typed broad inspection without a real admission cannot use this path.
+
+`component_of` selects Native's whole cohort and proves each member visible by a
+complete reverse path to the exact generation-bearing admitted root. Work grows
+with that cohort and its reverse witnesses. `components` and `component_count`
+evaluate the full forward path union before any window or limit. They refuse an
+encountered cohort if any member lies outside that universe; identity, partial
+membership and counts do not escape. An empty census still checks the selected
+Native definition and retains the path's negative adjacency and guard facts.
+
+The complete result uses the same read-only component value described above.
+Names remain Native identities: changing visibility does not mint a new name.
+The tracked reader retains original issued bodies under the real admission,
+installed contracts and snapshot. A copied selector cannot seal a read. A failed
+selection vetoes sealing even if the handler swallows its refusal. Reuse compares
+actual visibility/coupling revisions and Native aggregate/walk observations through
+the existing selected-snapshot owners. Native aggregate identity keeps its explicit
+full-verification fallback; no record-local invalidation cost is promised.
+
+The [scoped component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/components.rs)
+use an installed mutation binding, real admission and both projection seals.
+They cover complete/partial/foreign cohorts and negative census evidence across
+ordinary World publications. Ordinary invariant consumption and the public
+topology, replay and locality examples are described above.
+
+### Declared Component-Query Contracts
+
+A declared query can name a component result with
+`ApplicationQueryComponentRef::<Schema, Query, Slot, Set, Member>::of_scope_member`
+or `::census`. The former requires the query's typed scope to be the member type;
+the latter can start from another declared scope. Add the reference with
+`.component_selection(reference)` and supply a nonempty `.root_path(...)` union
+from scope to component members. An explicit identity path is valid for this
+shape. Ordinary row queries retain their existing nonempty-step requirement.
+
+The result slot describes Native identity, complete membership and component
+count together; member DTO fields are optional. A disclosure contract's
+`.components_by(reference, value, influence)` governs that complete slot.
+Predicates, ordering, paging, live execution and orbit selection cannot be combined
+with this shape. Complete-schema validation checks the actual set/member and
+all declared path and guard dependencies. Of and census have distinct canonical
+meaning and disclosure keys.
+
+One-shot Query execution acquires the installed Native component definition at
+its admitted snapshot. Of proves each Native member visible by reverse witnesses
+to the exact scope root. Census exhausts the forward path union and refuses any
+partially visible cohort. Neither mode silently truncates to the result limit.
+A closed whole slot refuses before Native acquisition; path guards require their
+own admitted projection before reading field revisions.
+
+`result.components(reference)` returns the complete slot with `len()`,
+`is_empty()` and `iter()`. Each component exposes `identity()`, `members()` and
+`len()`. Groups follow Native identity order and each group's Native member
+order; flattened rows preserve those boundaries. The same inspection is available
+on the admitted disclosed result and its output-demand source. Inspection reads
+already disclosed rows and grants no graph authority.
+
+The [installed component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/components.rs)
+use real schemas, ordinary query admission and independent Native inspection.
+Rows share their original cohort body; a Census result also retains the full
+negative universe. Empty census evidence includes guard failures. Reuse compares
+physical visibility/coupling revisions and the original Native observations,
+including the installed definition on empty results. Query bodies cannot seal as
+issued operation reads. Planning requires Native aggregate support independently
+of any relation-view requirement.
+
+The archive extends the existing optional aggregate position with component tag2;
+none0 and orbit1 keep their original bytes. Component disclosure uses selector6.
+An untrusted record containing both orbit and component meanings is refused during
+fresh admission and archive preflight/write. No common grammar version changes.
 
 ## How It Executes
 
@@ -296,13 +716,50 @@ identities or assume a particular edge wins when several close cycles.
 - Changing relation policy while assuming unchanged schema/program names make
   persisted application meaning compatible.
 
+## Relation-owned payload at creation
+
+Declare a real relation aspect with
+`ApplicationRelationAspectDefinition::new(relation, aspect, absence)` and typed
+`ApplicationRelationFieldRef` fields (or `worth_query_relation_field!`). Register
+the definition with `.relation_aspect(..)`. Scalar bindings keep their real
+relation owner through native contracts, canonical meaning and installation.
+The existing entity field declaration remains entity-owned.
+
+An operation that creates the relation declares both `.operation_link(..)` and
+`.operation_initialize_relation_field(operation, field)`, with `OperationLinks`
+and `OperationWrites` on its typed markers. In its handler, use
+`writer.link_for_initialization(..)` and then
+`writer.initialize_relation_field(&created, field, encoded_value)`.
+`ApplicationEncodedScalarValue` is explicit caller preparation. The initializer
+checks the original request's interruption controls and the installed binding
+before accepting the value; callers provide no resource estimate. The returned
+handle belongs to that actual program builder. Another
+program's handle, a duplicate field or a duplicate create key refuses.
+
+Initialization applies only to that candidate's new relation. It supplies no
+relation update operation. Native touch admission separately requires Link and
+every actual initialized field, including for raw candidates. Existing empty
+`link` behavior and native semantic-edge uniqueness remain in force.
+
+A bootstrap-minted invariant projection reader can inspect the initialized
+payload with `reader.relation_field(&physical_relation, field)`. It validates
+the exact relation occurrence, snapshot, endpoints and installed field binding.
+Operation/decision readers and ordinary disclosed rows expose no forwarding
+door. This privileged read supplies neither governed history permission nor a
+recorded relation-field decision dependency.
+
 ## Current Limits
 
 The ordinary application builders expose source-to-target acyclicity with no
 allowed cycle class, same-relation paired symmetry, and directed or normalized
 edge uniqueness, same-partition endpoints and distinct reachable-target minima.
-Other native symmetry modes are not exposed by these builders. They do not
-provide general traversal, orbit or component query operations.
+Other native symmetry modes are not exposed by these builders. Complete one-shot
+component query results use whole-slot disclosure as described above. Admitted operation
+decision readers support scoped component selection and complete census/count as
+described above. Ordinary installed invariant views expose complete component
+selection, enumeration and count with actual proposed/committed footprints.
+Installation-owned projection readers support complete component inspection,
+walks and orbit inspections as described above.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair
 plan. Native evaluation has no application-authored depth limit; it remains
 subject to the original execution request's resource and interruption policy.

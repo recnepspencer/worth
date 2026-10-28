@@ -19,6 +19,9 @@ use output_contract::*;
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_topology.rs"]
 mod planar_topology;
 use planar_topology::*;
+#[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_islands.rs"]
+mod planar_islands;
+use planar_islands::*;
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant.rs"]
 mod planar_invariant;
 

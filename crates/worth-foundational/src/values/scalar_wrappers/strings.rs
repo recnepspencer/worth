@@ -50,11 +50,12 @@ pub fn encode_canonical_text_hex(value: &str) -> String {
 }
 
 pub fn decode_canonical_text_hex(value: &str) -> Option<String> {
-    let pairs = value.as_bytes().chunks_exact(2);
-    if !pairs.remainder().is_empty() {
+    let (pairs, remainder) = value.as_bytes().as_chunks::<2>();
+    if !remainder.is_empty() {
         return None;
     }
     let bytes = pairs
+        .iter()
         .map(|pair| {
             hex_nibble(pair[0])?
                 .checked_mul(16)?

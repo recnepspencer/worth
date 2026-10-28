@@ -204,3 +204,38 @@ fn minimum_requires_a_positive_count_and_declared_nonempty_target_kinds() {
         ));
     }
 }
+
+#[test]
+fn orbit_has_distinct_removable_meaning_and_requires_homogeneous_endpoints() {
+    let original = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+    let orbit = original.orbit();
+    assert_eq!(orbit.endpoints, original.endpoints);
+    assert_eq!(orbit.cardinality, original.cardinality);
+    assert_eq!(orbit.deletion, original.deletion);
+    assert!(matches!(
+        ApplicationSchemaDeclarationBuilder::<()>::from_test_members(members(orbit)).build(),
+        Err(ApplicationSchemaDeclarationDenial::InvalidRelationIntegrity)
+    ));
+    let identity = |integrity| {
+        let mut members = members(integrity);
+        let ApplicationSchemaMember::Relation { to, .. } = &mut members[2] else {
+            unreachable!()
+        };
+        *to = "From".into();
+        ApplicationSchemaDeclarationBuilder::<()>::from_test_members(members)
+            .build()
+            .unwrap()
+            .identity()
+            .clone()
+    };
+    assert_ne!(identity(original), identity(orbit));
+    let mut removed = orbit;
+    removed.orbit = false;
+    assert_eq!(identity(original), identity(removed));
+    let exact_one = ApplicationRelationIntegrity::new(
+        original.endpoints,
+        ApplicationRelationCardinality::new(Some(1), Some(1), Some(1), Some(1), None, None),
+        original.deletion,
+    );
+    assert_ne!(identity(exact_one), identity(exact_one.orbit()));
+}

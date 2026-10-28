@@ -148,12 +148,22 @@ pub enum InvariantViolationFields {
         reachable_target_count: usize,
         minimum_reachable_targets: u32,
     },
+    DerivedRelationGraph {
+        definition: crate::derived_relation::DerivedRelationIdentity,
+        violation: crate::derived_relation::DerivedRelationLawViolation,
+    },
 }
 
 impl InvariantViolationFields {
     pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
         use InvariantViolationFields as Fields;
         match self {
+            Fields::DerivedRelationGraph {
+                definition,
+                violation,
+            } => (definition.schema.0.capacity() as u64)
+                .saturating_add(definition.name.capacity() as u64)
+                .saturating_add(violation.owned_bytes()),
             Fields::UniqueEntityField {
                 field_locator,
                 value,

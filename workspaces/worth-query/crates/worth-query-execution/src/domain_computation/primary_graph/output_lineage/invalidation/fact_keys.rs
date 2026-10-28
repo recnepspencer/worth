@@ -49,6 +49,18 @@ where
     F: FnMut(Key) -> Result<(), E>,
 {
     match fact {
+        Fact::ComponentSelection { observation } => {
+            observation.visit_physical(|fact| visit_projected(&fact, projection))?;
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact,
+            ));
+        }
+        Fact::Aggregate { .. } => {
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact,
+            ))
+        }
+
         Fact::StructuralWalk { observation } => {
             let query = observation.key();
             let direction = match query.direction() {

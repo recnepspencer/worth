@@ -1,5 +1,9 @@
+pub(crate) mod aggregate_identity;
 mod aspect_plans;
 mod continuity;
+mod registry_custody;
+pub(crate) mod source_catalog;
+pub(crate) use registry_custody::SchemaRegistryCustody;
 pub mod data;
 
 pub(crate) use aspect_plans::{

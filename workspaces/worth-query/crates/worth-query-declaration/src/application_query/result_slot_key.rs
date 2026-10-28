@@ -13,6 +13,25 @@ pub struct ApplicationQueryResultSlotKey {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum ApplicationQueryResultSlotContract {
+    Resource {
+        facet: crate::application_resource::ApplicationResourceDisclosureFacet,
+    },
+    HistoryMetadata {
+        facet: super::ApplicationHistoryMetadataFacet,
+    },
+    /// Identity, full membership/length and anchor-forward order are one result.
+    Components {
+        set: String,
+        member: String,
+        selection: super::ApplicationQueryComponentSelection,
+        output_name: String,
+    },
+    Orbit {
+        relation: String,
+        from: String,
+        to: String,
+        output_name: String,
+    },
     Field {
         entity: String,
         aspect: String,
@@ -29,6 +48,10 @@ enum ApplicationQueryResultSlotContract {
         direction: ApplicationQueryResultTraversalDirection,
         output_name: String,
         cardinality: ApplicationQueryCardinality,
+    },
+    InspectionMetadata {
+        binding: super::ApplicationQueryBindingReference,
+        facet: super::ApplicationQueryInspectionMetadataFacet,
     },
 }
 
@@ -52,6 +75,69 @@ pub(super) struct ApplicationQueryResultRelationSlotContract<'contract> {
 }
 
 impl ApplicationQueryResultSlotKey {
+    pub(super) fn inspection_metadata(
+        binding: super::ApplicationQueryBindingReference,
+        facet: super::ApplicationQueryInspectionMetadataFacet,
+    ) -> Self {
+        Self {
+            query: binding.parts().query.clone(),
+            slot: WorthQueryPortableTypeIdentity::declared(facet.name()),
+            contract: ApplicationQueryResultSlotContract::InspectionMetadata { binding, facet },
+        }
+    }
+    pub(crate) fn resource(
+        resource: WorthQueryPortableTypeIdentity,
+        facet: crate::application_resource::ApplicationResourceDisclosureFacet,
+    ) -> Self {
+        Self {
+            query: resource,
+            slot: WorthQueryPortableTypeIdentity::declared(facet.name()),
+            contract: ApplicationQueryResultSlotContract::Resource { facet },
+        }
+    }
+    pub(super) fn history_metadata(
+        history: WorthQueryPortableTypeIdentity,
+        facet: super::ApplicationHistoryMetadataFacet,
+    ) -> Self {
+        Self {
+            query: history,
+            slot: WorthQueryPortableTypeIdentity::declared(facet.name()),
+            contract: ApplicationQueryResultSlotContract::HistoryMetadata { facet },
+        }
+    }
+
+    pub(super) fn components(meaning: &super::ApplicationQueryComponentMeaning) -> Self {
+        Self {
+            query: meaning.query_identity(),
+            slot: meaning.slot_identity(),
+            contract: ApplicationQueryResultSlotContract::Components {
+                set: meaning.set().into(),
+                member: meaning.member().into(),
+                selection: meaning.selection(),
+                output_name: meaning.output_name().into(),
+            },
+        }
+    }
+
+    pub(super) fn orbit(
+        query: WorthQueryPortableTypeIdentity,
+        slot: WorthQueryPortableTypeIdentity,
+        relation: &str,
+        from: &str,
+        to: &str,
+        output_name: &str,
+    ) -> Self {
+        Self {
+            query,
+            slot,
+            contract: ApplicationQueryResultSlotContract::Orbit {
+                relation: relation.into(),
+                from: from.into(),
+                to: to.into(),
+                output_name: output_name.into(),
+            },
+        }
+    }
     pub fn query_identity(&self) -> WorthQueryPortableTypeIdentity {
         self.query.clone()
     }

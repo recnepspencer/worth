@@ -20,6 +20,8 @@ pub struct WorthQueryPortableApplicationQueryParts {
     pub parameters: Vec<ApplicationQueryParameterDefinition>,
     pub result_shape: ApplicationQueryResultShape,
     pub root_paths: Vec<ApplicationQueryRootPathMeaning>,
+    pub component_selection: Option<crate::application_query::ApplicationQueryComponentMeaning>,
+    pub orbit: Option<super::super::ApplicationQueryOrbitMeaning>,
     pub cardinality: ApplicationQueryCardinality,
     pub predicates: Vec<ApplicationQueryPredicate>,
     pub ordering: Vec<ApplicationQueryOrderingTerm>,
@@ -66,6 +68,16 @@ impl WorthQueryPortableApplicationQueryParts {
 
     pub fn result_shape(&self) -> &ApplicationQueryResultShape {
         &self.result_shape
+    }
+
+    pub fn component_selection(
+        &self,
+    ) -> Option<&crate::application_query::ApplicationQueryComponentMeaning> {
+        self.component_selection.as_ref()
+    }
+
+    pub fn orbit(&self) -> Option<&crate::application_query::ApplicationQueryOrbitMeaning> {
+        self.orbit.as_ref()
     }
 
     pub fn root_paths(&self) -> &[ApplicationQueryRootPathMeaning] {
@@ -126,6 +138,8 @@ impl WorthQueryPortableApplicationQueryParts {
             parameters: definition.parameters,
             result_shape: definition.result_shape,
             root_paths: definition.root_paths,
+            orbit: definition.orbit,
+            component_selection: definition.component_selection,
             cardinality: definition.cardinality,
             predicates: definition.predicates,
             ordering: definition.ordering,
@@ -152,6 +166,8 @@ impl WorthQueryPortableApplicationQueryParts {
             parameters: definition.parameters.clone(),
             result_shape: definition.result_shape.clone(),
             root_paths: definition.root_paths.clone(),
+            orbit: definition.orbit.clone(),
+            component_selection: definition.component_selection.clone(),
             cardinality: definition.cardinality,
             predicates: definition.predicates.clone(),
             ordering: definition.ordering.clone(),

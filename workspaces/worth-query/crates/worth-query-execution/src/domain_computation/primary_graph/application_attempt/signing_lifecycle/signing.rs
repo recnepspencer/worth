@@ -57,7 +57,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn capture
     }
     candidate
         .read_set
-        .append_completed_facts(extra.into_iter(), request.allocation_policy())
+        .append_completed_facts(extra, request.allocation_policy())
         .map_err(SigningDenial::Attempt)?;
     Ok(candidate)
 }

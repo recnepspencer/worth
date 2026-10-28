@@ -51,6 +51,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
     pub(super) observation: worth_relational::facade::mvcc::RelationalBranchObservation,
     pub(super) authority_identity: u64,
+    pub(super) binding_identity: &'runtime worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(super) program_activation:
         Option<&'runtime super::super::program_occurrence::WorthQueryProgramActivationCell>,
     pub(super) work: WorthQueryInvariantProjectionWork,
@@ -68,6 +69,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) output_lineage:
         Arc<std::sync::Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>>,
     pub(super) invalidation_owner: Arc<super::super::SourceInvalidationOwner>,
+    pub(super) managed_views: Arc<super::super::application_query::derived_view::ManagedDerivedViewRegistry>,
     pub(super) selected_product_occurrence:
         Option<worth_runtime_world::facade::ProductBranchIncarnation>,
     pub(super) selected_product_generation: Option<u64>,

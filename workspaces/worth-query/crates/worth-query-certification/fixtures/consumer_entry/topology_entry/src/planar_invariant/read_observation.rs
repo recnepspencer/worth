@@ -17,13 +17,22 @@ pub enum PlanarInvariantReadEvent {
     Touched {
         entity: EntityId,
     },
-    /// One completed reverse closure. Sizes describe its actual Native result;
-    /// before/after are the platform's acquired-read observations.
-    CompleteWalk {
+    /// One actual complete island. No copied membership or additional reads.
+    /// Private Native identity preparation is outside these business counts.
+    CompleteComponent {
+        before: WorthQueryInvariantProjectionWork,
+        after: WorthQueryInvariantProjectionWork,
+        visited: usize,
+        identity: [u8; 32],
+    },
+    /// One complete orbit. Counts describe its business walk; private Native
+    /// identity metadata preparation is outside these application observations.
+    CompleteOrbit {
         before: WorthQueryInvariantProjectionWork,
         after: WorthQueryInvariantProjectionWork,
         visited: usize,
         physical_relations: usize,
+        identity: [u8; 32],
     },
     Prepared {
         reads: WorthQueryInvariantProjectionWork,

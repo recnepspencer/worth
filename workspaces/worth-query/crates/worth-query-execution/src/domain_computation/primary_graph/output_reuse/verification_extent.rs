@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::{
     application_attempt::{
         FactMovement, WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure,
     },
-    structural_walk::StructuralWalkVerification,
+    source_read_verification::SourceReadVerification,
 };
 use worth_relational::facade::{
     mvcc::CompanionPreflightStop, runtime::RelationalRuntime, snapshots::SnapshotHandle,
@@ -19,7 +19,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedFactVerification
     runtime: &'call RelationalRuntime,
     snapshot: &'call SnapshotHandle,
     control: Option<&'call dyn Fn() -> Result<(), RelationalExecutionDenialCause>>,
-    walks: Option<StructuralWalkVerification<'call>>,
+    reads: Option<SourceReadVerification<'call>>,
 }
 impl<'call, 'request, 'authority> RetainedFactVerification<'call, 'request, 'authority> {
     pub(in crate::domain_computation::primary_graph) fn new(
@@ -33,7 +33,7 @@ impl<'call, 'request, 'authority> RetainedFactVerification<'call, 'request, 'aut
             runtime,
             snapshot,
             control,
-            walks: None,
+            reads: None,
         }
     }
 
@@ -57,7 +57,7 @@ impl<'call, 'request, 'authority> RetainedFactVerification<'call, 'request, 'aut
             self.runtime,
             self.execution,
             self.snapshot,
-            &mut self.walks,
+            &mut self.reads,
             self.control,
         )
     }

@@ -1,5 +1,6 @@
 //! Recorded replay lookup remains independent of retained population.
 use super::*;
+use std::time::Instant;
 
 fn populated(population: u64) -> DocumentRetentionRuntime<RetentionProgramP0> {
     let host = publish_on_first_program();

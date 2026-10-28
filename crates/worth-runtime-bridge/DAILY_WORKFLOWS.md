@@ -220,5 +220,5 @@ If ordinary code starts depending on:
 you have probably drifted out of the intended daily path.
 
 That does not mean those surfaces are wrong.
-It means the job may belong in `advanced` or `specialist`, not the ordinary
-workflow memory model.
+Use the explicit-control or replay/certification guide for that job, with the
+same `worth_runtime_bridge::facade` root import.

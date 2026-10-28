@@ -4,6 +4,8 @@ use super::WorthQueryOperationApplicationProjectionScope;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationGraphReadScope {
+    DerivedSource(super::WorthQueryOperationDerivedSourceReadScope),
+    Components(super::WorthQueryOperationComponentReadScope),
     Entity(WorthQueryOperationEntityReadScope),
     NativeProjection(WorthQueryOperationApplicationProjectionScope),
     Relation(WorthQueryOperationRelationReadScope),
