@@ -4,7 +4,7 @@ mod admission;
 pub(in crate::domain_computation::primary_graph) use admission::capture_parameters;
 pub(in crate::domain_computation) use admission::CapturedApplicationQueryParameters;
 pub(in crate::domain_computation::primary_graph) use admission::{
-    FreshQueryPermissionStop, PreparedApplicationQueryPermission,
+    FreshQueryPermissionStop, PreparedApplicationQueryPermission, SelectedIssuedAccessRoot,
 };
 mod admission_preparation;
 mod admitted_result;

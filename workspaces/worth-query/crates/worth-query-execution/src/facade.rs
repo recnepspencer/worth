@@ -21,6 +21,18 @@ pub mod causal_inspection {
     pub use crate::domain_computation::primary_graph::causal_inspection::*;
 }
 
+/// Fresh application inspection; only its supported result and request vocabulary.
+pub mod application_inspection {
+    pub use crate::domain_computation::primary_graph::causal_inspection::{
+        CausalInspectionReason, CausalObservationMissingReferencePosture,
+        WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
+        WorthQueryApplicationInspectionRequest, WorthQueryApplicationInspectionResourceRefusal,
+        WorthQueryApplicationInspectionStopKind, WorthQueryApplicationQueryObservation,
+        WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest,
+        WorthQueryReferenceOnlyInspectionRequest,
+    };
+}
+
 /// Directional integration for retained legacy request occurrences.
 #[doc(hidden)]
 pub mod resource_custody {

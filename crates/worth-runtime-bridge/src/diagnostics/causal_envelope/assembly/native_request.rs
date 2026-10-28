@@ -18,6 +18,12 @@ impl BridgeConditionalCausalEnvelopeRequest {
         summary: BridgeCausalInspectionAdmissionSummary,
         observation: BridgeConditionalCausalObservation,
     ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+        if summary.requires_application_inspection_admission() {
+            return Err(denial(
+                &summary,
+                BridgeCausalEnvelopeDenialKind::ApplicationInspectionAdmissionRequired,
+            ));
+        }
         if summary.expected_query_observation_identity().is_none() {
             return Err(denial(
                 &summary,

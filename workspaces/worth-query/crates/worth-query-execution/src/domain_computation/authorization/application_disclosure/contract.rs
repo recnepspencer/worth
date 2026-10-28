@@ -13,8 +13,10 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 use super::influence_validation::{validate_influence, GovernedInternalFieldRules};
 mod history;
+mod inspection;
 mod resource;
 pub(in crate::domain_computation) use history::compile_history_disclosure_contract;
+pub(in crate::domain_computation) use inspection::compile_inspection_disclosure_contract;
 pub(in crate::domain_computation) use resource::compile_resource_disclosure_contract;
 
 #[derive(Clone, Debug)]

@@ -38,6 +38,14 @@ impl WorthQueryInstalledApplicationInspectionContract {
         self.meaning.obligations.inspect()
     }
 
+    /// Share only the actual cold obligation leaf with its admission owner.
+    #[doc(hidden)]
+    pub fn retain_graph_obligations_for_admission(
+        &self,
+    ) -> Arc<crate::graph_obligation::WorthQueryInstalledGraphObligationSet> {
+        Arc::clone(&self.meaning.obligations)
+    }
+
     /// The six exact metadata slots prepared once by this binding's compiler.
     pub fn metadata_slots(
         &self,

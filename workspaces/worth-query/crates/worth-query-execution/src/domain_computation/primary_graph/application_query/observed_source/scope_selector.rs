@@ -44,6 +44,21 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self.scope_selector
     }
 
+    /// Exact original immutable custody, rather than public receipt equality.
+    pub(in crate::domain_computation::primary_graph) fn shares_original_custody<Other>(
+        &self,
+        other: &WorthQueryObservedSource<Other>,
+    ) -> bool {
+        Arc::ptr_eq(&self.parameters, &other.parameters)
+            && Arc::ptr_eq(&self.source_meaning, &other.source_meaning)
+            && self.runtime_authority == other.runtime_authority
+            && self.schema_binding == other.schema_binding
+            && self.query_identity == other.query_identity
+            && self.parameter_binding_identity == other.parameter_binding_identity
+            && self.selection == other.selection
+            && self.model_root == other.model_root
+    }
+
     /// The same source under another query marker. Only a caller that has
     /// already checked the query this source names may change its marker.
     pub(in crate::domain_computation::primary_graph) fn retyped<Other>(

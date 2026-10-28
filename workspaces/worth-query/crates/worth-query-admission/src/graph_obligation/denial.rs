@@ -45,6 +45,7 @@ pub enum WorthQueryGraphWorkAdmissionDenial {
     ProviderSupportUnavailable,
     OperationAuthorityMismatch,
     ResourceAuthorityMismatch,
+    InspectionAuthorityMismatch,
     CapacityUnavailable,
     IdentityExhausted,
 }
@@ -71,6 +72,7 @@ impl worth_execution::ChargedBytes for WorthQueryGraphWorkAdmissionDenial {
             | Self::ProviderSupportUnavailable
             | Self::OperationAuthorityMismatch
             | Self::ResourceAuthorityMismatch
+            | Self::InspectionAuthorityMismatch
             | Self::CapacityUnavailable
             | Self::IdentityExhausted => 0,
         }

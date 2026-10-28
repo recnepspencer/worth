@@ -56,11 +56,12 @@ pub mod graph_read_access {
 
 pub mod graph_obligation {
     pub use crate::graph_obligation::{
-        admit_prepared_resource_read_graph_work, prepare_resource_read_graph_work,
-        WorthQueryAdmittedGraphWorkPlan, WorthQueryGraphObligationSelectionCounters,
-        WorthQueryGraphObligationSelectionDenial, WorthQueryGraphObligationSelectionDenialKind,
-        WorthQueryGraphWorkAdmissionDenial, WorthQueryGraphWorkCapacityAdmissionStop,
-        WorthQueryGraphWorkIntent, WorthQueryGraphWorkIntentKind, WorthQueryGraphWorkPlanIdentity,
+        admit_application_inspection_graph_work, admit_prepared_resource_read_graph_work,
+        prepare_resource_read_graph_work, WorthQueryAdmittedGraphWorkPlan,
+        WorthQueryGraphObligationSelectionCounters, WorthQueryGraphObligationSelectionDenial,
+        WorthQueryGraphObligationSelectionDenialKind, WorthQueryGraphWorkAdmissionDenial,
+        WorthQueryGraphWorkCapacityAdmissionStop, WorthQueryGraphWorkIntent,
+        WorthQueryGraphWorkIntentKind, WorthQueryGraphWorkPlanIdentity,
         WorthQueryPreparedResourceReadGraphWork, WorthQuerySelectedGraphObligationInspection,
         WorthQuerySelectedGraphObligations,
     };

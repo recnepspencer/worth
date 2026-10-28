@@ -1,5 +1,7 @@
+mod inspection_read;
 mod prepared_operation;
 mod resource_read;
+pub use inspection_read::admit_application_inspection_graph_work;
 pub use prepared_operation::{
     admit_prepared_application_operation_graph_work, prepare_application_operation_graph_work,
     WorthQueryPreparedApplicationOperationGraphWork,

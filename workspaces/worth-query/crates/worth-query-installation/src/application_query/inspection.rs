@@ -1,4 +1,4 @@
-//! Validate optional meaning against actual compiled bindings before runtime refusal.
+//! Validate metadata meaning against actual compiled bindings before installation.
 use super::{
     binding::WorthQueryCompiledApplicationQueryBinding,
     WorthQueryApplicationQueryInstallationDenial as Denial,
@@ -62,20 +62,5 @@ fn validate_definitions(
     members: &[ApplicationSchemaMember],
     bindings: &BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
 ) -> Result<(), Denial> {
-    let validated = validate_all(members, bindings)?;
-    refuse_unavailable(&validated)
-}
-
-pub(super) fn refuse_unavailable(
-    validated: &[&ErasedApplicationQueryInspectionDefinition],
-) -> Result<(), Denial> {
-    // No optional meaning becomes an installed runtime capability before its
-    // genuine fresh issuer qualifies, even after its cold leaf is complete.
-    match validated.first() {
-        Some(definition) => Err(Denial::new(
-            Kind::InspectionUnavailable,
-            definition.parts().binding.parts().binding.as_str(),
-        )),
-        None => Ok(()),
-    }
+    validate_all(members, bindings).map(|_| ())
 }

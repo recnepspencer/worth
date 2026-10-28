@@ -30,6 +30,33 @@ pub struct ApplicationQueryBindingReferenceParts {
 }
 
 impl ApplicationQueryBindingReference {
+    /// Heap backing retained by this complete portable interpretation.
+    /// Borrowed identities contribute no allocation; overflow refuses a quote.
+    pub fn retained_heap_bytes(&self) -> Option<usize> {
+        let p = &self.parts;
+        let identities = [
+            &p.binding,
+            &p.input,
+            &p.query,
+            &p.parameters,
+            &p.result,
+            &p.scope,
+            &p.scope_value,
+        ];
+        let strings = [
+            &p.query_name,
+            &p.scope_entity,
+            &p.scope_aspect,
+            &p.scope_field,
+            &p.principal_binding,
+        ];
+        identities
+            .into_iter()
+            .map(Identity::retained_heap_bytes)
+            .chain(strings.into_iter().map(String::capacity))
+            .try_fold(0usize, usize::checked_add)
+    }
+
     pub fn of<Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>() -> Self {
         Self::from_descriptor(&Binding::descriptor())
     }

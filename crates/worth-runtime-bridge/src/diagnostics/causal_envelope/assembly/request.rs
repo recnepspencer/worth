@@ -18,7 +18,7 @@ pub enum BridgeCausalInspectionAdmissionSummaryKind {
 }
 
 impl BridgeCausalInspectionAdmissionSummaryKind {
-    fn as_str(&self) -> &'static str {
+    pub(super) fn as_str(&self) -> &'static str {
         match self {
             Self::Admitted => "admitted",
             Self::Advisory => "advisory",
@@ -33,6 +33,7 @@ pub struct BridgeCausalInspectionAdmissionSummary {
     causal_observation_anchor_identity: BridgeIdentityEvidence,
     summary_identity: BridgeIdentityEvidence,
     expected_query_observation: Option<BridgeIdentityEvidence>,
+    query_observation_report: bool,
 }
 
 impl BridgeCausalInspectionAdmissionSummary {
@@ -81,6 +82,7 @@ impl BridgeCausalInspectionAdmissionSummary {
             causal_observation_anchor_identity,
             summary_identity,
             expected_query_observation: None,
+            query_observation_report: false,
         })
     }
 
@@ -121,6 +123,28 @@ impl BridgeCausalInspectionAdmissionSummary {
         self.expected_query_observation.as_ref()
     }
 
+    /// Reporting association cannot enter a descriptor-only inspection path.
+    pub fn requires_application_inspection_admission(&self) -> bool {
+        self.query_observation_report
+    }
+
+    pub(super) fn query_observation_reporting(
+        kind: BridgeCausalInspectionAdmissionSummaryKind,
+        admission: &BridgeIdentityEvidence,
+        anchor: &BridgeIdentityEvidence,
+        observation: &BridgeIdentityEvidence,
+        identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            kind,
+            query_admission_identity: admission.clone(),
+            causal_observation_anchor_identity: anchor.clone(),
+            summary_identity: identity,
+            expected_query_observation: Some(observation.clone()),
+            query_observation_report: true,
+        }
+    }
+
     pub fn query_admission_for_reporting(&self) -> &str {
         self.query_admission_identity.as_str()
     }
@@ -154,6 +178,18 @@ pub struct BridgeCausalEnvelopeAssemblyRequest {
 }
 
 impl BridgeCausalEnvelopeAssemblyRequest {
+    pub(super) fn query_observation_reporting(
+        admission_summary: BridgeCausalInspectionAdmissionSummary,
+        references: Arc<[BridgeCausalEvidenceReference]>,
+        request_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            admission_summary,
+            references,
+            request_identity,
+        }
+    }
+
     pub fn from_query_admission(
         admission_summary: BridgeCausalInspectionAdmissionSummary,
         references: Vec<BridgeCausalEvidenceReference>,

@@ -155,7 +155,6 @@ where
             .expect("unpublished catalog uniquely owns each binding")
             .finish_inspection(meaning);
     }
-    crate::application_query::inspection::refuse_unavailable(&inspection)?;
     Ok(WorthQueryInstalledApplicationQueryCatalog {
         histories: crate::application_query::history::compile(schema, &bindings)?,
         certification: CertificationQueryCatalog::new(queries.into_values().collect()),

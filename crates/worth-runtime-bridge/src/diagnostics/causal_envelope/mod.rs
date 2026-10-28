@@ -14,6 +14,8 @@ mod retained_source;
 pub use assembly::{
     BridgeCausalEnvelopeAssemblyRequest, BridgeCausalInspectionAdmissionSummary,
     BridgeCausalInspectionAdmissionSummaryKind, BridgeConditionalCausalEnvelopeRequest,
+    BridgeQueryObservationReportingInputDenial, BridgeQueryObservationReportingRequest,
+    BridgeQueryObservationReportingStop,
 };
 pub use authority::{BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner};
 pub use binding::{BridgeCausalEvidenceBinding, BridgeCausalEvidenceBindingClass};

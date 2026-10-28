@@ -127,6 +127,14 @@ worth_query_declaration::worth_query_application_contribution! {
                 )
                 .application_query_binding::<TestAccountSourceBinding>()
                 .application_query_binding::<AlternateAccountSourceBinding>()
+                .application_query_inspection(
+                    worth_query_declaration::facade::application_query::ApplicationQueryInspectionDefinition::<IdentityExecutionSchema, TestAccountSourceBinding>::new(
+                        worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract::public(),
+                    ).unwrap(),
+                )
+                .application_query_inspection(
+                    inspection_disclosure::governed(),
+                )
                 .application_query(application_queries::account_summary_definition())
                 .application_query(application_queries::scoped_account_summary_definition())
                 .application_query(application_queries::public_scoped_definition())

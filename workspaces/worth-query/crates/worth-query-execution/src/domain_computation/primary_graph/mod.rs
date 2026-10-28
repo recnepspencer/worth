@@ -191,6 +191,6 @@ pub use observations::principal_target_reads_on_this_thread_for_test;
 pub use application_runtime::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation) mod selected_read_indexes;
 
-mod admitted_capture;
+pub(in crate::domain_computation) mod admitted_capture;
 pub(crate) mod causal_inspection;
 mod record_reservations;

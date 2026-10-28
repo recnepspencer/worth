@@ -200,6 +200,7 @@ fn bridge_causal_evidence_binding_class_label(
 ) -> &'static str {
     match binding_class {
         BridgeCausalEvidenceBindingClass::RetainedBridgeRecord => "retained_bridge_record",
+        BridgeCausalEvidenceBindingClass::QueryObservationReport => "query_observation_report",
         BridgeCausalEvidenceBindingClass::RetainedNativeObservation => {
             "retained_native_observation"
         }

@@ -22,8 +22,7 @@ fn declaration(inspect: bool) -> ApplicationSchemaDeclaration<IdentitySchema> {
 }
 
 #[test]
-fn typed_inspection_meaning_refuses_inert_installation_and_plain_binding_still_installs() {
-    use crate::facade::WorthQueryInstalledApplicationSchemaDenialKind as Kind;
+fn typed_inspection_installs_its_actual_independent_metadata_obligation() {
     for inspect in [false, true] {
         let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
             "identity_installation_test",
@@ -42,24 +41,22 @@ fn typed_inspection_meaning_refuses_inert_installation_and_plain_binding_still_i
             [admitted],
         )
         .unwrap();
-        match index.bind_application_schema(declaration(inspect)) {
-            Ok(schema) => {
-                assert!(
-                    !inspect,
-                    "metadata meaning cannot silently install without its issuer"
-                );
-                schema
-                    .installed_query_binding::<PrincipalQueryBinding>()
-                    .unwrap();
-            }
-            Err(denial) => {
-                assert!(inspect);
-                assert_eq!(denial.kind(), Kind::InspectionUnavailable);
-                assert_eq!(
-                    denial.subject(),
-                    "worth.query.tests.principal-query-binding.v1"
-                );
-            }
+        let schema = index.bind_application_schema(declaration(inspect)).unwrap();
+        let binding = schema
+            .installed_query_binding::<PrincipalQueryBinding>()
+            .unwrap();
+        let observation = binding.query().binding_observation().unwrap();
+        let contract = observation.inspection_contract();
+        assert_eq!(contract.is_some(), inspect);
+        if let Some(contract) = contract {
+            assert_eq!(contract.binding_observation(), observation);
+            assert_eq!(contract.graph_obligations().subject_kind(),
+                crate::graph_obligation::WorthQueryInstalledGraphObligationSubjectKind::ApplicationInspection);
+            assert_ne!(
+                contract.graph_obligations().identity(),
+                binding.query().graph_obligations().identity()
+            );
+            assert_eq!(contract.metadata_slots().len(), 6);
         }
     }
 }

@@ -18,7 +18,11 @@ use super::super::WorthQueryRetainedCapabilityAuthorization;
 
 mod field_admission;
 mod governance;
+mod inspection;
+mod preparation;
+pub(in crate::domain_computation) use preparation::WorthQueryPreparedApplicationGovernance;
 mod resource;
+pub(in crate::domain_computation) use inspection::prepare_application_inspection_governance;
 pub(in crate::domain_computation) use resource::admit_application_resource_governance;
 
 pub(in crate::domain_computation) use field_admission::{
@@ -100,66 +104,7 @@ pub(in crate::domain_computation) fn admit_application_query_governance(
     pending: Option<WorthQueryPendingApplicationQueryGovernance>,
     binding: WorthQueryApplicationGovernanceBinding,
 ) -> Result<WorthQueryApplicationQueryGovernance, WorthQueryApplicationQueryGovernanceDenialKind> {
-    match (contract, pending) {
-        (WorthQueryAdmittedApplicationDisclosureContract::Public, None) => {
-            Ok(WorthQueryApplicationQueryGovernance::Public)
-        }
-        (
-            WorthQueryAdmittedApplicationDisclosureContract::Governed {
-                classification,
-                capability_name,
-                capability_type,
-                result_rules,
-                internal_rules,
-                internal_field_rules,
-            },
-            Some(pending),
-        ) => {
-            if capability_name != pending.capability_name
-                || capability_type != pending.capability_type
-            {
-                return Err(WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch);
-            }
-            if internal_rules
-                .iter()
-                .any(|rule| rule.disclosure_value() != &pending.disclosure_value)
-            {
-                return Err(
-                    WorthQueryApplicationQueryGovernanceDenialKind::InternalComputationDenied,
-                );
-            }
-            let (disclosed, omitted) = result_rules.into_iter().fold(
-                (BTreeMap::new(), BTreeMap::new()),
-                |(mut disclosed, mut omitted), (slot, rule)| {
-                    let target = if rule.disclosure_value() == &pending.disclosure_value {
-                        &mut disclosed
-                    } else {
-                        &mut omitted
-                    };
-                    target.insert(slot, rule);
-                    (disclosed, omitted)
-                },
-            );
-            Ok(WorthQueryApplicationQueryGovernance::Governed {
-                capability_name: pending.capability_name,
-                capability_type: pending.capability_type,
-                disclosure_value: pending.disclosure_value.clone(),
-                authorization_canonical_work: pending.authorization_canonical_work,
-                computation: WorthQueryApplicationInternalComputationAuthority {
-                    binding,
-                    internal_field_rules,
-                    disclosure_value: pending.disclosure_value,
-                },
-                disclosure: WorthQueryApplicationDisclosureDecision {
-                    classification,
-                    disclosed,
-                    omitted,
-                },
-                authorization: pending.authorization,
-            })
-        }
-        _ => Err(WorthQueryApplicationQueryGovernanceDenialKind::Required),
-    }
+    preparation::prepare(contract, pending).map(|prepared| prepared.bind(binding))
 }
 
 mod binding;

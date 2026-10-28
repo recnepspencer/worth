@@ -62,3 +62,42 @@ fn descriptor(label: &str) -> WorthQueryEvidenceIdentity {
         .field_shape(WorthQueryEvidenceTag::new("legacy-test-descriptor"), label)
         .seal()
 }
+
+#[test]
+fn query_observation_reporting_requires_fresh_admission_under_both_legacy_paths_and_policies() {
+    use worth_runtime_bridge::facade::BridgeQueryObservationReportingRequest;
+    let admission: CausalInspectionOutcomeIdentity = descriptor("reporting-admission").into();
+    let anchor: CausalObservationAnchorDigest = descriptor("reporting-anchor").into();
+    let query = descriptor("reporting-original-query");
+    let admission_label = admission.evidence_identity().bridge_evidence_identity();
+    let anchor_label = anchor.evidence_identity().bridge_evidence_identity();
+    let query_label = query.bridge_evidence_identity();
+    for kind in [Kind::Admitted, Kind::Advisory] {
+        let envelope = BridgeQueryObservationReportingRequest::new(
+            kind,
+            &admission_label,
+            &anchor_label,
+            &query_label,
+        )
+        .unwrap()
+        .assemble_with_admission(&mut |_, _| Ok::<_, ()>(()))
+        .unwrap();
+        let error = super::super::validate_bridge_summary(&admission, &anchor, kind, &envelope)
+            .unwrap_err();
+        assert_eq!(
+            error.kind(),
+            CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired
+        );
+        for policy in [
+            CausalInspectionMaterializationPolicy::DigestReferenceOnly,
+            CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
+        ] {
+            let error =
+                validate_materialization_contract(&query, &[], &envelope, policy).unwrap_err();
+            assert_eq!(
+                error.kind(),
+                CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired
+            );
+        }
+    }
+}

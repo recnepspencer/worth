@@ -10,12 +10,14 @@ source footprints and optional disclosed projection after business rows drop.
 These owners retain evidence without retaining a Native reader or granting a new
 read permission. Close an observation or drop its last clone to release its custody.
 
-The `WorthQueryWorkspace` (`worth_query::facade`) diagnostic builder accepts an
-observation receipt and a sealed inspection-basis capability to plan and
-materialize its supported cross-runtime explanations. It does not supply
-application READ or metadata admission.
-A valid optional inspection definition currently returns `InspectionUnavailable`
-at installation; the declaration requirements are below.
+An ordinary completed bound query can supply its actual opaque observation through
+`result.receipt().inspect().observation()`. A fresh Host request admits a reference
+report for that exact installed binding with
+`request.inspect::<Binding>(original).why_observed().reference_only().execute()`.
+Governed metadata additionally requires `execute_governed(actual_capability)`.
+The report establishes one original Query reference. Producer-chain explanations,
+Changed comparisons, diagnostic fields and richer materialization are unavailable
+through this Host entrance.
 
 Output-readiness delivery also privately retains the actual Native conditional
 observation. Its immutable Bridge backing preserves the real Signal decision,
@@ -184,8 +186,9 @@ uses `ApplicationQueryDisclosureContract::public()` without rules.
 Installation checks every definition against its actual compiled binding before
 resolving metadata capabilities. Governed metadata must name an installed
 capability; an absent capability returns `InvalidInspectionDefinition`. A valid
-optional definition currently returns `InspectionUnavailable`. Declare the ordinary
-binding without that optional definition to execute queries.
+optional definition installs the independent metadata obligation for fresh Host
+inspection. Definitions remain optional for ordinary query execution; a binding
+without one cannot admit this inspection lane.
 
 Payload disclosure grants no metadata access. A diagnostic-fields metadata rule
 grants no field values: those require the separately admitted current subject's
@@ -212,189 +215,84 @@ Correction keeps its additional input/inverse custody where required. These
 captures retain evidence only. They grant neither a new query read nor metadata
 disclosure, and they do not establish a producer-to-row cause.
 
-This is different from `workspace.inspections()?.inspect(...)`, which explains one retained
-workspace target. Use causal inspection when the question crosses runtime
-boundaries.
+## Fresh Application Inspection
 
-## Why You Use It
+Use the same ordinary request and its actual bound query result:
 
-- Explain a result change through Query, bridge, truth, and signal evidence.
-- Investigate temporal wakes, async completions, remasking, replay drift, or a
-  resume mismatch.
-- Ask for reference-only evidence without materializing every lower-runtime
-  detail.
-- Preserve a typed denial or advisory when requested evidence is unavailable
-  or too expensive.
-- Keep the explanation tied to the same scoped authority as the observation.
-
-## Stable Entry Points
-
-Import the basis capability from the foundation facade and causal inspection
-from the runtime facade:
-
-```rust
-use worth_query::facade::{
-    foundation::{basis_lifecycle, ScopedInspectionBasis},
-    runtime::{CausalInspection, QueryObservationReceipt},
-};
-```
-
-The ordinary builder surface is:
-
-- `CausalInspection::for_observation(receipt, inspection_basis)`
-- `why_changed()`, `why_suppressed()`, `why_denied()`,
-  `why_replayed()`, or `why_previewed()`
-- `why_temporal_wake()`, `why_async_completion()`, `why_remasked()`, or
-  `why_resume_mismatch()` for common cross-runtime questions
-- `reference_only()` or `materialized_detail()`
-- `plan()`
-- `plan.materialize_with_bridge(...)`
-- `CausalInspection::support()`
-
-The observation receipt alone is not inspection authority. The scoped
-inspection basis is required and must match the basis retained by the receipt.
-
-## Core Mental Model
-
-The receipt proves that an observation happened. The inspection basis proves
-that this caller may inspect that truth world. Neither artifact substitutes for
-the other.
-
-`CausalInspection::for_observation(...)` keeps both together. Planning anchors
-the observation, resolves retained evidence references, checks support and
-cost, and creates an admitted, advisory, or denied proof flow. Materialization
-then asks the bridge for the detail allowed by that plan.
-
-Reference-only evidence is the common supported lane. Materialized detail is
-advisory because availability, redaction, and lower-runtime cost can narrow the
-answer.
-
-## How It Executes
-
-```text
-observation receipt + matching ScopedInspectionBasis
-  -> causal question and evidence selection
-  -> evidence-reference resolution
-  -> support and cost admission
-  -> causal inspection plan
-  -> optional bridge materialization
-  -> Query-owned causal inspection artifact
-```
-
-Basis mismatch and missing required evidence stop during planning, before a
-bridge explanation is assembled.
-
-## Small Example
-
-```rust
-use worth_query::facade::{
-    foundation::ScopedInspectionBasis,
-    runtime::{CausalInspection, QueryObservationReceipt},
-};
-
-fn plan_change_explanation(
-    receipt: QueryObservationReceipt,
-    inspection_basis: ScopedInspectionBasis,
-) -> Result<_, worth_query::facade::runtime::CausalInspectionPlanError> {
-    CausalInspection::for_observation(receipt, inspection_basis)
-        .why_changed()
-        .reference_only()
-        .include_all_retained_evidence()
-        .plan()
-}
-```
-
-The function requires both proof artifacts. A caller cannot authorize
-inspection by supplying a receipt or matching-looking digest alone.
-
-## Real Example
-
-```rust
-use worth_query::facade::runtime::CausalInspection;
-
-let plan = CausalInspection::for_observation(receipt, inspection_basis)
-    .why_async_completion()
+```rust,ignore
+let result = request.query(intent).execute()?;
+let original = result.receipt().inspect().observation()
+    .ok_or(ApplicationError::ObservationUnavailable)?;
+let explanation = request.inspect::<InstalledQueryBinding>(original)
+    .why_observed()
     .reference_only()
-    .include_all_retained_evidence()
-    .plan()?;
-
-let artifact = plan.materialize_with_bridge(&bridge)?;
-
-record_causal_evidence(
-    artifact.receipt(),
-    artifact.authority_bindings(),
-    artifact.performance_envelope(),
-);
+    .execute()?;
+// A descriptive original observation identity and this fresh report identity.
+let observation_id = explanation.observation_identity();
+let report_id = explanation.report_identity();
+explanation.close();
 ```
 
-The observation and inspection capability are authoritative inputs. The bridge
-owns its lower-runtime evidence and Query owns the public explanation artifact.
-The artifact's references and digests are inspection projections, not new
-authority inputs.
+The binding and application error above are application-defined. The
+[Host example](../../../worth-query-host/tests/application_runtime_surface/inspection.rs)
+uses an actual typed query, installed principal binding, admitted authentication
+adapter, ordinary publication receipt and this exact request entrance. Its
+[declaration](../../../worth-query-host/tests/application_runtime_surface/inspection_model.rs)
+registers the query binding and its explicit public inspection metadata together.
+For governed metadata, supply the actual currently admitted capability to
+`execute_governed`; it is revalidated independently of the original payload
+contract. The [capability example](../../../worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/tests.rs)
+shows admission, revocation and public metadata as distinct cases.
 
-## How It Relates To Other Features
+`observation()` returns `None` when the completed lane supplied no retained
+observation. The borrowed capsule grants no permission and exposes no payload,
+links or counts. To drop business rows first, retain a clone of the actual receipt
+and borrow its observation afterward. The opaque observation shares its original
+immutable source capsules and their original custody. Cloning the Publication
+receipt also copies owned descriptive strings and basis projections; those copies
+are separate from shared observation storage. The borrowing getter allocates
+nothing. An opaque observation retains no operational reader.
 
-- [Inspection](./inspection.md) explains retained Query targets without
-  assembling a cross-runtime causal envelope.
-- [Basis Capability Lifecycle](./basis-capability-lifecycle.md) creates the
-  `ScopedInspectionBasis` required here.
-- [Authoritative Mutation Evidence](./authoritative-mutation-evidence.md)
-  explains what a write changed; causal inspection explains why an observed
-  result followed.
-- [Lower-Runtime Capability Routing](../domain-capabilities/lower-runtime-capability-routing.md)
-  owns bridge-facing materialization boundaries.
-- Lower-runtime explanation contributions describe
-  domain explanation posture; they do not execute this runtime lane.
+Fresh admission checks the original runtime, schema and exact installed binding
+before selecting its current Product branch occurrence. It resolves the current
+principal and original scope selector, checks the full subject identity and
+current READ authorization, then independently admits `ObservationIdentity`,
+`EvidenceLinks`, `EvidenceCounts`, `EvidenceAvailability` and `Explanation` before
+looking up protected target metadata. Public payload visibility cannot supply
+metadata admission. This fixed report never exposes `DiagnosticFields`.
 
-## Inspection And Debugging
+A single observation yields `ObservedResult`. `lower_evidence_posture()` is
+`MissingOptional`: lower causal connections are unestablished. It does not claim
+that no producer exists. Matching values, field revisions, Route identities or
+producer contacts cannot establish Changed or a producer-to-row cause.
 
-Before materialization, inspect:
+The real Inspection read session checks current authority before report creation
+and before its consuming terminal. Fresh Product, issued identity and basis guards
+end before the descriptive result publishes. Cancellation is checked again at
+publication. The same original execution reservation covers preparation, the
+report, completion and any owned refusal; `close()` or drop releases it. The
+[funding courts](../../../worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/materialization/tests.rs)
+exercise genuine report-memory refusal, while the Host journey checks reader
+release and cancellation on a reused request. `SystemAllocation` delegates to the
+installed World's execution policy; it does not promise unaccounted work.
 
-- `plan.support_posture()`
-- `plan.required_evidence()`
-- `plan.decision_trace()`
-- `plan.estimated_cost()`
-- `plan.inspection_basis()`
-- `plan.explain()`
+Inspection denial provides a coarse `kind()` without protected metadata. Borrow
+its actual `resource_refusal()`, `execution_stop()`, `request_interruption()` or
+`canonical_refusal()` when present. These preserve their original typed causes
+without formatting protected diagnostics or cloning owner evidence. The denial
+keeps its original reservation until it drops.
 
-After materialization, inspect:
+## Retained Workspace Diagnostics
 
-- `artifact.primary_result()`
-- `artifact.warnings()`
-- `artifact.authority_bindings()`
-- `artifact.evidence()`
-- `artifact.performance_envelope()`
-- `artifact.receipt()`
-- `artifact.denial_reason()` or `artifact.advisory_reason()`
+The older `WorthQueryWorkspace` diagnostic builder remains a separate audience.
+Its `CausalInspection::for_observation` takes a diagnostic observation and an
+actual matching `ScopedInspectionBasis`; it supplies no application READ or
+metadata permission. Its retained Route reporting and support/planning contracts
+remain available to that audience. Both generic legacy Native-envelope and new
+Query-observation report admission stay closed: an old diagnostic basis cannot
+bypass the fresh application issuer, even with reference-only policy.
 
-Use `CausalInspection::support()` to distinguish supported, advisory, and
-deferred explanation families before authoring a production workflow.
-
-## Anti-Patterns
-
-- Calling `CausalInspection::for_observation(...)` without a scoped inspection
-  basis.
-- Reconstructing inspection authority from receipt, basis, or evidence digests.
-- Calling `workspace.inspections()?.inspect(...)` and describing it as cross-runtime causal
-  inspection.
-- Importing bridge or signal internals into product code to assemble a local
-  explanation.
-- Treating advisory materialized detail as guaranteed support.
-- Using domain explanation contributions in place of causal inspection.
-
-## Current Limits
-
-- Cross-runtime reference-only explanation is supported.
-- Materialized detail is advisory and can narrow under evidence, redaction, or
-  bridge constraints.
-- Durable causal archives and store-backed replay reconstruction are deferred.
-- Causal inspection explains retained evidence; it does not create truth,
-  replay authority, or durable history.
-
-## Related Docs
-
-- [Inspection](./inspection.md)
-- [Basis Capability Lifecycle](./basis-capability-lifecycle.md)
-- [Inspection Vs Cross-Runtime Explanation](../domain-capabilities/choosing/inspection-vs-cross-runtime-explanation.md)
-- [Support Matrix And Admission](../foundations/support-matrix-and-admission.md)
-- [Authoritative Mutation Evidence](./authoritative-mutation-evidence.md)
+Use the ordinary Host receipt entrance above for application queries. Optional
+Native materialization and performed-source/producer-chain inspection are
+unavailable through this Host entrance. The existing Native backing alone cannot
+open those reads.

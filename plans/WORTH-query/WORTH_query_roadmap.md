@@ -5752,13 +5752,20 @@ milestone, as defined by the governing 9.18 specification.
 **Progress, 2026-10-27:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
 query closure steps, stored orbits, persistent aggregate identity/lineage and
-qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6
-remain open for actual private CAD adoption and combined acceptance. Their public
-component and logical-source APIs are implemented; logical-source qualification
-covers 35 runtime courts and a Host compile-pass/compile-fail pair. The separate
-public production-maintenance prerequisite at `5b01312ed004` is qualified by eleven
-runtime courts and a Host example; actual private generation-reuse receipts remain
-required.
+qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6 are
+accepted on 2026-10-27: public component/logical-source qualification covers 35
+runtime courts and a Host compile-pass/compile-fail pair; production maintenance
+at SDK `5b01312ed004` adds eleven runtime courts and a Host example. Eleven focused
+private CAD Entry courts complete derived shell reads, identity and lineage,
+region/exterior transfer, retained-decision and cache controls, tessellation
+consumption, typed refusal and genuine generation reuse with valid old truth.
+Complete private qualification at merge `70aa8334bd8eb558bcbe589507152049b9805728`
+includes incoming main `52b0fd370ee428f1`: all 356 Entry tests pass (one existing
+ignored), all 3,480 workspace CI tests pass (78 skipped), 62 cost tests and 213
+doc tests pass, and the all-target, oracle, determinism and policy gates pass.
+The CI and cost lanes exclude only Entry, qualified separately in full. SDK
+`5b01312ed0048ad4591e6b4a50e08685ea6d77ba` is unchanged. Actual Rust 1.98.0
+qualification leaves Phase 18’s Rust 1.99.x requirement open.
 The 2026-10-26 runtime audit adds required Phases 7–11: exact async
 source commit identity, application managed async resources, receipt-rooted causal
 inspection, bounded record/aspect history, and one batch for both cleanup findings.
@@ -5778,7 +5785,13 @@ unrelated prefix. Phase 8 is accepted on 2026-10-27: installed typed resources
 use the ordinary Decl/Host start, fresh inspection, progression and close path,
 with finite provider/ingress/result custody and genuine owned-effect recovery.
 Its combined workflow qualifies populated forks, burned prepared adoptions and
-sibling publications against the actual Native source. Phase 9 remains unfinished.
+sibling publications against the actual Native source. Phase 9 now has a compiled
+ordinary Host query→receipt observation→fresh `why_observed().reference_only()`
+journey, independent metadata admission, actual Inspection terminal and original
+caller funding/refusal custody. Governed capability revocation and the legacy
+generic admission fences are qualified. Phase 9 remains unfinished for genuine
+producer-chain connection, Changed and optional richer materialization; see its
+[qualified partial slice](./milestone-9.18.1.md#phase-9-causal-inspection-from-ordinary-application-receipts).
 These additions do not reopen the original phases. The 2026-10-27 Proprietary
 report against SDK `ba86433627` adds compiler and unobserved-write refusals,
 cell-version/live-at-k qualification, fresh ordinary proposal acceptance and

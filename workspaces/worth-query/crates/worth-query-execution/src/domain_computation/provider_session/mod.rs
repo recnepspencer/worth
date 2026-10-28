@@ -4,9 +4,11 @@ mod direct_attempt;
 mod execution_attempt_identity;
 mod graph_obligation;
 pub(in crate::domain_computation) use graph_obligation::{
+    WorthQueryInspectionReadCompletion, WorthQueryInspectionReadTerminalDenial,
     WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
     WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
-    WorthQueryResourceReadCompletion, WorthQuerySessionResourceReadProof,
+    WorthQueryResourceReadCompletion, WorthQuerySessionInspectionReadProof,
+    WorthQuerySessionResourceReadProof,
 };
 pub(crate) mod graph_provider;
 mod protocol;

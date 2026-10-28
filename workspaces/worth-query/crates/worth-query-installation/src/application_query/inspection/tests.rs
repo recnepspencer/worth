@@ -12,7 +12,7 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 #[test]
-fn inspection_resolves_every_definition_against_actual_compiled_binding_before_unavailable() {
+fn inspection_resolves_every_definition_against_actual_compiled_binding_before_installation() {
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         "identity_installation_test",
         1,
@@ -48,12 +48,7 @@ fn inspection_resolves_every_definition_against_actual_compiled_binding_before_u
     let valid = ApplicationSchemaMember::ApplicationQueryInspection {
         definition: definition.clone(),
     };
-    assert_eq!(
-        validate_definitions(&[valid.clone()], &bindings)
-            .unwrap_err()
-            .kind(),
-        Kind::InspectionUnavailable
-    );
+    validate_definitions(&[valid.clone()], &bindings).unwrap();
     // Compile the actual installed binding's independent cold obligation. Its
     // ordinary query graph remains a different subject and grants no metadata.
     let compiled = bindings.get(name).unwrap();

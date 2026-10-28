@@ -69,6 +69,8 @@ mod application_queries;
 mod current_output_source;
 #[path = "fixture/filtered_activity_query.rs"]
 mod filtered_activity_query;
+#[path = "fixture/inspection_disclosure.rs"]
+mod inspection_disclosure;
 pub(super) use application_queries::{
     cross_root_definition, AccountSummaryQuery, GovernedAccountSummaryQuery,
     OrderedAccountSummaryQuery, PublicAccountMembershipQuery, PublicAccountMembershipResult,
@@ -189,7 +191,7 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
     installed_capability_world_with_same_resource_unrelated, installed_delegated_capability_world,
     installed_delegated_capability_world_at_depth,
     installed_delegated_capability_world_with_unrelated, installed_elevated_capability_live_world,
-    installed_elevated_capability_world,
+    installed_elevated_capability_world, installed_inspection_capability_world,
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation) use world_installation::installed_authorization_world;

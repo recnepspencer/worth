@@ -17,6 +17,33 @@ pub(super) struct BridgeCausalEnvelopeAssemblyProgress {
 }
 
 impl BridgeCausalEnvelopeAssemblyProgress {
+    pub(super) fn query_observation_reporting(
+        request: &BridgeCausalEnvelopeAssemblyRequest,
+        storage: Vec<BridgeCausalEvidenceBinding>,
+    ) -> Self {
+        let mut progress = Self::for_request(request, false);
+        progress.bindings = storage;
+        progress
+    }
+
+    pub(super) fn record_query_report(&mut self, binding: BridgeCausalEvidenceBinding) {
+        self.external_authority_reference_count += 1;
+        self.bindings.push(binding);
+    }
+
+    pub(super) fn query_reporting_counts(&self) -> [usize; 8] {
+        [
+            self.evidence_reference_count,
+            self.lower_runtime_family_count(),
+            self.bridge_retained_lookup_count,
+            self.retained_bridge_binding_count,
+            self.external_authority_reference_count,
+            self.bindings.len(),
+            0,
+            0,
+        ]
+    }
+
     pub(super) fn for_request(request: &BridgeCausalEnvelopeAssemblyRequest, native: bool) -> Self {
         Self {
             evidence_reference_count: request.references().len(),

@@ -26,6 +26,34 @@ pub struct BridgeCausalExplanationEnvelope {
 }
 
 impl BridgeCausalExplanationEnvelope {
+    pub(super) fn query_observation_reporting(
+        request: BridgeCausalEnvelopeAssemblyRequest,
+        bindings: Vec<BridgeCausalEvidenceBinding>,
+        counters: BridgeCausalEnvelopeCounters,
+        identity: BridgeCausalEnvelopeIdentity,
+        receipt: BridgeCausalEnvelopeReceipt,
+        envelope_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            identity,
+            admission_summary_kind: request.admission_summary().kind(),
+            admission_summary_identity: request
+                .admission_summary()
+                .summary_evidence_identity()
+                .clone(),
+            request_identity: request.request_evidence_identity().clone(),
+            causal_observation_anchor_identity: request
+                .admission_summary()
+                .causal_observation_anchor_identity()
+                .clone(),
+            bindings: bindings.into_boxed_slice(),
+            counters,
+            receipt,
+            envelope_identity,
+            retained_native: Default::default(),
+        }
+    }
+
     pub(super) fn new(
         request: BridgeCausalEnvelopeAssemblyRequest,
         bindings: Vec<BridgeCausalEvidenceBinding>,

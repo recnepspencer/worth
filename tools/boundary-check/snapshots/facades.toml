@@ -105,6 +105,7 @@ exports = [
     "application_entry",
     "application_installation",
     "application_invariants",
+    "causal_inspection",
     "certification",
     "convergence_epoch",
     "declaration",

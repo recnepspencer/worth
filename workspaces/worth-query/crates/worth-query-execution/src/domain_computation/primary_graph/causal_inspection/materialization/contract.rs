@@ -18,7 +18,11 @@ pub(super) fn require_legacy_materialization_source(
     envelope: &BridgeCausalExplanationEnvelope,
 ) -> Result<(), CausalInspectionMaterializationError> {
     if envelope.bindings().iter().any(|binding| {
-        binding.binding_class() == BridgeCausalEvidenceBindingClass::RetainedNativeObservation
+        matches!(
+            binding.binding_class(),
+            BridgeCausalEvidenceBindingClass::RetainedNativeObservation
+                | BridgeCausalEvidenceBindingClass::QueryObservationReport
+        )
     }) {
         return Err(CausalInspectionMaterializationError::new(
             CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired,

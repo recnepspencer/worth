@@ -1,6 +1,6 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-> **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
+> **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 accepted on 2026-10-27.
 > Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
@@ -485,9 +485,9 @@ links compiled projection, handler, query and privileged lineage examples.
 Proprietary's [CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md)
 records genuine sheet edits, holes, split/merge lineage and current-main
 qualification at `33278669079835d5f0f5c96556697784fa449eb9`, retaining SDK `b9cdf607`.
-The derived-orbit substrate is qualified under Phase 6; complete Phase 6
-acceptance remains open. Governed and tracked lineage reads remain separate
-unavailable capabilities.
+The derived-orbit substrate and its private consumer gates are qualified under
+accepted Phase 6. Governed and tracked lineage reads remain separate unavailable
+capabilities.
 
 ### Requirements
 
@@ -521,8 +521,8 @@ unavailable capabilities.
   - the current identity that a retired identity's lineage leads to.
 - **Composing orbits.** An orbit relation may itself be a derived relation (Phase
   6), so a composed permutation becomes an orbit without new platform vocabulary.
-  The qualified Phase 6 substrate also binds derived permutation sources;
-  complete Phase 6 acceptance still requires its private consumer gates.
+  The accepted Phase 6 substrate binds derived permutation sources and is
+  qualified through the private consumer gates.
 
 ### Tests That Prove It
 
@@ -601,14 +601,17 @@ and tracked lineage decisions remain separate unfinished capabilities.
 
 ## Phase 5: Components With Persistent Identity
 
+**Accepted, 2026-10-27.** The component identity, lineage and maintenance courts
+and the complete current-main CAD qualification recorded under Phase 6 accept
+this phase. The SDK remains `5b01312ed0048ad4591e6b4a50e08685ea6d77ba`.
+
 **Depends on:** Phase 4 (aggregate identity and lineage).
 
 ### Requirements
 
 - An application declares a component set over one or more relations, read as
   undirected coupling, for example components of a declared adjacency relation.
-- Query gains the plan shape that `plans/deferred-work.md` defers under
-  "Components (islands) plan shape in Query":
+- Query installs the component-set root and component-read plan shape:
   - it lowers onto `ComponentPartitioner` and its incremental maintenance
     (9.17.6.3 Slice 6.8);
   - it gives each component the Phase 4 aggregate identity, not the
@@ -655,8 +658,8 @@ membership, identities, incident lineage and historical-name resolution across
 one, two and eight workers. Parallel runs require actual overlapping invariant
 readers and staged-parallel metadata; they do not claim parallel partition
 maintenance. See [component replay and worker determinism](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-replay-and-worker-determinism).
-Phase 5 remains open for private CAD shell integration and the final guide/phase
-acceptance audit.
+Phase 5 is accepted with the private CAD shell integration and complete
+qualification recorded under Phase 6.
 
 ### Gaps To Watch
 
@@ -688,7 +691,7 @@ let count = reader.component_count(FaceIslands::reference())?;
 
 ## Phase 6: Derived Relations Readable By Rules
 
-**Status: open.** The public logical-source substrate is qualified by 35
+**Accepted, 2026-10-27.** The public logical-source substrate is qualified by 35
 runtime courts and a Host compile-pass/compile-fail pair. Genuine Native sources
 feed proposed/committed rule reads, declared decisions, ordinary committed
 projection and framework-owned managed counts. The evidence covers derived
@@ -701,9 +704,26 @@ The 10/10,000 courts compare actual maintenance and business-read acquisition
 category totals. Equal totals do not claim fixed work or an acquisition-identity
 roster. The public production-maintenance prerequisite is separately qualified
 at `5b01312ed004` by ten Native courts, one Query owner court and a Host example.
-Actual private generation-reuse and CAD adoption receipts, followed by combined
-Phase 5/6 acceptance, remain required; these public qualifications do not close
-either phase.
+The same SDK pin is adopted by the eleven focused CAD Entry courts. Actual
+region/exterior incidence supplies derived shell adjacency and retained decisions;
+malformed both/neither anchors refuse without publication. A retained guarded
+decision becomes stale before an unchanged physical-only twin commits in the
+same world, and a fresh guarded decision then commits. Cold/warm, unrelated-body
+and source-transition cache controls preserve their distinct causes. Combined
+public and private evidence accepts Phases 5–6; no derived value grants authority.
+
+The complete private qualification integrates incoming main `52b0fd370ee428f1`
+in merge `70aa8334bd8eb558bcbe589507152049b9805728`, retaining SDK
+`5b01312ed0048ad4591e6b4a50e08685ea6d77ba`. Its
+[CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/70aa8334bd8eb558bcbe589507152049b9805728/cad/docs/plans/query-9.18.1-adoption.md)
+records all 356 Entry tests passing with one existing ignored test, all 3,480
+workspace CI tests passing with 78 skipped, 62 cost tests passing, 213 doc tests
+passing, and an all-target check. The CI and cost lanes exclude only Entry, whose
+complete required lane ran separately. Oracle, determinism, repository Python,
+policy, dependency and line-cap gates also pass. The earlier Entry and CI failures
+remain recorded alongside their reviewed corrections and successful full retries.
+This qualification used Rust 1.98.0 (`88d9e12ae178fab0fb5cc050a94da85685d449ea`);
+it does not close Phase 18’s required Rust 1.99.x qualification.
 
 **Depends on:** Phase 3 (walk reads), and the existing derived-view owner.
 
@@ -947,7 +967,8 @@ meaning and exact compatibility; Native source/domain admission and recipe
 evaluation; shared aggregate persistence and read handoffs; ordinary Query
 rule/decision/disclosure consumption; actual CAD adoption and removal of its
 representative-name publication path. Each reviewed slice is committed, but
-Phases 5–6 stay open until their complete original obligations pass.
+Phases 5–6 are accepted after their complete public and private obligations pass,
+as recorded under Phase 6.
 
 The continuing CAD contract is `cad/docs/plans/query-9.18.1-adoption.md` with the
 cell-complex naming rules and general-modeling use-name contract updated in the
@@ -1341,8 +1362,9 @@ than counters alone. Read-only custody preserves the actual invalidation backing
 and its original reservation while the unique performed receipt transfers once;
 it does not retain a snapshot reader or operational reentry core. See
 [Native custody](../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
-Fresh Host admission, connected producer-chain references and the application
-inspection journey remain required below; this prerequisite does not close Phase 9.
+The qualified fresh Host reference-report lane is described below. Connected
+producer-chain references and richer application inspection remain required;
+Native custody alone does not close Phase 9.
 
 Bound-query issuance now preserves its actual compiled catalog binding through
 the installed query, including `into_query`, and the completed source's shared
@@ -1366,7 +1388,7 @@ request or physical allocation cause instead of publishing partial evidence.
 The [row evidence custody and courts](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#original-query-row-evidence)
 cover one, many and empty results, original storage funding and final-owner release.
 Fresh metadata admission must precede footprint traversal; this custody alone does
-not implement fresh Host inspection or connect a producer cause.
+not authorize fresh Host inspection or connect a producer cause.
 
 Actual output settlements also retain one original-request funded readonly supplier
 capsule on the exact settled read. Retained, shared and batch query issuance carry
@@ -1396,14 +1418,13 @@ foreign-binding selectors refuse. Public metadata requires an explicit public
 contract without rules; an installed-policy placeholder is insufficient.
 
 Metadata admission is independent of the original payload contract and never
-grants diagnostic field values. The eventual fresh Host issuer must separately
+grants diagnostic field values. Any diagnostic materialization must separately
 check the current subject's `DiagnosticMask` before reading those fields, and
 must admit requested metadata before looking up family availability, links or
 counts. Installation validates every definition against the actual compiled
 query-binding catalog, after ordinary query/result, scope, principal and limits
-checks. Until the fresh issuer exists, valid inspection meaning returns typed
-`InspectionUnavailable`; malformed or foreign definitions refuse with their own
-cause before that unavailability outcome. Portable member45/v1 and selector8/v1
+checks. Valid inspection meaning now installs its actual independent metadata
+obligation; malformed or foreign definitions retain their own typed cause. Portable member45/v1 and selector8/v1
 are additive subgrammars and preserve unextended v18 schema identity and bytes;
 unknown versions refuse before payload fields or allocations.
 
@@ -1415,8 +1436,35 @@ separate binding/count/summary domains distinguish them from registry records.
 The summary binds the distinct anchor and expected Query observation identities.
 Neither descriptors nor their digests supply fresh permission: generic legacy
 Query materialization refuses `NativeInspectionAdmissionRequired`, including
-reference-only policy. Fresh Host admission and the remaining requirements below
-are still unfinished.
+reference-only policy. The fresh application issuer admits its own distinct
+Inspection read/session and descriptive Query-reference Bridge report; neither
+legacy route can manufacture that admission. The remaining requirements below
+keep Phase 9 open.
+
+**Qualified partial slice, 2026-10-27.** An actual ordinary Host query receipt now
+lends its retained opaque observation to a fresh
+`request.inspect::<Binding>(original).why_observed().reference_only()` request.
+The issuer checks exact original runtime/schema/installed-binding custody before
+selection, current Product branch occurrence and full subject, actual current
+READ, independent metadata and the five fixed reference-report facets before
+protected target lookup. A genuine Inspection read proof/session consumes its
+actual basis release before publication. The report establishes `ObservedResult`
+and one original Query reference, with `MissingOptional` lower connections;
+it grants no diagnostic fields and makes no claim that a producer is absent.
+
+The [Host court](../../workspaces/worth-query/crates/worth-query-host/tests/application_runtime_surface/inspection.rs)
+executes real query→publication receipt→fresh inspector and cancellation with no
+remaining readers. Installation courts qualify the real optional metadata
+obligation, complete binding validation and canonical authoring order. Execution
+courts qualify lawful original-caller funding and final release, wrong binding,
+foreign runtime, cancellation, independent governed capability/revocation and
+actual report-memory refusal with owned-denial custody. Bridge courts retain the
+exact Query reference and original allocation refusal; both legacy generic
+materialization fences remain closed. Public qualification uses actual Rust
+1.94.0 and does not satisfy Phase 18. This is a reviewed slice, not Phase 9
+acceptance: performed-source and exact producer-chain connection, Changed,
+optional richer materialization and their disclosure/availability evidence remain
+required below.
 
 ### Requirements
 
@@ -1471,27 +1519,23 @@ proof that the new receipt acquisition and authorization path is complete.
 ### Target DX
 
 ```rust,ignore
-// Planned syntax; receipt is returned by an actual ordinary application query.
-let explanation = request.inspections()
-    .for_observation::<InstalledQueryBinding>(result.receipt())?
+// The ordinary bound query supplies this actual retained receipt observation.
+let original = result.receipt().inspect().observation()
+    .ok_or(ApplicationError::ObservationUnavailable)?;
+let explanation = request.inspect::<InstalledQueryBinding>(original)
     .why_observed()
     .reference_only()
     .execute()?;
-
-// Changed needs two genuine explicitly retained disclosed projections.
-let change = request.inspections()
-    .compare_observations::<InstalledQueryBinding>(before.receipt(), after.receipt())?
-    .why_changed()
-    .reference_only()
-    .execute()?;
+explanation.close();
 ```
 
-The explicit installed binding preserves the original source's query, parameter,
-scope and result interpretation during fresh admission. This remains planned DX
-until the ordinary and governed Host entrances compile. Moving the operational
-core and retaining an opaque native observation in Publication receipts do not
-complete this phase: genuine producer-chain references, fresh disclosure,
-availability, materialization controls and release evidence remain required.
+This syntax is exercised by the linked Host court; the binding and error are
+application-defined. Governed metadata supplies its actual newly admitted
+capability to `execute_governed`. The receipt loan carries no current permission.
+Changed comparison and richer evidence syntax remain unimplemented; no planned
+comparison builder is presented as an available entrance. The
+[capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#fresh-application-inspection)
+describes custody, refusal views and the supported fixed report.
 
 ### How We Know It's Done
 

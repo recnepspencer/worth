@@ -11,6 +11,7 @@ pub enum BridgeCausalEvidenceBindingClass {
     RetainedBridgeRecord,
     ExternalAuthorityReference,
     RetainedNativeObservation,
+    QueryObservationReport,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -24,6 +25,20 @@ pub struct BridgeCausalEvidenceBinding {
 }
 
 impl BridgeCausalEvidenceBinding {
+    pub(super) fn query_observation_reporting(
+        reference: &BridgeCausalEvidenceReference,
+        binding_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            owner: reference.owner(),
+            family: reference.family(),
+            binding_class: BridgeCausalEvidenceBindingClass::QueryObservationReport,
+            reference_identity: reference.reference_evidence_identity().clone(),
+            retained_record_identity: None,
+            binding_identity,
+        }
+    }
+
     pub(super) fn retained(
         reference: &BridgeCausalEvidenceReference,
         retained_record_identity: BridgeIdentityEvidence,

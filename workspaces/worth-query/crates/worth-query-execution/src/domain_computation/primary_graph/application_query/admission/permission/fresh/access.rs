@@ -94,7 +94,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &worth_query_installation::facade::WorthQueryValidatedPrincipalBinding,
         >,
         external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        observed: &WorthQueryObservedSource<Binding::Query>,
+        observed: &WorthQueryObservedSource<impl Sized>,
         selected: &'selected WorthQuerySelectedProductOperation<'runtime, Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         inspect: impl for<'fresh> FnOnce(

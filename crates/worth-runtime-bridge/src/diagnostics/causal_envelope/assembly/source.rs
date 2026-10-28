@@ -5,8 +5,39 @@ use super::super::{
     BridgeCausalEvidenceReference,
 };
 use super::native_evidence::NativeEvidence;
+use super::{
+    progress::BridgeCausalEnvelopeAssemblyProgress, BridgeCausalEnvelopeAssemblyRequest,
+    BridgeCausalExplanationEnvelope,
+};
 use crate::diagnostics::BridgeDiagnosticsFacade;
 use crate::identity::BridgeIdentityEvidence;
+
+/// Closed source strategies share sequencing while retaining their own truth,
+/// resource admission, failure causes and descriptive output posture.
+pub(super) trait CausalEnvelopeAssemblySource {
+    type Stop;
+
+    fn prepare_progress(
+        &mut self,
+        request: &BridgeCausalEnvelopeAssemblyRequest,
+    ) -> Result<BridgeCausalEnvelopeAssemblyProgress, Self::Stop>;
+    fn bind_reference(
+        &mut self,
+        progress: &mut BridgeCausalEnvelopeAssemblyProgress,
+        reference: &BridgeCausalEvidenceReference,
+    ) -> Result<(), Self::Stop>;
+    fn requires_bridge_route(&self) -> bool;
+    fn missing_bridge_route(
+        &mut self,
+        request: &BridgeCausalEnvelopeAssemblyRequest,
+        progress: &BridgeCausalEnvelopeAssemblyProgress,
+    ) -> Self::Stop;
+    fn finish(
+        self,
+        request: BridgeCausalEnvelopeAssemblyRequest,
+        progress: BridgeCausalEnvelopeAssemblyProgress,
+    ) -> Result<BridgeCausalExplanationEnvelope, Self::Stop>;
+}
 
 pub(super) enum SourceContext<'a> {
     LegacyDiagnostics(&'a BridgeDiagnosticsFacade),
@@ -17,6 +48,73 @@ pub(super) enum ResolvedBinding {
     LegacyRetained(BridgeIdentityEvidence),
     NativeRetained,
     External,
+}
+
+impl CausalEnvelopeAssemblySource for SourceContext<'_> {
+    type Stop = BridgeCausalEnvelopeDenial;
+
+    fn prepare_progress(
+        &mut self,
+        request: &BridgeCausalEnvelopeAssemblyRequest,
+    ) -> Result<BridgeCausalEnvelopeAssemblyProgress, Self::Stop> {
+        if request
+            .admission_summary()
+            .requires_application_inspection_admission()
+        {
+            return Err(BridgeCausalEnvelopeDenial::new(
+                BridgeCausalEnvelopeDenialKind::ApplicationInspectionAdmissionRequired,
+                BridgeCausalEvidenceFamily::QueryObservation,
+                BridgeCausalEvidenceOwner::Query,
+                BridgeCausalEvidenceOwner::Query,
+                request.request_evidence_identity().clone(),
+                BridgeCausalEnvelopeCounters::empty(),
+            ));
+        }
+        Ok(BridgeCausalEnvelopeAssemblyProgress::for_request(
+            request,
+            self.is_native(),
+        ))
+    }
+
+    fn bind_reference(
+        &mut self,
+        progress: &mut BridgeCausalEnvelopeAssemblyProgress,
+        reference: &BridgeCausalEvidenceReference,
+    ) -> Result<(), Self::Stop> {
+        progress.bind_reference(self, reference)
+    }
+
+    fn requires_bridge_route(&self) -> bool {
+        !self.is_native()
+    }
+
+    fn missing_bridge_route(
+        &mut self,
+        request: &BridgeCausalEnvelopeAssemblyRequest,
+        progress: &BridgeCausalEnvelopeAssemblyProgress,
+    ) -> Self::Stop {
+        BridgeCausalEnvelopeDenial::new(
+            BridgeCausalEnvelopeDenialKind::MissingRequiredBridgeRouteEvidence,
+            BridgeCausalEvidenceFamily::BridgeRoute,
+            BridgeCausalEvidenceOwner::RuntimeBridge,
+            BridgeCausalEvidenceOwner::RuntimeBridge,
+            request.request_evidence_identity().clone(),
+            progress.success_counters(),
+        )
+    }
+
+    fn finish(
+        self,
+        request: BridgeCausalEnvelopeAssemblyRequest,
+        progress: BridgeCausalEnvelopeAssemblyProgress,
+    ) -> Result<BridgeCausalExplanationEnvelope, Self::Stop> {
+        let counters = progress.success_counters();
+        Ok(BridgeCausalExplanationEnvelope::new(
+            request,
+            progress.into_bindings(),
+            counters,
+        ))
+    }
 }
 
 impl SourceContext<'_> {

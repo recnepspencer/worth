@@ -1,17 +1,19 @@
-use super::{
-    BridgeCausalEnvelopeDenial, BridgeCausalEnvelopeDenialKind, BridgeCausalEvidenceFamily,
-    BridgeCausalEvidenceOwner, BridgeCausalExplanationEnvelope,
-};
+use super::{BridgeCausalEnvelopeDenial, BridgeCausalExplanationEnvelope};
 use crate::diagnostics::BridgeDiagnosticsFacade;
 
 mod native_evidence;
 mod native_request;
 mod progress;
+mod query_observation;
 mod request;
 mod source;
 
 pub(crate) use native_request::assemble_native;
 pub use native_request::BridgeConditionalCausalEnvelopeRequest;
+pub use query_observation::{
+    BridgeQueryObservationReportingInputDenial, BridgeQueryObservationReportingRequest,
+    BridgeQueryObservationReportingStop,
+};
 pub use request::{
     BridgeCausalEnvelopeAssemblyRequest, BridgeCausalInspectionAdmissionSummary,
     BridgeCausalInspectionAdmissionSummaryKind,
@@ -26,29 +28,16 @@ impl BridgeDiagnosticsFacade {
     }
 }
 
-fn assemble(
+fn assemble<Source: source::CausalEnvelopeAssemblySource>(
     request: BridgeCausalEnvelopeAssemblyRequest,
-    source: source::SourceContext<'_>,
-) -> Result<BridgeCausalExplanationEnvelope, BridgeCausalEnvelopeDenial> {
-    let mut progress =
-        progress::BridgeCausalEnvelopeAssemblyProgress::for_request(&request, source.is_native());
+    mut source: Source,
+) -> Result<BridgeCausalExplanationEnvelope, Source::Stop> {
+    let mut progress = source.prepare_progress(&request)?;
     for reference in request.references() {
-        progress.bind_reference(&source, reference)?;
+        source.bind_reference(&mut progress, reference)?;
     }
-    if !source.is_native() && !progress.has_required_bridge_route_evidence() {
-        return Err(BridgeCausalEnvelopeDenial::new(
-            BridgeCausalEnvelopeDenialKind::MissingRequiredBridgeRouteEvidence,
-            BridgeCausalEvidenceFamily::BridgeRoute,
-            BridgeCausalEvidenceOwner::RuntimeBridge,
-            BridgeCausalEvidenceOwner::RuntimeBridge,
-            request.request_evidence_identity().clone(),
-            progress.success_counters(),
-        ));
+    if source.requires_bridge_route() && !progress.has_required_bridge_route_evidence() {
+        return Err(source.missing_bridge_route(&request, &progress));
     }
-    let counters = progress.success_counters();
-    Ok(BridgeCausalExplanationEnvelope::new(
-        request,
-        progress.into_bindings(),
-        counters,
-    ))
+    source.finish(request, progress)
 }

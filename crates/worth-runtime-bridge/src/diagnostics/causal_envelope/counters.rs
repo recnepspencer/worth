@@ -19,6 +19,24 @@ pub struct BridgeCausalEnvelopeCounters {
 }
 
 impl BridgeCausalEnvelopeCounters {
+    pub(super) fn query_observation_reporting(
+        counts: [usize; 8],
+        counter_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            evidence_reference_count: counts[0],
+            lower_runtime_family_count: counts[1],
+            bridge_retained_lookup_count: counts[2],
+            retained_bridge_binding_count: counts[3],
+            external_authority_reference_count: counts[4],
+            materialized_detail_count: counts[5],
+            missing_bridge_record_count: counts[6],
+            bridge_record_unindexed_scan_count: counts[7],
+            retained_native_observation_binding_count: 0,
+            counter_identity,
+        }
+    }
+
     pub(crate) fn empty() -> Self {
         Self::new(0, 0, 0, 0, 0, 0, 0)
     }
