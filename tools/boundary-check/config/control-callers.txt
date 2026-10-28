@@ -1,4 +1,8 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+# Original capture court quotes the actual SDK Serial native frame before narrowing storage.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs
+# Report refusal court leaves only its actual SDK unit frame on the original lease.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/materialization/tests.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/derived/court.rs
 # Logical source court observes only real closed-count retention lifecycle.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/logical/court.rs

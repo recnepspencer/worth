@@ -62,6 +62,11 @@ impl<Schema, Operation, Input, Scope>
             _ => FactContent::build(self.read_set.facts.clone(), control)
                 .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?,
         };
+        // The original performed read is captured before output normalization
+        // replaces reads with postconditions. Only immutable fields are copied.
+        let performed_inputs = crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::copy_performed_field_reads(
+            &self.read_set.facts, control,
+        ).map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
         let (dependency_facts, content, moved, normalization_work) = original_content
             .postcondition(
                 &self.effects,
@@ -88,7 +93,8 @@ impl<Schema, Operation, Input, Scope>
         let work = fact_work.combine(implementation_work);
         self.output_currentness_facts = Some(
             complete_content_currentness_facts(dependency_facts, moved, content.reusable())
-                .with_rebase_carry(self.read_set.postcondition_carry.clone()),
+                .with_rebase_carry(self.read_set.postcondition_carry.clone())
+                .with_performed_inputs(performed_inputs),
         );
         self.read_set
             .admission

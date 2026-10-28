@@ -155,7 +155,8 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     };
     let source_fact_rebase = match match &output_currentness_facts {
         Some(facts) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
-            facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), control,
+            facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(),
+            facts.performed_input_facts().cloned(), control,
         ),
         None if correction_facts.is_some() => {
             let facts = correction_facts.expect("declared correction retained the completed payload");

@@ -136,6 +136,7 @@ where
                 .field(Calculated::reference(), 0_u64),
             )?;
             super::adoption::seed(graph);
+            super::causal_inspection::capability::seed(graph);
             Ok(())
         },
     )

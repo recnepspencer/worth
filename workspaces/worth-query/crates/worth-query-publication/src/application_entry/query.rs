@@ -26,6 +26,8 @@ mod governed_continuation;
 mod governed_retained;
 mod live_approved;
 mod live_open;
+mod retained_projection;
+pub use retained_projection::WorthQueryApplicationProjectionRetentionRequest;
 
 /// A query request. `execute` runs it once; `subscribe` opens it live; `limits` bounds its
 /// results and work.
@@ -42,6 +44,7 @@ pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, S
     intent: Intent,
     limits: Option<NonZeroUsize>,
     retain_expression_context: bool,
+    retain_projection_for_inspection: bool,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -66,6 +69,7 @@ where
             intent,
             limits: None,
             retain_expression_context: false,
+            retain_projection_for_inspection: false,
         }
     }
 
@@ -88,6 +92,7 @@ where
             intent,
             limits: None,
             retain_expression_context: false,
+            retain_projection_for_inspection: false,
         }
     }
 
@@ -96,6 +101,23 @@ where
     pub fn limit_results(mut self, maximum_results: NonZeroUsize) -> Self {
         self.limits = Some(maximum_results);
         self
+    }
+
+    /// Explicitly retain the original complete Native disclosed projection for
+    /// later inspection. This grants no inspection permission, captures no DTO
+    /// and supports only one-shot execution. Unsupported shapes return a typed
+    /// execution refusal.
+    pub fn retain_projection_for_inspection(
+        mut self,
+    ) -> WorthQueryApplicationProjectionRetentionRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+    > {
+        self.retain_projection_for_inspection = true;
+        WorthQueryApplicationProjectionRetentionRequest::new(self)
     }
 
     /// Executes an exactly-one query and retains its native expression record
@@ -116,7 +138,7 @@ where
             ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
         <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
-    {
+{
         self.retain_expression_context = true;
         self.execute()
     }
@@ -141,7 +163,7 @@ where
                 Schema,
                 <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
             >,
-    {
+{
         let application = self.application;
         let scope = self.scope;
         application
@@ -170,7 +192,7 @@ where
                 Schema,
                 <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
             >,
-    {
+{
         let parameters = self.intent.parameters();
         let scope_binding = self.intent.into_scope();
         let binding = self
@@ -247,6 +269,11 @@ where
         .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
         let plan = if self.retain_expression_context {
             plan.retain_expression_context()
+        } else {
+            plan
+        };
+        let plan = if self.retain_projection_for_inspection {
+            plan.retain_projection_for_inspection()
         } else {
             plan
         };

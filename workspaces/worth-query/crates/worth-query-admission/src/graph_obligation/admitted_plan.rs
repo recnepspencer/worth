@@ -34,6 +34,9 @@ impl WorthQueryGraphWorkPlanIdentity {
 }
 
 pub(super) enum WorthQueryGraphWorkAdmissionMechanics {
+    ApplicationInspectionRead {
+        capacity: WorthQueryReservedGraphProviderCapacity,
+    },
     ResourceRead {
         capacity: WorthQueryReservedGraphProviderCapacity,
     },
@@ -95,6 +98,7 @@ impl WorthQueryAdmittedGraphWorkPlan {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { review, .. } => Some(review),
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { .. } => None,
         }
     }
@@ -122,6 +126,7 @@ impl WorthQueryAdmittedGraphWorkPlan {
             }
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { .. } => None,
         }
     }
@@ -142,11 +147,28 @@ impl WorthQueryAdmittedGraphWorkPlan {
         }
     }
 
+    /// Consume only the genuine metadata-inspection reservation at its terminal.
+    #[doc(hidden)]
+    pub fn complete_application_inspection(
+        self,
+    ) -> Option<(
+        WorthQueryGraphWorkPlanIdentity,
+        WorthQueryExecutionCapacityReleaseReceipt,
+    )> {
+        match self.mechanics {
+            WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { capacity } => {
+                Some((self.identity, capacity.release()))
+            }
+            _ => None,
+        }
+    }
+
     pub fn reservation_count(&self) -> usize {
         match &self.mechanics {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { .. } => 1,
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { .. } => 1,
-            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. } => 1,
+            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { .. } => 1,
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => {
                 capacity.as_ref().map_or(
                     0,
@@ -180,7 +202,8 @@ impl WorthQueryAdmittedGraphWorkPlan {
         match &mut self.mechanics {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { .. } => None,
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { .. } => None,
-            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. } => None,
+            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { .. } => None,
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => {
                 capacity.take()
             }
@@ -196,7 +219,10 @@ impl WorthQueryAdmittedGraphWorkPlan {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { capacity } => {
                 capacity.release()
             }
-            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { capacity } => capacity.release(),
+            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { capacity }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { capacity } => {
+                capacity.release()
+            }
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => capacity
                 .expect("an untransferred operation plan retains its reservation")
                 .release(),

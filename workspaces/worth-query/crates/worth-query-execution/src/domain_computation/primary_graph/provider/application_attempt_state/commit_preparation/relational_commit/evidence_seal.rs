@@ -34,6 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
     >,
     operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
     observed_source_facts: postcommit_currentness::RebasedSourceFacts,
+    performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
@@ -75,6 +76,9 @@ pub(super) fn seal(
         .idempotency()
         .producer_dependency_identity()
         .is_some();
+    let performed_input_facts = producer_output
+        .then(|| prepared_rebase.performed_input_facts())
+        .flatten();
     let request = committed.attempt().affinity().publication_request().clone();
     let committed_result = committed.committed();
     let observed_source_facts = provider.graph.with_runtime(execution, |runtime| {
@@ -101,6 +105,7 @@ pub(super) fn seal(
         output_correspondence: std::sync::Arc::new(output_correspondence),
         operation_scope: committed.attempt().affinity().operation_scope().clone(),
         observed_source_facts,
+        performed_input_facts,
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     }
 }
@@ -128,6 +133,13 @@ impl WorthQueryMutationWorkCommitSeal {
 }
 
 impl WorthQueryPrimaryGraphCommitEvidence {
+    pub(in crate::domain_computation::primary_graph) fn performed_input_facts(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
+    {
+        self.performed_input_facts.as_ref()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn workflow_origin(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{
@@ -152,7 +164,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     pub(in crate::domain_computation::primary_graph) const fn idempotency(
         &self,
     ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding
-    {
+{
         self.idempotency
     }
 

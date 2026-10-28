@@ -19,13 +19,14 @@ pub use selection::{
     select_installed_graph_obligations, select_shared_application_query_graph_obligations,
 };
 pub use support_admission::{
-    admit_application_operation_graph_work, admit_application_operation_read_graph_work,
-    admit_application_query_graph_work, admit_application_query_graph_work_admitted,
-    admit_prepared_application_operation_graph_work, admit_prepared_resource_read_graph_work,
-    prepare_application_operation_graph_work, prepare_resource_read_graph_work,
-    review_application_query_graph_work, WorthQueryGraphWorkCapacityAdmissionStop,
-    WorthQueryGraphWorkReviewAdmissionStop, WorthQueryPreparedApplicationOperationGraphWork,
-    WorthQueryPreparedResourceReadGraphWork, WorthQueryReviewedApplicationQueryGraphWork,
+    admit_application_inspection_graph_work, admit_application_operation_graph_work,
+    admit_application_operation_read_graph_work, admit_application_query_graph_work,
+    admit_application_query_graph_work_admitted, admit_prepared_application_operation_graph_work,
+    admit_prepared_resource_read_graph_work, prepare_application_operation_graph_work,
+    prepare_resource_read_graph_work, review_application_query_graph_work,
+    WorthQueryGraphWorkCapacityAdmissionStop, WorthQueryGraphWorkReviewAdmissionStop,
+    WorthQueryPreparedApplicationOperationGraphWork, WorthQueryPreparedResourceReadGraphWork,
+    WorthQueryReviewedApplicationQueryGraphWork,
 };
 
 #[cfg(test)]

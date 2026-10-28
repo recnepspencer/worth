@@ -354,3 +354,9 @@ pub(crate) fn classify_bridge_signal(
 ) -> super::WorthQueryConditionalSignalDecision {
     super::execution_provenance::signal_decision(evidence.signal().class())
 }
+
+pub(crate) fn classify_bridge_signal_observation(
+    evidence: &worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
+) -> super::WorthQueryConditionalSignalDecision {
+    super::execution_provenance::signal_decision(evidence.signal_class())
+}

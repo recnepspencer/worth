@@ -16,6 +16,7 @@ use worth_relational::facade::identity::EntityId;
 
 mod disclosed;
 mod projected_tree;
+pub(in crate::domain_computation::primary_graph) mod retained_projection;
 
 pub use disclosed::{WorthQueryApplicationDisclosed, WorthQueryApplicationOmission};
 

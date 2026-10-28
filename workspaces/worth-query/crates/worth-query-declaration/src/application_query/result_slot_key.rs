@@ -4,6 +4,8 @@ use super::{ApplicationQueryCardinality, ApplicationQueryResultTraversalDirectio
 use crate::application_schema::ApplicationFieldPresence;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
+mod retained_backing;
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationQueryResultSlotKey {
     query: WorthQueryPortableTypeIdentity,

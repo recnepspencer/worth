@@ -53,8 +53,29 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                 result
             });
     }
-    let selection = overlap::select(execution, facts).map_err(Denial::RestoredSupport)?;
     let original = source.ancestry().source().basis().relational_basis();
+    let selection = application
+        .primary_provider
+        .graph
+        .with_runtime_mut(&execution, |runtime| {
+            with_support_snapshots(
+                runtime,
+                original,
+                target.product().relational_basis(),
+                |runtime, before, current| {
+                    let original_view = runtime
+                        .read_truth()
+                        .project_snapshot(before)
+                        .ok_or(Denial::SemanticMaterialUnavailable)?;
+                    let target_view = runtime
+                        .read_truth()
+                        .project_snapshot(current)
+                        .ok_or(Denial::SemanticMaterialUnavailable)?;
+                    overlap::select(execution, facts, &original_view, &target_view)
+                        .map_err(Denial::RestoredSupport)
+                },
+            )
+        })?;
     let occurrences =
         application
             .primary_provider
@@ -113,21 +134,36 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         .primary_provider
         .graph
         .with_runtime_mut(&execution, |runtime| {
-            let before = open_exact_basis_snapshot(runtime, original).map_err(Denial::Basis)?;
-            let result =
-                match open_exact_basis_snapshot(runtime, target.product().relational_basis()) {
-                    Ok(current) => {
-                        let result = compare(runtime, execution, &before, &current, facts);
-                        crate::relational_snapshot_release::release_query_snapshot(
-                            runtime, &current,
-                        );
-                        result
-                    }
-                    Err(cause) => Err(Denial::Basis(cause)),
-                };
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
-            result
+            with_support_snapshots(
+                runtime,
+                original,
+                target.product().relational_basis(),
+                |runtime, before, current| compare(runtime, execution, before, current, facts),
+            )
         })
+}
+
+fn with_support_snapshots<T>(
+    runtime: &mut RelationalRuntime,
+    original: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    target: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    inspect: impl FnOnce(
+        &RelationalRuntime,
+        &worth_relational::facade::snapshots::SnapshotHandle,
+        &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Result<T, Denial>,
+) -> Result<T, Denial> {
+    let before = open_exact_basis_snapshot(runtime, original).map_err(Denial::Basis)?;
+    let result = match open_exact_basis_snapshot(runtime, target) {
+        Ok(current) => {
+            let result = inspect(runtime, &before, &current);
+            crate::relational_snapshot_release::release_query_snapshot(runtime, &current);
+            result
+        }
+        Err(cause) => Err(Denial::Basis(cause)),
+    };
+    crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
+    result
 }
 
 fn compare(

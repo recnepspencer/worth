@@ -105,6 +105,7 @@ mod selected;
 use preparation::Preparation;
 pub(in crate::domain_computation::primary_graph) struct PreparedSourceFactRebase {
     preparation: Preparation,
+    performed_input_facts: Option<FactPayload>,
 }
 
 impl OwnEffectOnReads {

@@ -8,6 +8,8 @@ use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 
+#[path = "correction/causal_inspection.rs"]
+mod causal_inspection;
 #[path = "correction/consecutive_undo.rs"]
 mod consecutive_undo;
 

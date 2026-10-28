@@ -2,7 +2,9 @@ mod admission;
 mod admission_decision;
 mod admission_trace;
 mod anchor;
+mod application_inspection;
 mod application_observation;
+pub(in crate::domain_computation) use application_inspection::WorthQueryApplicationInspectionTarget;
 mod builder;
 mod builder_bridge;
 mod builder_support;
@@ -33,6 +35,15 @@ pub use anchor::{
     anchor_causal_observation, CausalObservationAnchor, CausalObservationAnchorCounters,
     CausalObservationAnchorError, CausalObservationAnchorErrorKind,
     CausalObservationMissingReferencePosture,
+};
+pub use application_inspection::{
+    WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
+    WorthQueryApplicationInspectionRequest, WorthQueryApplicationInspectionResourceRefusal,
+    WorthQueryApplicationInspectionStopKind, WorthQueryApplicationProducerConnection,
+    WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,
+    WorthQueryComparedApplicationInspection, WorthQueryObservedApplicationInspection,
+    WorthQueryObservedInspectionRequest, WorthQueryProducerConnectionDenial,
+    WorthQueryReferenceOnlyInspectionRequest,
 };
 pub use application_observation::WorthQueryApplicationQueryObservation;
 pub use builder::{

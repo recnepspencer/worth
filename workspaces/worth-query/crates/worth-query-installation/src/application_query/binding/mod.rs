@@ -4,6 +4,7 @@ mod compiled_binding;
 mod compiled_contract;
 mod key;
 mod limits;
+mod observation;
 
 pub(crate) use catalog::{
     compile_application_query_catalog, AdmittedQueryCatalogStop,
@@ -15,4 +16,8 @@ pub(crate) use key::ApplicationQueryBindingKey;
 pub use limits::{
     WorthQueryApplicationQueryLimitDenial, WorthQueryInstalledApplicationQueryLimits,
     WorthQueryResolvedApplicationQueryLimits,
+};
+pub use observation::{
+    WorthQueryInstalledApplicationInspectionContract,
+    WorthQueryInstalledApplicationQueryBindingObservation,
 };

@@ -14,7 +14,7 @@ mod contract_encoding;
 
 use contract_encoding::{encode_contract, encode_resources};
 
-const OBLIGATION_IDENTITY_BUDGET: CanonicalDigestWorkBudget =
+pub(super) const OBLIGATION_IDENTITY_BUDGET: CanonicalDigestWorkBudget =
     match CanonicalDigestWorkBudget::new(4_096, 1024 * 1024) {
         Some(budget) => budget,
         None => panic!("fixed graph-obligation identity budget is valid"),
@@ -62,10 +62,10 @@ pub(super) fn derive_set_identity(
     basis.text("subject-name", subject_name)?;
     if let Some(input_type) = input_type {
         basis.text(
-            if subject_kind == "application-resource" {
-                "resource-purpose"
-            } else {
-                "input-type"
+            match subject_kind {
+                "application-resource" => "resource-purpose",
+                "application-inspection" => "inspection-purpose",
+                _ => "input-type",
             },
             input_type,
         )?;

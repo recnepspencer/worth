@@ -1,5 +1,6 @@
 //! Actual Native observations outlive operational evidence without pinning readers.
 use super::*;
+mod envelope;
 use crate::facade::{
     BridgeConditionalDecisionReentryRequest, BridgeInstalledConditionalLowering,
     BridgeSealedRuntimeAssembly,
@@ -77,6 +78,7 @@ fn causal_observation_preserves_native_custody_without_reader_or_second_performe
     );
     assert_eq!(causal.bridge_snapshot_identity(), Some(&source));
     assert_eq!(causal.semantic_observations().len(), 1);
+    let envelope = envelope::assemble_and_check(&owner, &causal);
     assert_eq!(contacts.reads.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.predicates.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.computes.load(Ordering::SeqCst), 1);
@@ -94,6 +96,24 @@ fn causal_observation_preserves_native_custody_without_reader_or_second_performe
         retained
     );
     drop(last_causal);
+    assert_eq!(
+        probe
+            .bridge_conditional_retention()
+            .unwrap()
+            .retained_bytes(),
+        retained,
+        "the explanation still retains the exact original observation"
+    );
+    let last_envelope = envelope.clone();
+    drop(envelope);
+    assert_eq!(
+        probe
+            .bridge_conditional_retention()
+            .unwrap()
+            .retained_bytes(),
+        retained
+    );
+    drop(last_envelope);
     assert_eq!(
         probe
             .bridge_conditional_retention()
@@ -134,32 +154,38 @@ fn owner(
             .condition(providers.clone())
             .compute(providers),
         &[],
-        |registrations| {
-            let mapping = super::super::super::exact_mapping();
-            let aspect = super::super::super::aspect_mapping(&mapping);
-            let builder = RuntimeBridgeBuilder::new()
-                .with_committed_patch_source(super::super::super::TestSource)
-                .with_snapshot_read_source(CountingSource {
-                    source: PacketSource {
-                        contacts,
-                        wrong_packet: false,
-                    },
-                    readers,
-                })
-                .with_signal_sink(super::super::super::TestSink)
-                .register_mapping(mapping)
-                .register_aspect_mapping(aspect);
-            registrations
-                .into_iter()
-                .fold(builder, |builder, registration| {
-                    builder.register_semantic_correspondence(registration)
-                })
-                .build()
-                .unwrap()
-        },
+        |registrations| bridge_runtime(registrations, contacts, readers),
     );
     let lowering = builder.install(installation).unwrap();
     (builder.seal().unwrap(), lowering)
+}
+
+fn bridge_runtime(
+    registrations: Vec<crate::correspondence::BridgeSemanticCorrespondenceRegistration>,
+    contacts: Arc<Contacts>,
+    readers: Arc<AtomicUsize>,
+) -> crate::facade::RuntimeBridge {
+    let mapping = super::super::super::exact_mapping();
+    let aspect = super::super::super::aspect_mapping(&mapping);
+    let builder = RuntimeBridgeBuilder::new()
+        .with_committed_patch_source(super::super::super::TestSource)
+        .with_snapshot_read_source(CountingSource {
+            source: PacketSource {
+                contacts,
+                wrong_packet: false,
+            },
+            readers,
+        })
+        .with_signal_sink(super::super::super::TestSink)
+        .register_mapping(mapping)
+        .register_aspect_mapping(aspect);
+    registrations
+        .into_iter()
+        .fold(builder, |builder, registration| {
+            builder.register_semantic_correspondence(registration)
+        })
+        .build()
+        .unwrap()
 }
 
 struct CountingSource {

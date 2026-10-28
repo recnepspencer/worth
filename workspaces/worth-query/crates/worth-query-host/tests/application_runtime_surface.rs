@@ -28,7 +28,7 @@ worth_query_application_schema! {
         owner: host_identity_test,
         version: (1, 0),
         members: |schema| {
-            schema
+            inspection_capability::install(schema)
                 .entity(ExternalMapping::reference())
                 .entity(Principal::reference())
                 .entity(Account::reference())
@@ -45,6 +45,12 @@ worth_query_application_schema! {
                     Principal::reference(),
                 )
                 .principal_binding(IdentityBinding::reference())
+                .application_query(inspection_model::definition())
+                .application_query_binding::<inspection_model::AccountReadBinding>()
+                .application_query_inspection(inspection_model::inspection_definition())
+                .application_query(comparison_model::definition())
+                .application_query_binding::<comparison_model::GovernedAccountReadBinding>()
+                .application_query_inspection(comparison_model::inspection_definition())
         }
     }
 }
@@ -84,8 +90,10 @@ worth_query_field!(
     String => StringApplicationValueBinding, read_only, equality
 );
 
-#[test]
-fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
+fn installed_application(
+) -> worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+    HostIdentitySchema,
+> {
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
@@ -154,6 +162,7 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
                     )
                     .unwrap();
 
+                inspection_capability::bind(&mut graph);
                 graph
         .publish_application_runtime(
             &phase,
@@ -168,11 +177,17 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
         )
         .unwrap();
 
+    application
+}
+
+#[test]
+fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
+    let application = installed_application();
     assert_eq!(application.publication().principal_binding_count(), 1);
     assert_eq!(application.publication().identity_index_count(), 1);
     assert_eq!(
         application.publication().application_equality_index_count(),
-        4
+        5
     );
     assert_eq!(
         application.installed_schema().schema_name(),
@@ -206,3 +221,17 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
     );
 }
 use std::time::{Duration, Instant};
+#[path = "application_runtime_surface/inspection.rs"]
+mod inspection;
+
+#[path = "application_runtime_surface/inspection_authentication.rs"]
+mod inspection_authentication;
+#[path = "application_runtime_surface/inspection_model.rs"]
+mod inspection_model;
+
+#[path = "application_runtime_surface/comparison.rs"]
+mod comparison;
+#[path = "application_runtime_surface/comparison_model.rs"]
+mod comparison_model;
+#[path = "application_runtime_surface/inspection_capability.rs"]
+mod inspection_capability;

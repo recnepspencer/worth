@@ -5,6 +5,7 @@ mod construction;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
 #[cfg(doctest)]
 mod disclosure_fences;
+mod input_observation;
 mod output_source_identity;
 mod pending;
 mod projection;
@@ -69,6 +70,7 @@ pub struct WorthQueryApplicationCommitReceipt {
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >,
     pub(super) committed_changes: WorthQueryApplicationCommittedChanges,
+    pub(super) performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
     pub(super) output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) exact_output_settlement: Option<std::sync::Arc<
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
@@ -109,6 +111,7 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             exact_output_settlement: self.exact_output_settlement.clone(),
             unrebased_own_effect: self.unrebased_own_effect,
             committed_changes: self.committed_changes.clone(),
+            performed_input_facts: self.performed_input_facts.clone(),
         }
     }
 }

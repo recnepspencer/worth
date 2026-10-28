@@ -164,6 +164,26 @@ ordinary Decl/Host causal inspection remains unfinished in
 The [Native custody court](src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention.rs)
 checks reader release, original retention custody and the single receipt transfer.
 
+### Native Conditional Evidence Assembly
+
+`BridgeConditionalCausalEnvelopeRequest` carries the genuine readonly observation
+and a reporting summary. `BridgeSealedRuntimeAssembly::assemble_conditional_causal_envelope`
+checks the exact sealed owner before deriving references or reading evidence.
+The shared envelope assembler distinguishes this source from legacy diagnostics:
+legacy assembly still requires an actual retained Route record and cannot resolve
+a Native observation from projected strings. Native assembly retains the same
+immutable observation through the final envelope share, with no source reader,
+provider contact or new performed invalidation receipt.
+
+The Native summary binds a distinct causal-anchor identity and expected Query
+observation identity. These descriptive identities grant no fresh Query authority;
+matching digests cannot replace actual observation custody. Native binding counts
+are separate from legacy registry lookups and external-authority references.
+Original reservations continue to cover the shared observation; descriptor and
+envelope allocations retain the existing lower diagnostic assembly posture.
+Fresh ordinary Host inspection, metadata admission and diagnostic disclosure remain
+required Phase 9 work.
+
 ## One Signal Graph
 
 `BridgeOwnedSignalRuntime` couples one Runtime Bridge with one Signal graph for

@@ -268,13 +268,14 @@ where
         selected.retained_output_binding = Some(output.binding);
         let installed_entry = Arc::clone(entry);
         let settlement = WorthQueryOutputDemandSettlement::from_stable(
+            execution,
             self,
             &output.stable,
             at,
             &selected.identity,
             Family::IDENTITY,
             0, // This retained-read admission starts a new handle with no executions.
-        );
+        )?;
 
         let observed_source = self
             .output_demands

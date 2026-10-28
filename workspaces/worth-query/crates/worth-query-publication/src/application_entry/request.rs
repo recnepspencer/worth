@@ -14,6 +14,7 @@ use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicat
 
 mod branch_set;
 mod current_read;
+mod inspection;
 mod resources;
 mod workflow_history;
 mod workflow_pages;
@@ -162,7 +163,7 @@ where
     ) -> WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>
     where
         Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
-    {
+{
         WorthQueryApplicationOutputDemandRequest::new(
             self.application,
             self.principal,
@@ -354,7 +355,7 @@ where
     ) -> WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>
     where
         Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
-    {
+{
         WorthQueryApplicationOutputDemandRequest::new_at(
             self.application,
             self.principal,

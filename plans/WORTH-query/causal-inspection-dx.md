@@ -5,7 +5,7 @@
 > `domain_computation/primary_graph/causal_inspection/`. The older engine translates
 > its supported receipts through that single owner. The examples below describe
 > that retained engine entrance; they do not authorize an application to import
-> Bridge or replace the planned fresh Decl/Host entrance. Current application
+> Bridge or replace the fresh Decl/Host entrance. Current application
 > status and Native observation custody are documented in
 > [Cross-Runtime Causal Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md).
 

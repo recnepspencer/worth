@@ -46,22 +46,21 @@ pub use crate::domain_computation::primary_graph::{
     place_managed_computations_on_this_thread_for_test,
     principal_target_reads_on_this_thread_for_test,
     query_read_kernel_entries_by_root_on_this_thread_for_test,
-    query_read_kernel_entries_on_this_thread_for_test, test_execution_workers_for_test,
-    WorthQueryAdvancementEventForTest, WorthQueryAdvancementEventKindForTest,
-    WorthQueryAdvancementIdentityForTest, WorthQueryAdvancementObservationForTest,
-    WorthQueryExecutionPlacementForTest, WorthQueryFactVerificationForTest,
-    WorthQueryInputCutoffCandidateForTest, WorthQueryInputCutoffForTest,
-    WorthQueryInputCutoffGateForTest, WorthQueryInputCutoffNativeBasisForTest,
-    WorthQueryInputCutoffNoRowReasonForTest, WorthQueryInputCutoffOutcomeForTest,
-    WorthQueryInputCutoffSettlementForTest, WorthQueryInputCutoffSettlementPostureForTest,
-    WorthQueryMarkedOutputForTest, WorthQueryNativeMarkingForTest,
-    WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
+    query_read_kernel_entries_on_this_thread_for_test, query_test_execution_authority_for_test,
+    test_execution_workers_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest, WorthQueryDiscoveredRetentionControlDenial,
+    WorthQueryDiscoveredRetentionReservationForTest, WorthQueryExecutionPlacementForTest,
+    WorthQueryFactVerificationForTest, WorthQueryInputCutoffCandidateForTest,
+    WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
+    WorthQueryInputCutoffNativeBasisForTest, WorthQueryInputCutoffNoRowReasonForTest,
+    WorthQueryInputCutoffOutcomeForTest, WorthQueryInputCutoffSettlementForTest,
+    WorthQueryInputCutoffSettlementPostureForTest, WorthQueryMarkedOutputForTest,
+    WorthQueryNativeMarkingForTest, WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
     WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
     WorthQueryRecoveredProgramSourceDeliveryForTest, WorthQueryRegistryCustodyForTest,
     WorthQueryRegistryCustodyTransitionForTest,
 };
-
-pub use crate::domain_computation::primary_graph::query_test_execution_authority_for_test;
 
 pub use worth_relational::facade::{
     indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
@@ -385,10 +384,6 @@ pub use crate::domain_computation::{
 };
 
 pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
-
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
-};
 
 pub use crate::domain_computation::primary_graph::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,

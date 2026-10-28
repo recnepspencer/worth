@@ -219,6 +219,19 @@ fn absent_field_writes(execution: ExecutionRequest<'_, '_>) {
         .unwrap();
     assert_eq!(
         absent_container
+            .entity_aspect_presence_scalar_field(
+                &execution,
+                &with_sibling,
+                entity,
+                crate::identity::data::KindId(1),
+                &aspect_key("summary"),
+            )
+            .unwrap(),
+        None,
+        "struct field lowering cannot initialize or remove its aspect container"
+    );
+    assert_eq!(
+        absent_container
             .entity_field_revision(&execution, entity, &locator)
             .unwrap(),
         with_sibling

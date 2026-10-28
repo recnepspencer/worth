@@ -5,6 +5,7 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
+use super::contract::admission::{pay, CompilationStop, CompilationWork};
 use super::contract::{
     denial, AdmittedDisclosureRule, WorthQueryApplicationDisclosureContractDenial,
 };
@@ -20,16 +21,19 @@ struct ObservableLaneCone {
     live: bool,
 }
 
-pub(super) fn validate_influence<Schema, Query, Parameters, QueryResult, Scope>(
+pub(super) fn validate_influence<Schema, Query, Parameters, QueryResult, Scope, E>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     fields: &GovernedInternalFieldRules,
     results: &BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
-) -> Result<(), WorthQueryApplicationDisclosureContractDenial> {
+    admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
+) -> Result<(), CompilationStop<E>> {
     for predicate in query.read_graph().predicates() {
-        require_field_influence(fields, predicate.field(), membership_surfaces(query))?;
+        admit_cone(admit)?;
+        require_field_influence(fields, predicate.field(), membership_surfaces(query), admit)?;
     }
     for path in query.read_graph().root_paths() {
         for guard in path.guards() {
+            admit_cone(admit)?;
             require_field_influence(
                 fields,
                 (
@@ -38,11 +42,13 @@ pub(super) fn validate_influence<Schema, Query, Parameters, QueryResult, Scope>(
                     guard.field().as_str(),
                 ),
                 membership_surfaces(query),
+                admit,
             )?;
         }
     }
     for ordering in query.read_graph().ordering() {
-        require_field_influence(fields, ordering.field(), ordering_surfaces(query))?;
+        admit_cone(admit)?;
+        require_field_influence(fields, ordering.field(), ordering_surfaces(query), admit)?;
     }
     for slot in query
         .read_graph()
@@ -66,7 +72,7 @@ pub(super) fn validate_influence<Schema, Query, Parameters, QueryResult, Scope>(
         }
     }
     validate_continuation(query, results)?;
-    validate_live(query, fields)
+    validate_live(query, fields, admit)
 }
 
 fn validate_continuation<Schema, Query, Parameters, QueryResult, Scope>(
@@ -89,10 +95,11 @@ fn validate_continuation<Schema, Query, Parameters, QueryResult, Scope>(
     )
 }
 
-fn validate_live<Schema, Query, Parameters, QueryResult, Scope>(
+fn validate_live<Schema, Query, Parameters, QueryResult, Scope, E>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     fields: &GovernedInternalFieldRules,
-) -> Result<(), WorthQueryApplicationDisclosureContractDenial> {
+    admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
+) -> Result<(), CompilationStop<E>> {
     let Some(live) = query.live() else {
         return Ok(());
     };
@@ -101,6 +108,7 @@ fn validate_live<Schema, Query, Parameters, QueryResult, Scope>(
             fields,
             (identity.entity(), identity.aspect(), identity.field()),
             [ApplicationQueryObservableInfluence::LiveMembership],
+            admit,
         )?;
     }
     Ok(())
@@ -169,25 +177,69 @@ fn append_lane_surfaces(
     }
 }
 
-fn require_field_influence(
+fn admit_cone<E>(
+    admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
+) -> Result<(), CompilationStop<E>> {
+    // The closed vocabulary bounds all inserts while constructing a lane cone.
+    for _ in ApplicationQueryObservableInfluence::ALL {
+        pay(
+            admit,
+            CompilationWork::Lookup {
+                entries: ApplicationQueryObservableInfluence::ALL.len(),
+                parts: &[],
+            },
+        )?;
+    }
+    Ok(())
+}
+
+fn require_field_influence<E>(
     fields: &GovernedInternalFieldRules,
     field: (&str, &str, &str),
     surfaces: impl IntoIterator<Item = ApplicationQueryObservableInfluence>,
-) -> Result<(), WorthQueryApplicationDisclosureContractDenial> {
+    admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
+) -> Result<(), CompilationStop<E>> {
+    for text in [field.0, field.1, field.2] {
+        pay(admit, CompilationWork::Copy(text.len()))?;
+    }
     let key = (
         field.0.to_string(),
         field.1.to_string(),
         field.2.to_string(),
     );
+    pay(
+        admit,
+        CompilationWork::Lookup {
+            entries: fields.len(),
+            parts: &[field.0, field.1, field.2],
+        },
+    )?;
     let rules = fields.get(&key).ok_or_else(|| denial(field.2))?;
-    let surfaces = surfaces.into_iter().collect::<Vec<_>>();
-    rules
-        .iter()
-        .all(|rule| influence_permits_every(rule.influence(), surfaces.iter().copied()))
-        .then_some(())
-        .ok_or_else(|| denial(field.2))
+    // No speculative Vec growth: each surface belongs to this closed vocabulary.
+    let mut required = Vec::with_capacity(ApplicationQueryObservableInfluence::ALL.len());
+    for surface in surfaces {
+        pay(admit, CompilationWork::Visit)?;
+        required.push(surface);
+    }
+    for rule in rules {
+        pay(admit, CompilationWork::Visit)?;
+        for surface in &required {
+            pay(
+                admit,
+                CompilationWork::Lookup {
+                    entries: rule.influence().permitted().len(),
+                    parts: &[],
+                },
+            )?;
+            if !rule.influence().permits(*surface) {
+                return Err(denial(field.2).into());
+            }
+        }
+    }
+    Ok(())
 }
 
+#[cfg(test)]
 fn influence_permits_every(
     influence: &worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract,
     surfaces: impl IntoIterator<Item = ApplicationQueryObservableInfluence>,

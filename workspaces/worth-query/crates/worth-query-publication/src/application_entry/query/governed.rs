@@ -178,6 +178,11 @@ where
                         controls,
                     )
                     .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
+                let plan = if self.retain_projection_for_inspection {
+                    plan.retain_projection_for_inspection()
+                } else {
+                    plan
+                };
                 let result = self
                     .application
                     .execute_application_query_one_shot(&phase, plan)

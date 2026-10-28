@@ -1,3 +1,4 @@
+use super::super::retained_projection::{storage::DisclosedRows, OriginalProjection};
 use super::WorthQueryApplicationProjectionNode;
 use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 use worth_relational::facade::identity::EntityId;
@@ -9,7 +10,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
 
 pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationDisclosedProjectionTree
 {
-    rows: Vec<WorthQueryApplicationProjectionNode>,
+    rows: DisclosedRows,
 }
 
 #[derive(Clone, Copy)]
@@ -32,7 +33,9 @@ impl WorthQueryApplicationWorkingProjectionTree {
     ) -> WorthQueryApplicationDisclosedProjectionTree {
         strip_undisclosed_nodes(&mut self.rows, governance);
 
-        WorthQueryApplicationDisclosedProjectionTree { rows: self.rows }
+        WorthQueryApplicationDisclosedProjectionTree {
+            rows: DisclosedRows::Owned(self.rows),
+        }
     }
 }
 
@@ -40,13 +43,14 @@ impl WorthQueryApplicationDisclosedProjectionTree {
     pub(in crate::domain_computation::primary_graph::application_query) fn raw_rows(
         &self,
     ) -> &[WorthQueryApplicationProjectionNode] {
-        &self.rows
+        self.rows.rows()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn iter(
         &self,
     ) -> impl ExactSizeIterator<Item = WorthQueryApplicationDisclosedProjectionNode<'_>> {
         self.rows
+            .rows()
             .iter()
             .map(WorthQueryApplicationDisclosedProjectionNode::new)
     }
@@ -54,7 +58,7 @@ impl WorthQueryApplicationDisclosedProjectionTree {
     pub(in crate::domain_computation::primary_graph::application_query) fn only(
         &self,
     ) -> Option<WorthQueryApplicationDisclosedProjectionNode<'_>> {
-        let [node] = self.rows.as_slice() else {
+        let [node] = self.rows.rows().as_slice() else {
             return None;
         };
         Some(WorthQueryApplicationDisclosedProjectionNode::new(node))
@@ -62,6 +66,19 @@ impl WorthQueryApplicationDisclosedProjectionTree {
 
     pub(in crate::domain_computation::primary_graph::application_query) fn clear(&mut self) {
         self.rows.clear();
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn retain_projection(
+        &mut self,
+        disclosure: worth_execution::ExecutionArray<(
+            std::sync::Arc<
+                worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey,
+            >,
+            bool,
+        )>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Option<std::sync::Arc<OriginalProjection>> {
+        self.rows.retain(disclosure, memory)
     }
 }
 
@@ -118,6 +135,7 @@ fn strip_undisclosed_nodes(
 impl worth_execution::ChargedBytes for WorthQueryApplicationDisclosedProjectionTree {
     fn additional_charged_bytes(&self) -> u64 {
         let Self { rows } = self;
+        let rows = rows.rows();
         rows.iter().fold(
             (rows.capacity() as u64)
                 .saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectionNode>() as u64),

@@ -133,6 +133,17 @@ pub(super) fn encode_resources(
     resources: &WorthQueryInstalledGraphObligationResourcePosture,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match resources {
+        WorthQueryInstalledGraphObligationResourcePosture::ApplicationInspection {
+            meaning,
+            maximum_authorization_facts,
+        } => {
+            basis.text("resources.kind", "application-inspection")?;
+            basis.digest("resources.inspection-meaning", *meaning)?;
+            basis.unsigned_usize(
+                "resources.maximum-authorization-facts",
+                *maximum_authorization_facts,
+            )?;
+        }
         WorthQueryInstalledGraphObligationResourcePosture::ApplicationQuery {
             maximum_traversal_depth,
             maximum_result_count,

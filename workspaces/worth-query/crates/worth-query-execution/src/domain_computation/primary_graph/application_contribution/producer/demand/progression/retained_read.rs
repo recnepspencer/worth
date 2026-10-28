@@ -83,7 +83,8 @@ where
         installed_limits.maximum_results(),
         request,
     )
-    .map_err(resource_denial)?;
+    .map_err(resource_denial)?
+    .with_original_settled_producer(shared.selected().original_settled_producer().cloned());
     runtime
         .with_fresh_retained_query_permission(execution,
             &installed,

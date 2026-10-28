@@ -748,9 +748,17 @@ source root. Matching values alone are insufficient. A live equal-value write,
 an unreversed reapplication, a changed independent decision dependency, or a
 reversal performed only on a sibling branch still blocks the older source.
 
-This restoration path supports complete entity/field dependency facts and
-bounded installed equality selections over authoritative stored fields. Native
-resolves the actual single-field Authoritative or Planned index descriptor;
+This restoration path supports complete entity/field dependency facts, exact
+aspect-presence facts, and bounded installed equality selections over
+authoritative stored fields. Native
+resolves presence support from the original and target full-generation entity,
+kind and compatible installed aspect binding. Lifecycle and whole-aspect writes
+overlap presence; scalar `UpdateFields` also overlaps at its actual installed
+field because lowering can initialize the aspect. Struct field patches preserve
+the aspect container. Both the original and target presence booleans must still
+match the captured fact; canonical cancellation remains required even when the
+boolean never changed. A changed binding refuses before correction effects.
+Native resolves the actual single-field Authoritative or Planned index descriptor;
 Query preserves that descriptor rather than relabeling it as permission.
 The latter include exact positive and empty index support: authored equal-key
 writes and competing membership changes cannot disappear behind unchanged values.

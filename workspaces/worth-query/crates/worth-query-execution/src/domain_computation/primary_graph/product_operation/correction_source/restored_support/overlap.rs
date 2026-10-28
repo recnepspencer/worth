@@ -2,11 +2,13 @@ use super::WorthQueryCorrectionRestoredSupportDenial as Stop;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_foundational::facade::CanonicalFieldPath;
 use worth_relational::facade::history::{
     RelationalAuthoredEntityIndexDefinition as Definition, RelationalAuthoredWriteScope as Scope,
     RelationalAuthoredWriteSelector as Key,
 };
 use worth_relational::facade::indexes::DerivedIndexKind;
+use worth_relational::facade::runtime::VisibilityProjectionView;
 use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Comparison;
 use worth_relational::facade::transactions::RecordRef;
 
@@ -19,6 +21,8 @@ pub(super) struct Selection {
 pub(super) fn select(
     execution: ExecutionRequest<'_, '_>,
     facts: &FactPayload,
+    original: &VisibilityProjectionView,
+    target: &VisibilityProjectionView,
 ) -> Result<Selection, Stop> {
     super::admit_work(execution, facts.len() as u64)?;
     let mut count = 0usize;
@@ -114,7 +118,34 @@ pub(super) fn select(
                 (1, payload)
             }
             Fact::OptionalAspectAbsent { .. } => return Err(unsupported("OptionalAspectAbsent")),
-            Fact::AspectPresence { .. } => return Err(unsupported("AspectPresence")),
+            Fact::AspectPresence {
+                entity_id,
+                kind,
+                aspect,
+                ..
+            } => {
+                let scalar = original
+                    .entity_aspect_presence_scalar_field(
+                        &execution, target, *entity_id, *kind, aspect,
+                    )
+                    .map_err(Stop::AspectPresence)?;
+                let aspect_bytes = aspect.owned_allocation_capacity_bytes() as u64;
+                match scalar {
+                    None => (2, aspect_bytes),
+                    Some(field) => {
+                        let bytes = aspect_bytes
+                            .checked_mul(2)
+                            .and_then(|bytes| {
+                                bytes.checked_add(std::mem::size_of_val(field) as u64)
+                            })
+                            .and_then(|bytes| {
+                                bytes.checked_add(field.owned_allocation_capacity_bytes() as u64)
+                            })
+                            .ok_or(Stop::SizeOverflow)?;
+                        (3, bytes)
+                    }
+                }
+            }
             Fact::SourceAspectRevision { .. } => return Err(unsupported("SourceAspectRevision")),
             Fact::SourceAdjacencyRevision { .. } => {
                 return Err(unsupported("SourceAdjacencyRevision"))
@@ -177,6 +208,7 @@ pub(super) fn select(
             | Fact::SourceFieldRevision { entity_id, .. }
             | Fact::Field { entity_id, .. }
             | Fact::AbsentField { entity_id, .. } => *entity_id,
+            Fact::AspectPresence { entity_id, .. } => *entity_id,
             _ => unreachable!("fully projected above"),
         };
         keys.push(Key::Record {
@@ -184,6 +216,29 @@ pub(super) fn select(
             scope: Scope::Lifecycle,
         })
         .map_err(array_stop)?;
+        if let Fact::AspectPresence {
+            entity_id,
+            kind,
+            aspect,
+            ..
+        } = fact
+        {
+            keys.push(Key::Record {
+                record: RecordRef::Entity(entity),
+                scope: Scope::WholeAspect(aspect.clone()),
+            })
+            .map_err(array_stop)?;
+            if let Some(field) = original
+                .entity_aspect_presence_scalar_field(&execution, target, *entity_id, *kind, aspect)
+                .map_err(Stop::AspectPresence)?
+            {
+                keys.push(Key::Record {
+                    record: RecordRef::Entity(entity),
+                    scope: Scope::Field(aspect.clone(), CanonicalFieldPath::single(field.clone())),
+                })
+                .map_err(array_stop)?;
+            }
+        }
         if let Fact::SourceFieldRevision { locator, .. }
         | Fact::Field { locator, .. }
         | Fact::AbsentField { locator, .. } = fact

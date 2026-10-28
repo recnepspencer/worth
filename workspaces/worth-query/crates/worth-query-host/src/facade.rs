@@ -330,6 +330,8 @@ pub use worth_query_declaration::{
 };
 pub use worth_query_execution::facade::application_contribution;
 pub use worth_query_execution::facade::application_discovery;
+/// Fresh application inspection through the ordinary Host request.
+pub use worth_query_execution::facade::application_inspection as causal_inspection;
 pub use worth_query_execution::facade::application_installation;
 pub use worth_query_execution::facade::application_invariants;
 /// Read-only observations for facade-only certification; these reports grant no authority.

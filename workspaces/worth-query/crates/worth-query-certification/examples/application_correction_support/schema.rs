@@ -16,6 +16,7 @@ worth_query_application_contribution! {
         identity: "numeric-correction.application.v1",
         corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit, super::source_output_correction::RecordIssued, super::composite_definition_model::CorrectDefinition, super::authored_identity_correction::UndoCreate, super::authored_identity_correction::UndoRetire],
         members: |schema| {
+            let schema = super::causal_inspection::declare(schema);
             let schema = super::composite_definition_model::declare(schema);
             let schema = super::authored_identity_model::declare(schema);
             let schema = super::authored_identity_reference::declare(schema);

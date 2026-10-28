@@ -9,6 +9,7 @@ pub mod authored_identity_reference;
 pub mod calculation;
 pub mod calculation_query;
 pub mod calculation_readiness;
+pub mod causal_inspection;
 pub mod compensation_courts;
 pub mod compensation_movement;
 pub mod composite_definition_adapters;

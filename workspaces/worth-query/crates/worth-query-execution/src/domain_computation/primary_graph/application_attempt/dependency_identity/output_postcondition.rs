@@ -15,6 +15,9 @@ use super::super::WorthQueryApplicationObservedFact;
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    performed_inputs: Option<
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    >,
     moved_by_own_effect: std::sync::Arc<[usize]>,
     carry: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
@@ -22,6 +25,21 @@ pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
 }
 
 impl OutputCurrentnessFacts {
+    /// Captured from the completed pre-normalization producer read set.
+    pub(super) fn with_performed_inputs(
+        mut self,
+        inputs: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    ) -> Self {
+        self.performed_inputs = Some(inputs);
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) fn performed_input_facts(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
+    {
+        self.performed_inputs.as_ref()
+    }
+
     /// Query owns these newly assembled program facts before any effect. Move
     /// them through completed-read construction, never relabel opaque storage.
     /// No computation supplied postconditions: candidate rebase must resolve
@@ -41,6 +59,7 @@ impl OutputCurrentnessFacts {
         Ok(Self {
             facts: builder.seal()?,
             carry: None,
+            performed_inputs: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         })
     }
@@ -83,6 +102,7 @@ impl From<crate::domain_computation::primary_graph::output_lineage::ComparableSo
         Self {
             facts: facts.facts().clone(),
             carry: None,
+            performed_inputs: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -97,12 +117,14 @@ pub(super) fn complete_content_currentness_facts(
         OutputCurrentnessFacts {
             facts,
             carry: None,
+            performed_inputs: None,
             moved_by_own_effect: moved.into(),
         }
     } else {
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
             carry: None,
+            performed_inputs: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -117,6 +139,7 @@ pub(super) fn complete_output_currentness_facts(
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from(facts).into(),
             carry: None,
+            performed_inputs: None,
             moved_by_own_effect: moved_by_own_effect.into(),
         }
     } else {
@@ -126,6 +149,7 @@ pub(super) fn complete_output_currentness_facts(
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
             carry: None,
+            performed_inputs: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }

@@ -65,3 +65,23 @@ mod installation;
 mod journey;
 
 mod optional_aspects;
+
+mod producer_observation;
+
+/// Reuse the real installed MODE2 producer when another owner needs its evidence.
+pub(in crate::domain_computation::primary_graph) fn with_genuine_native_observation<T>(
+    inspect: impl FnOnce(
+        &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        &worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
+    ) -> T,
+) -> T {
+    let runtime = installation::install();
+    let settled = journey::complete(&runtime);
+    let observation = settled
+        .readiness_delivery()
+        .unwrap()
+        .causal_observation()
+        .unwrap();
+    let owner = runtime.bridge.conditional();
+    inspect(&owner, observation)
+}

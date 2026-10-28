@@ -1,15 +1,19 @@
 mod branch_affinity;
 mod decision_read_set;
+mod inspection_terminal;
 mod mutation_progression;
 mod owner_execution;
 mod read_terminal;
+pub(in crate::domain_computation) use inspection_terminal::{
+    WorthQueryInspectionReadCompletion, WorthQueryInspectionReadTerminalDenial,
+};
 mod resource_terminal;
 pub(in crate::domain_computation) use resource_terminal::WorthQueryResourceReadCompletion;
 mod session;
 pub(in crate::domain_computation) use session::{
     WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
     WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
-    WorthQuerySessionResourceReadProof,
+    WorthQuerySessionInspectionReadProof, WorthQuerySessionResourceReadProof,
 };
 mod session_identity;
 

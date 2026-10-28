@@ -8,6 +8,7 @@ use std::num::NonZeroUsize;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
+mod aspect_presence;
 mod branches;
 mod custody;
 mod field_writes;

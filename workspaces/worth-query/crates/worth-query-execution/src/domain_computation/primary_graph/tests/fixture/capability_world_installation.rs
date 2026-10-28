@@ -9,6 +9,14 @@ pub(in crate::domain_computation::primary_graph) fn installed_capability_authori
     capability_world(1, "primary", CapabilityGrantPopulation::Current)
 }
 
+pub(in crate::domain_computation::primary_graph) fn installed_inspection_capability_world(
+) -> AuthorizationWorld {
+    install_authorization_world(AuthorizationWorldSpec {
+        owner_bindings: &[("principal-0", "account-1")],
+        ..capability_spec(1, "primary", CapabilityGrantPopulation::Current)
+    })
+}
+
 pub(in crate::domain_computation::primary_graph) fn installed_capability_world_with_label(
     label: &str,
 ) -> AuthorizationWorld {
