@@ -21,7 +21,7 @@ const FRONTIER_NEED: u64 = 1003;
 
 pub(super) fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
     match WorthStoreRecovery::recover(world.recovery_request()) {
-        PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
+        PhysicalRecoveryOutcome::Recovered(handoff) => *handoff,
         PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "{stage} blocked: kind={:?}; artifact={:?}; limit={:?}; sources={:?}; cause={:?}; \
              effects={}",

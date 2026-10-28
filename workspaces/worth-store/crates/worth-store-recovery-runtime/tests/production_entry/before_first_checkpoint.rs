@@ -102,7 +102,7 @@ impl KilledWorld {
 
     fn recover(&self, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
         match WorthStoreRecovery::recover(certified_release_serving::request(&self.root)) {
-            PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
+            PhysicalRecoveryOutcome::Recovered(handoff) => *handoff,
             PhysicalRecoveryOutcome::Blocked(block) => panic!(
                 "{stage} blocked: kind={:?}; artifact={:?}; sources={:?}; cause={:?}; effects={}",
                 block.cause(),

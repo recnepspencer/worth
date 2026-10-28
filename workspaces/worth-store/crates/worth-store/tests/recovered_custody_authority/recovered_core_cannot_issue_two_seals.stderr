@@ -4,12 +4,12 @@ error[E0382]: use of moved value: `core`
 3 | fn duplicate(core: RecoveredPhysicalRuntimeCore) {
   |              ---- move occurs because `core` has type `RecoveredPhysicalRuntimeCore`, which does not implement the `Copy` trait
 4 |     let _first = core.into_serving_handoff();
-  |                       ------------------------- `core` moved due to this method call
+  |                       ---------------------- `core` moved due to this method call
 5 |     let _second = core.into_serving_handoff();
   |                   ^^^^ value used here after move
   |
-note: `RecoveredPhysicalRuntimeCore::into_serving_handoff` takes ownership of the receiver `self`, which moves `core`
- --> src/physical_runtime/recovery_construction/handoff.rs
+note: `physical_runtime::recovery_construction::serving_handoff::<impl RecoveredPhysicalRuntimeCore>::into_serving_handoff` takes ownership of the receiver `self`, which moves `core`
+ --> src/physical_runtime/recovery_construction/serving_handoff.rs
   |
-  |         self,
-  |         ^^^^
+  |     pub fn into_serving_handoff(self) -> Option<RecoveredPhysicalServingHandoff> {
+  |                                 ^^^^

@@ -119,7 +119,7 @@ fn recover(
     stage: &str,
 ) -> worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff {
     match WorthStoreRecovery::recover(certified_release_serving::request(root)) {
-        PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
+        PhysicalRecoveryOutcome::Recovered(handoff) => *handoff,
         PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "{stage} blocked: kind={:?}; artifact={:?}; cause={:?}; effects={}",
             block.cause(),

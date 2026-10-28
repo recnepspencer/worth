@@ -100,7 +100,7 @@ fn recover(root: &Path) -> worth_store_recovery_runtime::RecoveredPhysicalRuntim
         }
         panic!("mixed V1 + two V3 C8/Store custody must recover: {outcome:?}");
     };
-    handoff
+    *handoff
 }
 
 fn append_ordinary_tail(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) {

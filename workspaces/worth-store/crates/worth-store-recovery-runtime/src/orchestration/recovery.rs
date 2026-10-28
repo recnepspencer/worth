@@ -9,7 +9,7 @@ pub(crate) fn recover(
         None => request.admit(),
     } {
         Ok(admitted) => admitted,
-        Err(refusal) => return PhysicalRecoveryOutcome::Refused(refusal),
+        Err(refusal) => return PhysicalRecoveryOutcome::Refused(Box::new(refusal)),
     };
     let discovered = match admitted.discover() {
         Ok(discovered) => discovered,
