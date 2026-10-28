@@ -14,8 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install the repository Rust toolchain
+        uses: dtolnay/rust-toolchain@1.99.1
         with:
           targets: wasm32-unknown-unknown
 

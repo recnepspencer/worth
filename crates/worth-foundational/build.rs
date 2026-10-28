@@ -39,6 +39,10 @@ fn main() {
             "release: 1.98.0",
             "commit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea",
         ),
+        (
+            "release: 1.99.1",
+            "commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67",
+        ),
     ]
     .into_iter()
     .any(|(release, commit)| {

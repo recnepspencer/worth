@@ -1742,8 +1742,9 @@ and 12. Rust 1.99 qualification does not substitute for this repair.
 
 ### Requirements And Acceptance
 
-`canonical_verified_std_sort` currently recognizes only exact release/commit
-pairs for Rust 1.94.0 and 1.98.0. Preserve an unqualified implementation as a typed
+`canonical_verified_std_sort` requires an exact release/full-commit identity;
+the [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
+lists the supported identities. Preserve an unqualified implementation as a typed
 compiler-qualification refusal containing the actual compiler release and full
 commit, rather than `AccountingOverflow` or
 `ExecutionResource { denial: ChargedBytesOverflow }`. Carry that cause through
@@ -1870,6 +1871,15 @@ SDK qualification.
 **Depends on:** the canonical sort bound and its existing compatibility contract.
 Source review can run alongside Phase 13; closure includes Phase 13's honest
 refusal on an unqualified compiler.
+
+The current qualification candidate selects official stable Rust 1.99.1,
+full compiler commit `58cf8f9c35b355199727627d07ae34a4e2846d67`, with the
+existing 32/64-bit target boundary. Exact core sort, alloc buffer and compiler
+specialization-owner review preserves the existing bounds and canonical version.
+The [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
+owns the exact compiler identities and upgrade procedure. Public runtime and
+Proprietary SDK qualification remain pending; source eligibility alone does not
+close this phase.
 
 ### Requirements And Acceptance
 
