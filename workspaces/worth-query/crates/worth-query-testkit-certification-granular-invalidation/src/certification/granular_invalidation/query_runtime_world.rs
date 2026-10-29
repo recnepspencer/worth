@@ -29,10 +29,10 @@ pub use worth_query::facade::runtime::WorthQueryPrimaryGraphSourceAdapter;
 pub use worth_query::facade::{domain as query_domain, read, runtime};
 pub use worth_query_host::facade::domain::APPLICATION_EXECUTION_SAFE_POINT_FAMILY;
 
+pub use providers::{ConditionalCompute, EligibleProvider};
 pub use worth_query_testkit_host::facade::host::contract::{
     TemporalDomain, TemporalDomainFamily, TemporalDomainOperation,
 };
-pub use providers::{ConditionalCompute, EligibleProvider};
 
 pub struct PrimaryQueryWorld {
     pub workspace: runtime::WorthQueryWorkspace,

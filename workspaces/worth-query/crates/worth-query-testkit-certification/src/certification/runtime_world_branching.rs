@@ -1,18 +1,18 @@
 pub use worth_query_testkit_host::facade::host::adapters;
-pub use worth_query_testkit_host::facade::host::contract;
-pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::courtroom_support;
-pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::product_query_support;
-pub use worth_query_testkit_host::facade::host::schema;
 pub use worth_query_testkit_host::facade::host::certification_support::execution_policy;
-pub use worth_query_testkit_host::facade::host::world;
+pub use worth_query_testkit_host::facade::host::contract;
+pub use worth_query_testkit_host::facade::host::schema;
 pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::courtroom;
 pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::courtroom_lifecycle;
 pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::courtroom_settlement;
+pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::courtroom_support;
+pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::product_query_support;
 pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::public_live_route;
 pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::public_product_journey;
 pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::selected_product_lifecycle;
 pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::selected_product_reads;
 pub use worth_query_testkit_host::facade::host::temporal_conditional_operation::shared_root_progress;
+pub use worth_query_testkit_host::facade::host::world;
 
 pub use world as host_world;
 

@@ -1,2 +1,1 @@
-# Distinct public consumer main; ordinary courts use their canonical libtest target.
-workspaces/worth-query/crates/worth-query-court-host-process/Cargo.toml | installed_audience_journey | harness=false public consumer executable with its own main
+# Convention v3: one canonical integration target; no executable exceptions.

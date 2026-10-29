@@ -1,5 +1,14 @@
 //! Public-entry approval currentness, not general business-attestation supersession.
 pub use super::super::approval_journey;
+pub use worth_query_host::facade::{
+    application_entry::{
+        PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowApprovalDecision,
+        WorkflowProgressOutcome, WorthQueryApplicationMutationOutcome,
+        WorthQueryApplicationRequestExt, WorthQueryApplicationRequestMutationDenial,
+        WorthQueryWorkflowOperationBindingDenial,
+    },
+    runtime::ExecutionAllocationPolicy,
+};
 pub use worth_query_testkit_document_retention::facade::document_retention_model::{
     host::{DocumentWorkflowRuntime, SEED_RETENTION},
     operator_identity::{authenticate_operator, request_scope},
@@ -12,15 +21,6 @@ pub use worth_query_testkit_document_retention::facade::document_retention_model
     schema::SetRetentionInput,
     settled_verdict::{settle, RetentionVerdict},
     workflow::{advance_instance, approve_instance},
-};
-pub use worth_query_host::facade::{
-    application_entry::{
-        PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowApprovalDecision,
-        WorkflowProgressOutcome, WorthQueryApplicationMutationOutcome,
-        WorthQueryApplicationRequestExt, WorthQueryApplicationRequestMutationDenial,
-        WorthQueryWorkflowOperationBindingDenial,
-    },
-    runtime::ExecutionAllocationPolicy,
 };
 
 pub fn signed_instance(key: u64) -> (DocumentWorkflowRuntime, PublishedWorkflowInstanceRef) {

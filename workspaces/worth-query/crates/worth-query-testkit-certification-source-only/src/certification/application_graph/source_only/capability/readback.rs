@@ -1,9 +1,5 @@
 //! Independent committed read truth, through the public query owner.
 pub use super::schema::*;
-pub use worth_query_testkit_document_retention::facade::document_retention_model::schema::{
-    DocumentQueryParameters, DocumentQueryParametersBinding, DocumentRetentionRow,
-    DocumentRetentionRowBinding,
-};
 pub use worth_query_host::facade::{
     declaration::{application_query::*, application_schema::*},
     primary_graph::{
@@ -11,6 +7,10 @@ pub use worth_query_host::facade::{
         WorthQueryApplicationProjectionRow,
     },
     worth_query_application_query, worth_query_portable_type,
+};
+pub use worth_query_testkit_document_retention::facade::document_retention_model::schema::{
+    DocumentQueryParameters, DocumentQueryParametersBinding, DocumentRetentionRow,
+    DocumentRetentionRowBinding,
 };
 pub struct RetentionSlot;
 pub struct IdentitySlot;

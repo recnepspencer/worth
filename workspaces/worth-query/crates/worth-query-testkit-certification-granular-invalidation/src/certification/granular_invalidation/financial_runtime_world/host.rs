@@ -54,7 +54,8 @@ pub struct FinancialCourtroomWorld {
     pub curve_clock_control: worth_query_testkit_host::facade::host::adapters::ClockController,
     pub quote_clock_control: worth_query_testkit_host::facade::host::adapters::ClockController,
     pub portfolio_clock_control: worth_query_testkit_host::facade::host::adapters::ClockController,
-    pub sibling_portfolio_clock_control: worth_query_testkit_host::facade::host::adapters::ClockController,
+    pub sibling_portfolio_clock_control:
+        worth_query_testkit_host::facade::host::adapters::ClockController,
     pub quote_output: FinancialQuoteOutputState,
     pub invariant:
         Arc<primary_graph::WorthQueryApplicationInvariantProjectionAuthority<FinancialHostSchema>>,

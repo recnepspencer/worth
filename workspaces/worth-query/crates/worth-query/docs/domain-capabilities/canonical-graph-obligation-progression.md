@@ -115,11 +115,11 @@ of avoiding physical proof work. `discard_rule_readable_collections()` removes
 these projections; later reads can reconstruct them without changing truth or
 ordinary Query views.
 
-The [facade journey](../../../worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/relation_laws/derived/court/mod.rs)
+The [facade journey](../../../worth-query-court-host-application-graph/tests/worth_query_court_host_application_graph/certification/application_graph/relation_laws/derived/court/mod.rs)
 uses an authenticated action, real proposed-state rule, negative-adjacency edit,
 physical rewire and discard/rebuild. The [Native audience court](../../../worth-query-execution/src/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience.rs)
 checks that a broad proof cannot lend its physical source access to a narrower
-reader on the same observation. The [logical composition journey](../../../worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/relation_laws/logical/court/mod.rs)
+reader on the same observation. The [logical composition journey](../../../worth-query-court-host-application-graph/tests/worth_query_court_host_application_graph/certification/application_graph/relation_laws/logical/court/mod.rs)
 uses the same source owners for laws, walks, orbits and components. The
 [grant-revocation journey](../../../worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/mod.rs)
 keeps a derived value available while actual grant revocation denies the action
@@ -133,7 +133,7 @@ composition, union and intersection use the same registered evaluator. Complete
 physical and empty-adjacency support survives endpoint deduplication. A logical
 coordinate includes domain, full carrier generation and case; it grants no access.
 
-In the [public logical fixture](../../../worth-query-worlds-certification/src/certification/application_graph/relation_laws/logical.rs),
+In the [public logical fixture](../../../worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/logical.rs),
 Uses has Negative and Positive cases over Node. The `successor()` helper is the
 forward Negative-lift inverse -> Precedes -> Positive-lift leg. These actual
 builder-chain lines register its union with the reverse as an orbit, then bind

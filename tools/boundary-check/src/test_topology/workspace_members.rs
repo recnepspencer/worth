@@ -7,6 +7,7 @@ use std::{
 pub(super) struct Member {
     pub(super) manifest: PathBuf,
     pub(super) production_dependencies: Option<Vec<String>>,
+    pub(super) all_dependencies: Vec<String>,
 }
 
 pub(super) fn manifests(workspace: &Path) -> Result<Vec<Member>, String> {
@@ -26,14 +27,15 @@ pub(super) fn manifests(workspace: &Path) -> Result<Vec<Member>, String> {
                 let production_dependencies = Some(
                     package
                         .dependencies
-                        .into_iter()
+                        .iter()
                         .filter(|dependency| dependency.kind.as_deref() != Some("dev"))
-                        .map(|dependency| dependency.name)
+                        .map(|dependency| dependency.name.clone())
                         .collect(),
                 );
                 Ok(Member {
                     manifest,
                     production_dependencies,
+                    all_dependencies: package.dependencies.into_iter().map(|d| d.name).collect(),
                 })
             })
             .collect();
@@ -42,6 +44,7 @@ pub(super) fn manifests(workspace: &Path) -> Result<Vec<Member>, String> {
         vec![Member {
             manifest: path,
             production_dependencies: None,
+            all_dependencies: Vec::new(),
         }]
     } else {
         Vec::new()

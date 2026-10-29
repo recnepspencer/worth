@@ -3,12 +3,12 @@ use super::{
     authentication::*, composite_definition_model::*, composite_definition_runtime::Conditional,
     edit, host, query::Row,
 };
-pub use worth_query_testkit_host::facade::host::certification_support::execution_policy as observation_request;
 use worth_query_host::facade::{
     application_entry::*,
     primary_graph::*,
     runtime::{self, ExecutionAllocationPolicy},
 };
+pub use worth_query_testkit_host::facade::host::certification_support::execution_policy as observation_request;
 
 pub fn run() {
     let mut application = host::install();

@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
-"""Report own compilation from `cargo build --tests --timings` HTML.
+"""Report Cargo own-unit timings as telemetry, never as topology decisions.
 
-Cargo 1.94 schema: rust-lang/cargo commit
-85eff7c80277b57f78b11e28d14154ab12fcf643, core/compiler/timings/{mod,report}.rs.
-UNIT_DATA.duration is each compiler unit's elapsed time, not its dependency
-chain. `mode` is "todo" for ordinary units; `target` identifies test harnesses.
-Own totals sum compiler work and can overlap. The canonical integration unit
-alone supplies a court's budget measurement. --cold asserts that this own unit
-was clean; HTML cannot prove cache conditions. Inputs are independent runs.
-Planning-time upward merges are already reflected in --plan, never inferred
-from timing. This command reports only; it never builds or changes the tree.
+Cargo 1.94 UNIT_DATA duration excludes dependency wait. Cache conditions are
+reported by the caller. Deterministic source/target/graph measures are separate.
+This command never builds, splits or merges crates.
 """
 
 import argparse
@@ -90,22 +84,19 @@ def court_identity(name):
     if "-court-" not in name:
         return None
     workspace, suffix = name.split("-court-", 1)
-    if suffix == "compile-fail":
-        return workspace, None, "compile_fail"
-    match = re.fullmatch(r"(.+)-(fast|process|exhaustive|scale)", suffix)
-    if not workspace or not match:
+    if not workspace or not suffix:
         raise ReportError(f"invalid court package name: {name}")
-    return workspace, match[1], match[2]
+    return workspace, suffix
 
 
-def worlds_package(name):
-    return name.endswith("-worlds") or "-worlds-" in name
+def testkit_package(name):
+    return name.endswith("-testkit") or "-testkit-" in name
 
 
 def read_metadata(root):
     manifests = set()
     for stem in (root, *root.glob("workspaces/*")):
-        for pattern in ("crates/*court*/Cargo.toml", "crates/*worlds*/Cargo.toml"):
+        for pattern in ("crates/*court*/Cargo.toml", "crates/*testkit*/Cargo.toml"):
             manifests.update(stem.glob(pattern))
     metadata = {}
     for path in sorted(manifests):
@@ -116,11 +107,11 @@ def read_metadata(root):
         identity = court_identity(name)
         if identity:
             court = package.get("metadata", {}).get("worth", {}).get("court", {})
-            if court.get("class") != identity[2] or not court.get("boundary"):
-                raise ReportError(f"missing/mismatched court metadata: {path}")
-            metadata[name] = {"boundary": court["boundary"], "class": court["class"]}
-        elif package.get("metadata", {}).get("worth", {}).get("worlds"):
-            metadata[name] = {"boundary": None, "class": None}
+            if court.get("surface") != identity[1]:
+                raise ReportError(f"missing/mismatched court surface: {path}")
+            metadata[name] = {"surface": court["surface"]}
+        elif package.get("metadata", {}).get("worth", {}).get("testkit"):
+            metadata[name] = {"surface": None}
     return metadata
 
 
@@ -146,18 +137,18 @@ def read_plan(path):
     return dict(counts), {name: dict(value) for name, value in owners.items()}
 
 
-def summarize(units, metadata, counts, owners, cold):
+def summarize(units, metadata, counts, owners):
     grouped = defaultdict(list)
     for unit in units:
         name = unit["name"]
-        if court_identity(name) or worlds_package(name):
+        if court_identity(name) or testkit_package(name):
             grouped[name].append(unit)
     if not grouped:
-        raise ReportError("no court/worlds compiler units; input may be fully fresh")
+        raise ReportError("no court/testkit compiler units; input may be fully fresh")
     rows = []
     for name, own in sorted(grouped.items()):
         if name not in metadata:
-            raise ReportError(f"no court/worlds manifest under --root for {name}")
+            raise ReportError(f"no court/testkit manifest under --root for {name}")
         targets = set()
         versions = {unit["version"] for unit in own}
         if len(versions) != 1:
@@ -169,19 +160,14 @@ def summarize(units, metadata, counts, owners, cold):
         identity = court_identity(name)
         canonical = f' test "{name.replace("-", "_")}" (test)'
         integration = next((u["duration"] for u in own if u["target"] == canonical), None)
-        # Worlds' ordinary library target is empty in Cargo's HTML schema.
+        # Testkits' ordinary library target is empty in Cargo's HTML schema.
         library = next((u["duration"] for u in own if u["target"] == ""), None)
-        measured = integration if identity else library
-        decision = "unmeasured_canonical_target" if measured is None else "unqualified_cache"
-        if cold and measured is not None:
-            decision = "split_candidate" if measured > 120 else "within_budget"
         rows.append({
-            "package": name, "kind": "court" if identity else "worlds",
+            "package": name, "kind": "court" if identity else "testkit",
             **metadata[name], "tests": counts.get(name),
             "planned_owners": owners.get(name, {}),
             "own_total_seconds": round(sum(u["duration"] for u in own), 6),
             "integration_seconds": integration, "library_seconds": library,
-            "budget_seconds": measured, "decision": decision,
             "targets": [{"target": u["target"] or "lib", "seconds": u["duration"],
                          "unit_index": u["i"]} for u in sorted(own, key=lambda u: u["target"])],
         })
@@ -189,18 +175,14 @@ def summarize(units, metadata, counts, owners, cold):
 
 
 def render_table(report):
-    print("Own unit times exclude dependencies; total is compiler work, not elapsed build time.")
-    print("Split qualification: " + ("caller asserts clean own compilation" if report["cold"]
-                                     else "unqualified cache; use --cold for clean measurements"))
-    print("Merges are planning decisions; --plan supplies final counts and owner receipts.")
+    print("Telemetry only: own compiler work excludes dependencies; no timing gates.")
+    print("Cache conditions: " + report["cache_conditions"])
     for run in report["runs"]:
-        print(f"\n{run['input']}")
-        print(f"{'Package':58} {'Own total':>10} {'Budget':>9} {'Tests':>5}  Decision")
+        print("\n" + run["input"])
+        print(f"{'Package':64} {'Own total':>10} {'Tests':>5}")
         for row in run["packages"]:
-            budget = "n/a" if row["budget_seconds"] is None else f"{row['budget_seconds']:.2f}s"
             tests = "?" if row["tests"] is None else str(row["tests"])
-            print(f"{row['package']:58} {row['own_total_seconds']:9.2f}s {budget:>9} "
-                  f"{tests:>5}  {row['decision']}")
+            print(f"{row['package']:64} {row['own_total_seconds']:9.2f}s {tests:>5}")
             for target in row["targets"]:
                 print(f"  {target['target'].strip()}: {target['seconds']:.2f}s")
 
@@ -210,7 +192,7 @@ def main(argv=None):
     parser.add_argument("html", nargs="+", type=Path, help="Cargo timing HTML, one independent run each")
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--plan", type=Path, help="final court-plan.json test occurrence array")
-    parser.add_argument("--cold", action="store_true", help="assert clean compilation of measured own units")
+    parser.add_argument("--cache-conditions", default="unspecified", help="describe cache state; telemetry only")
     parser.add_argument("--json", action="store_true", help="write machine JSON to stdout")
     args = parser.parse_args(argv)
     try:
@@ -219,11 +201,11 @@ def main(argv=None):
         paths = [path.resolve() for path in args.html]
         if len(paths) != len(set(paths)):
             raise ReportError("duplicate timing input path")
-        report = {"cold": args.cold, "runs": []}
+        report = {"cache_conditions": args.cache_conditions, "runs": []}
         for path in paths:
             try:
                 units = parse_units(path.read_text(encoding="utf-8-sig"))
-                packages = summarize(units, metadata, counts, owners, args.cold)
+                packages = summarize(units, metadata, counts, owners)
             except (OSError, ValueError) as error:
                 raise ReportError(f"{path}: {error}") from error
             report["runs"].append({"input": str(path), "packages": packages})

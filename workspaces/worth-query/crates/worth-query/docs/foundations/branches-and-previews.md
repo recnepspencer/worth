@@ -62,7 +62,7 @@ Each history continuation binds its target observation. If the branch advances
 between pages or before selection, obtain a new traversal with a fresh request.
 Keep the command's idempotency key when retrying a submitted correction: an
 equivalent retry resolves its original performed occurrence. The
-[history chooser example](../../../worth-query-worlds-certification/src/certification/application_graph/correction/model/tree_reapplication.rs)
+[history chooser example](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/tree_reapplication.rs)
 shows explicit older-alternative selection, pagination and ordinary close.
 
 A selected occurrence pins exact history for repeatable reads while the branch
@@ -83,7 +83,7 @@ own, so a correction selects a source made on either branch, and retained histor
 grows by the same amount for each adoption rather than replaying the journal.
 A refused step on the fork leaves the parent's head and history unchanged; close
 the fork to discard it. The
-[fork-head adoption court](../../../worth-query-worlds-certification/src/certification/application_graph/correction/model/fork_head_adoption.rs)
+[fork-head adoption court](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_adoption.rs)
 runs 100 such cycles.
 History pages are branch-occurrence scoped and bounded by the caller's nonzero
 limit. Their entries are descriptive until `select` asks World to issue an

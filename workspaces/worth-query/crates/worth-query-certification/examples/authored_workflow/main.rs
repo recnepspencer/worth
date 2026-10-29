@@ -13,13 +13,13 @@
     unused_imports,
     reason = "Shared reference application ports are exercised by independent consumer courts"
 )]
-pub(crate) use worth_query_testkit_document_retention::facade::document_world_resources;
+pub(crate) use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity;
 #[allow(
     dead_code,
     unused_imports,
     reason = "Shared reference application ports are exercised by independent consumer courts"
 )]
-pub(crate) use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity;
+pub(crate) use worth_query_testkit_document_retention::facade::document_world_resources;
 
 mod actions;
 #[allow(dead_code, unused_imports)]

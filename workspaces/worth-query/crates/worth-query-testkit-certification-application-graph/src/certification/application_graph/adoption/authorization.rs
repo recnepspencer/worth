@@ -1,11 +1,4 @@
 //! Capability admission at the real branch adoption publication boundary.
-pub use worth_query_testkit_document_retention::facade::document_retention_model::{
-    host::{publish_on_first_program, DocumentRetentionRuntime},
-    operator_identity::{authenticate_operator, request_scope},
-    programs::{RetentionProgramP0, RetentionProgramP1},
-    readback::read_retention,
-    workflow::{WorkflowGrantStatusInput, WorkflowGrantStatusIntent},
-};
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryOperationAuthorizationDenialKind, WorthQueryProgramAdoptionAuthorizationDenial,
 };
@@ -17,6 +10,13 @@ pub use worth_query_host::facade::{
         WorthQueryBranchAdoptionPublicationOutcome,
     },
     application_installation::WorthQueryProgramOwner,
+};
+pub use worth_query_testkit_document_retention::facade::document_retention_model::{
+    host::{publish_on_first_program, DocumentRetentionRuntime},
+    operator_identity::{authenticate_operator, request_scope},
+    programs::{RetentionProgramP0, RetentionProgramP1},
+    readback::read_retention,
+    workflow::{WorkflowGrantStatusInput, WorkflowGrantStatusIntent},
 };
 pub fn revoke(host: &DocumentRetentionRuntime<RetentionProgramP0>) {
     change_grant_status(host, host.current_world(), "revoked", 91764001);

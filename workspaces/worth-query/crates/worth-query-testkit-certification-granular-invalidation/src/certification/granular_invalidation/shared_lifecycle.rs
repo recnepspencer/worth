@@ -1,4 +1,3 @@
-pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 pub use crate::facade::certification::query_runtime_world::{
     build_primary_query_world, build_shared_primary_query_world, IntentSourceProjection,
 };
@@ -10,6 +9,7 @@ pub use worth_query::facade::domain::{
     WorthQueryPrimaryGranularMaintenanceOutcome, WorthQuerySharedPrimaryGranularMaintenanceOutcome,
 };
 pub use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
+pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 
 pub fn assert_shared_consumer_slope(request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
     let mut single_host = CourtroomWorld::publish("blocked");

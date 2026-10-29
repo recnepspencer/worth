@@ -445,7 +445,7 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-inst
 cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution
 
 # Installed-world regression, including primary and separate graph evidence
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p 'worth-query-court-host*-fast' query::installed_operating_world::
+cargo test --manifest-path workspaces/worth-query/Cargo.toml --workspace --tests query::installed_operating_world::
 
 # Bank consumer unit tests and independent declaration inventory
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-domain -p worth-query-bank-court-domain --tests
@@ -461,7 +461,7 @@ cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml --worksp
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml --workspace --tests server::ordinary_reads::
 
 # Consolidated hostile compiler certification
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --test application_schema_compile_fail
+python scripts/ci/query_gate.py fixture
 
 # Cold real-system courtroom
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p worth-query-bank-court-http-workflows --tests process::courtroom::async_identity_courtroom:: -- --ignored

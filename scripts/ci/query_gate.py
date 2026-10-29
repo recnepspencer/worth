@@ -6,7 +6,7 @@
     python scripts/ci/query_gate.py --list           suite names
 
 Build each workspace's tests once with `cargo test --no-run`, then run every
-listed case by exact name. Cost-class paths govern isolation; independent
+listed case by exact name. Category prefixes govern selection and isolation; independent
 chunks run concurrently, and compiler sessions run sequentially.
 
 Results go to target/query-gate (or --out): <suite>.json and one log per
@@ -30,7 +30,7 @@ from query_gate_environment import environment
 
 from query_gate_courts import (
     BANK, BEFORE, BOUNDARY, FIXTURE, FIXTURE_PACKAGES, GROUPS, LOWER, QUERY,
-    QUERY_PUBLIC, ROOT, ROOT_TESTS, TEST_SUITES, UI, packages,
+    QUERY_PUBLIC, ROOT, ROOT_TESTS, TEST_SUITES, UI, packages, selected, CATEGORY_SUITES,
 )
 
 
@@ -188,7 +188,7 @@ class Gate:
         started = time.time()
         with open(log, "w", encoding="utf-8") as sink:
             done = subprocess.run(
-                ["cargo", "test", *GROUPS[group], "--no-run", "--message-format=json"],
+                ["cargo", "test", *GROUPS[group], "--no-run", "--timings", "--message-format=json"],
                 cwd=ROOT, env=self.env, stdout=subprocess.PIPE, stderr=sink, text=True,
                 encoding="utf-8", errors="replace",
             )
@@ -201,7 +201,7 @@ class Gate:
 
     def chunk(self, suite, index, binary, names, extra=()):
         if suite.endswith("-scale"):
-            extra = (*extra, "--ignored")
+            extra = (*extra, "--include-ignored")
         log = self.out / f"{suite}-chunk-{index:03}.log"
         env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
         started = time.time()
@@ -251,6 +251,7 @@ class Gate:
                 return {"suite": suite, "ok": False, "listing": "FAILED", "log": log.name}
             names = sorted(line[: -len(": test")] for line in discovery.stdout.splitlines()
                            if line.endswith(": test"))
+            names = [name for name in names if selected(suite, binary, name)]
             listing.append((binary["package"], binary["target"], len(names)))
             total += len(names)
             exclusive_names = [n for n in names
@@ -290,7 +291,7 @@ class Gate:
             "run_seconds": round(time.time() - started),
             "slowest": sorted(((row["seconds"], row["log"]) for row in results),
                               reverse=True)[:3],
-            "ok": not failed and not bad_exit and bool(total or whole),
+            "ok": not failed and not bad_exit and (bool(total or whole) or suite in CATEGORY_SUITES),
             "chunks": results,
         }
 

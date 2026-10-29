@@ -1,11 +1,11 @@
 //! A genuine approved effect is corrected without reopening its completed instance.
 pub use super::*;
+pub use worth_query_host::facade::{application_entry::*, runtime::ExecutionAllocationPolicy};
 pub use worth_query_testkit_document_retention::facade::document_retention_model::{
     correctable_retention::{CorrectableRetentionBinding, CorrectableRetentionIntent},
     schema::SetRetentionInput,
     workflow::reviewed_document_definition_for_binding,
 };
-pub use worth_query_host::facade::{application_entry::*, runtime::ExecutionAllocationPolicy};
 #[path = "correction/authored_divergence.rs"]
 pub mod authored_divergence;
 

@@ -1,7 +1,7 @@
 //! Certification of the application graph: what a branch's own program means
 //! for the rules it actually enforces.
-pub use worth_query_testkit_document_retention::facade::document_world_resources;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity;
+pub use worth_query_testkit_document_retention::facade::document_world_resources;
 
 #[path = "application_graph/adoption.rs"]
 pub mod adoption;

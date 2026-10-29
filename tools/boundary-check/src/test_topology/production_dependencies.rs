@@ -1,4 +1,4 @@
-//! Fixture worlds and courts cannot become normal product authority providers.
+//! Testkits and courts cannot become normal product authority providers.
 use super::failure;
 use crate::{diagnostics::Diagnostic, source_rules::GovernedCrate};
 
@@ -11,12 +11,12 @@ pub(super) fn validate(
     let mut diagnostics = Vec::new();
     let is_test = |package: &str| {
         stems.iter().any(|stem| {
-            package.starts_with(&format!("{stem}-worlds"))
+            package.starts_with(&format!("{stem}-testkit"))
                 || package.starts_with(&format!("{stem}-court-"))
         })
     };
     let refused = |package: &str| {
-        failure(&owner.relative_crate_root, format!("product dependency `{package}` must be in dev-dependencies; worlds and courts are test-only"))
+        failure(&owner.relative_crate_root, format!("product dependency `{package}` must be in dev-dependencies; testkits are test-only and courts are leaves"))
     };
     if let Some(packages) = resolved {
         return packages

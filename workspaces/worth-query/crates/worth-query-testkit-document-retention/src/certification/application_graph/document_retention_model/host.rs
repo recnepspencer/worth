@@ -24,9 +24,10 @@ pub use worth_query_host::facade::declaration::application_schema::{
 pub use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 pub use worth_query_host::facade::{declaration, primary_graph, runtime};
 
+// This model also compiles inside the authored example's extended schema.
+pub use worth_query_testkit_document_retention::facade::document_world_resources as world_resources;
 pub use world_resources::world_resources;
 pub use world_resources::{ACTIVE_WORLD_OBSERVATIONS, WORKFLOW_DEFINITION_BYTES};
-pub use crate::facade::document_world_resources as world_resources;
 
 pub use super::assessment_output::{
     OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,

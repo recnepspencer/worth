@@ -1,5 +1,17 @@
 //! Reuse the installed assessment owners with an ordinary required-output source.
 pub use super::program::{AssessmentFeature, AssessmentProgram, RetentionInput, RetentionOutput};
+pub use worth_query_host::facade::{
+    application_entry::{
+        WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+        WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
+    },
+    application_installation::WorthQueryApplicationProgramRoster,
+    declaration::application_program::*,
+    primary_graph::{
+        WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
+        WorthQueryMutationHandlerWork, WorthQueryRequiredOutputConnectionDenial,
+    },
+};
 pub use worth_query_testkit_document_retention::facade::document_retention_model::{
     assessment_output::{
         AssessmentOutput, PublishRetentionAssessment, RetentionAssessmentDemand,
@@ -13,18 +25,6 @@ pub use worth_query_testkit_document_retention::facade::document_retention_model
         SetRetentionIntent, DOCUMENT_IDENTITY,
     },
     schema::{DocumentRetentionSchema, SetRetentionInput},
-};
-pub use worth_query_host::facade::{
-    application_entry::{
-        WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
-        WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
-    },
-    application_installation::WorthQueryApplicationProgramRoster,
-    declaration::application_program::*,
-    primary_graph::{
-        WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
-        WorthQueryMutationHandlerWork, WorthQueryRequiredOutputConnectionDenial,
-    },
 };
 
 pub struct OrdinaryConnection;

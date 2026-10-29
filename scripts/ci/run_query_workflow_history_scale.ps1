@@ -11,8 +11,7 @@ $testName = switch ($Lane) {
     "Cold" { "workflow_history_locality_smoke" }
     "Diagnostic" { "workflow_history_native_cost_diagnostic" }
 }
-$costClass = if ($Lane -eq "Cold") { "fast" } else { "scale" }
-$courtPattern = "worth-query-court-host*-$costClass"
+$court = "worth-query-court-application-graph"
 $testSuffix = "::application_graph::workflow_history_scale::$testName"
 
 # Fixed development qualification envelope, excluding compilation. Sampled
@@ -24,7 +23,7 @@ $maximumPrivateBytes = 4GB
 $hangWatchdogSeconds = 1800
 $pollMilliseconds = 100
 
-$artifacts = @(& cargo test --manifest-path $queryManifest -p $courtPattern `
+$artifacts = @(& cargo test --manifest-path $queryManifest -p $court `
     --tests --no-run --message-format=json)
 if ($LASTEXITCODE -ne 0) { throw "workflow history test compilation failed" }
 $executables = @($artifacts | ForEach-Object {

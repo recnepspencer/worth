@@ -1,330 +1,249 @@
 use super::*;
-use std::path::PathBuf;
-
-const COURT: &str = "sample-court-host-fast";
-const TARGET: &str = "sample_court_host_fast";
-struct Fixture(PathBuf);
-impl Fixture {
-    fn new() -> Self {
-        let fixture = Self(worth_harness::tooling::fixture_path::unique_path(
-            "test-topology",
-        ));
-        fixture.write(CONFIG, "governed | sample\n");
-        fixture.write(EXCEPTIONS, "# no executable exceptions\n");
-        fixture.manifest("", "");
-        fixture.entry("mod fast { #[test] fn lawful() {} }");
-        fixture
-    }
-    fn write(&self, relative: &str, text: &str) {
-        let path = self.0.join(relative);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(path, text).unwrap();
-    }
-    fn manifest(&self, package_fields: &str, targets: &str) {
-        self.write("governed/Cargo.toml", &format!("[package]\nname = '{COURT}'\nversion = '0.1.0'\n{package_fields}\n[package.metadata.worth.court]\nboundary = 'host'\nclass = 'fast'\n{targets}"));
-    }
-    fn entry(&self, source: &str) {
-        self.write(&format!("governed/tests/{TARGET}.rs"), source);
-    }
-    fn messages(&self) -> Vec<String> {
-        validate(&self.0)
-            .into_iter()
-            .map(|d| d.message().to_owned())
-            .collect()
-    }
-    fn refuses(&self, claim: &str) {
-        assert!(
-            self.messages().iter().any(|m| m.contains(claim)),
-            "{:?}",
-            self.messages()
-        );
-    }
-}
-impl Drop for Fixture {
-    fn drop(&mut self) {
-        let path = self.0.canonicalize().unwrap();
-        let parent = self.0.parent().unwrap().canonicalize().unwrap();
-        assert!(path.starts_with(&parent) && path != parent);
-        std::fs::remove_dir_all(path).unwrap();
-    }
-}
+mod fixture;
+mod source_ratchet;
+mod workspace_membership;
+use fixture::{Fixture, COURT, TARGET};
 
 #[test]
-fn law18_refuses_a_second_implicit_target_and_directory_target() {
-    let fixture = Fixture::new();
-    fixture.write(
-        "governed/tests/extra/main.rs",
-        "mod fast { #[test] fn extra() {} }",
+fn law18_v2_refuses_tests_directory_in_a_product_crate() {
+    let f = Fixture::new();
+    f.write("governed/Cargo.toml", "[package]\nname='product'\n");
+    f.refuses("product crate must not contain a tests/");
+}
+#[test]
+fn law18_v2_refuses_product_integration_targets_outside_tests_directory() {
+    let f = Fixture::new();
+    f.write(
+        "governed/Cargo.toml",
+        "[package]\nname='product'\n[[test]]\nname='outside'\npath='outside.rs'\n",
     );
-    fixture.refuses("second integration-test target");
+    f.refuses("product crate cannot declare integration targets");
+}
+#[test]
+fn court_requires_autotests_false() {
+    let f = Fixture::new();
+    f.manifest("autotests=true", "", "host");
+    f.refuses("autotests = false");
 }
 #[test]
 fn law18_refuses_second_explicit_target_even_with_autotests_disabled() {
-    let fixture = Fixture::new();
-    fixture.manifest(
-        "autotests = false",
-        &format!(
-            "[[test]]\nname = '{TARGET}'\n[[test]]\nname = 'hidden'\npath = 'tests/hidden.rs'\n"
-        ),
+    let f = Fixture::new();
+    f.manifest(
+        "autotests=false",
+        "[[test]]\nname='extra'\npath='tests/extra/main.rs'\n",
+        "host",
     );
-    fixture.write(
-        "governed/tests/hidden.rs",
-        "mod fast { #[test] fn hidden() {} }",
-    );
-    fixture.refuses("second integration-test target");
+    f.write("governed/tests/extra/main.rs", "#[test] fn extra() {}");
+    f.refuses("exactly one integration-test target");
 }
 #[test]
-fn law18_refuses_unclassed_root_inline_external_and_async_tests() {
-    let fixture = Fixture::new();
-    fixture.manifest(
-        "autotests = false",
-        &format!("[[test]]\nname = '{TARGET}'\n"),
-    );
-    fixture.entry("#[test] fn root() {}\nmod wrong { #[tokio::test] async fn async_case() {} }\n#[path = \"leaf.rs\"] mod leaf;");
-    fixture.write("governed/tests/leaf.rs", "#[test] fn external() {}");
-    for name in ["root", "async_case", "external"] {
-        fixture.refuses(&format!("`{name}`"));
-    }
-}
-#[test]
-fn law18_uses_module_paths_including_path_attributes_and_raw_identifiers() {
-    let fixture = Fixture::new();
-    fixture.manifest(
-        "autotests = false",
-        &format!("[[test]]\nname = '{TARGET}'\n"),
-    );
-    fixture.entry("mod r#fast { #[path = \"../leaf.rs\"] mod scenario; mod serial { #[test] fn isolated() {} } }");
-    fixture.write("governed/tests/fast/.keep", "");
-    fixture.write("governed/tests/leaf.rs", "#[test] fn scenario() {}");
-    assert!(fixture.messages().is_empty(), "{:?}", fixture.messages());
-}
-#[test]
-fn law18_exception_requires_explicit_target_and_reason_and_must_exist() {
-    let fixture = Fixture::new();
-    fixture.write("governed/tests/child.rs", "fn main() {}");
-    fixture.write(
-        EXCEPTIONS,
-        "governed/Cargo.toml | child | spawned executable\n",
-    );
-    fixture.refuses("explicit [[test]]");
-    fixture.manifest("", "[[test]]\nname = 'child'\nharness = false\n");
-    assert!(fixture.messages().is_empty(), "{:?}", fixture.messages());
-    fixture.write(EXCEPTIONS, "governed/Cargo.toml | absent | own main\n");
-    fixture.refuses("stale or ungoverned");
-    fixture.write(EXCEPTIONS, "governed/Cargo.toml | child | \n");
-    fixture.refuses("reason");
-}
-#[test]
-fn law18_nested_fixture_workspace_is_governed_but_other_workspaces_are_not() {
-    let fixture = Fixture::new();
-    fixture.write(
-        CONFIG,
-        "governed | sample\ngoverned/tests/fixtures/court | nested\n",
-    );
-    fixture.write("governed/tests/fixtures/court/Cargo.toml", "[package]\nname = 'nested-court-host-fast'\n[workspace]\n[package.metadata.worth.court]\nboundary = 'host'\nclass = 'fast'\n");
-    fixture.write(
-        "governed/tests/fixtures/court/tests/nested_court_host_fast.rs",
-        "#[test] fn unclassed() {}",
-    );
-    fixture.write("other/Cargo.toml", "[package]\nname = 'other'\n");
-    fixture.write("other/tests/other.rs", "#[test] fn excluded() {}");
-    let messages = fixture.messages();
-    assert_eq!(messages.len(), 1, "{messages:?}");
-    assert!(messages[0].contains("unclassed"));
-}
-#[test]
-fn law18_workspace_membership_does_not_annex_other_workspaces_or_fixtures() {
-    let fixture = Fixture::new();
-    fixture.write(CONFIG, ". | sample\n");
-    fixture.write(
-        "Cargo.toml",
-        "[workspace]\nmembers = ['governed/member*']\nexclude = ['governed/member-excluded']\n",
-    );
-    for owner in ["member", "member-excluded"] {
-        fixture.write(
-            &format!("governed/{owner}/Cargo.toml"),
-            "[package]\nname = 'product'\nversion = '0.1.0'\n",
-        );
-        fixture.write(&format!("governed/{owner}/src/lib.rs"), "");
-        fixture.write(
-            &format!("governed/{owner}/tests/forbidden.rs"),
-            "#[test] fn case() {}",
-        );
-    }
-    fixture.write(
-        "other/Cargo.toml",
-        "[package]\nname = 'other'\n[workspace]\n",
-    );
-    fixture.write("other/tests/other.rs", "#[test] fn untouched() {}");
-    // The valid default court lies outside the workspace member glob.
-    let messages = fixture.messages();
-    assert_eq!(messages.len(), 1, "{messages:?}");
-    assert!(messages[0].contains("product crate"));
-}
-#[test]
-fn law18_implicit_path_dependency_members_cannot_hide_a_second_target() {
-    let fixture = Fixture::new();
-    fixture.write(CONFIG, ". | sample\n");
-    fixture.write("Cargo.toml", "[workspace]\nmembers = ['owner']\n");
-    fixture.write("owner/Cargo.toml", "[package]\nname = 'owner'\nversion = '0.1.0'\n[dependencies]\nimplicit = { package = 'sample-court-host-fast', path = '../implicit' }\n");
-    fixture.write("owner/src/lib.rs", "");
-    fixture.write("implicit/Cargo.toml", "[package]\nname = 'sample-court-host-fast'\nversion = '0.1.0'\n[lib]\npath = 'outside.rs'\n[package.metadata.worth.court]\nboundary = 'host'\nclass = 'fast'\n");
-    fixture.write("implicit/outside.rs", "");
-    for target in [TARGET, "extra"] {
-        fixture.write(
-            &format!("implicit/tests/{target}.rs"),
-            "mod fast { #[test] fn case() {} }",
-        );
-    }
-    fixture.refuses("second integration-test target");
-}
-#[test]
-fn law18_harness_false_is_not_an_automatic_exemption() {
-    let fixture = Fixture::new();
-    fixture.manifest(
-        "",
-        &format!("[[test]]\nname = '{TARGET}'\nharness = false\n"),
-    );
-    fixture.entry("fn main() {}");
-    fixture.refuses("harness=false");
-}
-#[test]
-fn law18_conditional_attributes_and_macro_tests_cannot_hide_unclassed_cases() {
-    let fixture = Fixture::new();
-    fixture.entry("#[cfg_attr(test, test)] fn conditional() {}\nmacro_rules! generated { () => { #[test] fn hidden() {} }; }\ninclude!(\"uninspected.rs\");");
-    let messages = fixture.messages();
-    assert_eq!(messages.len(), 3, "{messages:?}");
-    assert!(messages.iter().any(|m| m.contains("conditional")));
-    assert!(messages.iter().any(|m| m.contains("generated")));
-}
-#[test]
-fn law18_checkout_cannot_disable_the_rule_by_removing_both_config_files() {
-    let fixture = Fixture::new();
-    fixture.write(".git", "gitdir: fixture checkout marker\n");
-    std::fs::remove_file(fixture.0.join(CONFIG)).unwrap();
-    std::fs::remove_file(fixture.0.join(EXCEPTIONS)).unwrap();
-    fixture.refuses("missing its test-topology configuration");
-}
-#[test]
-fn law18_v2_refuses_tests_directory_in_a_product_crate() {
-    let fixture = Fixture::new();
-    fixture.write("governed/Cargo.toml", "[package]\nname = 'product'\n");
-    fixture.refuses("product crate must not contain a tests/");
+fn court_refuses_wrong_canonical_target_path() {
+    let f = Fixture::new();
+    let path = f.0.join("governed/Cargo.toml");
+    let text = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace(&format!("tests/{TARGET}.rs"), "tests/other.rs");
+    f.write("governed/Cargo.toml", &text);
+    f.write("governed/tests/other.rs", "#[test] fn ordinary() {}");
+    f.refuses("canonical explicit integration target");
 }
 #[test]
 fn law18_v2_refuses_a_misnamed_court() {
-    let fixture = Fixture::new();
-    let path = fixture.0.join("governed/Cargo.toml");
-    let source = std::fs::read_to_string(&path)
-        .unwrap()
-        .replace(COURT, "sample-court-host-process");
-    std::fs::write(path, source).unwrap();
-    fixture.refuses("misnamed court");
+    let f = Fixture::new();
+    f.manifest("autotests=false", "", "other");
+    f.refuses("misnamed court");
 }
 #[test]
-fn law18_v2_refuses_a_court_declaring_two_classes() {
-    let fixture = Fixture::new();
-    let path = fixture.0.join("governed/Cargo.toml");
-    let source = std::fs::read_to_string(&path)
-        .unwrap()
-        .replace("class = 'fast'", "class = ['fast', 'process']");
-    std::fs::write(path, source).unwrap();
-    fixture.refuses("exactly one class");
+fn manifest_classes_are_retired() {
+    let f = Fixture::new();
+    f.append(
+        "governed/Cargo.toml",
+        "[package.metadata.worth.court]\nsurface='host'\nclass='fast'\n",
+    );
+    // Replace, rather than duplicate, the metadata table.
+    let text = std::fs::read_to_string(f.0.join("governed/Cargo.toml")).unwrap();
+    let start = text.find("[package.metadata.worth.court]").unwrap();
+    f.write(
+        "governed/Cargo.toml",
+        &format!(
+            "{}[package.metadata.worth.court]\nsurface='host'\nclass=['fast','process']\n",
+            &text[..start]
+        ),
+    );
+    f.refuses("categories belong in module paths");
 }
 #[test]
 fn law18_v2_refuses_product_code_in_a_court() {
-    let fixture = Fixture::new();
-    fixture.write("governed/src/lib.rs", "pub fn product() -> u32 { 3 }");
-    fixture.refuses("court contains product code");
+    let f = Fixture::new();
+    f.write("governed/src/lib.rs", "pub fn product() {} ");
+    f.refuses("court contains product code");
 }
-#[test]
-fn law18_v2_refuses_a_second_class_module_even_without_tests() {
-    let fixture = Fixture::new();
-    fixture.entry("mod fast { #[test] fn lawful() {} } mod process {}");
-    fixture.refuses("second class module");
-}
-
-#[test]
-fn law18_v2_products_cannot_consume_fixture_authority_as_a_normal_dependency() {
-    let fixture = Fixture::new();
-    fixture.write("governed/Cargo.toml", "[package]\nname = 'product'\n[dependencies]\nworld = { package = 'sample-worlds', path = '../world' }\n");
-    fixture.refuses("must be in dev-dependencies");
-    fixture.write("governed/Cargo.toml", "[package]\nname = 'product'\n[dev-dependencies]\nworld = { package = 'sample-worlds', path = '../world' }\n");
-    assert!(!fixture
-        .messages()
-        .iter()
-        .any(|m| m.contains("must be in dev-dependencies")));
-}
-
-#[test]
-fn law18_v2_workspace_alias_cannot_hide_a_production_fixture_dependency() {
-    let fixture = Fixture::new();
-    fixture.write(CONFIG, ". | sample\n");
-    fixture.write("Cargo.toml", "[workspace]\nmembers = ['app', 'world']\n[workspace.dependencies]\nfixture_alias = { package = 'sample-worlds', path = 'world' }\n");
-    fixture.write("app/Cargo.toml", "[package]\nname = 'product'\nversion = '0.1.0'\n[dependencies]\nfixture_alias.workspace = true\n");
-    fixture.write("app/src/lib.rs", "pub fn app() {}\n");
-    fixture.write("world/Cargo.toml", "[package]\nname = 'sample-worlds'\nversion = '0.1.0'\n[package.metadata.worth.worlds]\nworkspace = 'sample'\n");
-    fixture.write("world/src/lib.rs", "pub fn authored_world() {}\n");
-    fixture.refuses("product dependency `sample-worlds` must be in dev-dependencies");
-}
-
-#[test]
-fn law18_v2_refuses_product_integration_targets_outside_tests_directory() {
-    let fixture = Fixture::new();
-    std::fs::remove_file(fixture.0.join(format!("governed/tests/{TARGET}.rs"))).unwrap();
-    std::fs::remove_dir(fixture.0.join("governed/tests")).unwrap();
-    fixture.write(
-        "governed/Cargo.toml",
-        "[package]\nname = 'product'\n[[test]]\nname = 'outside'\npath = 'integration.rs'\n",
-    );
-    fixture.write("governed/integration.rs", "#[test] fn outside() {}\n");
-    fixture.refuses("product crate cannot declare integration targets");
-}
-
 #[test]
 fn law18_v2_refuses_bench_targets_hidden_inside_tests() {
-    let fixture = Fixture::new();
-    fixture.manifest("autotests = false", &format!("[[test]]\nname = '{TARGET}'\n[[bench]]\nname = 'hidden'\npath = 'tests/bench.rs'\nharness = false\n"));
-    fixture.write("governed/tests/bench.rs", "fn main() {}\n");
-    fixture.refuses("court contains product code or a production target");
+    let f = Fixture::new();
+    f.manifest(
+        "autotests=false",
+        "[[bench]]\nname='hidden'\npath='tests/bench.rs'\nharness=false\n",
+        "host",
+    );
+    f.write("governed/tests/bench.rs", "fn main() {}");
+    f.refuses("court contains product code or a production target");
 }
-
 #[test]
-fn law18_v2_executable_exceptions_cannot_become_unclassed_test_harnesses() {
-    let fixture = Fixture::new();
-    fixture.write(
+fn court_cannot_disable_harness_or_test_execution() {
+    for field in ["harness=false", "test=false"] {
+        let f = Fixture::new();
+        let text = std::fs::read_to_string(f.0.join("governed/Cargo.toml")).unwrap();
+        f.write(
+            "governed/Cargo.toml",
+            &text.replace(
+                &format!("name='{TARGET}'"),
+                &format!("name='{TARGET}'\n{field}"),
+            ),
+        );
+        f.refuses("standard harness");
+    }
+}
+#[test]
+fn executable_exception_registry_cannot_bypass_one_target() {
+    let f = Fixture::new();
+    f.write(
         EXCEPTIONS,
-        "governed/Cargo.toml | child | public consumer main\n",
+        "governed/Cargo.toml | child | former executable\n",
     );
-    fixture.manifest("", "[[test]]\nname = 'child'\nharness = true\n");
-    fixture.write("governed/tests/child.rs", "#[test] fn escaped() {}\n");
-    fixture.refuses("must retain harness=false");
-    fixture.refuses("`escaped` must be under");
+    f.refuses("no executable exceptions");
 }
-
 #[test]
-fn law18_v2_metavariable_macro_tests_must_be_generated_inside_the_class() {
-    let fixture = Fixture::new();
-    let source = "macro_rules! cases { ($a:meta) => { #[$a] fn escaped() {} }; } cases!(test);";
-    fixture.entry(source);
-    fixture.refuses("must be under its court class");
-    fixture.entry(&format!("mod fast {{ {source} }}"));
-    assert!(fixture.messages().is_empty(), "{:?}", fixture.messages());
+fn ordinary_and_each_category_can_share_one_binary() {
+    let f = Fixture::new();
+    f.entry("#[test] fn ordinary() {} mod process { mod serial { #[test] fn isolated() {} } } mod oracle { #[test] fn model() {} } mod cost { #[test] fn growth() {} } mod determinism { #[test] fn replay() {} } mod compile_fail { #[test] fn sealed() {} }");
+    assert!(f.messages().is_empty(), "{:?}", f.messages());
 }
-
 #[test]
-fn law18_v2_refuses_disabling_court_or_exception_test_execution() {
-    let fixture = Fixture::new();
-    fixture.manifest(
-        "autotests = false",
-        &format!("[[test]]\nname = '{TARGET}'\ntest = false\n"),
+fn retired_and_nested_categories_are_refused() {
+    for source in [
+        "mod fast {}",
+        "mod scale {}",
+        "mod area { mod process {} }",
+        "mod serial { #[test] fn isolated() {} }",
+    ] {
+        let f = Fixture::new();
+        f.entry(source);
+        f.refuses("invalid category path");
+    }
+}
+#[test]
+fn real_module_paths_and_wrapped_test_functions_are_checked() {
+    let f = Fixture::new();
+    f.entry("mod r#process { #[path=\"../leaf.rs\"] mod family; }");
+    f.write("governed/tests/process/.keep", "");
+    f.write(
+        "governed/tests/leaf.rs",
+        "wrapper! { #[test] fn phase_nine_old_id() {} }",
     );
-    fixture.refuses("cannot disable test execution");
-    fixture.manifest("autotests = false", &format!("[[test]]\nname = '{TARGET}'\n[[test]]\nname = 'child'\nharness = false\ntest = false\n"));
-    fixture.write(
-        EXCEPTIONS,
-        "governed/Cargo.toml | child | public consumer main\n",
+    f.refuses("without an identifier");
+}
+#[test]
+fn milestone_decision_ticket_and_phase_identifiers_are_refused() {
+    for name in [
+        "m3_old_id",
+        "d17_old_id",
+        "r8_old_id",
+        "phase_nine_old_id",
+        "ticket_123_old_id",
+        "test_old_prefix",
+        "it_old_prefix",
+    ] {
+        let f = Fixture::new();
+        f.entry(&format!("#[test] fn {name}() {{}}"));
+        f.refuses("without an identifier");
+    }
+}
+#[test]
+fn semantic_program_revision_is_not_a_milestone_identifier() {
+    let f = Fixture::new();
+    f.entry("#[test] fn p2_adoption_preserves_the_program_contract() {}");
+    assert!(f.messages().is_empty(), "{:?}", f.messages());
+}
+#[test]
+fn court_and_testkit_source_ceilings_are_deterministic() {
+    for testkit in [false, true] {
+        let f = Fixture::new();
+        if testkit {
+            f.write("governed/Cargo.toml", "[package]\nname='sample-testkit-host'\n[package.metadata.worth.testkit]\nworkspace='sample'\n");
+            std::fs::remove_dir_all(f.0.join("governed/tests")).unwrap();
+        }
+        f.write("governed/large.rs", &"// source line\n".repeat(15_001));
+        f.refuses("ceiling is 15000");
+    }
+}
+#[test]
+fn testkit_name_and_metadata_are_required() {
+    let f = Fixture::new();
+    f.write(
+        "governed/Cargo.toml",
+        "[package]\nname='wrong-name'\n[package.metadata.worth.testkit]\nworkspace='sample'\n",
     );
-    fixture.write("governed/tests/child.rs", "fn main() {}\n");
-    fixture.refuses("court target `child` cannot disable test execution");
+    f.refuses("misnamed testkit");
+}
+#[test]
+fn normal_and_build_dependencies_cannot_import_testkits() {
+    for kind in ["dependencies", "build-dependencies"] {
+        let f = Fixture::new();
+        f.write("governed/Cargo.toml", &format!("[package]\nname='product'\n[{kind}]\nfixture={{package='sample-testkit-host',path='../fixture'}}\n"));
+        f.refuses("must be in dev-dependencies");
+    }
+}
+#[test]
+fn no_package_can_depend_on_a_court_even_in_dev_dependencies() {
+    let f = Fixture::new();
+    f.workspace();
+    f.write("app/Cargo.toml", &format!("[package]\nname='app'\nversion='0.1.0'\n[dev-dependencies]\nproof={{package='{COURT}',path='../governed'}}\n"));
+    f.write("app/src/lib.rs", "");
+    f.refuses("must be a leaf");
+}
+#[test]
+fn law18_v2_workspace_alias_cannot_hide_a_production_fixture_dependency() {
+    let f = Fixture::new();
+    f.workspace();
+    f.append(
+        "Cargo.toml",
+        "[workspace.dependencies]\nfixture={package='sample-testkit-host',path='fixture'}\n",
+    );
+    f.write(
+        "app/Cargo.toml",
+        "[package]\nname='app'\nversion='0.1.0'\n[dependencies]\nfixture.workspace=true\n",
+    );
+    f.write("app/src/lib.rs", "");
+    f.write("fixture/Cargo.toml", "[package]\nname='sample-testkit-host'\nversion='0.1.0'\n[package.metadata.worth.testkit]\nworkspace='sample'\n");
+    f.write("fixture/src/lib.rs", "");
+    f.refuses("product dependency `sample-testkit-host`");
+}
+#[test]
+fn workspace_membership_does_not_annex_external_consumer_fixtures() {
+    let f = Fixture::new();
+    f.write("other/Cargo.toml", "[package]\nname='other'\n[workspace]\n");
+    f.write("other/tests/untouched.rs", "#[test] fn outside_scope() {}");
+    assert!(f.messages().is_empty(), "{:?}", f.messages());
+}
+#[test]
+fn law18_checkout_cannot_disable_the_rule_by_removing_both_config_files() {
+    let f = Fixture::new();
+    f.write(".git", "gitdir: fixture\n");
+    std::fs::remove_file(f.0.join(CONFIG)).unwrap();
+    std::fs::remove_file(f.0.join(EXCEPTIONS)).unwrap();
+    f.refuses("missing its test-topology configuration");
+}
+#[test]
+fn query_gate_and_governed_nextest_filters_refuse_name_regexes() {
+    for path in [
+        "scripts/ci/query_gate.py",
+        "workspaces/worth-query/.config/nextest.toml",
+    ] {
+        let f = Fixture::new();
+        f.write(path, "filter = 'test(/behaviour_name/)' ");
+        f.refuses("name regex");
+        f.write(path, "filter = 'test(/^process::/)' ");
+        assert!(f.messages().is_empty(), "{:?}", f.messages());
+    }
 }

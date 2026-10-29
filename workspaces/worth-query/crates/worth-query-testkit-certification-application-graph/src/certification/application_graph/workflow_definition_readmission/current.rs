@@ -6,12 +6,12 @@ pub fn occurrence_definition() -> Result<
     >,
     worth_query_host::facade::declaration::application_program::ApplicationWorkflowValidationDenial,
 >{
+    use worth_query_host::facade::declaration::application_program::{
+        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
+    };
     use worth_query_testkit_document_retention::facade::document_retention_model::workflow::{
         definition_limits, governed_read::GovernedDocumentWorkflow,
         WorkflowDefinitionAuthoringOperation,
-    };
-    use worth_query_host::facade::declaration::application_program::{
-        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
     };
     let mut builder = ApplicationWorkflowDefinitionBuilder::<GovernedDocumentWorkflow>::new(
         "information-recording",

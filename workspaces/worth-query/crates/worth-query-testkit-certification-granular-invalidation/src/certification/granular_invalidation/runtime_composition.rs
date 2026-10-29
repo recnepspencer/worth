@@ -1,4 +1,3 @@
-pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 pub use crate::facade::certification::query_runtime_world::{
     build_primary_query_world, build_primary_query_world_with_dimensions,
     build_with_foreign_snapshot_adapter, PrimaryQueryScale,
@@ -9,6 +8,7 @@ pub use worth_query::facade::domain::{
     WorthQueryPrimaryGranularMaintenanceOutcome,
 };
 pub use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
+pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 
 pub fn assert_primary_runtime_composition(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,

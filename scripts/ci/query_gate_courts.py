@@ -40,31 +40,25 @@ GROUPS = {
     "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
 
-NON_ORDINARY = ("process", "exhaustive", "scale", "compile_fail")
-
-
-def court_packages(manifest, cost_class):
-    crates = ROOT / Path(manifest).parent / "crates"
-    found = []
-    for path in crates.glob("*-court-*/Cargo.toml"):
-        value = tomllib.loads(path.read_text(encoding="utf-8"))
-        court = value["package"].get("metadata", {}).get("worth", {}).get("court", {})
-        if court.get("class") not in ("fast", *NON_ORDINARY):
-            raise ValueError(f"court must declare exactly one class: {path}")
-        if court.get("class") == cost_class:
-            found.append(value["package"]["name"])
-    return sorted(found)
+CATEGORIES = ("process", "oracle", "cost", "determinism", "compile_fail")
 
 
 def ordinary_selection(manifest):
-    excluded = [name for cost in NON_ORDINARY
-                for name in court_packages(manifest, cost)]
-    return ["--manifest-path", manifest, "--workspace",
-            *[part for name in excluded for part in ("--exclude", name)], "--tests"]
+    # Every surface has one harness; category paths select cases after discovery.
+    return ["--manifest-path", manifest, "--workspace", "--tests"]
 
 
 GROUPS["query"] = ordinary_selection(QUERY)
 GROUPS["bank"] = ordinary_selection(BANK)
+
+
+def selected(suite, binary, name):
+    if "-court-" not in binary["package"]:
+        return suite not in CATEGORY_SUITES
+    category = next((c for c in CATEGORIES if name.startswith(c + "::")), None)
+    if suite in CATEGORY_SUITES:
+        return category == CATEGORY_SUITES[suite]
+    return category is None
 
 
 def lib_of(*names):
@@ -76,6 +70,10 @@ def package_of(*names):
 
 def everything(_binary):
     return True
+
+
+def courts_only(binary):
+    return "-court-" in binary["package"]
 
 
 # suite -> (group, which binaries, tests per process, processes at once)
@@ -92,14 +90,15 @@ TEST_SUITES = {
     "ui": ("ui", everything, 100, 2),
     "bank": ("bank", everything, 150, 1),
 }
-# Process and oracle courts are separate selections; ignored scale courts are explicit only.
-for prefix, manifest in (("query", QUERY), ("bank", BANK)):
-    for cost in NON_ORDINARY:
-        names = court_packages(manifest, cost)
-        if names:
-            label = prefix + "-" + cost.replace("_", "-")
-            GROUPS[label] = ["--manifest-path", manifest, *packages(*names), "--tests"]
-            TEST_SUITES[label] = (label, everything, 150, 1)
+# Category suites reuse the same build and select top-level path prefixes.
+CATEGORY_SUITES = {}
+for prefix in ("query", "bank"):
+    for label, category in (("process", "process"), ("exhaustive", "oracle"),
+                            ("scale", "cost"), ("determinism", "determinism"),
+                            ("compile-fail", "compile_fail")):
+        suite = prefix + "-" + label
+        CATEGORY_SUITES[suite] = category
+        TEST_SUITES[suite] = (prefix, courts_only, 150, 1)
 
 # Build real product executables, not only their test harnesses.
 BEFORE = {name: [("bank-product-binaries", ["cargo", "build", "--manifest-path", BANK,

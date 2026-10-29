@@ -1,10 +1,8 @@
-//! A court declares one cost class and has no production compilation target.
+//! A court names a dependency surface and has no production compilation target.
 use super::failure;
 use crate::{diagnostics::Diagnostic, source_rules::GovernedCrate};
 
-const CLASSES: &[&str] = &["fast", "process", "exhaustive", "scale", "compile_fail"];
-
-pub(super) fn class(
+pub(super) fn surface(
     owner: &GovernedCrate,
     value: &toml::Value,
     stem: &str,
@@ -20,43 +18,44 @@ pub(super) fn class(
                 "court needs package.metadata.worth.court",
             )
         })?;
-    let class = court
-        .get("class")
+    if court.get("class").is_some() {
+        return Err(failure(
+            &owner.relative_crate_root,
+            "court categories belong in module paths, not a manifest class",
+        ));
+    }
+    if value
+        .get("package")
+        .and_then(|p| p.get("autotests"))
+        .and_then(|v| v.as_bool())
+        != Some(false)
+    {
+        return Err(failure(
+            &owner.relative_crate_root,
+            "court must set autotests = false",
+        ));
+    }
+    let surface = court
+        .get("surface")
         .and_then(|v| v.as_str())
-        .filter(|v| CLASSES.contains(v))
+        .filter(|v| segment(v))
         .ok_or_else(|| {
             failure(
                 &owner.relative_crate_root,
-                "court must declare exactly one class",
+                "court needs its dependency surface",
             )
         })?;
-    let boundary = court
-        .get("boundary")
-        .and_then(|v| v.as_str())
-        .filter(|v| segment(v))
-        .ok_or_else(|| failure(&owner.relative_crate_root, "court needs its entry boundary"))?;
-    let family = court.get("family").and_then(|v| v.as_str());
-    if family.is_some_and(|name| !segment(name)) {
-        return Err(failure(
-            &owner.relative_crate_root,
-            "court family must name its measured split axis",
-        ));
-    }
-    let name = if class == "compile_fail" {
-        format!("{stem}-court-compile-fail")
-    } else {
-        format!(
-            "{stem}-court-{boundary}{}-{class}",
-            family.map_or(String::new(), |f| format!("-{f}"))
-        )
-    };
-    if owner.package != name {
+    let name = format!("{stem}-court-{surface}");
+    let class_suffix = ["-fast", "-exhaustive", "-scale", "-compile-fail"]
+        .iter()
+        .any(|suffix| name.ends_with(suffix));
+    if owner.package != name || class_suffix {
         return Err(failure(
             &owner.relative_crate_root,
             format!("misnamed court: expected `{name}`"),
         ));
     }
-    Ok(class.into())
+    Ok(surface.into())
 }
 
 fn segment(value: &str) -> bool {

@@ -7,7 +7,8 @@ pub fn assert_foreign_primary_source_is_denied_at_build(
 ) {
     let invalidation_host =
         worth_query_testkit_host::facade::host::world::CourtroomWorld::publish("blocked");
-    let source_host = worth_query_testkit_host::facade::host::world::CourtroomWorld::publish("blocked");
+    let source_host =
+        worth_query_testkit_host::facade::host::world::CourtroomWorld::publish("blocked");
     let source_installation = source_host.application.granular_invalidation_installation();
     let snapshot_installation = invalidation_host
         .application

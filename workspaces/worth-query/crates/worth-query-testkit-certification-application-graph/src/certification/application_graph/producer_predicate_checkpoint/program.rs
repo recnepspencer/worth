@@ -1,4 +1,8 @@
 //! A real required-output program over the existing retention contribution.
+pub use worth_query_host::facade::declaration::application_program::*;
+pub use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationRequiredOutputConnection, WorthQueryRequiredOutputConnectionDenial,
+};
 pub use worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionCompletion;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::{
     assessment_output::{PublishRetentionAssessment, RetentionAssessmentDemand},
@@ -8,10 +12,6 @@ pub use worth_query_testkit_document_retention::facade::document_retention_model
         DocumentRetentionContribution, DocumentRetentionRowBinding, DocumentRetentionSchema,
         SetRetentionInput,
     },
-};
-pub use worth_query_host::facade::declaration::application_program::*;
-pub use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationRequiredOutputConnection, WorthQueryRequiredOutputConnectionDenial,
 };
 
 pub struct AssessmentProgram;

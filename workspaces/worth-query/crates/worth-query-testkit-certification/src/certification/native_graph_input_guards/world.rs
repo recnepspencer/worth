@@ -17,7 +17,11 @@ pub type App = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub fn install() -> App {
     let schema = program::schema();
     let limits = WorthQueryInMemoryApplicationLimits::new(
-        worth_query_testkit_document_retention::facade::document_world_resources::world_resources(256, 4 * 1024 * 1024, 256),
+        worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
+            256,
+            4 * 1024 * 1024,
+            256,
+        ),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).unwrap(),
         ),

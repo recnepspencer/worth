@@ -44,6 +44,9 @@ struct Arguments {
     width: usize,
     write_guidance: bool,
     sealed_sources_only: bool,
+    topology_report: bool,
+    topology_only: bool,
+    topology_all: bool,
 }
 
 enum OutputFormat {
@@ -61,6 +64,9 @@ fn main() {
         width,
         write_guidance,
         sealed_sources_only,
+        topology_report,
+        topology_only,
+        topology_all,
     } = match parse_args() {
         Ok(args) => args,
         Err(error) => {
@@ -69,6 +75,16 @@ fn main() {
         }
     };
 
+    if topology_report {
+        match test_topology::source_report(&root) {
+            Ok(report) => println!("{}", serde_json::to_string_pretty(&report).unwrap()),
+            Err(error) => {
+                eprintln!("{error}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     if write_guidance {
         match consumer_docs::write_guidance(&root) {
             Ok(()) => println!("boundary-check: generated guidance regions and derived skills"),
@@ -80,7 +96,18 @@ fn main() {
         return;
     }
     let profile = scan_profile::Session::new(profile_path);
-    let result = if sealed_sources_only {
+    let result = if topology_only {
+        let diagnostics = if topology_all {
+            test_topology::validate(&root)
+        } else {
+            test_topology::validate_diff(&root)
+        };
+        if diagnostics.is_empty() {
+            Ok(())
+        } else {
+            Err(diagnostics)
+        }
+    } else if sealed_sources_only {
         let diagnostics = sealed_sources::validate(&root);
         if diagnostics.is_empty() {
             Ok(())
@@ -114,6 +141,9 @@ fn parse_args() -> Result<Arguments, String> {
     let mut width = std::thread::available_parallelism().map_or(1, usize::from);
     let mut write_guidance = false;
     let mut sealed_sources_only = false;
+    let mut topology_report = false;
+    let mut topology_only = false;
+    let mut topology_all = false;
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -142,6 +172,9 @@ fn parse_args() -> Result<Arguments, String> {
             }
             "--write-guidance" => write_guidance = true,
             "--sealed-sources-only" => sealed_sources_only = true,
+            "--test-topology-report" => topology_report = true,
+            "--test-topology-only" => topology_only = true,
+            "--all" => topology_all = true,
             "--update-snapshots" => snapshot_mode = SnapshotMode::Update,
             other => return Err(format!("unknown argument: {other}")),
         }
@@ -161,5 +194,8 @@ fn parse_args() -> Result<Arguments, String> {
         width,
         write_guidance,
         sealed_sources_only,
+        topology_report,
+        topology_only,
+        topology_all,
     })
 }

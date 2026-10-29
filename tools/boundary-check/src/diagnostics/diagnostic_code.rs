@@ -161,7 +161,7 @@ impl DiagnosticCode {
             Self::Bc7007ThreadingBoundary => "tools/boundary-check/config/road1.toml [[threading_sites]]; parallel work belongs in worth-execution, while every non-compute thread needs an exact category and reason",
             Self::Bc7013CertificationConstructionSeal => "tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths",
             Self::Bc7012ControlSeal => "tools/boundary-check/src/control_seal.rs; Law 1, reach: control references belong only to owners and closed test/certification callers",
-            Self::Bc9002TestTopology => "tools/boundary-check/config/test-workspaces.txt; tests use one cost-classed integration target; executable exceptions require test-binary-exceptions.txt",
+            Self::Bc9002TestTopology => "docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts",
             Self::Bc9001OneBuild => "tools/boundary-check/src/one_build.rs; remove the build predicate or feature declaration and use an owned inert control",
             Self::Bc7008RequestConstruction => "tools/boundary-check/config/road1.toml [[request_constructor_denials]]; borrow the caller request or construct backing only at the declared policy-taking host entry",
             Self::Bc7009CanonicalOrder => "tools/boundary-check/src/source_rules/analysis/canonical_order.rs; order Query Execution by declared identity; named TypeId containers are membership only",

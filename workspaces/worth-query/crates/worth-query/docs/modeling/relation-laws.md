@@ -197,7 +197,7 @@ after a fresh installation. Scoped/governed lineage reads and tracked lineage
 decisions are unavailable through these inspection APIs.
 Generic Native branch reconciliation has separate existing execution limitations
 and retains its typed refusal.
-The [installed orbit court](../../../worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/relation_laws/orbit/mod.rs)
+The [installed orbit court](../../../worth-query-court-host-application-graph/tests/worth_query_court_host_application_graph/certification/application_graph/relation_laws/orbit/mod.rs)
 exercises native refusals and atomic lawful mutations through the ordinary
 authenticated program.
 
@@ -429,7 +429,7 @@ dependency.
                             .unwrap();
 ```
 
-The [logical composition court](../../../worth-query-worlds-certification/src/certification/application_graph/relation_laws/logical/committed.rs)
+The [logical composition court](../../../worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/logical/committed.rs)
 compares this reader's genuine component with the ordinary tracked decision and
 checks refusal of a foreign projection's member beside a lawful local read.
 This reader observes the selected stored snapshot. A feature-history-prefix

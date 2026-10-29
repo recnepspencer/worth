@@ -1,8 +1,5 @@
 //! Genuine installation, source seeding, authenticated reads and checkpoint recovery.
 pub use super::{model::NestedValue, producer, query::ReadValue, schema::*};
-pub use worth_query_testkit_document_retention::facade::document_retention_model::{
-    host::host_limits, operator_identity::*,
-};
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub use worth_query_host::facade::{
     application_contribution::*,
@@ -10,6 +7,9 @@ pub use worth_query_host::facade::{
     application_installation::*,
     declaration::{application_program::*, authentication::*},
     primary_graph::*,
+};
+pub use worth_query_testkit_document_retention::facade::document_retention_model::{
+    host::host_limits, operator_identity::*,
 };
 
 pub use super::program::Program;

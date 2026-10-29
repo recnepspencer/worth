@@ -188,6 +188,18 @@ class CostClassScheduling(unittest.TestCase):
 
 
 class CourtSelection(unittest.TestCase):
+    def test_category_suites_do_not_repeat_harness_free_product_examples(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            binary = {"package": "owning-example", "target": "main", "lib": False,
+                      "harness": False, "exe": "reference-main", "cwd": temporary}
+            gate = query_gate.Gate(Path(temporary))
+            gate.built["query"] = ([binary], 0, "existing-build.log")
+            with patch.object(query_gate.subprocess, "run") as process:
+                result = gate.tests("query-process")
+            process.assert_not_called()
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["chunks"], [])
+
     def test_explicit_build_identity_reaches_the_complete_gate(self):
         identity = "00000000-0000-4000-8000-000000000001"
         with tempfile.TemporaryDirectory() as temporary, patch.dict(
@@ -195,38 +207,27 @@ class CourtSelection(unittest.TestCase):
             gate = query_gate.Gate(Path(temporary))
         self.assertEqual(gate.env["WORTH_IMPLEMENTATION_BUILD_ID"], identity)
 
-    def write_court(self, root, name, cost_class):
-        path = root / "workspaces/worth-query/crates" / name / "Cargo.toml"
-        path.parent.mkdir(parents=True)
-        path.write_text(
-            f"[package]\nname = '{name}'\n[package.metadata.worth.court]\nclass = '{cost_class}'\n",
-            encoding="utf-8",
-        )
-        return path
+    def test_build_selection_is_shared_by_every_category(self):
+        selection = query_gate_courts.ordinary_selection(query_gate.QUERY)
+        self.assertIn("--workspace", selection)
+        self.assertIn("--tests", selection)
+        self.assertNotIn("--exclude", selection)
+        self.assertNotIn("--lib", selection)
+        for suite in ("query-process", "query-exhaustive", "query-determinism"):
+            self.assertEqual(query_gate.TEST_SUITES[suite][0], "query")
 
-    def test_ordinary_selection_keeps_units_and_fast_courts_after_boundary_rename(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            fast = "worth-query-court-renamed-boundary-fast"
-            process = "worth-query-court-renamed-boundary-process"
-            self.write_court(root, fast, "fast")
-            self.write_court(root, process, "process")
-            with patch.object(query_gate_courts, "ROOT", root):
-                self.assertEqual(query_gate_courts.court_packages(query_gate.QUERY, "fast"), [fast])
-                selection = query_gate_courts.ordinary_selection(query_gate.QUERY)
-            self.assertIn("--workspace", selection)
-            self.assertIn("--tests", selection)
-            self.assertNotIn("--lib", selection)
-            self.assertEqual(selection[selection.index("--exclude") + 1], process)
-            self.assertNotIn(fast, selection)
+    def test_category_suites_partition_paths_without_classifying_behaviour_names(self):
+        binary = {"package": "worth-query-court-host"}
+        cases = ["ordinary::process_word_is_a_behaviour", "process::io::behaviour",
+                 "oracle::reference::behaviour", "cost::growth::behaviour",
+                 "determinism::replay::behaviour", "compile_fail::sealed::behaviour"]
+        suites = ["query-rest", "query-process", "query-exhaustive", "query-scale",
+                  "query-determinism", "query-compile-fail"]
+        for name, expected in zip(cases, suites):
+            selected = [suite for suite in suites
+                        if query_gate_courts.selected(suite, binary, name)]
+            self.assertEqual(selected, [expected])
 
-    def test_invalid_court_class_cannot_fall_into_the_ordinary_build(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            self.write_court(root, "worth-query-court-host-fast", "serial")
-            with patch.object(query_gate_courts, "ROOT", root):
-                with self.assertRaisesRegex(ValueError, "exactly one class"):
-                    query_gate_courts.ordinary_selection(query_gate.QUERY)
 
 
 if __name__ == "__main__":

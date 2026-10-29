@@ -10,8 +10,8 @@ import unittest
 import report_court_build_times as report
 
 
-COURT = "worth-query-court-host-fast"
-TARGET = ' test "worth_query_court_host_fast" (test)'
+COURT = "worth-query-court-host"
+TARGET = ' test "worth_query_court_host" (test)'
 
 
 def unit(index=0, name=COURT, target=TARGET, seconds=121, start=800):
@@ -27,29 +27,29 @@ def html(units):
 
 
 class CourtTimingTests(unittest.TestCase):
-    def test_measured_world_family_split_keeps_its_library_budget(self):
-        name = "worth-query-worlds-host"
+    def test_testkit_family_records_library_telemetry_without_a_decision(self):
+        name = "worth-query-testkit-host"
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             manifest = root / "crates" / name / "Cargo.toml"
             manifest.parent.mkdir(parents=True)
             manifest.write_text(f'[package]\nname = "{name}"\n'
-                                '[package.metadata.worth.worlds]\nworkspace = "worth-query"\n',
+                                '[package.metadata.worth.testkit]\nworkspace = "worth-query"\n',
                                 encoding="utf-8")
             metadata = report.read_metadata(root)
         rows = report.summarize([unit(name=name, target="", seconds=121)],
-                                metadata, {}, {}, True)
-        self.assertEqual(rows[0]["kind"], "worlds")
-        self.assertEqual(rows[0]["budget_seconds"], 121)
-        self.assertEqual(rows[0]["decision"], "split_candidate")
+                                metadata, {}, {})
+        self.assertEqual(rows[0]["kind"], "testkit")
+        self.assertEqual(rows[0]["library_seconds"], 121)
+        self.assertNotIn("decision", rows[0])
 
     def setUp(self):
-        self.metadata = {COURT: {"boundary": "host", "class": "fast"},
-                         "worth-query-worlds": {"boundary": None, "class": None}}
+        self.metadata = {COURT: {"surface": "host"},
+                         "worth-query-testkit": {"surface": None}}
 
-    def summarize(self, units, cold=True):
+    def summarize(self, units):
         return report.summarize(report.parse_units(html(units)), self.metadata,
-                                {COURT: 4}, {COURT: {"publication": 4}}, cold)
+                                {COURT: 4}, {COURT: {"publication": 4}})
 
     def test_real_schema_excludes_dependency_wait_and_other_target_work(self):
         units = [unit(), unit(1, "worth-query-execution", "", 900),
@@ -57,31 +57,32 @@ class CourtTimingTests(unittest.TestCase):
         row = self.summarize(units)[0]
         self.assertEqual(row["integration_seconds"], 121)
         self.assertEqual(row["own_total_seconds"], 141)
-        self.assertEqual(row["decision"], "split_candidate")
+        self.assertNotIn("decision", row)
         self.assertEqual(len(row["targets"]), 2)
         self.assertEqual(row["planned_owners"], {"publication": 4})
 
-    def test_split_threshold_is_strict_and_needs_clean_claim(self):
-        self.assertEqual(self.summarize([unit(seconds=120)])[0]["decision"], "within_budget")
-        self.assertEqual(self.summarize([unit()], False)[0]["decision"], "unqualified_cache")
-        # Small count and short duration never decide an upward merge.
-        self.assertEqual(self.summarize([unit(seconds=2)])[0]["decision"], "within_budget")
+    def test_duration_never_changes_topology_or_reports_a_threshold(self):
+        for seconds in (2, 120, 121, 10000):
+            row = self.summarize([unit(seconds=seconds)])[0]
+            self.assertEqual(row["integration_seconds"], seconds)
+            self.assertNotIn("decision", row)
+            self.assertFalse(any("budget" in key for key in row))
 
     def test_worlds_library_and_missing_canonical_test_are_distinct(self):
         rows = self.summarize([unit(target=' test "exception" (test)'),
-                               unit(1, "worth-query-worlds", "", 125)])
-        self.assertEqual(rows[0]["decision"], "unmeasured_canonical_target")
+                               unit(1, "worth-query-testkit", "", 125)])
+        self.assertIsNone(rows[0]["integration_seconds"])
         self.assertEqual(rows[1]["library_seconds"], 125)
-        self.assertEqual(rows[1]["decision"], "split_candidate")
+        self.assertNotIn("decision", rows[1])
 
-    def test_name_classes_include_workspace_and_compile_boundary(self):
-        self.assertEqual(report.court_identity("worth-query-bank-court-server-scale"),
-                         ("worth-query-bank", "server", "scale"))
-        self.assertEqual(report.court_identity("worth-query-court-compile-fail"),
-                         ("worth-query", None, "compile_fail"))
+    def test_names_describe_surfaces_without_classes(self):
+        self.assertEqual(report.court_identity("worth-query-bank-court-server"),
+                         ("worth-query-bank", "server"))
+        self.assertEqual(report.court_identity("worth-query-court-archive-wire"),
+                         ("worth-query", "archive-wire"))
         self.assertIsNone(report.court_identity("worth-query-host"))
         with self.assertRaisesRegex(report.ReportError, "invalid court"):
-            report.court_identity("worth-query-court-host-serial")
+            report.court_identity("worth-query-court-")
 
     def test_bad_html_schema_and_duplicate_units_fail_explicitly(self):
         bad = ["no data", "const UNIT_DATA = [];", "<script>const UNIT_DATA = nope;</script>",
@@ -100,7 +101,7 @@ class CourtTimingTests(unittest.TestCase):
             manifest = root / "crates" / COURT / "Cargo.toml"
             manifest.parent.mkdir(parents=True)
             manifest.write_text('[package]\nname = "' + COURT + '"\n'
-                                '[package.metadata.worth.court]\nboundary = "host"\nclass = "fast"\n',
+                                '[package.metadata.worth.court]\nsurface = "host"\n',
                                 encoding="utf-8")
             plan = root / "plan.json"
             plan.write_text(json.dumps([{"court": COURT, "court_after": "fast::publication::case",
@@ -110,7 +111,7 @@ class CourtTimingTests(unittest.TestCase):
                 path.write_text(html([unit(seconds=122 + index)]), encoding="utf-8")
             output = io.StringIO()
             args = [*(str(path) for path in inputs), "--root", str(root), "--plan", str(plan),
-                    "--cold", "--json"]
+                    "--cache-conditions", "warm dependencies, new court targets", "--json"]
             with redirect_stdout(output):
                 self.assertEqual(report.main(args), 0)
             result = json.loads(output.getvalue())
@@ -121,7 +122,7 @@ class CourtTimingTests(unittest.TestCase):
             with redirect_stdout(table):
                 report.render_table(result)
             self.assertIn("Own total", table.getvalue())
-            self.assertIn('test "worth_query_court_host_fast" (test): 122.00s', table.getvalue())
+            self.assertIn('test "worth_query_court_host" (test): 122.00s', table.getvalue())
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(report.main([str(inputs[0]), str(inputs[0]), "--root", str(root)]), 2)
                 self.assertEqual(report.main([str(root / "missing.html"), "--root", str(root)]), 2)

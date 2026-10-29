@@ -1,12 +1,12 @@
 //! The currently activated source chooses permission, never the target or initial host program.
 pub use super::*;
+pub use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
+pub use worth_query_host::facade::declaration::application_program::*;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::{
     host::publish,
     programs::{validated_first_program, validated_second_program},
     schema::{DocumentRetentionContribution, DocumentRetentionSchema},
 };
-pub use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
-pub use worth_query_host::facade::declaration::application_program::*;
 pub struct NoAdoptionProgram;
 impl ApplicationProgramDefinition<DocumentRetentionSchema> for NoAdoptionProgram {
     type Contributions = (DocumentRetentionContribution,);

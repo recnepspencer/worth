@@ -53,11 +53,6 @@ pub mod retirement;
 pub mod schema;
 pub use installation::{install, install_with_projection};
 
-pub use worth_query_testkit_document_retention::facade::document_retention_model::{
-    host::host_limits,
-    operator_identity::{block_on, operator_identity, request_scope, OperatorAdapter},
-    retention_entry::DOCUMENT_IDENTITY,
-};
 pub use schema::*;
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub use worth_query_host::facade::{
@@ -72,6 +67,11 @@ pub use worth_query_host::facade::{
         WorthQueryOperationBodyDenial,
     },
     runtime::ExecutionAllocationPolicy,
+};
+pub use worth_query_testkit_document_retention::facade::document_retention_model::{
+    host::host_limits,
+    operator_identity::{block_on, operator_identity, request_scope, OperatorAdapter},
+    retention_entry::DOCUMENT_IDENTITY,
 };
 
 pub fn invoke<const DESTINATION: u64>(

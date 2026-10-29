@@ -1,10 +1,10 @@
-pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 pub use crate::facade::certification::query_runtime_world::build_primary_query_world;
 pub use worth_query::facade::domain::{
     bind_primary_runtime_granular_invalidations, maintain_primary_runtime_granular_batch,
     WorthQueryPrimaryGranularMaintenanceOutcome,
 };
 pub use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
+pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 
 pub fn assert_duplicate_and_reordered_convergence(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,

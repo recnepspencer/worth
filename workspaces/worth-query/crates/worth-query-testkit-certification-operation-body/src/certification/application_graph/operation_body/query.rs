@@ -1,10 +1,5 @@
 // Governed readback uses the same declared field bindings as ordinary queries.
 pub use super::schema::*;
-pub use worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DocumentRetentionRead;
-pub use worth_query_testkit_document_retention::facade::document_retention_model::schema::{
-    DocumentQueryParameters, DocumentQueryParametersBinding, DocumentRetentionRow,
-    DocumentRetentionRowBinding,
-};
 pub use worth_query_host::facade::{
     declaration::{application_query::*, application_schema::*},
     primary_graph::{
@@ -12,6 +7,11 @@ pub use worth_query_host::facade::{
         WorthQueryApplicationProjectionRow,
     },
     worth_query_application_query, worth_query_portable_type,
+};
+pub use worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DocumentRetentionRead;
+pub use worth_query_testkit_document_retention::facade::document_retention_model::schema::{
+    DocumentQueryParameters, DocumentQueryParametersBinding, DocumentRetentionRow,
+    DocumentRetentionRowBinding,
 };
 
 pub struct IdentitySlot;

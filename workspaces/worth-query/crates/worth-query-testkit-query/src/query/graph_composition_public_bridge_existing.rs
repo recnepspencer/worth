@@ -1,4 +1,3 @@
-pub use worth_query_testkit_installed_operation_fixture::facade::query::support;
 pub use worth_query::facade::runtime::{
     WorthQueryContinuityMutationFamily, WorthQueryExistingRelationTarget,
     WorthQueryExistingTruthAssertionMode, WorthQueryExistingTruthTargetBinding,
@@ -6,6 +5,7 @@ pub use worth_query::facade::runtime::{
     WorthQueryGraphCompositionProgramStepKind, WorthQueryInspection, WorthQueryLiveView,
     WorthQueryNamingMutationFamily, WorthQueryRuntimeError, WorthQueryUnrefinedLiveShape,
 };
+pub use worth_query_testkit_installed_operation_fixture::facade::query::support;
 
 pub use support::aspect_touch as touch;
 pub use support::public_bridge_runtime::PublicBridgeRuntimeHarness;

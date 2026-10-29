@@ -1,4 +1,3 @@
-pub use worth_query_testkit_installed_operation_fixture::facade::query::support;
 pub use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
 pub use worth_query::facade::foundation::WorthQueryEntityIdentity;
 pub use worth_query::facade::runtime::{
@@ -7,6 +6,7 @@ pub use worth_query::facade::runtime::{
     WorthQueryExistingTruthProbeRequest, WorthQueryExistingTruthTargetBinding, WorthQueryLiveView,
     WorthQueryMutationAuthorityIdentity, WorthQueryRuntimeError, WorthQueryUnrefinedLiveShape,
 };
+pub use worth_query_testkit_installed_operation_fixture::facade::query::support;
 
 pub use support::aspect_touch as touch;
 pub use support::public_bridge_runtime::{

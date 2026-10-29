@@ -30,7 +30,7 @@ pub fn settled_with_order_key(
         foundation::ObservationLaneWitness,
     >,
     domain::WorthQueryNativeAccessKey,
-) {
+){
     settled_with_native_field(workspace, 15)
 }
 
@@ -45,7 +45,7 @@ pub fn settled_with_native_field(
         foundation::ObservationLaneWitness,
     >,
     domain::WorthQueryNativeAccessKey,
-) {
+){
     let bound = bind(workspace);
     let mut request = bound
         .consumer_projection_contract()

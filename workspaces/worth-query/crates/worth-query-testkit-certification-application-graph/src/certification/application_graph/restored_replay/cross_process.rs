@@ -26,12 +26,13 @@ pub const PHASE_DIRECTORY: &str = "WORTH_QUERY_RESTORED_REPLAY_DIRECTORY";
 
 pub fn run_phase(phase: &str, directory: &Path) {
     let test = format!("{}::{phase}", own_test_module());
-    let output = worth_query_testkit_host::facade::host::certification_support::process_deadline::output(
-        Command::new(std::env::current_exe().expect("the test binary is known"))
-            .args([test.as_str(), "--exact", "--nocapture", "--test-threads=1"])
-            .env(PHASE_DIRECTORY, directory),
-    )
-    .expect("the phase process runs");
+    let output =
+        worth_query_testkit_host::facade::host::certification_support::process_deadline::output(
+            Command::new(std::env::current_exe().expect("the test binary is known"))
+                .args([test.as_str(), "--exact", "--nocapture", "--test-threads=1"])
+                .env(PHASE_DIRECTORY, directory),
+        )
+        .expect("the phase process runs");
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         output.status.success() && stdout.contains("1 passed"),

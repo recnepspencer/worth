@@ -27,11 +27,11 @@ pub use worth_query_execution::facade::primary_graph::WorthQueryGranularInvalida
 pub use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
 pub use worth_relational::facade::publication::PatchStreamPosition;
 
+pub use adapters::{CommitLog, CommitThenDecline, DECLINED_AFTER_COMMIT};
 pub use worth_query_testkit_document_retention::facade::document_retention_model::host::{
     publish_on_first_program, restore_on_first_program,
 };
 pub use worth_query_testkit_document_retention::facade::document_retention_model::programs::validated_second_program;
-pub use adapters::{CommitLog, CommitThenDecline, DECLINED_AFTER_COMMIT};
 
 /// Composes a Query runtime over the installation and writes twice, returning
 /// each answer. Every write must have committed exactly once.

@@ -1,14 +1,14 @@
 //! Actual ordinary action ownership for the source-bound replay proof.
+pub use worth_query_host::facade::declaration::application_program::{
+    ApplicationFeatureSpec, ApplicationProgramAuthoring, ApplicationProgramDefinition,
+    ApplicationProgramIdentity, ValidatedApplicationProgram,
+};
 pub use worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionCompletion;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::{
     assessment_output::{OrdinaryRetentionAssessmentBinding, PublishRetentionAssessment},
     programs::{DocumentRetentionFeature, RetentionProgramP0},
     retention_entry::SetRetentionBinding,
     schema::DocumentRetentionSchema,
-};
-pub use worth_query_host::facade::declaration::application_program::{
-    ApplicationFeatureSpec, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-    ApplicationProgramIdentity, ValidatedApplicationProgram,
 };
 
 pub struct SourceBoundReplayProgram;

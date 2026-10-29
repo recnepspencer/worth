@@ -43,7 +43,7 @@ pub fn expired_operator(
     scope: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedExternalPrincipal<
     worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
-> {
+>{
     let adapter = admit_authentication_adapter(
         host.installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(

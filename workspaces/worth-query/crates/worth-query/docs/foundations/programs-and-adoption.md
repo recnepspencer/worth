@@ -290,7 +290,7 @@ An equivalent successor program can correct the older operation while retaining
 its current activation. The correction appends a new occurrence to the target
 branch. A Relational-only correction retains that target's exact Signal basis;
 an authored conditional-definition correction supplies the corresponding Signal
-successor. The [compiled adoption example](../../../worth-query-worlds-certification/src/certification/application_graph/correction/model/adoption_courts.rs)
+successor. The [compiled adoption example](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/adoption_courts.rs)
 shows correction after adoption, changed source and inverse meaning refusals,
 and an equivalent retry returning the same performed receipt.
 

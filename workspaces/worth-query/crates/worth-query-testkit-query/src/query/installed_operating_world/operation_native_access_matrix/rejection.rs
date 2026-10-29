@@ -40,7 +40,7 @@ pub fn execute_owner(
     super::fixture::NativeMatrixRead,
     worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::ReadFamily,
     worth_query::facade::foundation::ObservationLaneWitness,
-> {
+>{
     bound
         .admit_execution_resources(
             (),

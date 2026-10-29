@@ -153,7 +153,7 @@ for contribution-wide invariants, host setup and standalone conditionals.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/program_example_authority/product_workflow_support/schema.rs (abridged)
+// workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/schema.rs (abridged)
 worth_query_application! {
     pub TemporalHostSchema {
         owner: "temporal_host_courtroom",
@@ -386,7 +386,7 @@ Ordinary deletion and producer Retire alone do not authorize a fresh Birth. Nati
 recovery preserves the same physical carrier and unchanged authored records,
 retires the old output before adopting target contracts and indexes, and leaves
 reconstruction to the installed target producer. The
-[native codec journey](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/canonical_transition/successor/adoption.rs)
+[native codec journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/successor/adoption.rs)
 uses nonempty authored source, incompatible V1/V2 output codecs, real producer
 publication, a source edit through Preserve, and current-format reopen.
 
@@ -410,8 +410,8 @@ eligibility-only fields or a different node. Consume it with
 exercise full optional aspects, nested wire changes, concrete binding mismatch
 and reordered delivery/eligibility inputs.
 
-The executable [nested-value model](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/canonical_value/model.rs)
-and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/canonical_value.rs)
+The executable [nested-value model](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_value/model.rs)
+and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_value.rs)
 exercise nondefault values through the entry binding, installed catalog,
 authenticated read and current-format native recovery. The
 [compiler fixtures](../crates/worth-foundational/tests/value_shape/compiler.rs)
@@ -430,16 +430,16 @@ refusal remains attached to the read, so catching its error still prevents
 managed collection-pair reads share it until their atomic view decision.
 Continuation and live delivery retain it through finalization and recheck the
 request after application projection returns. See the
-[canonical read examples](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/canonical_admission.rs),
-[read-attempt example](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/canonical_admission/ordinary_attempt.rs)
-and [paired-read example](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/canonical_admission/paired.rs).
+[canonical read examples](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission.rs),
+[read-attempt example](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission/ordinary_attempt.rs)
+and [paired-read example](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission/paired.rs).
 
 For several reads from a retained invariant snapshot, use
 `snapshot.read_fields(&execution, |read| { /* read.field(&identity, field) */ })`.
 The closure borrows the existing native pin and shares decode state across its
 field reads. A field refusal or late cancellation discards the closure's output.
 `snapshot.field(&execution, &identity, field)` remains a single completed read.
-See the [retained snapshot example](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/canonical_admission/retained_snapshot.rs)
+See the [retained snapshot example](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission/retained_snapshot.rs)
 for fresh-request retry at the original version after a source edit.
 
 Representation bounds, request grants, resident retained-size accounting and
@@ -1753,7 +1753,7 @@ lifetimes, failure types and measured-result handling.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/program_example_authority/product_workflow_support/application.rs
+// workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/application.rs
 use worth_query_host::facade::{application_installation, primary_graph, runtime};
 
 let declaration = TemporalHostSchema::declaration().expect("the example schema is valid");
@@ -1921,9 +1921,9 @@ the same successor without reauthoring. The existing phase/policy repair method
 remains available for its explicit contract; its `Execution(&lease)` must be the
 caller lease that funds the call or one of its ancestors, and any other lease
 refuses `UnrelatedNestedLease`. The runnable
-[original request fixture](../workspaces/worth-query/crates/worth-query-worlds-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
+[original request fixture](../workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
 uses the real nonempty native transition; its
-[capture repair companion](../workspaces/worth-query/crates/worth-query-worlds-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
+[capture repair companion](../workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
 retains the native capsule across stopped attempts.
 
 Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
@@ -1994,7 +1994,7 @@ let token = continuation.expect("another child page");
 let second = fresh_original_request.query(read_children).resume(token, width, work)?;
 ```
 
-The [related-output journey](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/canonical_transition/related/continuation.rs)
+The [related-output journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/continuation.rs)
 publishes three output roles and two internal relations. An original token still
 reads the old child total `12` after Preserve advances all three original outputs
 to `37`; the genuine target producer emits child total `1012`, then Preserve
@@ -2227,7 +2227,7 @@ the delete grant. In `decide`, resolve the target, call
 supplies the native dependency used by deletion lowering. In `build_candidate`,
 project that target, call `writer.delete_entity(...)`, and bind its declared
 Retire role with `writer.retire_output::<Role>(&target)`. The
-[compiled retirement handler](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/correction/model/source_output_handlers.rs)
+[compiled retirement handler](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/source_output_handlers.rs)
 shows this sequence with ordinary installed read and delete authority.
 
 The full, compiling version of all three is
@@ -2468,7 +2468,7 @@ required-output settlement nor permission to publish a positive result. Native
 eligibility still refuses unresolved preparation, partial work, already settled
 roots, dependent trees and discovered aggregates. No source or producer is
 reexecuted to close. The executable ordinary fixed-leaf court is
-[`terminal_unavailable.rs`](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs).
+[`terminal_unavailable.rs`](../workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs).
 
 Capture the original meaning once. Supply a fresh authenticated ordinary request
 for every `advance`, delivery and close. Native admission checks current authority
@@ -3645,7 +3645,7 @@ keys interned only while preparing an unpublished attempt do not change the
 checkpoint. The runtime's live symbol interner can still resolve those pending
 keys; recovery persists the selected retained truth.
 
-The [temporal integrity rule](../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/program_example_authority/product_workflow_support/integrity.rs)
+The [temporal integrity rule](../workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/integrity.rs)
 returns `TemporalIntegrityRefusal::InvalidState` with the candidate revision and
 lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/typed_invariant_refusal.rs)
 exercise original-caller decoding, unchanged native checkpoints, cancellation,
@@ -4157,7 +4157,7 @@ legacy policy. Manual implementations return the direct requirement type.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/retention_entry/occurrence_write.rs (abridged)
+// workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/retention_entry/occurrence_write.rs (abridged)
 worth_query_decl::facade::worth_query_mutation_binding!(
     pub OccurrenceSetRetentionBinding for SetRetentionInput, schema DocumentRetentionSchema,
     // ... identity, input, operation, result, idempotency, decision, handler ...
@@ -4932,7 +4932,7 @@ authentication must still be current at publication.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/adoption/branch_adoption.rs
+// workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/adoption/branch_adoption.rs
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryBranchAdoptionPublicationOutcome,
 };

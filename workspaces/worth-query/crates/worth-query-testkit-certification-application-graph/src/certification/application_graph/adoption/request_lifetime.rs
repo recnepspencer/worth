@@ -1,9 +1,4 @@
 //! A staged adoption carries facts across host calls, never request custody.
-pub use worth_query_testkit_document_retention::facade::document_retention_model::{
-    host::publish_on_first_program,
-    operator_identity::{authenticate_operator, request_scope},
-    programs::RetentionProgramP1,
-};
 pub use std::num::NonZeroUsize;
 pub use worth_query_host::facade::{
     application_contribution::{
@@ -22,6 +17,11 @@ pub use worth_query_host::facade::{
         place_managed_computations_on_this_thread_for_test as place,
         WorthQueryExecutionPlacementForTest as Placement,
     },
+};
+pub use worth_query_testkit_document_retention::facade::document_retention_model::{
+    host::publish_on_first_program,
+    operator_identity::{authenticate_operator, request_scope},
+    programs::RetentionProgramP1,
 };
 pub struct Restore(
     pub Placement,

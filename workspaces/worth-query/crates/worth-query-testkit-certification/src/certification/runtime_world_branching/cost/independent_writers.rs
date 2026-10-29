@@ -1,10 +1,10 @@
 pub use std::num::NonZeroUsize;
 pub use std::sync::Arc;
 
-pub use worth_query_testkit_host::facade::host::adapters::ReplacementPredicate;
 pub use crate::facade::certification::query_probe::{assert_ordinary_work, read};
-pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 pub use worth_query_host::facade::runtime::CompositeComponentChangePosture;
+pub use worth_query_testkit_host::facade::host::adapters::ReplacementPredicate;
+pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 
 pub fn assert_sibling_writer_progress_while_combined_is_parked() {
     let world = CourtroomWorld::publish("ready");

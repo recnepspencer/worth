@@ -6,9 +6,9 @@ pub use worth_query::facade::domain::{
 pub use worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationCoverage;
 pub use worth_query_host::facade::primary_graph;
 
-pub use worth_query_testkit_host::facade::host::world::{request_scope, CourtroomWorld};
 pub use crate::facade::certification::query_runtime_world::build_primary_query_world;
 pub use worth_query_testkit_host::facade::host::schema::{IntentGateField, UnrelatedValueField};
+pub use worth_query_testkit_host::facade::host::world::{request_scope, CourtroomWorld};
 
 /// A relevant write followed by many unrelated writes reaches the next
 /// conditional observation exactly. The subscription keeps no retention
