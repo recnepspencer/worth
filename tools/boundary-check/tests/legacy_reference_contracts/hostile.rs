@@ -58,6 +58,9 @@ fn committed_grown_snapshot_cannot_self_authorize_at_head() {
         "cad/workspaces/worth-contracts/crates/demo/src/lib.rs",
         "pub fn ok() {}\n",
     );
+    // This committed ratchet fixture has no governed Query or Bank workspace.
+    repo.write_file("tools/boundary-check/config/test-workspaces.txt", "");
+    repo.write_file("tools/boundary-check/config/test-binary-exceptions.txt", "");
     repo.git_init_commit_all();
 
     let (ok, output) = repo.run_boundary_check();
