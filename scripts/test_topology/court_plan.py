@@ -159,7 +159,8 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
                for name in sorted([c['name'] for c in courts] + list(kits))]
     effects.write(manifest, workspace_manifest(manifest.read_text(encoding='utf-8'), members))
     register(effects, repository, workspace, stem, splits)
-    registry_rewrites, unresolved_registrations = relocate(effects, repository, assignments)
+    compiled_sources = sorted([{'destination': relative(u['case_path'], repository), 'source': relative(u['node'].source, repository), 'old_module': '::'.join(u['node'].names)} for u in units] + [{'destination': relative(r['declarations'], repository), 'source': relative(r['node'].source, repository), 'old_module': '::'.join(r['node'].names)} for r in model.canonical if 'declarations' in r], key=lambda r: r['destination'])
+    registry_rewrites, unresolved_registrations = relocate(effects, repository, assignments, compiled_sources)
     rewrites.extend(registry_rewrites)
     selector_changes = selectors(effects, repository, workspace, courts, roster, model.executables.prerequisites())
     work = collect(courts, assignments, repository)
@@ -184,7 +185,7 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
     executables_before = sum(t['test'] for o in owners for t in o['cargo']['targets'])
     return {'version': 1, 'workspace_manifest': relative(manifest, repository), 'stem': stem,
             'authority': ['docs/coding-guidelines/iteration_laws.md', 'test_convention_v3.md §§2–5'],
-            'compiled_source_map': sorted([{'destination': relative(u['case_path'], repository), 'source': relative(u['node'].source, repository), 'old_module': '::'.join(u['node'].names)} for u in units] + [{'destination': relative(r['declarations'], repository), 'source': relative(r['node'].source, repository), 'old_module': '::'.join(r['node'].names)} for r in model.canonical if 'declarations' in r], key=lambda r: r['destination']),
+            'compiled_source_map': compiled_sources,
             'targets': targets, 'binary_constraints': binary_constraints(targets, courts), 'courts': court_rows, 'testkits': kit_report, 'splits': splits,
             'category_mapping': mapping or [{'from': k, 'to': v or 'ordinary'} for k, v in sorted(__import__('court_partition').INTERIM.items())],
             'path_rewrites': [json.loads(r) for r in rewrites], 'dev_dependencies_to_drop': drops,

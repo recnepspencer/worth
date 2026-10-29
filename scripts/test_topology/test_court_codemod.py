@@ -16,7 +16,8 @@ from court_plan import build
 from court_packing import area_suffix
 from frontier_adapter import surface
 from module_tree import read_tree, test_names
-from plan_effects import apply
+from plan_effects import apply, Effects
+from registered_paths import relocate
 from rust_source import crate_uses, modules
 from rust_source import pairs, tokens
 from frontier_adapter import frontiers
@@ -79,6 +80,20 @@ class CourtCodemodTests(unittest.TestCase):
         self.assertTrue(any('#[cfg(not(any()))]' in w['content'] for w in writes))
         forbidden = {'testkit-visibility', 'testkit-crate-context', 'cross-category-support'}
         self.assertFalse(forbidden & set(self.plan['totals']['work_items_by_kind']))
+
+    def test_closed_caller_registration_follows_every_compiled_source_slice(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            registry = root / 'tools/boundary-check/config/control-callers.txt'
+            registry.parent.mkdir(parents=True)
+            old = 'crates/owner/tests/shared.rs'
+            registry.write_text('crates/product/ ' + old + '\n')
+            effects = Effects(root)
+            destinations = ['crates/court/tests/case.rs', 'crates/testkit/src/declarations.rs']
+            relocate(effects, root, {}, [{'source': old, 'destination': d} for d in destinations])
+            content = effects.program()['writes'][0]['content']
+            self.assertEqual(content.splitlines(), ['crates/product/ ' + d for d in destinations])
+            self.assertNotIn(old, content)
 
     def test_executable_paths_have_a_named_runtime_owner_and_build_prerequisite(self):
         self.assertEqual(self.plan['executable_prerequisites'], [{'package': 'worth-host', 'binary': 'host-inspect'}])
