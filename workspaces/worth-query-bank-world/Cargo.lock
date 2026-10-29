@@ -3412,6 +3412,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde_json",
  "tokio",
+ "worth-query-bank-testkit",
  "worth-query-bank-testkit-courtroom",
 ]
 

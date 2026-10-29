@@ -11,6 +11,7 @@ publish = false
 surface = "transport"
 
 [dev-dependencies]
+worth-query-bank-testkit = { path = "../worth-query-bank-testkit" }
 bank-http-adapter = { workspace = true }
 bank-user-node = { workspace = true }
 reqwest = { workspace = true }
