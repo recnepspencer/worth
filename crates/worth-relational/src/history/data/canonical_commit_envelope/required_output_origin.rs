@@ -17,8 +17,28 @@ use retention::{origin_request, origin_retention_bytes};
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum CanonicalOutputPublication {
     Birth,
-    BirthAfterCodecRetirement { retirement: CommitId },
-    Preserve { predecessor: CommitId },
+    BirthAfterCodecRetirement {
+        retirement: CommitId,
+    },
+    Preserve {
+        predecessor: CommitId,
+    },
+    /// Ordinary authored retirement succeeds the selected publication without
+    /// inventing a running producer. Attribution remains predecessor provenance.
+    AuthoredRetirement {
+        predecessor: CommitId,
+    },
+}
+
+impl CanonicalOutputPublication {
+    pub(crate) fn predecessor(&self) -> Option<CommitId> {
+        match self {
+            Self::Birth | Self::BirthAfterCodecRetirement { .. } => None,
+            Self::Preserve { predecessor } | Self::AuthoredRetirement { predecessor } => {
+                Some(*predecessor)
+            }
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]

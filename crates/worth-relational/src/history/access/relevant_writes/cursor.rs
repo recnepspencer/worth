@@ -100,12 +100,16 @@ impl RelationalRuntime {
                 .any(|key| matches!(key, Key::Adjacency { .. }))
             {
                 super::ordered_visit(context, generation.incomplete_adjacency.len(), 8)?;
-                if generation
-                    .incomplete_adjacency
-                    .first_at_or_after(&next)
-                    .is_some()
+                if let Some((&ordinal, gap)) =
+                    generation.incomplete_adjacency.first_at_or_after(&next)
                 {
-                    return Err(Denial::IncompleteAdjacencyHistory);
+                    return Err(Denial::IncompleteAdjacencyHistory {
+                        ordinal,
+                        commit: gap.commit,
+                        relation: gap.relation,
+                        kind: gap.kind,
+                        reason: gap.reason,
+                    });
                 }
             }
             super::ordered_visit(context, 0, selectors.len() as u64)?;

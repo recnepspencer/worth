@@ -108,6 +108,15 @@ derives and captures the inverse input, resolves its scope, admits the current
 caller and runs the installed handler to build a candidate. State changes when
 `publish()` succeeds. Dropping the candidate releases its preparation.
 
+The internal preparation consumes the compatibility owner's checked source,
+target ancestry and program interpretation together. Its retained evidence is
+specific to that occurrence and action. Publication still checks the actual
+target: even a later equal-value write makes an older prepared target stale.
+Compensation keeps its fresh ordinary reads, and reapplication keeps its
+separate declared source-action and active-reversal checks. The focused
+stale/equal-write control passed; overall qualification remains blocked by the
+retirement/currentness and Native consult findings described below.
+
 ## Select a source after closing its operation
 
 Capture the completed receipt's `correction_source()` locator, then close
@@ -772,10 +781,16 @@ restoring the list does not restore a changed model resolution field.
 Strict original fact verification and genuine canonical cancellation still
 precede target support comparison. Advancing structural revisions during a real
 reverse is allowed; equal final lists never substitute for that reverse.
-Cascade retirement contributes membership occurrences. Audit retention without
-full-generation membership evidence returns `IncompleteAdjacencyHistory`;
-audit-visible membership comparison returns `UnsupportedVisibility`. Neither
-refusal asserts an empty list. Native storage, request and allocation refusals
+Cascade retirement contributes membership occurrences. Audit retention carries
+its actual unchanged full-generation endpoints with the canonical lifecycle,
+even though it does not physically change adjacency. That history can be
+complete while audit-visible support comparison still returns
+`UnsupportedVisibility`. Genuinely missing membership evidence returns
+`IncompleteAdjacencyHistory` with the offending canonical ordinal/commit and
+known relation/kind/reason; unknown touch graphs refuse the whole interval.
+Previously committed lifecycle-only records remain incomplete; reconstruction
+cannot invent their missing endpoints from dense patch detail. Neither refusal
+asserts an empty list. Native storage, request and allocation refusals
 remain typed through `RestoredSupport::Adjacency` or its canonical-history cause.
 
 Unprojected aggregate, raw adjacency/relation/walk, other index kinds, workflow
@@ -802,6 +817,80 @@ the same installed contribution and program composition. Native's
 cover actual endpoint moves/no-ops, equal-endpoint physical relation identities,
 retirement, and exact occurrence recovery; its existing durable-medium fixture
 also checks the paired receiver's typed current-head storage refusal.
+
+The earlier focused coverage/freshness qualification passed Native's 19 cases
+and 10 of 11 Query cases. Audit lifecycle coverage survived accelerator disposal,
+canonical digest/encoding and durable recovery. Those authored-history passes
+carry. The same installed Preserve producer passed A/B/A with distinct receipts,
+exact current output and full-generation lineage, stale-settlement refusal and
+unchanged zero-contact reuse; that court passed again in the current run.
+
+The earlier retirement/reissue failure retained Native's "publication
+relation generation absent or retired" denial during required-output publication.
+The source edit had already committed; its later producer-attempt refusal did
+not roll it back. The exact relation/site in that earlier failure remains
+unobserved. Its original failed receipt is preserved.
+
+The preceding post057 run passed all nine Native publication courts, including
+complete ordinary authored retirement followed by exact warm/cold successor
+reissue, full-generation membership, partial/foreign/sibling/stale/cancelled
+refusals and closed Birth. The ordinary action does not pretend to run a
+producer, and canonical succession retains the original lineage provenance.
+
+That run executed all 17 Query cases: 16 passed and the unchanged retirement
+case failed later. Required-output reissue now actually publishes fresh
+full-generation entities; exact operation/receipt distinctions and value/graph
+readback pass. A following output demand attempts Preserve and returns
+`ProducerUnavailable` with `PriorOutputDenial::OutputUnavailable` for
+`derived-report`. The expected zero-contact current settlement, its retry and
+post-reissue stale-settlement checks were not reached. Matching readback alone
+does not prove output currentness. No stale prior-output error becomes absence.
+
+That run's stale/equal-write prepared-use court passed: a later equal authored
+write makes the exact preparation `ProductBasisStale`, preserves that head,
+and fresh inspection returns `SourceDiverged`. Compensation, reapplication,
+consecutive originals, independent dependencies, siblings and adjacency controls
+also passed. The 146 affected Native/QueryExecution doctests, guidance generation
+and context generation/check passed. Normal boundary enforcement refused two
+direct request consults in the new Native retirement receiver (`BC7014`);
+those failures remain preserved. The current receiving correction uses Native
+`consult_stage(Admission)` with the original request at both safe points.
+Current facts may schedule the actual producer of an already committed Ready
+for the exact source and correspondence; this grants no input-reuse or
+checkpoint authority. The ordinary Ready path still certifies currentness.
+Paired Create/Preserve reads select the latest actual publication in one
+installed family, exact partition and selected ancestry, then require the
+selected role's live full generation. A dead selected member still refuses.
+The strict reissue court now also requires a later source change to Preserve
+the new generations and a second retirement attempt to refuse without head
+movement. All ten approved current cases passed: one Native admission court,
+two QueryExecution locator courts and seven public application cases. The
+strict retirement/reissue court reached actual zero-contact current receipt,
+new full generations, unchanged retry, stale-settlement refusal and subsequent
+Preserve of the new identities. SAME-Preserve ABA, companion preservation,
+required-output reapplication and cancellation/custody also passed. The exact
+dynamic candidate/currentness substage and prior full generation in the
+preserved failed run were not observed; the selection mechanism above is
+established by source tracing, not a new runtime observation.
+
+The first Native acquisition failed on a test-local missing `mut` for schema
+installation. That one-line fixture correction changed no production or
+assertion; its fresh acquisition and exact case passed. The original compiler
+failure remains retained. Current normal guidance and context generation,
+complete generated-delta inspection, boundary check and context check pass.
+There was no generated or facade snapshot delta. Unchanged Native history and
+publication proofs and the 146 unaffected doctests carry their actual prior
+results; they were not rerun or counted as new proof. Final evidence review and
+a qualified immutable adoption remain pending; Phase19 remains open.
+
+The existing passive observer retains the first correction rejection stage,
+exact fact coordinate when known and typed denial before consumer categorization.
+Returned publication errors retain predecessor/candidate relation and basis
+context. Private Entry remains failed; its six unsupported classes, first
+producer rejection, session Native subtype and exact CAD incomplete-history
+occurrence remain unknown. One focused diagnostic acquisition follows only
+a publicly qualified immutable SDK and separately reviewed adoption. These
+public results authorize no consumer SourceOccurrence/read/inverse cutover.
 
 The caller needs current disclosure and current admission for the inverse.
 Another authorized actor can correct the source after the original actor's

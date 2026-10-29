@@ -18,7 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) | A source receipt, current principal, target branch and client key; the contribution declares the inverse and disclosure query. Restoration requires exact later source/reversal pairs and retained original field, aspect-presence and complete live adjacency support under compatible installed meaning. Relation-dependent fields remain separate dependencies. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) | A source receipt, current principal, target branch and client key; the contribution declares the inverse and disclosure query. Restoration requires exact later source/reversal pairs and retained original field, aspect-presence and complete live adjacency support under compatible installed meaning. Relation-dependent fields remain separate dependencies. Audit lifecycle coverage and readable audit support have separate contracts; focused audit, same-producer ABA and stale-use proofs pass; the current focused receiving courts pass genuine retirement/reissue, current receipts and later Preserve of fresh generations; private diagnostics and Phase19 qualification remain open. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -599,6 +599,15 @@ with value 11. Run it from the repository root:
 ```text
 cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-topology-entry --example required_feature
 ```
+
+`DecisionReader::prior_output_preserved_or_created` selects the latest publication
+of its declared Create/Preserve bindings in one installed output family, exact
+source partition and selected ancestry. The selected typed role must still be
+a live full-generation entity. A stale or missing member is a denial; it never
+falls back to an older binding. Ordinary `prior_output` keeps its exact-binding
+historical meaning. Focused public tests pass genuine retirement, reissue,
+current settlement, unchanged retry and subsequent Preserve of fresh generations.
+Final evidence review and immutable adoption remain pending.
 
 ### 3.2 Attach actions to features
 

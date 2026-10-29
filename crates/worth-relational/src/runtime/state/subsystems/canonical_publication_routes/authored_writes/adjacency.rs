@@ -15,7 +15,17 @@ pub(super) fn append(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), Denial> {
     let Some(touches) = envelope.descriptive_touches().exact_touches() else {
-        return incomplete(generation, execution, context);
+        return incomplete(
+            generation,
+            execution,
+            context,
+            super::AdjacencyHistoryGap {
+                commit: envelope.commit.commit_id,
+                relation: None,
+                kind: None,
+                reason: "unknown-touch-graph",
+            },
+        );
     };
     let mut affected = authored_relations(execution, context, envelope, touches)?;
     for touch in touches {
@@ -41,7 +51,17 @@ pub(super) fn append(
             || source.generation_value() == 0
             || target.generation_value() == 0
         {
-            return incomplete(generation, execution, context);
+            return incomplete(
+                generation,
+                execution,
+                context,
+                super::AdjacencyHistoryGap {
+                    commit: envelope.commit.commit_id,
+                    relation: Some(*relation),
+                    kind: Some(*kind),
+                    reason: "wildcard-membership-generation",
+                },
+            );
         }
         mark(&mut affected, execution, context, *relation, true)?;
         // Every old/new coordinate contributes BOTH roles. The unchanged role
@@ -62,13 +82,24 @@ pub(super) fn append(
             )?;
         }
     }
-    for (_, covered) in affected.iter() {
+    for (relation, covered) in affected.iter() {
         crate::history::visit_authored_write(context)?;
         if !covered {
-            // Audit retention has lifecycle evidence without full endpoints.
-            // Dense patch detail cannot supply missing generations. Refuse
-            // this selected interval for adjacency, never report empty.
-            return incomplete(generation, execution, context);
+            // Dense patch detail cannot supply missing full generations.
+            // Preserve the actual offending relation and any known kind,
+            // but refuse globally: kind alone cannot establish its endpoints.
+            let kind = uncovered_kind(context, envelope, touches, *relation)?;
+            return incomplete(
+                generation,
+                execution,
+                context,
+                super::AdjacencyHistoryGap {
+                    commit: envelope.commit.commit_id,
+                    relation: Some(*relation),
+                    kind,
+                    reason: "uncovered-relation-lifecycle-or-intent",
+                },
+            );
         }
     }
     Ok(())
@@ -115,6 +146,34 @@ fn authored_relations(
     Ok(affected)
 }
 
+fn uncovered_kind(
+    context: &mut MapKernelContext<'_, '_>,
+    envelope: &CanonicalCommitEnvelope,
+    touches: &[Touch],
+    relation: RelationId,
+) -> Result<Option<crate::identity::data::KindId>, Denial> {
+    for touch in touches {
+        crate::history::visit_authored_write(context)?;
+        if let Touch::RelationLifecycle {
+            relation: actual,
+            kind,
+        } = touch
+            && *actual == relation
+        {
+            return Ok(Some(*kind));
+        }
+    }
+    for intent in &envelope.merged_plan.merged_intents {
+        crate::history::visit_authored_write(context)?;
+        if let MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(value)) = intent
+            && value.relation_id == relation
+        {
+            return Ok(Some(value.kind_id));
+        }
+    }
+    Ok(None)
+}
+
 fn mark(
     affected: &mut ExecutionOrderedMap<RelationId, bool>,
     execution: ExecutionRequest<'_, '_>,
@@ -135,10 +194,11 @@ fn incomplete(
     generation: &mut AuthoredWriteGeneration,
     execution: ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
+    gap: super::AdjacencyHistoryGap,
 ) -> Result<(), Denial> {
     crate::history::visit_authored_write_lookup(context, generation.incomplete_adjacency.len(), 8)?;
     generation
         .incomplete_adjacency
-        .insert_cloned_native_for_request(&generation.ordinal, &(), execution)?;
+        .insert_cloned_native_for_request(&generation.ordinal, &gap, execution)?;
     Ok(())
 }

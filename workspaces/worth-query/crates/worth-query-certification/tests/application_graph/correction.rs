@@ -16,6 +16,11 @@ use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenia
 mod consecutive_undo;
 
 #[test]
+fn compensation_keeps_fresh_authority_and_intervening_movements() {
+    model::compensation_courts::run();
+}
+
+#[test]
 fn retained_reapplication_uses_explicit_alternatives_and_active_consumption() {
     model::tree_reapplication::run();
 }

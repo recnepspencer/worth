@@ -11,6 +11,7 @@ fn paired_membership_refuses_incompatible_installed_relation_or_endpoint_meaning
         let a = create_entity(&execution, &runtime, "source");
         let b = create_entity(&execution, &runtime, "target");
         let edge = create_relation_outcome(&execution, &runtime, a, b, "edge");
+        let source = test_owner_main_basis(&runtime).unwrap();
         let old = runtime
             .read_truth()
             .project_snapshot(&edge.snapshot)
@@ -115,6 +116,15 @@ fn paired_membership_refuses_incompatible_installed_relation_or_endpoint_meaning
                 ReadDirection::Outgoing
             ),
             Err(Denial::IncompatibleMeaning)
+        );
+        let target = test_owner_main_basis(&runtime).unwrap();
+        assert!(
+            matches!(runtime.authored_write_history_cursor(
+            execution, &source, selected(&runtime, &target), &[key(a, Direction::Outgoing)]
+        ), Err(RelationalAuthoredWriteDenial::IncompleteAdjacencyHistory {
+            commit, ordinal, relation: None, kind: None, reason: "unknown-touch-graph"
+        }) if commit == installed.commit.commit_id && ordinal > 0),
+            "an actual schema-transition publication has unknown touches and must refuse globally"
         );
         for outcome in [&edge, &installed] {
             release_test_commit_snapshot(&runtime, outcome);

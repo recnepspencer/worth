@@ -7,6 +7,53 @@ use super::super::WorthQueryOutputDemandKey;
 use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
+impl super::super::WorthQueryOutputDemandRegistry {
+    /// A scheduling hint for a committed Ready of this exact semantic source.
+    /// This grants neither input reuse nor currentness; ordinary Ready
+    /// advancement rechecks the original receipt, dependencies and request.
+    pub(in crate::domain_computation::primary_graph) fn has_committed_ready(
+        &self,
+        requested: &WorthQueryOutputDemandKey,
+        scope: WorthQueryOperationScopeEntityBinding,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        idempotency_key: &[u8; 32],
+    ) -> bool {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        // A later stopped/in-flight row cannot expose an older cached Ready.
+        let Some(key) = super::super::refreshed_rejoin::newest_matching_row(
+            &state.records,
+            requested,
+            |key, record| {
+                key.same_semantic_source(requested)
+                    && record.product_occurrence == occurrence
+                    && record.source_scope == Some(scope)
+            },
+        ) else {
+            return false;
+        };
+        let DemandState::Output(output) = &state.records[&key].state else {
+            return false;
+        };
+        if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) {
+            return false;
+        }
+        let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
+            return false;
+        };
+        let super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt) =
+            &completion.authority
+        else {
+            return false;
+        };
+        receipt.idempotency_binding().key_identity() == idempotency_key
+            && std::ptr::eq(receipt.output_correspondence(), correspondence)
+    }
+}
+
 /// This returns scheduling custody only. The ordinary Ready path authenticates
 /// its native witness and reads before it can settle or admit an actual refresh.
 pub(super) fn predecessor(

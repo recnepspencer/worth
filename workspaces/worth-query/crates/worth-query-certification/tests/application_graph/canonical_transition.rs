@@ -184,3 +184,6 @@ fn derived_successor_wire_is_incompatible_while_authored_source_codec_is_unchang
         v1
     );
 }
+
+#[path = "canonical_transition/producer_freshness.rs"]
+mod producer_freshness;

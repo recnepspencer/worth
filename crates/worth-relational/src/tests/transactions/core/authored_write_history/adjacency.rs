@@ -3,6 +3,7 @@ use super::*;
 use crate::facade::history::RelationalTouchAdjacencyDirection as Direction;
 use crate::facade::identity::{KindId, RelationId};
 
+mod audit;
 mod paired;
 mod recovery;
 
@@ -215,28 +216,4 @@ fn relation_fields_are_disjoint_but_cascade_retirement_is_an_occurrence() {
     for outcome in [&edited, &retired] {
         release_test_commit_snapshot(&runtime, outcome);
     }
-}
-
-#[test]
-fn audit_retention_refuses_incomplete_membership_history() {
-    use crate::config::data::CascadeDeletePolicy;
-    let host = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
-    let a = create_entity(&execution, &runtime, "source");
-    let b = create_entity(&execution, &runtime, "target");
-    create_relation(&execution, &runtime, a, b, "audit-edge");
-    let source = test_owner_main_basis(&runtime).unwrap();
-    let retired = delete_entity(&execution, &runtime, b);
-    let target = test_owner_main_basis(&runtime).unwrap();
-    assert!(matches!(
-        runtime.authored_write_history_cursor(
-            execution,
-            &source,
-            selected(&runtime, &target),
-            &[key(a, Direction::Outgoing)]
-        ),
-        Err(RelationalAuthoredWriteDenial::IncompleteAdjacencyHistory)
-    ));
-    release_test_commit_snapshot(&runtime, &retired);
 }

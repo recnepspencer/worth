@@ -177,7 +177,11 @@ pub(crate) fn canonical_delta_for_mutation(
                 authoritative_state: authoritative_aspect_state.as_ref(),
             },
             RecordStructuralChange::RetainedForAudit,
-        ),
+        )
+        .map(|mut delta| {
+            delta.retained_relation_endpoints = Some((*source, *target));
+            delta
+        }),
         RecordMutation::RelationMaterializationSuspended {
             relation_id,
             kind_id,
