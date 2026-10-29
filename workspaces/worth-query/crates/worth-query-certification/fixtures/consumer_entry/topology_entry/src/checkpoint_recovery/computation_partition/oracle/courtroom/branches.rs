@@ -71,102 +71,108 @@ fn judge(
     }
 }
 
-#[test]
-fn seeded_branch_alphabet_has_exact_counts_on_forks_switches_and_deletion() {
-    let _guard = checkpoint_recovery_test_guard();
-    for seed in SEEDS {
-        let mut rng = Lcg(seed);
-        let model = Model::new(&mut rng);
-        let kept = installation::install_variant::<false, TOTALS_WORK, 1, 0>(
-            None,
-            Default::default(),
-            |graph| model.seed(graph),
-        );
-        let fresh = installation::install_variant::<false, TOTALS_WORK, 1, 3>(
-            None,
-            Default::default(),
-            |graph| model.seed(graph),
-        );
-        let main = kept.current_world();
-        let full_main = fresh.current_world();
-        let mut prior = None;
-        let (contacts, a) = run(&kept, main);
-        let (_, b) = run(&fresh, full_main);
-        assert_eq!(contacts, 1);
-        judge(&model, &mut prior, &a, &b, None);
-        let parent = fork(&kept, main);
-        let full_parent = fork(&fresh, full_main);
-        let child = fork(&kept, parent);
-        let full_child = fork(&fresh, full_parent);
-        let nested = fork(&kept, child);
-        let full_nested = fork(&fresh, full_child);
-        let branches = [parent, child, nested];
-        let full_branches = [full_parent, full_child, full_nested];
-        let mut models = [model.clone(), model.clone(), model];
-        let mut priors = [prior.clone(), prior.clone(), prior];
-        for index in 0..branches.len() {
-            let (contacts, a) = run(&kept, branches[index]);
-            let (_, b) = run(&fresh, full_branches[index]);
-            // A fresh fork has no demand row; its producer runs once, carrying all partitions.
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn seeded_branch_alphabet_has_exact_counts_on_forks_switches_and_deletion() {
+        let _guard = checkpoint_recovery_test_guard();
+        for seed in SEEDS {
+            let mut rng = Lcg(seed);
+            let model = Model::new(&mut rng);
+            let kept = installation::install_variant::<false, TOTALS_WORK, 1, 0>(
+                None,
+                Default::default(),
+                |graph| model.seed(graph),
+            );
+            let fresh = installation::install_variant::<false, TOTALS_WORK, 1, 3>(
+                None,
+                Default::default(),
+                |graph| model.seed(graph),
+            );
+            let main = kept.current_world();
+            let full_main = fresh.current_world();
+            let mut prior = None;
+            let (contacts, a) = run(&kept, main);
+            let (_, b) = run(&fresh, full_main);
             assert_eq!(contacts, 1);
-            judge(&models[index], &mut priors[index], &a, &b, None);
-            assert_eq!(a[0].calls, OwnerCalls::default());
-        }
-        let mut command = 0x612_0000;
-        for _ in 0..ROUNDS {
-            let mut order = KINDS;
-            for place in (1..order.len()).rev() {
-                order.swap(place, rng.below(place + 1));
+            judge(&model, &mut prior, &a, &b, None);
+            let parent = fork(&kept, main);
+            let full_parent = fork(&fresh, full_main);
+            let child = fork(&kept, parent);
+            let full_child = fork(&fresh, full_parent);
+            let nested = fork(&kept, child);
+            let full_nested = fork(&fresh, full_child);
+            let branches = [parent, child, nested];
+            let full_branches = [full_parent, full_child, full_nested];
+            let mut models = [model.clone(), model.clone(), model];
+            let mut priors = [prior.clone(), prior.clone(), prior];
+            for index in 0..branches.len() {
+                let (contacts, a) = run(&kept, branches[index]);
+                let (_, b) = run(&fresh, full_branches[index]);
+                // A fresh fork has no demand row; its producer runs once, carrying all partitions.
+                assert_eq!(contacts, 1);
+                judge(&models[index], &mut priors[index], &a, &b, None);
+                assert_eq!(a[0].calls, OwnerCalls::default());
             }
-            for kind in order {
-                let index = rng.below(branches.len());
-                for kind in match kind {
-                    Kind::Fault => vec![kind, Kind::Repair],
-                    kind => vec![kind],
-                } {
-                    let step = models[index].step(kind, &mut rng);
-                    apply(&kept, branches[index], &step.changes, &mut command);
-                    apply(&fresh, full_branches[index], &step.changes, &mut command);
-                    super::super::super::own_write::arm_own_write(step.own_write);
-                    let (contacts, a) = run(&kept, branches[index]);
-                    let (_, b) = run(&fresh, full_branches[index]);
-                    super::super::super::own_write::arm_own_write(None);
-                    let executes = kind != Kind::NoOp;
-                    let written = executes
-                        && models[index].completes()
-                        && step
-                            .own_write
-                            .is_some_and(|write| !models[index].holds(write));
-                    assert_eq!(
-                        (contacts, a.len()),
-                        (
-                            usize::from(executes) + usize::from(written),
-                            usize::from(executes) + usize::from(written)
-                        )
-                    );
-                    judge(&models[index], &mut priors[index], &a, &b, step.own_write);
-                    if let Some(write) = step.own_write {
-                        models[index].written(write);
+            let mut command = 0x612_0000;
+            for _ in 0..ROUNDS {
+                let mut order = KINDS;
+                for place in (1..order.len()).rev() {
+                    order.swap(place, rng.below(place + 1));
+                }
+                for kind in order {
+                    let index = rng.below(branches.len());
+                    for kind in match kind {
+                        Kind::Fault => vec![kind, Kind::Repair],
+                        kind => vec![kind],
+                    } {
+                        let step = models[index].step(kind, &mut rng);
+                        apply(&kept, branches[index], &step.changes, &mut command);
+                        apply(&fresh, full_branches[index], &step.changes, &mut command);
+                        super::super::super::super::super::super::own_write::arm_own_write(
+                            step.own_write,
+                        );
+                        let (contacts, a) = run(&kept, branches[index]);
+                        let (_, b) = run(&fresh, full_branches[index]);
+                        super::super::super::super::super::super::own_write::arm_own_write(None);
+                        let executes = kind != Kind::NoOp;
+                        let written = executes
+                            && models[index].completes()
+                            && step
+                                .own_write
+                                .is_some_and(|write| !models[index].holds(write));
+                        assert_eq!(
+                            (contacts, a.len()),
+                            (
+                                usize::from(executes) + usize::from(written),
+                                usize::from(executes) + usize::from(written)
+                            )
+                        );
+                        judge(&models[index], &mut priors[index], &a, &b, step.own_write);
+                        if let Some(write) = step.own_write {
+                            models[index].written(write);
+                        }
+                        let sibling = (index + 1) % branches.len();
+                        let (contacts, a) = run(&kept, branches[sibling]);
+                        let (_, b) = run(&fresh, full_branches[sibling]);
+                        assert_eq!((contacts, a.len(), b.len()), (0, 0, 0), "unchanged switch");
                     }
-                    let sibling = (index + 1) % branches.len();
-                    let (contacts, a) = run(&kept, branches[sibling]);
-                    let (_, b) = run(&fresh, full_branches[sibling]);
-                    assert_eq!((contacts, a.len(), b.len()), (0, 0, 0), "unchanged switch");
                 }
             }
-        }
-        // Closing ancestors completes and cannot release the nested branch's
-        // retained basis.
-        for (a, b) in [(child, full_child), (parent, full_parent)] {
-            super::super::branch_sharing::close_ancestor(&kept, a);
-            super::super::branch_sharing::close_ancestor(&fresh, b);
-            let step = models[2].step(Kind::Value, &mut rng);
-            apply(&kept, nested, &step.changes, &mut command);
-            apply(&fresh, full_nested, &step.changes, &mut command);
-            let (contacts, a) = run(&kept, nested);
-            let (_, b) = run(&fresh, full_nested);
-            assert_eq!(contacts, 1);
-            judge(&models[2], &mut priors[2], &a, &b, None);
+            // Closing ancestors completes and cannot release the nested branch's
+            // retained basis.
+            for (a, b) in [(child, full_child), (parent, full_parent)] {
+                super::super::super::super::branch_sharing::close_ancestor(&kept, a);
+                super::super::super::super::branch_sharing::close_ancestor(&fresh, b);
+                let step = models[2].step(Kind::Value, &mut rng);
+                apply(&kept, nested, &step.changes, &mut command);
+                apply(&fresh, full_nested, &step.changes, &mut command);
+                let (contacts, a) = run(&kept, nested);
+                let (_, b) = run(&fresh, full_nested);
+                assert_eq!(contacts, 1);
+                judge(&models[2], &mut priors[2], &a, &b, None);
+            }
         }
     }
 }

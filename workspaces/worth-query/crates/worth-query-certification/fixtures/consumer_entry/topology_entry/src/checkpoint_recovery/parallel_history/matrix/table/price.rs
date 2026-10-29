@@ -21,7 +21,7 @@ fn amount(encoded: &str, name: &str) -> u64 {
         .unwrap()
 }
 const CELL_TEST: &str =
-    "checkpoint_recovery::parallel_history::matrix::runtime::required_matrix_cell";
+    "checkpoint_recovery::parallel_history::matrix::runtime::serial::required_matrix_cell";
 
 fn run(row: Cell, scale: u64) -> Result<PricedObservation, String> {
     let mut command = std::process::Command::new(std::env::current_exe().unwrap());
@@ -78,19 +78,23 @@ pub(super) fn cell(row: Cell) -> Result<(String, (u64, u64)), String> {
     Ok((base.encoded, remainder))
 }
 
-#[test]
-fn required_nested_shape_prices_its_critical_path() {
-    for fault in [0, 4] {
-        let row = Cell {
-            family: 7,
-            workers: 1,
-            declaration: 0,
-            dispatch: super::super::cases::UNSEEDED,
-            fault,
-            reuse: false,
-        };
-        if let Err(reason) = cell(row) {
-            panic!("{row:?}: {reason}");
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn required_nested_shape_prices_its_critical_path() {
+        for fault in [0, 4] {
+            let row = Cell {
+                family: 7,
+                workers: 1,
+                declaration: 0,
+                dispatch: super::super::super::super::cases::UNSEEDED,
+                fault,
+                reuse: false,
+            };
+            if let Err(reason) = cell(row) {
+                panic!("{row:?}: {reason}");
+            }
         }
     }
 }

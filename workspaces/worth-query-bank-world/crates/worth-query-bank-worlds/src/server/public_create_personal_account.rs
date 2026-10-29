@@ -1,0 +1,157 @@
+pub use crate::facade::server::support;
+
+pub use bank_domain::model::{
+    AccountId, AccountName, BankPrincipalId, BankSnapshotVersion, EmployeeAssignmentId,
+    EmployeeRole, InstitutionId,
+};
+pub use bank_domain::proposals::{BankIdempotencyKey, BankSnapshotBuilder};
+pub use bank_domain::queries;
+pub use bank_domain::schema::{
+    CreatePersonalAccount, CreatePersonalAccountOutputs, CreatedPersonalAccountOutput,
+};
+pub use bank_server::{
+    mutations, BankEmployeeAssignmentSeed, BankMutationControls, BankPrincipalSeed, BankWorldSeed,
+};
+pub use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+pub use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind;
+
+pub use support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
+
+pub fn assert_public_creation(display_name: &str) {
+    let actor_identity = DynamicIdentity::new("public-create-personal-account");
+    let institution = id(InstitutionId::new, 1);
+    let actor_id = id(BankPrincipalId::new, 1);
+    let snapshot = BankSnapshotBuilder::new(id(BankSnapshotVersion::new, 1))
+        .institution(institution)
+        .principal(actor_id)
+        .institution_cash_account(id(AccountId::new, 100), institution)
+        .build()
+        .expect("the account-creation world should be valid");
+    let world = runtime(
+        BankWorldSeed::new(snapshot)
+            .principal(BankPrincipalSeed::enabled(
+                actor_id,
+                actor_identity.external(),
+            ))
+            .employee(BankEmployeeAssignmentSeed::new(
+                id(EmployeeAssignmentId::new, 1),
+                institution,
+                actor_id,
+                EmployeeRole::Teller,
+            )),
+    );
+    let scope = request_scope();
+    let actor = block_on(world.runtime.authenticate_with(
+        &world.authentication,
+        CausalCredential::for_identity(&actor_identity),
+        &scope,
+    ))
+    .expect("the teller should authenticate");
+    let request = world.runtime.request(&actor, &scope);
+    let key = BankIdempotencyKey::new("public-create-personal-account")
+        .expect("the client key should be valid");
+    let input = CreatePersonalAccount {
+        institution,
+        owner: actor_id,
+        display_name: AccountName::new(display_name).expect("the name should be valid"),
+    };
+    let omitted_program = request
+        .advanced()
+        .mutate(input.clone())
+        .idempotency(&key)
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+        .expect_err("a program-owned action must not publish through the ordinary path");
+    assert_eq!(
+        omitted_program.kind(),
+        WorthQueryApplicationRequestMutationDenialKind::ApplicationProgramRequired
+    );
+
+    let create = |input| {
+        world
+            .runtime
+            .mutate(mutations::create_personal_account(input))
+            .as_principal(&actor)
+            .controls(BankMutationControls::new(scope.clone(), key.clone()))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("declared personal action: {cause:?}"))
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(first) =
+        create(input.clone()).advance(&request)
+    else {
+        panic!("fresh creation completes")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt: first_receipt,
+        result,
+        ..
+    } = first.evidence()
+    else {
+        panic!("fresh handler result")
+    };
+    let account = result.account;
+    assert!(account.canonical_text().starts_with("operation:"));
+    assert_eq!(account.canonical_text().len(), 76);
+    let created_entity = first_receipt
+        .outputs_of::<CreatePersonalAccountOutputs>()
+        .unwrap()
+        .entity::<CreatedPersonalAccountOutput>()
+        .unwrap()
+        .entity_id();
+    let detail = request
+        .query(queries::account_detail(account))
+        .execute()
+        .unwrap();
+    let [detail] = detail.rows() else {
+        panic!("one created account")
+    };
+    assert_eq!(detail.summary().id(), account);
+    assert_eq!(detail.summary().display_name(), &input.display_name);
+    assert_eq!(detail.institution(), institution);
+    assert_eq!(detail.personal_owner(), Some(actor_id));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(retry) =
+        create(input.clone()).advance(&request)
+    else {
+        panic!("keyed recovery completes")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered {
+        receipt: retry_receipt,
+        ..
+    } = retry.evidence()
+    else {
+        panic!("replay never invents a result")
+    };
+    let recovered_entity = retry_receipt
+        .outputs_of::<CreatePersonalAccountOutputs>()
+        .unwrap()
+        .entity::<CreatedPersonalAccountOutput>()
+        .unwrap()
+        .entity_id();
+    assert_eq!(recovered_entity, created_entity);
+    assert!(retry_receipt.is_same_authoritative_commit(first_receipt));
+    retry
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("retry close: {cause:?}"));
+    first
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("creation close: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(changed) =
+        create(CreatePersonalAccount {
+            display_name: AccountName::new("Changed account").unwrap(),
+            ..input
+        })
+        .advance(&request)
+    else {
+        panic!("changed key meaning terminal")
+    };
+    assert!(matches!(
+        changed.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
+    ));
+    changed
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("drift close: {cause:?}"));
+}
+
+pub fn id<T>(constructor: impl FnOnce(u64) -> Option<T>, value: u64) -> T {
+    constructor(value).expect("the fixture identity should be valid")
+}

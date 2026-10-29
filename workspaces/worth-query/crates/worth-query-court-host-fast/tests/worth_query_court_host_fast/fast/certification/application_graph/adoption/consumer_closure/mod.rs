@@ -1,0 +1,127 @@
+pub(crate) use worth_query_worlds::facade::certification::application_graph::adoption::consumer_closure::*;
+
+#[test]
+fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
+    let host = publish_on_first_program();
+    let main = host.current_world();
+    let sibling = host
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling branch publishes")
+        })
+        .expect("installed host call opens");
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
+        .expect("P1 is rostered")
+        .owned_revision();
+    let source = *host.owned_revision();
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+
+    for branch in [main, sibling] {
+        let inspection = host
+            .runtime()
+            .request(&principal, &scope)
+            .on_branch(branch)
+            .programs()
+            .inspect()
+            .expect("the public entry inspects its exact selected occurrence");
+        assert_eq!(inspection.revision(), &source);
+    }
+
+    let programs = host
+        .runtime()
+        .request(&principal, &scope)
+        .on_branch(main)
+        .programs();
+    let requirements = programs.compare(&target).expect("P0 to P1 compares");
+    let prepared = programs
+        .adopt(&requirements)
+        .expect("declared adoption capability admits")
+        .prepare(64)
+        .expect("main prepares");
+    assert!(matches!(
+        prepared.publish(host.runtime(), &principal, &scope),
+        WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
+    ));
+
+    let main_selection = host
+        .runtime()
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .on_branch(main)
+                .select(&host_phase)
+                .expect("main selects its exact occurrence")
+        })
+        .expect("installed host call opens");
+    let sibling_selection = host
+        .runtime()
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .on_branch(sibling)
+                .select(&host_phase)
+                .expect("sibling selects its exact occurrence")
+        })
+        .expect("installed host call opens");
+    let main_owner = host
+        .selected_program_owner(&main_selection)
+        .expect("main resolves its installed P1 owner");
+    let sibling_owner = host
+        .selected_program_owner(&sibling_selection)
+        .expect("sibling resolves its installed P0 owner");
+    assert_eq!(main_owner.owned_revision(), &target);
+    assert_eq!(sibling_owner.owned_revision(), &source);
+    assert_eq!(
+        settle(set_retention(&host, main, 15, 0x9175_5001)),
+        RetentionVerdict::Performed(15)
+    );
+    assert_eq!(
+        settle(set_retention(&host, sibling, 3, 0x9175_5002)),
+        RetentionVerdict::Performed(3)
+    );
+}
+
+#[test]
+fn same_typed_first_branch_from_another_live_host_cannot_select_an_owner() {
+    let host = publish_on_first_program();
+    let foreign = publish_on_first_program();
+    let foreign_selection = foreign
+        .runtime()
+        .with_host_advancement(|host_phase| {
+            foreign
+                .runtime()
+                .on_branch(foreign.current_world())
+                .select(&host_phase)
+                .expect("the foreign host can select its own branch")
+        })
+        .expect("installed host call opens");
+    assert!(matches!(
+        host.selected_program_owner(&foreign_selection),
+        Err(WorthQuerySelectedProgramOwnerDenial::ProductSelection(
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignOwner)
+        ))
+    ));
+}
+
+#[test]
+fn selected_program_mutation_reuses_its_authorization_selection() {
+    let host = publish_on_first_program();
+    let branch = host.current_world();
+    let observer = host.runtime().application_query_basis_observer();
+    let before = observer.observe().acquisitions();
+
+    assert_eq!(
+        settle(set_retention(&host, branch, 3, 0x9175_5003)),
+        RetentionVerdict::Performed(3)
+    );
+
+    let contacts = observer.observe().acquisitions() - before;
+    assert_eq!(
+        contacts, 5,
+        "one selected mutation retains one authorization selection plus four fresh security bases"
+    );
+}

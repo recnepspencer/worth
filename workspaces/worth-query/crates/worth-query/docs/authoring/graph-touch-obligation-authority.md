@@ -154,7 +154,7 @@ graph to the specialized graph-read review, reserves capacity, opens one
 managed session, and consumes the read through the session-owned port.
 
 The executable public proof is
-`worth-query-host/tests/canonical_graph_progression.rs`.
+`worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/host/canonical_graph_progression/mod.rs`.
 
 An application mutation may install several rows. Query must obtain the
 complete authorization facts, build proposed state, execute every selected

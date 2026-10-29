@@ -1,0 +1,27 @@
+[package]
+name = "worth-query-court-package-archive-fast"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+boundary = "package-archive"
+class = "fast"
+
+[dev-dependencies]
+sha2.workspace = true
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-package-archive = { path = "../worth-query-package-archive" }
+worth-query-worlds = { path = "../worth-query-worlds" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_package_archive_fast"
+path = "tests/worth_query_court_package_archive_fast.rs"

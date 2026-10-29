@@ -1,0 +1,70 @@
+pub(crate) use worth_query_bank_worlds::facade::server::identity_denials::*;
+
+#[test]
+fn unknown_dynamic_identity_is_denied() {
+    let installed = DynamicIdentity::new("installed");
+    let unknown = DynamicIdentity::new("unknown");
+    assert_ne!(installed.external().subject(), unknown.external().subject());
+    let world = runtime([BankPrincipalSeed::enabled(
+        BankPrincipalId::new(51).expect("nonzero principal id should admit"),
+        installed.external(),
+    )]);
+
+    assert_resolution_denial(
+        block_on(world.runtime.authenticate_with(
+            &world.authentication,
+            CausalCredential::for_identity(&unknown),
+            &request_scope(),
+        )),
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::UnknownPrincipal),
+    );
+}
+
+#[test]
+fn disabled_dynamic_identity_is_denied() {
+    let disabled = DynamicIdentity::new("disabled");
+    let world = runtime([BankPrincipalSeed::new(
+        BankPrincipalId::new(61).expect("nonzero principal id should admit"),
+        disabled.external(),
+        WorthQueryPrincipalMappingStatus::Disabled,
+    )]);
+
+    assert_resolution_denial(
+        block_on(world.runtime.authenticate_with(
+            &world.authentication,
+            CausalCredential::for_identity(&disabled),
+            &request_scope(),
+        )),
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::DisabledPrincipal),
+    );
+}
+
+#[test]
+fn ambiguous_dynamic_identity_is_denied() {
+    let ambiguous = DynamicIdentity::new("ambiguous");
+    let result = BankIdentityRuntime::install([
+        BankPrincipalSeed::enabled(
+            BankPrincipalId::new(71).expect("nonzero principal id should admit"),
+            ambiguous.external(),
+        ),
+        BankPrincipalSeed::enabled(
+            BankPrincipalId::new(72).expect("nonzero principal id should admit"),
+            ambiguous.external(),
+        ),
+    ]);
+    let error = match result {
+        Ok(_) => panic!("duplicate external identity must not publish an ambiguous graph"),
+        Err(error) => error,
+    };
+
+    match error {
+        BankIdentityRuntimeBuildError::ApplicationInstallation(denial) => match *denial {
+            WorthQueryInMemoryApplicationDenial::InitialState(denial) => assert_eq!(
+                denial.kind(),
+                WorthQueryPrimaryGraphInstallationDenialKind::DuplicateExternalIdentity
+            ),
+            other => panic!("unexpected duplicate-identity installation denial: {other:?}"),
+        },
+        other => panic!("unexpected duplicate-identity denial: {other:?}"),
+    }
+}

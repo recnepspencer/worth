@@ -30,13 +30,6 @@ impl TopologySchemaBinding for NoReuseSchema {
     const FINAL_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 }
 
-#[test]
-fn live_output_without_initial_input_reuse_selects_preserve_and_keeps_its_entity() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install_no_reuse(None);
-    check_live_output(&application);
-}
-
 fn install_no_reuse(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
@@ -195,4 +188,15 @@ fn check_live_output(
             .entity_id(),
         entity
     );
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn live_output_without_initial_input_reuse_selects_preserve_and_keeps_its_entity() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install_no_reuse(None);
+        check_live_output(&application);
+    }
 }

@@ -1,0 +1,77 @@
+//! A P0-initial host whose trusted time the certification sets, so deadline
+//! law is exercised without waiting on the wall clock.
+
+pub use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+pub use std::sync::Arc;
+pub use std::time::{Duration, SystemTime};
+pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
+
+pub use worth_query_host::facade::application_installation::{
+    in_memory_rostered_program_with_authorization_time_source, WorthQueryApplicationProgramRoster,
+};
+pub use worth_query_host::facade::primary_graph::{
+    WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
+};
+
+pub use super::super::{
+    programs::{validated_first_program, validated_second_program, RetentionProgramP0},
+    schema::DocumentRetentionSchema,
+};
+pub use super::{host_limits, seed_host, DocumentRetentionRuntime};
+
+/// Trusted time that moves only when the certification advances it, and can
+/// be made unreadable.
+#[derive(Clone)]
+pub struct CertificationTrustedTime {
+    pub origin: SystemTime,
+    pub offset_milliseconds: Arc<AtomicU64>,
+    pub unavailable: Arc<AtomicBool>,
+}
+
+impl CertificationTrustedTime {
+    pub fn new() -> Self {
+        Self {
+            origin: SystemTime::now(),
+            offset_milliseconds: Arc::new(AtomicU64::new(0)),
+            unavailable: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    pub fn advance(&self, duration: Duration) {
+        let milliseconds = u64::try_from(duration.as_millis()).expect("finite test advance");
+        self.offset_milliseconds
+            .fetch_add(milliseconds, Ordering::SeqCst);
+    }
+
+    pub fn set_unavailable(&self, unavailable: bool) {
+        self.unavailable.store(unavailable, Ordering::SeqCst);
+    }
+}
+
+impl WorthQueryRuntimeTimeSource for CertificationTrustedTime {
+    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
+        if self.unavailable.load(Ordering::SeqCst) {
+            return Err(WorthQueryRuntimeTimeSourceDenial::Unavailable);
+        }
+        Ok(self.origin + Duration::from_millis(self.offset_milliseconds.load(Ordering::SeqCst)))
+    }
+}
+
+/// Publishes the P0-initial host with P1 rostered, on the given trusted time.
+pub fn publish_on_first_program_with_trusted_time(
+    time: impl WorthQueryRuntimeTimeSource + 'static,
+) -> DocumentRetentionRuntime<RetentionProgramP0> {
+    in_memory_rostered_program_with_authorization_time_source(
+        validated_first_program(),
+        WorthQueryApplicationProgramRoster::new()
+            .support(validated_second_program())
+            .support(super::super::actor_generation::validated_actor_program()),
+        DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
+        ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        host_limits(),
+        seed_host,
+        time,
+    )
+    .expect("the trusted-time host must install")
+}

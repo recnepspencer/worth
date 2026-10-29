@@ -1,0 +1,33 @@
+[package]
+name = "worth-query-bank-court-external-rail-process"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+boundary = "external-rail"
+class = "process"
+
+[dev-dependencies]
+bank-external-rail = { workspace = true }
+ed25519-dalek = { workspace = true }
+rcgen = "=0.14.4"
+reqwest = { workspace = true }
+rustls-pemfile = "=2.2.0"
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tokio = { workspace = true }
+tokio-rustls = "=0.26.4"
+worth-foundational = { workspace = true }
+worth-query-bank-worlds = { path = "../worth-query-bank-worlds" }
+
+[[test]]
+name = "worth_query_bank_court_external_rail_process"
+path = "tests/worth_query_bank_court_external_rail_process.rs"
+
+[lints]
+workspace = true

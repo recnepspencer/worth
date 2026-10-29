@@ -48,170 +48,175 @@ pub(super) fn quantity_scope(
 pub(super) fn controls() -> WorthQueryOutputDemandControls {
     WorthQueryOutputDemandControls::host_policy()
 }
-#[test]
-fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
-    let _guard = checkpoint_recovery_test_guard();
-    let provider_observation = crate::producer::ProviderContacts::default();
-    let mut app = installation::install_observed(&provider_observation);
-    let (scope, principal) = authenticate(&app);
-    let request = app.request(&principal, &scope);
-    provider_observation.reset();
-    let first = quantity(&app, &request);
-    let held = first
-        .read_current(&request, read::Read(publication::output_key("population")))
-        .unwrap_or_else(|stop| {
-            panic!(
-                "first current delivery: {stop:?}; original receipt: {:?}",
-                first.settlement().root_receipt(),
-            )
-        });
-    assert_eq!(held.rows()[0].count, 1);
-    assert_eq!(held.rows()[0].measure, Measure::Pending);
-    assert_eq!(
-        provider_observation.count(),
-        0,
-        "first source observation must not execute upstream provider"
-    );
-    eprintln!("native availability: first Count1/Pending; upstream contacts=0");
-    assert_eq!(
-        request
-            .query(PlanarOutputRead {
-                body_key: "measure-a".into()
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
+        let _guard = checkpoint_recovery_test_guard();
+        let provider_observation = crate::producer::ProviderContacts::default();
+        let mut app = installation::install_observed(&provider_observation);
+        let (scope, principal) = authenticate(&app);
+        let request = app.request(&principal, &scope);
+        provider_observation.reset();
+        let first = quantity(&app, &request);
+        let held = first
+            .read_current(&request, read::Read(publication::output_key("population")))
+            .unwrap_or_else(|stop| {
+                panic!(
+                    "first current delivery: {stop:?}; original receipt: {:?}",
+                    first.settlement().root_receipt(),
+                )
+            });
+        assert_eq!(held.rows()[0].count, 1);
+        assert_eq!(held.rows()[0].measure, Measure::Pending);
+        assert_eq!(
+            provider_observation.count(),
+            0,
+            "first source observation must not execute upstream provider"
+        );
+        eprintln!("native availability: first Count1/Pending; upstream contacts=0");
+        assert_eq!(
+            request
+                .query(PlanarOutputRead {
+                    body_key: "measure-a".into()
+                })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value,
+            length(1)
+        );
+        let geometry = finish!(
+            request
+                .demand(PlanarOutputDemand::new("measure-a"))
+                .controls(controls())
+                .retain_program_outputs::<Program, GeometryRoot>(&app)
+                .unwrap_or_else(|stop| panic!("{:?}", stop.denial())),
+            &request
+        );
+        assert!(
+            first
+                .read_current(&request, read::Read(publication::output_key("population")))
+                .is_err(),
+            "real first completion invalidates Pending"
+        );
+        let current = quantity(&app, &request);
+        assert_eq!(
+            held.rows()[0].measure,
+            Measure::Pending,
+            "held read remains historical"
+        );
+        let ready = current
+            .read_current(&request, read::Read(publication::output_key("population")))
+            .unwrap();
+        assert_eq!(ready.rows()[0].count, 1);
+        assert_eq!(ready.rows()[0].measure, Measure::Complete(11));
+        let identity = first
+            .settlement()
+            .root_settlement()
+            .outputs_of::<binding::InitialOutputs>()
+            .unwrap()
+            .entity::<binding::Created>()
+            .unwrap()
+            .entity_id();
+        assert_eq!(
+            identity,
+            current
+                .settlement()
+                .root_settlement()
+                .outputs_of::<binding::PreserveOutputs>()
+                .unwrap()
+                .entity::<binding::Preserved>()
+                .unwrap()
+                .entity_id()
+        );
+        eprintln!("native availability: first completion -> same-record Preserve Complete11; held Pending historical");
+        // A genuine source edit preserves the producer identity but invalidates its value.
+        let source = request
+            .query(PlanarRead {
+                body_key: "measure-a".into(),
             })
             .execute()
-            .unwrap()
-            .rows()[0]
-            .value,
-        length(1)
-    );
-    let geometry = finish!(
+            .unwrap();
         request
-            .demand(PlanarOutputDemand::new("measure-a"))
-            .controls(controls())
-            .retain_program_outputs::<Program, GeometryRoot>(&app)
-            .unwrap_or_else(|stop| panic!("{:?}", stop.denial())),
-        &request
-    );
-    assert!(
-        first
+            .advanced()
+            .mutate(PlanarSourceAdjustment {
+                scope_key: "measure-a".into(),
+                replacement_y: length(11),
+            })
+            .expect_source(source.observed_sources()[0].clone())
+            .idempotency(&0x91742701u64)
+            .execute_performed::<Program, GeometryRoot>(
+                &app,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        assert!(current
             .read_current(&request, read::Read(publication::output_key("population")))
-            .is_err(),
-        "real first completion invalidates Pending"
-    );
-    let current = quantity(&app, &request);
-    assert_eq!(
-        held.rows()[0].measure,
-        Measure::Pending,
-        "held read remains historical"
-    );
-    let ready = current
-        .read_current(&request, read::Read(publication::output_key("population")))
-        .unwrap();
-    assert_eq!(ready.rows()[0].count, 1);
-    assert_eq!(ready.rows()[0].measure, Measure::Complete(11));
-    let identity = first
-        .settlement()
-        .root_settlement()
-        .outputs_of::<binding::InitialOutputs>()
-        .unwrap()
-        .entity::<binding::Created>()
-        .unwrap()
-        .entity_id();
-    assert_eq!(
-        identity,
-        current
-            .settlement()
-            .root_settlement()
-            .outputs_of::<binding::PreserveOutputs>()
-            .unwrap()
-            .entity::<binding::Preserved>()
-            .unwrap()
-            .entity_id()
-    );
-    eprintln!("native availability: first completion -> same-record Preserve Complete11; held Pending historical");
-    // A genuine source edit preserves the producer identity but invalidates its value.
-    let source = request
-        .query(PlanarRead {
-            body_key: "measure-a".into(),
-        })
-        .execute()
-        .unwrap();
-    request
-        .advanced()
-        .mutate(PlanarSourceAdjustment {
-            scope_key: "measure-a".into(),
-            replacement_y: length(11),
-        })
-        .expect_source(source.observed_sources()[0].clone())
-        .idempotency(&0x91742701u64)
-        .execute_performed::<Program, GeometryRoot>(
-            &app,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    assert!(current
-        .read_current(&request, read::Read(publication::output_key("population")))
-        .is_err());
-    // Availability observes the edited source without driving regeneration.
-    // Genuine interrupted-owner custody is exercised in races::interruption;
-    // an obsolete one-unit producer quote is not a semantic stop contract.
-    provider_observation.reset();
-    let pending = quantity(&app, &request);
-    let pending_read = pending
-        .read_current(&request, read::Read(publication::output_key("population")))
-        .unwrap();
-    assert_eq!(pending_read.rows()[0].count, 1);
-    assert_eq!(pending_read.rows()[0].measure, Measure::Pending);
-    assert_eq!(
-        provider_observation.count(),
-        0,
-        "edited source observation cannot fund upstream"
-    );
-    eprintln!("native availability: edited source -> Count1/Pending; upstream contacts=0");
-    let completed = finish!(
-        request
-            .demand(PlanarOutputDemand::new("measure-a"))
-            .controls(controls())
-            .retain_program_outputs::<Program, GeometryRoot>(&app)
-            .unwrap_or_else(|stop| panic!("{:?}", stop.denial())),
-        &request
-    );
-    assert!(pending
-        .read_current(&request, read::Read(publication::output_key("population")))
-        .is_err());
-    let renewed = quantity(&app, &request);
-    assert_eq!(
-        renewed
+            .is_err());
+        // Availability observes the edited source without driving regeneration.
+        // Genuine interrupted-owner custody is exercised in races::interruption;
+        // an obsolete one-unit producer quote is not a semantic stop contract.
+        provider_observation.reset();
+        let pending = quantity(&app, &request);
+        let pending_read = pending
             .read_current(&request, read::Read(publication::output_key("population")))
-            .unwrap()
-            .rows()[0]
-            .measure,
-        Measure::Complete(12)
-    );
-    assert_eq!(
-        identity,
-        renewed
-            .settlement()
-            .root_settlement()
-            .outputs_of::<binding::PreserveOutputs>()
-            .unwrap()
-            .entity::<binding::Preserved>()
-            .unwrap()
-            .entity_id()
-    );
-    eprintln!("native availability: separate completion -> same-record Preserve Complete12; old Pending refuses current");
-    drop((held, ready, pending_read));
-    for owner in [first, current, pending, renewed] {
-        owner
+            .unwrap();
+        assert_eq!(pending_read.rows()[0].count, 1);
+        assert_eq!(pending_read.rows()[0].measure, Measure::Pending);
+        assert_eq!(
+            provider_observation.count(),
+            0,
+            "edited source observation cannot fund upstream"
+        );
+        eprintln!("native availability: edited source -> Count1/Pending; upstream contacts=0");
+        let completed = finish!(
+            request
+                .demand(PlanarOutputDemand::new("measure-a"))
+                .controls(controls())
+                .retain_program_outputs::<Program, GeometryRoot>(&app)
+                .unwrap_or_else(|stop| panic!("{:?}", stop.denial())),
+            &request
+        );
+        assert!(pending
+            .read_current(&request, read::Read(publication::output_key("population")))
+            .is_err());
+        let renewed = quantity(&app, &request);
+        assert_eq!(
+            renewed
+                .read_current(&request, read::Read(publication::output_key("population")))
+                .unwrap()
+                .rows()[0]
+                .measure,
+            Measure::Complete(12)
+        );
+        assert_eq!(
+            identity,
+            renewed
+                .settlement()
+                .root_settlement()
+                .outputs_of::<binding::PreserveOutputs>()
+                .unwrap()
+                .entity::<binding::Preserved>()
+                .unwrap()
+                .entity_id()
+        );
+        eprintln!("native availability: separate completion -> same-record Preserve Complete12; old Pending refuses current");
+        drop((held, ready, pending_read));
+        for owner in [first, current, pending, renewed] {
+            owner
+                .close(&request)
+                .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
+        }
+        geometry
             .close(&request)
             .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
+        completed
+            .close(&request)
+            .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
+        drop((principal, scope));
+        app.close_conditional_runtime().unwrap();
     }
-    geometry
-        .close(&request)
-        .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
-    completed
-        .close(&request)
-        .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
-    drop((principal, scope));
-    app.close_conditional_runtime().unwrap();
 }

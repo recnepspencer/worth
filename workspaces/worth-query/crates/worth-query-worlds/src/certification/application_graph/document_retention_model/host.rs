@@ -1,0 +1,378 @@
+//! Publishing a document-retention host through the real installation path.
+//!
+//! Every host in this court is built here and nowhere else: one installed
+//! schema carrying both rule contracts, an explicit program roster, and two
+//! seeded documents. Ordinary cases share one resource profile; the scheduled
+//! history court explicitly installs larger history and exact-pin capacities.
+
+pub use worth_query_host::facade::application_contribution::{
+    WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
+    WorthQueryBootstrapAdvancementPhase,
+};
+pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
+pub use worth_query_host::facade::application_installation::{
+    in_memory_rostered_program, WorthQueryApplicationProgramRoster,
+    WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
+    WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
+};
+pub use worth_query_host::facade::declaration::application_program::{
+    ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
+};
+pub use worth_query_host::facade::declaration::application_schema::{
+    ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity,
+};
+pub use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
+pub use worth_query_host::facade::{declaration, primary_graph, runtime};
+
+pub use world_resources::world_resources;
+pub use world_resources::{ACTIVE_WORLD_OBSERVATIONS, WORKFLOW_DEFINITION_BYTES};
+pub use worth_query_worlds::facade::certification::document_world_resources as world_resources;
+
+pub use super::assessment_output::{
+    OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,
+    RetentionAssessmentBinding, RetentionAssessmentHandler, RetentionAssessmentProducer,
+    RetentionAssessmentProvider,
+};
+pub use super::assessment_readiness::RetentionAssessmentReadiness;
+pub use super::programs::{
+    validated_changed_feature_program, validated_changed_operation_program,
+    validated_first_program, validated_foreign_rule_program,
+    validated_removed_assessment_supplier_program, validated_removed_operation_program,
+    validated_second_program, RetentionProgramP0, RetentionProgramP1,
+};
+pub use super::retention_entry::{
+    ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding,
+    ReviewedSetRetentionBinding, ReviewedSetRetentionHandler, SetRetentionBinding,
+    SetRetentionHandler, DOCUMENT_IDENTITY, RELATED_DOCUMENT_IDENTITY,
+};
+pub use super::rules::{resolve_first_rule, resolve_second_rule};
+pub use super::schema::{
+    Document, DocumentIdentityField, DocumentPrincipalBinding, DocumentRetentionContribution,
+    DocumentRetentionField, DocumentRetentionSchema, DocumentRetentionV1, DocumentRetentionV2,
+};
+pub use super::workflow::{
+    ReviewRequirementBinding, ReviewRequirementHandler, UnlinkReviewRequirementBinding,
+    UnlinkReviewRequirementHandler, WorkflowGrantStatusBinding, WorkflowGrantStatusHandler,
+};
+
+#[path = "host/checkpoint_restore.rs"]
+pub mod checkpoint_restore;
+#[path = "host/trusted_time.rs"]
+pub mod trusted_time;
+#[path = "host/workflow_runtime.rs"]
+pub mod workflow_runtime;
+pub use checkpoint_restore::{restore, restore_on_first_program};
+pub use trusted_time::{publish_on_first_program_with_trusted_time, CertificationTrustedTime};
+pub use workflow_runtime::DocumentWorkflowRuntime;
+
+/// The retention every host seeds. It satisfies both installed rules, so the
+/// same bootstrap is lawful whichever program the host starts on.
+pub const SEED_RETENTION: u64 = 7;
+
+#[path = "host/tests.rs"]
+pub mod tests;
+
+pub type DocumentRetentionRuntime<Initial> =
+    WorthQueryProgramApplicationRuntime<DocumentRetentionSchema, Initial>;
+
+impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRetentionContribution {
+    type Configuration = ();
+
+    fn contracts(
+        contracts: &mut worth_query_host::facade::application_contribution::WorthQueryApplicationContributionContracts<DocumentRetentionSchema>,
+    ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+        contracts.producer::<RetentionAssessmentProducer>()?;
+        contracts.conditional::<RetentionAssessmentReadiness>()?;
+        Ok(())
+    }
+
+    fn configure(
+        (): Self::Configuration,
+        setup: &mut WorthQueryApplicationContributionSetup<'_, DocumentRetentionSchema>,
+    ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(
+            super::actor_generation::ActorLifecycleHandler,
+        )?;
+        setup.handler::<super::record_history::reaffirm::Binding, _>(
+            super::record_history::reaffirm::Handler,
+        )?;
+        setup.invariant(
+            DocumentRetentionV1::reference(),
+            ApplicationInvariantExecutionPoint::CommitBoundary,
+            resolve_first_rule,
+        )?;
+        setup.invariant(
+            DocumentRetentionV2::reference(),
+            ApplicationInvariantExecutionPoint::CommitBoundary,
+            resolve_second_rule,
+        )?;
+        setup
+            .handler::<SetRetentionBinding, _>(SetRetentionHandler)
+            .and_then(|()| {
+                setup.handler::<super::correctable_retention::CorrectableRetentionBinding, _>(
+                    ReviewedSetRetentionHandler,
+                )
+            })
+            .and_then(|()| {
+                setup.handler::<ReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
+            })
+            .and_then(|()| {
+                setup.handler::<OccurrenceSetRetentionBinding, _>(ReviewedSetRetentionHandler)
+            })
+            .and_then(|()| {
+                setup.handler::<ExplicitReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
+            })
+            .and_then(|()| setup.handler::<ReviewRequirementBinding, _>(ReviewRequirementHandler))
+            .and_then(|()| {
+                setup.handler::<UnlinkReviewRequirementBinding, _>(UnlinkReviewRequirementHandler)
+            })
+            .and_then(|()| {
+                setup.handler::<RetentionAssessmentBinding, _>(RetentionAssessmentHandler)
+            })
+            .and_then(|()| {
+                setup.handler::<OrdinaryRetentionAssessmentBinding, _>(
+                    OrdinaryRetentionAssessmentHandler,
+                )
+            })
+            .and_then(|()| {
+                setup.producer::<RetentionAssessmentProducer>(RetentionAssessmentProvider)
+            })
+            .and_then(|()| setup.conditional::<RetentionAssessmentReadiness>(()))
+            .and_then(|()| {
+                setup.handler::<WorkflowGrantStatusBinding, _>(WorkflowGrantStatusHandler)
+            })
+    }
+}
+
+/// Publishes a host whose first occurrence runs P0, with P1 rostered beside it.
+pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0> {
+    publish_on_first_program_with_limits(host_limits())
+}
+
+/// Scale publication lane with WorkflowScale's Relational publication and
+/// integrity settings.
+pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
+{
+    publish_on_first_program_with_limits(
+        WorthQueryInMemoryApplicationLimits::new(
+            world_resources(1_024, 256 * 1024 * 1024, 2_048),
+            runtime::WorthQueryApplicationQueryResourceProfile::new(
+                std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+            ),
+            primary_graph::SignalConditionalEvaluationBudget::development(),
+        )
+        .with_profile(WorthQueryInMemoryApplicationProfile::WorkflowScale),
+    )
+}
+
+pub fn publish_on_first_program_with_limits(
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> DocumentRetentionRuntime<RetentionProgramP0> {
+    publish_with_limits(
+        validated_first_program(),
+        WorthQueryApplicationProgramRoster::new()
+            .support(validated_second_program())
+            .support(validated_changed_feature_program())
+            .support(validated_changed_operation_program())
+            .support(validated_removed_assessment_supplier_program())
+            .support(validated_removed_operation_program()),
+        limits,
+    )
+    .expect("the P0-initial document-retention host must install")
+}
+
+pub fn publish_workflow_on_first_program() -> DocumentWorkflowRuntime {
+    super::workflow::retain_workflow(publish_on_first_program())
+}
+
+/// Publishes a host whose first occurrence runs P1, with P0 rostered beside it.
+pub fn publish_on_second_program() -> DocumentRetentionRuntime<RetentionProgramP1> {
+    publish(
+        validated_second_program(),
+        WorthQueryApplicationProgramRoster::new()
+            .support(validated_first_program())
+            .support(validated_changed_feature_program())
+            .support(validated_changed_operation_program())
+            .support(validated_removed_operation_program()),
+    )
+    .expect("the P1-initial document-retention host must install")
+}
+
+/// Attempts a host without a V2 program against the two-rule catalog.
+pub fn publish_first_program_alone(
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+    publish(
+        validated_first_program(),
+        WorthQueryApplicationProgramRoster::new(),
+    )
+}
+
+/// Attempts a host that rosters a program declaring an uninstalled rule.
+pub fn publish_with_foreign_rule_rostered(
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+    publish(
+        validated_first_program(),
+        WorthQueryApplicationProgramRoster::new()
+            .support(validated_second_program())
+            .support(validated_changed_feature_program())
+            .support(validated_changed_operation_program())
+            .support(validated_removed_operation_program())
+            .support(validated_foreign_rule_program()),
+    )
+}
+
+pub fn publish<Initial>(
+    initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
+    roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+where
+    Initial: ApplicationProgramDefinition<
+            DocumentRetentionSchema,
+            Contributions = (DocumentRetentionContribution,),
+        > + 'static,
+    Initial::Outputs:
+        ApplicationProgramOutputsShape<DocumentRetentionSchema>
+            + worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoots<
+                DocumentRetentionSchema,
+            >,
+{
+    publish_with_limits(initial, roster, host_limits())
+}
+
+pub fn publish_with_limits<Initial>(
+    initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
+    roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+where
+    Initial: ApplicationProgramDefinition<
+            DocumentRetentionSchema,
+            Contributions = (DocumentRetentionContribution,),
+        > + 'static,
+    Initial::Outputs:
+        ApplicationProgramOutputsShape<DocumentRetentionSchema>
+            + worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoots<
+                DocumentRetentionSchema,
+            >,
+{
+    in_memory_rostered_program(
+        initial,
+        // The installed lifecycle binding is owned by this explicitly rostered
+        // program, not implicitly added to P0/P1 or the alternative programs.
+        roster.support(super::actor_generation::validated_actor_program()),
+        DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
+        ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        limits,
+        seed_host,
+    )
+}
+
+pub fn seed_host(
+    _phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>,
+    installed: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
+) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    let principal_binding = installed
+        .principal_binding(DocumentPrincipalBinding::reference())
+        .expect("the document principal binding must install");
+    seed_operator(graph, &principal_binding);
+    seed_document(graph);
+    super::workflow::seed_authoring(graph);
+    super::workflow::governed_read::seed(graph);
+    super::record_history::seed(graph);
+    super::program_adoption::seed(graph);
+    Ok(())
+}
+
+pub fn seed_operator(
+    graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>,
+    principal_binding: &worth_query_host::facade::domain::WorthQueryInstalledPrincipalBinding<
+        DocumentRetentionSchema,
+        DocumentPrincipalBinding,
+        super::schema::ExternalMapping,
+        super::schema::Principal,
+        u64,
+        declaration::application_schema::U64ApplicationValueBinding,
+    >,
+) {
+    graph
+        .bind_principal(
+            principal_binding,
+            primary_graph::WorthQueryApplicationPrincipalKey::new("document-retention-operator")
+                .expect("the principal key is valid"),
+            1_u64,
+            super::operator_identity::operator_identity(),
+            declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
+        )
+        .expect("the operator must seed");
+    for (key, identity, external) in [
+        (
+            "document-retention-reviewer",
+            2_u64,
+            super::operator_identity::reviewer_identity(),
+        ),
+        (
+            "document-retention-ungranted-reviewer",
+            3_u64,
+            super::operator_identity::ungranted_reviewer_identity(),
+        ),
+    ] {
+        graph
+            .bind_principal(
+                principal_binding,
+                primary_graph::WorthQueryApplicationPrincipalKey::new(key).unwrap(),
+                identity,
+                external,
+                declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
+            )
+            .expect("review principals seed through the native principal binding");
+    }
+}
+
+pub fn seed_document(
+    graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>,
+) {
+    graph
+        .bind_entity(
+            primary_graph::WorthQueryApplicationEntitySeed::new(
+                Document::reference(),
+                primary_graph::WorthQueryApplicationEntityKey::new("document-row-1")
+                    .expect("the row key is valid"),
+            )
+            .field(
+                DocumentIdentityField::reference(),
+                DOCUMENT_IDENTITY.to_owned(),
+            )
+            .field(DocumentRetentionField::reference(), SEED_RETENTION),
+        )
+        .expect("the document must seed");
+    graph
+        .bind_entity(
+            primary_graph::WorthQueryApplicationEntitySeed::new(
+                Document::reference(),
+                primary_graph::WorthQueryApplicationEntityKey::new("document-row-2")
+                    .expect("the related row key is valid"),
+            )
+            .field(
+                DocumentIdentityField::reference(),
+                RELATED_DOCUMENT_IDENTITY.to_owned(),
+            )
+            .field(DocumentRetentionField::reference(), SEED_RETENTION),
+        )
+        .expect("the related document must seed");
+}
+
+#[path = "host/query_resources.rs"]
+pub mod query_resources;
+pub use query_resources::host_limits;
+pub use query_resources::with_query_resources;
+
+#[path = "host/owning_workflow.rs"]
+pub mod owning_workflow;
+#[allow(
+    unused_imports,
+    reason = "Shared fixture factory is used by compiled workflow examples"
+)]
+pub use owning_workflow::publish_owner_workflow;
+pub use owning_workflow::{publish_owner_workflow_with_projection, read_owner_approval_grant};

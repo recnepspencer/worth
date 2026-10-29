@@ -1,4 +1,5 @@
 [package]
+autotests = false
 name = "bank-user-node"
 edition.workspace = true
 rust-version.workspace = true

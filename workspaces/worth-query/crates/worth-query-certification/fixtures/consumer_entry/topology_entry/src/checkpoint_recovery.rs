@@ -126,135 +126,6 @@ impl ApplicationProgramDefinition<CheckpointSchema> for CheckpointProgram {
 #[path = "checkpoint_recovery/checkpoint_reopens_ready_output_without_producer_contact_and_rec.rs"]
 mod checkpoint_reopens_ready_output_without_producer_contact_and_rec;
 
-#[test]
-fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact() {
-    let _guard = checkpoint_recovery_test_guard();
-    let provider_observation = crate::producer::ProviderContacts::default();
-    let application = support::observed::install(None, &provider_observation);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    drop(settle(&request, &application));
-    drop(principal);
-    drop(scope);
-    let checkpoint = application
-        .with_host_advancement(|host_phase| {
-            application
-                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                .expect("the ready output is checkpointable")
-        })
-        .expect("installed host call opens");
-    drop(application);
-
-    let restored = support::observed::install(Some(checkpoint), &provider_observation);
-    let (scope, principal) = authenticate(&restored);
-    let request = restored.request(&principal, &scope);
-    drop(settle(&request, &restored));
-    let unrelated = request
-        .query(PlanarRead {
-            body_key: "anchor-isolated".to_owned(),
-        })
-        .execute()
-        .expect("the unrelated source is readable");
-    request
-        .advanced()
-        .mutate(PlanarSourceAdjustment {
-            scope_key: "anchor-isolated".to_owned(),
-            replacement_y: length(51),
-        })
-        .expect_source(unrelated.observed_sources()[0].clone())
-        .idempotency(&88_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(
-            &restored,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the unrelated edit settles");
-
-    provider_observation.reset();
-    let redemanded = settle(&request, &restored);
-    assert_eq!(redemanded.work().producer_contact_count(), 0);
-    assert_eq!(provider_observation.count(), 0);
-}
-
-#[test]
-fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
-    let _guard = checkpoint_recovery_test_guard();
-    let provider_observation = crate::producer::ProviderContacts::default();
-    let application = support::observed::install(None, &provider_observation);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    drop(settle(&request, &application));
-    drop(principal);
-    drop(scope);
-    let checkpoint = application
-        .with_host_advancement(|host_phase| {
-            application
-                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                .expect("the ready output is checkpointable")
-        })
-        .expect("installed host call opens");
-    drop(application);
-
-    let restored = support::observed::install(Some(checkpoint), &provider_observation);
-    let (scope, principal) = authenticate(&restored);
-    let request = restored.request(&principal, &scope);
-    let unrelated = request
-        .query(PlanarRead {
-            body_key: "anchor-isolated".to_owned(),
-        })
-        .execute()
-        .expect("the unrelated source is readable");
-    request
-        .advanced()
-        .mutate(PlanarSourceAdjustment {
-            scope_key: "anchor-isolated".to_owned(),
-            replacement_y: length(51),
-        })
-        .expect_source(unrelated.observed_sources()[0].clone())
-        .idempotency(&89_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(
-            &restored,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the unrelated edit settles before adoption");
-
-    provider_observation.reset();
-    let first_demand = settle(&request, &restored);
-    assert_eq!(first_demand.work().producer_contact_count(), 0);
-    assert_eq!(provider_observation.count(), 0);
-}
-
-#[test]
-fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
-    let _guard = checkpoint_recovery_test_guard();
-    let provider_observation = crate::producer::ProviderContacts::default();
-    let application = support::observed::install(None, &provider_observation);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    drop(settle_for(&request, &application, "anchor-a"));
-    drop(settle_for(&request, &application, "anchor-b"));
-    drop(principal);
-    drop(scope);
-    let checkpoint = application
-        .with_host_advancement(|host_phase| {
-            application
-                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                .expect("both parameter partitions are checkpointable")
-        })
-        .expect("installed host call opens");
-    drop(application);
-
-    provider_observation.reset();
-    let restored = support::observed::install(Some(checkpoint), &provider_observation);
-    let (scope, principal) = authenticate(&restored);
-    let request = restored.request(&principal, &scope);
-    let first = settle_for(&request, &restored, "anchor-a");
-    assert_eq!(first.work().producer_contact_count(), 0);
-    drop(first);
-    let sibling = settle_for(&request, &restored, "anchor-b");
-    assert_eq!(sibling.work().producer_contact_count(), 0);
-    assert_eq!(provider_observation.count(), 0);
-}
-
 fn settle<'application, 'principal, 'scope>(
     request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
         'application,
@@ -318,3 +189,136 @@ mod advancement_custody;
 mod advancement_bootstrap;
 
 mod advancement_discovered;
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact() {
+        let _guard = checkpoint_recovery_test_guard();
+        let provider_observation = crate::producer::ProviderContacts::default();
+        let application = support::observed::install(None, &provider_observation);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        drop(settle(&request, &application));
+        drop(principal);
+        drop(scope);
+        let checkpoint = application
+            .with_host_advancement(|host_phase| {
+                application
+                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                    .expect("the ready output is checkpointable")
+            })
+            .expect("installed host call opens");
+        drop(application);
+
+        let restored = support::observed::install(Some(checkpoint), &provider_observation);
+        let (scope, principal) = authenticate(&restored);
+        let request = restored.request(&principal, &scope);
+        drop(settle(&request, &restored));
+        let unrelated = request
+            .query(PlanarRead {
+                body_key: "anchor-isolated".to_owned(),
+            })
+            .execute()
+            .expect("the unrelated source is readable");
+        request
+            .advanced()
+            .mutate(PlanarSourceAdjustment {
+                scope_key: "anchor-isolated".to_owned(),
+                replacement_y: length(51),
+            })
+            .expect_source(unrelated.observed_sources()[0].clone())
+            .idempotency(&88_u64)
+            .execute_performed::<CheckpointProgram, CheckpointRoot>(
+                &restored,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("the unrelated edit settles");
+
+        provider_observation.reset();
+        let redemanded = settle(&request, &restored);
+        assert_eq!(redemanded.work().producer_contact_count(), 0);
+        assert_eq!(provider_observation.count(), 0);
+    }
+
+    #[test]
+    fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
+        let _guard = checkpoint_recovery_test_guard();
+        let provider_observation = crate::producer::ProviderContacts::default();
+        let application = support::observed::install(None, &provider_observation);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        drop(settle(&request, &application));
+        drop(principal);
+        drop(scope);
+        let checkpoint = application
+            .with_host_advancement(|host_phase| {
+                application
+                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                    .expect("the ready output is checkpointable")
+            })
+            .expect("installed host call opens");
+        drop(application);
+
+        let restored = support::observed::install(Some(checkpoint), &provider_observation);
+        let (scope, principal) = authenticate(&restored);
+        let request = restored.request(&principal, &scope);
+        let unrelated = request
+            .query(PlanarRead {
+                body_key: "anchor-isolated".to_owned(),
+            })
+            .execute()
+            .expect("the unrelated source is readable");
+        request
+            .advanced()
+            .mutate(PlanarSourceAdjustment {
+                scope_key: "anchor-isolated".to_owned(),
+                replacement_y: length(51),
+            })
+            .expect_source(unrelated.observed_sources()[0].clone())
+            .idempotency(&89_u64)
+            .execute_performed::<CheckpointProgram, CheckpointRoot>(
+                &restored,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("the unrelated edit settles before adoption");
+
+        provider_observation.reset();
+        let first_demand = settle(&request, &restored);
+        assert_eq!(first_demand.work().producer_contact_count(), 0);
+        assert_eq!(provider_observation.count(), 0);
+    }
+
+    #[test]
+    fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
+        let _guard = checkpoint_recovery_test_guard();
+        let provider_observation = crate::producer::ProviderContacts::default();
+        let application = support::observed::install(None, &provider_observation);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        drop(settle_for(&request, &application, "anchor-a"));
+        drop(settle_for(&request, &application, "anchor-b"));
+        drop(principal);
+        drop(scope);
+        let checkpoint = application
+            .with_host_advancement(|host_phase| {
+                application
+                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                    .expect("both parameter partitions are checkpointable")
+            })
+            .expect("installed host call opens");
+        drop(application);
+
+        provider_observation.reset();
+        let restored = support::observed::install(Some(checkpoint), &provider_observation);
+        let (scope, principal) = authenticate(&restored);
+        let request = restored.request(&principal, &scope);
+        let first = settle_for(&request, &restored, "anchor-a");
+        assert_eq!(first.work().producer_contact_count(), 0);
+        drop(first);
+        let sibling = settle_for(&request, &restored, "anchor-b");
+        assert_eq!(sibling.work().producer_contact_count(), 0);
+        assert_eq!(provider_observation.count(), 0);
+    }
+}

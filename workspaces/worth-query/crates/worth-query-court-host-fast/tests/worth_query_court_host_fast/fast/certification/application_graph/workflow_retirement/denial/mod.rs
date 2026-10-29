@@ -1,0 +1,70 @@
+pub(crate) use worth_query_worlds::facade::certification::application_graph::workflow_retirement::denial::*;
+
+#[test]
+fn retirement_denies_a_foreign_runtime_authority_or_branch_and_keeps_the_definition_current() {
+    let application = publish_workflow_on_first_program();
+    let first = expect_published(
+        "first revision",
+        publish_definition(
+            &application,
+            terminal_definition("completed"),
+            WorkflowDefinitionExpectedPredecessor::Absent,
+            531,
+        ),
+    );
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+
+    let other = publish_workflow_on_first_program();
+    let foreign_runtime = runtime
+        .request(&principal, &scope)
+        .mutate(authoring_intent())
+        .without_source()
+        .idempotency(&532_u64)
+        .prepare_workflow_definition_retirement(&other, first.clone());
+    assert!(matches!(
+        foreign_runtime,
+        Err(WorthQueryWorkflowDefinitionRetirementPreparationDenial::RuntimeMismatch)
+    ));
+
+    let wrong_authority = runtime
+        .request(&principal, &scope)
+        .mutate(WorkflowInstanceStartIntent {
+            input: WorkflowInstanceStartInput {
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&533_u64)
+        .prepare_workflow_definition_retirement(&application, first.clone());
+    expect_attempt_denial(
+        wrong_authority.map(|_| ()),
+        WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionAuthorityMismatch,
+    );
+
+    let main = runtime.current_world();
+    let sibling = runtime
+        .with_host_advancement(|host_phase| {
+            runtime
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling branch publishes")
+        })
+        .expect("installed host call opens");
+    let foreign_branch = runtime
+        .request(&principal, &scope)
+        .on_branch(sibling)
+        .mutate(authoring_intent())
+        .without_source()
+        .idempotency(&534_u64)
+        .prepare_workflow_definition_retirement(&application, first.clone());
+    expect_attempt_denial(
+        foreign_branch.map(|_| ()),
+        WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionAffinityMismatch,
+    );
+
+    expect_started(start_instance(&application, first, 535));
+}

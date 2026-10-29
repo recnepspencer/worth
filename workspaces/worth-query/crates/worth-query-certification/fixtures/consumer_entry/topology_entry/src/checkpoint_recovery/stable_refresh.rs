@@ -5,72 +5,6 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryOutputSettlementPosture,
 };
 
-#[test]
-fn open_stable_interest_refreshes_twice_without_new_producer_or_world_commit() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let performed = input_cutoff::direct_demand(&request, &application, "anchor-a");
-    assert_eq!(
-        performed.posture(),
-        WorthQueryOutputSettlementPosture::Performed
-    );
-    let original_receipt = performed.application_commit_receipt().unwrap().clone();
-
-    edit_successor(&request, &application, "anchor-b", 2, 101);
-    let mut interest = request
-        .demand(PlanarOutputDemand::new("anchor-a"))
-        .controls(controls())
-        .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
-        .expect("the changed source admits an output interest");
-    let first = settle_open(&mut interest, &request);
-    assert_eq!(
-        first.posture(),
-        WorthQueryOutputSettlementPosture::StableReused
-    );
-    assert_eq!(first.producer_contacts_in_this_demand(), 0);
-    assert!(first.application_commit_receipt().is_none());
-
-    edit_successor(&request, &application, "anchor-b", 3, 102);
-    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-    let second = settle_open(&mut interest, &request);
-    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-    assert_eq!(
-        second.posture(),
-        WorthQueryOutputSettlementPosture::StableReused
-    );
-    assert_eq!(second.producer_contacts_in_this_demand(), 0);
-    assert!(second.application_commit_receipt().is_none());
-    assert_eq!(before.selected_commit(), after.selected_commit());
-    assert_eq!(
-        original_receipt
-            .outputs_of::<PlanarOutputs>()
-            .unwrap()
-            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
-            .unwrap()
-            .entity_id(),
-        second
-            .outputs_of::<PlanarOutputs>()
-            .unwrap()
-            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
-            .unwrap()
-            .entity_id(),
-    );
-
-    edit_successor(&request, &application, "anchor-b", 4, 103);
-    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-    let third = settle_open(&mut interest, &request);
-    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-    assert_eq!(
-        third.posture(),
-        WorthQueryOutputSettlementPosture::StableReused
-    );
-    assert_eq!(third.producer_contacts_in_this_demand(), 0);
-    assert!(third.application_commit_receipt().is_none());
-    assert_eq!(before.selected_commit(), after.selected_commit());
-}
-
 fn controls() -> WorthQueryOutputDemandControls {
     input_cutoff::controls()
 }
@@ -131,4 +65,78 @@ fn edit_successor(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the successor edit publishes");
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn open_stable_interest_refreshes_twice_without_new_producer_or_world_commit() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install(None);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let performed = input_cutoff::direct_demand(&request, &application, "anchor-a");
+        assert_eq!(
+            performed.posture(),
+            WorthQueryOutputSettlementPosture::Performed
+        );
+        let original_receipt = performed.application_commit_receipt().unwrap().clone();
+
+        edit_successor(&request, &application, "anchor-b", 2, 101);
+        let mut interest = request
+            .demand(PlanarOutputDemand::new("anchor-a"))
+            .controls(controls())
+            .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
+            .expect("the changed source admits an output interest");
+        let first = settle_open(&mut interest, &request);
+        assert_eq!(
+            first.posture(),
+            WorthQueryOutputSettlementPosture::StableReused
+        );
+        assert_eq!(first.producer_contacts_in_this_demand(), 0);
+        assert!(first.application_commit_receipt().is_none());
+
+        edit_successor(&request, &application, "anchor-b", 3, 102);
+        let before =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+        let second = settle_open(&mut interest, &request);
+        let after =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+        assert_eq!(
+            second.posture(),
+            WorthQueryOutputSettlementPosture::StableReused
+        );
+        assert_eq!(second.producer_contacts_in_this_demand(), 0);
+        assert!(second.application_commit_receipt().is_none());
+        assert_eq!(before.selected_commit(), after.selected_commit());
+        assert_eq!(
+            original_receipt
+                .outputs_of::<PlanarOutputs>()
+                .unwrap()
+                .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+                .unwrap()
+                .entity_id(),
+            second
+                .outputs_of::<PlanarOutputs>()
+                .unwrap()
+                .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+                .unwrap()
+                .entity_id(),
+        );
+
+        edit_successor(&request, &application, "anchor-b", 4, 103);
+        let before =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+        let third = settle_open(&mut interest, &request);
+        let after =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+        assert_eq!(
+            third.posture(),
+            WorthQueryOutputSettlementPosture::StableReused
+        );
+        assert_eq!(third.producer_contacts_in_this_demand(), 0);
+        assert!(third.application_commit_receipt().is_none());
+        assert_eq!(before.selected_commit(), after.selected_commit());
+    }
 }

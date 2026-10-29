@@ -7,12 +7,8 @@ mod declaration;
 mod handler;
 #[path = "resource_monitor/journey.rs"]
 mod journey;
-#[path = "../../tests/application_graph/source_only/capability/resources/provider.rs"]
-#[expect(
-    dead_code,
-    reason = "The example shares the provider; clock mutation and counters are exercised by its certification tests."
-)]
-pub mod producer;
+
+pub use worth_query_worlds::facade::certification::native_workflow_operations::capability::resources::provider as producer;
 #[path = "resource_monitor/resource.rs"]
 mod resource;
 #[path = "resource_monitor/source_binding.rs"]

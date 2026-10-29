@@ -8,105 +8,110 @@ use worth_query_host::facade::{
     },
 };
 
-#[test]
-fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
-    let _guard = checkpoint_recovery_test_guard();
-    reports();
-    let before = reads();
-    let application = install(None);
-    assert!(
-        reads() > before,
-        "the admitted installation entered the real reader"
-    );
-    assert_eq!(
-        reports().len(),
-        1,
-        "preparation, seeding and publication borrow one root"
-    );
-    let checkpoint = application.runtime().with_host_advancement(|host_phase| application
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
+        let _guard = checkpoint_recovery_test_guard();
+        reports();
+        let before = reads();
+        let application = install(None);
+        assert!(
+            reads() > before,
+            "the admitted installation entered the real reader"
+        );
+        assert_eq!(
+            reports().len(),
+            1,
+            "preparation, seeding and publication borrow one root"
+        );
+        let checkpoint = application.runtime().with_host_advancement(|host_phase| application
         .runtime()
         .capture_application_checkpoint( &host_phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation)
         .unwrap()).expect("installed host call opens");
-    reports();
-    let before = reads();
-    drop(install(Some(checkpoint)));
-    assert!(
-        reads() > before,
-        "checkpoint installation enters the same source reader"
-    );
-    assert_eq!(
-        reports().len(),
-        1,
-        "recovery reads borrow the installation root too"
-    );
-    for restored in [false, true] {
-        for zero_memory in [false, true] {
-            let policy = worth_foundational::ExecutionRequestPolicy::new(
-                worth_foundational::ExecutionPosture::Serial,
-                worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(
-                    NonZeroUsize::MIN,
-                    if zero_memory { Some(0) } else { None },
-                    Some(if zero_memory { 8_000_000 } else { 0 }),
-                ),
-            );
-            let limits = support::limits_with_policy(32, 16, 64, support::invalidation(), policy);
-            let checkpoint = restored.then(|| {
+        reports();
+        let before = reads();
+        drop(install(Some(checkpoint)));
+        assert!(
+            reads() > before,
+            "checkpoint installation enters the same source reader"
+        );
+        assert_eq!(
+            reports().len(),
+            1,
+            "recovery reads borrow the installation root too"
+        );
+        for restored in [false, true] {
+            for zero_memory in [false, true] {
+                let policy = worth_foundational::ExecutionRequestPolicy::new(
+                    worth_foundational::ExecutionPosture::Serial,
+                    worth_foundational::DeterminismContract::CanonicalBitwise,
+                    worth_foundational::ExecutionBudget::new(
+                        NonZeroUsize::MIN,
+                        if zero_memory { Some(0) } else { None },
+                        Some(if zero_memory { 8_000_000 } else { 0 }),
+                    ),
+                );
+                let limits =
+                    support::limits_with_policy(32, 16, 64, support::invalidation(), policy);
+                let checkpoint = restored.then(|| {
                 application.runtime().with_host_advancement(|host_phase| application
                     .runtime()
                     .capture_application_checkpoint( &host_phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation)
                     .unwrap()).expect("installed host call opens")
             });
-            let before = reads();
-            reports();
-            let mut seeds = 0;
-            let denial = support::try_install_program_with_limits::<CheckpointProgram>(
-                checkpoint,
-                Default::default(),
-                limits,
-                |_| {
-                    seeds += 1;
-                },
-            )
-            .err()
-            .expect("the declared bootstrap policy refuses");
-            let application_installation::WorthQueryInMemoryApplicationDenial::Graph(denial) =
-                *denial
-            else {
-                panic!("the installation retains request admission");
-            };
-            use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind;
-            let primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
-                kind:
-                    WorthQueryProviderSessionDenialKind::ExecutionResource {
-                        denial: cause,
-                        partition_identity,
-                        policy_ancestor,
+                let before = reads();
+                reports();
+                let mut seeds = 0;
+                let denial = support::try_install_program_with_limits::<CheckpointProgram>(
+                    checkpoint,
+                    Default::default(),
+                    limits,
+                    |_| {
+                        seeds += 1;
                     },
-            } = denial.kind()
-            else {
-                panic!("the typed cause reaches the builder");
-            };
-            if zero_memory {
-                let Resource::MemoryLimit {
-                    level,
-                    requested,
-                    admitted,
-                } = cause
+                )
+                .err()
+                .expect("the declared bootstrap policy refuses");
+                let application_installation::WorthQueryInMemoryApplicationDenial::Graph(denial) =
+                    *denial
                 else {
-                    panic!("the bootstrap retains its leased memory refusal");
+                    panic!("the installation retains request admission");
                 };
-                assert_eq!(level, worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy);
-                assert_eq!(admitted, 0);
-                assert!(requested > 0);
-            } else {
-                assert_eq!(cause, Resource::WorkExhausted);
+                use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind;
+                let primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+                    kind:
+                        WorthQueryProviderSessionDenialKind::ExecutionResource {
+                            denial: cause,
+                            partition_identity,
+                            policy_ancestor,
+                        },
+                } = denial.kind()
+                else {
+                    panic!("the typed cause reaches the builder");
+                };
+                if zero_memory {
+                    let Resource::MemoryLimit {
+                        level,
+                        requested,
+                        admitted,
+                    } = cause
+                    else {
+                        panic!("the bootstrap retains its leased memory refusal");
+                    };
+                    assert_eq!(level, worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy);
+                    assert_eq!(admitted, 0);
+                    assert!(requested > 0);
+                } else {
+                    assert_eq!(cause, Resource::WorkExhausted);
+                }
+                assert_eq!(partition_identity, None);
+                assert_eq!(policy_ancestor, None);
+                assert_eq!(reads(), before);
+                assert_eq!(seeds, 0);
+                assert_eq!(reports().len(), 1);
             }
-            assert_eq!(partition_identity, None);
-            assert_eq!(policy_ancestor, None);
-            assert_eq!(reads(), before);
-            assert_eq!(seeds, 0);
-            assert_eq!(reports().len(), 1);
         }
     }
 }

@@ -65,36 +65,41 @@ macro_rules! source {
             .clone()
     };
 }
-#[test]
-fn idempotency_opens_before_selected_authorization_and_lookup() {
-    let _guard = checkpoint_recovery_test_guard();
-    for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
-        let _restore = Restore(place(placement), bound(None));
-        let application = install(None);
-        let (scope, principal) = authenticate(&application);
-        let request = application.request(&principal, &scope);
-        let source = source!(request);
-        zero_work();
-        reports();
-        let before = reads();
-        opening_refused(
-            ordinary!(request, source, &9133_u64)
-                .resolve_idempotency_in_program(&application)
-                .err()
-                .unwrap(),
-            before,
-        );
-        reports();
-        assert!(matches!(
-            ordinary!(request, source, &9133_u64)
-                .resolve_idempotency_in_program(&application)
-                .unwrap()
-                .into_resolution(),
-            primary_graph::WorthQueryApplicationIdempotencyResolution::Unseen
-        ));
-        assert!(reads() > before, "admitted call reaches its readers");
-        one_admitted_request("resolve_idempotency_in_program");
-    }
-}
 
 mod cancellation;
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn idempotency_opens_before_selected_authorization_and_lookup() {
+        let _guard = checkpoint_recovery_test_guard();
+        for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
+            let _restore = Restore(place(placement), bound(None));
+            let application = install(None);
+            let (scope, principal) = authenticate(&application);
+            let request = application.request(&principal, &scope);
+            let source = source!(request);
+            zero_work();
+            reports();
+            let before = reads();
+            opening_refused(
+                ordinary!(request, source, &9133_u64)
+                    .resolve_idempotency_in_program(&application)
+                    .err()
+                    .unwrap(),
+                before,
+            );
+            reports();
+            assert!(matches!(
+                ordinary!(request, source, &9133_u64)
+                    .resolve_idempotency_in_program(&application)
+                    .unwrap()
+                    .into_resolution(),
+                primary_graph::WorthQueryApplicationIdempotencyResolution::Unseen
+            ));
+            assert!(reads() > before, "admitted call reaches its readers");
+            one_admitted_request("resolve_idempotency_in_program");
+        }
+    }
+}

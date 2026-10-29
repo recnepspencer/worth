@@ -155,23 +155,6 @@ mod current_acknowledgement;
 mod owned_continuation;
 mod selection_at_inspection;
 
-#[test]
-fn an_unrelated_required_advance_progresses_the_dirty_required_set() {
-    let _guard = checkpoint_recovery_test_guard();
-    run_unrelated_required_advance(chain_application(), [1, 1, 1]);
-}
-
-#[test]
-fn restored_required_demands_reenter_source_query() {
-    let _guard = checkpoint_recovery_test_guard();
-    let checkpoint = ready_chain_checkpoint();
-    // The restored original demands must reenter their authentic source query.
-    run_unrelated_required_advance(
-        chain_application_from_checkpoint(Some(checkpoint)),
-        [0, 1, 1],
-    );
-}
-
 fn ready_chain_checkpoint() -> application_installation::WorthQueryApplicationCheckpoint {
     let application = chain_application();
     {
@@ -274,50 +257,6 @@ fn run_unrelated_required_advance(
     drop((a, b, c, d, fresh_root));
 }
 
-#[test]
-fn queued_required_work_stays_live_and_exact_across_cycles() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = chain_application();
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
-    let inexact = inexact_deliveries();
-    for cycle in 0..6_u64 {
-        change_root_input!(request, application, 2 + cycle % 2, 0x9176_3300_u64 + cycle);
-        let before_unrelated = query_entries();
-        settled_in_one_advance!(d, request, "the unrelated required demand");
-        assert!(
-            query_entries() > before_unrelated,
-            "cycle {cycle}: the unrelated advance re-evidences the dirty chain"
-        );
-        let before_chain = query_entries();
-        let contacts = [
-            settled_in_one_advance!(c, request, "the last consumer")
-                .producer_contacts_in_this_demand(),
-            settled_in_one_advance!(b, request, "the middle consumer")
-                .producer_contacts_in_this_demand(),
-            settled_in_one_advance!(a, request, "the open root demand")
-                .producer_contacts_in_this_demand(),
-        ];
-        assert_eq!(
-            contacts,
-            [1, 1, 1],
-            "cycle {cycle}: each admitted demand keeps its initial execution, with no additional contact"
-        );
-        assert_eq!(
-            query_entries(),
-            before_chain,
-            "cycle {cycle}: chain was current"
-        );
-        assert_eq!(
-            inexact_deliveries(),
-            inexact,
-            "cycle {cycle}: exact publications"
-        );
-    }
-    drop((a, b, c, d));
-}
-
 mod pending_queue;
 mod recovery_isolation;
 mod reopened_dependent;
@@ -331,3 +270,68 @@ mod current_consumption;
 mod retained_currentness;
 
 mod checkpoint_failures;
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn an_unrelated_required_advance_progresses_the_dirty_required_set() {
+        let _guard = checkpoint_recovery_test_guard();
+        run_unrelated_required_advance(chain_application(), [1, 1, 1]);
+    }
+
+    #[test]
+    fn restored_required_demands_reenter_source_query() {
+        let _guard = checkpoint_recovery_test_guard();
+        let checkpoint = ready_chain_checkpoint();
+        // The restored original demands must reenter their authentic source query.
+        run_unrelated_required_advance(
+            chain_application_from_checkpoint(Some(checkpoint)),
+            [0, 1, 1],
+        );
+    }
+
+    #[test]
+    fn queued_required_work_stays_live_and_exact_across_cycles() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = chain_application();
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
+        let inexact = inexact_deliveries();
+        for cycle in 0..6_u64 {
+            change_root_input!(request, application, 2 + cycle % 2, 0x9176_3300_u64 + cycle);
+            let before_unrelated = query_entries();
+            settled_in_one_advance!(d, request, "the unrelated required demand");
+            assert!(
+                query_entries() > before_unrelated,
+                "cycle {cycle}: the unrelated advance re-evidences the dirty chain"
+            );
+            let before_chain = query_entries();
+            let contacts = [
+                settled_in_one_advance!(c, request, "the last consumer")
+                    .producer_contacts_in_this_demand(),
+                settled_in_one_advance!(b, request, "the middle consumer")
+                    .producer_contacts_in_this_demand(),
+                settled_in_one_advance!(a, request, "the open root demand")
+                    .producer_contacts_in_this_demand(),
+            ];
+            assert_eq!(
+            contacts,
+            [1, 1, 1],
+            "cycle {cycle}: each admitted demand keeps its initial execution, with no additional contact"
+        );
+            assert_eq!(
+                query_entries(),
+                before_chain,
+                "cycle {cycle}: chain was current"
+            );
+            assert_eq!(
+                inexact_deliveries(),
+                inexact,
+                "cycle {cycle}: exact publications"
+            );
+        }
+        drop((a, b, c, d));
+    }
+}

@@ -1,0 +1,43 @@
+[package]
+name = "worth-query-bank-court-server-fast"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+boundary = "server"
+class = "fast"
+
+[dev-dependencies]
+bank-courtroom = { path = "../bank-courtroom" }
+bank-domain = { workspace = true }
+bank-estate-certification = { path = "../bank-estate-certification" }
+bank-external-rail = { workspace = true }
+bank-http-adapter = { workspace = true }
+bank-server = { workspace = true }
+bank-user-node = { workspace = true }
+ed25519-dalek = { workspace = true }
+getrandom = "0.4"
+rand = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thirtyfour = { workspace = true }
+tokio = { workspace = true }
+url = { workspace = true }
+worth-foundational = { workspace = true }
+worth-query-bank-worlds = { path = "../worth-query-bank-worlds" }
+worth-query-decl = { workspace = true }
+worth-query-host = { workspace = true }
+worth-query-package-archive = { path = "../../../worth-query/crates/worth-query-package-archive" }
+
+[[test]]
+name = "worth_query_bank_court_server_fast"
+path = "tests/worth_query_bank_court_server_fast.rs"
+
+[lints]
+workspace = true

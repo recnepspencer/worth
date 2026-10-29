@@ -1,4 +1,5 @@
 [package]
+autotests = false
 name = "bank-server"
 edition.workspace = true
 rust-version.workspace = true
@@ -14,6 +15,7 @@ worth-foundational.workspace = true
 worth-query-host.workspace = true
 
 [dev-dependencies]
+worth-query-bank-worlds = { workspace = true }
 serde_json.workspace = true
 bank-external-rail.workspace = true
 bank-server = { path = "." }

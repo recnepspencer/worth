@@ -115,13 +115,13 @@ of avoiding physical proof work. `discard_rule_readable_collections()` removes
 these projections; later reads can reconstruct them without changing truth or
 ordinary Query views.
 
-The [facade journey](../../../worth-query-certification/tests/application_graph/relation_laws/derived/court.rs)
+The [facade journey](../../../worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/certification/application_graph/relation_laws/derived/court/mod.rs)
 uses an authenticated action, real proposed-state rule, negative-adjacency edit,
 physical rewire and discard/rebuild. The [Native audience court](../../../worth-query-execution/src/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience.rs)
 checks that a broad proof cannot lend its physical source access to a narrower
-reader on the same observation. The [logical composition journey](../../../worth-query-certification/tests/application_graph/relation_laws/logical/court.rs)
+reader on the same observation. The [logical composition journey](../../../worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/certification/application_graph/relation_laws/logical/court/mod.rs)
 uses the same source owners for laws, walks, orbits and components. The
-[grant-revocation journey](../../../worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs)
+[grant-revocation journey](../../../worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/certification/mod.rs)
 keeps a derived value available while actual grant revocation denies the action
 before provider access; a derived value cannot replace that grant.
 
@@ -314,7 +314,7 @@ proves the read-only adoption view reports one `GraphRead` row owned by
 Relational and requiring a `GraphReadProduct` terminal.
 
 The executable example is
-`worth-query-host/tests/canonical_graph_progression.rs`. It deliberately lives
+`worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/host/canonical_graph_progression/mod.rs`. It deliberately lives
 in the host crate, whose normal dependency graph contains destination packages
 and no `worth-query` monolith dependency.
 

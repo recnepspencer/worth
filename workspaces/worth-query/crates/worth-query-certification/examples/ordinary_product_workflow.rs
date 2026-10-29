@@ -1,6 +1,6 @@
 //! Run with `cargo run -p worth-query-certification --example ordinary_product_workflow`.
 
-pub mod product_workflow_support;
+pub use worth_query_worlds::facade::certification::program_example_authority::product_workflow_support;
 
 use product_workflow_support::schema::AmendTemporalInput;
 use product_workflow_support::{

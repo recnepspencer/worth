@@ -1,0 +1,65 @@
+pub(crate) use worth_query_worlds::facade::query::suite::conditional_workflow_operation::advancement_custody::*;
+
+#[test]
+fn deferred_start_retry_opens_before_the_same_condition_reader() {
+    let host_request = worth_query_worlds::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    super::super::advancement_custody::verify(
+        "deferred workflow retry",
+        || {
+            let node = domain_condition_node("deferred-start-retry-custody");
+            let mut installation = conditional_installation(&node);
+            installation.providers =
+                worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().condition(
+                    StaticCondition(
+                        worth_signal::facade::InstalledSignalConditionDecision::Deferred,
+                    ),
+                );
+            let mut workspace = operation_conditional_workflow_workspace_with(
+                request_execution,
+                "deferred-start-retry-custody",
+                node,
+                installation,
+                CountedWorkflowCompute(Arc::new(std::sync::atomic::AtomicUsize::new(0))),
+            )
+            .unwrap();
+            let installed = workspace.domain(GeometryDomain).unwrap();
+            let bound = workspace
+                .observe_operating_world(workspace.current_world())
+                .unwrap()
+                .family(ReadFamily)
+                .bind(&installed, WorkflowRead)
+                .unwrap();
+            let TransitionOutcome::Deferred(deferred) = bound
+                .admit_workflow_resources(
+                    worth_query_worlds::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+                    &workspace,
+                )
+                .unwrap()
+                .start_workflow(&mut workspace)
+            else {
+                panic!("the declared condition produces a retained deferred start");
+            };
+            (workspace, deferred)
+        },
+        |deferred, workspace| {
+            let counters = deferred.counters();
+            assert_ne!(counters, Default::default());
+            match deferred.retry(workspace) {
+                TransitionOutcome::Deferred(_) => None,
+                TransitionOutcome::Denied(denial) => {
+                    assert_eq!(denial.counters(), counters);
+                    match denial.kind() {
+                        domain::WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause) => {
+                            Some(*cause)
+                        }
+                        other => panic!("unexpected retry denial: {other:?}"),
+                    }
+                }
+                _ => panic!("the same admitted condition remains deferred"),
+            }
+        },
+    );
+}

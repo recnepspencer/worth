@@ -71,106 +71,6 @@ pub(super) fn association_sensitive_entries() -> Vec<RegionEntry> {
     ]
 }
 
-#[test]
-fn keyed_floating_point_sum_keeps_its_bits_and_its_charged_work_on_every_run() {
-    let entries = association_sensitive_entries();
-    // The fixture is only a proof if association matters to it: summing the
-    // regions' sums ascending and descending gives different bits.
-    let region_sums = (1..=8)
-        .map(|region| {
-            sum(entries
-                .iter()
-                .filter(|entry| entry.region == region)
-                .map(|entry| entry.value))
-        })
-        .collect::<Vec<_>>();
-    assert_ne!(
-        sum(region_sums.iter().copied()).to_bits(),
-        sum(region_sums.iter().rev().copied()).to_bits()
-    );
-
-    // Exactly representable values total exactly under any association, so
-    // every entry is counted once.
-    let exact = (1..=40_u32)
-        .map(|id| entry(u64::from(id), id % 7, f64::from(id)))
-        .collect::<Vec<_>>();
-
-    with_region_totals(&[("sensitive", &entries), ("exact", &exact)], |demand| {
-        let first = total(demand("sensitive"));
-        assert!(f64::from_bits(first.bits).is_finite());
-        // The serial policy now carries a lease; its lineage resolves serial.
-        {
-            assert_eq!(
-                first.report.fallback(),
-                super::worker_axis::serial_fallback()
-            );
-            assert!(first.charged_work > first.report.charged_work());
-        }
-        for _ in 0..3 {
-            assert_eq!(total(demand("sensitive")), first);
-        }
-        assert_eq!(total(demand("exact")).bits, 820.0_f64.to_bits());
-    });
-}
-
-#[test]
-fn empty_input_totals_to_the_reducer_identity_and_one_region_to_its_own_sum() {
-    // One region's values, met out of identity order. The kernel sums them in
-    // entry identity order, which here loses the small values.
-    let one_region = [
-        entry(4, 9, -1.0e16),
-        entry(1, 9, 1.0e16),
-        entry(3, 9, 1.0),
-        entry(2, 9, 1.0),
-    ];
-    with_region_totals(&[("empty", &[]), ("one-region", &one_region)], |demand| {
-        let empty = total(demand("empty"));
-        assert_eq!(empty.bits, NEGATIVE_ZERO);
-        assert_eq!(total(demand("empty")), empty);
-
-        let single = total(demand("one-region"));
-        assert_eq!(single.bits, sum([1.0e16, 1.0, 1.0, -1.0e16]).to_bits());
-        assert_ne!(
-            single.bits,
-            sum(one_region.iter().map(|entry| entry.value)).to_bits()
-        );
-        assert_eq!(total(demand("one-region")), single);
-    });
-}
-
-#[test]
-fn reordering_the_input_changes_neither_the_total_nor_the_charged_work() {
-    let entries = association_sensitive_entries();
-    let mut reversed = entries.clone();
-    reversed.reverse();
-    let mut interleaved = entries.clone();
-    interleaved.rotate_left(5);
-    interleaved.swap(0, 9);
-    // Summed as met, the two orders disagree, for the whole input and inside
-    // the first region: the invariance below is the partitioned binding's,
-    // not the data's.
-    let as_met = |entries: &[RegionEntry], region: Option<u32>| {
-        sum(entries
-            .iter()
-            .filter(|entry| region.is_none_or(|region| entry.region == region))
-            .map(|entry| entry.value))
-        .to_bits()
-    };
-    assert_ne!(as_met(&entries, None), as_met(&reversed, None));
-    assert_ne!(as_met(&entries, Some(1)), as_met(&reversed, Some(1)));
-
-    let sets: facts::Sets<'_> = &[
-        ("planned", &entries),
-        ("reversed", &reversed),
-        ("interleaved", &interleaved),
-    ];
-    with_region_totals(sets, |demand| {
-        let planned = total(demand("planned"));
-        assert_eq!(total(demand("reversed")), planned);
-        assert_eq!(total(demand("interleaved")), planned);
-    });
-}
-
 /// Six regions met in descending partition order, of which the second,
 /// fourth and fifth partitions fail, and the least failure: the last met.
 pub(super) fn several_refusals() -> (Vec<RegionEntry>, RegionOutcome) {
@@ -195,38 +95,6 @@ pub(super) fn several_refusals() -> (Vec<RegionEntry>, RegionOutcome) {
     (entries, least)
 }
 
-#[cfg(panic = "unwind")]
-#[test]
-fn refusals_in_several_regions_report_the_least_partition_identity() {
-    let (entries, least) = several_refusals();
-    let mut ascending = entries.clone();
-    ascending.reverse();
-
-    let sets: facts::Sets<'_> = &[("descending", &entries), ("ascending", &ascending)];
-    with_region_totals(sets, |demand| {
-        assert_eq!(demand("descending"), least);
-        assert_eq!(demand("ascending"), least);
-    });
-}
-
-#[cfg(panic = "unwind")]
-#[test]
-fn kernel_panic_is_a_typed_stop_and_the_next_demand_runs() {
-    let clean = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
-    let mut panicking = clean;
-    panicking[1].fault = Some(RegionFault::Panic);
-    with_region_totals(&[("panicking", &panicking), ("clean", &clean)], |demand| {
-        assert_eq!(
-            demand("panicking"),
-            Err(WorthQueryPartitionedComputationDenial::Partition {
-                partition: partition_of(2),
-                cause: WorthQueryComputationPartitionStop::Panicked,
-            })
-        );
-        assert_eq!(total(demand("clean")).bits, 5.0_f64.to_bits());
-    });
-}
-
 /// Three regions of 1,500 work units each. An owned certification ceiling of
 /// 4,096 admits two regions and stops the third, irrespective of input order.
 pub(super) fn heavy_regions() -> (Vec<RegionEntry>, RegionOutcome) {
@@ -247,26 +115,162 @@ pub(super) fn heavy_regions() -> (Vec<RegionEntry>, RegionOutcome) {
     (heavy, exhausted)
 }
 
-#[test]
-fn work_ceiling_stops_at_the_same_partition_with_the_same_outcome_on_every_run() {
-    let (heavy, exhausted) = heavy_regions();
-    let mut reversed = heavy.clone();
-    reversed.reverse();
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn keyed_floating_point_sum_keeps_its_bits_and_its_charged_work_on_every_run() {
+        let entries = association_sensitive_entries();
+        // The fixture is only a proof if association matters to it: summing the
+        // regions' sums ascending and descending gives different bits.
+        let region_sums = (1..=8)
+            .map(|region| {
+                sum(entries
+                    .iter()
+                    .filter(|entry| entry.region == region)
+                    .map(|entry| entry.value))
+            })
+            .collect::<Vec<_>>();
+        assert_ne!(
+            sum(region_sums.iter().copied()).to_bits(),
+            sum(region_sums.iter().rev().copied()).to_bits()
+        );
 
-    // The same regions inside the ceiling complete.
-    let light = heavy
-        .iter()
-        .map(|entry| RegionEntry { work: 1, ..*entry })
-        .collect::<Vec<_>>();
-    let sets: facts::Sets<'_> = &[
-        ("heavy", &heavy),
-        ("reversed", &reversed),
-        ("light", &light),
-    ];
-    with_region_totals(sets, |demand| {
-        assert_eq!(demand("heavy"), exhausted);
-        assert_eq!(demand("reversed"), exhausted);
-        assert_eq!(demand("heavy"), exhausted);
-        assert_eq!(total(demand("light")).bits, 3.0_f64.to_bits());
-    });
+        // Exactly representable values total exactly under any association, so
+        // every entry is counted once.
+        let exact = (1..=40_u32)
+            .map(|id| entry(u64::from(id), id % 7, f64::from(id)))
+            .collect::<Vec<_>>();
+
+        with_region_totals(&[("sensitive", &entries), ("exact", &exact)], |demand| {
+            let first = total(demand("sensitive"));
+            assert!(f64::from_bits(first.bits).is_finite());
+            // The serial policy now carries a lease; its lineage resolves serial.
+            {
+                assert_eq!(
+                    first.report.fallback(),
+                    super::super::worker_axis::serial_fallback()
+                );
+                assert!(first.charged_work > first.report.charged_work());
+            }
+            for _ in 0..3 {
+                assert_eq!(total(demand("sensitive")), first);
+            }
+            assert_eq!(total(demand("exact")).bits, 820.0_f64.to_bits());
+        });
+    }
+
+    #[test]
+    fn empty_input_totals_to_the_reducer_identity_and_one_region_to_its_own_sum() {
+        // One region's values, met out of identity order. The kernel sums them in
+        // entry identity order, which here loses the small values.
+        let one_region = [
+            entry(4, 9, -1.0e16),
+            entry(1, 9, 1.0e16),
+            entry(3, 9, 1.0),
+            entry(2, 9, 1.0),
+        ];
+        with_region_totals(&[("empty", &[]), ("one-region", &one_region)], |demand| {
+            let empty = total(demand("empty"));
+            assert_eq!(empty.bits, NEGATIVE_ZERO);
+            assert_eq!(total(demand("empty")), empty);
+
+            let single = total(demand("one-region"));
+            assert_eq!(single.bits, sum([1.0e16, 1.0, 1.0, -1.0e16]).to_bits());
+            assert_ne!(
+                single.bits,
+                sum(one_region.iter().map(|entry| entry.value)).to_bits()
+            );
+            assert_eq!(total(demand("one-region")), single);
+        });
+    }
+
+    #[test]
+    fn reordering_the_input_changes_neither_the_total_nor_the_charged_work() {
+        let entries = association_sensitive_entries();
+        let mut reversed = entries.clone();
+        reversed.reverse();
+        let mut interleaved = entries.clone();
+        interleaved.rotate_left(5);
+        interleaved.swap(0, 9);
+        // Summed as met, the two orders disagree, for the whole input and inside
+        // the first region: the invariance below is the partitioned binding's,
+        // not the data's.
+        let as_met = |entries: &[RegionEntry], region: Option<u32>| {
+            sum(entries
+                .iter()
+                .filter(|entry| region.is_none_or(|region| entry.region == region))
+                .map(|entry| entry.value))
+            .to_bits()
+        };
+        assert_ne!(as_met(&entries, None), as_met(&reversed, None));
+        assert_ne!(as_met(&entries, Some(1)), as_met(&reversed, Some(1)));
+
+        let sets: facts::Sets<'_> = &[
+            ("planned", &entries),
+            ("reversed", &reversed),
+            ("interleaved", &interleaved),
+        ];
+        with_region_totals(sets, |demand| {
+            let planned = total(demand("planned"));
+            assert_eq!(total(demand("reversed")), planned);
+            assert_eq!(total(demand("interleaved")), planned);
+        });
+    }
+
+    #[cfg(panic = "unwind")]
+    #[test]
+    fn refusals_in_several_regions_report_the_least_partition_identity() {
+        let (entries, least) = several_refusals();
+        let mut ascending = entries.clone();
+        ascending.reverse();
+
+        let sets: facts::Sets<'_> = &[("descending", &entries), ("ascending", &ascending)];
+        with_region_totals(sets, |demand| {
+            assert_eq!(demand("descending"), least);
+            assert_eq!(demand("ascending"), least);
+        });
+    }
+
+    #[cfg(panic = "unwind")]
+    #[test]
+    fn kernel_panic_is_a_typed_stop_and_the_next_demand_runs() {
+        let clean = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
+        let mut panicking = clean;
+        panicking[1].fault = Some(RegionFault::Panic);
+        with_region_totals(&[("panicking", &panicking), ("clean", &clean)], |demand| {
+            assert_eq!(
+                demand("panicking"),
+                Err(WorthQueryPartitionedComputationDenial::Partition {
+                    partition: partition_of(2),
+                    cause: WorthQueryComputationPartitionStop::Panicked,
+                })
+            );
+            assert_eq!(total(demand("clean")).bits, 5.0_f64.to_bits());
+        });
+    }
+
+    #[test]
+    fn work_ceiling_stops_at_the_same_partition_with_the_same_outcome_on_every_run() {
+        let (heavy, exhausted) = heavy_regions();
+        let mut reversed = heavy.clone();
+        reversed.reverse();
+
+        // The same regions inside the ceiling complete.
+        let light = heavy
+            .iter()
+            .map(|entry| RegionEntry { work: 1, ..*entry })
+            .collect::<Vec<_>>();
+        let sets: facts::Sets<'_> = &[
+            ("heavy", &heavy),
+            ("reversed", &reversed),
+            ("light", &light),
+        ];
+        with_region_totals(sets, |demand| {
+            assert_eq!(demand("heavy"), exhausted);
+            assert_eq!(demand("reversed"), exhausted);
+            assert_eq!(demand("heavy"), exhausted);
+            assert_eq!(total(demand("light")).bits, 3.0_f64.to_bits());
+        });
+    }
 }

@@ -159,55 +159,64 @@ pub(super) fn assert_edited(run: &OracleRun, bound: u64) {
     assert_eq!(reducer_calls(run), 2 * completed_nodes(run));
 }
 
-#[test]
-fn recomputed_partition_with_identical_bits_reports_zero_tree_work() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install(|graph| {
-        facts::seed_set(graph, "even", -0.0);
-        for place in 0..32 {
-            seed_entry(
-                graph,
-                &["even"],
-                place,
-                RegionEntry {
-                    id: u64::try_from(place).unwrap(),
-                    region: u32::try_from(place).unwrap(),
-                    value: 1.0,
-                    work: 1,
-                    fault: None,
-                },
-            );
-        }
-    });
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let (_, first) = demand(&request, &application);
-    assert_counted(&first[0]);
-    // An ignored probe fault moves a gathered fact while preserving the
-    // leaf's canonical bits. Owner calls are independent of tree work.
-    edit(
-        &request,
-        &application,
-        EntryEdit::new("even", 7, super::super::entry_edit::EntryFact::Fault, 3),
-        1,
-    );
-    let (_, next) = demand(&request, &application);
-    assert_eq!(
-        next[0].calls,
-        OwnerCalls {
-            plans: 0,
-            keys: 0,
-            gathers: 1,
-            kernels: 1
-        }
-    );
-    assert_eq!(
-        next[0].runs,
-        [WorthQueryPartitionedComputationRunForTest::Incremental]
-    );
-    assert_edited(&next[0], 0);
-    assert_eq!(
-        next[0].outcome.as_ref().unwrap().0,
-        first[0].outcome.as_ref().unwrap().0
-    );
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn recomputed_partition_with_identical_bits_reports_zero_tree_work() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install(|graph| {
+            facts::seed_set(graph, "even", -0.0);
+            for place in 0..32 {
+                seed_entry(
+                    graph,
+                    &["even"],
+                    place,
+                    RegionEntry {
+                        id: u64::try_from(place).unwrap(),
+                        region: u32::try_from(place).unwrap(),
+                        value: 1.0,
+                        work: 1,
+                        fault: None,
+                    },
+                );
+            }
+        });
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let (_, first) = demand(&request, &application);
+        assert_counted(&first[0]);
+        // An ignored probe fault moves a gathered fact while preserving the
+        // leaf's canonical bits. Owner calls are independent of tree work.
+        edit(
+            &request,
+            &application,
+            EntryEdit::new(
+                "even",
+                7,
+                super::super::super::super::entry_edit::EntryFact::Fault,
+                3,
+            ),
+            1,
+        );
+        let (_, next) = demand(&request, &application);
+        assert_eq!(
+            next[0].calls,
+            OwnerCalls {
+                plans: 0,
+                keys: 0,
+                gathers: 1,
+                kernels: 1
+            }
+        );
+        assert_eq!(
+            next[0].runs,
+            [WorthQueryPartitionedComputationRunForTest::Incremental]
+        );
+        assert_edited(&next[0], 0);
+        assert_eq!(
+            next[0].outcome.as_ref().unwrap().0,
+            first[0].outcome.as_ref().unwrap().0
+        );
+    }
 }

@@ -146,21 +146,25 @@ fn block_on<Output>(future: impl Future<Output = Output>) -> Output {
     }
 }
 
-#[test]
-fn fixture_principal_expiry_cannot_be_a_wall_clock_timeout() {
-    let cancellation = authentication::WorthQueryCancellationSource::new();
-    let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
-    let principal = block_on(authentication::WorthQueryAuthenticationAdapter::validate(
-        &LocalIdentityAdapter(FixtureAuthenticationRealm::Checkpoint),
-        LocalCredential,
-        &scope,
-    ))
-    .unwrap();
-    assert!(
-        principal
-            .expires_at()
-            .checked_add(Duration::from_secs(1))
-            .is_none(),
-        "a count-proof principal must expire at the far end of SystemTime"
-    );
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn fixture_principal_expiry_cannot_be_a_wall_clock_timeout() {
+        let cancellation = authentication::WorthQueryCancellationSource::new();
+        let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+        let principal = block_on(authentication::WorthQueryAuthenticationAdapter::validate(
+            &LocalIdentityAdapter(FixtureAuthenticationRealm::Checkpoint),
+            LocalCredential,
+            &scope,
+        ))
+        .unwrap();
+        assert!(
+            principal
+                .expires_at()
+                .checked_add(Duration::from_secs(1))
+                .is_none(),
+            "a count-proof principal must expire at the far end of SystemTime"
+        );
+    }
 }

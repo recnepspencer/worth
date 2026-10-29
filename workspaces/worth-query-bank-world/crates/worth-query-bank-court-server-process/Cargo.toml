@@ -1,0 +1,32 @@
+[package]
+name = "worth-query-bank-court-server-process"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+boundary = "server"
+class = "process"
+
+[dev-dependencies]
+bank-domain = { workspace = true }
+bank-estate-certification = { path = "../bank-estate-certification" }
+bank-external-rail = { workspace = true }
+bank-server = { workspace = true }
+getrandom = "0.4"
+serde_json = { workspace = true }
+tokio = { workspace = true }
+worth-foundational = { workspace = true }
+worth-query-bank-worlds = { path = "../worth-query-bank-worlds" }
+worth-query-decl = { workspace = true }
+worth-query-host = { workspace = true }
+
+[[test]]
+name = "worth_query_bank_court_server_process"
+path = "tests/worth_query_bank_court_server_process.rs"
+
+[lints]
+workspace = true

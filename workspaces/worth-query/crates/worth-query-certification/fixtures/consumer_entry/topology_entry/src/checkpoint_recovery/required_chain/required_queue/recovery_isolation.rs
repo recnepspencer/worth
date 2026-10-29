@@ -8,14 +8,6 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 
-#[test]
-fn recovery_selected_refusal_leaves_an_ordinary_dependent_live() {
-    scenario(false);
-}
-#[test]
-fn recovery_direct_refresh_door_refuses_its_exact_publication() {
-    scenario(true);
-}
 fn scenario(direct: bool) {
     let _guard = checkpoint_recovery_test_guard();
     let application = install_program::<program::ChainProgram>(None, Default::default());
@@ -231,4 +223,18 @@ fn scenario(direct: bool) {
     // certification clears the row's stop before the dependent proceeds.
     let settled = settle!(dependent, request);
     assert!(settled.producer_contacts_in_this_demand() > before);
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn recovery_selected_refusal_leaves_an_ordinary_dependent_live() {
+        scenario(false);
+    }
+
+    #[test]
+    fn recovery_direct_refresh_door_refuses_its_exact_publication() {
+        scenario(true);
+    }
 }

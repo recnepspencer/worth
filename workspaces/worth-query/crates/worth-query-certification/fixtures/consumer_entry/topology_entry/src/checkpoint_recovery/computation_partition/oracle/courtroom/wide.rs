@@ -233,63 +233,67 @@ fn run<const FRESH: bool>(
     runs.pop().unwrap()
 }
 
-#[test]
-fn ten_thousand_neutral_partitions_isolate_a_real_one_entry_edit() {
-    let _guard = checkpoint_recovery_test_guard();
-    let kept = application::<false>(1.0);
-    let first = run(&kept);
-    assert_eq!(
-        first.calls,
-        OwnerCalls {
-            plans: 1,
-            keys: PARTITIONS,
-            gathers: PARTITIONS,
-            kernels: PARTITIONS
-        }
-    );
-    let (scope, principal) = authenticate(&kept);
-    let edited = EntryEdit::new(
-        "even",
-        u64::from(EDITED),
-        super::super::super::entry_edit::EntryFact::Value,
-        2.5_f64.to_bits(),
-    );
-    let edited = at_demand_scope(edited).commanded(0x612_10000);
-    let outcome = kept
-        .request(&principal, &scope)
-        .advanced()
-        .mutate(edited)
-        .without_source()
-        .idempotency(&0x612_10000_u64)
-        .execute_in_program::<Program<false>>(
-            &kept,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn ten_thousand_neutral_partitions_isolate_a_real_one_entry_edit() {
+        let _guard = checkpoint_recovery_test_guard();
+        let kept = application::<false>(1.0);
+        let first = run(&kept);
+        assert_eq!(
+            first.calls,
+            OwnerCalls {
+                plans: 1,
+                keys: PARTITIONS,
+                gathers: PARTITIONS,
+                kernels: PARTITIONS
+            }
         );
-    assert!(
-        matches!(
-            outcome,
-            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-        ),
-        "wide edit {outcome:?}"
-    );
-    let next = run(&kept);
-    let fresh = run(&application::<true>(2.5));
-    assert_eq!(
-        next.calls,
-        OwnerCalls {
-            plans: 0,
-            keys: 0,
-            gathers: 1,
-            kernels: 1
-        }
-    );
-    assert_eq!(next.outcome, fresh.outcome);
-    assert_eq!(
-        next.outcome.as_ref().unwrap().0,
-        (PARTITIONS as f64 + 1.5).to_bits()
-    );
-    assert_eq!(
-        next.outcome.as_ref().unwrap().1,
-        first.outcome.as_ref().unwrap().1
-    );
+        let (scope, principal) = authenticate(&kept);
+        let edited = EntryEdit::new(
+            "even",
+            u64::from(EDITED),
+            super::super::super::super::super::super::entry_edit::EntryFact::Value,
+            2.5_f64.to_bits(),
+        );
+        let edited = at_demand_scope(edited).commanded(0x612_10000);
+        let outcome = kept
+            .request(&principal, &scope)
+            .advanced()
+            .mutate(edited)
+            .without_source()
+            .idempotency(&0x612_10000_u64)
+            .execute_in_program::<Program<false>>(
+                &kept,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
+        assert!(
+            matches!(
+                outcome,
+                Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+            ),
+            "wide edit {outcome:?}"
+        );
+        let next = run(&kept);
+        let fresh = run(&application::<true>(2.5));
+        assert_eq!(
+            next.calls,
+            OwnerCalls {
+                plans: 0,
+                keys: 0,
+                gathers: 1,
+                kernels: 1
+            }
+        );
+        assert_eq!(next.outcome, fresh.outcome);
+        assert_eq!(
+            next.outcome.as_ref().unwrap().0,
+            (PARTITIONS as f64 + 1.5).to_bits()
+        );
+        assert_eq!(
+            next.outcome.as_ref().unwrap().1,
+            first.outcome.as_ref().unwrap().1
+        );
+    }
 }

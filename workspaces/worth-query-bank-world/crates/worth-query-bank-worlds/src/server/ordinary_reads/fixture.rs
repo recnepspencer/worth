@@ -1,0 +1,282 @@
+pub use bank_domain::model::{
+    AccountId, AccountName, BankPrincipalId, BankSnapshotVersion, BusinessId, CustomerRole,
+    EmployeeAssignmentId, EmployeeRole, InstitutionId, Money, PaymentId,
+};
+pub use bank_domain::proposals::{
+    BankIdempotencyKey, BankOperationScopeBinding, BankProposalEngine, BankSnapshot,
+    BankSnapshotBuilder,
+};
+pub use bank_domain::schema::{
+    ApplyOpeningFunding, CreateBusinessAccount, CreatePersonalAccount, GrantAccountAuthorization,
+    InitiateBusinessPayment, SendMoney,
+};
+pub use bank_server::{
+    BankApprovalAuthenticationConfiguration, BankAuthenticatedPrincipal, BankBusinessOwnerSeed,
+    BankEmployeeAssignmentSeed, BankPrincipalSeed, BankWorldSeed,
+};
+
+pub use super::support::{
+    block_on, runtime, runtime_with_approval_authentication, CausalCredential, DynamicIdentity,
+    TestIdentityWorld,
+};
+
+pub const OWNER: usize = 0;
+pub const RECIPIENT: usize = 1;
+pub const APPROVER: usize = 2;
+pub const VIEWER: usize = 3;
+pub const STRANGER: usize = 4;
+pub const AUDITOR: usize = 5;
+pub const TELLER: usize = 6;
+
+#[path = "fixture/deployment.rs"]
+pub mod deployment;
+#[path = "fixture/proposals.rs"]
+pub mod proposals;
+pub use proposals::{binding, create_business, create_personal, fund, grant, key, send};
+#[path = "fixture/discovery.rs"]
+pub mod discovery;
+#[allow(
+    unused_imports,
+    reason = "the shared fixture's discovery court is a separate test target"
+)]
+pub use discovery::{
+    over_budget_discovery_world, over_budget_discovery_world_with_role, AccountDiscoveryFixture,
+};
+
+pub struct OrdinaryReadFixture {
+    pub world: TestIdentityWorld,
+    pub identities: Vec<DynamicIdentity>,
+    pub personal_account: AccountId,
+    pub recipient_account: AccountId,
+    pub business_account: AccountId,
+    pub institution: InstitutionId,
+    pub payment: PaymentId,
+    pub payments: Vec<PaymentId>,
+}
+
+impl OrdinaryReadFixture {
+    pub fn authenticate(&self, principal: usize) -> BankAuthenticatedPrincipal {
+        let request = super::support::request_scope();
+        block_on(self.world.runtime.authenticate_with(
+            &self.world.authentication,
+            CausalCredential::for_identity(&self.identities[principal]),
+            &request,
+        ))
+        .expect("fixture principal should authenticate")
+    }
+}
+
+pub fn ordinary_read_world(scenario: &str, unrelated_accounts: usize) -> OrdinaryReadFixture {
+    ordinary_read_world_with_pending_payments(scenario, unrelated_accounts, 1)
+}
+
+#[allow(
+    dead_code,
+    reason = "this shared fixture also compiles in the ordinary-reads test target"
+)]
+pub fn ordinary_read_world_with_approval_authentication(
+    scenario: &str,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), false, 900)
+}
+
+#[allow(
+    dead_code,
+    reason = "the shared fixture also compiles in targets without the approval-limit court"
+)]
+pub fn ordinary_read_world_with_payment_amount(
+    scenario: &str,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+    payment_minor_units: i64,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(
+        scenario,
+        0,
+        1,
+        Some(approval_authentication),
+        false,
+        payment_minor_units,
+    )
+}
+
+#[allow(
+    dead_code,
+    reason = "the shared fixture also compiles in targets without the actor-handoff court"
+)]
+pub fn ordinary_read_world_with_two_approvers(
+    scenario: &str,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), true, 900)
+}
+
+pub fn ordinary_read_world_with_pending_payments(
+    scenario: &str,
+    unrelated_accounts: usize,
+    pending_payment_count: usize,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(
+        scenario,
+        unrelated_accounts,
+        pending_payment_count,
+        None,
+        false,
+        900,
+    )
+}
+
+pub fn build_ordinary_read_world(
+    scenario: &str,
+    unrelated_accounts: usize,
+    pending_payment_count: usize,
+    approval_authentication: Option<BankApprovalAuthenticationConfiguration>,
+    second_approver: bool,
+    payment_minor_units: i64,
+) -> OrdinaryReadFixture {
+    assert!(pending_payment_count > 0);
+    let mut identities = (0..(7 + unrelated_accounts))
+        .map(|ordinal| DynamicIdentity::new(&format!("{scenario}-{ordinal}")))
+        .collect::<Vec<_>>();
+    let institution = id(InstitutionId::new, 1);
+    let business = id(BusinessId::new, 1);
+    let mut builder = BankSnapshotBuilder::new(id(BankSnapshotVersion::new, 1))
+        .institution(institution)
+        .business(business)
+        .business(id(BusinessId::new, 2))
+        .institution_cash_account(id(AccountId::new, 100), institution);
+    for ordinal in 0..identities.len() {
+        builder = builder.principal(principal_id(ordinal));
+    }
+    let mut snapshot = builder.build().expect("base read world should build");
+    snapshot = create_personal(snapshot, principal_id(OWNER), "Daily", "personal");
+    snapshot = create_personal(snapshot, principal_id(RECIPIENT), "Recipient", "recipient");
+    snapshot = create_business(snapshot, institution, business);
+    let personal_account = snapshot
+        .primary_account(principal_id(OWNER))
+        .expect("owner account should exist");
+    let recipient_account = snapshot
+        .primary_account(principal_id(RECIPIENT))
+        .expect("recipient account should exist");
+    let business_account = snapshot
+        .business_account(business)
+        .expect("business account should exist");
+    snapshot = fund(
+        snapshot,
+        institution,
+        personal_account,
+        10_000,
+        "fund-personal",
+    );
+    snapshot = fund(
+        snapshot,
+        institution,
+        business_account,
+        20_000,
+        "fund-business",
+    );
+    snapshot = send(snapshot, personal_account, principal_id(RECIPIENT));
+    snapshot = grant(
+        snapshot,
+        personal_account,
+        principal_id(VIEWER),
+        CustomerRole::Viewer,
+        "viewer",
+    );
+    snapshot = grant(
+        snapshot,
+        business_account,
+        principal_id(OWNER),
+        CustomerRole::Initiator,
+        "initiator",
+    );
+    snapshot = grant(
+        snapshot,
+        business_account,
+        principal_id(APPROVER),
+        CustomerRole::Approver,
+        "approver",
+    );
+    if second_approver {
+        snapshot = grant(
+            snapshot,
+            business_account,
+            principal_id(STRANGER),
+            CustomerRole::Approver,
+            "second-approver",
+        );
+    }
+    for ordinal in 0..pending_payment_count {
+        let payment_proposal = BankProposalEngine::prepare_initiate_business_payment(
+            &snapshot,
+            binding(8),
+            &key(&format!("pending-payment-{ordinal}")),
+            principal_id(OWNER),
+            &InitiateBusinessPayment {
+                business,
+                from: business_account,
+                recipient: principal_id(RECIPIENT),
+                amount: Money::from_minor(payment_minor_units + i64::try_from(ordinal).unwrap())
+                    .unwrap(),
+            },
+        )
+        .expect("pending payment should prepare");
+        snapshot = payment_proposal.proposed_snapshot().clone();
+    }
+    let payments = snapshot
+        .payments()
+        .map(|payment| payment.id())
+        .collect::<Vec<_>>();
+    let payment = payments[0];
+    for ordinal in 0..unrelated_accounts {
+        snapshot = create_personal(
+            snapshot,
+            principal_id(7 + ordinal),
+            &format!("Unrelated {ordinal}"),
+            &format!("unrelated-{ordinal}"),
+        );
+    }
+
+    let mut seed = BankWorldSeed::new(snapshot)
+        .program_deployment_grant(deployment::approver_grant())
+        .business_owner(BankBusinessOwnerSeed::new(business, principal_id(OWNER)))
+        .employee(BankEmployeeAssignmentSeed::new(
+            id(EmployeeAssignmentId::new, 1),
+            institution,
+            principal_id(AUDITOR),
+            EmployeeRole::Auditor,
+        ))
+        .employee(BankEmployeeAssignmentSeed::new(
+            id(EmployeeAssignmentId::new, 2),
+            institution,
+            principal_id(TELLER),
+            EmployeeRole::Teller,
+        ));
+    for (ordinal, identity) in identities.iter_mut().enumerate() {
+        seed = seed.principal(BankPrincipalSeed::enabled(
+            principal_id(ordinal),
+            identity.external(),
+        ));
+    }
+    OrdinaryReadFixture {
+        world: match approval_authentication {
+            Some(configuration) => runtime_with_approval_authentication(seed, configuration),
+            None => runtime(seed),
+        },
+        identities,
+        personal_account,
+        recipient_account,
+        business_account,
+        institution,
+        payment,
+        payments,
+    }
+}
+
+pub fn principal_id(ordinal: usize) -> BankPrincipalId {
+    id(BankPrincipalId::new, u64::try_from(ordinal).unwrap() + 1)
+}
+
+pub fn id<T>(constructor: impl FnOnce(u64) -> Option<T>, value: u64) -> T {
+    constructor(value).unwrap()
+}

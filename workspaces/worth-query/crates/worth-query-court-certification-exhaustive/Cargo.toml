@@ -1,0 +1,41 @@
+[package]
+name = "worth-query-court-certification-exhaustive"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+boundary = "certification"
+class = "exhaustive"
+
+[dev-dependencies]
+serde = { workspace = true }
+sha2 = { workspace = true }
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { workspace = true }
+worth-harness = { path = "../../../../crates/worth-harness" }
+worth-proof = { workspace = true }
+worth-query = { workspace = true }
+worth-query-admission = { path = "../worth-query-admission" }
+worth-query-decl = { workspace = true }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { workspace = true }
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-package-archive = { workspace = true }
+worth-query-publication = { path = "../worth-query-publication" }
+worth-query-replay = { workspace = true }
+worth-query-worlds = { path = "../worth-query-worlds" }
+worth-relational = { workspace = true }
+worth-runtime-bridge = { workspace = true }
+worth-signal = { workspace = true }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_certification_exhaustive"
+path = "tests/worth_query_court_certification_exhaustive.rs"

@@ -1,0 +1,144 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Custody courts retain the original native workflow refusal and cleanup owner"
+)]
+
+pub(crate) use worth_query_bank_worlds::facade::server::approved_payment_workflow::owner_custody::*;
+
+pub(crate) mod correction;
+
+#[test]
+fn a_cancellation_stays_blocked_after_rail_completion_without_inbound() {
+    let ready = ReadyPaymentWorld::new("cancel-in-owner-custody", FaultScript::Succeed);
+    ready
+        .perform()
+        .into_performed()
+        .expect("the payment commits into rail custody");
+    assert_in_owner_custody(cancel(&ready, "approved-payment:cancel:in-custody"));
+    owner_remains_pending(&ready, "approved-payment:operation:accept:before-cancel");
+    assert_in_owner_custody(cancel(&ready, "approved-payment:cancel:without-inbound"));
+    assert_eq!(ready.rail.completed_effect_count(), 1);
+}
+
+#[test]
+fn a_cancellation_prepared_before_the_rail_takes_the_payment_goes_stale() {
+    let ready = ReadyPaymentWorld::new("cancel-before-owner-custody", FaultScript::Succeed);
+    let early = ready
+        .fixture
+        .world
+        .runtime
+        .approved_business_payment(&ready.principal, &ready.scope)
+        .prepare_cancellation(
+            ready.instance.clone(),
+            ready.authority.clone(),
+            &key("approved-payment:cancel:early"),
+        )
+        .expect("nothing is in the rail owner's custody yet");
+    ready
+        .perform()
+        .into_performed()
+        .expect("the payment commits into rail custody");
+    match early.execute() {
+        WorkflowInstanceCancellationOutcome::Application(
+            WorthQueryApplicationUncommitted::Stale(stale),
+        ) => assert!(
+            stale.stale_fact_count() > 0,
+            "the custody the rail took changed facts the cancellation read",
+        ),
+        other => panic!("a cancellation read before the rail took custody is stale: {other:?}"),
+    }
+    // The stale attempt claimed no key; the same key now meets the custody.
+    assert_in_owner_custody(cancel(&ready, "approved-payment:cancel:early"));
+}
+
+#[test]
+fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
+    let ready = ReadyPaymentWorld::new("migrate-in-owner-custody", FaultScript::Succeed);
+    ready
+        .perform()
+        .into_performed()
+        .expect("the payment commits into rail custody");
+    let workflow = ready
+        .fixture
+        .world
+        .runtime
+        .approved_business_payment(&ready.principal, &ready.scope);
+    let publish = |expected, command_key| match workflow
+        .publish_definition(ready.authority.clone(), expected, &key(command_key))
+        .expect("the payment definition publishes")
+    {
+        WorkflowDefinitionPublicationOutcome::Published(published) => {
+            published.definition().clone()
+        }
+        other => panic!("expected definition publication, got {other:?}"),
+    };
+    // The fixture's own publication replays to name the running definition.
+    let source = publish(
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        "approved-payment:definition",
+    );
+    let successor = publish(
+        WorkflowDefinitionExpectedPredecessor::Published(source),
+        "approved-payment:definition:successor",
+    );
+    let migrate = |command_key| {
+        workflow.migrate(
+            ready.instance.clone(),
+            successor.clone(),
+            "completed",
+            ready.authority.clone(),
+            &key(command_key),
+        )
+    };
+    match migrate("approved-payment:migrate:in-custody") {
+        Err(BankApprovedPaymentWorkflowError::InstanceMigration(
+            WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
+                WorkflowInstancePreparationDenial::Attempt(attempt),
+            ),
+        )) => assert_eq!(
+            attempt.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+            "migration never ends a source the rail owner still settles into",
+        ),
+        other => panic!("a payment in owner custody must refuse migration: {other:?}"),
+    }
+    owner_remains_pending(&ready, "approved-payment:operation:accept:before-migrate");
+    match migrate("approved-payment:migrate:without-inbound") {
+        Err(BankApprovedPaymentWorkflowError::InstanceMigration(
+            WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
+                WorkflowInstancePreparationDenial::Attempt(attempt),
+            ),
+        )) => assert_eq!(
+            attempt.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+            "rail completion without inbound acceptance still owns the operation",
+        ),
+        other => panic!("migration must name retained owner custody: {other:?}"),
+    }
+    assert_eq!(ready.rail.completed_effect_count(), 1);
+}
+
+#[test]
+fn adoption_leaves_a_payment_the_rail_holds_with_no_disposition() {
+    let ready = ReadyPaymentWorld::new("adopt-in-owner-custody", FaultScript::Succeed);
+    ready
+        .perform()
+        .into_performed()
+        .expect("the payment commits into rail custody");
+    let runtime = &ready.fixture.world.runtime;
+    let target = runtime
+        .supported_program_revision::<BankApplicationP1>()
+        .expect("Bank P1 is rostered beside P0");
+    let programs = runtime
+        .request(&ready.principal, &ready.scope)
+        .on_branch(runtime.current_branch())
+        .programs();
+    let requirements = programs.compare(&target).expect("P0 to P1 compares");
+    let denied = programs.adopt(&requirements)
+        .expect("declared program adoption permission admits")
+        .workflow(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()).prepare(4_096);
+    assert!(matches!(denied,
+        Err(worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+            worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
+        "the actual rail custody forbids adoption without disclosing the private inventory");
+}

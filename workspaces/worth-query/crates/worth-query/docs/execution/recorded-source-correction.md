@@ -41,15 +41,15 @@ and list it in the contribution's `corrections: [RecordedEdit]` declaration.
 | `visit_reapplication(dispatch)` | Enables the original source binding's conventional or capability admission for retained reapplication. |
 | `reapplication_key(key)` | Converts a new reapplication command key into the original source binding's key type. |
 
-The complete [numeric binding](../../../worth-query-certification/examples/application_correction_support/correction.rs)
+The complete [numeric binding](../../../worth-query-worlds/src/certification/application_graph/correction/model/correction.rs)
 captures primary and decodes it through `U64ApplicationValueBinding`. Its
 `mechanism()` returns `DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(demand)`;
 the capture width comes from the field binding's encoded representation. Native
 derivation supplies `ApplicationCorrectionSourceMaterial::RecordedInverse(preimage)`.
 The
-[disclosure query](../../../worth-query-certification/examples/application_correction_support/query.rs)
+[disclosure query](../../../worth-query-worlds/src/certification/application_graph/correction/model/query.rs)
 addresses the original number and applies its current read-enabled predicate.
-The [contribution](../../../worth-query-certification/examples/application_correction_support/schema.rs)
+The [contribution](../../../worth-query-worlds/src/certification/application_graph/correction/model/schema.rs)
 installs the association alongside the ordinary schema members.
 
 ## Select, prepare and publish
@@ -147,7 +147,7 @@ needed. Serialized coordinates locate an occurrence; its live selection owns
 retention. After the final selection is released, subsequent publications can
 retire that optional source history.
 
-The [Bank accounting court](../../../../../worth-query-bank-world/crates/bank-server/tests/ordinary_mutations/recorded_correction.rs)
+The [Bank accounting court](../../../../../worth-query-bank-world/crates/worth-query-bank-court-server-fast/tests/worth_query_bank_court_server_fast/fast/server/ordinary_mutations/recorded_correction/mod.rs)
 shows closed source operations, later transfers, a freshly authenticated teller,
 original-journal compensation and replay through this entry.
 
@@ -321,9 +321,9 @@ any earlier page. Session ownership and expiry belong to the server's ordinary
 request lifecycle; action publication returns its own owner, which the server
 retains through advancement and normal close.
 
-The [tree journey](../../../worth-query-certification/examples/application_correction_support/tree_reapplication.rs)
+The [tree journey](../../../worth-query-worlds/src/certification/application_graph/correction/model/tree_reapplication.rs)
 shows multi-page selection across fresh request scopes, older-alternative choice,
-exact retries and normal source close. The [required-output journey](../../../worth-query-certification/examples/application_correction_support/required_reapplication.rs)
+exact retries and normal source close. The [required-output journey](../../../worth-query-worlds/src/certification/application_graph/correction/model/required_reapplication.rs)
 shows the source publication and subsequent output settlement separately.
 
 ## Compensate a performed operation
@@ -372,8 +372,8 @@ fresh ordinary reads and admission determine current eligibility. Preparation
 retains the exact target through publication. Equivalent retries resolve the
 original correction command and receipt, including its causal source link.
 
-The [compiled credit/debit binding](../../../worth-query-certification/examples/application_correction_support/compensation_movement.rs)
-and [compensation court](../../../worth-query-certification/examples/application_correction_support/compensation_courts.rs)
+The [compiled credit/debit binding](../../../worth-query-worlds/src/certification/application_graph/correction/model/compensation_movement.rs)
+and [compensation court](../../../worth-query-worlds/src/certification/application_graph/correction/model/compensation_courts.rs)
 show current-balance arithmetic, intervening work, replay and current authority.
 
 ## Correct an operation performed inside a workflow
@@ -394,7 +394,7 @@ fresh disclosure and ordinary admission on the current target.
 
 The inverse handler writes the domain subject covered by the binding. Native
 candidate validation preserves the original workflow instance and its custody.
-The [document retention example](../../../worth-query-certification/tests/application_graph/workflow_approval/correction.rs)
+The [document retention example](../../../worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/certification/application_graph/workflow_approval/correction/mod.rs)
 shows an approved retention edit corrected after completion, during a live
 successor and after cancellation.
 
@@ -430,7 +430,7 @@ to retain the installed journal reversal's delivery; publish or continue its
 returned owner and close it under a fresh request. The
 [binding](../../../../../worth-query-bank-world/crates/bank-domain/src/schema/approved_payment_correction.rs)
 shows the declaration and original journal projection; the
-[owning journey](../../../../../worth-query-bank-world/crates/bank-server/tests/approved_payment_workflow/owner_custody/correction.rs)
+[owning journey](../../../../../worth-query-bank-world/crates/worth-query-bank-court-server-process/tests/worth_query_bank_court_server_process/process/server/approved_payment_workflow/owner_custody/correction/mod.rs)
 shows original rail custody, settlement, compensation and replay.
 
 ## Read original fields of a created output
@@ -480,11 +480,11 @@ source subject runs first; the corrective action then receives its own fresh
 ordinary admission. A refused material read terminates preparation even when
 the domain callback catches its marker error.
 
-The [complete binding](../../../worth-query-certification/examples/application_correction_support/source_output_correction.rs)
+The [complete binding](../../../worth-query-worlds/src/certification/application_graph/correction/model/source_output_correction.rs)
 requests both the created identifier and original payload. Its
-[ordinary handlers](../../../worth-query-certification/examples/application_correction_support/source_output_handlers.rs)
+[ordinary handlers](../../../worth-query-worlds/src/certification/application_graph/correction/model/source_output_handlers.rs)
 bind two actual created roles, and its
-[runtime court](../../../worth-query-certification/examples/application_correction_support/source_output_courts.rs)
+[runtime court](../../../worth-query-worlds/src/certification/application_graph/correction/model/source_output_courts.rs)
 reads back the published output, changes its payload, retires it and corrects
 from the original committed values. Exact replay preserves the original
 correction receipt and World head.
@@ -558,14 +558,14 @@ to `RetainedDanglingForAudit`. Ordinary live adjacency reads omit that relation.
 A consumer that requires it refuses the missing live relationship, even when a
 successor with the same logical key is available through a fresh query.
 
-The [complete family and correction bindings](../../../worth-query-certification/examples/application_correction_support/authored_identity_correction.rs)
-show both directions. The [ordinary lifecycle handlers](../../../worth-query-certification/examples/application_correction_support/authored_identity_handlers.rs)
+The [complete family and correction bindings](../../../worth-query-worlds/src/certification/application_graph/correction/model/authored_identity_correction.rs)
+show both directions. The [ordinary lifecycle handlers](../../../worth-query-worlds/src/certification/application_graph/correction/model/authored_identity_handlers.rs)
 perform the actual allocation and deletion; the
-[reference consumer](../../../worth-query-certification/examples/application_correction_support/authored_identity_reference.rs)
+[reference consumer](../../../worth-query-worlds/src/certification/application_graph/correction/model/authored_identity_reference.rs)
 follows the authored relation while live and compares its endpoint's complete
 identity with the original created output. After retirement and restoration, it
 requires the exact missing-relationship refusal and an unchanged product head. The
-[lifecycle court](../../../worth-query-certification/examples/application_correction_support/authored_identity_courts.rs)
+[lifecycle court](../../../worth-query-worlds/src/certification/application_graph/correction/model/authored_identity_courts.rs)
 checks restored values, the new native identity, independent edits, exact retry
 and mismatched candidates.
 
@@ -593,9 +593,9 @@ World commit. The receipt identifies both component publications and the
 conditional definition generation. A moved target returns the ordinary stale
 outcome; prepare again against the current target to retry.
 
-The [complete ordinary handler](../../../worth-query-certification/examples/application_correction_support/composite_definition_handler.rs)
-and [correction binding](../../../worth-query-certification/examples/application_correction_support/composite_definition_model.rs)
-show these two stages. Their [runtime example](../../../worth-query-certification/examples/application_correction_support/composite_definition_court.rs)
+The [complete ordinary handler](../../../worth-query-worlds/src/certification/application_graph/correction/model/composite_definition_handler.rs)
+and [correction binding](../../../worth-query-worlds/src/certification/application_graph/correction/model/composite_definition_model.rs)
+show these two stages. Their [runtime example](../../../worth-query-worlds/src/certification/application_graph/correction/model/composite_definition_court.rs)
 changes an authored parameter from `5` to `23`, changes a separate field to
 `19`, then corrects the original parameter to `5`. Readback preserves `19`.
 The replacement predicate then permits an actual due conditional operation.
@@ -637,7 +637,7 @@ original client key when checking the command after a lost response.
 When the inverse action delivers a required output root, use the typed performed
 entrance. The installed action must declare fixed delivery to that exact root,
 and its binding must implement the root connection's required-source contract.
-The [numeric output program](../../../worth-query-certification/examples/application_correction_support/output_program.rs)
+The [numeric output program](../../../worth-query-worlds/src/certification/application_graph/correction/model/output_program.rs)
 declares a calculation root whose producer computes `primary * 2 + 1`.
 
 ```rust,ignore

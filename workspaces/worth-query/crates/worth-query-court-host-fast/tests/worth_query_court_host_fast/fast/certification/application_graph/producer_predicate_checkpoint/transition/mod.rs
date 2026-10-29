@@ -1,0 +1,85 @@
+pub(crate) use worth_query_worlds::facade::certification::application_graph::producer_predicate_checkpoint::transition::*;
+
+#[test]
+fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
+    let program = validated_program();
+    let predecessor =
+        installation::WorthQueryCheckpointProgramPredecessor::new(&program.revision().to_string())
+            .unwrap();
+    let host = publish(
+        program,
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+    )
+    .unwrap();
+    let runtime = host.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let request = runtime.request(&principal, &scope);
+    let mut handle = request
+        .demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
+        .start_in_program::<_, AssessmentRoot>(&host)
+        .unwrap();
+    let WorthQueryApplicationOutputDemandProgress::Settled(settled) =
+        handle.settle(&request).unwrap()
+    else {
+        panic!("actual producer must settle");
+    };
+    assert!(settled.application_commit_receipt().is_some());
+    let (source, sections) = runtime
+        .with_host_advancement(|host_phase| {
+            runtime
+                .capture_application_checkpoint_with_sections(
+                    &host_phase,
+                    CapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    assert_eq!(sections.accepted_output_count(), 1);
+    let mut called = false;
+    let denial = installation::in_memory_rostered_program_from_checkpoint_with_transition(
+        validated_program(),
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        DocumentRetentionSchema::declaration().unwrap(),
+        ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        host_limits(),
+        source.clone(),
+        predecessor,
+        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        CapturePolicy::SystemAllocation,
+        |_, _| {
+            called = true;
+            Ok(())
+        },
+    )
+    .err()
+    .expect("unmapped accepted output must not be silently discarded or recertified");
+    assert!(
+        !called,
+        "accepted-output refusal must precede authoring and native effects"
+    );
+    assert!(format!("{denial:?}").contains("accepted-output migration support"));
+    let restored = restore(
+        validated_program(),
+        source,
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+    )
+    .unwrap();
+    assert_eq!(
+        restored
+            .runtime()
+            .with_host_advancement(|host_phase| restored
+                .runtime()
+                .capture_application_checkpoint_with_sections(
+                    &host_phase,
+                    CapturePolicy::SystemAllocation
+                )
+                .unwrap()
+                .1
+                .accepted_output_count())
+            .expect("installed host call opens"),
+        1,
+        "ordinary restore preserves the original accepted output"
+    );
+}

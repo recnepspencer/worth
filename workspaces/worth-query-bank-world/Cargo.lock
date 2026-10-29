@@ -160,6 +160,7 @@ dependencies = [
  "thirtyfour",
  "tokio",
  "url",
+ "worth-query-bank-worlds",
  "worth-query-decl",
  "worth-query-host",
  "worth-query-package-archive",
@@ -236,6 +237,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "worth-foundational",
+ "worth-query-bank-worlds",
  "worth-query-host",
 ]
 
@@ -3298,6 +3300,188 @@ dependencies = [
  "worth-foundational",
  "worth-query-declaration",
  "worth-query-installation",
+]
+
+[[package]]
+name = "worth-query-bank-court-domain-fast"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "serde",
+ "worth-foundational",
+ "worth-query-bank-worlds",
+ "worth-query-decl",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-court-external-rail-process"
+version = "0.1.0"
+dependencies = [
+ "bank-external-rail",
+ "ed25519-dalek",
+ "rcgen",
+ "reqwest 0.12.28",
+ "rustls-pemfile",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tokio-rustls",
+ "worth-foundational",
+ "worth-query-bank-worlds",
+]
+
+[[package]]
+name = "worth-query-bank-court-server-fast"
+version = "0.1.0"
+dependencies = [
+ "bank-courtroom",
+ "bank-domain",
+ "bank-estate-certification",
+ "bank-external-rail",
+ "bank-http-adapter",
+ "bank-server",
+ "bank-user-node",
+ "ed25519-dalek",
+ "getrandom 0.4.3",
+ "rand 0.8.8",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thirtyfour",
+ "tokio",
+ "url",
+ "worth-foundational",
+ "worth-query-bank-worlds",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-package-archive",
+]
+
+[[package]]
+name = "worth-query-bank-court-server-process"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "bank-estate-certification",
+ "bank-external-rail",
+ "bank-server",
+ "getrandom 0.4.3",
+ "serde_json",
+ "tokio",
+ "worth-foundational",
+ "worth-query-bank-worlds",
+ "worth-query-decl",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-court-user-node-fast"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "bank-domain",
+ "bank-external-rail",
+ "bank-http-adapter",
+ "bank-server",
+ "bank-user-node",
+ "ed25519-dalek",
+ "openidconnect",
+ "rand 0.8.8",
+ "rcgen",
+ "reqwest 0.12.28",
+ "rustls-pemfile",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tokio-rustls",
+ "tokio-stream",
+ "url",
+ "worth-foundational",
+ "worth-query-bank-worlds",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-court-user-node-process"
+version = "0.1.0"
+dependencies = [
+ "bank-courtroom",
+ "bank-domain",
+ "bank-external-rail",
+ "bank-http-adapter",
+ "bank-server",
+ "bank-user-node",
+ "ed25519-dalek",
+ "rand 0.8.8",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thirtyfour",
+ "tokio",
+ "url",
+ "worth-query-bank-worlds",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-package-archive",
+]
+
+[[package]]
+name = "worth-query-bank-court-user-node-scale"
+version = "0.1.0"
+dependencies = [
+ "bank-courtroom",
+ "bank-domain",
+ "bank-external-rail",
+ "bank-http-adapter",
+ "bank-server",
+ "bank-user-node",
+ "ed25519-dalek",
+ "getrandom 0.4.3",
+ "rand 0.8.8",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thirtyfour",
+ "tokio",
+ "url",
+ "worth-foundational",
+ "worth-query-bank-worlds",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-package-archive",
+]
+
+[[package]]
+name = "worth-query-bank-worlds"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "bank-estate-certification",
+ "bank-external-rail",
+ "bank-http-adapter",
+ "bank-server",
+ "bank-user-node",
+ "ed25519-dalek",
+ "rand 0.8.8",
+ "rcgen",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thirtyfour",
+ "tokio",
+ "tokio-rustls",
+ "url",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-package-archive",
 ]
 
 [[package]]

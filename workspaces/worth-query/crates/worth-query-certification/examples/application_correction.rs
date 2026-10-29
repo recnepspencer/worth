@@ -1,27 +1,18 @@
 //! Authored source selection through the ordinary request and a real performed receipt.
 #![recursion_limit = "256"]
-#[path = "../tests/application_graph/document_retention_model/host/world_resources.rs"]
 #[allow(
     dead_code,
     unused_imports,
     reason = "Shared reference application ports are exercised by independent consumer courts"
 )]
-pub(crate) mod document_world_resources;
-#[path = "../tests/application_graph/document_retention_model/operator_identity.rs"]
+pub(crate) use worth_query_worlds::facade::certification::document_world_resources;
 #[allow(
     dead_code,
     unused_imports,
     reason = "Shared reference application ports are exercised by independent consumer courts"
 )]
-pub(crate) mod operator_identity;
-#[path = "../tests/support/execution_policy.rs"]
-#[allow(
-    dead_code,
-    reason = "Shared execution policy includes the other consumer courts? request adapter"
-)]
-mod test_request_policy;
+pub(crate) use worth_query_worlds::facade::certification::operator_identity;
 
-mod application_correction_support;
 use application_correction_support::publication_courts::*;
 use application_correction_support::{authentication::*, edit::Value, host, query::Row};
 use std::num::NonZeroUsize;
@@ -31,6 +22,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryCorrectionApplicability, WorthQueryCorrectionHistoryLimits,
 };
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
+use worth_query_worlds::facade::certification::application_graph::correction::model as application_correction_support;
 
 fn main() {
     let court = std::env::args().nth(1);

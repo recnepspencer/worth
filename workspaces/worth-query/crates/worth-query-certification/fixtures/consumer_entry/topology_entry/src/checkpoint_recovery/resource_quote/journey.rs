@@ -6,19 +6,6 @@ use worth_query_host::facade::{
     runtime::ExecutionAllocationPolicy,
 };
 
-#[test]
-fn ordinary_and_selected_producers_publish_and_regenerate_without_resource_estimates() {
-    let _guard = checkpoint_recovery_test_guard();
-    {
-        let application = installation::install_ordinary(seed);
-        exercise(&application, None);
-    }
-    {
-        let application = installation::install_program(seed);
-        exercise(application.runtime(), Some(&application));
-    }
-}
-
 fn exercise(
     application: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<QuoteSchema>,
     program: Option<
@@ -130,4 +117,21 @@ fn seed(graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<QuoteSchema>)
             .field(CountedTotal::reference(), 0),
         )
         .unwrap();
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn ordinary_and_selected_producers_publish_and_regenerate_without_resource_estimates() {
+        let _guard = checkpoint_recovery_test_guard();
+        {
+            let application = installation::install_ordinary(seed);
+            exercise(&application, None);
+        }
+        {
+            let application = installation::install_program(seed);
+            exercise(application.runtime(), Some(&application));
+        }
+    }
 }

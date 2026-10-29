@@ -1,0 +1,174 @@
+pub(crate) use worth_query_worlds::facade::certification::application_graph::workflow_proposal::*;
+
+#[test]
+fn public_real_operation_request_publishes_and_replays_one_immutable_proposal() {
+    let application = publish_workflow_on_first_program();
+    let definition = expect_published(publish_definition(
+        &application,
+        reviewed_document_definition("completed"),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        401,
+    ));
+    let started = expect_started(start_instance(
+        &application,
+        definition.definition().clone(),
+        402,
+    ));
+    let proposal = expect_proposal(propose_instance(
+        &application,
+        started.instance().clone(),
+        403,
+    ));
+    assert_eq!(proposal.node_path(), "propose");
+    assert!(!proposal.replayed());
+
+    let replay = expect_proposal(propose_instance(
+        &application,
+        started.instance().clone(),
+        403,
+    ));
+    assert!(replay.replayed());
+    assert_eq!(replay.transition(), proposal.transition());
+    assert_eq!(replay.proposal(), proposal.proposal());
+
+    match propose_instance(&application, started.instance().clone(), 404)
+        .expect("a new proposal key must reach retained-head comparison")
+    {
+        WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Stale(stale)) => {
+            assert!(stale.stale_fact_count() > 0);
+        }
+        other => panic!("expected a stale duplicate proposal, got {other:?}"),
+    }
+
+    let other_instance = expect_started(start_instance(
+        &application,
+        definition.definition().clone(),
+        405,
+    ));
+    match propose_instance(&application, other_instance.instance().clone(), 403)
+        .expect("same-key proposal drift must reach idempotency comparison")
+    {
+        WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Denied(denial)) => {
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
+            )
+        }
+        other => panic!("expected proposal intent drift, got {other:?}"),
+    }
+}
+
+#[test]
+fn proposal_replay_is_key_bound_across_an_eligible_repeated_proposal_head() {
+    let application = publish_workflow_on_first_program();
+    let definition = expect_published(publish_definition(
+        &application,
+        repeated_proposal_definition(),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        411,
+    ));
+    let started = expect_started(start_instance(
+        &application,
+        definition.definition().clone(),
+        412,
+    ));
+    let first = expect_proposal(propose_authoring_instance(
+        &application,
+        started.instance().clone(),
+        413,
+    ));
+    assert_eq!(first.node_path(), "proposal/first");
+
+    let replay = expect_proposal(propose_authoring_instance(
+        &application,
+        started.instance().clone(),
+        413,
+    ));
+    assert!(replay.replayed());
+    assert_eq!(replay.proposal(), first.proposal());
+
+    let second = expect_proposal(propose_authoring_instance(
+        &application,
+        started.instance().clone(),
+        414,
+    ));
+    assert!(!second.replayed());
+    assert_eq!(second.node_path(), "proposal/second");
+    assert_ne!(second.proposal(), first.proposal());
+}
+
+#[test]
+fn proposal_replay_resolves_after_the_instance_completed() {
+    let application = publish_workflow_on_first_program();
+    let definition = expect_published(publish_definition(
+        &application,
+        proposal_terminal_definition(),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        421,
+    ));
+    let started = expect_started(start_instance(
+        &application,
+        definition.definition().clone(),
+        422,
+    ));
+    let proposal = expect_proposal(propose_authoring_instance(
+        &application,
+        started.instance().clone(),
+        423,
+    ));
+    match advance_instance(&application, started.instance().clone(), 424)
+        .expect("terminal completion must prepare")
+    {
+        WorkflowProgressOutcome::Completed(_) => {}
+        other => panic!("expected terminal completion, got {other:?}"),
+    }
+
+    let replay = expect_proposal(propose_authoring_instance(
+        &application,
+        started.instance().clone(),
+        423,
+    ));
+    assert!(replay.replayed());
+    assert_eq!(replay.proposal(), proposal.proposal());
+    assert_eq!(replay.transition(), proposal.transition());
+}
+
+#[test]
+fn proposal_replay_rejects_a_foreign_branch_instance_reference_before_lookup() {
+    let application = publish_workflow_on_first_program();
+    let definition = expect_published(publish_definition(
+        &application,
+        proposal_terminal_definition(),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        431,
+    ));
+    let started = expect_started(start_instance(
+        &application,
+        definition.definition().clone(),
+        432,
+    ));
+    expect_proposal(propose_authoring_instance(
+        &application,
+        started.instance().clone(),
+        433,
+    ));
+    let main = application.runtime().current_world();
+    let sibling = application
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling branch publishes")
+        })
+        .expect("installed host call opens");
+
+    let denial = propose_instance_on_branch(&application, sibling, started.instance().clone(), 433)
+        .expect_err("a foreign-branch instance reference must be denied before replay lookup");
+    assert_eq!(
+        denial.kind(),
+        worth_query_host::facade::application_entry::WorthQueryWorkflowProposalPreparationDenialKind::InstanceBranchMismatch
+    );
+}

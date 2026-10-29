@@ -84,33 +84,39 @@ fn wait(child: &mut Child, backstop: Duration) -> Result<std::process::ExitStatu
 
 const PARKED_CHILD: &str = "WORTH_MATRIX_PARKED_CHILD";
 const CHILD_TEST: &str =
-    "checkpoint_recovery::parallel_history::matrix::table::cell_process::cell_backstop_child";
-#[test]
-fn cell_backstop_child() {
-    if std::env::var_os(PARKED_CHILD).is_some() {
-        println!("matrix child deliberately parked before member 40 arrives");
-        use std::io::Write;
-        std::io::stdout().flush().unwrap();
-        loop {
-            std::thread::park();
+    "checkpoint_recovery::parallel_history::matrix::table::cell_process::serial::cell_backstop_child";
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn cell_backstop_child() {
+        if std::env::var_os(PARKED_CHILD).is_some() {
+            println!("matrix child deliberately parked before member 40 arrives");
+            use std::io::Write;
+            std::io::stdout().flush().unwrap();
+            loop {
+                std::thread::park();
+            }
         }
     }
-}
-#[test]
-fn child_backstop_kills_and_reaps_a_cell_that_never_finishes() {
-    let mut child = Command::new(std::env::current_exe().unwrap());
-    child
-        .args(["--exact", CHILD_TEST, "--nocapture"])
-        .env(PARKED_CHILD, "1");
-    let stop = output(
-        &mut child,
-        "missing member 40 injection",
-        Duration::from_secs(5),
-    )
-    .expect_err("a deliberately parked child must fail within the backstop");
-    assert!(
-        stop.contains("child-process backstop expired")
-            && stop.contains("deliberately parked before member 40 arrives"),
-        "{stop}"
-    );
+
+    #[test]
+    fn child_backstop_kills_and_reaps_a_cell_that_never_finishes() {
+        let mut child = Command::new(std::env::current_exe().unwrap());
+        child
+            .args(["--exact", CHILD_TEST, "--nocapture"])
+            .env(PARKED_CHILD, "1");
+        let stop = output(
+            &mut child,
+            "missing member 40 injection",
+            Duration::from_secs(5),
+        )
+        .expect_err("a deliberately parked child must fail within the backstop");
+        assert!(
+            stop.contains("child-process backstop expired")
+                && stop.contains("deliberately parked before member 40 arrives"),
+            "{stop}"
+        );
+    }
 }

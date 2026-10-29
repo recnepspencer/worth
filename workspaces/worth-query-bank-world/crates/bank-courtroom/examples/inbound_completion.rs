@@ -7,17 +7,11 @@
 #![recursion_limit = "256"]
 
 #[allow(dead_code)]
-#[path = "../../bank-server/tests/ordinary_mutations/authorization_time.rs"]
-mod authorization_time;
+use worth_query_bank_worlds::facade::server::approved_payment_workflow::rail_transport;
 #[allow(dead_code)]
-#[path = "../../bank-server/tests/ordinary_mutations/estate_operations/notify_death/fixture.rs"]
-mod fixture;
+use worth_query_bank_worlds::facade::server::estate_operations::notify_death::fixture;
 #[allow(dead_code)]
-#[path = "../../bank-server/tests/ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"]
-mod rail_transport;
-#[allow(dead_code)]
-#[path = "../../bank-server/tests/support/mod.rs"]
-mod support;
+use worth_query_bank_worlds::facade::server::support;
 
 use std::sync::Arc;
 use std::time::Duration;

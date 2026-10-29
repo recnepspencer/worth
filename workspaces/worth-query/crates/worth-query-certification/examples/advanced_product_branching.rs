@@ -2,7 +2,7 @@
 //! Branch construction and bounded history inspection deliberately use the World API; all product
 //! reads and mutations use the ordinary application entry.
 
-pub mod product_workflow_support;
+pub use worth_query_worlds::facade::certification::program_example_authority::product_workflow_support;
 
 use std::num::NonZeroUsize;
 
