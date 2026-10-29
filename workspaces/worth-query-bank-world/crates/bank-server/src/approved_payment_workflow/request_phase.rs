@@ -7,19 +7,19 @@ use bank_domain::schema::{
 use bank_external_rail::test_control::FaultScript;
 use ready_payment::ReadyPaymentWorld;
 use std::{num::NonZeroUsize, time::Duration};
-#[path = "../../../worth-query-bank-worlds/src/server/approved_payment_workflow/approval.rs"]
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/approval.rs"]
 mod approval;
-#[path = "../../../worth-query-bank-worlds/src/server/approved_payment_workflow/assertions.rs"]
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/assertions.rs"]
 mod assertions;
-#[path = "../../../worth-query-bank-worlds/src/server/approved_payment_workflow/authentication.rs"]
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/authentication.rs"]
 mod authentication;
-#[path = "../../../worth-query-bank-worlds/src/server/ordinary_reads/fixture.rs"]
+#[path = "../../../worth-query-bank-testkit-server/src/ordinary_reads/fixture.rs"]
 mod fixture;
-#[path = "../../../worth-query-bank-worlds/src/server/approved_payment_workflow/journey.rs"]
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/journey.rs"]
 mod journey;
-#[path = "../../../worth-query-bank-worlds/src/server/ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"]
+#[path = "../../../worth-query-bank-testkit-server/src/ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"]
 mod rail_transport;
-#[path = "../../../worth-query-bank-worlds/src/server/approved_payment_workflow/ready_payment.rs"]
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/ready_payment.rs"]
 mod ready_payment;
 use worth_query_host::facade::{
     application_contribution::{

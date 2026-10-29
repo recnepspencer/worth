@@ -1,0 +1,23 @@
+[package]
+name = "worth-query-bank-court-external-rail-tls"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "external-rail-tls"
+
+[dev-dependencies]
+tokio = { workspace = true }
+tokio-rustls = "=0.26.4"
+worth-query-bank-testkit-external-rail = { path = "../worth-query-bank-testkit-external-rail" }
+
+[[test]]
+name = "worth_query_bank_court_external_rail_tls"
+path = "tests/worth_query_bank_court_external_rail_tls.rs"
+
+[lints]
+workspace = true

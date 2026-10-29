@@ -1,0 +1,216 @@
+pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::native_staging_allocation::*;
+
+#[test]
+fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease() {
+    const CHILD: &str = "WORTH_QUERY_NATIVE_STAGING_PROOF_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let name = format!(
+            "{}::ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease",
+            module_path!().split_once("::").unwrap().1
+        );
+        let output = worth_query_testkit_host::facade::host::certification_support::process_deadline::output(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", &name, "--nocapture"])
+                .env(CHILD, "1"),
+        )
+        .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+        return;
+    }
+    // Allocation is narrowed inside the installed host's original phase;
+    // preparation and publication keep their distinct real native owners.
+    let host = publish_on_first_program();
+    let runtime = host.runtime();
+    let branch = host.current_world();
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let original = observe_head(runtime, branch);
+    const RETENTION: u64 = 9;
+    let key = 0xa110_1001;
+    macro_rules! mutation {
+        () => {
+            runtime
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .advanced()
+                .mutate(SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: RETENTION,
+                    },
+                })
+                .without_source()
+                .idempotency(&key)
+        };
+    }
+    // This separate probe obtains the real checked provider Layout quote. It
+    // is only read-set refusal evidence, never native staging evidence.
+    let mut probe = mutation!();
+    let candidate = match probe
+        .prepare_in_program(&host, Policy::SystemAllocation)
+        .unwrap()
+    {
+        Preparation::Prepared(candidate) => candidate,
+        Preparation::Settled(_) => panic!("fresh ordinary candidate required"),
+    };
+    let Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) = runtime
+        .with_application_advancement(&scope, |phase| {
+            let zero = worth_query_testkit_host::facade::host::certification_support::execution_policy::memory_child(
+                phase
+                    .checked_execution_request_for(runtime.product_runtime())
+                    .unwrap(),
+                0,
+            );
+            candidate
+                .commit_report_in_advancement(&phase, Policy::Execution(&zero))
+                .into_outcome()
+        })
+        .unwrap()
+    else {
+        panic!("read-set quote probe must refuse before native staging");
+    };
+    assert_eq!(denial.stage(), Stage::DecisionReadSet, "{denial:?}");
+    let failure = denial
+        .decision_read_set_failure()
+        .expect("full read-set cause");
+    assert_eq!(
+        failure.kind(),
+        WorthQueryDecisionReadSetDenialKind::AllocationDenied
+    );
+    let cause = failure.allocation_denial().expect("actual provider quote");
+    // Use the provider's checked quote: completed facts include the real
+    // retained decision closure, not a guessed number of evidence entries.
+    let read_set_bytes = cause
+        .requested_payload_bytes()
+        .expect("checked read-set quote");
+    assert_eq!(
+        cause.kind(),
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                requested: read_set_bytes,
+                admitted: 0,
+                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
+            }
+        ))
+    );
+    assert_eq!(cause.requested_payload_bytes(), Some(read_set_bytes));
+    assert!(read_set_bytes > 0);
+    assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
+    assert_eq!(
+        observe_head(runtime, branch).selected_commit(),
+        original.selected_commit()
+    );
+
+    // Fund each real predecessor phase before asking native staging to admit
+    // more backing. Rebase may retain additional facts after the provider capture.
+    let mut staging_bytes = read_set_bytes;
+    let denial = loop {
+        let mut staging = mutation!();
+        let candidate = match staging
+            .prepare_in_program(&host, Policy::SystemAllocation)
+            .unwrap()
+        {
+            Preparation::Prepared(candidate) => candidate,
+            Preparation::Settled(_) => panic!("refusal must not record idempotency"),
+        };
+        let answer = runtime
+            .with_application_advancement(&scope, |phase| {
+                let stage_lease =
+                    worth_query_testkit_host::facade::host::certification_support::execution_policy::memory_child(
+                        phase
+                            .checked_execution_request_for(runtime.product_runtime())
+                            .unwrap(),
+                        staging_bytes,
+                    );
+                let answer = candidate
+                    .commit_report_in_advancement(&phase, Policy::Execution(&stage_lease))
+                    .into_outcome();
+                drop(
+                    stage_lease
+                        .reserve_memory(staging_bytes)
+                        .expect("failed attempt released backing"),
+                );
+                answer
+            })
+            .unwrap();
+        let Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) = answer else {
+            panic!("the native staging owner must refuse additional backing");
+        };
+        if !matches!(
+            denial.stage(),
+            Stage::ProposalBinding | Stage::DecisionReadSet
+        ) {
+            break denial;
+        }
+        let cause = denial.allocation_denial().unwrap_or_else(|| {
+            panic!("expected a checked preparation allocation quote: {denial:?}")
+        });
+        let ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                requested,
+                admitted,
+                ..
+            },
+        )) = cause.kind()
+        else {
+            panic!("physical preparation refusal: {cause:?}");
+        };
+        assert!(requested > admitted);
+        staging_bytes = staging_bytes
+            .checked_add(requested - admitted)
+            .expect("finite native allocation quotes");
+        assert_eq!(
+            observe_head(runtime, branch).selected_commit(),
+            original.selected_commit()
+        );
+    };
+    assert_eq!(denial.stage(), Stage::InvariantExecution, "{denial:?}");
+    assert!(denial.decision_read_set_failure().is_none());
+    let failure = denial
+        .invariant_execution_failure()
+        .expect("full native cause survives");
+    assert_eq!(failure.kind(), InvariantKind::AllocationDenied);
+    let native = failure
+        .relational_staging_denial()
+        .expect("specifically native staging");
+    let NativeDenial::AllocationDenied(native_cause) = native else {
+        panic!("expected native physical admission, got {native:?}");
+    };
+    assert_eq!(failure.allocation_denial(), Some(native_cause));
+    let ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+        worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+            requested,
+            admitted,
+            ..
+        },
+    )) = native_cause.kind()
+    else {
+        panic!("native staging must preserve the physical refusal: {native_cause:?}");
+    };
+    assert!(requested > admitted);
+    assert_eq!(native_cause.requested_payload_bytes(), Some(requested));
+    assert!(native_cause
+        .requested_payload_bytes()
+        .is_some_and(|bytes| bytes > 0));
+    assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
+    assert_eq!(
+        observe_head(runtime, branch).selected_commit(),
+        original.selected_commit()
+    );
+    let Outcome::Committed { receipt, .. } = mutation!()
+        .execute_in_program(&host, Policy::SystemAllocation)
+        .expect("same-key ordinary retry")
+    else {
+        panic!("physical refusal must not record a commit or reserve the key");
+    };
+    assert_eq!(read_retention(runtime, branch), RETENTION);
+    let head = observe_head(runtime, branch);
+    assert_ne!(head.selected_commit(), original.selected_commit());
+    assert_eq!(receipt.product_branch(), branch);
+}

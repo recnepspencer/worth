@@ -1,0 +1,22 @@
+[package]
+name = "worth-query-testkit-certification-operation-body"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+serde = { version = "1", features = ["derive", "rc"] }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-decl = { workspace = true }
+worth-query-host = { workspace = true }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+
+[lints]
+workspace = true

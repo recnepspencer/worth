@@ -1,0 +1,24 @@
+[package]
+name = "worth-query-bank-court-server-owned-effects"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "server-owned-effects"
+
+[dev-dependencies]
+bank-domain = { workspace = true }
+bank-server = { workspace = true }
+worth-query-bank-testkit-server = { path = "../worth-query-bank-testkit-server" }
+worth-query-host = { workspace = true }
+
+[[test]]
+name = "worth_query_bank_court_server_owned_effects"
+path = "tests/worth_query_bank_court_server_owned_effects.rs"
+
+[lints]
+workspace = true

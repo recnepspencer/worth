@@ -1,0 +1,22 @@
+[package]
+name = "worth-query-court-installation-workflow"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "installation-workflow"
+
+[dev-dependencies]
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-testkit-certification-application-graph = { path = "../worth-query-testkit-certification-application-graph" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_installation_workflow"
+path = "tests/worth_query_court_installation_workflow.rs"

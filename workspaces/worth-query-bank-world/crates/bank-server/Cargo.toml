@@ -15,7 +15,7 @@ worth-foundational.workspace = true
 worth-query-host.workspace = true
 
 [dev-dependencies]
-worth-query-bank-worlds = { workspace = true }
+worth-query-bank-testkit = { path = "../worth-query-bank-testkit" }
 serde_json.workspace = true
 bank-external-rail.workspace = true
 bank-server = { path = "." }

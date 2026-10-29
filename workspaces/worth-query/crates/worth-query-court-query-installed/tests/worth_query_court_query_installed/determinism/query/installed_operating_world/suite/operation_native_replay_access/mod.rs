@@ -1,0 +1,101 @@
+pub(crate) use worth_query_testkit_query::facade::query::suite::operation_native_replay_access::*;
+
+#[test]
+fn ordinary_publication_consumption_converges_without_receiving_replay_authority() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "replay-publication-parity").unwrap();
+    let original_bound = bind(&workspace);
+    let (original_request, original_keys) =
+        native_replay_request(original_bound.consumer_projection_contract().unwrap());
+    let original = original_bound
+        .admit_workflow_resources(
+            worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+            &workspace,
+        )
+        .unwrap()
+        .reexecute(intent(), &mut workspace)
+        .unwrap();
+    let replay_bound = bind(&workspace);
+    let replay = certification::replay_installed_workflow(
+        certification::issue_query_certification_replay_capability(),
+        &original,
+        replay_bound,
+        intent(),
+        worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+        &mut workspace,
+    )
+    .unwrap();
+    let ordinary_bound = bind(&workspace);
+    let (ordinary_request, ordinary_keys) =
+        native_replay_request(ordinary_bound.consumer_projection_contract().unwrap());
+    let ordinary = ordinary_bound
+        .admit_workflow_resources(
+            worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+            &workspace,
+        )
+        .unwrap()
+        .reexecute(intent(), &mut workspace)
+        .unwrap();
+    assert_eq!(
+        domain::compare_exact_workflow_traces(
+            replay.replay_semantics(),
+            &ordinary.semantics(),
+            Default::default(),
+        ),
+        domain::WorthQueryReplayComparison::Equivalent
+    );
+    assert_ne!(replay.replay_trace_identity(), ordinary.identity());
+
+    let original_settled = original
+        .publish()
+        .unwrap()
+        .consume_bound(original_request)
+        .unwrap()
+        .settle()
+        .unwrap();
+    let ordinary_settled = ordinary
+        .publish()
+        .unwrap()
+        .consume_bound(ordinary_request)
+        .unwrap()
+        .settle()
+        .unwrap();
+    assert_eq!(original_settled.counters(), ordinary_settled.counters());
+    assert_eq!(
+        original_settled.native_access_binding_counters(),
+        ordinary_settled.native_access_binding_counters()
+    );
+    assert_eq!(original_settled.warnings(), ordinary_settled.warnings());
+    assert_ne!(original_settled.identity(), ordinary_settled.identity());
+    for (original_key, ordinary_key) in original_keys.iter().zip(&ordinary_keys) {
+        let original_access = original_settled.native_value(original_key, 0).unwrap();
+        let ordinary_access = ordinary_settled.native_value(ordinary_key, 0).unwrap();
+        assert_eq!(
+            original_access.fact().as_interned_string(),
+            Ok(&InternedString::Raw("synthetic-anchor".into()))
+        );
+        assert_eq!(ordinary_access.value(), original_access.value());
+        assert_eq!(ordinary_access.counters(), original_access.counters());
+        assert_eq!(original_access.counters().indexed_accesses, 1);
+        assert_eq!(original_access.counters().refinement_checks, 1);
+        assert_eq!(original_access.counters().fact_scans, 0);
+        assert_eq!(original_access.counters().row_scans, 0);
+        assert_eq!(original_access.counters().path_parses, 0);
+        assert_eq!(
+            ordinary_settled
+                .native_value(original_key, 0)
+                .unwrap_err()
+                .kind(),
+            domain::WorthQueryNativeAccessDenialKind::CapabilityMismatch
+        );
+        assert_eq!(
+            original_settled
+                .native_value(ordinary_key, 0)
+                .unwrap_err()
+                .kind(),
+            domain::WorthQueryNativeAccessDenialKind::CapabilityMismatch
+        );
+    }
+}

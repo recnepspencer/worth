@@ -1,0 +1,22 @@
+[package]
+name = "worth-query-bank-court-estate-dependency-contract"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "estate-dependency-contract"
+
+[dev-dependencies]
+serde_json = { workspace = true }
+worth-query-bank-testkit-estate-certification = { path = "../worth-query-bank-testkit-estate-certification" }
+
+[[test]]
+name = "worth_query_bank_court_estate_dependency_contract"
+path = "tests/worth_query_bank_court_estate_dependency_contract.rs"
+
+[lints]
+workspace = true

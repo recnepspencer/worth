@@ -1,0 +1,18 @@
+[package]
+name = "worth-query-court-composition"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "composition"
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_composition"
+path = "tests/worth_query_court_composition.rs"

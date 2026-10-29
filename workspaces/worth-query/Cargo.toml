@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/worth-query-worlds*",
+    "crates/worth-query-testkit*",
     "crates/worth-query-court-*",
     "crates/worth-query",
     "crates/worth-query-decl",
@@ -16,7 +16,7 @@ members = [
     "crates/worth-query-publication",
 ]
 default-members = [
-    "crates/worth-query-court-*-fast",
+    "crates/worth-query-court-*",
     "crates/worth-query",
     "crates/worth-query-decl",
     "crates/worth-query-host",
@@ -29,7 +29,6 @@ version = "0.1.0"
 license = "BUSL-1.1"
 
 [workspace.dependencies]
-worth-query-worlds = { path = "crates/worth-query-worlds" }
 worth-query = { path = "crates/worth-query" }
 worth-query-decl = { path = "crates/worth-query-decl" }
 worth-query-host = { path = "crates/worth-query-host" }

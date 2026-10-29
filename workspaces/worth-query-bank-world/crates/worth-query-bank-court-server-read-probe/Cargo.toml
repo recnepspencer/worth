@@ -1,0 +1,21 @@
+[package]
+name = "worth-query-bank-court-server-read-probe"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "server-read-probe"
+
+[dev-dependencies]
+worth-query-bank-testkit-server = { path = "../worth-query-bank-testkit-server" }
+
+[[test]]
+name = "worth_query_bank_court_server_read_probe"
+path = "tests/worth_query_bank_court_server_read_probe.rs"
+
+[lints]
+workspace = true

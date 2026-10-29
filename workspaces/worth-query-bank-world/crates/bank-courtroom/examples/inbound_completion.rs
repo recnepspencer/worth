@@ -7,11 +7,11 @@
 #![recursion_limit = "256"]
 
 #[allow(dead_code)]
-use worth_query_bank_worlds::facade::server::approved_payment_workflow::rail_transport;
+use worth_query_bank_testkit_server::facade::approved_payment_workflow::rail_transport;
 #[allow(dead_code)]
-use worth_query_bank_worlds::facade::server::estate_operations::notify_death::fixture;
+use worth_query_bank_testkit_server::facade::estate_operations::notify_death::fixture;
 #[allow(dead_code)]
-use worth_query_bank_worlds::facade::server::support;
+use worth_query_bank_testkit_server::facade::support;
 
 use std::sync::Arc;
 use std::time::Duration;

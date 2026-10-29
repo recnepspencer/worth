@@ -1,0 +1,26 @@
+[package]
+name = "worth-query-bank-testkit-estate-certification"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+autotests = false
+
+[package.metadata.worth.testkit]
+workspace = "worth-query-bank"
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+bank-domain = { workspace = true }
+bank-estate-certification = { path = "../bank-estate-certification" }
+bank-server = { workspace = true }
+serde_json = { workspace = true }
+worth-foundational = { workspace = true }
+worth-query-host = { workspace = true }
+
+[lints]
+workspace = true

@@ -744,453 +744,464 @@ dependencies = [
  "worth-query-installation",
  "worth-query-package-archive",
  "worth-query-replay",
- "worth-query-worlds",
- "worth-query-worlds-document-retention",
+ "worth-query-testkit-certification",
+ "worth-query-testkit-certification-correction",
+ "worth-query-testkit-certification-source-only",
+ "worth-query-testkit-document-retention",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-court-certification-exhaustive"
+name = "worth-query-court-application-graph"
 version = "0.1.0"
 dependencies = [
- "serde",
- "sha2",
+ "worth-query-testkit-certification-application-graph",
+]
+
+[[package]]
+name = "worth-query-court-canonical-records"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-certification-canonical",
+]
+
+[[package]]
+name = "worth-query-court-composition"
+version = "0.1.0"
+
+[[package]]
+name = "worth-query-court-correction"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-certification-correction",
+]
+
+[[package]]
+name = "worth-query-court-decl"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-decl",
+]
+
+[[package]]
+name = "worth-query-court-execution-conditional-oracle"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-testkit-certification",
+ "worth-query-testkit-host",
+]
+
+[[package]]
+name = "worth-query-court-execution-granular-invalidation"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-testkit-certification-granular-invalidation",
+ "worth-query-testkit-host",
+]
+
+[[package]]
+name = "worth-query-court-execution-installed-fixture"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-testkit-installed-operation-fixture",
+]
+
+[[package]]
+name = "worth-query-court-execution-mutation-guards"
+version = "0.1.0"
+dependencies = [
+ "worth-query-execution",
+ "worth-query-testkit-certification-application-graph",
+]
+
+[[package]]
+name = "worth-query-court-execution-restored-replay"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-host",
+]
+
+[[package]]
+name = "worth-query-court-host"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-host",
+]
+
+[[package]]
+name = "worth-query-court-host-adoption"
+version = "0.1.0"
+dependencies = [
  "worth-execution",
  "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
  "worth-query-execution",
  "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
+ "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
 ]
 
 [[package]]
-name = "worth-query-court-composition-process"
-version = "0.1.0"
-
-[[package]]
-name = "worth-query-court-decl-fast"
+name = "worth-query-court-host-allocation"
 version = "0.1.0"
 dependencies = [
- "serde",
- "sha2",
+ "worth-query-host",
+ "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-host",
+]
+
+[[package]]
+name = "worth-query-court-host-application-graph"
+version = "0.1.0"
+dependencies = [
+ "worth-query-host",
+ "worth-query-testkit-certification-application-graph",
+]
+
+[[package]]
+name = "worth-query-court-host-branches"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-host",
+ "worth-query-testkit-certification",
+ "worth-query-testkit-host",
+]
+
+[[package]]
+name = "worth-query-court-host-canonical-admission"
+version = "0.1.0"
+dependencies = [
  "worth-execution",
  "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
+ "worth-query-host",
+ "worth-query-testkit-certification-canonical",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-host-canonical-transition"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-host",
+ "worth-query-testkit-certification",
+ "worth-query-testkit-certification-canonical",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-host-document-retention"
+version = "0.1.0"
+dependencies = [
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
+name = "worth-query-court-host-graph-input"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
  "worth-query-decl",
- "worth-query-declaration",
+ "worth-query-host",
+ "worth-query-testkit-certification",
+]
+
+[[package]]
+name = "worth-query-court-host-inspection"
+version = "0.1.0"
+dependencies = [
+ "worth-query-host",
+ "worth-query-testkit-host",
+]
+
+[[package]]
+name = "worth-query-court-host-native-operations"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+ "worth-query-host",
+ "worth-query-testkit-certification-operation-body",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
+name = "worth-query-court-host-native-workflows"
+version = "0.1.0"
+dependencies = [
+ "worth-query-host",
+ "worth-query-testkit-certification-source-only",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
+name = "worth-query-court-host-program-authority"
+version = "0.1.0"
+dependencies = [
+ "worth-query-host",
+ "worth-query-testkit-certification",
+]
+
+[[package]]
+name = "worth-query-court-host-replay"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query",
  "worth-query-execution",
  "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
  "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-court-host-certification-application-graph-fast"
+name = "worth-query-court-host-runtime"
 version = "0.1.0"
 dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
- "worth-execution",
  "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
  "worth-query-execution",
  "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
+ "worth-query-testkit-host",
 ]
 
 [[package]]
-name = "worth-query-court-host-certification-granular-invalidation-fast"
+name = "worth-query-court-host-source-bound-replay"
 version = "0.1.0"
 dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
+ "worth-query-host",
+ "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+]
+
+[[package]]
+name = "worth-query-court-host-temporal"
+version = "0.1.0"
+dependencies = [
  "worth-execution",
  "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
  "worth-query-execution",
  "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
+ "worth-query-testkit-host",
  "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-court-host-certification-native-graph-input-guards-fast"
+name = "worth-query-court-host-workflow-approval"
 version = "0.1.0"
 dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
  "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-certification-native-operation-bodies-fast"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-certification-native-workflow-operations-fast"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-certification-program-example-authority-fast"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-certification-runtime-world-branching-fast"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-exhaustive"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-fast"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-process"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-query-fast"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-runtime-world",
- "worth-schema-graph",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-host-scale"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
  "worth-query-admission",
  "worth-query-decl",
  "worth-query-execution",
  "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-replay",
- "worth-query-worlds",
+ "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
  "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-host-workflow-archive"
+version = "0.1.0"
+dependencies = [
+ "worth-query-host",
+ "worth-query-package-archive",
+ "worth-query-testkit-certification-application-graph",
+]
+
+[[package]]
+name = "worth-query-court-host-workflow-readmission"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-query-host",
+ "worth-query-package-archive",
+ "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
+name = "worth-query-court-installation"
+version = "0.1.0"
+dependencies = [
+ "worth-query-declaration",
+ "worth-query-installation",
+ "worth-query-testkit-installation",
+]
+
+[[package]]
+name = "worth-query-court-installation-workflow"
+version = "0.1.0"
+dependencies = [
+ "worth-query-installation",
+ "worth-query-testkit-certification-application-graph",
+]
+
+[[package]]
+name = "worth-query-court-package-archive"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-package-archive",
+]
+
+[[package]]
+name = "worth-query-court-package-archive-workflow-input"
+version = "0.1.0"
+dependencies = [
+ "worth-query-package-archive",
+ "worth-query-testkit-certification-application-graph",
+]
+
+[[package]]
+name = "worth-query-court-publication"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-publication",
+]
+
+[[package]]
+name = "worth-query-court-query"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+]
+
+[[package]]
+name = "worth-query-court-query-bridge"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-court-query-conditional-definition"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-query",
+]
+
+[[package]]
+name = "worth-query-court-query-execution-advancement"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-execution",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+]
+
+[[package]]
+name = "worth-query-court-query-execution-conditional-workflows"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-execution",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
  "worth-runtime-bridge",
  "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-court-installation-fast"
+name = "worth-query-court-query-foundational"
 version = "0.1.0"
 dependencies = [
- "getrandom",
- "hmac",
- "serde",
- "sha2",
- "subtle",
+ "worth-execution",
  "worth-foundational",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+]
+
+[[package]]
+name = "worth-query-court-query-foundational-conditional-partitions"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+ "worth-runtime-bridge",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-court-query-foundational-definition"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+]
+
+[[package]]
+name = "worth-query-court-query-installed"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+]
+
+[[package]]
+name = "worth-query-court-query-installed-conditional-attempts"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-installation",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-court-query-proof-conditional-authority"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
  "worth-proof",
- "worth-query-declaration",
- "worth-query-installation",
- "worth-query-worlds",
- "zeroize",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+ "worth-runtime-bridge",
+ "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-court-package-archive-exhaustive"
+name = "worth-query-court-query-signal-bridge"
 version = "0.1.0"
 dependencies = [
- "sha2",
- "worth-foundational",
- "worth-query-declaration",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-worlds",
+ "worth-execution",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+ "worth-runtime-bridge",
+ "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-court-package-archive-fast"
+name = "worth-query-court-query-signal-workflow"
 version = "0.1.0"
 dependencies = [
- "sha2",
- "worth-foundational",
- "worth-query-declaration",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-worlds",
+ "worth-execution",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+ "worth-signal",
 ]
 
 [[package]]
@@ -1301,216 +1312,204 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-query-worlds"
-version = "0.1.0"
-dependencies = [
- "worth-query-worlds-certification",
- "worth-query-worlds-decl",
- "worth-query-worlds-host",
- "worth-query-worlds-installation",
- "worth-query-worlds-package-archive",
- "worth-query-worlds-publication",
- "worth-query-worlds-query",
-]
-
-[[package]]
-name = "worth-query-worlds-certification"
+name = "worth-query-testkit-certification"
 version = "0.1.0"
 dependencies = [
  "serde",
- "sha2",
  "worth-execution",
  "worth-foundational",
- "worth-harness",
- "worth-proof",
+ "worth-query",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-testkit-certification-granular-invalidation",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-application-graph"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
  "worth-query",
  "worth-query-admission",
  "worth-query-decl",
- "worth-query-declaration",
  "worth-query-execution",
  "worth-query-host",
  "worth-query-installation",
  "worth-query-package-archive",
- "worth-query-publication",
  "worth-query-replay",
- "worth-query-worlds-document-retention",
- "worth-query-worlds-host",
+ "worth-query-testkit-certification",
+ "worth-query-testkit-certification-canonical",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-canonical"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-correction"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-installation",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-granular-invalidation"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-testkit-host",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-worlds-decl"
+name = "worth-query-testkit-certification-operation-body"
 version = "0.1.0"
 dependencies = [
  "serde",
- "sha2",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-source-only"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
+name = "worth-query-testkit-decl"
+version = "0.1.0"
+dependencies = [
+ "worth-query-decl",
+]
+
+[[package]]
+name = "worth-query-testkit-document-retention"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-testkit-host"
+version = "0.1.0"
+dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-harness",
- "worth-proof",
  "worth-query",
- "worth-query-admission",
  "worth-query-decl",
  "worth-query-declaration",
  "worth-query-execution",
  "worth-query-host",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-testkit-installation"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+ "worth-query-declaration",
  "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
+]
+
+[[package]]
+name = "worth-query-testkit-installed-operation-fixture"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-declaration",
+ "worth-query-execution",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-worlds-document-retention"
+name = "worth-query-testkit-package-archive"
 version = "0.1.0"
 dependencies = [
- "serde",
  "sha2",
- "worth-execution",
  "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
  "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
  "worth-query-installation",
  "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-query-worlds-host",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-worlds-host"
+name = "worth-query-testkit-publication"
 version = "0.1.0"
 dependencies = [
  "serde",
- "sha2",
- "worth-execution",
  "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
  "worth-query-admission",
- "worth-query-decl",
  "worth-query-declaration",
  "worth-query-execution",
- "worth-query-host",
  "worth-query-installation",
- "worth-query-package-archive",
  "worth-query-publication",
- "worth-query-replay",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
 ]
 
 [[package]]
-name = "worth-query-worlds-installation"
+name = "worth-query-testkit-query"
 version = "0.1.0"
 dependencies = [
- "serde",
  "sha2",
  "worth-execution",
  "worth-foundational",
- "worth-harness",
  "worth-proof",
  "worth-query",
- "worth-query-admission",
- "worth-query-decl",
  "worth-query-declaration",
  "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-worlds-package-archive"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-worlds-publication"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-worlds-query"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-harness",
- "worth-proof",
- "worth-query",
- "worth-query-admission",
- "worth-query-decl",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-host",
- "worth-query-installation",
- "worth-query-package-archive",
- "worth-query-publication",
- "worth-query-replay",
+ "worth-query-testkit-installed-operation-fixture",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-signal",

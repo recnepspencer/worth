@@ -13,8 +13,11 @@ worth-query-host.workspace = true
 worth-query-replay.workspace = true
 
 [dev-dependencies]
-worth-query-worlds-document-retention = { path = "../worth-query-worlds-document-retention" }
-worth-query-worlds = { workspace = true }
+worth-query-testkit-certification = { path = "../worth-query-testkit-certification" }
+worth-query-testkit-certification-correction = { path = "../worth-query-testkit-certification-correction" }
+worth-query-testkit-certification-source-only = { path = "../worth-query-testkit-certification-source-only" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-harness = { path = "../../../../crates/worth-harness" }
 serde.workspace = true

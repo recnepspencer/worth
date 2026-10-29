@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/worth-query-bank-worlds",
+    "crates/worth-query-bank-testkit*",
     "crates/worth-query-bank-court-*",
     "crates/bank-courtroom",
     "crates/bank-domain",
@@ -12,7 +12,7 @@ members = [
     "crates/bank-user-node",
 ]
 default-members = [
-    "crates/worth-query-bank-court-*-fast",
+    "crates/worth-query-bank-court-*",
     "crates/bank-domain",
     "crates/bank-estate-certification",
     "crates/bank-external-rail",
@@ -28,7 +28,7 @@ version = "0.1.0"
 license = "BUSL-1.1"
 
 [workspace.dependencies]
-worth-query-bank-worlds = { path = "crates/worth-query-bank-worlds" }
+worth-query-bank-testkit = { path = "crates/worth-query-bank-testkit" }
 worth-foundational = { path = "../../crates/worth-foundational" }
 worth-query-decl = { path = "../worth-query/crates/worth-query-decl" }
 worth-query-host = { path = "../worth-query/crates/worth-query-host" }

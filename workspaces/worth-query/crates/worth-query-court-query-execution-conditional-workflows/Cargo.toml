@@ -1,0 +1,26 @@
+[package]
+name = "worth-query-court-query-execution-conditional-workflows"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "query-execution-conditional-workflows"
+
+[dev-dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-testkit-installed-operation-fixture = { path = "../worth-query-testkit-installed-operation-fixture" }
+worth-query-testkit-query = { path = "../worth-query-testkit-query" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_query_execution_conditional_workflows"
+path = "tests/worth_query_court_query_execution_conditional_workflows.rs"

@@ -1,0 +1,21 @@
+[package]
+name = "worth-query-court-host"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "host"
+
+[dev-dependencies]
+worth-query-testkit-host = { path = "../worth-query-testkit-host" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_host"
+path = "tests/worth_query_court_host.rs"

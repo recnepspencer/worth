@@ -1,0 +1,23 @@
+[package]
+name = "worth-query-court-host-workflow-archive"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "host-workflow-archive"
+
+[dev-dependencies]
+worth-query-host = { path = "../worth-query-host" }
+worth-query-package-archive = { path = "../worth-query-package-archive" }
+worth-query-testkit-certification-application-graph = { path = "../worth-query-testkit-certification-application-graph" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_host_workflow_archive"
+path = "tests/worth_query_court_host_workflow_archive.rs"

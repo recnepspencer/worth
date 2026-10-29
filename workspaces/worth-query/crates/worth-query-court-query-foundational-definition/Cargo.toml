@@ -1,0 +1,25 @@
+[package]
+name = "worth-query-court-query-foundational-definition"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "query-foundational-definition"
+
+[dev-dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query = { path = "../worth-query" }
+worth-query-testkit-installed-operation-fixture = { path = "../worth-query-testkit-installed-operation-fixture" }
+worth-query-testkit-query = { path = "../worth-query-testkit-query" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_query_foundational_definition"
+path = "tests/worth_query_court_query_foundational_definition.rs"

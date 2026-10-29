@@ -1,0 +1,280 @@
+pub(crate) use worth_query_testkit_certification::facade::certification::program_example_authority::*;
+
+#[test]
+fn program_example_denies_plain_commit_and_conditional_client_admission() {
+    let mut application = ExampleApplication::publish("blocked");
+    assert!(application
+        .runtime
+        .admit_program_operation::<ExecuteTemporal>()
+        .is_err());
+
+    let scope = product_workflow_support::adapters::request_scope();
+    let principal = principal(&application, &scope);
+    let branch = application.runtime.current_world();
+    let predecessor = read_input(&application, branch, &principal, &scope);
+    let intent = amendment("must-not-publish", 2);
+    let idempotency_key = 0x71_u64;
+    let callable = application
+        .runtime
+        .discovery()
+        .mutations()
+        .find(|description| {
+            description.declaration().binding_identity().as_str() == AmendTemporalBinding::IDENTITY
+        })
+        .expect("the installed mutation is discoverable");
+    assert_eq!(
+        callable.availability(),
+        WorthQueryApplicationCallablePosture::InstalledRequestBinding
+    );
+    application
+        .runtime
+        .request(&principal, &scope)
+        .advanced()
+        .mutate(intent.clone())
+        .assess_current_authorization()
+        .expect("fresh current authorization is observable without execution authority");
+    assert_eq!(
+        read_input(&application, branch, &principal, &scope),
+        predecessor,
+        "callability and authorization observations cannot execute the action"
+    );
+    let denial = application
+        .runtime
+        .request(&principal, &scope)
+        .advanced()
+        .mutate(intent.clone())
+        .without_source()
+        .idempotency(&idempotency_key)
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+        .expect_err("the unbound native entry must deny a program-owned action");
+    assert!(matches!(
+        denial,
+        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired
+    ));
+    assert_eq!(
+        read_input(&application, branch, &principal, &scope),
+        predecessor
+    );
+
+    let selected = application
+        .runtime
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the published branch remains selectable")
+        })
+        .expect("installed host call opens");
+    let principal_binding = application
+        .runtime
+        .installed_schema()
+        .principal_binding(TemporalPrincipalBinding::reference())
+        .expect("the temporal principal binding must be installed");
+    let resolved_principal = application
+        .runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_authenticated_principal(
+                    &host_phase,
+                    &principal_binding,
+                    &principal,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("the external principal must resolve through the installed binding")
+        })
+        .expect("installed host call opens");
+    let entity = application
+        .runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    IntentIdentityField::reference(),
+                    intent.identity.clone(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("the temporal intent must resolve")
+        })
+        .expect("installed host call opens");
+    let operation = application
+        .runtime
+        .installed_schema()
+        .installed_operation(AmendTemporal::reference())
+        .expect("the temporal amendment must be installed");
+    let admission = application
+        .runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .authorize_operation(
+                    &host_phase,
+                    &resolved_principal,
+                    &entity,
+                    &operation,
+                    Default::default(),
+                    &scope,
+                )
+                .expect("the low-level public chain may prepare the installed operation")
+        })
+        .expect("installed host call opens");
+    let identities =
+        ApplicationMutationIdentities::<TemporalHostSchema, AmendTemporalBinding>::encode(
+            &idempotency_key,
+            &intent.amendment,
+        )
+        .expect("key and input must encode");
+    let HandlerResult::Completed(completed) = application
+        .runtime
+        .with_application_advancement(&scope, |phase| {
+            application
+                .runtime
+                .execute_mutation_handler::<AmendTemporalBinding>(
+                    &phase,
+                    &identities,
+                    resolved_principal.principal_identity(),
+                    admission,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+        })
+        .expect("the fixture policy admits its handler advancement")
+        .expect("the admitted mutation handler must complete")
+    else {
+        panic!("the admitted mutation handler must produce a candidate");
+    };
+    let (program, _) = completed.into_parts();
+    let change = WorthQueryAdmittedChange::new(
+        program,
+        WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities),
+    );
+    let outcome = application
+        .runtime
+        .on_branch(branch)
+        .transaction()
+        .apply(change)
+        .commit()
+        .expect("the prepared change belongs to this branch");
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("the low-level commit door must deny a program-owned action");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
+    );
+    // External hosts can name and match the complete invariant cause. This
+    // earlier program refusal must carry no invariant-owner evidence.
+    let invariant_failure: Option<&WorthQueryInvariantExecutionFailure> =
+        denial.invariant_execution_failure();
+    assert!(invariant_failure.is_none());
+    assert_eq!(
+        read_input(&application, branch, &principal, &scope),
+        predecessor,
+        "both denied doors must leave the branch unchanged"
+    );
+
+    application
+        .runtime
+        .close_conditional_runtime()
+        .expect("the denied program closes its conditional resources");
+}
+
+#[test]
+fn installed_conditional_requires_its_declared_program_action() {
+    let (clock_source, _) = ClockSource::due();
+    let program =
+        ApplicationProgramAuthoring::<TemporalHostSchema, MissingConditionalActionProgram>::begin()
+            .validated_program()
+            .expect("the deliberately incomplete program is syntactically valid");
+    let denial = application_installation::in_memory_program(
+        program,
+        TemporalHostSchema::declaration().expect("the temporal schema is valid"),
+        (TemporalContributionConfiguration::new(clock_source),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        example_limits(None),
+        |_phase, graph, installed| {
+            let principal = installed
+                .principal_binding(TemporalPrincipalBinding::reference())
+                .expect("the temporal principal binding is installed");
+            seed_graph(graph, &principal, "blocked");
+            Ok(())
+        },
+    )
+    .err()
+    .expect("installation must reject the missing conditional action");
+    assert!(matches!(
+        denial,
+        WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch
+    ));
+}
+
+#[test]
+fn installed_conditional_rejects_a_client_action_for_its_operation() {
+    let (clock_source, _) = ClockSource::due();
+    let program = ApplicationProgramAuthoring::<
+        TemporalHostSchema,
+        ConflictingConditionalClientProgram,
+    >::begin()
+    .validated_program()
+    .expect("distinct features make both action postures syntactically valid");
+    let denial = application_installation::in_memory_program(
+        program,
+        TemporalHostSchema::declaration().expect("the temporal schema is valid"),
+        (TemporalContributionConfiguration::new(clock_source),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        example_limits(None),
+        |_phase, graph, installed| {
+            let principal = installed
+                .principal_binding(TemporalPrincipalBinding::reference())
+                .expect("the temporal principal binding is installed");
+            seed_graph(graph, &principal, "blocked");
+            Ok(())
+        },
+    )
+    .err()
+    .expect("the client action must not share the conditional operation");
+    assert!(matches!(
+        denial,
+        WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch
+    ));
+}
+
+#[test]
+fn program_action_from_another_runtime_cannot_commit_this_product() {
+    let mut first = ExampleApplication::publish("blocked");
+    let mut second = ExampleApplication::publish("blocked");
+    let branch = first.runtime.current_world();
+    let scope = product_workflow_support::adapters::request_scope();
+    let principal = principal(&first, &scope);
+    let predecessor = read_input(&first, branch, &principal, &scope);
+    let result = first
+        .runtime
+        .request(&principal, &scope)
+        .advanced()
+        .mutate(amendment("must-not-publish", 2))
+        .without_source()
+        .idempotency(&0x72_u64)
+        .execute_in_program(
+            &second.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
+    assert!(matches!(
+        result,
+        Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch)
+    ));
+    assert_eq!(read_input(&first, branch, &principal, &scope), predecessor);
+    first
+        .runtime
+        .close_conditional_runtime()
+        .expect("the first conditional runtime closes");
+    second
+        .runtime
+        .close_conditional_runtime()
+        .expect("the second conditional runtime closes");
+}
+
+pub(crate) mod mutation_attempt_report;
+
+pub(crate) mod temporal_integrity_lease;
+
+pub(crate) mod temporal_integrity_reentry;

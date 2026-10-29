@@ -1,0 +1,26 @@
+[package]
+name = "worth-query-court-host-temporal"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "host-temporal"
+
+[dev-dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-host = { path = "../worth-query-testkit-host" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_host_temporal"
+path = "tests/worth_query_court_host_temporal.rs"

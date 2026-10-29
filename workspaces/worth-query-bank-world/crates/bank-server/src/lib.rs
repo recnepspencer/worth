@@ -151,7 +151,7 @@ extern crate self as bank_server;
     dead_code,
     reason = "shared integration fixture support is reused by the workflow request proof"
 )]
-#[path = "../../worth-query-bank-worlds/src/server/support/mod.rs"]
+#[path = "../../worth-query-bank-testkit-server/src/support/mod.rs"]
 mod support;
 
 pub use application_definition::{

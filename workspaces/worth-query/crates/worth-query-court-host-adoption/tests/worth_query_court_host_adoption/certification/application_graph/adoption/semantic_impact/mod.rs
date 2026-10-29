@@ -1,0 +1,42 @@
+pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::adoption::semantic_impact::*;
+
+#[test]
+fn migration_assessment_impact_is_inspectable_and_stops_before_selection() {
+    let host = publish_on_first_program();
+    let branch = host.current_world();
+    let target = *host
+        .supported_program::<ChangedFeatureRetentionProgram>()
+        .expect("the changed-feature target is rostered")
+        .owned_revision();
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let programs = host
+        .runtime()
+        .request(&principal, &scope)
+        .on_branch(branch)
+        .programs();
+    let requirements = programs
+        .compare(&target)
+        .expect("the public comparison exposes semantic impact");
+    assert!(requirements.requires_migration_assessment());
+    assert!(requirements.semantic_diff().changes().iter().any(|change| {
+        change.family()
+            == worth_query_host::facade::declaration::application_program::ApplicationSemanticFamily::Features
+    }));
+
+    let denial = match programs
+        .adopt(&requirements)
+        .expect("declared adoption capability admits")
+        .prepare(0)
+    {
+        Ok(_) => panic!("migration assessment must fail before zero-budget selection"),
+        Err(denial) => denial,
+    };
+    assert!(matches!(
+        denial,
+        WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+            worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::MigrationAssessmentRequired(_)
+        )
+    ));
+    assert_eq!(read_retention(host.runtime(), branch), SEED_RETENTION);
+}

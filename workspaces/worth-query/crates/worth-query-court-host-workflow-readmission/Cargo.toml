@@ -1,0 +1,25 @@
+[package]
+name = "worth-query-court-host-workflow-readmission"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "host-workflow-readmission"
+
+[dev-dependencies]
+sha2 = "=0.10.9"
+worth-query-host = { path = "../worth-query-host" }
+worth-query-package-archive = { path = "../worth-query-package-archive" }
+worth-query-testkit-certification-application-graph = { path = "../worth-query-testkit-certification-application-graph" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_host_workflow_readmission"
+path = "tests/worth_query_court_host_workflow_readmission.rs"

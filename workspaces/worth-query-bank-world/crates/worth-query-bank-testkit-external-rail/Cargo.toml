@@ -1,0 +1,29 @@
+[package]
+name = "worth-query-bank-testkit-external-rail"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+autotests = false
+
+[package.metadata.worth.testkit]
+workspace = "worth-query-bank"
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+bank-external-rail = { workspace = true }
+ed25519-dalek = { workspace = true }
+rcgen = "=0.14.4"
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tokio = { workspace = true }
+tokio-rustls = "=0.26.4"
+worth-foundational = { workspace = true }
+worth-query-bank-testkit = { path = "../worth-query-bank-testkit" }
+
+[lints]
+workspace = true

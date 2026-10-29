@@ -1,0 +1,22 @@
+[package]
+name = "worth-query-court-host-application-graph"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "host-application-graph"
+
+[dev-dependencies]
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-certification-application-graph = { path = "../worth-query-testkit-certification-application-graph" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_host_application_graph"
+path = "tests/worth_query_court_host_application_graph.rs"

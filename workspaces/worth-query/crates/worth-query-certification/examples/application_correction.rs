@@ -5,13 +5,13 @@
     unused_imports,
     reason = "Shared reference application ports are exercised by independent consumer courts"
 )]
-pub(crate) use worth_query_worlds::facade::certification::document_world_resources;
+pub(crate) use worth_query_testkit_document_retention::facade::document_world_resources;
 #[allow(
     dead_code,
     unused_imports,
     reason = "Shared reference application ports are exercised by independent consumer courts"
 )]
-pub(crate) use worth_query_worlds::facade::certification::operator_identity;
+pub(crate) use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity;
 
 use application_correction_support::publication_courts::*;
 use application_correction_support::{authentication::*, edit::Value, host, query::Row};
@@ -22,7 +22,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryCorrectionApplicability, WorthQueryCorrectionHistoryLimits,
 };
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
-use worth_query_worlds::facade::certification::application_graph::correction::model as application_correction_support;
+use worth_query_testkit_certification_correction::facade::certification::application_graph::correction::model as application_correction_support;
 
 fn main() {
     let court = std::env::args().nth(1);

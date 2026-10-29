@@ -1,0 +1,122 @@
+pub use std::sync::atomic::{AtomicUsize, Ordering};
+pub use std::sync::Arc;
+
+pub use worth_query::facade::domain;
+
+pub use super::super::installed_operation_fixture::{GeometryDomain, ReadFamily, ReadVertex};
+
+pub struct UnrequestedTrigger;
+
+impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for UnrequestedTrigger {
+    type SemanticContract = ();
+
+    fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
+}
+
+impl worth_runtime_bridge::facade::BridgeConditionalTriggerProvider for UnrequestedTrigger {
+    fn requested(&self) -> bool {
+        false
+    }
+}
+
+pub struct DeferredWake;
+
+impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for DeferredWake {
+    type SemanticContract = ();
+
+    fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
+}
+
+impl worth_runtime_bridge::facade::BridgeConditionalWakeProvider for DeferredWake {
+    fn resolve(
+        &self,
+        _context: worth_runtime_bridge::facade::BridgeConditionalResolverContext,
+    ) -> Result<worth_signal::facade::InstalledSignalConditionDecision, String> {
+        Ok(worth_signal::facade::InstalledSignalConditionDecision::Deferred)
+    }
+}
+
+pub struct DetachedCompute(pub Arc<AtomicUsize>);
+
+impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for DetachedCompute {
+    type SemanticContract = ();
+
+    fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
+}
+
+impl worth_runtime_bridge::facade::BridgeConditionalComputeProvider for DetachedCompute {
+    fn compute(
+        &self,
+        _context: &mut dyn std::any::Any,
+    ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
+        self.0.fetch_add(1, Ordering::SeqCst);
+        Err("detached compute must never be invoked".into())
+    }
+}
+
+pub struct CountedCompute(pub Arc<AtomicUsize>);
+
+impl domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex, ReadFamily>
+    for CountedCompute
+{
+    type SemanticContract = ();
+
+    fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
+
+    fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
+        worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_support()
+    }
+
+    fn compute(
+        &self,
+        _context: &domain::WorthQueryConditionalComputeContext,
+    ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
+        self.0.fetch_add(1, Ordering::SeqCst);
+        Ok(worth_signal::facade::NodeEvaluationResult::from_version(
+            worth_signal::facade::AspectVersion::from_updates([(
+                worth_signal::facade::Aspect::new(0),
+                1,
+            )]),
+        ))
+    }
+}

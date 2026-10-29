@@ -1,0 +1,24 @@
+[package]
+name = "worth-query-court-host-runtime"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "host-runtime"
+
+[dev-dependencies]
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-host = { path = "../worth-query-testkit-host" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_host_runtime"
+path = "tests/worth_query_court_host_runtime.rs"

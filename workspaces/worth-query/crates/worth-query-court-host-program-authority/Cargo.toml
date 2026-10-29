@@ -1,0 +1,22 @@
+[package]
+name = "worth-query-court-host-program-authority"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "host-program-authority"
+
+[dev-dependencies]
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-certification = { path = "../worth-query-testkit-certification" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_host_program_authority"
+path = "tests/worth_query_court_host_program_authority.rs"

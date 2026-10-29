@@ -1,0 +1,22 @@
+[package]
+name = "worth-query-court-execution-mutation-guards"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[package.metadata.worth.court]
+surface = "execution-mutation-guards"
+
+[dev-dependencies]
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-testkit-certification-application-graph = { path = "../worth-query-testkit-certification-application-graph" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_execution_mutation_guards"
+path = "tests/worth_query_court_execution_mutation_guards.rs"

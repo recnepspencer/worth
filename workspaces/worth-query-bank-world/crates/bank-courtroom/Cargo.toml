@@ -48,7 +48,7 @@ harness = false
 workspace = true
 
 [dev-dependencies]
-worth-query-bank-worlds = { workspace = true }
+worth-query-bank-testkit-server = { path = "../worth-query-bank-testkit-server" }
 
 [lib]
 test = false
