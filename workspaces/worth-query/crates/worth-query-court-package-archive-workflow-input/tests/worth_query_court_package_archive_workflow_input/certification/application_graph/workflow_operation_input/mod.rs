@@ -59,7 +59,7 @@ fn authentic_predecessor_draft_cannot_import_executable_meaning() {
     // Captured with the original production validator and writer, before the
     // guarded-input requirement was enforced. No bytes are converted on import.
     let bytes = include_bytes!(
-        "../../../../../../../worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_definition_readmission/missing_input.wqwd"
+        "../../../../../../worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_definition_readmission/missing_input.wqwd"
     );
     let original = bytes.to_vec();
     let denial = decode_workflow_definition_draft(bytes, WorthQueryPackageArchiveLimits::DEFAULT)
