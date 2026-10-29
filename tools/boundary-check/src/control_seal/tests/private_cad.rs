@@ -1,4 +1,6 @@
 //! Exact private CAD reach uses the ordinary discovery and source validator.
+//! Commit 9d29936548 retired absent CAD caller permits. Historical case names
+//! remain; owner/alias proofs stay live and former callers must now be refused.
 use super::*;
 
 const OWNER: &str = super::super::private_cad::OWNER;
@@ -40,7 +42,19 @@ fn actual_cad_door_allows_only_named_owner_hooks_facade_and_test_leaf() {
     assert_eq!(doors[ARM], BTreeSet::from([OWNER.into()]));
     let diagnostics = crate::sealed_sources::validate(&root);
     fs::remove_dir_all(root).unwrap();
-    assert!(diagnostics.is_empty(), "{diagnostics:?}");
+    for path in [
+        "crates/worth-cad-entry/src/contribution.rs",
+        "crates/worth-cad-entry/src/families/chamfer/realization/mod.rs",
+        "crates/worth-cad-entry/src/schema/chamfer_correspondence.rs",
+        "crates/worth-cad-entry/src/facade.rs",
+        CALLER,
+    ] {
+        assert!(
+            diagnostics.iter().any(|d| d.subject() == path),
+            "{path}: {diagnostics:?}"
+        );
+    }
+    assert!(!diagnostics.iter().any(|d| d.subject() == OWNER));
 }
 
 #[test]
@@ -101,7 +115,7 @@ fn cad_aliases_are_denied_even_in_the_named_facade_or_caller() {
     let root = fixture();
     let (_, doors) = load(&root);
     fs::remove_dir_all(root).unwrap();
-    for path in ["crates/worth-cad-entry/src/facade.rs", CALLER] {
+    for path in [OWNER, "crates/worth-cad-entry/src/facade.rs", CALLER] {
         for source in [
             "pub use crate::owner::arm_cad_installation_omission_for_test as ordinary;",
             "type Ordinary = CadInstallationOmissionGuardForTest;",
@@ -113,16 +127,19 @@ fn cad_aliases_are_denied_even_in_the_named_facade_or_caller() {
             assert!(
                 diagnostics
                     .iter()
-                    .any(|d| d.message().contains("may not be aliased")),
+                    .any(|d| if path == OWNER { d.message().contains("may not be aliased") } else { d.code() == DiagnosticCode::Bc7012ControlSeal }),
                 "{path}: {diagnostics:?}"
             );
         }
-        assert!(references(
-            path,
-            "pub use crate::owner::arm_cad_installation_omission_for_test;",
-            &doors
-        )
-        .is_empty());
+        assert_eq!(
+            references(
+                path,
+                "pub use crate::owner::arm_cad_installation_omission_for_test;",
+                &doors
+            )
+            .is_empty(),
+            path == OWNER
+        );
     }
 }
 
@@ -143,7 +160,7 @@ fn only_actual_registration_hook_items_may_consume_controls_as_ordinary_function
     ] {
         let source =
             format!("pub(crate) fn {name}() {{ arm_cad_installation_omission_for_test::<S>(); }}");
-        assert!(references(path, &source, &doors).is_empty());
+        assert!(!references(path, &source, &doors).is_empty());
         let helper =
             "pub(crate) fn ordinary_helper() { arm_cad_installation_omission_for_test::<S>(); }";
         assert!(!references(path, helper, &doors).is_empty());
@@ -178,7 +195,7 @@ fn private_helpers_cannot_forward_an_opaque_control_export() {
             "private helper escaped at {path}"
         );
     }
-    assert!(references(CALLER, USE, &doors).is_empty());
+    assert!(!references(CALLER, USE, &doors).is_empty());
     assert!(references(
         OWNER,
         &format!("{SOURCE}\nfn hidden<S>() {{ arm_cad_installation_omission_for_test::<S>(); }}"),

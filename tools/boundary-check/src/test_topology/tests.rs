@@ -119,11 +119,11 @@ fn law18_nested_fixture_workspace_is_governed_but_other_workspaces_are_not() {
     let fixture = Fixture::new();
     fixture.write(
         CONFIG,
-        "governed | sample\ngoverned/fixtures/court | nested\n",
+        "governed | sample\ngoverned/tests/fixtures/court | nested\n",
     );
-    fixture.write("governed/fixtures/court/Cargo.toml", "[package]\nname = 'nested-court-host-fast'\n[workspace]\n[package.metadata.worth.court]\nboundary = 'host'\nclass = 'fast'\n");
+    fixture.write("governed/tests/fixtures/court/Cargo.toml", "[package]\nname = 'nested-court-host-fast'\n[workspace]\n[package.metadata.worth.court]\nboundary = 'host'\nclass = 'fast'\n");
     fixture.write(
-        "governed/fixtures/court/tests/nested_court_host_fast.rs",
+        "governed/tests/fixtures/court/tests/nested_court_host_fast.rs",
         "#[test] fn unclassed() {}",
     );
     fixture.write("other/Cargo.toml", "[package]\nname = 'other'\n");
@@ -166,7 +166,7 @@ fn law18_implicit_path_dependency_members_cannot_hide_a_second_target() {
     let fixture = Fixture::new();
     fixture.write(CONFIG, ". | sample\n");
     fixture.write("Cargo.toml", "[workspace]\nmembers = ['owner']\n");
-    fixture.write("owner/Cargo.toml", "[package]\nname = 'owner'\nversion = '0.1.0'\n[dependencies]\nimplicit = { path = '../implicit' }\n");
+    fixture.write("owner/Cargo.toml", "[package]\nname = 'owner'\nversion = '0.1.0'\n[dependencies]\nimplicit = { package = 'sample-court-host-fast', path = '../implicit' }\n");
     fixture.write("owner/src/lib.rs", "");
     fixture.write("implicit/Cargo.toml", "[package]\nname = 'sample-court-host-fast'\nversion = '0.1.0'\n[lib]\npath = 'outside.rs'\n[package.metadata.worth.court]\nboundary = 'host'\nclass = 'fast'\n");
     fixture.write("implicit/outside.rs", "");
