@@ -1,0 +1,31 @@
+[package]
+"name" = "worth-court-server-product-operation-phase-thirteen-shared-read"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"axum" = { "version" = "^0.8" }
+"serde" = { "version" = "^1", "features" = ["derive", "rc"] }
+"serde_json" = { "version" = "^1" }
+"tokio" = { "version" = "^1", "features" = ["macros", "net", "rt-multi-thread"] }
+"tower" = { "version" = "^0.5", "features" = ["util"] }
+"trybuild" = { "version" = "^1.0" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+"worth-query" = { "path" = "../../workspaces/worth-query/crates/worth-query" }
+"worth-query-host" = { "path" = "../../workspaces/worth-query/crates/worth-query-host" }
+"worth-runtime-bridge" = { "path" = "../worth-runtime-bridge" }
+"worth-server" = { "path" = "../worth-server" }
+"worth-testkit-server" = { "path" = "../worth-testkit-server" }
+
+[[test]]
+name = "worth_court_server_product_operation_phase_thirteen_shared_read"
+path = "tests/worth_court_server_product_operation_phase_thirteen_shared_read.rs"
+
+[lints]
+workspace = true

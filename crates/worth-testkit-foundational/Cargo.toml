@@ -1,0 +1,19 @@
+[package]
+"name" = "worth-testkit-foundational"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true

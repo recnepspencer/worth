@@ -1,0 +1,108 @@
+pub(crate) use {worth_execution::ExecutionAllocationPolicy as AllocationPolicy, worth_relational::facade::transactions::AspectFieldPatch, worth_foundational::facade::AspectValue, worth_relational::facade::history::BranchId, worth_relational::facade::transactions::BulkEntityCreateIntent, worth_execution::CancellationToken, worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::indexes::DerivedIndexBuildRequest, worth_relational::facade::indexes::DerivedIndexDefinition, worth_relational::facade::indexes::DerivedIndexExecutionDenialKind, worth_relational::facade::indexes::DerivedIndexId, worth_relational::facade::indexes::DerivedIndexKind, worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_relational::facade::identity::KindId, worth_relational::facade::transactions::MutationIntent, std::num::NonZeroUsize, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::transactions::WorkerIntentBatch, crate::leased_preparation::ordinary_context::authority, crate::leased_preparation::ordinary_context::lease_request, crate::leased_preparation::ordinary_context::serial, crate::leased_preparation::ordinary_context::support};
+
+#[test]
+fn one_large_index_build_stops_at_its_request_memory_without_publication() {
+    if worth_testkit_relational::test_process::reexecute_isolated_test() {
+        return;
+    }
+
+    let host_request =
+        worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _serial = serial();
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .schema_registry(crate::leased_preparation::ordinary_context::support::demo_schema_registry())
+        .build()
+        .expect("valid native runtime configuration");
+    let identity = runtime.main_branch_identity();
+    let (_, basis) = runtime.observe_branch(&identity).expect("main basis");
+    let mut transaction = runtime
+        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .expect("admitted basis");
+    let client_keys = (0..128)
+        .map(|index| worth_relational::facade::symbols::ClientKey::raw(format!("index-heavy-{index}")))
+        .collect();
+    let field_patches = (0..128)
+        .map(|index| {
+            worth_relational::facade::transactions::AspectFieldPatch::from_locator(
+                crate::leased_preparation::ordinary_context::support::aspect_field_locator("name"),
+                worth_foundational::facade::AspectValue::String(format!("index-heavy-{index}").into()),
+            )
+        })
+        .collect();
+    transaction
+        .push_batch(
+            worth_relational::facade::transactions::WorkerIntentBatch::new("large-index-source").push(worth_relational::facade::transactions::MutationIntent::Create(
+                worth_relational::facade::transactions::CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                    partition_id: worth_relational::facade::identity::PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_keys,
+                    field_patches,
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("bulk source stages");
+    let committed = runtime
+        .commit_branch_transaction(execution, transaction)
+        .expect("source commits");
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "large.index.name".to_owned(),
+            kind: worth_relational::facade::indexes::DerivedIndexKind::EntityField {
+                field_locator: crate::leased_preparation::ordinary_context::support::aspect_field_locator("name"),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
+    let request = DerivedIndexBuildRequest {
+        source_commit_id: committed.commit.commit_id,
+        branch_id: BranchId("main".to_owned()),
+        index_ids: vec![index.index_id],
+    };
+    let serial = runtime
+        .index_authority()
+        .build_for_commit(execution, request.clone());
+    assert!(serial.execution_denial.is_none());
+    let published = serial.generations[0].generation_id;
+    // The 128-key build needs more than this request's 64 KiB memory policy.
+    // The request's own policy refuses it, and nothing is published.
+    let mut request_lease = lease_request(64 * 1024, worth_execution::CancellationToken::new());
+    request_lease.policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Automatic,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(64 * 1024), Some(1_000_000)),
+    );
+    let lease = authority()
+        .request_lease(request_lease)
+        .expect("tight lease is admitted");
+    let stopped = runtime.index_authority().build_for_commit(
+        &worth_execution::ExecutionRequest::leased(&lease),
+        request.clone(),
+    );
+    let Some(worth_relational::facade::indexes::DerivedIndexExecutionDenialKind::Cause(worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+        requested,
+        admitted: 65_536,
+        ancestor: 0,
+    })) = stopped.execution_denial.map(|denial| denial.kind)
+    else {
+        panic!("the request's memory policy refuses the build");
+    };
+    assert!(
+        requested > 64 * 1024,
+        "the refused charge exceeds the request: {requested}"
+    );
+    assert!(stopped.generations.is_empty());
+    assert_eq!(
+        runtime
+            .index_access()
+            .read_latest_generation(execution, index.index_id, &request.branch_id)
+            .unwrap()
+            .expect("prior index remains")
+            .generation_id,
+        published
+    );
+}

@@ -1,0 +1,10 @@
+#[path = "boundary/mod.rs"]
+pub(crate) mod boundary;
+#[path = "diagnostics/mod.rs"]
+pub(crate) mod diagnostics;
+#[path = "identities/mod.rs"]
+pub(crate) mod identities;
+#[path = "profiles/mod.rs"]
+pub(crate) mod profiles;
+#[path = "transitions/mod.rs"]
+pub(crate) mod transitions;
