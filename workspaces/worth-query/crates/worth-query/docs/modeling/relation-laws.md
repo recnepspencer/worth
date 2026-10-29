@@ -429,7 +429,7 @@ dependency.
                             .unwrap();
 ```
 
-The [logical composition court](../../../worth-query-certification/tests/application_graph/relation_laws/logical/committed.rs)
+The [logical composition court](../../../worth-query-worlds-certification/src/certification/application_graph/relation_laws/logical/committed.rs)
 compares this reader's genuine component with the ordinary tracked decision and
 checks refusal of a foreign projection's member beside a lawful local read.
 This reader observes the selected stored snapshot. A feature-history-prefix

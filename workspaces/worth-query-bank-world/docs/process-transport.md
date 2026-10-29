@@ -185,7 +185,7 @@ signing seed, and the same audience, source and key epoch through
 estate and payment verifiers; callback bytes cannot add a protocol or replace
 either verifier. The
 [real process setup](../crates/worth-query-bank-court-user-node-process/tests/worth_query_bank_court_user_node_process/process/courtroom/transport_process_courtroom/rail_completion/mod.rs)
-and [payment setup](../crates/bank-courtroom/tests/transport_process_courtroom/payment/setup.rs)
+and [payment setup](../crates/worth-query-bank-worlds/src/courtroom/transport_process_courtroom/payment/setup.rs)
 exercise both installed routes. Rotate keys and epochs through an explicit
 deployment overlap and retirement policy; the current single-key process
 installation does not negotiate versions or silently accept an old key.

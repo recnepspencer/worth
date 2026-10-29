@@ -133,7 +133,7 @@ composition, union and intersection use the same registered evaluator. Complete
 physical and empty-adjacency support survives endpoint deduplication. A logical
 coordinate includes domain, full carrier generation and case; it grants no access.
 
-In the [public logical fixture](../../../worth-query-certification/tests/application_graph/relation_laws/logical.rs),
+In the [public logical fixture](../../../worth-query-worlds-certification/src/certification/application_graph/relation_laws/logical.rs),
 Uses has Negative and Positive cases over Node. The `successor()` helper is the
 forward Negative-lift inverse -> Precedes -> Positive-lift leg. These actual
 builder-chain lines register its union with the reverse as an orbit, then bind
