@@ -1,0 +1,194 @@
+pub use {std::fs};
+pub use {std::path::Path};
+
+pub use {crate::durability_admission::independent_wal_oracle::BindingField, crate::durability_admission::independent_wal_oracle::BindingInspectionDenial};
+
+pub const REWRITE_DOMAIN: &[u8] = b"store.physical.rewrite-redo.v2";
+pub const CANONICAL_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
+pub const BODY_BYTES: usize = 280;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IndependentRewriteRedo {
+    pub source_root_generation: u64,
+    pub source_length: u32,
+    pub destination_length: u32,
+    pub candidate_bytes: u64,
+    pub resulting_root_generation: u64,
+    pub arena_routes: Option<([u64; 3], [u64; 3], u64)>,
+}
+
+pub fn inspect_rewrite_redo(
+    bytes: &[u8],
+) -> Result<IndependentRewriteRedo, BindingInspectionDenial> {
+    let mut cursor = bytes;
+    let domain = take_field(&mut cursor)?;
+    if domain == CANONICAL_DOMAIN {
+        return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::DomainMismatch);
+    }
+    if domain != REWRITE_DOMAIN {
+        return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::DomainMismatch);
+    }
+    if cursor.len() != BODY_BYTES {
+        return Err(if cursor.len() < BODY_BYTES {
+            crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated
+        } else {
+            crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::TrailingBytes
+        });
+    }
+    cursor = &cursor[32 + 32..];
+    let source_root_generation = take_u64(&mut cursor)?;
+    let _source_generation = take_u64(&mut cursor)?;
+    let _source_offset = take_u64(&mut cursor)?;
+    let source_length = take_u32(&mut cursor)?;
+    cursor = &cursor[32..];
+    let _destination_generation = take_u64(&mut cursor)?;
+    let _destination_offset = take_u64(&mut cursor)?;
+    let destination_length = take_u32(&mut cursor)?;
+    let _page_lsn = take_u64(&mut cursor)?;
+    cursor = &cursor[32..];
+    let source_placement = take_u64(&mut cursor)?;
+    let destination_placement = take_u64(&mut cursor)?;
+    let candidate_bytes = take_u64(&mut cursor)?;
+    let resulting_root_generation = take_u64(&mut cursor)?;
+    let mut route_fields = [0_u64; 8];
+    for field in &mut route_fields {
+        *field = take_u64(&mut cursor)?;
+    }
+    let arena_routes = if route_fields == [0; 8] {
+        None
+    } else {
+        let [tag, source_arena, source_offset, source_bytes, destination_arena, destination_offset, destination_bytes, alignment] =
+            route_fields;
+        if tag != 1
+            || source_placement != destination_placement
+            || source_arena == 0
+            || destination_arena == 0
+            || source_bytes == 0
+            || source_bytes != destination_bytes
+            || !alignment.is_power_of_two()
+            || source_offset % alignment != 0
+            || destination_offset % alignment != 0
+            || source_bytes % alignment != 0
+            || source_offset.checked_add(source_bytes).is_none()
+            || destination_offset.checked_add(destination_bytes).is_none()
+            || (source_arena == destination_arena
+                && source_offset < destination_offset + destination_bytes
+                && destination_offset < source_offset + source_bytes)
+        {
+            return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
+        }
+        Some((
+            [source_arena, source_offset, source_bytes],
+            [destination_arena, destination_offset, destination_bytes],
+            alignment,
+        ))
+    };
+    if !cursor.is_empty() {
+        return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::TrailingBytes);
+    }
+    if source_length == 0
+        || source_length != destination_length
+        || u64::from(destination_length) != candidate_bytes
+        || source_root_generation == 0
+        || resulting_root_generation != source_root_generation.saturating_add(1)
+    {
+        return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
+    }
+    Ok(IndependentRewriteRedo {
+        source_root_generation,
+        source_length,
+        destination_length,
+        candidate_bytes,
+        resulting_root_generation,
+        arena_routes,
+    })
+}
+
+pub fn produced_rewrite_payloads(root: &Path) -> Vec<IndependentRewriteRedo> {
+    let mut found = Vec::new();
+    collect(root, &mut found);
+    found
+}
+
+pub fn collect(root: &Path, found: &mut Vec<IndependentRewriteRedo>) {
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect(&path, found);
+            continue;
+        }
+        let Ok(bytes) = std::fs::read(&path) else {
+            continue;
+        };
+        let mut offset = 0;
+        while let Some(index) = bytes[offset..]
+            .windows(REWRITE_DOMAIN.len())
+            .position(|window| window == REWRITE_DOMAIN)
+        {
+            let domain_at = offset + index;
+            if let Some(payload) = framed_payload(&bytes, domain_at)
+                && let Ok(rewrite) = inspect_rewrite_redo(payload)
+            {
+                found.push(rewrite);
+            }
+            offset = domain_at + REWRITE_DOMAIN.len();
+        }
+    }
+}
+
+pub fn framed_payload(bytes: &[u8], domain_at: usize) -> Option<&[u8]> {
+    let length_at = domain_at.checked_sub(8)?;
+    let domain_len = u64::from_le_bytes(bytes.get(length_at..domain_at)?.try_into().ok()?);
+    if domain_len != REWRITE_DOMAIN.len() as u64 {
+        return None;
+    }
+    let redo_len_at = length_at.checked_sub(8)?;
+    let redo_len = u64::from_le_bytes(bytes.get(redo_len_at..length_at)?.try_into().ok()?);
+    let payload_len = 8 + REWRITE_DOMAIN.len() + BODY_BYTES;
+    if redo_len != payload_len as u64 {
+        return None;
+    }
+    bytes.get(length_at..length_at + payload_len)
+}
+
+pub fn take_field<'a>(cursor: &mut &'a [u8]) -> Result<&'a [u8], BindingInspectionDenial> {
+    let length = usize::try_from(take_u64(cursor)?)
+        .map_err(|_| crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFieldLength(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload))?;
+    take(cursor, length)
+}
+
+pub fn take_u64(cursor: &mut &[u8]) -> Result<u64, BindingInspectionDenial> {
+    let bytes = take(cursor, 8)?;
+    Ok(u64::from_le_bytes(bytes.try_into().expect("fixed u64")))
+}
+
+pub fn take_u32(cursor: &mut &[u8]) -> Result<u32, BindingInspectionDenial> {
+    let bytes = take(cursor, 4)?;
+    Ok(u32::from_le_bytes(bytes.try_into().expect("fixed u32")))
+}
+
+pub fn take<'a>(cursor: &mut &'a [u8], length: usize) -> Result<&'a [u8], BindingInspectionDenial> {
+    if cursor.len() < length {
+        return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated);
+    }
+    let (value, rest) = cursor.split_at(length);
+    *cursor = rest;
+    Ok(value)
+}
+
+pub fn sample_rewrite() -> Vec<u8> {
+    let mut body = vec![0_u8; BODY_BYTES];
+    body[64..72].copy_from_slice(&4_u64.to_le_bytes());
+    body[88..92].copy_from_slice(&4096_u32.to_le_bytes());
+    body[140..144].copy_from_slice(&4096_u32.to_le_bytes());
+    body[200..208].copy_from_slice(&4096_u64.to_le_bytes());
+    body[208..216].copy_from_slice(&5_u64.to_le_bytes());
+    let mut encoded = Vec::new();
+    encoded.extend_from_slice(&(REWRITE_DOMAIN.len() as u64).to_le_bytes());
+    encoded.extend_from_slice(REWRITE_DOMAIN);
+    encoded.extend_from_slice(&body);
+    encoded
+}

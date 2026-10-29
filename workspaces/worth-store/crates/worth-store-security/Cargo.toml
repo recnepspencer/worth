@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-security"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 2 S.11 security, compliance, tenant boundaries, and auditability."
+"workspace" = "../.."
+"name" = "worth-store-security"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 2 S.11 security, compliance, tenant boundaries, and auditability."
+"autotests" = false
+
 
 [features]
 certification-test-authority = []

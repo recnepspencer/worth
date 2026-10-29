@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-aspect-native"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Aspect-native Worth Store boundary vocabulary over Foundational APIs."
+"workspace" = "../.."
+"name" = "worth-store-aspect-native"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Aspect-native Worth Store boundary vocabulary over Foundational APIs."
+"autotests" = false
+
 
 [dependencies]
 worth-foundational = { path = "../../../../crates/worth-foundational" }

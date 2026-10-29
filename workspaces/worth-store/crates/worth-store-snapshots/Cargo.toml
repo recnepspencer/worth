@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-snapshots"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 immutable snapshots and point-in-time restore contracts."
+"workspace" = "../.."
+"name" = "worth-store-snapshots"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 immutable snapshots and point-in-time restore contracts."
+"autotests" = false
+
 
 [dependencies]
 worth-store-contracts.workspace = true
@@ -17,3 +19,7 @@ default = []
 
 [lints]
 workspace = true
+
+[lib]
+"test" = false
+

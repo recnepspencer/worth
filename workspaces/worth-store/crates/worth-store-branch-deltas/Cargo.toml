@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-branch-deltas"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 structural delta storage and branch delta layering."
+"workspace" = "../.."
+"name" = "worth-store-branch-deltas"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 structural delta storage and branch delta layering."
+"autotests" = false
+
 
 [dependencies]
 worth-store-contracts.workspace = true
@@ -17,3 +19,7 @@ default = []
 
 [lints]
 workspace = true
+
+[lib]
+"test" = false
+

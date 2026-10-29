@@ -1,0 +1,43 @@
+[package]
+"name" = "worth-store-court-recovery-runtime-replication-store-physical-blob-journeys"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"serde" = { "version" = "^1", "features" = ["derive"] }
+"serde_json" = { "version" = "^1" }
+"sha2" = { "version" = "^0.10" }
+"stats_alloc" = { "version" = "^0.1" }
+"tempfile" = { "version" = "^3" }
+"tracking-allocator" = { "version" = "^0.4", "default-features" = false }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-proof" = { "path" = "../../../../crates/worth-proof" }
+"worth-signal" = { "path" = "../../../../crates/worth-signal" }
+"worth-store" = { "path" = "../worth-store", "features" = ["certification-test-authority"] }
+"worth-store-authority" = { "path" = "../worth-store-authority" }
+"worth-store-blob-chunks" = { "path" = "../worth-store-blob-chunks" }
+"worth-store-buffer-pool" = { "path" = "../worth-store-buffer-pool" }
+"worth-store-contracts" = { "path" = "../worth-store-contracts" }
+"worth-store-io-scheduler" = { "path" = "../worth-store-io-scheduler" }
+"worth-store-offline-integrity-observer" = { "path" = "../worth-store-offline-integrity-observer" }
+"worth-store-offline-verifier" = { "path" = "../worth-store-offline-verifier" }
+"worth-store-physical-backend" = { "path" = "../worth-store-physical-backend", "features" = ["store-runtime-owner", "volatile-sync-for-tests"] }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format", "features" = ["certification-test-authority"] }
+"worth-store-physical-integrity" = { "path" = "../worth-store-physical-integrity" }
+"worth-store-recovery-physics" = { "path" = "../worth-store-recovery-physics", "features" = ["test-support"] }
+"worth-store-security" = { "path" = "../worth-store-security" }
+"worth-store-test-support" = { "path" = "../worth-store-test-support", "default-features" = false }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+"worth-store-testkit-store" = { "path" = "../worth-store-testkit-store" }
+"worth-store-wal" = { "path" = "../worth-store-wal" }
+
+[[test]]
+name = "worth_store_court_recovery_runtime_replication_store_physical_blob_journeys"
+path = "tests/worth_store_court_recovery_runtime_replication_store_physical_blob_journeys.rs"
+
+[lints]
+workspace = true

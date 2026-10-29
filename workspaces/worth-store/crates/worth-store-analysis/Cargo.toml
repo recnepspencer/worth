@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-analysis"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 basis-anchored analysis lanes."
+"workspace" = "../.."
+"name" = "worth-store-analysis"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 basis-anchored analysis lanes."
+"autotests" = false
+
 
 [dependencies]
 worth-store-contracts.workspace = true
@@ -13,3 +15,7 @@ worth-store-extensions.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+"test" = false
+

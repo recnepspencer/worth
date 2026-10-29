@@ -1,0 +1,21 @@
+[package]
+"name" = "worth-store-court-store-entry"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"stats_alloc" = { "version" = "^0.1" }
+"trybuild" = { "version" = "^1.0" }
+"worth-store" = { "path" = "../worth-store" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_store_entry"
+path = "tests/worth_store_court_store_entry.rs"
+
+[lints]
+workspace = true

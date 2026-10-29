@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Public Worth Store facade and owner of the physical runtime lifecycle."
+"workspace" = "../.."
+"name" = "worth-store"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Public Worth Store facade and owner of the physical runtime lifecycle."
+"autotests" = false
+
 
 [features]
 default = []
@@ -48,19 +50,13 @@ sha2 = "0.10"
 serde_json = "1"
 getrandom = "0.4"
 tracking-allocator = { version = "0.4", default-features = false }
-
 [dev-dependencies]
-serde = { version = "1", features = ["derive"] }
-worth-store-physical-backend = { workspace = true, features = ["volatile-sync-for-tests"] }
-stats_alloc = "0.1"
-tempfile = "3"
-trybuild = "1.0"
-worth-foundational = { path = "../../../../crates/worth-foundational" }
-worth-store-offline-verifier.workspace = true
-worth-store-offline-integrity-observer.workspace = true
-worth-store-physical-format = { workspace = true, features = ["certification-test-authority"] }
-worth-store-recovery-physics = { workspace = true, features = ["test-support"] }
-worth-store-test-support.workspace = true
+"worth-store-physical-backend" = { "workspace" = true, "features" = ["volatile-sync-for-tests"] }
+"tempfile" = "3"
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-store-physical-format" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-recovery-physics" = { "workspace" = true, "features" = ["test-support"] }
+
 
 [lints]
 workspace = true
@@ -76,37 +72,3 @@ name = "physical_store_c8_writer"
 path = "src/bin/physical_store_c8_writer.rs"
 test = false
 doctest = false
-
-[[test]]
-name = "public_facade_downstream"
-path = "tests/public_facade_downstream.rs"
-required-features = ["certification-test-authority"]
-
-[[test]]
-name = "physical_media_journeys"
-path = "tests/physical_media_journeys.rs"
-required-features = ["certification-test-authority"]
-
-[[test]]
-name = "physical_media_authority_ui"
-path = "tests/physical_media_authority_ui.rs"
-required-features = ["certification-test-authority"]
-
-[[test]]
-name = "physical_runtime_authority_ui"
-path = "tests/physical_runtime_authority_ui.rs"
-required-features = ["certification-test-authority"]
-
-[[test]]
-name = "physical_adapter_authority_ui"
-path = "tests/physical_adapter_authority_ui.rs"
-
-[[test]]
-name = "physical_record_journeys"
-path = "tests/physical_record_journeys.rs"
-required-features = ["certification-test-authority"]
-
-[[test]]
-name = "physical_blob_journeys"
-path = "tests/physical_blob_journeys.rs"
-required-features = ["certification-test-authority"]

@@ -27,6 +27,6 @@ jobs:
       - name: Checkpoint and recover all 64 certificate records
         run: >-
           cargo nextest run --profile ci --cargo-profile ci-test
-          -p worth-store-recovery-runtime --features certification-test-authority
-          --test production_entry --run-ignored only --no-tests=fail
-          -E 'test(=certified_release_serving::certificate_roster_scale::maximum_certificate_roster_checkpoints_recovers_and_rejoins)'
+          -p worth-store-court-recovery-runtime-replication-production-entry-certified-release-serving --features worth-store-recovery-runtime/certification-test-authority
+          --test worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving --run-ignored only --no-tests=fail
+          -E 'test(/^cost::recovery_runtime::production_entry::certified_release_serving::certificate_roster_scale::/)'

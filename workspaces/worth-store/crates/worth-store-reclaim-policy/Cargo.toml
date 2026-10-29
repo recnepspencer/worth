@@ -1,21 +1,23 @@
 [package]
-workspace = "../.."
-name = "worth-store-reclaim-policy"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 2 S.6 reclaim, punch-hole, trim, and cold-tier I/O posture admission."
+"workspace" = "../.."
+"name" = "worth-store-reclaim-policy"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 2 S.6 reclaim, punch-hole, trim, and cold-tier I/O posture admission."
+"autotests" = false
+
 
 [dependencies]
 worth-store-physical-backend.workspace = true
 worth-store-physical-format.workspace = true
 worth-store-physical-isolation.workspace = true
 worth-store-security.workspace = true
-
 [dev-dependencies]
-worth-store-physical-backend = { workspace = true, features = ["certification-test-authority"] }
-worth-store-security = { workspace = true, features = ["certification-test-authority"] }
+"worth-store-physical-backend" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-security" = { "workspace" = true, "features" = ["certification-test-authority"] }
+
 
 [features]
 certification-test-authority = ["worth-store-physical-backend/certification-test-authority"]

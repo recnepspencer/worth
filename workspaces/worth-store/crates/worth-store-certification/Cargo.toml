@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-certification"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Direct behavioral certification scenarios for WORTH Store."
+"workspace" = "../.."
+"name" = "worth-store-certification"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Direct behavioral certification scenarios for WORTH Store."
+"autotests" = false
+
 
 [dependencies]
 sha2 = "0.10"
@@ -42,54 +44,11 @@ certification-test-support = ["worth-store-physical-certification/certification-
 
 [lints]
 workspace = true
-
 [dev-dependencies]
-serde_json = "1"
-worth-relational = { path = "../../../../crates/worth-relational" }
-worth-store-io-scheduler = { workspace = true, features = ["certification-test-authority"] }
-worth-store-physical-backend = { workspace = true, features = ["certification-test-authority"] }
-worth-store-physical-certification = { workspace = true, features = ["certification-test-support"] }
-worth-store-reclaim-policy = { workspace = true, features = ["certification-test-authority"] }
-worth-store-recovery-physics.workspace = true
-worth-store-security = { workspace = true, features = ["certification-test-authority"] }
-tempfile = "3"
+"worth-store-io-scheduler" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-physical-backend" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-physical-certification" = { "workspace" = true, "features" = ["certification-test-support"] }
+"worth-store-reclaim-policy" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-recovery-physics" = { "workspace" = true }
+"worth-store-security" = { "workspace" = true, "features" = ["certification-test-authority"] }
 
-[[test]]
-name = "s4_5_driver_contract_boundary_compile_fail"
-path = "tests/compile_fail/recovery/driver_contract_boundary_runner.rs"
-
-[[test]]
-name = "s5_1_security_scope_admission_compile_fail"
-path = "tests/compile_fail/security/security_scope_admission_runner.rs"
-
-[[test]]
-name = "recovery_read_authority_compile_fail"
-path = "tests/compile_fail/physical_isolation/recovery_read_authority_runner.rs"
-
-[[test]]
-name = "s5_tier_movement_future_chunk_compile_fail"
-path = "tests/compile_fail/blobs/tier_movement_future_chunk_runner.rs"
-
-[[test]]
-name = "s6_secure_io_authority_compile_fail"
-path = "tests/compile_fail/scheduling/secure_io_authority_runner.rs"
-
-[[test]]
-name = "physical_isolation"
-path = "tests/suites/physical_isolation.rs"
-
-[[test]]
-name = "io_scheduling"
-path = "tests/suites/io_scheduling.rs"
-
-[[test]]
-name = "layout_access"
-path = "tests/suites/layout_access.rs"
-
-[[test]]
-name = "blob_chunks"
-path = "tests/suites/blob_chunks.rs"
-
-[[test]]
-name = "operational_security"
-path = "tests/suites/operational_security.rs"

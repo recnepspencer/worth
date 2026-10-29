@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-lsm-authority"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "LSM durable-membership, compaction-publication, and replay authority."
+"workspace" = "../.."
+"name" = "worth-store-lsm-authority"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "LSM durable-membership, compaction-publication, and replay authority."
+"autotests" = false
+
 
 [features]
 default = []
@@ -18,9 +20,9 @@ worth-store-recovery-physics.workspace = true
 worth-store-security.workspace = true
 worth-store-wal.workspace = true
 sha2 = "0.10"
-
 [dev-dependencies]
-worth-store-security = { workspace = true, features = ["certification-test-authority"] }
+"worth-store-security" = { "workspace" = true, "features" = ["certification-test-authority"] }
+
 
 [lints]
 workspace = true

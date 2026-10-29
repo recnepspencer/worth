@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-layout-indexes"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Durable artifact layout, indexing, and access-path authority."
+"workspace" = "../.."
+"name" = "worth-store-layout-indexes"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Durable artifact layout, indexing, and access-path authority."
+"autotests" = false
+
 
 [dependencies]
 worth-foundational = { path = "../../../../crates/worth-foundational" }
@@ -23,20 +25,18 @@ worth-store-recovery-physics = { path = "../worth-store-recovery-physics" }
 worth-store-security = { path = "../worth-store-security" }
 worth-store-wal = { path = "../worth-store-wal" }
 sha2 = "0.10"
-
 [dev-dependencies]
-tempfile = "3"
-worth-store-aspect-native = { path = "../worth-store-aspect-native" }
-worth-store-blob-chunks = { path = "../worth-store-blob-chunks", features = ["certification-test-authority"] }
-worth-store-budgets = { path = "../worth-store-budgets" }
-worth-store-io-scheduler = { path = "../worth-store-io-scheduler", features = ["certification-test-authority"] }
-worth-store-lsm-authority = { path = "../worth-store-lsm-authority", features = ["certification-test-authority"] }
-worth-store-physical-format = { path = "../worth-store-physical-format" }
-worth-store-physical-isolation = { path = "../worth-store-physical-isolation" }
-worth-store-recovery-physics = { path = "../worth-store-recovery-physics" }
-worth-store-security = { path = "../worth-store-security", features = ["certification-test-authority"] }
-worth-store-test-support = { path = "../worth-store-test-support", default-features = false }
-worth-store-wal = { path = "../worth-store-wal", features = ["certification-authority"] }
+"tempfile" = "3"
+"worth-store-aspect-native" = { "path" = "../worth-store-aspect-native" }
+"worth-store-blob-chunks" = { "path" = "../worth-store-blob-chunks", "features" = ["certification-test-authority"] }
+"worth-store-budgets" = { "path" = "../worth-store-budgets" }
+"worth-store-io-scheduler" = { "path" = "../worth-store-io-scheduler", "features" = ["certification-test-authority"] }
+"worth-store-lsm-authority" = { "path" = "../worth-store-lsm-authority", "features" = ["certification-test-authority"] }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-physical-isolation" = { "path" = "../worth-store-physical-isolation" }
+"worth-store-security" = { "path" = "../worth-store-security", "features" = ["certification-test-authority"] }
+"worth-store-wal" = { "path" = "../worth-store-wal", "features" = ["certification-authority"] }
+
 
 [lints]
 workspace = true

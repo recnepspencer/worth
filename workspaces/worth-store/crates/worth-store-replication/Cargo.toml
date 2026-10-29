@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-replication"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 replication, capsules, export/import, and integrity verification."
+"workspace" = "../.."
+"name" = "worth-store-replication"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 replication, capsules, export/import, and integrity verification."
+"autotests" = false
+
 
 [dependencies]
 fs4 = "0.8"
@@ -19,11 +21,10 @@ worth-store-security.workspace = true
 [features]
 default = []
 certification-test-authority = []
-
 [dev-dependencies]
-tempfile = "3"
-worth-store-security = { workspace = true, features = ["certification-test-authority"] }
-worth-store-wal.workspace = true
+"tempfile" = "3"
+"worth-store-security" = { "workspace" = true, "features" = ["certification-test-authority"] }
+
 
 [lints]
 workspace = true

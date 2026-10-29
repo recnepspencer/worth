@@ -1,0 +1,33 @@
+[package]
+"name" = "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"serde_json" = { "version" = "^1" }
+"tempfile" = { "version" = "^3" }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-proof" = { "path" = "../../../../crates/worth-proof" }
+"worth-signal" = { "path" = "../../../../crates/worth-signal" }
+"worth-store" = { "path" = "../worth-store", "features" = ["certification-test-authority"] }
+"worth-store-contracts" = { "path" = "../worth-store-contracts" }
+"worth-store-io-scheduler" = { "path" = "../worth-store-io-scheduler" }
+"worth-store-offline-verifier" = { "path" = "../worth-store-offline-verifier" }
+"worth-store-physical-backend" = { "path" = "../worth-store-physical-backend", "features" = ["store-runtime-owner", "volatile-sync-for-tests"] }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format", "features" = ["certification-test-authority"] }
+"worth-store-physical-integrity" = { "path" = "../worth-store-physical-integrity" }
+"worth-store-security" = { "path" = "../worth-store-security" }
+"worth-store-test-support" = { "path" = "../worth-store-test-support", "default-features" = false }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+"worth-store-testkit-store" = { "path" = "../worth-store-testkit-store" }
+
+[[test]]
+name = "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_record_chunk_views"
+path = "tests/worth_store_court_recovery_runtime_replication_store_physical_record_journeys_record_chunk_views.rs"
+
+[lints]
+workspace = true

@@ -1,23 +1,25 @@
 [package]
-workspace = "../.."
-name = "worth-store-extensions"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 extensible durable artifact families and storage strategies."
+"workspace" = "../.."
+"name" = "worth-store-extensions"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 extensible durable artifact families and storage strategies."
+"autotests" = false
+
 
 [dependencies]
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-store-claim-boundaries.workspace = true
 worth-store-contracts.workspace = true
 worth-store-layout-indexes.workspace = true
-
 [dev-dependencies]
-worth-foundational = { path = "../../../../crates/worth-foundational" }
-worth-store-aspect-native = { path = "../worth-store-aspect-native" }
-worth-store-authority = { path = "../worth-store-authority" }
-worth-store-security = { path = "../worth-store-security", features = ["certification-test-authority"] }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-store-aspect-native" = { "path" = "../worth-store-aspect-native" }
+"worth-store-authority" = { "path" = "../worth-store-authority" }
+"worth-store-security" = { "path" = "../worth-store-security", "features" = ["certification-test-authority"] }
+
 
 [lints]
 workspace = true
