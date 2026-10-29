@@ -45,6 +45,12 @@ executable_read_operation!(RouteOperation, RouteFamily);
 #[derive(Clone, Copy)]
 pub struct FamilyReadExecutor<O, F>(pub PhantomData<fn() -> (O, F)>);
 
+impl<O, F> Default for FamilyReadExecutor<O, F> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<O, F> FamilyReadExecutor<O, F> {
     pub const fn new() -> Self {
         Self(PhantomData)

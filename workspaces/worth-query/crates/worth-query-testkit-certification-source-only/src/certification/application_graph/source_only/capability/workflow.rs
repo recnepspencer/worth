@@ -11,11 +11,10 @@ pub mod captured_actor;
 pub mod inspection;
 #[path = "workflow/program.rs"]
 pub mod program;
-pub use super::{grants::*, host, schema::*};
+pub use super::{grants::*, host};
 pub use program::*;
 pub use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*, application_installation::*,
-    declaration::application_program::*, declaration::application_schema::*,
     domain::WorthQueryApplicationWorkflowSpecInstallation,
 };
 pub use worth_query_testkit_document_retention::facade::document_retention_model::{

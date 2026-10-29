@@ -3,7 +3,6 @@ pub use super::{
     grants::*,
     handler::{Contacts, RetentionHandler},
     program::Program,
-    schema::*,
 };
 pub use std::{
     sync::Arc,

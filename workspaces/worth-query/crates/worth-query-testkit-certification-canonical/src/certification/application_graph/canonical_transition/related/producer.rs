@@ -1,11 +1,8 @@
 //! Installed native producer, with ordinary admitted source reads and created output.
-pub use super::{model::NestedValue, output::*, query, schema::*};
+pub use super::{model::NestedValue, output::*, query};
 pub use worth_query_decl::facade::{worth_query_operation_creates, worth_query_operation_links};
 pub use worth_query_host::facade::{
-    application_contribution::*,
-    declaration::{application_operation::*, application_schema::*},
-    primary_graph::*,
-    *,
+    application_contribution::*, declaration::application_schema::*, primary_graph::*, *,
 };
 
 #[path = "producer/preserve.rs"]

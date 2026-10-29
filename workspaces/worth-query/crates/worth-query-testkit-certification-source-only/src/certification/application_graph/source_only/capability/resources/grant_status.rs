@@ -1,8 +1,8 @@
 //! Actual grant-status transitions drive independent action and facet decisions.
-pub use super::super::{grants::*, schema::*};
+pub use super::super::grants::*;
 pub use worth_query_decl::facade::{
-    application_operation::*, application_schema::*, worth_query_mutation_binding,
-    worth_query_operation, worth_query_operation_reads, worth_query_operation_writes,
+    application_operation::*, worth_query_mutation_binding, worth_query_operation,
+    worth_query_operation_reads, worth_query_operation_writes,
     worth_query_structured_value_binding,
 };
 pub use worth_query_host::facade::primary_graph::*;

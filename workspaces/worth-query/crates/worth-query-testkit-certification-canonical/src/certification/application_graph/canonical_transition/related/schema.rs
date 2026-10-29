@@ -1,7 +1,7 @@
 //! One independently installed source field using the generated canonical binding.
 pub use super::companion::{producer as cp, schema::*};
 pub use super::{binding::NestedBinding, derived_query, edit, model::*, output, producer, query};
-pub use declaration::{application_schema::*, authentication::*};
+pub use declaration::authentication::*;
 pub use worth_query_host::facade::{declaration, *};
 
 worth_query_application! {

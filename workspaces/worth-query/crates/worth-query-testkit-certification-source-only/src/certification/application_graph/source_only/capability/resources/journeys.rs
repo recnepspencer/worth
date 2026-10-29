@@ -1,5 +1,5 @@
 //! Real two-facade resource requests, including independent provider observations.
-pub use super::super::{grant_commands, host, program::*, schema::*};
+pub use super::super::{grant_commands, host, program::*};
 pub use super::{metadata, Resource};
 pub use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::request_scope;
 pub use std::sync::atomic::Ordering;

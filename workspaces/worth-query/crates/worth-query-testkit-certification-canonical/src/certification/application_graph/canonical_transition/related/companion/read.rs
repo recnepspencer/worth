@@ -1,9 +1,8 @@
 //! Ordinary authenticated read projects the nested field through its binding.
-pub use super::{super::schema::*, schema::*};
+pub use super::super::schema::*;
 pub use worth_query_host::facade::{
     declaration::{application_query::*, application_schema::*},
     primary_graph::*,
-    *,
 };
 
 pub struct Parameters;

@@ -1,12 +1,9 @@
 //! Retained no-output delivery reads the native original World occurrence.
-pub use super::{fixture::*, host, readback::*, schema::*};
+pub use super::{fixture::*, host, readback::*};
 pub use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
 };
 pub use std::num::NonZeroUsize;
-pub use worth_query_host::facade::{
-    application_entry::*, declaration::application_program::*, declaration::application_schema::*,
-};
 pub struct RetainedProgram;
 pub struct RetainedDelivery;
 impl ApplicationActionDelivery<SourceOnlyRetentionSchema, SetRetentionBinding>

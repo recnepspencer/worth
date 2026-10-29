@@ -3,9 +3,7 @@ pub use super::{
     super::{program::Feature, schema::*},
     bindings::*,
 };
-pub use worth_query_host::facade::{
-    declaration::application_operation::*, declaration::application_program::*,
-};
+pub use worth_query_host::facade::declaration::application_program::*;
 pub struct Program;
 pub struct Completion;
 impl ApplicationActionDelivery<CapabilitySchema, GuardedBinding> for Completion {

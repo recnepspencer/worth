@@ -1443,6 +1443,7 @@ dependencies = [
  "worth-foundational",
  "worth-harness",
  "worth-query",
+ "worth-query-admission",
  "worth-query-decl",
  "worth-query-declaration",
  "worth-query-execution",

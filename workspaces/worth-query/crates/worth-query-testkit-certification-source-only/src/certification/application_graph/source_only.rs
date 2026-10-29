@@ -1,4 +1,6 @@
 //! Owning no-output publication, native unresolved postures, and independent close custody.
+#[path = "source_only/authorization.rs"]
+pub mod authorization;
 #[path = "source_only/capability.rs"]
 pub mod capability;
 #[path = "source_only/fixture.rs"]

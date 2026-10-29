@@ -1,8 +1,6 @@
 //! The actual ability observer reads its own live grant, independent of facets.
-pub use super::super::{grants::*, schema::*};
-pub use worth_query_decl::facade::{
-    application_schema::*, worth_query_ability, worth_query_policy,
-};
+pub use super::super::grants::*;
+pub use worth_query_decl::facade::{worth_query_ability, worth_query_policy};
 
 worth_query_ability!(pub AdvanceResource scoped_to Document, in CapabilitySchema);
 worth_query_policy!(pub ResourceActionPolicy in CapabilitySchema);

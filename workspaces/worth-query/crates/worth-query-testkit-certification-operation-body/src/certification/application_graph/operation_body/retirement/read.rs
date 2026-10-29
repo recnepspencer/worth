@@ -7,7 +7,7 @@ pub use super::{
     declaration::*,
 };
 pub use worth_query_host::facade::{
-    declaration::{application_query::*, application_schema::*},
+    declaration::application_query::*,
     primary_graph::{
         WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
         WorthQueryApplicationProjectionRow,

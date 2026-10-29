@@ -1,5 +1,5 @@
 //! One installed presence rule drives descriptive guidance and direct admission.
-pub use super::{draft::*, program, request_scope, schema::*};
+pub use super::{draft::*, program, request_scope};
 pub use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationMutationOutcome as Outcome,

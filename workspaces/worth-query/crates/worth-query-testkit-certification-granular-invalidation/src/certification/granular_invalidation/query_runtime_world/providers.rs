@@ -2,7 +2,9 @@ pub use std::sync::Arc;
 
 pub use worth_query::facade::domain as query_domain;
 
-pub use super::super::contract::{TemporalDomain, TemporalDomainFamily, TemporalDomainOperation};
+pub use worth_query_testkit_host::facade::host::contract::{
+    TemporalDomain, TemporalDomainFamily, TemporalDomainOperation,
+};
 
 pub struct EligibleProvider;
 

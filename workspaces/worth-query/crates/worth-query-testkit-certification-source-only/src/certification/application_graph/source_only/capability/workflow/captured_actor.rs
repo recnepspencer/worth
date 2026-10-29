@@ -1,5 +1,5 @@
 //! Captured target input is distinct from the proposal used by native actor policy.
-pub use super::super::{grants::*, host, readback::ReadRetention, schema::*};
+pub use super::super::{grants::*, host, readback::ReadRetention};
 pub use super::{
     actor_binding::ActorBinding,
     actor_program::{Action, Effect, Program, Spec},

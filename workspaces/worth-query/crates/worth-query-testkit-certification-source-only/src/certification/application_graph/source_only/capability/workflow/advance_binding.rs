@@ -1,9 +1,7 @@
 //! Distinct guarded/control contracts over existing retention and revocation request contexts.
-pub use super::super::super::{grants::*, schema::*};
+pub use super::super::super::grants::*;
 
-pub use worth_query_host::facade::{
-    declaration::application_operation::*, declaration::application_schema::*, primary_graph,
-};
+pub use worth_query_host::facade::{declaration::application_operation::*, primary_graph};
 pub struct AdvanceBinding;
 impl ApplicationMutationBinding<CapabilitySchema> for AdvanceBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {

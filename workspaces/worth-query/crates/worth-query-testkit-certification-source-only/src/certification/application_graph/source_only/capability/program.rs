@@ -1,4 +1,4 @@
-pub use super::{grants::*, schema::*};
+pub use super::grants::*;
 pub use worth_query_host::facade::{
     declaration::application_operation::*, declaration::application_program::*,
 };

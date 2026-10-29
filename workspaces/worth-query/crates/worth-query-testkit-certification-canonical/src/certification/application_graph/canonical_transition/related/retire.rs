@@ -5,11 +5,7 @@ pub use super::{
     schema::*,
 };
 pub use worth_query_decl::facade::{worth_query_operation_deletes, worth_query_operation_unlinks};
-pub use worth_query_host::facade::{
-    declaration::{application_operation::*, application_schema::*},
-    primary_graph::*,
-    *,
-};
+pub use worth_query_host::facade::{declaration::application_schema::*, primary_graph::*, *};
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Input {
     pub identity: String,
