@@ -7,6 +7,9 @@
 )]
 
 pub use super::journal_model;
+pub use crate::facade::server::approved_payment_workflow::authentication;
+pub use crate::facade::server::fixture;
+pub use bank_domain::proposals::BankIdempotencyKey;
 pub use bank_domain::schema::ApprovePayment;
 pub use bank_server::{BankApprovedPaymentAssessmentProgress, BankPaymentAssessmentSettlement};
 pub use std::num::NonZeroUsize;
@@ -14,20 +17,6 @@ pub use worth_query_host::facade::application_entry::{
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
     WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
 };
-#[path = "../approved_payment_workflow/authentication.rs"]
-#[allow(
-    dead_code,
-    reason = "assessment settlement does not request an approval credential"
-)]
-pub mod authentication;
-#[path = "../ordinary_reads/fixture.rs"]
-#[allow(
-    dead_code,
-    reason = "the assessment adapter uses the shared Bank installation, not its unrelated read worlds"
-)]
-pub mod fixture;
-pub use bank_domain::proposals::BankIdempotencyKey;
 pub fn key(label: &str) -> BankIdempotencyKey {
     BankIdempotencyKey::new(label).unwrap()
 }
-pub use crate::facade::server::support;

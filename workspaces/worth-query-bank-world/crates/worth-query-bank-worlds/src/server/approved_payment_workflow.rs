@@ -21,12 +21,7 @@ pub mod owner_custody;
 pub mod postures;
 #[path = "approved_payment_workflow/program_retirement.rs"]
 pub mod program_retirement;
-#[allow(
-    dead_code,
-    reason = "the shared rail adapter exposes additional custody probes used by its owning court"
-)]
-#[path = "ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"]
-pub mod rail_transport;
+pub use crate::facade::server::estate_operations::external_effect_dispatch::rail_transport;
 #[path = "approved_payment_workflow/ready_payment.rs"]
 pub mod ready_payment;
 #[path = "approved_payment_workflow/rejection.rs"]

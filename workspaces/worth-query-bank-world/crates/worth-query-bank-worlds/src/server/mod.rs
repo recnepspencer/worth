@@ -21,7 +21,7 @@ pub mod estate_operations;
     dead_code,
     reason = "the shared read fixture includes scenarios used by sibling consumer courtrooms"
 )]
-#[allow(dead_code, unused_imports)]
+#[allow(unused_imports)]
 #[path = "ordinary_reads/fixture.rs"]
 pub mod fixture;
 #[allow(dead_code, unused_imports)]

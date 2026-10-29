@@ -5,7 +5,6 @@ pub mod canonical_scale_fixture;
 pub mod canonical_work_scale;
 pub mod estate;
 pub mod estate_fixture;
-pub mod fixture;
+pub use super::fixture;
 pub mod locality;
 pub mod pending_payments;
-pub use super::support;

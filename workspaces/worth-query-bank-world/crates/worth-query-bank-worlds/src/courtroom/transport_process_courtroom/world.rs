@@ -35,7 +35,7 @@ pub struct TransportProcessWorld {
 impl TransportProcessWorld {
     pub async fn start() -> Self {
         let rail =
-            RailProcessHandle::spawn(&crate::facade::binary_path("cold-bank-rail"), "127.0.0.1:0")
+            RailProcessHandle::spawn(crate::facade::binary_path("cold-bank-rail"), "127.0.0.1:0")
                 .expect("the external rail should start in a separate process");
         let (mut primary_node, primary_bound) = spawn_user_node().await;
         let (mut peer_node, peer_bound) = spawn_user_node().await;

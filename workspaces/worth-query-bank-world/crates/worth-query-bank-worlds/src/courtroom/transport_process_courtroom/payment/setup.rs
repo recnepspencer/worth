@@ -47,7 +47,7 @@ pub struct PaymentCourt {
 impl PaymentCourt {
     pub async fn start(scenario: &str) -> Self {
         let mut rail = RailProcessHandle::spawn_awaiting_completion_installation(
-            &crate::facade::binary_path("cold-bank-rail"),
+            crate::facade::binary_path("cold-bank-rail"),
             "127.0.0.1:0",
         )
         .expect("separate payment rail process should bind");
