@@ -13,6 +13,7 @@ from module_tree import Node
 from support_visibility import promote
 from cfg_context import rebind
 from court_packing import first_fit_decreasing
+from support_readers import has_meaning
 
 
 def layout_support(model, kits):
@@ -21,10 +22,7 @@ def layout_support(model, kits):
         changed = False
         for record in model.canonical:
             text, _receipts = model.bindings.rewrite(record['helper'], record, record['support_owner'])
-            active = any(item.keyword not in ('inner-attribute', 'use') or
-                         (item.keyword == 'use' and bool(use_leaves(tokens(text[item.start:item.end])[next(
-                             i for i, t in enumerate(tokens(text[item.start:item.end])) if t.value == 'use') + 1:-1])))
-                         for item in items(text))
+            active = has_meaning(record)
             changed |= record.get('active', True) != active
             record['active'] = active
             contexts[id(record)] = text

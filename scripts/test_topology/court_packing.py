@@ -3,20 +3,26 @@ from collections import defaultdict
 
 
 def assign_file_weights(units):
-    """One original Rust file is charged once, even when several areas read it."""
-    consumers = defaultdict(list)
+    from support_readers import has_meaning
+    consumers, compiled, programs = defaultdict(list), set(), defaultdict(list)
     for unit in units:
-        unit['packing_files'] = set()
-        paths = set(unit['footprint'])
-        paths.update(n.source for support in unit['support'] for n in support.walk())
-        for path in paths:
+        record = unit['scope']
+        unit['packing_lines'] = len(record['test'].splitlines()) + len(record['attributes'].splitlines()) + 12
+        compiled.add(record['node'].source)
+        for source in unit.get('support_inputs', ()):
+            compiled.add(source['node'].source)
+            if has_meaning(source):
+                consumers[id(source)].append((source, unit))
+    for readers in consumers.values():
+        record, unit = min(readers, key=lambda pair: (pair[1]['owner_area'], pair[1]['key']))
+        unit['packing_lines'] += len(record['helper'].splitlines()) + len(record['attributes'].splitlines()) + 12
+    for unit in units:
+        for path in unit['footprint'] - compiled:
             if path.suffix == '.rs':
-                consumers[path].append(unit)
-    for path, readers in sorted(consumers.items()):
-        reader = min(readers, key=lambda u: (u['owner_area'], u['key']))
-        reader['packing_files'].add(path)
-    for unit in units:
-        unit['packing_lines'] = sum(len(p.read_bytes().splitlines()) + 12 for p in unit['packing_files'])
+                programs[path].append(unit)
+    for path, readers in programs.items():
+        unit = min(readers, key=lambda u: (u['owner_area'], u['key']))
+        unit['packing_lines'] += len(path.read_bytes().splitlines())
 
 
 def whole_areas(population, ceiling):

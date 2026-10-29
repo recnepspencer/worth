@@ -62,7 +62,7 @@ class CourtCodemodTests(unittest.TestCase):
         self.assertTrue(any(w['kind'] == 'classification' and w['source'].endswith('ambiguous.rs') for w in work))
 
     def test_shared_module_compiles_at_one_testkit_owner(self):
-        moves = [m for m in self.plan['effects']['moves'] if m['source'].endswith('support/mod.rs')]
+        moves = [m for m in self.plan['effects']['moves'] if m['source'].endswith('support/values.rs')]
         self.assertEqual(len(moves), 1)
         self.assertIn('worth-testkit-host/src/', moves[0]['destination'])
         kit = next(k for k in self.plan['testkits'] if k['name'] == 'worth-testkit-host')
@@ -70,10 +70,19 @@ class CourtCodemodTests(unittest.TestCase):
 
     def test_visibility_and_cross_category_paths_are_mechanical(self):
         writes = self.plan['effects']['writes']
-        declarations = next(w['content'] for w in writes if '/support/declarations.rs' in w['path'])
+        declarations = next(w['content'] for w in writes if '/support/values/declarations.rs' in w['path'])
         self.assertIn('pub struct Value', declarations)
         self.assertIn('pub amount: u32', declarations)
         self.assertIn('pub fn shared_value', declarations)
+        self.assertNotIn('::std::', declarations)
+        self.assertIn('clippy::needless_return', declarations)
+        self.assertNotIn('::clippy::', declarations)
+        implementation = next(w for w in writes if w['path'].endswith('support/values_more/declarations.rs'))
+        self.assertIn('worth-testkit-host/src', implementation['path'])
+        self.assertIn('inner: crate::support::values::Value', implementation['content'])
+        plain = next(w['content'] for w in writes if '/plain/mod.rs' in w['path'])
+        self.assertNotIn('amount: crate::support::', plain)
+        self.assertIn('amount: worth_testkit_host::support::values::shared_value()', plain)
         model = next(w['content'] for w in writes if '/model/mod.rs' in w['path'])
         self.assertIn('crate::plain::ordinary_context::cross_category_value()', model)
         self.assertNotIn('crate::fast::', model)
@@ -119,15 +128,30 @@ class CourtCodemodTests(unittest.TestCase):
             self.assertNotEqual(rewrite['before'], rewrite['after'])
 
     def test_ceiling_splits_use_registered_module_areas(self):
-        plan = build(self.root / 'Cargo.toml', self.root, copy.deepcopy(self.data), ceiling=55)
-        self.assertGreater(len(plan['courts']), len(self.plan['courts']))
-        self.assertTrue(plan['splits'])
-        self.assertTrue(all(s['area'] and s['owners'] for s in plan['splits']))
-        self.assertTrue(all('bucket' not in s['area'] for s in plan['splits']))
-        for a in plan['courts']:
-            for b in plan['courts']:
-                if a['name'] < b['name'] and a['frontier'] == b['frontier']:
-                    self.assertGreater(a['packing_lines'] + b['packing_lines'], 55)
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            shutil.copytree(FIXTURE.parent / 'ceiling', root, dirs_exist_ok=True)
+            data = metadata(root / 'Cargo.toml')
+            unsplit = build(root / 'Cargo.toml', root, copy.deepcopy(data))
+            limit = 40
+            plan = build(root / 'Cargo.toml', root, copy.deepcopy(data), ceiling=limit)
+            self.assertGreater(len(plan['courts']), len(unsplit['courts']))
+            self.assertTrue(plan['splits'])
+            self.assertFalse(plan['blockers'])
+            self.assertTrue(all(c['rust_lines'] <= limit for c in plan['courts']))
+            self.assertTrue(all(s['area'] and s['owners'] for s in plan['splits']))
+            for a in plan['courts']:
+                for b in plan['courts']:
+                    if a['name'] < b['name'] and a['frontier'] == b['frontier']:
+                        self.assertGreater(a['packing_lines'] + b['packing_lines'], limit)
+
+    def test_indivisible_area_over_the_ceiling_is_refused(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            shutil.copytree(FIXTURE.parent / 'ceiling', root, dirs_exist_ok=True)
+            data = metadata(root / 'Cargo.toml')
+            with self.assertRaisesRegex(ValueError, 'indivisible area exceeds ceiling'):
+                build(root / 'Cargo.toml', root, data, ceiling=1)
 
     def test_plan_is_byte_deterministic(self):
         other = build(self.root / 'Cargo.toml', self.root, copy.deepcopy(self.data))
