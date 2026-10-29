@@ -172,6 +172,59 @@ existing controls rather than multiplying their Cartesian product. After both
 providers work, the 1,000/2,000 geometry court measures the whole warm Source,
 reverse-scope, provider and invariant preparation path, not just the query kernel.
 
+### Phase 2 Court: Logical Suspension And Physical Resumption
+
+Extend that same provider boundary through real owner-admitted materialization,
+not an operation that imitates suspension by deleting rows. The present Native
+[maintenance court](../../crates/worth-relational/src/tests/transactions/core/aggregate_identity/maintenance.rs)
+establishes the distinction: the actual materialization port prepares and
+publishes suspension, custom rules still observe the logical before-image, and
+the suspended physical snapshot is unavailable until genuine rematerialization.
+It does not yet prove managed-index or Query/World composition. Extend the real
+[public reconstruction journey](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/generated_materialization/typed_reconstruction_preserves_query_authority.rs)
+with the same registered managed Source and installed rule; the generated rows
+must actually influence its Source projection. Existing producer/source/output
+custody supplies the legal world. Do not fabricate a candidate, suspension token
+or unavailable flag to connect otherwise unrelated fixtures.
+
+Start with admitted public committed answers and an independent authored scan.
+Suspend a genuine generated payload whose reverse Source paths reach A and
+unopened B. Prove both scoped rule invocations receive Native's logical Source
+at its real source version, with unchanged logical membership and values. The
+physical removal must not look like logical deletion or satisfy a uniqueness
+rule merely by hiding rows. Public current reads must return their actual
+typed suspended/unavailable denial before provider query callbacks; they cannot
+attach the retained logical payload as a new physical Ready root or return an
+empty success. A pre-suspension retained read remains immutable and usable only
+under its own admitted historical basis. Cold B uses the declared cold policy
+and real logical-source admission, never a public cached-root prerequisite.
+
+Reconstruct through the existing producer reconstruction receiver and restore
+through the actual Native materialization and World publication owners. A
+reconstruction with the correct manifest but a real Source-projected domain
+violation must reach the installed rule on the actual reconstructed candidate
+and refuse; missing physical committed rows cannot excuse it. Keep manifest,
+producer-continuity and required-invariant failures distinct: a fixture that
+stops at one of those earlier boundaries does not prove candidate evaluation.
+The lawful twin resumes, publishes the matching physical Source/root and yields
+public answers equal to a fresh independent scan. A retained-payload reuse twin
+must consume Native's exact Source correspondence, create a new basis-bound
+header and avoid provider reconstruction. Refusing reuse without that proof
+must still permit admitted actual reconstruction; a root ID or equal values
+alone can never make the old header current.
+
+Cancel the original request after real roots/dispositions are staged and before
+cutover, once from available truth toward suspension and once from suspended
+truth toward resumption. Require respectively the prior available answers or
+prior suspended denial, unchanged graph/World position, retained recovery
+custody where required, and released staged backing after the last staging
+holder closes. No Ready root or physical-availability change may escape a
+refused, cancelled or discarded proposal. Pair this focused family with genuine
+foreign/sibling basis, full-generation, definition/version and observation
+controls at the owners that consume the new correspondence. Do not mechanically
+duplicate the existing control portfolio. The ordinary unopened-B domain court,
+both providers and real 1,000/2,000 whole-path growth remain required.
+
 ## Product Decision Lock
 
 1. Access products are derived managed resources, never authoritative truth.
@@ -206,6 +259,12 @@ reverse-scope, provider and invariant preparation path, not just the query kerne
 14. Completeness and locality apply in both dependency directions: source changes
     to index state, and index changes to query observations. Whole-index invalidation
     is a conservative safety posture, never evidence of local reuse.
+15. Native's sealed materialization interpretation separates logical invariant
+    Source from physical candidate availability. Suspension is not logical
+    deletion; a logical root is not public physical Ready. Only Native-admitted
+    rematerialization and exact Source correspondence or admitted reconstruction
+    can establish the resumed physical root. One atomic publication owner carries
+    these meanings; Query cannot select or certify the interpretation.
 
 ## Generic Extension Contract
 
@@ -290,19 +349,28 @@ workspaces/worth-query/crates/
       source/                           N replace dense cold-image-only internals
         occurrences.rs                  N persistent full-generation Source rows
         dependencies.rs                 N complete per-entry and absence support
+        interpretation.rs               N consume sealed Native basis/availability
       candidate/                        N pure maintenance and staged payload adapter
         preparation.rs
         publication.rs
+        resumption.rs                   N exact correspondence or admitted rebuild
       retention/                        E one registered resource and root lifetime
     application_invariant/typed_view/
       managed_index/                     N candidate-root read adapter
     handler/invariant/
       managed_index.rs                   N admitted DecisionReader adapter
+    product_operation/
+      context.rs                         E selected composite read/image custody
+      generated_materialization/         E existing public suspend/restore receivers
+    output_lineage/invalidation/
+      source_publication.rs              E one required companion participant
     access_strategy/                     N candidate/refinement/evidence orchestration
       coverage/
       exact_refinement/
       realized_footprint/
       continuation/
+  worth-query-execution/src/domain_computation/execution_runtime/
+    product_world/                       E selected/pending World image retention
   worth-query-publication/src/application_entry/
     managed_index/                       N governed public reads and typed outcomes
   worth-query-package-archive/src/record/application_query/
@@ -321,15 +389,23 @@ crates/worth-relational/src/
       scope.rs                          N affected scope closure, including absence
       projection.rs                     N admitted before/after row acquisition
       loan.rs                           N reborrow for each actual observation
+      interpretation.rs                 N Native-minted logical/physical association
+      resumption.rs                     N actual rematerialization correspondence
   validation/custom_rule/                E real rule receivers and scoped invocations
+  validation/engine/observation/
+    custom_semantics.rs                 E sole custom Source interpretation policy
+  branch/owner_services/
+    materialization_port.rs             E sealed association before validation
+  branch/materialization.rs             E one existing materialization custody
   authority/commit/phases/
     applied_mutation.rs                 E owns candidate-lived prepared Source/roots
   mvcc/validation/proposal_round.rs      E prepare before first invariant
-  mvcc/publication/companion/            E exact cell matching and atomic cutover
+  mvcc/publication/companion/            E fixed effect bundle and atomic cutover
+    preflight/cutover.rs                E reserve/check/install the complete fixed set
 crates/worth-proof/src/
-  managed_source.rs                     N concrete Source-audience legality witness
+  managed_source.rs                     N Source audience/correspondence witnesses
 crates/worth-foundational/src/
-  managed_source.rs                     N portable Source association identity only
+  managed_source.rs                     N portable association/interpretation meaning
 ```
 
 `E` means an existing owner to extend; `N` means a planned destination populated
@@ -571,12 +647,15 @@ phase, not a generic callback validator or an after-publication notification.
 Native mints candidate-lived before/after Source custody bound to the real
 runtime owner, selected branch/incarnation and committed basis, unique proposal,
 selected schema/definition/version, installed association, exact audience and
-full-generation scope/row occurrences. Before is the immutable predecessor;
-after is the actually applied candidate. No raw WorkingState or freely reusable
-read handle crosses the facade. Query receives only the compiled projection and
-change loans needed for the generic provider update. Roots for ALL affected
-scopes are prepared and sealed before the first invariant. Failure drops the
-entire staged set; there is no partial-success visibility.
+full-generation scope/row occurrences. For an ordinary proposal, before is the
+immutable predecessor and after is the actually applied candidate. Sealed
+materialization instead consumes the exact interpretation defined below; it
+never substitutes physical removal for logical Source change. No raw
+WorkingState or freely reusable read handle crosses the facade. Query receives
+only the compiled projection and change loans needed for the generic provider
+update. Roots and physical dispositions for ALL affected scopes are prepared
+and sealed before the first invariant. Failure drops the entire staged set;
+there is no partial-success visibility.
 
 `PreparedManagedIndexSource` owns immutable data/support and original payer
 custody, not an Execution grant. Each real planner/evaluation observation asks
@@ -622,6 +701,194 @@ Type placement is mandatory, not left to naming preference:
 Existing manifests provide `worth-proof` and `worth-foundational` to Native and
 Query Installation/Execution; Declaration already has foundational vocabulary.
 Do not hand-roll proof types in Declaration or add a substrate dependency cycle.
+
+#### Sealed Source Interpretation, Suspension And Resumption
+
+**Decision.** One Native-owned interpretation travels with the applied draft,
+its Source preparation, every actual observation and the single-use publication
+candidate. Logical Source basis and physical candidate/publication basis are
+distinct typed associations. The installed declaration cannot select this
+posture. The governing present owners are
+[proposal issuance](../../crates/worth-relational/src/mvcc/validation/proposal_identity.rs),
+[custom semantics](../../crates/worth-relational/src/validation/engine/observation/custom_semantics.rs),
+[scope planning](../../crates/worth-relational/src/validation/custom_rule/scope_planner.rs),
+[evaluation](../../crates/worth-relational/src/validation/custom_rule/execution_context.rs)
+and [structural Source binding](../../crates/worth-relational/src/validation/custom_rule/structural_source.rs).
+These paths already distinguish physical native checks from logical custom
+reads. Phase 2 extends their custody; it does not install a Query replacement
+for that policy.
+
+Only the real owner-admitted materialization-only proposal can carry sealed
+Suspend. Ordinary field/lifecycle edits or a reconstructed candidate cannot
+acquire that posture by copying its mode or association. A mixed logical write
+cannot be hidden behind before-image reads: Native must reject an invalid
+materialization association, and genuine logical changes use their intended
+applied Source and domain validation.
+
+| Native-issued posture | Actual invariant Source pair | Physical successor |
+| --- | --- | --- |
+| Ordinary applied proposal | Actual committed Source and actual applied Source, at their respective real versions | Ready only for the admitted matching physical Source/root |
+| Sealed Suspend | Committed and proposed custom reads both use the actual logical before-image at the sealed source version | Suspended/unavailable; retained logical payload is not physical Ready |
+| Rematerialization applied proposal | Committed physical Source retains its actual suspended/unavailable posture; proposed Source is the actual reconstructed candidate | Ready only after exact correspondence or admitted reconstruction and all invariant/publication checks |
+
+Rematerialization has no implicit logical-before substitution today. Its managed
+`pair.committed().query(...)` therefore returns typed unavailable when that
+actual committed physical Source is unavailable; it cannot expose the retained
+logical root as that view. `pair.proposed()` reads the real reconstructed values.
+The retained logical Source can serve only a separately Native-authorized
+logical/historical loan. No new application flag or historical-root argument
+opens one. A genuine pre-suspension historical reader keeps its own basis.
+
+| Type and owner | Construction, consumption and limit |
+| --- | --- |
+| `ManagedSourceInterpretationCommitment`, Foundational | Canonical portable interpretation/Source-plan revision meaning. No live basis, availability or read authority can be reconstructed from it. |
+| `NativeManagedSourceInterpretation`, Relational | Opaque live association; private variants are ordinary applied, sealed suspension and rematerialization applied. Native's materialization/proposal owners mint it from actual custody and applied state. Query cannot construct it from a mode, root ID or ordinal. |
+| `PreparedManagedIndexSource`, Relational | Owns exact Source/support, logical and physical associations, original payer and prepared scope closure. Its new observation loan consumes the installed Source audience and the actual observation's interpretation; retained data is not retained Execution authority. |
+| `AdmittedManagedIndexSourceAudience`, Proof | Existing planned legality witness remains bound to the actual installed Native issuer and receiving audience, including the permitted Source posture. A foreign issuer opens no receiver. |
+| `AdmittedManagedIndexSourceCorrespondence`, Proof | Native-minted legality witness for reusing this exact logical payload as the specified new physical Source. Bound to its installed issuer; consumed with the sealed live Native correspondence, never accepted as a portable digest claim. |
+| `ManagedIndexBranchImage`, Query managed resource | One persistent directory holds the Native-bound interpretation, physical availability and optional logical/physical payload shares. Its private entries distinguish physical Ready from suspended logical-only and other unavailable states. It mints no Source grant. |
+
+The Native interpretation binds runtime/selected branch, before basis and
+physical proposal, real logical Source version, materialization occurrence and
+manifest, installed Source/schema/definition/audience and full-generation scope
+and row occurrences. Source data may be shared when unchanged; an association
+for the physical proposal is never produced by changing the version on that
+data. Every planner and evaluator reborrows against its own genuine observation,
+the exact Source views and that interpretation. Existing `InvariantSourceAffinity`
+comparisons remain strict. In particular,
+[the structural paired proof](../../crates/worth-relational/src/derived_relation/structural/changes/proof.rs)
+continues to require `after.version == proposal.proposed_version_id()`. A sealed
+suspension logical pair cannot be cast to that proof; the managed Source loan
+uses the separately bound Native interpretation and its actual older Source
+version. Equal proposal ordinals or an observation from another validation
+family cannot authenticate that loan.
+
+**Preparation and discovery.** The existing
+[materialization port](../../crates/worth-relational/src/branch/owner_services/materialization_port.rs)
+already validates custody branch/suspension basis and exact record manifest
+before rematerialization validation. Extend that owner to attach a sealed,
+owned Source association to the transaction before its actual apply/validation.
+After apply, Native binds it to the genuine candidate before the FIRST invariant.
+Its retained backing shares the original custody/payer; it is not another
+restoration token, registry or transferable grant. Current
+[producer continuity preparation](../../crates/worth-relational/src/history/data/codec_retirement_closure/materialization/capture.rs)
+runs after `transaction.validate` and cannot serve as this pre-first association
+or as index Source equivalence. Producer/required-output law remains its owner.
+
+Discover scopes from the union of actual logical Source changes and physical
+availability changes. Start with Native's complete applied effects and sealed
+[materialization manifest](../../crates/worth-relational/src/branch/owner_services/materialization_port/source_manifest.rs),
+using compiled before/after reverse scope/projection paths and genuine retained
+Source support where physical payload is absent. Include unopened, empty, new,
+leaving, indirect and full-generation scopes. An unchanged logical Source during
+Suspend does not remove affected scopes from scheduling: every live logical
+scope whose availability changes receives its installed rule invocation and
+joined receipt. Physical suspension is not logical scope retirement. A retired
+logical scope and a live-but-physically-unavailable scope have distinct Native
+dispositions. Resume likewise routes its complete manifest and actual projected
+changes, not just already-open roots. Missing inverse/support custody refuses
+preparation; it is not empty membership or permission to scan all scopes.
+
+An existing branch-wide physical/admission suspension gate is carried once by
+the Native/World branch association and checked by every public current read.
+Do not expand that shared gate by enumerating all Source scopes or registrations.
+Scoped rule scheduling still covers every compiled Source projection/support
+affected by the actual manifest and logical/physical row changes, including
+unopened scopes; the shared public gate is neither a substitute for that closure
+nor a business-rule Source delta. Unaffected logical scopes need no fabricated
+row change merely because public branch admission is suspended.
+
+Prepare an admitted cold logical root from the real before-image when Suspend
+affects an unopened scope and cold policy permits it. If that Source or original
+allocation admission is unavailable, refuse before effects; do not invent an
+empty root. Availability changes invalidate affected public Source observations
+under complete conservative Source dependence even when logical values match.
+Logical reuse by a Native rule does not certify public currentness or narrow
+membership/conflicts. Original-request work includes manifest routing, reverse
+support, scope admission, maintenance and availability delivery; zero logical
+delta does not mean zero work. There is no all-query/all-scope or warm Source
+roster sweep. Ordinary warm bounds remain unchanged; admitted cold construction
+is explicit per-scope O(N), not hidden in a warm slope.
+The actual materialization owner's residency/probe and complete-manifest work
+also belongs to its named materialization lane; it is not free Source work or
+evidence of ordinary warm locality.
+
+**Publication and lifetime.** During Suspend, stage a logical-only root share and
+a Native-sealed unavailable physical disposition, not a Ready physical header.
+The one existing registry owns their lifetime; the same managed branch image
+contains both meanings. Retain only required immutable projection/support,
+provider pages and genuine Source custody with their original reservations.
+There is no second logical store, ever-retained history ledger, active read loan
+or Execution request in the cache. Retained historical/sibling owners may keep
+their genuine backing alive; disposal releases it after the last relevant
+resource/reader/staging owner, outside cutover locks.
+
+Extend the existing required `SourceInvalidationOwner` participant and Native
+`PreparedPublicationCompanionEffect` to one fixed compound effect over its branch
+mark and managed-image cells. Native verifies every selected predecessor and
+registration generation and acquires the fixed cells in owner-defined order
+before irreversible movement. It installs graph, branch marks, interpretation,
+physical availability and matching root states together at the Native/World
+boundary. No second participant, late root callback, allocation, fallible work
+or final backing destructor runs in that swap. Refusal/cancel/discard before
+irreversible movement releases staging and leaves prior truth AND availability
+unchanged. An unresolved World publication retains its existing recovery
+custody until settlement.
+
+Native component movement and World-head settlement remain distinct real
+stages. Extend the existing selected composite read/recovery ownership to retain
+the exact predecessor managed image with its genuine Native basis, and the
+prepared successor while settlement is pending. Native-issued read association
+and Query's selected composite lease consume the same image; a branch name or
+current-cell lookup cannot select it for an older World basis. Public readers
+therefore see the image for their admitted World/Native selection or typed
+unavailable, never a new component root with an old World root. This adds custody
+to existing owners, not a numeric-basis lookup registry. Historical metadata
+alone must not keep every provider image alive; actual retained readers,
+registered resources and unresolved publications own the necessary shares and
+release superseded staging at settlement.
+
+Public current admission always precedes selecting or exposing the physical
+root. Preserve the real `PrincipalRefusal::BranchMaterializationSuspended` when
+principal admission stops there; an otherwise admitted managed read with
+unavailable physical Source preserves `SnapshotUnavailable`. Neither becomes
+`NotReady`, cold empty success or a stale logical answer. Legacy cache-lifecycle
+observations do not certify current physical Ready or disclose suspended Source
+metadata in advance of admission. Native-authorized logical reads and physical
+current readiness are different consumers of this same resource.
+
+**Resumption.** Only the real materialization owner can establish the resumed
+Source association. Native derives exact correspondence from genuine suspension
+custody, the selected suspension basis/manifest, actually applied reconstructed
+Source and complete compiled projection/dependency/scope support. The proof
+includes schema/Source/provider version, ordering/absence/codec meaning, full
+generations, branch and the unchanged-outside-closure evidence. Manifest equality,
+producer continuity, equal values or root identity alone is insufficient.
+Native issues the correspondence witness only after those checks on the original
+request. Query must also bind it to its actual selected composite/branch
+incarnation; Native cannot mint World authority.
+
+For correspondence checking, Native may reborrow retained logical Source only
+under the installed derived-preparation audience, explicitly as historical
+Source at its real version. This loan does not itself certify payload reuse,
+make that Source the rule's committed physical view or admit a public read.
+Correspondence must establish equivalence of the retained payload's complete
+Source meaning to the actual reconstructed Source. Without that equivalence,
+reconstruct from the actual candidate under cold policy or refuse; never treat
+the missing committed physical image as an empty before-image or infer reuse
+from a comparison of the values that happened to be queried.
+
+Consume that exact correspondence to share an immutable provider payload and
+Source backing, while minting a fresh header for the actual reconstructed
+physical basis. Without correspondence, perform admitted reconstruction from
+the real candidate physical Source under the declared cold policy, or return
+typed refusal. All proposed-root checks and every required invariant still run;
+reuse is not an invariant skip. Stage the resulting Ready successor after
+actual apply, before the first invariant, and publish only it after successful
+coordinated cutover. Completion transaction matching or a later restoration
+callback cannot make a root Ready.
+An ordinary valid non-suspended commit still publishes its prepared Ready root
+so a subsequent public open attaches it without consumer reconstruction.
 
 #### One Resource, Two Read Postures And Atomic Publication
 
@@ -675,8 +942,11 @@ generation and candidate/root association, then holds the fixed cutover cells.
 Matching graph, Source and provider root images become visible together at the
 existing canonical/World publication boundary. No allocation, fallible work,
 provider callback or final backing destruction runs in that swap. No reader may
-select a new graph with an old root or the converse. Native publishes only the
-prepared payload judged by the invariant; it cannot rebuild it at publication.
+select a new graph with an old root or the converse. For an available physical
+Source, Native publishes only the prepared payload judged by the invariant;
+it cannot rebuild it at publication. Sealed Suspend publishes the matching
+unavailable disposition and separately authorized logical share specified
+above, never that logical share as physical Ready.
 
 Refusal, cancellation, stale basis, failed validation or discard leaves every
 committed image unchanged and releases staged Source/pages/pins after locks are
@@ -724,6 +994,17 @@ let after = pair.proposed().query(&Prefix { prefix: name.clone() })?;
 // The rule's own string owner performs exact uniqueness refinement on `after`.
 ```
 
+`proposed()` means the actual Native-authorized custom Source, not an assertion
+that physical payload is materialized. During sealed Suspend both loans name
+the real logical before-image; during rematerialization only `proposed()` names
+the reconstructed candidate and unavailable committed reads remain typed.
+Application suspension, reconstruction and restoration keep the existing
+`suspend_current_generated_output`, `reconstruct_generated_output` and
+`restore_generated_output` receivers and their custody/recovery results. No
+managed-index argument, boolean or root ID can opt a caller into these postures.
+The compiled application example must show the public suspended denial and real
+resumed current query, alongside the ordinary preparation/invariant example.
+
 The ordinary declared invariant read/applicability closure is still required.
 `retain_managed_index` has no caller scope/root argument; a reference to an
 undeclared index or an unfrozen scope is denied. The actual box adapter uses
@@ -763,7 +1044,16 @@ arbitrary refusal ceiling conceals it. The existing 1,000/2,000 geometry court
 must measure Source/reverse/scope work as well as provider work after both
 providers are integrated, with declared growth/headroom, not fitted exact counts.
 
-Version the added invariant requirement and canonical Source-plan meaning.
+Version the added invariant requirement and canonical Source-plan meaning,
+including the fixed platform interpretation-policy revision. This revision
+distinguishes ordinary applied, sealed suspension and real rematerialization;
+applications cannot select the interpretation by naming a revision. New
+invariant-Source archive records must encode policy revision 1 explicitly,
+with canonical token `managed-source-interpretation-v1`;
+missing/older incompatible interpretation meaning refuses installation rather
+than defaulting to physical-after or reinterpreting bytes. Declaration,
+installation and archive codecs must agree before qualification. Existing
+Phase 1 index records/provider meaning remain unchanged.
 Existing public Phase 1 declarations retain their meaning and need not opt into
 invariant access. An old or incompatible plan/root cannot satisfy the new loan;
 installation refuses or a fresh binding rebuilds under admission. Do not
@@ -789,7 +1079,8 @@ provider prepares an isolated next root without changing any retained committed
 root. Query stages that root before dependent invariants; Relational remains the
 source/candidate authority and original commit owner. Publication makes the
 matching graph/root visible together. `DecisionReader` in `prepare_decision` uses
-committed custody; the installed invariant uses candidate custody. Branches,
+committed physical custody; the installed invariant uses Native's interpreted
+candidate custody, including the sealed logical suspension posture. Branches,
 incarnations and definition versions remain distinct. A descriptor or caller's
 root identity cannot stand in for framework-issued custody.
 
@@ -805,22 +1096,28 @@ on names, rename/retire/recreate a record. Both providers must work through both
 readers. Compare candidate and committed answers to independent exhaustive
 references. Include stale-root, sibling-branch and slot-generation twins,
 cancellation during maintenance, refusal after root preparation and successful
-commit. The chain case at 1,000/2,000 vertices must expose rebuild growth;
+commit. The real suspension/rematerialization court above must prove logical
+rule semantics, physical unavailability, exact resumption and both availability
+directions under cancellation. The chain case at 1,000/2,000 vertices must expose
+rebuild growth;
 observations cover maintenance and scope acquisition, not only the query kernel.
 
 **Documentation and completion.** Extend `docs/build-an-application.md` and
 `workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md`
 with compiled preparation/candidate examples, atomicity and unavailable/rebuild
 semantics. The application guide owns the ordinary two-facade examples, cold
-policy and independent READ explanation. The internal schema-validation guide
-owns Native invariant audience/staging/atomicity explanation and links directly
-to the governed compiled application examples; do not register its internal
+policy, independent READ, existing generated-output suspension/reconstruction/
+restoration receivers and current unavailable versus historical-read behavior.
+The internal schema-validation guide owns Native interpretation, actual Source
+versions, observation reborrowing, staging, atomicity and resumption
+correspondence, and links directly to the governed compiled application
+examples; do not register its internal
 engine examples as consumer documentation. The capability index must lead to
 both read postures and their typed limits. Preserve the owning compiled-region
 inventory, facade and boundary/context checks when the implementation lands.
-Close when both providers pass the unopened/new-scope court above,
-root/currentness/refusal and growth evidence. No private pin, adapter rewrite or
-CAD cutover is required here.
+Close when both providers pass the unopened/new-scope and real materialization
+courts above, root/currentness/refusal and growth evidence. No private pin,
+adapter rewrite or CAD cutover is required here.
 
 ### Phase 3: Complete Membership, Exact Refinement And Disclosure
 
