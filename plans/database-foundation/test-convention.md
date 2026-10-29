@@ -18,11 +18,11 @@
 - **Grouping rule (mechanical).** Courts whose resolved normal and dev dependency sets are equal, as `cargo metadata` reports them, belong in one court crate. A court whose dependency set differs, because it needs more or fewer crates, gets its own crate named for what distinguishes it. Two examples:
   - `host-process` stays separate only if its dependencies differ from `host`'s, for example the rail executable or process-harness crates.
   - A small court with a narrower dependency set stays separate. Small is cheap when the surface is narrow. Never fold a narrow court into a wider one: that is surface collapse.
-- **Adding a court** means placing a module in the court crate that matches its dependency set (law 20). A new crate is justified only by a new dependency set or by the size ceiling in Ã‚Â§5.
+- **Adding a court** means placing a module in the court crate that matches its dependency set (law 20). A new crate is justified only by a new dependency set or by the size ceiling in §5.
 
 ## 3. Shared fixtures (law 3)
 
-- **Fixtures live in testkit crates,** named `<workspace>-testkit`, or `<workspace>-testkit-<family>` once split (Ã‚Â§5). Testkits replace v2's `-worlds` crates.
+- **Fixtures live in testkit crates,** named `<workspace>-testkit`, or `<workspace>-testkit-<family>` once split (§5). Testkits replace v2's `-worlds` crates.
 - **Production never depends on a testkit.** The boundary rule enforces this.
 - **A testkit is compiled once.** Courts depend on it; it never depends on a court.
 
@@ -49,7 +49,7 @@ A test's category is a top-level module segment inside its court binary, never a
 - **Court-crate ceiling:** a court crate or testkit crate splits when its Rust source exceeds **15,000 lines**. The boundary tool measures this on the diff.
   - The number is provisional. Calibration: the pre-split Query host court was about 61,000 lines and compiled in 977 s, which is costly per line because tests instantiate Query's generics.
   - Record each court's LLVM IR line total (`cargo llvm-lines`, law 7) once at the landing. That is the deterministic codegen measure the owner will use to replace this proxy.
-- **Splits follow the next area:** owner module, requirement family or world family. Each resulting crate keeps the Ã‚Â§2 naming, for example `worth-query-court-host-certification`.
+- **Splits follow the next area:** owner module, requirement family or world family. Each resulting crate keeps the §2 naming, for example `worth-query-court-host-certification`.
 - **No other split trigger.** A split never happens because a timing report said so.
 - **No merges by test count.**
 
@@ -62,7 +62,7 @@ The boundary-check test-topology rule enforces the following in governed workspa
 - court and testkit names follow the pattern;
 - no production dependency on a court or a testkit;
 - court-crate and testkit line ceilings;
-- category segments drawn from the Ã‚Â§4 set only;
+- category segments drawn from the §4 set only;
 - no filter in `query_gate.py` or the nextest config selects by name regex;
 - no test name carries a milestone or ticket id.
 
@@ -72,7 +72,7 @@ Checks run on the diff by default and on the whole tree at the gate.
 
 - **No test is deleted, weakened or `#[ignore]`d.** Prove it with before and after multisets of test names per workspace. Module paths may change. Names may change only by stripping a milestone or ticket id; list each such rename.
 - **A test that relied on being alone in its process** goes under `process::serial::`, or is fixed. Find these by reading.
-- **Tests needing private access** stay unit tests, within Ã‚Â§1's limits.
+- **Tests needing private access** stay unit tests, within §1's limits.
 - **Record structural measures:** test-target count, court-crate count, lines per court and testkit crate, and the crate graph. One build-time sample per landing is telemetry only.
 
 

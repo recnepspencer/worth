@@ -32,41 +32,32 @@ pub(super) fn observed(
     source_construction::inventory(root, &owner.crate_root.join("src"))
 }
 
-pub(super) fn validate(root: &Path, owner: &GovernedCrate) -> Vec<Diagnostic> {
+pub(super) fn load(root: &Path) -> Result<Baseline, String> {
+    match std::fs::read_to_string(root.join(BASELINE)) {
+        Ok(text) => serde_json::from_str(&text).map_err(|e| format!("{BASELINE}: {e}")),
+        Err(error)
+            if error.kind() == std::io::ErrorKind::NotFound && !root.join(".git").exists() =>
+        {
+            Ok(Baseline::new())
+        }
+        Err(error) => Err(format!("{BASELINE}: {error}")),
+    }
+}
+
+pub(super) fn validate(root: &Path, owner: &GovernedCrate, baseline: &Baseline) -> Vec<Diagnostic> {
     let observations = match observed(root, owner) {
         Ok(value) => value,
         Err(error) => return vec![failure(&owner.relative_crate_root, error)],
     };
-    let baseline: Baseline = match std::fs::read_to_string(root.join(BASELINE)) {
-        Ok(text) => match serde_json::from_str(&text) {
-            Ok(value) => value,
-            Err(error) => return vec![failure(BASELINE, error.to_string())],
-        },
-        Err(error)
-            if error.kind() == std::io::ErrorKind::NotFound && !root.join(".git").exists() =>
-        {
-            Baseline::new()
-        }
-        Err(error) => return vec![failure(BASELINE, error.to_string())],
+    let known = |item: &Construction| {
+        baseline
+            .get(&item.source)
+            .and_then(|tests| tests.get(&item.test))
+            .is_some_and(|constructors| constructors.contains(&item.constructor))
     };
-    let baseline: BTreeSet<Construction> = baseline
-        .into_iter()
-        .flat_map(|(source, tests)| {
-            tests.into_iter().flat_map(move |(test, constructors)| {
-                let source = source.clone();
-                constructors
-                    .into_iter()
-                    .map(move |constructor| Construction {
-                        source: source.clone(),
-                        test: test.clone(),
-                        constructor,
-                    })
-            })
-        })
-        .collect();
-    let existing = observations.intersection(&baseline).count();
+    let existing = observations.iter().filter(|item| known(item)).count();
     if existing > 0 {
         println!("test-topology: {}: {existing} baselined source-test construction witnesses (report mode)", owner.package);
     }
-    observations.difference(&baseline).map(|item| failure(&item.source, format!("new source court `{}` constructs `{}`; move to a court or audit private logic before adding a baseline exception", item.test, item.constructor))).collect()
+    observations.iter().filter(|item|!known(item)).map(|item| failure(&item.source, format!("new source court `{}` constructs `{}`; move to a court or audit private logic before adding a baseline exception", item.test, item.constructor))).collect()
 }

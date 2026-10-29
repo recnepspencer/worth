@@ -97,6 +97,7 @@ fn validate_configured(
     let manifests = owners(&root)?;
     let stems: Vec<_> = config.workspaces.iter().map(|w| w.stem.as_str()).collect();
     let mut diagnostics = selectors::validate(&root);
+    let mut source_debt: Option<source_baseline::Baseline> = None;
     for (manifest, (stem, member)) in &manifests {
         let value = manifest_value(manifest)?;
         let owner = owner(&root, manifest, &value)?;
@@ -182,7 +183,14 @@ fn validate_configured(
                     &stems,
                     member.production_dependencies.as_deref(),
                 ));
-                diagnostics.extend(source_baseline::validate(&root, &owner));
+                if source_debt.is_none() {
+                    source_debt = Some(source_baseline::load(&root)?);
+                }
+                diagnostics.extend(source_baseline::validate(
+                    &root,
+                    &owner,
+                    source_debt.as_ref().unwrap(),
+                ));
             }
         }
         // Even dev dependencies would invalidate the leaf property.

@@ -49,7 +49,7 @@ fn inspection_resolves_every_definition_against_actual_compiled_binding_before_u
         definition: definition.clone(),
     };
     assert_eq!(
-        validate_definitions(&[valid.clone()], &bindings)
+        validate_definitions(std::slice::from_ref(&valid), &bindings)
             .unwrap_err()
             .kind(),
         Kind::InspectionUnavailable
