@@ -5,7 +5,10 @@
 ## 1. Product crates (laws 2 and 4)
 
 - **`src/` keeps only unit tests,** in `#[cfg(test)]` modules covering the module's own private logic.
-- **A `src` test module may not construct** the application runtime, a session, or any type from a crate its own crate does not own. A test that does is a court in disguise, and it moves to a court crate.
+- **A `src` test module may not construct a runtime root.** **[adaptation]** A runtime root is a type registered in `tools/boundary-check/config/runtime-roots.toml`, following law 2's check ("a registry of runtime roots that are forbidden in `src` test modules"). A test that constructs one is a court in disguise, and it moves to a court crate.
+  - **A runtime root hosts or drives work.** Examples: the application runtime, installation runtimes, sessions, store, media and custody handles, and execution entry points submitted to an executor (`ExecutionRequest`, `SerialRequest`).
+  - **Value and vocabulary types are not runtime roots, whatever crate owns them.** Examples: keys, identities, revisions, digests, enums, laws, budgets and cancellation tokens. A unit test may build these freely.
+  - **Each registry entry carries a one-line reason.** Adding a type to the registry is a reviewed change, like an exemption.
 - **No `#[path]` mounts into `tests/`.** A product package has no `tests/` directory.
 - **A library with no unit tests sets `[lib] test = false`.**
 - **A test edit never recompiles production code.**
@@ -75,33 +78,14 @@ Checks run on the diff by default and on the whole tree at the gate.
 - **Tests needing private access** stay unit tests, within §1's limits.
 - **Record structural measures:** test-target count, court-crate count, lines per court and testkit crate, and the crate graph. One build-time sample per landing is telemetry only.
 
+## Track sequencing and retired checker claims
 
-## Track A2 slice sequencing and retired v2 proofs
+The coordinator sequences source migration after the reviewed Slice 1 regroup.
+The committed source baseline reports existing registered runtime-root tests;
+new runtime-root constructions are refused. Slice 2 completes the macro-aware
+inventory and private-access audit before moving source families.
 
-The coordinator's slice decision retains existing source courts in report mode
-against `tools/boundary-check/config/src-court-baseline.json`; only new
-construction evidence is refused. Slice 2 audits private access before moving
-families, without widening product APIs. The 300-case stop is superseded.
-
-Convention v3 sections 2, 4 and 5 deliberately retire v2's sole-class manifests,
-unclassed-test refusal, second-class-module refusal, executable exceptions,
-120-second decisions and count-based merges. Boundary and timing tool tests
-that asserted those claims are replaced with the corresponding v3 negative
-and positive proofs. Other target, ownership, alias, membership and harness
-refusals remain covered. Query and bank test bodies and ignore statuses remain
-subject to the exactness proof. Repeated behaviour leaves retain their distinct
-full module paths; requiring leaf-name uniqueness would conflict with section7's
-unchanged-name requirement for the pre-existing multiset.
-
-
-### Slice 1 source baseline
-
-`tools/boundary-check/config/src-court-inventory.json` preserves the702
-manually confirmed cases. `src-court-baseline.json` in the same directory adds
-the constructor/generator evidence discovered by the module-graph scan of the
-existing source tests. These additional static candidates have not yet received
-the complete private-access audit; they are reported, not declared movable.
-New constructor evidence, new source tests reaching an existing fixture, and
-new opaque source-test generator calls are refused. Scope follows Cargo members;
-the external consumer fixture workspace remains excluded. Slice 2 audits the
-families and reduces the baseline as movable tests leave product source.
+The amended v3 section 1 retires the earlier claim that constructing any foreign
+value or arbitrary opaque generator makes a court. Their checker tests now prove
+that vocabulary enums and value-only generators pass. Runtime alias, helper,
+struct-literal, macro-argument and factory proofs retain the work-host boundary.

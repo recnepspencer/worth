@@ -1,0 +1,255 @@
+# Runtime roots host or drive work. Values, budgets, identities and tokens are excluded.
+# Derivation evidence: target/lane-evidence/runtime-root-shard-{0,1,2}.json.
+
+[[roots]]
+type = "ActiveSubscriptionRuntime"
+reason = "Owns live subscription lanes, attachment lifecycle and delivery counters."
+owner = "workspaces/worth-query/crates/worth-query"
+
+[[roots]]
+type = "BankHttpCleanupRuntime"
+reason = "Custody handle retains the original Bank runtime for native inspection and recovery."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "BankHttpPreparedListener"
+reason = "Retains installed server plus bound listener/router and activates the serving task."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "BankHttpServer"
+reason = "Owns HTTP, dispatcher, continuation, recovery and rail maintenance tasks and live thread."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "BankHttpServerBinding"
+reason = "Owns an already-bound HTTP listener; install consumes that service-hosting endpoint."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "BankIdentityRuntime"
+reason = "Owns the installed Bank workflow/application runtime and drives authenticated request advancement."
+owner = "workspaces/worth-query-bank-world/crates/bank-server"
+
+[[roots]]
+type = "BankPreviewSession"
+reason = "Owns an exact retained product observation used for Bank preview request execution."
+owner = "workspaces/worth-query-bank-world/crates/bank-server"
+
+[[roots]]
+type = "BankRailCallbackServer"
+reason = "Owns callback server and maintenance tasks plus retained completion runtime route."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "BankRailCallbackServerBinding"
+reason = "Owns an already-bound callback endpoint before installing the runtime-backed service."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "BridgeConditionalRuntimeBuilder"
+reason = "Owns the Bridge-owned Signal runtime and installs live conditional/clock/async work before sealing it."
+owner = "crates/worth-runtime-bridge"
+
+[[roots]]
+type = "CompletionDelivery"
+reason = "Private sender root owns bounded completion custody, timer/wake state and HTTP client and drives retransmission in run."
+owner = "workspaces/worth-query-bank-world/crates/bank-external-rail"
+
+[[roots]]
+type = "CorrectionCustody"
+reason = "Owns native correction operation states and drives their advance, close and cleanup lifecycle."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "DepositCustody"
+reason = "Owns native active/completed/terminal operation custody and drives advance, close, and cleanup lifecycle."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "DisbursementCustody"
+reason = "Owns native estate disbursement operation states and drives their advance, close and release lifecycle."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "EstateCorrectionCustody"
+reason = "Owns native active/completed/terminal operation custody and drives advance, close, and cleanup lifecycle."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "ExecutionAuthority"
+reason = "Owns executor worker pool and live worker/memory ledger used to lease and drive execution."
+owner = "crates/worth-execution"
+
+[[roots]]
+type = "ExecutionMap"
+reason = "Owns admitted work batches and directly dispatches kernels through its run/run_owned entrances."
+owner = "crates/worth-execution"
+
+[[roots]]
+type = "ExecutionRequest"
+reason = "Serial/leased execution entry that opens accounted native work scopes and runs executor callbacks."
+owner = "crates/worth-execution"
+
+[[roots]]
+type = "ExecutionResourceLease"
+reason = "Owns live executor authority/lease lineage and admits worker entries and retained memory for work."
+owner = "crates/worth-execution"
+
+[[roots]]
+type = "ExecutionRounds"
+reason = "Drives executor barrier rounds through run_ordered_until rather than merely describing a result."
+owner = "crates/worth-execution"
+
+[[roots]]
+type = "tokio::task::LocalSet"
+reason = "Owns and schedules local asynchronous tasks on the current executor thread."
+
+[[roots]]
+type = "NotificationCustody"
+reason = "Owns native estate notification operation states and drives their advance, close and release lifecycle."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "RailProcessHandle"
+reason = "Spawns, retains and terminates a running separate-process external rail service."
+owner = "workspaces/worth-query-bank-world/crates/bank-external-rail"
+
+[[roots]]
+type = "RailServer"
+reason = "Owns bound rail/control listeners and dispatch custody, spawning sender and connection tasks in serve_until."
+owner = "workspaces/worth-query-bank-world/crates/bank-external-rail"
+
+[[roots]]
+type = "ReapplicationCustody"
+reason = "Owns native reapplication operation states and drives their advance, close and cleanup lifecycle."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "RelationalRuntime"
+reason = "Owns live relational runtime state and owner/admitted-operation tenure."
+owner = "crates/worth-relational"
+
+[[roots]]
+type = "RuntimeBridge"
+reason = "Owns live truth adapters, Signal custody and execution reservations and drives Bridge work."
+owner = "crates/worth-runtime-bridge"
+
+[[roots]]
+type = "RuntimeBridgeRelationalSource"
+reason = "Retains a live relational runtime handle and source observation/branch custody registries used to serve graph work."
+owner = "crates/worth-runtime-bridge"
+
+[[roots]]
+type = "SendMoneyCustody"
+reason = "Owns native active/completed/terminal operation custody and drives advance, close, and cleanup lifecycle."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "SerialRequest"
+reason = "Execution entry point submitted to the executor to open accounted inline execution scopes."
+owner = "crates/worth-execution"
+
+[[roots]]
+type = "SignalGraph"
+reason = "Owns the live reactive graph, topology, dependencies, evaluation and observation state."
+owner = "crates/worth-signal"
+
+[[roots]]
+type = "tokio::net::TcpStream"
+reason = "Owns a reactor-backed live TCP transport medium that performs asynchronous network work."
+
+[[roots]]
+type = "WithdrawalCustody"
+reason = "Owns native withdrawal operation states and drives their advance, close and cleanup lifecycle."
+owner = "workspaces/worth-query-bank-world/crates/bank-http-adapter"
+
+[[roots]]
+type = "WorthQueryApplicationPreviewSession"
+reason = "Owns native speculative-session handle, source lease and runtime destruction custody."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "WorthQueryBranchSession"
+reason = "Live borrowed runtime session driving branch intent execution and retaining admitted basis."
+owner = "workspaces/worth-query/crates/worth-query"
+
+[[roots]]
+type = "WorthQueryExecutionRuntime"
+reason = "Execution-owned installed world root retaining packages, graph and request resource state."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "WorthQueryInstalledOperatingWorld"
+reason = "Owns retained admitted product basis and runtime access used to drive installed operation families."
+owner = "workspaces/worth-query/crates/worth-query"
+
+[[roots]]
+type = "WorthQueryInstalledPackageIndex"
+reason = "Owns installation authority, installed operation/schema tables and live lookup service state."
+owner = "workspaces/worth-query/crates/worth-query-installation"
+
+[[roots]]
+type = "WorthQueryManagedGraphWorkSession"
+reason = "Live work session opened from a capacity-reserved plan with runtime/branch and retained-fact custody."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "WorthQueryOwnedAsyncRequestCustody"
+reason = "Owns the actual native managed asynchronous request admission and its live request handle."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "WorthQueryPreviewSession"
+reason = "Borrowed live runtime session owning pending writes, execution evidence and promotion/discard lifecycle."
+owner = "workspaces/worth-query/crates/worth-query"
+
+[[roots]]
+type = "WorthQueryPrimaryGraphApplicationRuntime"
+reason = "Owns installed application execution, publication, Bridge and product runtime services."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "WorthQueryProductRuntime"
+reason = "Owns live RuntimeWorld, source custody, activation state and branch lifecycle."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "WorthQueryProgramApplicationRuntime"
+reason = "Retains the installed application runtime allocation and drives typed program work."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "WorthQueryRelationalSourceOwner"
+reason = "Owns shared Relational runtime and Bridge subscription custody and drives runtime reads/mutations and snapshot release."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "WorthQueryRuntime"
+reason = "Owns installed execution/backend state and drives Query runtime operations."
+owner = "workspaces/worth-query/crates/worth-query"
+
+[[roots]]
+type = "WorthQueryWorkflowApplicationRuntime"
+reason = "Owns the program runtime and installed workflow/authentication services used to drive workflow work."
+owner = "workspaces/worth-query/crates/worth-query-execution"
+
+[[roots]]
+type = "axum::Router"
+reason = "Hosts composed HTTP handlers/services and dispatches requests through its path/fallback routers."
+
+[[roots]]
+type = "reqwest::Client"
+reason = "Owns the HTTP connection pool and drives outgoing asynchronous network requests."
+
+[[roots]]
+type = "tokio::net::TcpListener"
+reason = "Owns a bound network endpoint and accepts incoming asynchronous service work."
+
+[[roots]]
+type = "tokio::runtime::Runtime"
+reason = "Owns async executor/scheduler and drives spawned tasks and block_on work; Builder.build returns this root."
+
+[[roots]]
+type = "tokio::task::JoinSet"
+reason = "Spawns and owns asynchronous tasks, retaining their execution and cancellation lifetime."

@@ -77,7 +77,18 @@ fn main() {
 
     if topology_report {
         match test_topology::source_report(&root) {
-            Ok(report) => println!("{}", serde_json::to_string_pretty(&report).unwrap()),
+            Ok(report) => {
+                let entries = report.as_array().unwrap();
+                println!("[");
+                for (index, entry) in entries.iter().enumerate() {
+                    println!(
+                        "{}{}",
+                        serde_json::to_string(entry).unwrap(),
+                        if index + 1 == entries.len() { "" } else { "," }
+                    );
+                }
+                println!("]");
+            }
             Err(error) => {
                 eprintln!("{error}");
                 std::process::exit(1);

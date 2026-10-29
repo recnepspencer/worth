@@ -10,6 +10,7 @@ impl Fixture {
         ));
         f.write(CONFIG, "governed | sample\n");
         f.write(EXCEPTIONS, "# no exceptions\n");
+        f.write(runtime_roots::CONFIG, "[[roots]]\ntype='foreign::Runtime'\nreason='Synthetic work host'\nowner='governed'\n[[roots]]\ntype='foreign::OtherRuntime'\nreason='Second synthetic work host'\n[[roots]]\ntype='ApplicationRuntime'\nreason='Owned synthetic work host'\n");
         f.manifest("autotests=false", "", "host");
         f.entry("#[test] fn lawful() {}");
         f

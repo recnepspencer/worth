@@ -7,9 +7,11 @@ use std::{
 
 mod category_paths;
 mod configuration;
+mod construction_factories;
 mod court_manifest;
 mod diff_scope;
 mod production_dependencies;
+mod runtime_roots;
 mod selectors;
 mod source_baseline;
 mod source_construction;
@@ -49,12 +51,13 @@ fn owners(
 
 pub(crate) fn source_report(root: &Path) -> Result<serde_json::Value, String> {
     let root = std::fs::canonicalize(root).map_err(|e| e.to_string())?;
+    let roots = runtime_roots::Registry::load(&root)?;
     let mut observations = BTreeSet::new();
     for (manifest, (_, _)) in owners(&root)? {
         let value = manifest_value(&manifest)?;
         let owner = owner(&root, &manifest, &value)?;
         if !owner.package.contains("-court-") && !owner.package.contains("-testkit") {
-            observations.extend(source_baseline::observed(&root, &owner)?);
+            observations.extend(source_baseline::observed(&root, &owner, &roots)?);
         }
     }
     serde_json::to_value(source_baseline::grouped(observations)).map_err(|e| e.to_string())
@@ -97,7 +100,7 @@ fn validate_configured(
     let manifests = owners(&root)?;
     let stems: Vec<_> = config.workspaces.iter().map(|w| w.stem.as_str()).collect();
     let mut diagnostics = selectors::validate(&root);
-    let mut source_debt: Option<source_baseline::Baseline> = None;
+    let mut source_debt: Option<(source_baseline::Baseline, runtime_roots::Registry)> = None;
     for (manifest, (stem, member)) in &manifests {
         let value = manifest_value(manifest)?;
         let owner = owner(&root, manifest, &value)?;
@@ -168,12 +171,8 @@ fn validate_configured(
                                     b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-'
                                 })
                         }))
-                    || worth.and_then(|w| w.get("testkit")).is_none()
                 {
-                    diagnostics.push(failure(
-                        &relative,
-                        "misnamed testkit or missing testkit metadata",
-                    ));
+                    diagnostics.push(failure(&relative, "misnamed testkit"));
                 }
                 diagnostics.extend(structure_limits::validate(&owner));
             } else {
@@ -184,12 +183,16 @@ fn validate_configured(
                     member.production_dependencies.as_deref(),
                 ));
                 if source_debt.is_none() {
-                    source_debt = Some(source_baseline::load(&root)?);
+                    source_debt = Some((
+                        source_baseline::load(&root)?,
+                        runtime_roots::Registry::load(&root)?,
+                    ));
                 }
                 diagnostics.extend(source_baseline::validate(
                     &root,
                     &owner,
-                    source_debt.as_ref().unwrap(),
+                    &source_debt.as_ref().unwrap().0,
+                    &source_debt.as_ref().unwrap().1,
                 ));
             }
         }

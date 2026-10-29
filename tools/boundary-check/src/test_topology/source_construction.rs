@@ -1,5 +1,5 @@
 //! Syntactic construction evidence and local-fixture propagation for source tests.
-use super::category_paths::test_attribute;
+use super::{category_paths::test_attribute, runtime_roots::Registry};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -27,7 +27,11 @@ struct Function {
     constructors: BTreeSet<String>,
 }
 
-pub(super) fn inventory(root: &Path, source: &Path) -> Result<BTreeSet<Construction>, String> {
+pub(super) fn inventory(
+    root: &Path,
+    source: &Path,
+    roots: &Registry,
+) -> Result<BTreeSet<Construction>, String> {
     let manifest =
         crate::source_documents::read_to_string(&source.parent().unwrap().join("Cargo.toml"))
             .map_err(|e| e.to_string())?;
@@ -125,6 +129,8 @@ pub(super) fn inventory(root: &Path, source: &Path) -> Result<BTreeSet<Construct
                 scope: scope.clone(),
                 imports: inherited,
                 foreign: &foreign,
+                roots,
+                package: &owner.package.replace('-', "_"),
                 functions: &mut functions,
             };
             // The module graph already expanded each inline/file module exactly once.
@@ -191,6 +197,8 @@ struct Functions<'a> {
     scope: Vec<String>,
     imports: BTreeMap<String, String>,
     foreign: &'a BTreeSet<String>,
+    roots: &'a Registry,
+    package: &'a str,
     functions: &'a mut Vec<Function>,
 }
 impl Functions<'_> {
@@ -233,6 +241,9 @@ impl Functions<'_> {
             }
         }
         let mut body = Body {
+            roots: self.roots,
+            package: self.package,
+            variables: BTreeMap::new(),
             imports: &imports,
             foreign: self.foreign,
             scope: &self.scope,
@@ -240,6 +251,22 @@ impl Functions<'_> {
             constructors: BTreeSet::new(),
         };
         body.visit_block(&function.block);
+        if function.attrs.iter().any(|attribute| {
+            attribute
+                .path()
+                .segments
+                .first()
+                .is_some_and(|p| p.ident == "tokio")
+                && attribute
+                    .path()
+                    .segments
+                    .last()
+                    .is_some_and(|p| p.ident == "test")
+        }) && self.roots.matching("tokio::runtime::Runtime").is_some()
+        {
+            body.constructors
+                .insert("tokio::runtime::Runtime::<test-harness>".into());
+        }
         self.functions.push(Function {
             source: self.source.clone(),
             name: self
@@ -275,6 +302,19 @@ impl<'ast> Visit<'ast> for Functions<'_> {
         let Some(owner) = ty.path.segments.last() else {
             return;
         };
+        let inherited = self.imports.clone();
+        let identity = self
+            .imports
+            .get(&owner.ident.to_string())
+            .cloned()
+            .unwrap_or_else(|| {
+                std::iter::once("crate".to_owned())
+                    .chain(self.scope.iter().cloned())
+                    .chain([owner.ident.to_string()])
+                    .collect::<Vec<_>>()
+                    .join("::")
+            });
+        self.imports.insert("Self".into(), identity);
         self.scope.push(owner.ident.to_string());
         for item in &implementation.items {
             if let syn::ImplItem::Fn(method) = item {
@@ -288,6 +328,7 @@ impl<'ast> Visit<'ast> for Functions<'_> {
             }
         }
         self.scope.pop();
+        self.imports = inherited;
     }
     fn visit_item_macro(&mut self, item: &'ast syn::ItemMacro) {
         if let Ok(file) = syn::parse2::<syn::File>(item.mac.tokens.clone()) {
@@ -296,8 +337,19 @@ impl<'ast> Visit<'ast> for Functions<'_> {
             || self.source.ends_with("tests.rs")
             || self.scope.iter().any(|p| p == "tests")
         {
-            // Opaque generators are audited as a family in Slice 2. New calls
-            // cannot add invisible tests behind a previously baselined template.
+            // Keep macro-family evidence only when its arguments construct a
+            // registered root or call a local fixture that does so.
+            let mut body = Body {
+                package: self.package,
+                variables: BTreeMap::new(),
+                roots: self.roots,
+                imports: &self.imports,
+                foreign: self.foreign,
+                scope: &self.scope,
+                calls: BTreeSet::new(),
+                constructors: BTreeSet::new(),
+            };
+            body.visit_macro(&item.mac);
             let generator = item
                 .mac
                 .path
@@ -308,13 +360,14 @@ impl<'ast> Visit<'ast> for Functions<'_> {
                 .join("::");
             self.functions.push(Function {
                 source: self.source.clone(),
-                name: format!("{}::<generator:{generator}>", self.scope.join("::")),
-                test: true,
-                constructors: BTreeSet::from([format!(
-                    "opaque source-test generator {generator}({})",
+                name: format!(
+                    "{}::<generator:{generator}({})>",
+                    self.scope.join("::"),
                     item.mac.tokens
-                )]),
-                ..Function::default()
+                ),
+                test: true,
+                calls: body.calls,
+                constructors: body.constructors,
             });
         }
     }
