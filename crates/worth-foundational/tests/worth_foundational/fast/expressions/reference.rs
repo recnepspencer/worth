@@ -158,7 +158,7 @@ pub(crate) fn render_bool(tree: &Bool) -> String {
     }
 }
 
-pub(crate) struct Seeded(u64);
+pub(crate) struct Seeded(pub(crate) u64);
 
 impl Seeded {
     pub(crate) fn next(&mut self) -> u64 {
