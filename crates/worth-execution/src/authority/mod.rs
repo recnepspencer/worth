@@ -7,9 +7,9 @@ mod serial;
 
 pub use cancellation::{CancellationSource, CancellationToken};
 pub use equivalence::EquivalencePredicate;
-pub(crate) use lease::ResourceReservation;
 #[cfg(test)]
 pub(crate) use lease::SlotRefusal;
+pub(crate) use lease::{ActiveWorkerGuard, ResourceReservation};
 pub use lease::{
     ConstructionDenial, ExecutionAllocationDenial, ExecutionAllocationDenialClass,
     ExecutionAllocationDenialKind, ExecutionAllocationPolicy, ExecutionArray,

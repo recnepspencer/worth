@@ -3,5 +3,3 @@ error: cannot construct `ExecutionMap<_, _, _>` with struct literal syntax due t
   |
 4 |     let _forged: ExecutionMap<u64, u64> = ExecutionMap {};
   |                                           ^^^^^^^^^^^^
-  |
-  = note: private fields `batch`, `_read_sets`, `_write_sets` and `_payload` that were not provided

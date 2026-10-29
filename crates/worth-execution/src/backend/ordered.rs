@@ -1,4 +1,4 @@
-use std::{mem::size_of, panic::AssertUnwindSafe};
+use std::mem::size_of;
 
 use worth_foundational::{
     ExecutionFallbackCause, ExecutionPhysicalReport, ExecutionPosture, ExecutionReport,
@@ -152,10 +152,16 @@ where
             Err(reason) => Err(KernelFailure::Stop(reason)),
             Ok(()) => {
                 let _meter_context = context.enter();
-                super::panic_boundary::contain(AssertUnwindSafe(|| {
-                    step(&state, index, &mut context)
-                }))
-                .unwrap_or(Err(KernelFailure::Panic))
+                let mut returned = None;
+                let panicked = super::panic_boundary::contain(&mut || {
+                    returned = Some(step(&state, index, &mut context));
+                })
+                .is_err();
+                if panicked {
+                    Err(KernelFailure::Panic)
+                } else {
+                    returned.expect("contained ordered step returned")
+                }
             }
         };
         let result = if let Some(reason) = context.checkpoint_stop() {
@@ -187,7 +193,11 @@ where
             }
             other => other,
         };
-        let failure_owner = context.settle_result(&result, |cause| context.failure_owner(cause));
+        context.note_settled_failure(result.is_err());
+        let failure_owner = match result.as_ref() {
+            Ok(_) => None,
+            Err(cause) => Some(context.failure_owner(cause)),
+        };
         match result {
             Ok(step) => {
                 let (next, output, done) = match step {

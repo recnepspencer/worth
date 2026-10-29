@@ -129,28 +129,30 @@ impl super::KernelContext<'_, '_> {
         cause
     }
 
-    /// Settle the run's refused questions before classifying its final result.
-    pub(crate) fn settle_result<R, E>(
-        &self,
-        result: &Result<R, E>,
-        classify: impl FnOnce(&E) -> NestedStopOwner,
-    ) -> Option<NestedStopOwner> {
+    /// Promote a pending refusal once the scope's result is known to have failed.
+    /// Classification stays with the typed caller so this latch is compiled once.
+    pub(crate) fn note_settled_failure(&self, failed: bool) {
         let mut meter = self.meter.borrow_mut();
-        if std::mem::take(&mut meter.pending_request_refusal) && result.is_err() {
+        if std::mem::take(&mut meter.pending_request_refusal) && failed {
             meter.nested_stop.record(NestedStopOwner::Request);
         }
-        drop(meter);
-        result.as_ref().err().map(classify)
     }
 
     pub(crate) fn failure_owner<E>(&self, failure: &super::KernelFailure<E>) -> NestedStopOwner {
-        use super::{KernelFailure, KernelStop};
+        self.owner_of_failure_class(kernel_failure_class(failure))
+    }
+
+    /// One compiled classification of a kernel failure. The variant, not the
+    /// error value, decides the owner, so callers pass [`KernelFailureClass`].
+    #[inline(never)]
+    pub(crate) fn owner_of_failure_class(&self, class: KernelFailureClass) -> NestedStopOwner {
+        use super::KernelStop;
         let meter = self.meter.borrow();
         if meter.nested_stop.owner() == Some(NestedStopOwner::Request) {
             return NestedStopOwner::Request;
         }
-        match failure {
-            KernelFailure::Domain(_) => {
+        match class {
+            KernelFailureClass::Domain => {
                 meter
                     .nested_stop
                     .owner()
@@ -158,22 +160,40 @@ impl super::KernelContext<'_, '_> {
                         NestedComputationStop::DomainFailure,
                     ))
             }
-            KernelFailure::Panic => NestedStopOwner::Computation(NestedComputationStop::Panic),
-            KernelFailure::ResultCapacityExceeded => {
+            KernelFailureClass::Panic => NestedStopOwner::Computation(NestedComputationStop::Panic),
+            KernelFailureClass::ResultCapacityExceeded => {
                 NestedStopOwner::Computation(NestedComputationStop::ResultCapacityExceeded)
             }
-            KernelFailure::Stop(
+            KernelFailureClass::Stop(
                 KernelStop::Cancelled
                 | KernelStop::DeadlineElapsed
                 | KernelStop::WorkCounterOverflow
                 | KernelStop::AccountingUnavailable,
             ) => NestedStopOwner::Request,
-            KernelFailure::Stop(KernelStop::WorkCeiling) => meter.limits.ceiling_owner,
-            KernelFailure::Stop(KernelStop::NestedStopped) => meter
+            KernelFailureClass::Stop(KernelStop::WorkCeiling) => meter.limits.ceiling_owner,
+            KernelFailureClass::Stop(KernelStop::NestedStopped) => meter
                 .nested_stop
                 .owner()
                 .unwrap_or(NestedStopOwner::Request),
         }
+    }
+}
+
+/// The part of a kernel failure that chooses its stop owner.
+#[derive(Clone, Copy)]
+pub(crate) enum KernelFailureClass {
+    Stop(super::KernelStop),
+    Domain,
+    Panic,
+    ResultCapacityExceeded,
+}
+
+pub(crate) fn kernel_failure_class<E>(failure: &super::KernelFailure<E>) -> KernelFailureClass {
+    match failure {
+        super::KernelFailure::Stop(stop) => KernelFailureClass::Stop(*stop),
+        super::KernelFailure::Domain(_) => KernelFailureClass::Domain,
+        super::KernelFailure::Panic => KernelFailureClass::Panic,
+        super::KernelFailure::ResultCapacityExceeded => KernelFailureClass::ResultCapacityExceeded,
     }
 }
 

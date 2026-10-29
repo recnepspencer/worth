@@ -165,7 +165,7 @@ pub(super) fn checked_edit(
         )));
         // This checked edit has ended in admission failure on the context
         // it was asked through, before a child scope could be entered.
-        parent.settle_result(&refused, |_| crate::backend::NestedStopOwner::Request);
+        parent.note_settled_failure(refused.is_err());
         return refused;
     }
     let scope = run_admitting_scope(Some(lease), 0, 0, true, |child| {

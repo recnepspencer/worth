@@ -1,4 +1,4 @@
-use std::{panic::AssertUnwindSafe, vec::IntoIter};
+use std::vec::IntoIter;
 
 use super::{admission::BatchDeclaration, native, panic_boundary::contain, perturbation};
 use crate::authority::ExecutionResourceLease;
@@ -105,7 +105,8 @@ impl<T: Send> InputMode for OwnedInputs<T> {
     fn discard(&mut self) -> Option<usize> {
         let mut first = None;
         for (index, input) in self.0.drain(..).enumerate() {
-            if contain(AssertUnwindSafe(|| drop(input))).is_err() && first.is_none() {
+            let mut input = Some(input);
+            if contain(&mut || drop(input.take())).is_err() && first.is_none() {
                 first = Some(index);
             }
         }
@@ -132,7 +133,8 @@ impl<T> Iterator for OwnedTasks<T> {
 impl<T> Drop for OwnedTasks<T> {
     fn drop(&mut self) {
         for (_, input) in self.values.by_ref() {
-            let _ = contain(AssertUnwindSafe(|| drop(input)));
+            let mut input = Some(input);
+            let _ = contain(&mut || drop(input.take()));
         }
     }
 }

@@ -63,7 +63,7 @@ pub(crate) use activity::{enter_certification_activity, enter_retained_memory, h
 pub(crate) use nested::{record_nested, record_nested_outcome};
 pub use nested_stop::NestedComputationStop;
 use nested_stop::NestedStop;
-pub(crate) use nested_stop::NestedStopOwner;
+pub(crate) use nested_stop::{kernel_failure_class, NestedStopOwner};
 pub(crate) use nested_stop::{request_refusal, request_stop};
 pub(crate) use prepared_context::PreparedMeterContext;
 pub(crate) use structural_span::StructuralSpanFailure;

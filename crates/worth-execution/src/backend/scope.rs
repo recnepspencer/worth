@@ -3,9 +3,11 @@ use crate::{
     report::ChargedBytes,
 };
 
+mod drive;
 mod execution;
 mod native_payload;
 mod settlement;
+mod typed_slot;
 use execution::run_scope_inner;
 pub(crate) use native_payload::run_scope_native_within;
 

@@ -15,10 +15,12 @@ pub(crate) fn run_invoking_scope<R, E>(
         });
     let questions = context.as_ref().map(InvokingQuestions::enter);
     let result = kernel();
-    if let Some(context) = &context
-        && let Some(owner) = context.settle_result(&result, |error| classify(context, error))
-    {
-        context.meter.borrow_mut().nested_stop.record(owner);
+    if let Some(context) = &context {
+        context.note_settled_failure(result.is_err());
+        if let Err(error) = &result {
+            let owner = classify(context, error);
+            context.meter.borrow_mut().nested_stop.record(owner);
+        }
     }
     drop(questions);
     result

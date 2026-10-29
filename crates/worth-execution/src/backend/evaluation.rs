@@ -7,8 +7,6 @@ use super::{
 use crate::authority::ExecutionResourceLease;
 #[cfg(test)]
 use crate::report::ChargedBytes;
-use std::panic::AssertUnwindSafe;
-
 /// Both input modes cross the same checkpoint, panic, capacity, and cost boundary.
 #[cfg(test)]
 pub(super) fn evaluate<I, R, E, F>(
@@ -70,7 +68,8 @@ where
                 // Only owned destruction adds a panic boundary at a skipped item.
                 // A destructor panic replaces the public stop with Panic;
                 // it cannot release the interruption's request ownership.
-                contain(AssertUnwindSafe(|| drop(input)))
+                let mut input = Some(input);
+                contain(&mut || drop(input.take()))
                     .map(|()| Err(KernelFailure::Stop(stop)))
                     .unwrap_or(Err(KernelFailure::Panic))
             } else {
@@ -81,15 +80,26 @@ where
         Ok(()) => {
             let _physical_worker = limits.enter_physical_worker(newly_active_worker);
             let _meter_context = context.enter();
-            contain(AssertUnwindSafe(|| match capture {
-                Some(storage) => {
-                    let captured = context.record_kernel(storage, |context| kernel(input, context));
-                    receipt = captured.1;
-                    captured.0
-                }
-                None => kernel(input, &mut context),
-            }))
-            .unwrap_or(Err(KernelFailure::Panic))
+            let mut input = Some(input);
+            let mut returned = None;
+            let panicked = contain(&mut || {
+                let input = input.take().expect("contained kernel takes its input once");
+                returned = Some(match capture {
+                    Some(storage) => {
+                        let captured =
+                            context.record_kernel(storage, |context| kernel(input, context));
+                        receipt = captured.1;
+                        captured.0
+                    }
+                    None => kernel(input, &mut context),
+                });
+            })
+            .is_err();
+            if panicked {
+                Err(KernelFailure::Panic)
+            } else {
+                returned.expect("contained kernel returned")
+            }
         }
     };
     let result = if let Some(stop) = context.checkpoint_stop() {
@@ -144,7 +154,8 @@ where
             Some(Err(denial)) => {
                 context.record_nested_stop_owner(super::meter::NestedStopOwner::Request);
                 allocation_denial = Some(denial);
-                let disposed = contain(AssertUnwindSafe(|| drop(result)));
+                let mut result = Some(result);
+                let disposed = contain(&mut || drop(result.take()));
                 if disposed.is_err() {
                     allocation_denial = None;
                     Err(KernelFailure::Panic)
@@ -158,7 +169,11 @@ where
         result
     };
     let (work, span) = context.cost();
-    let stop_owner = context.settle_result(&result, |failure| context.failure_owner(failure));
+    context.note_settled_failure(result.is_err());
+    let stop_owner = match result.as_ref() {
+        Ok(_) => None,
+        Err(failure) => Some(context.failure_owner(failure)),
+    };
     if result.is_err() {
         receipt = None;
     }

@@ -17,6 +17,7 @@ mod body_requirement;
 mod body_retirement;
 mod body_selection;
 mod field_presence;
+mod named_field;
 mod operation_body;
 mod predecode_admission;
 mod signed_evidence;
@@ -200,61 +201,19 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        let target = ApplicationOperationDecisionReadTarget::Field {
-            entity: field.entity().to_string(),
-            aspect: field.aspect().to_string(),
-            field: field.field().to_string(),
-        };
-        self.admit_decision_target(&target)?;
-        if !self.reader.identity_is_local(identity, field.entity()) {
-            return Err(WorthQueryInvariantDecisionPlanDenial::new(
-                WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
-                field.entity(),
-            ));
-        }
-        let locator = self
-            .reader
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())
-            .cloned()
-            .ok_or_else(|| {
-                WorthQueryInvariantDecisionPlanDenial::new(
-                    WorthQueryInvariantDecisionPlanDenialKind::FieldNotInstalled,
-                    field.field(),
-                )
-            })?;
-        self.record_field_dependency(identity, field.entity(), locator);
-        Ok(())
-    }
-
-    fn record_field_dependency<Entity>(
-        &mut self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        entity: &str,
-        locator: worth_foundational::facade::AspectFieldLocator,
-    ) {
-        if self.reader.layout.field_is_optional(entity, &locator)
-            && self.admitted_contracts.as_deref().is_some_and(|contract| {
-                field_presence::may_write(contract.touches(), entity, &locator)
-            })
-        {
-            self.decision_facts.record(
-                WorthQueryApplicationFactKey::AspectPresence {
-                    entity: entity.to_owned(),
-                    entity_id: identity.entity_id,
-                    locator: locator.clone(),
-                },
-                DecisionReadOutcome::Observed,
-            );
-        }
-        self.decision_facts.record(
-            WorthQueryApplicationFactKey::Field {
-                entity: entity.to_owned(),
-                entity_id: identity.entity_id,
-                locator,
-            },
-            DecisionReadOutcome::Observed,
-        );
+        let entity = field.entity();
+        let aspect = field.aspect();
+        let field_name = field.field();
+        // Locality is a pure comparison. The concrete core still refuses an
+        // undeclared target before it applies this fact.
+        let local_identity = self.reader.identity_is_local(identity, entity);
+        self.require_named_decision_field(named_field::NamedDecisionField {
+            entity_id: identity.entity_id,
+            entity,
+            aspect,
+            field: field_name,
+            local_identity,
+        })
     }
 
     pub fn require_decision_relation<Relation, From, To>(

@@ -1,27 +1,23 @@
-use super::{ScopeHold, ScopeStop};
-use crate::{LeaseDenial, MapKernelFailure as KernelFailure};
+use crate::authority::ExecutionMemoryReservation;
+use crate::LeaseDenial;
 
-/// Leaves `hold` holding what a completed result keeps, and nothing after a
-/// failure. Holding less never refuses.
-pub(super) fn settle_hold<R, E>(
-    hold: ScopeHold<'_, R>,
-    result: Result<R, KernelFailure<E>>,
-) -> Result<R, ScopeStop<E>> {
-    let kept = match &result {
-        Ok(value) => (hold.kept)(value).ok_or_else(LeaseDenial::charged_bytes_overflow),
-        Err(_) => Ok(0),
-    };
-    let held = kept.and_then(|bytes| {
-        hold.reservation
-            .resize(bytes)
-            .map_err(LeaseDenial::MemoryExhausted)
-    });
-    match (result, held) {
-        (Ok(value), Ok(())) => Ok(value),
-        (Ok(_), Err(denial)) => {
-            let _ = hold.reservation.resize(0);
-            Err(ScopeStop::Admission(denial))
-        }
-        (Err(failure), _) => Err(ScopeStop::Failure(failure)),
-    }
+/// Moves a held reservation to `kept` bytes.
+///
+/// `kept` is the success charge, or the overflow of computing it. A failure
+/// passes zero. This does not release a refused success: the caller drops
+/// that value first, then [`release_held_reservation`], so disposal still
+/// sees the charge the failed resize left in place.
+pub(super) fn apply_held_charge(
+    reservation: &mut ExecutionMemoryReservation,
+    kept: Result<u64, LeaseDenial>,
+) -> Result<(), LeaseDenial> {
+    let bytes = kept?;
+    reservation
+        .resize(bytes)
+        .map_err(LeaseDenial::MemoryExhausted)
+}
+
+/// Releases a held reservation after a refused success has been dropped.
+pub(super) fn release_held_reservation(reservation: &mut ExecutionMemoryReservation) {
+    let _ = reservation.resize(0);
 }
