@@ -6,6 +6,7 @@ use super::{
     meter::{KernelContext, KernelFailure, NestedStopOwner, RunLimits},
     payload_storage::PayloadStorage,
     port::{BackendKind, BatchOutcome, BatchStop, TaskOutcome},
+    run_admission::{admit_batch_prefix, BatchRunPrefixStop},
     settlement, PreparedBatchResources,
 };
 use crate::authority::{ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial};
@@ -33,154 +34,48 @@ where
     E: Send,
     F: Fn(I::Item, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
 {
-    let accounted =
-        !matches!(payload, PayloadStorage::Native) || RunLimits::native_accounting(lease);
     let mut custody = RunCustody::new(inputs, taken, prepared);
-    if lease.is_none() && RunLimits::has_leased_parent() {
-        let outcome = denied(LeaseDenial::unrelated_nested_lease(), accounted);
-        return custody.finish(outcome, batch, charge_parent);
-    }
-    if custody
-        .prepared
-        .as_ref()
-        .is_some_and(|resources| !resources.matches_current_parent())
-    {
-        let outcome = denied(LeaseDenial::unrelated_nested_lease(), accounted);
-        return custody.finish(outcome, batch, charge_parent);
-    }
-    let limits = if let Some(resources) = custody.prepared.as_ref() {
-        resources.dispatch_limits(lease.expect("prepared map requires its lease"), backend)
-    } else {
-        if matches!(payload, PayloadStorage::Native) {
-            RunLimits::for_native(lease, matches!(backend, BackendKind::Serial))
-        } else {
-            RunLimits::for_run(lease, matches!(backend, BackendKind::Serial))
-        }
-    };
-    let requested_posture = if lease
-        .is_some_and(|value| value.resolved_posture() == ExecutionPosture::Automatic)
-        && !limits.force_serial()
-        && !matches!(backend, BackendKind::Serial)
-    {
-        ExecutionPosture::Automatic
-    } else {
-        ExecutionPosture::Serial
-    };
-    let initial_fallback = if requested_posture == ExecutionPosture::Serial {
-        // A lease that resolves serial names why. An automatic lease runs
-        // serial only under a serial oracle: this run's, or the enclosing
-        // run's that its limits inherit.
-        Some(match lease {
-            None => ExecutionFallbackCause::NoLease,
-            Some(value) => value
-                .serial_cause()
-                .unwrap_or(ExecutionFallbackCause::OracleSerial),
-        })
-    } else {
-        None
-    };
-    if batch.len() == 0 && retained.is_none() {
-        let physical = if custody.prepared.is_some() {
-            ExecutionPhysicalReport::new(
-                limits.worker_high_watermark(),
-                limits.peak_memory(),
-                Some(0),
-                0,
-                limits.discarded_work(),
-            )
-        } else {
-            ExecutionPhysicalReport::default()
-        };
-        let outcome = BatchOutcome {
-            values: Vec::new(),
-            stop: None,
-            stop_owner: None,
-            prefix_boundary: None,
-            report: (if accounted {
-                ExecutionReport::new(ExecutionPosture::Serial, 0, 0, physical)
-            } else {
-                ExecutionReport::native(ExecutionPosture::Serial, physical)
-            })
-            .with_fallback(ExecutionFallbackCause::NoWork),
-        };
-        return custody.finish(outcome, batch, charge_parent);
-    }
-    // A lease-free run holds its framework at one worker: its own thread.
-    let max_workers = lease.map_or(1, |value| value.policy().max_workers().get());
-    let memory_bytes = if limits.is_accounted() {
-        custody
-            .inputs
-            .as_ref()
-            .expect("inputs precede accounting")
-            .memory_bytes::<R, E>(batch, payload.input_measure())
-            .and_then(|bytes| {
-                // Retained settlement may enter one native carried-slot context
-                // after all changed workers join, including an empty frontier.
-                let contexts = batch.len().checked_add(usize::from(retained.is_some()))?;
-                bytes.checked_add(limits.framework_context_bytes(contexts, max_workers)?)
-            })
-    } else {
-        Some(0)
-    };
-    let Some(memory_bytes) = memory_bytes else {
-        let outcome = denied(LeaseDenial::charged_bytes_overflow(), accounted);
-        return custody.finish(outcome, batch, charge_parent);
-    };
-    if custody
-        .prepared
-        .as_ref()
-        .is_some_and(|resources| !resources.matches_dispatch(memory_bytes))
-    {
-        let outcome = denied(LeaseDenial::unrelated_nested_lease(), accounted);
-        return custody.finish(outcome, batch, charge_parent);
-    }
-    custody.reservation = if let Some(lease) = lease {
-        let admission_bytes = if custody.prepared.is_some() || custody.taken.is_some() {
-            0
-        } else {
-            memory_bytes
-        };
-        match if limits.is_accounted() {
-            lease.reserve_entry(admission_bytes)
-        } else {
-            lease.reserve_worker_entry()
-        } {
-            Ok(guard) => Some(guard),
-            Err(denial) => {
-                let outcome = denied(denial, accounted);
-                return custody.finish(outcome, batch, charge_parent);
+    let native = matches!(payload, PayloadStorage::Native);
+    let prefix = {
+        let inputs = &custody.inputs;
+        let mut memory_bytes = |limits: &RunLimits, max_workers: usize| -> Option<u64> {
+            if !limits.is_accounted() {
+                return Some(0);
             }
-        }
-    } else {
-        None
+            inputs
+                .as_ref()
+                .expect("inputs precede accounting")
+                .memory_bytes::<R, E>(batch, payload.input_measure())
+                .and_then(|bytes| {
+                    // Retained settlement may enter one native carried-slot context
+                    // after all changed workers join, including an empty frontier.
+                    let contexts = batch.len().checked_add(usize::from(retained.is_some()))?;
+                    bytes.checked_add(limits.framework_context_bytes(contexts, max_workers)?)
+                })
+        };
+        admit_batch_prefix(
+            lease,
+            batch.len(),
+            retained.is_some(),
+            backend,
+            native,
+            custody.prepared.as_ref(),
+            &mut custody.reservation,
+            &mut custody.serial_reservation,
+            &mut custody.taken,
+            &mut memory_bytes,
+        )
     };
-    if let Some(held) = custody.taken.as_mut()
-        && let Err(denial) = held.take_over(lease, limits.serial_memory(), memory_bytes)
-    {
-        // The caller still covers every input. Close the zero-byte entry
-        // before refused inputs can clean up otherwise empty ledger nodes.
-        drop(custody.reservation.take());
-        let outcome = denied(denial, accounted);
-        return custody.finish(outcome, batch, charge_parent);
-    }
-    custody.serial_reservation = match (lease, limits.serial_memory(), &custody.taken) {
-        (None, Some(budget), None) => match budget.reserve(memory_bytes) {
-            Ok(guard) => Some(guard),
-            Err(denial) => {
-                let outcome = denied(LeaseDenial::MemoryExhausted(denial), accounted);
-                return custody.finish(outcome, batch, charge_parent);
-            }
-        },
-        _ => None,
+    let prefix = match prefix {
+        Ok(prefix) => prefix,
+        Err(stop) => return release_prefix_stop(&mut custody, stop, batch, charge_parent),
     };
-    let _memory_activity = if !limits.is_accounted() || custody.prepared.is_some() {
-        None
-    } else {
-        (custody.reservation.is_some()
-            || custody.serial_reservation.is_some()
-            || custody.taken.is_some())
-        .then(|| limits.enter_memory(memory_bytes))
-    };
+    // Activity drops with `prefix`, before limits and before custody's entry.
+    let _memory_activity = &prefix.memory_activity;
+    let limits = &prefix.limits;
+    let requested_posture = prefix.requested_posture;
+    let initial_fallback = prefix.initial_fallback;
+    let accounted = prefix.accounted;
     // The reservation remains alive through settlement and result-vector
     // allocation; the returned values leave the lease at this boundary.
     let mut outcomes: Vec<Mutex<Option<TaskOutcome<R, E>>>> = Vec::new();
@@ -268,6 +163,43 @@ where
         values,
     );
     custody.finish(outcome, batch, charge_parent)
+}
+
+fn release_prefix_stop<I: InputMode, R, E>(
+    custody: &mut RunCustody<I>,
+    stop: BatchRunPrefixStop,
+    batch: &BatchDeclaration,
+    charge_parent: bool,
+) -> BatchOutcome<R, E> {
+    let (outcome, limits) = match stop {
+        BatchRunPrefixStop::Denied {
+            denial,
+            accounted,
+            limits,
+        } => (denied(denial, accounted), limits),
+        BatchRunPrefixStop::NoWork {
+            physical,
+            accounted,
+            limits,
+        } => (
+            BatchOutcome {
+                values: Vec::new(),
+                stop: None,
+                stop_owner: None,
+                prefix_boundary: None,
+                report: (if accounted {
+                    ExecutionReport::new(ExecutionPosture::Serial, 0, 0, physical)
+                } else {
+                    ExecutionReport::native(ExecutionPosture::Serial, physical)
+                })
+                .with_fallback(ExecutionFallbackCause::NoWork),
+            },
+            Some(limits),
+        ),
+    };
+    let outcome = custody.finish(outcome, batch, charge_parent);
+    drop(limits);
+    outcome
 }
 
 fn allocation_refused<R, E>(accounted: bool) -> BatchOutcome<R, E> {

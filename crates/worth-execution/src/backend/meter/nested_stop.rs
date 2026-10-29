@@ -116,17 +116,29 @@ impl super::KernelContext<'_, '_> {
     }
 
     pub(crate) fn refuse_request<E>(&self, cause: E) -> E {
-        self.meter.borrow_mut().pending_request_refusal = true;
+        self.latch_pending_request_refusal();
         cause
+    }
+
+    /// The refusal bit does not depend on the cause type. One compiled latch
+    /// serves every shell that only forwards that cause.
+    #[inline(never)]
+    fn latch_pending_request_refusal(&self) {
+        self.meter.borrow_mut().pending_request_refusal = true;
     }
 
     /// A request fact stops this kernel even when its caller swallows the error.
     pub(crate) fn stop_request<E>(&self, cause: E) -> E {
+        self.latch_request_stop();
+        cause
+    }
+
+    #[inline(never)]
+    fn latch_request_stop(&self) {
         self.meter
             .borrow_mut()
             .nested_stop
             .record(NestedStopOwner::Request);
-        cause
     }
 
     /// Promote a pending refusal once the scope's result is known to have failed.
@@ -199,16 +211,27 @@ pub(crate) fn kernel_failure_class<E>(failure: &super::KernelFailure<E>) -> Kern
 
 /// Mark a refused question on the invoking run, without stopping its kernel.
 pub(crate) fn request_refusal<E>(cause: E) -> E {
+    latch_invoking_request_refusal();
+    cause
+}
+
+#[inline(never)]
+fn latch_invoking_request_refusal() {
     super::ACTIVE_METER.with(|active| {
         if let Some(meter) = active.borrow().last() {
             meter.borrow_mut().pending_request_refusal = true;
         }
     });
-    cause
 }
 
 /// Record an established request stop rather than a refused question.
 pub(crate) fn request_stop<E>(cause: E) -> E {
+    latch_invoking_request_stop();
+    cause
+}
+
+#[inline(never)]
+fn latch_invoking_request_stop() {
     super::ACTIVE_METER.with(|active| {
         if let Some(meter) = active.borrow().last() {
             meter
@@ -217,5 +240,4 @@ pub(crate) fn request_stop<E>(cause: E) -> E {
                 .record(NestedStopOwner::Request);
         }
     });
-    cause
 }

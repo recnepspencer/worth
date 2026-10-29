@@ -2,15 +2,13 @@ mod canonical_bits;
 mod comparison_stop;
 use comparison_stop::ComparisonStop;
 
-use std::panic::{catch_unwind, AssertUnwindSafe};
-
 use canonical_bits::visit_exact;
 pub use canonical_bits::CanonicalBits;
 
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
-        enter_retained_memory, run_checked_batch, run_checked_batch_with_charge,
+        contain, enter_retained_memory, run_checked_batch, run_checked_batch_with_charge,
         run_invoking_scope, AdmittedBatch, BackendKind, BatchOutcome, KernelContext, KernelFailure,
     },
     report::ChargedBytes,
@@ -76,9 +74,17 @@ where
         .map_err(|_| ComparisonStop::refused().finish())?;
     let _actual_physical = enter_retained_memory(retained_bytes);
     let actual = run_checked_batch(Some(lease), batch, selected, kernel);
-    let comparison = catch_unwind(AssertUnwindSafe(|| compare(lease, &expected, &actual)))
-        .unwrap_or(Err(ComparisonStop::Encoding(OracleMismatch::Stop)))
-        .map_err(ComparisonStop::finish);
+    let mut compared = None;
+    let panicked = contain(&mut || {
+        compared = Some(compare(lease, &expected, &actual));
+    })
+    .is_err();
+    let comparison = if panicked {
+        Err(ComparisonStop::Encoding(OracleMismatch::Stop))
+    } else {
+        compared.expect("contained comparison returned")
+    };
+    let comparison = comparison.map_err(ComparisonStop::finish);
     comparison?;
     drop((expected_retained, actual_retained));
     Ok(actual)
@@ -184,10 +190,16 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
         }) {
             return Err(OracleMismatch::Stop.into());
         }
-        return catch_unwind(AssertUnwindSafe(|| {
-            predicate.equivalent(&reference, &candidate)
-        }))
-        .map_err(|_| ComparisonStop::Encoding(OracleMismatch::Stop));
+        let mut equivalent = None;
+        let panicked = contain(&mut || {
+            equivalent = Some(predicate.equivalent(&reference, &candidate));
+        })
+        .is_err();
+        return if panicked {
+            Err(ComparisonStop::Encoding(OracleMismatch::Stop))
+        } else {
+            Ok(equivalent.expect("contained equivalence predicate returned"))
+        };
     }
     if actual.canonical_len() != Some(length) {
         return Ok(false);

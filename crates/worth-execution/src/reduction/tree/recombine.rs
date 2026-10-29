@@ -1,11 +1,8 @@
-use std::{
-    panic::{catch_unwind, AssertUnwindSafe},
-    sync::Arc,
-};
+use std::sync::Arc;
 
 use worth_foundational::PartitionIdentity;
 
-use crate::{oracle::CanonicalBits, report::ChargedBytes};
+use crate::{backend::contain, oracle::CanonicalBits, report::ChargedBytes};
 
 use super::{
     value_storage::{BoundedValues, ValueStorage},
@@ -169,8 +166,15 @@ where
                 .record_combine()
                 .map_err(|_| ReductionRunStop::work_counter_overflow())?;
         }
-        let value = catch_unwind(AssertUnwindSafe(|| (self.combine)(left, right)))
-            .map_err(|_| ReductionRunStop::Panic)?;
+        let mut value = None;
+        let panicked = contain(&mut || {
+            value = Some((self.combine)(left, right));
+        })
+        .is_err();
+        if panicked {
+            return Err(ReductionRunStop::Panic);
+        }
+        let value = value.expect("contained combine returned");
         self.validate(&value)?;
         Ok(value)
     }
