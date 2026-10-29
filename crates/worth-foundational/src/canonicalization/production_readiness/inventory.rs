@@ -217,27 +217,27 @@ pub(super) fn phase_gates() -> Vec<CanonicalPhaseGateEvidence> {
     vec![
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::BasisGrammar,
-            "tests/certification/canonicalization/basis",
+            "tests/worth_foundational/fast/certification/canonicalization/basis",
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::MilestoneOneBasisBuilders,
-            "tests/certification/canonicalization/digest_preparation",
+            "tests/worth_foundational/fast/certification/canonicalization/digest_preparation",
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::EquivalenceAndMismatch,
-            "tests/certification/canonicalization/equivalence",
+            "tests/worth_foundational/fast/certification/canonicalization/equivalence",
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::ExportFixtures,
-            "tests/certification/canonicalization/export",
+            "tests/worth_foundational/fast/certification/canonicalization/export",
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::DigestSlots,
-            "tests/certification/canonicalization/digest_slots",
+            "tests/worth_foundational/fast/certification/canonicalization/digest_slots",
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::ProductionReadiness,
-            "tests/certification/canonicalization/production_readiness",
+            "tests/worth_foundational/fast/certification/canonicalization/production_readiness",
         ),
     ]
 }
