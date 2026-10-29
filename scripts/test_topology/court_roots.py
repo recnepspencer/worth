@@ -14,7 +14,8 @@ def area_names(names):
 
 
 def origin_name(owner):
-    return owner['cargo']['name'].removeprefix('worth-').replace('-', '_')
+    name, stem = owner['cargo']['name'], owner.get('workspace_stem', 'worth')
+    return (name.rsplit('-', 1)[-1] if name == stem else name.removeprefix(stem + '-')).replace('-', '_')
 
 
 def target_area(unit):

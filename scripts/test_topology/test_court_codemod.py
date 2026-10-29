@@ -13,6 +13,7 @@ import unittest
 
 from cargo_inventory import metadata
 from court_plan import build
+from court_packing import area_suffix
 from frontier_adapter import surface
 from module_tree import read_tree, test_names
 from plan_effects import apply
@@ -175,6 +176,8 @@ class CourtCodemodTests(unittest.TestCase):
 
     def test_naming_matches_the_frontier_authoritys_examples(self):
         self.assertEqual(surface('sample', []), 'source')
+        self.assertEqual(area_suffix(('foundational', 'foundational_values'), 'foundational'), 'values')
+        self.assertEqual(area_suffix(('store', 'physical_blob_journeys'), 'physical'), 'store-blob-journeys')
         self.assertEqual(surface('worth-query', ['worth-query', 'worth-query-host']), 'query-host')
         self.assertEqual(surface('worth-query-bank', ['bank-external-rail', 'bank-server']), 'external-rail-server')
 
