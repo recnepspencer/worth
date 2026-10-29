@@ -11,6 +11,8 @@ mod checkpoint_commitment;
 mod epoch_construction;
 mod identity_kind;
 mod interning;
+mod material_storage;
+pub(in crate::domain_computation::primary_graph::application_query) use material_storage::admit_footprint_comparison;
 mod membership;
 mod ordering;
 mod runtime_commitment;
@@ -42,10 +44,14 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
     runtime_idempotency_identity: [u8; 32],
     checkpoint_identity: [u8; 32],
     registry: Weak<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,
+    _material_allocation:
+        Option<Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>>,
 }
 
 impl WorthQueryObservedSourceMeaning {
-    pub(super) fn footprint(&self) -> &WorthQueryObservedSourceFootprint {
+    pub(in crate::domain_computation::primary_graph::application_query) fn footprint(
+        &self,
+    ) -> &WorthQueryObservedSourceFootprint {
         &self.footprint
     }
 
@@ -89,6 +95,9 @@ impl Drop for WorthQueryObservedSourceMeaning {
         if remove_coordinate {
             state.meanings.remove(&self.coordinate);
         }
+        let released = state.take_empty_material_storage();
+        drop(state);
+        drop(released);
     }
 }
 
@@ -96,6 +105,8 @@ struct WorthQueryObservedSourceMeaningRegistryState {
     next_ordinal: u64,
     meanings:
         BTreeMap<WorthQueryObservedSourceCoordinate, Vec<Weak<WorthQueryObservedSourceMeaning>>>,
+    material_allocations:
+        Vec<Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaningRegistry {
@@ -112,6 +123,7 @@ impl WorthQueryObservedSourceMeaningRegistry {
             state: Arc::new(Mutex::new(WorthQueryObservedSourceMeaningRegistryState {
                 next_ordinal: 1,
                 meanings: BTreeMap::new(),
+                material_allocations: Vec::new(),
             })),
         }
     }

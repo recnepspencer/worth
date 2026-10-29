@@ -39,6 +39,13 @@ impl ClosureIndex<'_> {
         target: &ApplicationOperationProgramTarget,
     ) -> bool {
         match target {
+            ApplicationOperationProgramTarget::RemoveAspect { entity, aspect } => self.members.iter().any(|member| matches!(member,
+                ApplicationSchemaMember::Aspect { entity: e, aspect: a, absence: worth_foundational::facade::AbsenceLaw::Optional, .. }
+                if e == entity && a == aspect)) && self.members.iter().filter_map(|member| match member {
+                    ApplicationSchemaMember::Field { entity: e, aspect: a, field, .. } if e == entity && a == aspect => Some(field), _ => None,
+                }).all(|field| self.members.iter().any(|member| matches!(member,
+                    ApplicationSchemaMember::OperationDecisionRead { operation: o, target: ApplicationOperationDecisionReadTarget::Field { entity: e, aspect: a, field: f } }
+                    if o == operation && e == entity && a == aspect && f == field))),
             ApplicationOperationProgramTarget::Create { entity }
             | ApplicationOperationProgramTarget::Delete { entity } => {
                 self.entities.contains(entity.as_str())

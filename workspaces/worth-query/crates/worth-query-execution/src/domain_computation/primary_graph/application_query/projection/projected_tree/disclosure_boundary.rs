@@ -55,6 +55,16 @@ impl WorthQueryApplicationDisclosedProjectionTree {
             .map(WorthQueryApplicationDisclosedProjectionNode::new)
     }
 
+    pub(in crate::domain_computation::primary_graph::application_query) fn at(
+        &self,
+        ordinal: usize,
+    ) -> Option<WorthQueryApplicationDisclosedProjectionNode<'_>> {
+        self.rows
+            .rows()
+            .get(ordinal)
+            .map(WorthQueryApplicationDisclosedProjectionNode::new)
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn only(
         &self,
     ) -> Option<WorthQueryApplicationDisclosedProjectionNode<'_>> {
@@ -62,6 +72,12 @@ impl WorthQueryApplicationDisclosedProjectionTree {
             return None;
         };
         Some(WorthQueryApplicationDisclosedProjectionNode::new(node))
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn take(&mut self) -> Self {
+        Self {
+            rows: std::mem::replace(&mut self.rows, DisclosedRows::Owned(Vec::new())),
+        }
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn clear(&mut self) {

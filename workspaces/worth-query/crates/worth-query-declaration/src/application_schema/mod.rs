@@ -2,6 +2,7 @@ pub use worth_foundational::facade::RelationDirection;
 
 mod application_capability_authoring;
 mod application_correction_authoring;
+mod application_managed_index_authoring;
 mod application_mutation_authoring;
 mod application_query_authoring;
 mod application_resource_authoring;
@@ -166,8 +167,9 @@ pub use capabilities::{
     ApplicationFieldUnit, ApplicationUnitMarker, CreatableBy, DeclaredApplicationUnit,
     EqualityCapable, EqualityPosture, EqualityPredicate, NoApplicationUnit, NoEqualityPredicate,
     OperationCreates, OperationDeletes, OperationEmits, OperationExpectsFact,
-    OperationExpectsVersion, OperationLinks, OperationReads, OperationRequiresAbility,
-    OperationUnlinks, OperationWrites, ReadOnly, ReadWrite, WritableCapability, WritePosture,
+    OperationExpectsVersion, OperationLinks, OperationReads, OperationRemovesAspects,
+    OperationRequiresAbility, OperationUnlinks, OperationWrites, ReadOnly, ReadWrite,
+    WritableCapability, WritePosture,
 };
 pub use component_set::{
     ApplicationComponentSetDefinition, ApplicationComponentSetMeaning, ApplicationComponentSetRef,

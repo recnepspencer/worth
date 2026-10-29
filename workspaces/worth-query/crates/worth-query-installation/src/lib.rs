@@ -113,7 +113,7 @@ pub mod facade {
         ApplicationValueDecodeDenial, ApplicationValueEncodeDenial,
         ApplicationValueValidationDenial, DeclaredApplicationFieldValue, EqualityPosture,
         EqualityPredicate, ErasedApplicationSchemaDeclaration, OperationCreates, OperationDeletes,
-        OperationLinks, OperationReads, OperationUnlinks, OperationWrites,
+        OperationLinks, OperationReads, OperationRemovesAspects, OperationUnlinks, OperationWrites,
         OptionalApplicationFieldValue, RequiredApplicationFieldValue,
         WorthQueryExternalEffectCorrelationFamily, WritableCapability, WritePosture,
     };
@@ -231,6 +231,8 @@ pub mod facade {
         WorthQueryInstalledBoundQuery, WorthQueryInstalledGraphOrdering,
         WorthQueryInstalledGraphPredicate, WorthQueryInstalledGraphProjection,
         WorthQueryInstalledGraphReadContract, WorthQueryInstalledGraphRelation,
+        WorthQueryInstalledManagedIndex, WorthQueryInstalledManagedIndexAccessContract,
+        WorthQueryInstalledManagedIndexParent, WorthQueryInstalledManagedIndexReadMeaning,
         WorthQueryInstalledOutputDependencyContract, WorthQueryInstalledQueryBindingAdmissionStop,
         WorthQueryInstalledRootPath, WorthQueryInstalledRootPathGuard,
         WorthQueryInstalledRootPathStep, WorthQueryPlanningInventoryStop,

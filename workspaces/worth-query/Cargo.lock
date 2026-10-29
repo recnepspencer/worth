@@ -827,6 +827,7 @@ dependencies = [
 name = "worth-query-package-archive"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
  "worth-query-declaration",

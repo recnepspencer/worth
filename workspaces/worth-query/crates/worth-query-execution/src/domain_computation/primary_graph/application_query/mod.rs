@@ -40,6 +40,17 @@ pub use history::{
 pub use one_shot::WorthQueryApplicationHistoryCaptureResult;
 mod installed_schema_currentness;
 mod live;
+pub(in crate::domain_computation::primary_graph) mod managed_index;
+pub use managed_index::{
+    WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
+    WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
+    WorthQueryManagedIndexLifecycle, WorthQueryManagedIndexNodeId,
+    WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
+    WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
+    WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
+    WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceRows,
+    WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop, WorthQueryManagedIndexWorkDenial,
+};
 mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;
 pub(in crate::domain_computation::primary_graph) mod observed_source;

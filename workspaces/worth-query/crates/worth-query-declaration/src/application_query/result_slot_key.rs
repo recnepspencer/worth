@@ -1,7 +1,7 @@
 use worth_foundational::facade::ScalarAspectType;
 
 use super::{ApplicationQueryCardinality, ApplicationQueryResultTraversalDirection};
-use crate::application_schema::ApplicationFieldPresence;
+use crate::application_query::ApplicationQueryResultFieldPresence;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 mod retained_backing;
@@ -41,7 +41,7 @@ enum ApplicationQueryResultSlotContract {
         output_name: String,
         scalar_family: ScalarAspectType,
         value_type: WorthQueryPortableTypeIdentity,
-        presence: ApplicationFieldPresence,
+        presence: ApplicationQueryResultFieldPresence,
     },
     Relation {
         relation: String,
@@ -64,7 +64,7 @@ pub(super) struct ApplicationQueryResultFieldSlotContract<'contract> {
     pub output_name: &'contract str,
     pub scalar_family: ScalarAspectType,
     pub value_type: WorthQueryPortableTypeIdentity,
-    pub presence: ApplicationFieldPresence,
+    pub presence: ApplicationQueryResultFieldPresence,
 }
 
 pub(super) struct ApplicationQueryResultRelationSlotContract<'contract> {

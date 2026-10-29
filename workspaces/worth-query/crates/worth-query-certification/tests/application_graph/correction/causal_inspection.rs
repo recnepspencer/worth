@@ -64,3 +64,29 @@ fn optional_input_clear_and_recreate_connect_only_the_actual_absence_occurrence(
 fn optional_input_noop_clear_cannot_replace_the_source_created_absent_revision() {
     super::model::causal_inspection::absence::no_op_clear_is_not_the_source_that_created_the_absent_revision();
 }
+
+#[test]
+fn optional_whole_aspect_removal_recreation_and_aba_keep_original_cause() {
+    super::model::aspect_input::courts::whole_aspect_removal_and_recreation_keep_the_particular_source();
+}
+#[test]
+fn optional_whole_aspect_noop_cannot_create_an_absence_revision() {
+    super::model::aspect_input::courts::no_op_clear_is_not_the_source_that_created_the_absent_revision();
+}
+#[test]
+fn optional_whole_aspect_requires_all_siblings_and_rejects_mixed_writes_both_orders() {
+    super::model::aspect_input::refusals::incomplete_read_and_mixed_parent_child_writes_refuse_atomically();
+}
+#[test]
+fn optional_whole_aspect_action_requires_real_program_delivery() {
+    super::model::aspect_input::refusals::whole_parent_authoring_still_requires_program_delivery();
+}
+#[test]
+fn optional_whole_aspect_connection_revalidates_current_authority_and_release() {
+    super::model::aspect_input::lifecycle::removed_parent_rechecks_current_read_cancellation_and_expiry();
+}
+
+#[test]
+fn optional_whole_aspect_declaration_requires_optional_parent_and_sibling_read_closure() {
+    super::model::aspect_input::declaration::only_complete_optional_parent_declarations_admit_removal();
+}

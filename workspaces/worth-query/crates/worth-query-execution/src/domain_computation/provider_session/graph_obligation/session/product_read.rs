@@ -36,6 +36,14 @@ impl WorthQueryPreparedProductReadSessionIdentity {
         })
     }
 
+    pub(super) fn into_identities(
+        self,
+    ) -> (
+        WorthQueryGraphWorkSessionIdentity,
+        WorthQueryGraphWorkManagedRunIdentity,
+    ) {
+        (self.identity, self.managed_run)
+    }
     pub(in crate::domain_computation) const fn identity(
         &self,
     ) -> WorthQueryGraphWorkSessionIdentity {

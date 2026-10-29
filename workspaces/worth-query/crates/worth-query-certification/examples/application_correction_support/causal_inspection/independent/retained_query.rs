@@ -6,7 +6,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryProductQueryControls,
 };
 
-pub(in super::super) fn read(
+pub(in super::super::super) fn read(
     application: &host::OutputHost,
     external: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
     scope: &WorthQueryRequestScope,
@@ -17,7 +17,7 @@ pub(in super::super) fn read(
     (original, rows[0].clone())
 }
 
-pub(in super::super) fn read_parameters(
+pub(in super::super::super) fn read_parameters(
     application: &host::OutputHost,
     external: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
     scope: &WorthQueryRequestScope,

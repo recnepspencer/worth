@@ -19,6 +19,8 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         contracts: &mut WorthQueryApplicationContributionContracts<NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<super::calculation::Producer>()?;
+        contracts.producer::<super::aspect_input::calculation::Producer>()?;
+        contracts.conditional::<super::aspect_input::readiness::Readiness>()?;
         contracts.conditional::<super::calculation_readiness::Readiness>()?;
         contracts.conditional::<super::composite_definition_runtime::Conditional>()?;
         Ok(())
@@ -28,6 +30,16 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<super::calculation::Binding, _>(super::calculation::Handler)?;
+        setup.handler::<super::aspect_input::authoring::Binding, _>(
+            super::aspect_input::authoring::Handler,
+        )?;
+        setup.handler::<super::aspect_input::calculation::Binding, _>(
+            super::aspect_input::calculation::Handler,
+        )?;
+        setup.producer::<super::aspect_input::calculation::Producer>(
+            super::aspect_input::calculation::Provider,
+        )?;
+        setup.conditional::<super::aspect_input::readiness::Readiness>(())?;
         setup.producer::<super::calculation::Producer>(super::calculation::Provider)?;
         setup.conditional::<super::calculation_readiness::Readiness>(())?;
         setup.conditional::<super::composite_definition_runtime::Conditional>(())?;

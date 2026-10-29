@@ -35,6 +35,10 @@ pub(super) fn query_posture(
         Denial::ScopeResolution(denial) => scope_posture(denial.kind()),
         Denial::Admission(denial) => admission_posture(denial.kind()),
         Denial::Execution(denial) => execution_posture(denial.kind()),
+        // This owner asks whether the SAME required-output source receipt can
+        // be reused. Managed source fact expansion is currently unsupported;
+        // this says nothing about retrying an ordinary public index query.
+        Denial::ManagedIndex(_) => WorthQueryRequiredOutputRecoveryPosture::Terminal,
         Denial::ContinuationExecution(_)
         | Denial::RequestMode
         | Denial::CapabilityInstallation(_)

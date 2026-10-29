@@ -55,13 +55,23 @@ pub enum WorthQueryApplicationBasisSelectionIdentity {
 }
 
 impl WorthQueryApplicationBasisIdentity {
-    /// Physical backing copied by this descriptive identity's Clone.
-    /// World selection names/custody stay shared; only the Relational names
-    /// and selected target's parent vector are newly allocated.
+    /// Physical Relational clone backing; world selection custody remains shared.
     pub(in crate::domain_computation) fn retained_clone_heap_bytes(&self) -> Option<u64> {
-        let descriptor = &self.descriptor;
-        let strings = self
-            .branch_id
+        Self::clone_heap_bytes(&self.branch_id, &self.descriptor)
+    }
+
+    /// Price the actual selected descriptor before constructing its Query identity.
+    pub(in crate::domain_computation) fn retained_basis_clone_heap_bytes(
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Option<u64> {
+        Self::clone_heap_bytes(basis.identity().branch_id(), basis.descriptor())
+    }
+
+    fn clone_heap_bytes(
+        branch_id: &BranchId,
+        descriptor: &RelationalBranchBasisDescriptor,
+    ) -> Option<u64> {
+        let strings = branch_id
             .0
             .len()
             .checked_add(descriptor.branch_id().0.len())?

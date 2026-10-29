@@ -3,7 +3,7 @@ use worth_foundational::facade::{
     AspectMask, CanonicalFieldPath, DiagnosticMask, FieldKey, ProjectionMask, ScalarAspectType,
 };
 
-use crate::application_schema::ApplicationFieldPresence;
+use crate::application_query::ApplicationQueryResultFieldPresence;
 
 use super::super::{
     result_slot_key::{
@@ -35,7 +35,7 @@ pub enum ApplicationQueryDisclosureSelector {
         output_name: String,
         scalar_family: ScalarAspectType,
         value_type: WorthQueryPortableTypeIdentity,
-        presence: ApplicationFieldPresence,
+        presence: ApplicationQueryResultFieldPresence,
         projection_mask: AspectMask<ProjectionMask>,
         diagnostic_mask: AspectMask<DiagnosticMask>,
     },

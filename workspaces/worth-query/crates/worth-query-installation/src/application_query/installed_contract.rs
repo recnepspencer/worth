@@ -92,6 +92,12 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     ) -> Option<&super::WorthQueryInstalledApplicationQueryBindingObservation> {
         self.binding.as_ref()
     }
+    pub(crate) fn is_compiled_query(
+        &self,
+        actual: &Arc<WorthQueryCompiledApplicationQuery>,
+    ) -> bool {
+        Arc::ptr_eq(&self.compiled, actual)
+    }
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         self.compiled.binding_identity()
     }

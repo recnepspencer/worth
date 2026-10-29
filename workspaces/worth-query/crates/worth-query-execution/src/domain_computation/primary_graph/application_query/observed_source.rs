@@ -12,6 +12,8 @@ pub(in crate::domain_computation::primary_graph::application_query) mod comparis
 mod denial;
 mod expression_context;
 mod fact_conversion;
+pub(in crate::domain_computation::primary_graph) use fact_conversion::SourceFactExpansionControl;
+mod fact_sources;
 mod footprint_accounting;
 mod prepared_expectation;
 mod query_context_binding;
@@ -79,7 +81,8 @@ pub(in crate::domain_computation::primary_graph) use super::super::entity_resolu
 pub(in crate::domain_computation::primary_graph::application_query) use retained_parameters::WorthQueryRetainedObservedParameters;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
 pub(in crate::domain_computation::primary_graph::application_query) use root_selection::{
-    DeclaredComponentSelection, DeclaredOrbitSelection,
+    DeclaredComponentSelection, DeclaredManagedIndexSelection, DeclaredOrbitSelection,
+    ManagedSourceDependencies,
 };
 pub(in crate::domain_computation::primary_graph) use source_identity::{
     WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,

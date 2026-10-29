@@ -85,11 +85,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
+        self.on_product_with_basis_admission(execution, product, |_| Ok(()))
+    }
+
+    fn on_product_with_basis_admission<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: WorthQueryProductBranchLease,
+        before_basis: impl FnOnce(
+            &worth_runtime_world::facade::ProductBranchObservation,
+        ) -> Result<(), Stop>,
+    ) -> Result<WorthQuerySelectedProductOperation<'_, Schema>, Stop> {
         if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
-            ));
+            )
+            .into());
         }
+        before_basis(product.observation())?;
         let mut application_basis =
             self.retain_product_application_basis(execution, product.observation())?;
         let selected_program = self.bind_selected_program_interpretation(
@@ -140,6 +153,25 @@ impl<'runtime, Schema> WorthQueryProductEntry<'runtime, Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Internal managed receiver hook at the actual retained Query basis owner.
+    pub(in crate::domain_computation::primary_graph) fn select_for_managed_index<
+        Stop: From<WorthQueryProductBranchAdmissionDenial>,
+    >(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        before_basis: impl FnOnce(
+            &worth_runtime_world::facade::ProductBranchObservation,
+        ) -> Result<(), Stop>,
+    ) -> Result<WorthQuerySelectedProductOperation<'runtime, Schema>, Stop> {
+        let application = self.application;
+        let product = application.admit_with_observation_room(|| {
+            application
+                .product_runtime
+                .admit_product_occurrence(self.branch.occurrence())
+        })?;
+        application.on_product_with_basis_admission(request, product, before_basis)
+    }
+
     pub fn select(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,

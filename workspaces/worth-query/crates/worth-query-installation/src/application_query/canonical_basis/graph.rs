@@ -35,6 +35,7 @@ pub(in crate::application_query) fn prepare_graph_basis(
             entries.push(text(format!("components.{key}"), value))
         });
     }
+    super::append_managed_index(&mut entries, meaning.managed_index.as_deref());
     append_projections(&mut entries, &meaning.projections);
     append_root_paths(&mut entries, &meaning.root_paths);
     append_relations(&mut entries, &meaning.relations);
@@ -123,16 +124,9 @@ fn append_projections(
 }
 
 const fn field_presence_name(
-    value: worth_query_declaration::facade::application_schema::ApplicationFieldPresence,
+    value: worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence,
 ) -> &'static str {
-    match value {
-        worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Required => {
-            "required"
-        }
-        worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => {
-            "optional"
-        }
-    }
+    value.canonical_name()
 }
 
 fn append_relations(

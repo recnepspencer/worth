@@ -5,6 +5,7 @@ impl ChargedBytes for RawNonLiveKernelOutcome {
     fn additional_charged_bytes(&self) -> u64 {
         let Self { raw } = self;
         let RawOneShotRows {
+            material_source: _material_source,
             rows,
             source_footprints,
             result_set_source,
@@ -28,6 +29,16 @@ impl ChargedBytes for RawNonLiveKernelOutcome {
         // the inaccessible native continuation payload if this door changes.
         if next_boundary.is_some() {
             return u64::MAX;
+        }
+        // Managed material backing was admitted before each allocation and
+        // retains that same grant. Merely having an unaccounted owner is not
+        // payment and never suppresses the existing output-capacity quote.
+        if raw
+            .material_source
+            .as_ref()
+            .is_some_and(|allocation| allocation.has_payment())
+        {
+            return 0;
         }
         let sources = source_footprints.iter().fold(
             (source_footprints.capacity() as u64).saturating_mul(std::mem::size_of::<

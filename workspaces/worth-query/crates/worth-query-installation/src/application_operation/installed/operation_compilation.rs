@@ -203,6 +203,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             &self.binding,
             native_contracts,
             self.portable_contract.touches(),
+            &graph_reads,
         )
         .map_err(|()| {
             operation_denial(

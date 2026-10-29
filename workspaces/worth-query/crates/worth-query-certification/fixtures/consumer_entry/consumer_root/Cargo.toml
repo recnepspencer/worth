@@ -14,3 +14,6 @@ worth-query-decl.workspace = true
 worth-query-host = { workspace = true }
 worth-query-parameter-entry.workspace = true
 worth-query-topology-entry.workspace = true
+
+[dev-dependencies]
+stats_alloc = "0.1"

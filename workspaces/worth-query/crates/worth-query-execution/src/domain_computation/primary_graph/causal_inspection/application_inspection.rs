@@ -34,3 +34,7 @@ pub(in crate::domain_computation) use target::WorthQueryApplicationInspectionTar
 #[cfg(test)]
 #[path = "application_inspection/tests/comparison.rs"]
 mod comparison_tests;
+
+#[cfg(test)]
+#[path = "application_inspection/tests/receipt_affinity.rs"]
+mod receipt_affinity_tests;

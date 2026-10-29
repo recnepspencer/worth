@@ -63,6 +63,9 @@ impl EqualityPosture for EqualityPredicate {
 /// required later.
 pub trait OperationWrites<Operation> {}
 
+/// Aspect removal is distinct from every child field write; installation still admits it.
+pub trait OperationRemovesAspects<Operation> {}
+
 /// Compile-time declaration that an entity marker may be created by an
 /// operation marker.
 pub trait OperationCreates<Operation> {}

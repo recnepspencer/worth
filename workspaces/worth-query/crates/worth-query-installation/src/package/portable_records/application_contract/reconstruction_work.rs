@@ -274,6 +274,15 @@ fn observe_touch(
 ) {
     work.observe_fixed(1);
     match scope {
+        WorthQueryPortableOperationTouchScope::RemoveAspect {
+            schema,
+            entity,
+            contract,
+        } => {
+            work.observe_text(schema);
+            work.observe_text(entity);
+            work.observe_contract(contract);
+        }
         WorthQueryPortableOperationTouchScope::InitializeRelationField {
             schema,
             relation,

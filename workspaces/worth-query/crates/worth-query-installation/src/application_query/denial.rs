@@ -27,6 +27,11 @@ pub enum WorthQueryApplicationQueryInstallationDenialKind {
     InvalidInspectionDefinition,
     InspectionBindingMeaningChanged,
     InspectionUnavailable,
+    InvalidManagedIndexDefinition,
+    ManagedIndexBindingMeaningChanged,
+    ManagedIndexSourceUnsupported,
+    ManagedIndexParentUnsupported,
+    ManagedIndexUnavailable,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

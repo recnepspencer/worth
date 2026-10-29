@@ -308,7 +308,7 @@ where
     )
 }
 
-pub(super) fn access<P: ApplicationProgramDefinition<NumericSchema>>(
+pub(in super::super) fn access<P: ApplicationProgramDefinition<NumericSchema>>(
     application: &WorthQueryProgramApplicationRuntime<NumericSchema, P>,
     external: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
     scope: &WorthQueryRequestScope,

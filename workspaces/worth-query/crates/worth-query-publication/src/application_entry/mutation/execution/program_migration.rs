@@ -60,11 +60,7 @@ where
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
         if let Some(pending) = prepared.pending_source.take() {
             pending
-                .consume_into(
-                    self.request.application,
-                    &mut prepared.admission,
-                    allocation_policy,
-                )
+                .consume_into(self.request.application, phase, &mut prepared.admission)
                 .map_err(|denial| {
                     WorthQueryApplicationProgramMigrationPreparationDenial::Request(
                         WorthQueryApplicationRequestMutationDenial::SourceExpectation(denial),

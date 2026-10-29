@@ -10,11 +10,11 @@ use worth_query_host::facade::{
 };
 mod lifecycle;
 mod parameters;
-pub(super) mod retained_query;
+pub(in super::super) mod retained_query;
 pub use lifecycle::current_admission_cancellation_and_expiry_precede_connection_discovery;
 pub use parameters::no_match_parameters_keep_original_output_evidence_unavailable;
 
-fn metadata<Binding: ApplicationQueryBinding<NumericSchema>>(
+pub(in super::super) fn metadata<Binding: ApplicationQueryBinding<NumericSchema>>(
     name: &'static str,
 ) -> ApplicationQueryInspectionDefinition<NumericSchema, Binding> {
     let contract = ApplicationQueryInspectionMetadataFacet::ALL

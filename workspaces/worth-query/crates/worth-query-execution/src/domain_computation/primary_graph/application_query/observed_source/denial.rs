@@ -30,6 +30,9 @@ pub enum WorthQuerySourceExpectationDenialKind {
     PreparationMemoryExceeded,
     /// Exact backing or request stop while retaining a source payload.
     RetainedSourceStorageDenied,
+    /// Managed expansion requires the genuine current Execution request.
+    /// Legacy conversion without that request preserves evidence and refuses.
+    ManagedSourceExpansionUnsupported,
 }
 
 /// Refusal to bind an observed query source as an admitted mutation's source
@@ -71,6 +74,17 @@ impl WorthQuerySourceExpectationDenial {
             Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop),
             _ => None,
         }
+    }
+
+    /// The exact original Execution request stop during source conversion.
+    pub fn execution_denial(&self) -> Option<&worth_execution::WorkCeilingDenial> {
+        match &self.retention_denial {
+            Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::ExecutionRequest(cause)) => Some(cause),
+            _ => None,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn retention_denial(&self) -> Option<&crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
+        self.retention_denial.as_ref()
     }
 
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {

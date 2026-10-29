@@ -7,8 +7,13 @@ mod continuation_contract;
 mod denial;
 mod graph_access_contract;
 pub(crate) mod history;
+mod managed_index;
 pub use history::{
     WorthQueryApplicationHistoryInstallationDenial, WorthQueryInstalledApplicationHistoryQuery,
+};
+pub use managed_index::{
+    WorthQueryInstalledManagedIndex, WorthQueryInstalledManagedIndexAccessContract,
+    WorthQueryInstalledManagedIndexParent, WorthQueryInstalledManagedIndexReadMeaning,
 };
 mod inspection;
 mod installed_binding;

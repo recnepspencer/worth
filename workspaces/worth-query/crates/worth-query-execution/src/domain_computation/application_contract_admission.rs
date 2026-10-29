@@ -136,6 +136,10 @@ fn touch_scope_admits_target(
 ) -> bool {
     match (scope, target) {
         (
+            WorthQueryOperationTouchScope::RemoveAspect(scope),
+            ApplicationOperationProgramTarget::RemoveAspect { entity, aspect },
+        ) => scope.entity() == entity && scope.contract().key().as_str() == aspect,
+        (
             WorthQueryOperationTouchScope::CreateEntity(scope),
             ApplicationOperationProgramTarget::Create { entity },
         )

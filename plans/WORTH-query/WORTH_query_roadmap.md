@@ -5787,6 +5787,18 @@ with finite provider/ingress/result custody and genuine owned-effect recovery.
 Its combined workflow qualifies populated forks, burned prepared adoptions and
 sibling publications against the actual Native source. Phase 9 remains unfinished.
 
+Phase 9 is subdivided into [capability subphases 9.1-9.11](./milestone-9.18.1.md#phase-9-subphase-plan).
+Original observation/reference reports (9.1), paired original comparison (9.2),
+performed-source/producer connections (9.3), independent admission (9.4) and
+canonical field absence/currentness proof transfer (9.5) are complete in their
+qualified bounded scopes. Optional whole-aspect removal and parent-optional reads
+(9.6) are complete.
+Remaining connection shapes (9.7), genuine suppression (9.8), rich materialization
+(9.9), actual evidence availability/expiry (9.10) and integrated consumer
+qualification (9.11) keep the parent phase open. This subdivision preserves the
+existing scope and evidence; later phases keep their numbers and no phase-by-phase
+private SDK adoption is introduced.
+
 Consecutive original-source correction reverses later sources before earlier
 ones. Retain each original receipt and the required endpoint read observation;
 select each original through a fresh request, then prepare and publish its
@@ -5801,7 +5813,7 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-The retained scope has seventeen implementation phases; 9, 13, 14, 16, 17 and 18
+The retained scope has seventeen implementation phases; 9, 16, 17 and 18
 remain unfinished.
 
 ### Goal
@@ -5857,10 +5869,10 @@ The governing milestone spec is
   private platform workarounds; spatial-dependent locality is required in 9.19
 - proposal acceptance reissuing fresh ordinary requests with replay kept cert-only
 - mandatory exact-release Rust 1.99.x sort qualification and current qualified
-  stable workspace/CI/Proprietary toolchains; the current 1.99.1/full
-  `58cf8f9c35b355199727627d07ae34a4e2846d67` candidate retains the reviewed
-  32/64-bit bounds and older compatibility entries, with public runtime and
-  Proprietary acceptance still pending under the
+  stable workspace/CI/Proprietary toolchains; the qualified workspace/CI 1.99.1/full
+  `58cf8f9c35b355199727627d07ae34a4e2846d67` retains the reviewed
+  32/64-bit bounds and older compatibility entries, with Proprietary default
+  adoption and remaining SDK qualification still required under the
   [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
 - P1 consecutive source undo through ordinary correction requests: reverse B then
   A on one field, preserving genuine live/reapplied divergence and fresh admission
@@ -5912,6 +5924,19 @@ in one final cutover, rather than a private SDK refactor after each phase.
 
 The governing milestone spec is
 [milestone-9.19.md](./milestone-9.19.md).
+
+### Committed Provider Indexes
+
+Declare and install a box or versioned-prefix provider through the same Decl/Host
+contract. Construct and read its index against the admitted committed Source;
+retain the returned owner while using its results. Handle typed stop, allocation,
+version, runtime and basis refusals. Rebuild after eviction with a fresh request,
+and release the final owner when finished. Committed reads retain complete
+conservative Source dependencies.
+
+Follow the [provider lifecycle contract](./milestone-9.19.md#phase-1-declared-providers-and-managed-index-ownership)
+and [application guide](../../docs/build-an-application.md#construct-committed-provider-indexes)
+for the declaration, read, rebuild and cleanup sequence.
 
 ### Must Ship
 

@@ -11,6 +11,7 @@ mod components;
 mod disclosure;
 mod history;
 mod inspection;
+mod managed_index;
 
 use super::schema_read_closure::{entity_exists, field_matches, relation_exists};
 
@@ -25,7 +26,8 @@ pub(super) fn validate_application_query_members(
         validate_query(definition, members)?;
     }
     history::validate(members)?;
-    inspection::validate(members)
+    inspection::validate(members)?;
+    managed_index::validate(members)
 }
 
 fn query_definition(member: &ApplicationSchemaMember) -> Option<&ErasedApplicationQueryDefinition> {
@@ -225,6 +227,9 @@ fn result_field_matches(
     members: &[ApplicationSchemaMember],
     expected: &crate::application_query::ApplicationQueryResultField,
 ) -> bool {
+    if expected.presence() == crate::application_query::ApplicationQueryResultFieldPresence::OptionalAspect
+        && !members.iter().any(|m| matches!(m, ApplicationSchemaMember::Aspect { entity, aspect, absence: worth_foundational::facade::AbsenceLaw::Optional, .. }
+            if entity == expected.entity() && aspect == expected.aspect())) { return false; }
     members.iter().any(|member| {
         matches!(
             member,
@@ -241,7 +246,7 @@ fn result_field_matches(
                 && field == expected.field()
                 && *scalar_family == expected.scalar_family()
                 && value_type == expected.value_type()
-                && *presence == expected.presence()
+                && *presence == expected.presence().schema_presence()
         )
     })
 }

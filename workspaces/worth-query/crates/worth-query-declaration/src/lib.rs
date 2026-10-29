@@ -72,6 +72,7 @@ mod application_relation_field_macro;
 mod application_relation_macro;
 #[macro_use]
 mod application_operation_macro;
+mod aspect_removal_macro;
 #[macro_use]
 mod value_binding_macro;
 #[macro_use]

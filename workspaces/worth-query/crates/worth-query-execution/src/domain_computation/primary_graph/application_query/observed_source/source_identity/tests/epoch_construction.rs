@@ -38,6 +38,7 @@ impl WorthQueryObservedSourceEpoch {
                 runtime_idempotency_identity: identity,
                 checkpoint_identity,
                 registry: Weak::new(),
+                _material_allocation: None,
             }),
         }
     }

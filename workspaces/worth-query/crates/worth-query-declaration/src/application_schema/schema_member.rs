@@ -44,6 +44,10 @@ pub enum ApplicationOperationProgramTarget {
     Emit {
         effect: String,
     },
+    RemoveAspect {
+        entity: String,
+        aspect: String,
+    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -65,6 +69,9 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    ManagedIndex {
+        definition: crate::application_query::ErasedApplicationManagedIndexDefinition,
+    },
     ApplicationResource {
         definition: crate::application_resource::ErasedApplicationResourceDefinition,
     },

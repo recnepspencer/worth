@@ -31,7 +31,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                     output_name: text("value"),
                     scalar_family: ScalarAspectType::UInt64,
                     value_type: type_id("u64"),
-                    presence: ApplicationFieldPresence::Required,
+                    presence: worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence::Required,
                 },
             )],
             relations: vec![ApplicationQueryResultRelation::from_untrusted_parts(
@@ -70,6 +70,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
             root_paths: vec![root_path()],
             orbit: None,
             component_selection: None,
+            managed_index: None,
             cardinality: ApplicationQueryCardinality::Many,
             predicates: vec![ApplicationQueryPredicate::from_untrusted_fields(
                 text("Entity"),

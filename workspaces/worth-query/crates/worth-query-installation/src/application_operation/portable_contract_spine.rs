@@ -1,3 +1,4 @@
+mod aspect_removal;
 use std::collections::{BTreeMap, BTreeSet};
 mod derived_reads;
 
@@ -225,6 +226,9 @@ fn compile_touch(
 ) -> SpineResult<WorthQueryPortableOperationTouchScope> {
     let schema = schema.to_owned();
     match target {
+        ApplicationOperationProgramTarget::RemoveAspect { entity, aspect } => {
+            aspect_removal::compile(&schema, native_contracts, entity, aspect)
+        }
         ApplicationOperationProgramTarget::Create { entity } => {
             Ok(WorthQueryPortableOperationTouchScope::CreateEntity {
                 schema,

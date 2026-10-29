@@ -25,6 +25,27 @@ pub(super) fn admit(
         AbsenceLaw::Required if actual.before_present() && actual.after_present() => {}
         AbsenceLaw::Required | AbsenceLaw::Defaulted => return Err(().into()),
     }
+    if !actual.after_present() {
+        if contract.absence() != AbsenceLaw::Optional {
+            return Err(().into());
+        }
+        execution
+            .consult()
+            .map_err(|stop| projection_stop(stop.into()))?;
+        return touches
+            .scopes()
+            .iter()
+            .enumerate()
+            .find_map(|(index, scope)| match scope {
+                WorthQueryOperationTouchScope::RemoveAspect(grant)
+                    if grant.entity() == entity && grant.contract() == contract =>
+                {
+                    Some(index)
+                }
+                _ => None,
+            })
+            .ok_or_else(|| ().into());
+    }
     let (index, grant) = touches
         .scopes()
         .iter()

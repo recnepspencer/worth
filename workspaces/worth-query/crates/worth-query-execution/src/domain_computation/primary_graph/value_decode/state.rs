@@ -11,6 +11,7 @@ pub(in crate::domain_computation::primary_graph) struct ValueDecodeState {
     pub(super) bindings: WorthQueryInstalledApplicationValueBindingCatalog,
     pub(super) memory: RefCell<Option<ExecutionMemoryReservation>>,
     first: Cell<Option<Stop>>,
+    pub(super) require_admitted: bool,
 }
 
 impl ValueDecodeState {
@@ -21,6 +22,17 @@ impl ValueDecodeState {
             bindings,
             memory: RefCell::new(None),
             first: Cell::new(None),
+            require_admitted: false,
+        }
+    }
+
+    /// Managed source callbacks require the actual admitted scalar codec.
+    pub(in crate::domain_computation::primary_graph) fn admitted(
+        bindings: WorthQueryInstalledApplicationValueBindingCatalog,
+    ) -> Self {
+        Self {
+            require_admitted: true,
+            ..Self::new(bindings)
         }
     }
 
@@ -55,6 +67,17 @@ impl ValueDecodeState {
         execution: &ExecutionRequest<'_, '_>,
         body: impl FnOnce(&ValueDecodeSession<'_>) -> R,
     ) -> Result<R, Stop> {
+        self.run_with_scope_refusal(execution, &mut |_| {}, body)
+    }
+
+    /// The managed invocation observes actual SDK envelope failures separately
+    /// from this decoder's ordinary first semantic refusal.
+    pub(in crate::domain_computation::primary_graph) fn run_with_scope_refusal<R>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope_refusal: &mut dyn FnMut(worth_execution::WorkCeilingDenial),
+        body: impl FnOnce(&ValueDecodeSession<'_>) -> R,
+    ) -> Result<R, Stop> {
         if let Some(cause) = self.denial() {
             return Err(cause);
         }
@@ -72,6 +95,7 @@ impl ValueDecodeState {
                     let checkpoint = |work| context.borrow_mut().checkpoint(work);
                     let poll = || context.borrow_mut().poll();
                     let session = ValueDecodeSession {
+                        on_refusal: None,
                         state: self,
                         checkpoint: accounted.then_some(
                             &checkpoint
@@ -96,8 +120,16 @@ impl ValueDecodeState {
                         .map(|(result, _)| result)
                 }
             })
-            .map_err(Stop::Scope)
-            .and_then(|result| result.map_err(Stop::Scope))
+            .map_err(|cause| {
+                scope_refusal(cause);
+                Stop::Scope(cause)
+            })
+            .and_then(|result| {
+                result.map_err(|cause| {
+                    scope_refusal(cause);
+                    Stop::Scope(cause)
+                })
+            })
             .and_then(|result| result);
         if let Err(cause) = &result {
             self.refuse(*cause);

@@ -7,10 +7,12 @@ mod identity;
 mod inspection_binding;
 mod installed_set;
 mod kind;
+mod managed_index_binding;
 mod operation_binding;
 mod owner;
 mod query_binding;
 mod resource_binding;
+pub(crate) use managed_index_binding::bind_managed_index_obligations;
 mod selection_index;
 
 pub use adoption::{

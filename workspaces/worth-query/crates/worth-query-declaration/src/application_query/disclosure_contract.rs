@@ -16,6 +16,7 @@ mod inspection;
 
 mod components;
 mod influence;
+mod optional_aspect;
 mod resource;
 mod selector;
 pub use influence::{ApplicationQueryInfluenceContract, ApplicationQueryObservableInfluence};
@@ -236,7 +237,7 @@ impl ApplicationQueryDisclosureContract {
                 output_name: selector.output_name().to_owned(),
                 scalar_family: selector.scalar_family(),
                 value_type: Field::Binding::IDENTITY,
-                presence: crate::application_schema::ApplicationFieldPresence::Required,
+                presence: crate::application_query::ApplicationQueryResultFieldPresence::Required,
                 projection_mask: AspectMask::new([CanonicalFieldPath::single(field.clone())]),
                 diagnostic_mask: AspectMask::new([CanonicalFieldPath::single(field)]),
             },
@@ -296,7 +297,7 @@ impl ApplicationQueryDisclosureContract {
                 output_name: selector.output_name().to_owned(),
                 scalar_family: selector.scalar_family(),
                 value_type: Field::Binding::IDENTITY,
-                presence: crate::application_schema::ApplicationFieldPresence::Optional,
+                presence: crate::application_query::ApplicationQueryResultFieldPresence::Optional,
                 projection_mask: AspectMask::new([CanonicalFieldPath::single(field.clone())]),
                 diagnostic_mask: AspectMask::new([CanonicalFieldPath::single(field)]),
             },

@@ -17,7 +17,12 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease
 
 mod inspection_preparation;
 mod inspection_read;
+mod managed_index_read;
 mod mutation_readmission;
+pub(in crate::domain_computation) use managed_index_read::{
+    WorthQueryManagedIndexCallbackProof, WorthQueryManagedIndexReadSession,
+    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
+};
 mod prepared_query_read;
 mod product_read;
 mod query_preparation;
@@ -30,6 +35,7 @@ pub(in crate::domain_computation) use prepared_query_read::{
 };
 pub(in crate::domain_computation) use product_read::WorthQueryPreparedProductReadSessionIdentity;
 use product_read::{ProductReadBasis, ProductReadIntent};
+pub(in crate::domain_computation) use query_read::WorthQueryQuerySourceContext;
 pub(in crate::domain_computation) use resource_read::WorthQuerySessionResourceReadProof;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

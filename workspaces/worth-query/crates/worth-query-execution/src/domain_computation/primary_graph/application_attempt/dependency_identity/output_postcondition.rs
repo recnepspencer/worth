@@ -186,6 +186,23 @@ pub(super) fn normalized_output_facts(
     facts
         .iter()
         .map(|fact| match fact {
+            WorthQueryApplicationObservedFact::Field {
+                entity_id,
+                kind,
+                locator,
+                ..
+            }
+            | WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                kind,
+                locator,
+            } if parent_removed(*entity_id, locator.aspect().aspect_key(), effects) => {
+                WorthQueryApplicationObservedFact::OptionalAspectAbsent {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    locator: locator.clone(),
+                }
+            }
             WorthQueryApplicationObservedFact::AspectPresence {
                 entity_id,
                 kind,
@@ -213,7 +230,8 @@ pub(super) fn normalized_output_facts(
                     entity_id: *entity_id,
                     kind: *kind,
                     aspect: aspect.clone(),
-                    present: *present || initialized,
+                    present: !parent_removed(*entity_id, aspect, effects)
+                        && (*present || initialized),
                 }
             }
             WorthQueryApplicationObservedFact::Field {
@@ -281,3 +299,13 @@ fn replacement_field_value<'effect>(
 
 #[cfg(test)]
 mod owned_program_facts_tests;
+
+#[cfg(test)]
+fn parent_removed(
+    entity: EntityId,
+    aspect: &worth_foundational::facade::AspectKey,
+    effects: &[WorthQueryApplicationRealizedEffect],
+) -> bool {
+    effects.iter().any(|effect| matches!(effect, WorthQueryApplicationRealizedEffect::RemoveAspect { entity_id, contract, .. }
+        if *entity_id == entity && contract.key() == aspect))
+}

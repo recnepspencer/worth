@@ -3,8 +3,12 @@ use crate::domain_computation::primary_graph::source_facts::SourceFacts;
 use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 mod components;
+mod managed_index;
 mod orbit;
 pub(in crate::domain_computation::primary_graph::application_query) use components::DeclaredComponentSelection;
+pub(in crate::domain_computation::primary_graph::application_query) use managed_index::{
+    DeclaredManagedIndexSelection, ManagedSourceDependencies,
+};
 mod walks;
 pub(in crate::domain_computation::primary_graph::application_query) use orbit::DeclaredOrbitSelection;
 
@@ -16,6 +20,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSe
         Option<DeclaredOrbitSelection>,
     pub(in crate::domain_computation::primary_graph::application_query) components:
         Option<DeclaredComponentSelection>,
+    pub(in crate::domain_computation::primary_graph::application_query) managed_index:
+        Option<DeclaredManagedIndexSelection>,
     identity: [u8; 32],
 }
 impl WorthQueryObservedRootSelection {
@@ -23,18 +29,25 @@ impl WorthQueryObservedRootSelection {
         facts: SourceFacts,
         orbit: Option<DeclaredOrbitSelection>,
     ) -> Self {
-        Self::from_parts(facts, orbit, None)
+        Self::from_parts(facts, orbit, None, None)
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn with_components(
         facts: SourceFacts,
         components: DeclaredComponentSelection,
     ) -> Self {
-        Self::from_parts(facts, None, Some(components))
+        Self::from_parts(facts, None, Some(components), None)
+    }
+    pub(in crate::domain_computation::primary_graph::application_query) fn with_managed_index(
+        facts: SourceFacts,
+        managed: DeclaredManagedIndexSelection,
+    ) -> Self {
+        Self::from_parts(facts, None, None, Some(managed))
     }
     fn from_parts(
         facts: SourceFacts,
         orbit: Option<DeclaredOrbitSelection>,
         components: Option<DeclaredComponentSelection>,
+        managed_index: Option<DeclaredManagedIndexSelection>,
     ) -> Self {
         let mut digest = Sha256::new();
         digest.update(b"worth-query:root-selection-source:v2");
@@ -45,10 +58,14 @@ impl WorthQueryObservedRootSelection {
         if let Some(components) = &components {
             components.append_descriptor(&mut digest);
         }
+        if let Some(managed) = &managed_index {
+            managed.append_descriptor(&mut digest);
+        }
         Self {
             facts,
             orbit,
             components,
+            managed_index,
             identity: digest.finalize().into(),
         }
     }
@@ -107,6 +124,7 @@ impl PartialEq for WorthQueryObservedRootSelection {
             && self.facts == other.facts
             && self.orbit == other.orbit
             && self.components == other.components
+            && self.managed_index == other.managed_index
     }
 }
 impl Eq for WorthQueryObservedRootSelection {}

@@ -15,6 +15,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::EntityId;
 
 mod disclosed;
+mod optional_aspect;
 mod projected_tree;
 pub(in crate::domain_computation::primary_graph) mod retained_projection;
 

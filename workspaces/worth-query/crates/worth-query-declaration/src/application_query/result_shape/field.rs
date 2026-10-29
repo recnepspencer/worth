@@ -1,6 +1,6 @@
 use worth_foundational::facade::ScalarAspectType;
 
-use crate::application_schema::ApplicationFieldPresence;
+use crate::application_query::ApplicationQueryResultFieldPresence;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::super::{
@@ -18,7 +18,7 @@ pub struct ApplicationQueryResultField {
     output_name: String,
     scalar_family: ScalarAspectType,
     value_type: WorthQueryPortableTypeIdentity,
-    presence: ApplicationFieldPresence,
+    presence: ApplicationQueryResultFieldPresence,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,7 +31,7 @@ pub struct WorthQueryPortableApplicationQueryResultFieldParts {
     pub output_name: String,
     pub scalar_family: ScalarAspectType,
     pub value_type: WorthQueryPortableTypeIdentity,
-    pub presence: ApplicationFieldPresence,
+    pub presence: ApplicationQueryResultFieldPresence,
 }
 
 impl ApplicationQueryResultField {
@@ -111,7 +111,7 @@ impl ApplicationQueryResultField {
         self.value_type.clone()
     }
 
-    pub const fn presence(&self) -> ApplicationFieldPresence {
+    pub const fn presence(&self) -> ApplicationQueryResultFieldPresence {
         self.presence
     }
 }

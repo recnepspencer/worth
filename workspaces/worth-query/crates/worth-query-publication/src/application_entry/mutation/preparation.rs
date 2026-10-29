@@ -182,7 +182,7 @@ where
         }
         if let Some(pending) = prepared.pending_source {
             pending
-                .consume_into(self.request.application, &mut admission, allocation_policy)
+                .consume_into(self.request.application, phase, &mut admission)
                 .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?;
         }
         let workflow_authority = self

@@ -189,6 +189,7 @@ where
 {
     pub fn bind_application_source_expectation<Binding, Scope>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<
             Schema,
             Binding::Operation,
@@ -204,9 +205,10 @@ where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
         >,
-    {
+{
         let identity = source.idempotency_identity().bytes();
         self.bind_checked_source_expectation::<Binding, Scope>(
+            phase,
             admission,
             source,
             identity,
@@ -217,6 +219,7 @@ where
 
     pub fn bind_application_result_set_expectation<Binding, Scope>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<
             Schema,
             Binding::Operation,
@@ -232,9 +235,10 @@ where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
         >,
-    {
+{
         let identity = result_set.idempotency_identity();
         self.bind_checked_source_expectation::<Binding, Scope>(
+            phase,
             admission,
             result_set.source,
             identity,
@@ -250,6 +254,7 @@ where
         Scope,
     >(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<
             Schema,
             Binding::Operation,
@@ -260,8 +265,6 @@ where
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
         input: &Binding::Input,
-
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<PreparedObservedSourceExpectation, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
@@ -279,11 +282,16 @@ where
                     .map_err(|denial| parameter_denial(Binding::IDENTITY, denial))
             },
         )?;
+        let control = SourceFactExpansionControl::for_phase(
+            self,
+            phase,
+            Some(admission.publication_request()),
+            Binding::IDENTITY,
+        )?;
         let prepared_facts =
-            source.admit_fact_materialization(checked.layout, Binding::IDENTITY)?;
+            source.admit_fact_materialization(checked.layout, Binding::IDENTITY, control)?;
         let partition_identity = source.partition_identity();
-        let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
-        let facts = prepared_facts.into_facts(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(admission.publication_request())))?;
+        let facts = prepared_facts.into_facts()?;
         let context = source.retain_expression_binding();
         let super::WorthQueryApplicationBasisSelectionIdentity::Product(observed_product) =
             source.selection
@@ -306,6 +314,7 @@ where
 
     fn bind_checked_source_expectation<Binding, Scope>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Binding::Operation, Binding::Input, Scope>,
         source: WorthQueryObservedSource<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>,
         identity: [u8; 32],
@@ -313,7 +322,7 @@ where
         kind: WorthQuerySourceExpectationKind,
     ) -> Result<WorthQueryPendingSourceExpectation<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>, WorthQuerySourceExpectationDenial>
     where Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<Schema>,
-    {
+{
         let checked = self.checked_source_affinity::<Binding, Scope>(
             admission,
             &source,
@@ -327,7 +336,12 @@ where
         source.validate_fact_retention(
             checked.layout,
             checked.expected_query_identifier,
-            Some(admission.publication_request()),
+            SourceFactExpansionControl::for_phase(
+                self,
+                phase,
+                Some(admission.publication_request()),
+                Binding::IDENTITY,
+            )?,
         )?;
         let bound = WorthQueryBoundSourceExpectation {
             kind,

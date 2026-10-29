@@ -65,6 +65,7 @@ pub(super) fn derive_set_identity(
             match subject_kind {
                 "application-resource" => "resource-purpose",
                 "application-inspection" => "inspection-purpose",
+                "application-managed-index" => "parent-binding",
                 _ => "input-type",
             },
             input_type,

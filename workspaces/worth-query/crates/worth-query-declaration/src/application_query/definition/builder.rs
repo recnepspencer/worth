@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+mod managed_index;
 
 use crate::application_query::ApplicationQueryMarkerIdentity;
 use crate::application_query::{
@@ -50,6 +51,8 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 root_paths: Vec::new(),
                 orbit: None,
                 component_selection: None,
+                managed_index: None,
+                managed_index_recipe: None,
                 cardinality: parts.cardinality,
                 predicates: Vec::new(),
                 ordering: Vec::new(),
@@ -240,7 +243,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         Query: ApplicationQueryMarkerIdentity<Schema>,
         ScopeSlot: WorthQueryPortableType,
         TargetSlot: WorthQueryPortableType,
-    {
+{
         self.definition.live_cause = Some(ApplicationQueryLiveCauseContract::typed::<
             Schema,
             Query,
@@ -303,7 +306,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         Query: ApplicationQueryMarkerIdentity<Schema>,
         ScopeSlot: WorthQueryPortableType,
         TargetSlot: WorthQueryPortableType,
-    {
+{
         self.definition.live_cause = Some(ApplicationQueryLiveCauseContract::typed::<
             Schema,
             Query,

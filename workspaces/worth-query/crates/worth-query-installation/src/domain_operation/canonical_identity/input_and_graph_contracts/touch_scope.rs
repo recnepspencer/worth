@@ -2,6 +2,16 @@ use super::*;
 
 pub(super) fn hash_touch_scope(hasher: &mut impl Sink, scope: &WorthQueryOperationTouchScope) {
     match scope {
+        WorthQueryOperationTouchScope::RemoveAspect(aspect) => {
+            hash_text_field(hasher, "touch-scope", "remove-aspect");
+            hash_binding(hasher, aspect.schema());
+            hash_text_field(hasher, "touch-entity", aspect.entity());
+            hash_text_field(
+                hasher,
+                "touch-contract-canonical-material",
+                aspect.canonical_contract_material(),
+            );
+        }
         WorthQueryOperationTouchScope::InitializeRelationField(field) => {
             hash_text_field(hasher, "touch-scope", "initialize-relation-field");
             let relation = field.relation();

@@ -2,7 +2,7 @@
 use super::*;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationBuilder;
 
-pub(super) fn declare(
+pub(crate) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<IdentitySchema>,
 ) -> ApplicationSchemaDeclarationBuilder<IdentitySchema> {
     resource::with_authorization(schema)

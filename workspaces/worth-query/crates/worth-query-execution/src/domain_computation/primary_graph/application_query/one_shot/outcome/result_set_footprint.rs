@@ -12,6 +12,30 @@ pub(super) struct ResultSetFootprint<'a> {
     context_row: Option<&'a WorthQueryObservedSourceFootprint>,
 }
 impl<'a> ResultSetFootprint<'a> {
+    pub(super) fn take_rows(
+        kernel: &mut super::RawNonLiveKernelOutcome,
+    ) -> Result<
+        (
+            Vec<WorthQueryObservedSourceFootprint>,
+            Arc<WorthQueryObservedRootSelection>,
+        ),
+        Denial,
+    > {
+        let mut rows = std::mem::take(&mut kernel.raw.source_footprints);
+        let selection = Arc::clone(
+            kernel
+                .raw
+                .result_set_source
+                .as_ref()
+                .ok_or(Denial::ProjectionUnavailable)?,
+        );
+        // Single-row producer input also depends on the complete selection:
+        // a new matching root invalidates reuse even if this row did not change.
+        if let [row] = rows.as_mut_slice() {
+            row.root_selection = Some(Arc::clone(&selection));
+        }
+        Ok((rows, selection))
+    }
     pub(super) fn prepare(
         root: EntityId,
         selection: Arc<WorthQueryObservedRootSelection>,

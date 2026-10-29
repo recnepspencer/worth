@@ -17,67 +17,17 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 mod ordinary;
 pub(in crate::domain_computation::primary_graph::application_query) use ordinary::{
-    complete_one_shot, finalize_one_shot, finalize_one_shot_with_decode,
+    complete_one_shot, complete_one_shot_with_projection, finalize_one_shot,
+    finalize_one_shot_with_decode,
 };
 mod completed;
+pub(in crate::domain_computation::primary_graph::application_query) mod material;
 pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;
 mod decode_denial;
 mod result_set_footprint;
 pub(in crate::domain_computation::primary_graph::application_query) mod source_storage;
 pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
 use result_set_footprint::ResultSetFootprint;
-pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_projection<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Projected,
->(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    decode: &ValueDecodeState,
-    plan: WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
-    kernel: RawNonLiveKernelOutcome,
-    authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
-    read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
-    project: impl FnOnce(
-        RawNonLiveKernelOutcome,
-        &super::super::disclosure::WorthQueryApplicationQueryGovernance,
-        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        &str,
-    ) -> Result<
-        super::super::read_execution::ProjectedNonLiveKernelOutcome<Projected>,
-        WorthQueryApplicationOneShotDenial,
-    >,
-) -> Result<CompletedOneShotRead<Query, Projected>, WorthQueryApplicationOneShotDenial>
-where
-    Schema: ApplicationSchema,
-{
-    complete_one_shot_with_capture(
-        execution,
-        application,
-        decode,
-        plan,
-        kernel,
-        authorization_work,
-        read_proof,
-        project,
-        |_, _| Ok(()),
-    )
-}
-
 pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_capture<
     Schema,
     Query,
@@ -136,6 +86,36 @@ where
     if let Some(cause) = decode.denial() {
         return Err(value_decode_denial(cause, plan.query.name()).into());
     }
+    // Only the private managed-source kernel supplies this original grant.
+    let allocation = kernel
+        .raw
+        .material_source
+        .as_ref()
+        .map(std::sync::Arc::clone);
+    let material = allocation
+        .as_ref()
+        .map(|allocation| material::MaterialCompletion::new(execution, allocation));
+    let material_failure = |cause| {
+        super::map_authorized_read_denial(
+            super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
+                super::super::read_execution::relational_read_denial(cause, plan.query.name()),
+            ),
+            plan.query.name(),
+        )
+    };
+    if let Some(material) = &material {
+        if plan.retain_expression_context {
+            return Err(denial(
+                WorthQueryApplicationOneShotDenialKind::ExpressionContextUnavailable,
+                plan.query.name(),
+                plan.query.name(),
+            )
+            .into());
+        }
+        material
+            .affinity(plan.principal)
+            .map_err(&material_failure)?;
+    }
     let request_affinity =
         super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity::new(
             plan.principal,
@@ -154,21 +134,8 @@ where
     } else {
         None
     };
-    let mut source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
-    let result_set_selection =
-        std::sync::Arc::clone(kernel.raw.result_set_source.as_ref().ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ProjectionUnavailable,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?);
-    // A single row can feed an output demand. Its output depends on the
-    // complete query selection as well as the row: a newly matching root must
-    // invalidate reuse even when this row's local path remains unchanged.
-    if let [footprint] = source_footprints.as_mut_slice() {
-        footprint.root_selection = Some(std::sync::Arc::clone(&result_set_selection));
-    }
+    let (source_footprints, result_set_selection) = ResultSetFootprint::take_rows(&mut kernel)
+        .map_err(|kind| denial(kind, plan.query.name(), plan.query.name()))?;
     let set_footprint = ResultSetFootprint::prepare(
         plan.scope.entity_id(),
         result_set_selection,
@@ -177,6 +144,11 @@ where
     )
     .map_err(|kind| denial(kind, plan.query.name(), plan.query.name()))?;
     let request = plan.controls.request_scope();
+    if let Some(material) = &material {
+        material
+            .basis(plan.basis.identity())
+            .map_err(&material_failure)?;
+    }
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
     let parameter_binding_identity = *plan.parameters.identity();
@@ -194,7 +166,16 @@ where
     } else {
         None
     };
-    let scope_selector = plan.scope.retain_scope_selector();
+    let scope_selector = if material.is_some() {
+        material::retain_scope(execution, plan.scope, plan.query.name())?
+    } else {
+        plan.scope.retain_scope_selector()
+    };
+    if let Some(material) = &material {
+        material
+            .original_metadata(plan.query.name(), basis_identity.branch_id())
+            .map_err(&material_failure)?;
+    }
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let result_set_footprint = set_footprint.materialize();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
@@ -216,17 +197,7 @@ where
                 execution,
                 &source_control,
             )
-            .map_err(|cause| {
-                super::map_authorized_read_denial(
-                    super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
-                        super::super::read_execution::relational_read_denial(
-                            cause,
-                            plan.query.name(),
-                        ),
-                    ),
-                    plan.query.name(),
-                )
-            })
+            .map_err(&material_failure)
         };
     let mut row_meanings = worth_execution::ExecutionRequestArrayBuilder::allocate(
         *execution,
@@ -236,22 +207,33 @@ where
     for footprint in source_footprints {
         admit_request(request, plan.query.name())?;
         let selection = basis_identity.selection().clone();
-        let source_meaning = application
-            .source_meanings
-            .intern_compared(
+        let source_meaning = if let Some(allocation) = &allocation {
+            application.source_meanings.intern_material_compared(
                 plan.query.identity().as_bytes(),
                 parameter_binding_identity.bytes(),
                 footprint,
                 &selection,
                 &mut compare_source,
-            )?
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
-                    plan.query.name(),
-                    plan.query.name(),
-                )
-            })?;
+                execution,
+                allocation,
+                &mut |cause| material_failure(cause),
+            )
+        } else {
+            application.source_meanings.intern_compared(
+                plan.query.identity().as_bytes(),
+                parameter_binding_identity.bytes(),
+                footprint,
+                &selection,
+                &mut compare_source,
+            )
+        }?
+        .ok_or_else(|| {
+            denial(
+                WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
+                plan.query.name(),
+                plan.query.name(),
+            )
+        })?;
         row_meanings
             .push(source_meaning)
             .map_err(|cause| source_storage::denied(cause, plan.query.name()))?;
@@ -269,7 +251,13 @@ where
             retained_projection,
         ),
     );
-    let mut observed_sources = Vec::with_capacity(source_parameters.row_meanings().len());
+    let mut observed_sources = if let Some(material) = &material {
+        material
+            .source_headers(source_parameters.row_meanings().len())
+            .map_err(&material_failure)?
+    } else {
+        Vec::with_capacity(source_parameters.row_meanings().len())
+    };
     for source_meaning in source_parameters.row_meanings() {
         admit_request(request, plan.query.name())?;
         observed_sources.push(super::super::WorthQueryObservedSource {
@@ -289,22 +277,35 @@ where
             _marker: PhantomData,
         });
     }
-    let result_set_meaning = application
-        .source_meanings
-        .intern_result_set_compared(
+    let result_set_meaning = if let Some(allocation) = &allocation {
+        application
+            .source_meanings
+            .intern_material_result_set_compared(
+                plan.query.identity().as_bytes(),
+                parameter_binding_identity.bytes(),
+                result_set_footprint,
+                basis_identity.selection(),
+                &mut compare_source,
+                execution,
+                allocation,
+                &mut |cause| material_failure(cause),
+            )
+    } else {
+        application.source_meanings.intern_result_set_compared(
             plan.query.identity().as_bytes(),
             parameter_binding_identity.bytes(),
             result_set_footprint,
             basis_identity.selection(),
             &mut compare_source,
-        )?
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
+        )
+    }?
+    .ok_or_else(|| {
+        denial(
+            WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
+            plan.query.name(),
+            plan.query.name(),
+        )
+    })?;
     let result_set_observation =
         super::super::WorthQueryObservedResultSet::new(super::super::WorthQueryObservedSource {
             expression_context,
@@ -346,20 +347,14 @@ where
     admit_request(request, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
     let (rows, kernel_receipt) = projected?.into_parts();
-    let read_completion = plan
-        .graph_work
-        .complete_query_read(
-            read_proof,
-            kernel_receipt.observed_graph_read_work(),
-            basis_release,
-        )
-        .map_err(|_| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ForeignPlan,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
+    let (read_completion, source_context) = completed::complete_query(
+        plan.graph_work,
+        read_proof,
+        kernel_receipt.observed_graph_read_work(),
+        basis_release,
+        allocation.is_some(),
+        plan.query.name(),
+    )?;
     let receipt = WorthQueryApplicationQueryAccessReceipt::from_non_live_kernel(
         WorthQueryApplicationQueryReceiptIdentity {
             query_identity: plan.query.identity().clone(),
@@ -391,6 +386,8 @@ where
             receipt,
         },
         capture,
+        material_source: allocation,
+        source_context,
         authorization: plan.authorization,
     })
 }

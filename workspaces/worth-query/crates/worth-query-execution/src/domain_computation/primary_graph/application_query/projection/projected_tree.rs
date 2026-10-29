@@ -196,6 +196,12 @@ impl WorthQueryApplicationProjectedField {
         &self.result_path
     }
 
+    pub(in crate::domain_computation::primary_graph::application_query) fn slot_key_identity(
+        &self,
+    ) -> &Arc<ApplicationQueryResultSlotKey> {
+        &self.slot_key
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn value(
         &self,
     ) -> &AspectValue {

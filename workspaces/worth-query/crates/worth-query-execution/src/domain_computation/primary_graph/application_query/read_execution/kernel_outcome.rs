@@ -121,3 +121,33 @@ where
         },
     })
 }
+
+/// Internal completion carrier only: () is not the application's result binding.
+pub(in crate::domain_computation::primary_graph::application_query) fn project_non_live_kernel_source(
+    kernel: RawNonLiveKernelOutcome,
+    work: impl FnOnce(usize) -> Result<(), super::super::WorthQueryApplicationOneShotDenial>,
+) -> Result<
+    (
+        ProjectedNonLiveKernelOutcome<()>,
+        super::super::projection::WorthQueryApplicationDisclosedProjectionTree,
+    ),
+    super::super::WorthQueryApplicationOneShotDenial,
+> {
+    let RawNonLiveKernelOutcome { mut raw } = kernel;
+    let result_count = raw.rows.raw_rows().len();
+    work(result_count)?;
+    let rows = vec![(); result_count];
+    let tree = raw.rows.take();
+    let truncation_count = usize::from(raw.has_more);
+    Ok((
+        ProjectedNonLiveKernelOutcome {
+            rows,
+            receipt: NonLiveKernelReceiptEvidence {
+                read: raw,
+                result_count,
+                truncation_count,
+            },
+        },
+        tree,
+    ))
+}
