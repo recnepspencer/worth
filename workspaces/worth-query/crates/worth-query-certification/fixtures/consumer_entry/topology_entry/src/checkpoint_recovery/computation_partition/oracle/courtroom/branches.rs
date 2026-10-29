@@ -130,12 +130,10 @@ mod serial {
                         let step = models[index].step(kind, &mut rng);
                         apply(&kept, branches[index], &step.changes, &mut command);
                         apply(&fresh, full_branches[index], &step.changes, &mut command);
-                        super::super::super::super::super::super::own_write::arm_own_write(
-                            step.own_write,
-                        );
+                        super::super::super::super::own_write::arm_own_write(step.own_write);
                         let (contacts, a) = run(&kept, branches[index]);
                         let (_, b) = run(&fresh, full_branches[index]);
-                        super::super::super::super::super::super::own_write::arm_own_write(None);
+                        super::super::super::super::own_write::arm_own_write(None);
                         let executes = kind != Kind::NoOp;
                         let written = executes
                             && models[index].completes()
@@ -163,8 +161,8 @@ mod serial {
             // Closing ancestors completes and cannot release the nested branch's
             // retained basis.
             for (a, b) in [(child, full_child), (parent, full_parent)] {
-                super::super::super::super::branch_sharing::close_ancestor(&kept, a);
-                super::super::super::super::branch_sharing::close_ancestor(&fresh, b);
+                super::super::super::branch_sharing::close_ancestor(&kept, a);
+                super::super::super::branch_sharing::close_ancestor(&fresh, b);
                 let step = models[2].step(Kind::Value, &mut rng);
                 apply(&kept, nested, &step.changes, &mut command);
                 apply(&fresh, full_nested, &step.changes, &mut command);

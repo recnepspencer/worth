@@ -35,7 +35,7 @@ mod serial {
             None,
             profile,
             32,
-            super::super::super::super::super::super::source_world::seed,
+            super::super::super::super::source_world::seed,
         );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
@@ -47,7 +47,7 @@ mod serial {
         let open = || {
             request
             .demand(ChainDemand("anchor-b".into()))
-            .start_dependent_in_program::<Program, super::super::super::super::super::super::program::ChainConnection>(
+            .start_dependent_in_program::<Program, super::super::super::super::program::ChainConnection>(
                 &application,
             )
             .unwrap()

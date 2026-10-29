@@ -91,7 +91,7 @@ mod serial {
         .without_source()
         .idempotency_owned(0x9176_4002)
         .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<OracleProgram, super::super::super::super::source_delivery::RetainedEntryAction>(
+        .retain_operation::<OracleProgram, super::super::super::source_delivery::RetainedEntryAction>(
             &application,
         )
         .unwrap_or_else(|(_, denial)| panic!("retained commit constructor: {denial:?}"));

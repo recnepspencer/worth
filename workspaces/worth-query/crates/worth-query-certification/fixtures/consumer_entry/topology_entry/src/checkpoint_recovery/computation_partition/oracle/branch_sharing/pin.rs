@@ -33,7 +33,7 @@ mod serial {
             at_demand_scope(EntryEdit::new(
                 "even",
                 entry,
-                super::super::super::super::super::super::entry_edit::EntryFact::Value,
+                super::super::super::super::entry_edit::EntryFact::Value,
                 bits,
             ))
         };

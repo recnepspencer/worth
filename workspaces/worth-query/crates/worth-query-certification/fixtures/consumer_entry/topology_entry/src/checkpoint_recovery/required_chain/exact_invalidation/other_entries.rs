@@ -103,7 +103,7 @@ mod serial {
             "the native writer changes B, not C"
         );
         assert!(
-            super::super::super::super::binding::decisions_snapshot().is_empty(),
+            super::super::super::binding::decisions_snapshot().is_empty(),
             "the native write itself invokes no chain handler"
         );
         // Let C initiate its own refresh before an unrelated caller may pump it.
@@ -111,7 +111,7 @@ mod serial {
         // B's own Length is its source and prepared value. Its native overwrite
         // requires B's new owned publication before C can consume current B.
         assert_eq!(
-            super::super::super::super::binding::decisions_snapshot(),
+            super::super::super::binding::decisions_snapshot(),
             vec![
                 (rings[1].key("b"), vec![rings[1].root_output()]),
                 (rings[1].key("c"), vec![44]),

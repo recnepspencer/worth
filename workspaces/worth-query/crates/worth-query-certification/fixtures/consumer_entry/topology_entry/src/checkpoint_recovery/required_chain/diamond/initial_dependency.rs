@@ -274,7 +274,7 @@ mod serial {
             None,
             profile,
             4096,
-            super::super::super::super::source_world::seed,
+            super::super::super::source_world::seed,
         );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);

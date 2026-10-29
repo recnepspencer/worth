@@ -194,7 +194,7 @@ mod serial {
             EntryEdit::new(
                 "even",
                 7,
-                super::super::super::super::entry_edit::EntryFact::Fault,
+                super::super::super::entry_edit::EntryFact::Fault,
                 3,
             ),
             1,

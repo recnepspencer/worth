@@ -31,11 +31,11 @@ mod serial {
     use super::*;
     #[test]
     fn extra_valid_operation_node_refuses_before_initialization() {
-        refusal::<{ super::super::super::super::ORPHAN_OPERATION }>("unbound-output-ready");
+        refusal::<{ super::super::super::ORPHAN_OPERATION }>("unbound-output-ready");
     }
 
     #[test]
     fn same_named_unbound_workflow_stage_node_refuses_before_initialization() {
-        refusal::<{ super::super::super::super::ORPHAN_STAGE }>("orphan-stage");
+        refusal::<{ super::super::super::ORPHAN_STAGE }>("orphan-stage");
     }
 }

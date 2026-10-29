@@ -31,7 +31,7 @@ mod serial {
         let advance = at_demand_scope(EntryEdit::new(
             "even",
             26,
-            super::super::super::super::super::super::entry_edit::EntryFact::Value,
+            super::super::super::super::entry_edit::EntryFact::Value,
             3.25_f64.to_bits(),
         ));
         apply(&app, parent, vec![Change::Entry(advance)], &mut 0x6118);
@@ -39,7 +39,7 @@ mod serial {
         let edit = at_demand_scope(EntryEdit::new(
             "even",
             7,
-            super::super::super::super::super::super::entry_edit::EntryFact::Value,
+            super::super::super::super::entry_edit::EntryFact::Value,
             2.5_f64.to_bits(),
         ));
         apply(&app, child, vec![Change::Entry(edit)], &mut 0x6119);
@@ -68,8 +68,8 @@ mod serial {
             "the changed leaf copies its root path"
         );
         let keys = shared.iter().map(|(key, _)| *key).collect::<Vec<_>>();
-        let edited = super::super::super::super::tree_work::identity(7);
-        let path = super::super::super::super::tree_work::update_path(&keys, edited);
+        let edited = super::super::super::tree_work::identity(7);
+        let path = super::super::super::tree_work::update_path(&keys, edited);
         for (key, shared) in shared {
             assert_eq!(
                 shared,

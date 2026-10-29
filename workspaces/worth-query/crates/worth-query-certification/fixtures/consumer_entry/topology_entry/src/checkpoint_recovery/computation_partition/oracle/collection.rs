@@ -133,11 +133,7 @@ mod serial {
                         graph,
                         &["even"],
                         place,
-                        super::super::super::super::execution::entry(
-                            place as u64,
-                            place as u32,
-                            value,
-                        ),
+                        super::super::super::execution::entry(place as u64, place as u32, value),
                     );
                 }
             },
@@ -159,10 +155,10 @@ mod serial {
         edit(
             &request,
             &application,
-            super::super::super::super::entry_edit::EntryEdit::new(
+            super::super::super::entry_edit::EntryEdit::new(
                 "even",
                 1,
-                super::super::super::super::entry_edit::EntryFact::Value,
+                super::super::super::entry_edit::EntryFact::Value,
                 5.0_f64.to_bits(),
             ),
             1,
@@ -208,7 +204,7 @@ mod serial {
                     graph,
                     &["even"],
                     0,
-                    super::super::super::super::execution::entry(0, 1, -1.0),
+                    super::super::super::execution::entry(0, 1, -1.0),
                 );
             },
         );

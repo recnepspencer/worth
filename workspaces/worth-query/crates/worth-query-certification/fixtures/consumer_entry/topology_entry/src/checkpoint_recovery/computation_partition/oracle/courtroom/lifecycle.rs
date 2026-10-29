@@ -143,7 +143,7 @@ mod serial {
                 );
                 assert_eq!(restored.len(), 1);
                 let total = restored[0].outcome.as_ref().unwrap().0;
-                super::super::super::super::republication::republish(&app, total);
+                super::super::super::republication::republish(&app, total);
                 prior = None;
                 let step = model.step(Kind::Value, &mut rng);
                 apply(&app, &step.changes, &mut history, &mut command);

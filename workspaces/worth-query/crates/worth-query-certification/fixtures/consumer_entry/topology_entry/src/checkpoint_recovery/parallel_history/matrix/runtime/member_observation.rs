@@ -29,9 +29,9 @@ mod serial {
         // This intentionally uses no fixture rendezvous: the measurement must
         // remain sensitive without a selected key set defining its answer.
         for actual in [1, 2, 3] {
-            let world = super::super::super::super::seeded_world::world(
-                super::super::super::super::Family::Empty,
-                super::super::super::super::SEED,
+            let world = super::super::super::seeded_world::world(
+                super::super::super::Family::Empty,
+                super::super::super::SEED,
             );
             let control = Control::new(world, false, false, 0, false);
             let waves = vec![vec![10, 20, 30, 40]];

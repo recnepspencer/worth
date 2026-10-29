@@ -95,7 +95,7 @@ mod serial {
             false,
             TOTALS_WORK,
             1,
-            { super::super::super::super::LIFECYCLE },
+            { super::super::super::LIFECYCLE },
         >(None, Default::default(), |graph| {
             for set in ["even", "odd"] {
                 facts::seed_set(graph, set, -0.0);
@@ -133,7 +133,7 @@ mod serial {
             false,
             TOTALS_WORK,
             1,
-            { super::super::super::super::LIFECYCLE },
+            { super::super::super::LIFECYCLE },
         >(None, Default::default(), |_| {});
         let (foreign_scope, foreign_principal) = authenticate(&foreign);
         let foreign_request = foreign.request(&foreign_principal, &foreign_scope);
@@ -309,12 +309,7 @@ mod serial {
         let _guard = checkpoint_recovery_test_guard();
         let initial_effects = std::cell::Cell::new(false);
         let result = support::try_install_program_with_limits::<
-            OracleProgram<
-                false,
-                TOTALS_WORK,
-                1,
-                { super::super::super::super::CONFLICTING_READINESS },
-            >,
+            OracleProgram<false, TOTALS_WORK, 1, { super::super::super::CONFLICTING_READINESS }>,
         >(
             None,
             Default::default(),

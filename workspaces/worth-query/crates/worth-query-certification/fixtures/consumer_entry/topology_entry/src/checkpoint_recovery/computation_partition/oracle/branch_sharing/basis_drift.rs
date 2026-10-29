@@ -28,7 +28,7 @@ mod serial {
         let edit = at_demand_scope(EntryEdit::new(
             "even",
             7,
-            super::super::super::super::super::super::entry_edit::EntryFact::Value,
+            super::super::super::super::entry_edit::EntryFact::Value,
             2.5_f64.to_bits(),
         ));
         apply(&kept, child, vec![Change::Entry(edit.clone())], &mut 0x6119);

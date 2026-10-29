@@ -17,7 +17,7 @@ mod serial {
             Default::default(),
             |graph| {
                 case.before.seed(graph);
-                super::super::super::super::correction_grant::seed(graph, SCOPE);
+                super::super::super::correction_grant::seed(graph, SCOPE);
             },
         );
         let (scope, principal) = authenticate(&application);
@@ -74,7 +74,7 @@ mod serial {
             .before;
         let application = installation::install(|graph| {
             model.seed(graph);
-            super::super::super::super::correction_grant::seed(graph, SCOPE);
+            super::super::super::correction_grant::seed(graph, SCOPE);
         });
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);

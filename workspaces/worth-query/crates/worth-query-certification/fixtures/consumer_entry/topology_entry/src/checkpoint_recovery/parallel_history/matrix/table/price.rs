@@ -88,7 +88,7 @@ mod serial {
                 family: 7,
                 workers: 1,
                 declaration: 0,
-                dispatch: super::super::super::super::cases::UNSEEDED,
+                dispatch: super::super::super::cases::UNSEEDED,
                 fault,
                 reuse: false,
             };

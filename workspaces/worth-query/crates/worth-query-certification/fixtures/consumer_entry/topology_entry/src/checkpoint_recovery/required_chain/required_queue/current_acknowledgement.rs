@@ -13,7 +13,7 @@ mod serial {
             None,
             profile,
             support::limits(4096, support::invalidation()),
-            super::super::super::super::diamond::seed,
+            super::super::super::diamond::seed,
         );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);

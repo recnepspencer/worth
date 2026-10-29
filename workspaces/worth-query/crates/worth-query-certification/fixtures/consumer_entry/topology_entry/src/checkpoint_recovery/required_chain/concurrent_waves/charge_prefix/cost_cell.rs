@@ -8,7 +8,7 @@ mod serial {
     use super::*;
     #[test]
     fn failed_advancement_cost_cell() {
-        let _guard = super::super::super::super::checkpoint_recovery_test_guard();
+        let _guard = super::super::super::checkpoint_recovery_test_guard();
         let suffix =
             std::env::var("WORTH_FAILED_PREFIX_SUFFIX").map_or(0, |suffix| suffix.parse().unwrap());
         let observed = history::run_costs(

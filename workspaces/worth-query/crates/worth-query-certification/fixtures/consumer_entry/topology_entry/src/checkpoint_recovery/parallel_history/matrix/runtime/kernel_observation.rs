@@ -107,9 +107,9 @@ mod serial {
     use super::*;
     #[test]
     fn four_inner_kernels_cannot_hide_in_one_member_window() {
-        let world = super::super::super::super::seeded_world::world(
-            super::super::super::super::Family::Empty,
-            super::super::super::super::SEED,
+        let world = super::super::super::seeded_world::world(
+            super::super::super::Family::Empty,
+            super::super::super::SEED,
         );
         let control = control::Control::new(world, false, false, 0, true);
         control.state.lock().unwrap().armed = true;

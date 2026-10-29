@@ -254,7 +254,7 @@ mod serial {
         let edited = EntryEdit::new(
             "even",
             u64::from(EDITED),
-            super::super::super::super::super::super::entry_edit::EntryFact::Value,
+            super::super::super::super::entry_edit::EntryFact::Value,
             2.5_f64.to_bits(),
         );
         let edited = at_demand_scope(edited).commanded(0x612_10000);

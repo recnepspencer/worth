@@ -153,7 +153,7 @@ mod serial {
         // Reenter through untrusted bytes and installed producer readmission.
         // No demand or supplier replay is allowed to repair this current-output read.
         provider_observation.reset();
-        super::super::super::super::final_output::reset_provider_contacts();
+        super::super::super::final_output::reset_provider_contacts();
         let reopened = support::observed::install(
             Some(
                 application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
@@ -194,10 +194,7 @@ mod serial {
             WorthQueryApplicationMutationOutcome::Committed { .. }
         ));
         assert_eq!(provider_observation.count(), 0);
-        assert_eq!(
-            super::super::super::super::final_output::provider_contacts(),
-            0
-        );
+        assert_eq!(super::super::super::final_output::provider_contacts(), 0);
 
         let source = request
             .query(PlanarRead {
@@ -223,9 +220,6 @@ mod serial {
             .unwrap();
         assert_stale(verify(0x9176_6204_u64).unwrap_err());
         assert_eq!(provider_observation.count(), 0);
-        assert_eq!(
-            super::super::super::super::final_output::provider_contacts(),
-            0
-        );
+        assert_eq!(super::super::super::final_output::provider_contacts(), 0);
     }
 }
