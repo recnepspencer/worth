@@ -91,6 +91,26 @@ impl VisibilityProjectionView {
         entity: EntityId,
         project: impl FnOnce(RelationalEntityMetadata, Option<&AuthoritativeRecordAspectState>) -> T,
     ) -> Result<Option<T>, RelationalBorrowedRecordReadDenial> {
+        let mut project = Some(project);
+        let mut slot = None;
+        let produced =
+            self.read_exact_entity_state_erased(execution, entity, &mut |metadata, state| {
+                let project = project.take().expect(
+                    /* Proof: The erased exact-entity core invokes this projection once, while the selected slot is still borrowed. */
+                    "exact entity state projection runs once",
+                );
+                slot = Some(project(metadata, state));
+            })?;
+        Ok(if produced { slot } else { None })
+    }
+
+    #[inline(never)]
+    fn read_exact_entity_state_erased(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+        project: &mut dyn FnMut(RelationalEntityMetadata, Option<&AuthoritativeRecordAspectState>),
+    ) -> Result<bool, RelationalBorrowedRecordReadDenial> {
         let SnapshotStateBasis::Exact(basis) = &self.basis else {
             return Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired);
         };
@@ -98,18 +118,18 @@ impl VisibilityProjectionView {
             .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
         let root = basis.root();
         let Some(partition) = self.admitted_head_region(entity.partition_id) else {
-            return Ok(None);
+            return Ok(false);
         };
         let Some(slot) = partition.entity_arena().get_slot(entity.slot_index()) else {
-            return Ok(None);
+            return Ok(false);
         };
         if !slot.is_live()
             || (!entity.generation.is_zero() && slot.generation() != entity.generation_value())
         {
-            return Ok(None);
+            return Ok(false);
         }
         let Some(kind_id) = slot.kind_id() else {
-            return Ok(None);
+            return Ok(false);
         };
         if !root
             .schema_authority()
@@ -117,7 +137,7 @@ impl VisibilityProjectionView {
             .entity_kinds
             .contains_key(&kind_id)
         {
-            return Ok(None);
+            return Ok(false);
         }
         let metadata = RelationalEntityMetadata {
             entity_id: EntityId::new(
@@ -128,10 +148,8 @@ impl VisibilityProjectionView {
             kind_id,
             lifecycle: slot.lifecycle(),
         };
-        Ok(Some(project(
-            metadata,
-            slot.extra().authoritative_aspect_state.as_ref(),
-        )))
+        project(metadata, slot.extra().authoritative_aspect_state.as_ref());
+        Ok(true)
     }
 
     /// Exact metadata only; names and aspect values stay in the pinned root.
@@ -151,6 +169,29 @@ impl VisibilityProjectionView {
         relation: RelationId,
         project: impl FnOnce(RelationalRelationMetadata, Option<&AuthoritativeRecordAspectState>) -> T,
     ) -> Result<Option<T>, RelationalBorrowedRecordReadDenial> {
+        let mut project = Some(project);
+        let mut slot = None;
+        let produced =
+            self.read_exact_relation_state_erased(execution, relation, &mut |metadata, state| {
+                let project = project.take().expect(
+                    /* Proof: The erased exact-relation core invokes this projection once, while the selected slot is still borrowed. */
+                    "exact relation state projection runs once",
+                );
+                slot = Some(project(metadata, state));
+            })?;
+        Ok(if produced { slot } else { None })
+    }
+
+    #[inline(never)]
+    fn read_exact_relation_state_erased(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        relation: RelationId,
+        project: &mut dyn FnMut(
+            RelationalRelationMetadata,
+            Option<&AuthoritativeRecordAspectState>,
+        ),
+    ) -> Result<bool, RelationalBorrowedRecordReadDenial> {
         let SnapshotStateBasis::Exact(basis) = &self.basis else {
             return Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired);
         };
@@ -158,18 +199,18 @@ impl VisibilityProjectionView {
             .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
         let root = basis.root();
         let Some(partition) = self.admitted_head_region(relation.partition_id) else {
-            return Ok(None);
+            return Ok(false);
         };
         let Some(slot) = partition.relation_arena().get_slot(relation.slot_index()) else {
-            return Ok(None);
+            return Ok(false);
         };
         if !slot.is_live()
             || (!relation.generation.is_zero() && slot.generation() != relation.generation_value())
         {
-            return Ok(None);
+            return Ok(false);
         }
         let Some(kind_id) = slot.kind_id() else {
-            return Ok(None);
+            return Ok(false);
         };
         if !root
             .schema_authority()
@@ -177,10 +218,10 @@ impl VisibilityProjectionView {
             .relation_kinds
             .contains_key(&kind_id)
         {
-            return Ok(None);
+            return Ok(false);
         }
         let Some(endpoints) = &slot.extra().endpoints else {
-            return Ok(None);
+            return Ok(false);
         };
         let metadata = RelationalRelationMetadata {
             relation_id: RelationId::new(
@@ -193,10 +234,8 @@ impl VisibilityProjectionView {
             source: endpoints.source,
             target: endpoints.target,
         };
-        Ok(Some(project(
-            metadata,
-            slot.extra().authoritative_aspect_state.as_ref(),
-        )))
+        project(metadata, slot.extra().authoritative_aspect_state.as_ref());
+        Ok(true)
     }
 }
 

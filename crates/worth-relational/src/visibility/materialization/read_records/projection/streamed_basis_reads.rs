@@ -1,3 +1,4 @@
+mod keyed_entity_record;
 mod preclaimed_records;
 mod record_clone_quotes;
 use super::super::read_stop::ReadStop;
@@ -39,37 +40,39 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         inspect: impl FnOnce(&EntityReadRecord) -> T,
     ) -> Result<Option<T>, ReadStop<E>> {
-        self.demand_regions_full(execution, [id.partition_id])
-            .map_err(ReadStop::Request)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
-        let bytes = self
-            .candidate_entity_heap_for_id(id)
-            .and_then(|heap| {
-                heap.checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
-                    .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
-            })
-            .map_err(ReadStop::Request)?;
-        before_candidate(super::super::read_prices::KEYED_RECORD, bytes)
-            .map_err(ReadStop::Admission)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
-        let record = preclaimed_records::entity(self, id);
-        let actual = record
-            .as_ref()
-            .map_or(0, super::super::read_footprint::entity)
-            .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
-            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
-            .map_err(ReadStop::Request)?;
-        if actual > bytes {
-            return Err(ReadStop::Request(
-                crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
-            ));
+        let mut admission_stop = None;
+        let mut slot = None;
+        let mut inspect = Some(inspect);
+        let produced = keyed_entity_record::inspect(
+            self,
+            execution,
+            id,
+            &mut |work, bytes| {
+                before_candidate(work, bytes).map_err(|stop| {
+                    admission_stop = Some(stop);
+                })
+            },
+            &mut |record| {
+                let inspect = inspect.take().expect(
+                    /* Proof: The erased keyed-entity core invokes inspection once, while the materialized record is still borrowed. */
+                    "keyed entity inspection runs once",
+                );
+                slot = Some(inspect(record));
+            },
+        );
+        match produced {
+            Ok(true) => Ok(slot),
+            Ok(false) => Ok(None),
+            Err(keyed_entity_record::KeyedEntityInspectionStop::Request(cause)) => {
+                Err(ReadStop::Request(cause))
+            }
+            Err(keyed_entity_record::KeyedEntityInspectionStop::Admission) => {
+                Err(ReadStop::Admission(admission_stop.expect(
+                    /* Proof: Admission is reported only after this trampoline stores before_candidate's stop. */
+                    "keyed entity admission stores its stop",
+                )))
+            }
         }
-        before_candidate(0, actual).map_err(ReadStop::Admission)?;
-        let result = record.as_ref().map(inspect);
-        drop(record);
-        // The original caller may now restore its enclosing temporary claim.
-        before_candidate(0, 0).map_err(ReadStop::Admission)?;
-        Ok(result)
     }
 
     fn try_for_each_entity_record_in<E>(
