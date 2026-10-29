@@ -95,7 +95,22 @@ def testkit_package(name):
 
 def read_metadata(root):
     manifests = set()
-    for stem in (root, *root.glob("workspaces/*")):
+    config = root / "tools/boundary-check/config/test-workspaces.txt"
+    if config.exists():
+        stems = []
+        for line in config.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                workspace, separator, _ = line.partition("|")
+                path = Path(workspace.strip())
+                if not separator or path.is_absolute() or ".." in path.parts:
+                    raise ReportError("governed workspace must be repository-relative")
+                stems.append(root / path)
+    elif (root / ".git").exists():
+        raise ReportError("missing governed-workspace configuration")
+    else:
+        stems = [root]
+    for stem in stems:
         for pattern in ("crates/*court*/Cargo.toml", "crates/*testkit*/Cargo.toml"):
             manifests.update(stem.glob(pattern))
     metadata = {}
@@ -110,7 +125,7 @@ def read_metadata(root):
             if court.get("surface") != identity[1]:
                 raise ReportError(f"missing/mismatched court surface: {path}")
             metadata[name] = {"surface": court["surface"]}
-        elif package.get("metadata", {}).get("worth", {}).get("testkit"):
+        elif testkit_package(name):
             metadata[name] = {"surface": None}
     return metadata
 

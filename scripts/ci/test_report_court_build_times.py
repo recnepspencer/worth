@@ -33,8 +33,7 @@ class CourtTimingTests(unittest.TestCase):
             root = Path(directory)
             manifest = root / "crates" / name / "Cargo.toml"
             manifest.parent.mkdir(parents=True)
-            manifest.write_text(f'[package]\nname = "{name}"\n'
-                                '[package.metadata.worth.testkit]\nworkspace = "worth-query"\n',
+            manifest.write_text(f'[package]\nname = "{name}"\n',
                                 encoding="utf-8")
             metadata = report.read_metadata(root)
         rows = report.summarize([unit(name=name, target="", seconds=121)],
@@ -42,6 +41,23 @@ class CourtTimingTests(unittest.TestCase):
         self.assertEqual(rows[0]["kind"], "testkit")
         self.assertEqual(rows[0]["library_seconds"], 121)
         self.assertNotIn("decision", rows[0])
+
+    def test_metadata_reads_only_configured_workspaces(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "tools/boundary-check/config/test-workspaces.txt"
+            config.parent.mkdir(parents=True)
+            config.write_text("workspaces/query | worth-query\n", encoding="utf-8")
+            selected = root / "workspaces/query/crates/worth-query-testkit-host/Cargo.toml"
+            selected.parent.mkdir(parents=True)
+            selected.write_text('[package]\nname="worth-query-testkit-host"\n', encoding="utf-8")
+            for relative in ("crates/outside-court-host/Cargo.toml",
+                             "workspaces/another/crates/outside-testkit/Cargo.toml"):
+                outside = root / relative
+                outside.parent.mkdir(parents=True)
+                outside.write_text("deliberately invalid TOML", encoding="utf-8")
+            self.assertEqual(report.read_metadata(root),
+                             {"worth-query-testkit-host": {"surface": None}})
 
     def setUp(self):
         self.metadata = {COURT: {"surface": "host"},
