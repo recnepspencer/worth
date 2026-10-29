@@ -36,7 +36,7 @@ GROUPS = {
     # evaluate_obligation cache. Keep the workaround in its build owner;
     # ordinary Query and Bank builds retain their incremental settings.
     "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES),
-                "--lib", "--bins", "--config", "build.incremental=false"],
+                "--lib", "--bins", "--tests", "--config", "build.incremental=false"],
     "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
 

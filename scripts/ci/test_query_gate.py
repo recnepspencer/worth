@@ -44,6 +44,10 @@ class FailureReporting(unittest.TestCase):
 
 
 class DeclaredHarness(unittest.TestCase):
+    def test_fixture_build_includes_existing_integration_contracts(self):
+        self.assertIn("--tests", query_gate_courts.GROUPS["fixture"])
+        self.assertIn("worth-query-topology-entry", query_gate_courts.GROUPS["fixture"])
+
     def test_artifacts_use_target_kind_and_declared_harness_with_true_default(self):
         manifest_text = '''[package]
 name = "real-package"
