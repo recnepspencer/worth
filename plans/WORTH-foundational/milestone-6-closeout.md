@@ -1,5 +1,7 @@
 # Milestone 6 Closeout: Diagnostics And Explanation Ontology
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 Date: 2026-05-14
 
 ## Status
@@ -354,8 +356,8 @@ The final broad gap-close pass ran:
 
 ```powershell
 cargo fmt -p worth-foundational
-cargo test -p worth-foundational --test certification diagnostics::readiness -- --nocapture
-cargo test -p worth-foundational --test compile_time_boundaries diagnostic_production_readiness_requires_certified_artifact -- --nocapture
+cargo test -p worth-foundational --test worth_foundational diagnostics::readiness -- --nocapture
+cargo test -p worth-foundational --test worth_foundational diagnostic_production_readiness_requires_certified_artifact -- --nocapture
 cargo test -p worth-foundational
 git diff --check
 ```

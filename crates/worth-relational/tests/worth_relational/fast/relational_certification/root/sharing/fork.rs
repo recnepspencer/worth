@@ -1,0 +1,111 @@
+pub(crate) use super::world::supply_chain::SupplyChainScale;
+pub(crate) use super::world::supply_chain::{assert_oracle_matches, certified_supply_chain_world};
+pub(crate) use worth_relational::facade::history::BranchId;
+
+#[derive(Clone, Copy)]
+pub(crate) struct ForkFanoutSample {
+    pub(crate) log2_fanout: f64,
+    pub(crate) fork_materialized_authoritative_bytes: u64,
+}
+
+pub(crate) fn standard_fanout_samples(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    fanouts: &[u32],
+) -> Vec<ForkFanoutSample> {
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::standard());
+    assert_oracle_matches(execution, &world, &expected);
+    let mut branches = vec![world.runtime.main_branch_identity()];
+    let mut samples = Vec::with_capacity(fanouts.len());
+    for ordinal in 0..*fanouts.last().expect("at least one fan-out sample") {
+        let name = format!("standard-fanout-{ordinal}");
+        fork_from_main(execution, &world.runtime, &name);
+        branches.push(branch_identity(&world.runtime, &name));
+        let fanout = ordinal + 1;
+        if fanouts.contains(&fanout) {
+            let observation = world.runtime.observe_branch_sharing(&branches).unwrap();
+            assert_standard_fanout_observation(&observation, fanout, branches.len());
+            samples.push(ForkFanoutSample {
+                log2_fanout: f64::from(fanout).log2(),
+                fork_materialized_authoritative_bytes: observation
+                    .fork_materialized_authoritative_bytes(),
+            });
+        }
+    }
+    samples
+}
+
+pub(crate) fn assert_standard_fanout_observation(
+    observation: &worth_relational::facade::inspection::RelationalBranchSharingObservation,
+    fanout: u32,
+    observed_branch_count: usize,
+) {
+    assert_eq!(observation.branch_count(), u64::from(fanout) + 1);
+    assert_eq!(observation.unique_root_count(), 1);
+    assert_eq!(observation.unique_canonical_commit_artifacts(), 1);
+    assert_eq!(observation.shared_root_acquisitions(), u64::from(fanout));
+    assert_eq!(observation.copied_truth_bytes(), 0);
+    assert_eq!(observation.copied_commit_envelopes(), 0);
+    assert_eq!(observation.fork_materialized_entity_count(), 0);
+    assert_eq!(observation.fork_materialized_relation_count(), 0);
+    assert_eq!(observation.fork_materialized_authoritative_bytes(), 0);
+    assert_eq!(
+        observation.coordination_cells().len(),
+        observed_branch_count
+    );
+    assert_eq!(
+        observation.logical_branch_partition_payload_bytes(),
+        observation.unique_physical_partition_payload_bytes() * observation.branch_count()
+    );
+    let eager_fork_clone_mutant = observation
+        .unique_physical_partition_payload_bytes()
+        .saturating_mul(u64::from(fanout));
+    assert_ne!(
+        observation.fork_materialized_authoritative_bytes(),
+        eager_fork_clone_mutant,
+        "an eager per-fork truth clone must turn the zero-copy oracle red"
+    );
+}
+
+pub(crate) fn fitted_slope(samples: &[ForkFanoutSample]) -> f64 {
+    let sample_count = samples.len() as f64;
+    let mean_x = samples.iter().map(|sample| sample.log2_fanout).sum::<f64>() / sample_count;
+    let mean_y = samples
+        .iter()
+        .map(|sample| sample.fork_materialized_authoritative_bytes as f64)
+        .sum::<f64>()
+        / sample_count;
+    let covariance = samples
+        .iter()
+        .map(|sample| {
+            (sample.log2_fanout - mean_x)
+                * (sample.fork_materialized_authoritative_bytes as f64 - mean_y)
+        })
+        .sum::<f64>();
+    let variance = samples
+        .iter()
+        .map(|sample| (sample.log2_fanout - mean_x).powi(2))
+        .sum::<f64>();
+    covariance / variance
+}
+
+pub(crate) fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    name: &str,
+) {
+    let (_, source_basis) = runtime
+        .observe_fork_source(&BranchId("main".to_owned()))
+        .expect("main remains forkable");
+    runtime
+        .fork_branch(execution, BranchId(name.to_owned()), source_basis)
+        .expect("fork remains metadata-only");
+}
+
+pub(crate) fn branch_identity(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    name: &str,
+) -> worth_relational::facade::branch::RelationalBranchIdentity {
+    runtime
+        .branch_identity(&BranchId(name.to_owned()))
+        .expect("branch identity is owner-issued")
+}

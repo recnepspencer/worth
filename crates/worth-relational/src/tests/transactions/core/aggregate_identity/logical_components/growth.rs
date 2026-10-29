@@ -5,23 +5,6 @@ use super::{
 };
 use std::collections::BTreeSet;
 
-#[test]
-fn one_case_delta_has_identical_actual_maintenance_acquisitions_beside_ten_and_ten_thousand_carriers(
-) {
-    let small = run(10);
-    let large = run(10_000);
-    assert!(
-        small[0] > 0,
-        "actual adjacency acquisition must be reported"
-    );
-    assert!(small[1] > 0, "actual entity acquisition must be reported");
-    assert!(small[2] > 0, "actual relation acquisition must be reported");
-    assert_eq!(
-        large, small,
-        "same completed law/cohort stages, not whole-census or charged work"
-    );
-}
-
 fn run(unrelated: usize) -> [usize; 4] {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
@@ -143,4 +126,26 @@ fn run(unrelated: usize) -> [usize; 4] {
         actual.aggregate_maintenance_relation_records,
         actual.aggregate_maintenance_aspect_states,
     ]
+}
+
+#[cfg(test)]
+mod exhaustive {
+    use super::*;
+
+    #[test]
+    fn one_case_delta_has_identical_actual_maintenance_acquisitions_beside_ten_and_ten_thousand_carriers(
+    ) {
+        let small = run(10);
+        let large = run(10_000);
+        assert!(
+            small[0] > 0,
+            "actual adjacency acquisition must be reported"
+        );
+        assert!(small[1] > 0, "actual entity acquisition must be reported");
+        assert!(small[2] > 0, "actual relation acquisition must be reported");
+        assert_eq!(
+            large, small,
+            "same completed law/cohort stages, not whole-census or charged work"
+        );
+    }
 }

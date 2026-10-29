@@ -8,35 +8,6 @@ use super::throughput_definition::{
 };
 
 #[test]
-fn measured_idle_versus_introspective_records_diagnostic_pressure_benefit() {
-    let (idle_report, pressure_report, idle_inventory, pressure_inventory) = pressure_reports();
-    assert_profile_report(
-        &idle_report,
-        ORDINARY_OUTPUT_FLOOR as usize,
-        PERFORMANCE_BATCHES,
-    );
-    assert_profile_report(
-        &pressure_report,
-        ORDINARY_OUTPUT_FLOOR as usize,
-        PERFORMANCE_BATCHES,
-    );
-    assert!(idle_inventory.is_idle_zero());
-    assert!(!pressure_inventory.is_idle_zero());
-    let ten_percent = ten_percent_benefit(&idle_report, &pressure_report);
-    println!(
-        "pressure packet context={} idle_median={} idle_p95={} idle_milli={} pressure_median={} pressure_p95={} pressure_milli={} ten_percent_benefit={ten_percent} governed_nodes={}",
-        PerformancePacketContext::recorded(),
-        idle_report.warm_median_micros,
-        idle_report.warm_p95_micros,
-        idle_report.completed_batches_per_second_milli,
-        pressure_report.warm_median_micros,
-        pressure_report.warm_p95_micros,
-        pressure_report.completed_batches_per_second_milli,
-        ORDINARY_OUTPUT_FLOOR
-    );
-}
-
-#[test]
 #[ignore = "asserts wall-clock time; run on a quiet machine"]
 fn measured_idle_versus_introspective_compares_wall_clock_throughput() {
     let (idle_report, pressure_report, _, _) = pressure_reports();
@@ -82,4 +53,38 @@ fn pressure_reports() -> ProfileReports {
         idle_inventory,
         pressure_inventory,
     )
+}
+
+#[cfg(test)]
+mod exhaustive {
+    use super::*;
+
+    #[test]
+    fn measured_idle_versus_introspective_records_diagnostic_pressure_benefit() {
+        let (idle_report, pressure_report, idle_inventory, pressure_inventory) = pressure_reports();
+        assert_profile_report(
+            &idle_report,
+            ORDINARY_OUTPUT_FLOOR as usize,
+            PERFORMANCE_BATCHES,
+        );
+        assert_profile_report(
+            &pressure_report,
+            ORDINARY_OUTPUT_FLOOR as usize,
+            PERFORMANCE_BATCHES,
+        );
+        assert!(idle_inventory.is_idle_zero());
+        assert!(!pressure_inventory.is_idle_zero());
+        let ten_percent = ten_percent_benefit(&idle_report, &pressure_report);
+        println!(
+            "pressure packet context={} idle_median={} idle_p95={} idle_milli={} pressure_median={} pressure_p95={} pressure_milli={} ten_percent_benefit={ten_percent} governed_nodes={}",
+            PerformancePacketContext::recorded(),
+            idle_report.warm_median_micros,
+            idle_report.warm_p95_micros,
+            idle_report.completed_batches_per_second_milli,
+            pressure_report.warm_median_micros,
+            pressure_report.warm_p95_micros,
+            pressure_report.completed_batches_per_second_milli,
+            ORDINARY_OUTPUT_FLOOR
+        );
+    }
 }

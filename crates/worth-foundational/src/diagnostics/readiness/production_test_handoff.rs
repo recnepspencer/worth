@@ -22,23 +22,23 @@ pub(super) fn canonical_golden_artifact_evidence(
     vec![
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::PrimitiveCategoryAndMaterializationMeaning,
-            "tests/certification/diagnostics/primitives.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
         ),
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::FamilyDistinctRowTopologyMeaning,
-            "tests/certification/diagnostics/rows.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
         ),
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::MaterializationRichnessAndDebtMeaning,
-            "tests/certification/diagnostics/materialization.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
         ),
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::CanonicalBundleAndComparisonMeaning,
-            "tests/certification/diagnostics/basis.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
         ),
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::CertifiedCoverageAndAttachmentMeaning,
-            "tests/certification/diagnostics/certified.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
         ),
     ]
 }
@@ -57,27 +57,27 @@ pub(super) fn property_seed_evidence() -> Vec<FoundationalDiagnosticPropertySeed
     vec![
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::PrimitiveOrderingAndTokenCanonicalization,
-            "tests/certification/diagnostics/primitives.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
             "ordering hostility and canonical token-segment rejection",
         ),
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::RowFamilyOrderingAndSemanticTieBreaks,
-            "tests/certification/diagnostics/basis.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
             "tied-common-field row ordering must still canonicalize by family-specific meaning",
         ),
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::RichnessElisionPreservesTruthUnderPartiality,
-            "tests/certification/diagnostics/materialization.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
             "reduced richness narrows breadth while preserving outcome truth and explicit partiality",
         ),
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::IndependentProducerCanonicalParity,
-            "tests/certification/diagnostics/basis.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
             "independent producer layouts and input order must still lower to one diagnostic meaning",
         ),
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::CertifiedCoverageNamedGapParity,
-            "tests/certification/diagnostics/certified.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
             "partial coverage and typed named gaps must stay canonical under certified attachment pressure",
         ),
     ]
@@ -96,19 +96,19 @@ pub(super) fn harness_expansion_evidence() -> Vec<FoundationalDiagnosticHarnessE
     vec![
         FoundationalDiagnosticHarnessExpansionEvidence::new(
             FoundationalDiagnosticHarnessExpansionPoint::IndependentProducerDiagnosticParityMatrix,
-            "tests/certification/diagnostics/basis.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
         ),
         FoundationalDiagnosticHarnessExpansionEvidence::new(
             FoundationalDiagnosticHarnessExpansionPoint::RichnessAvailabilityAndFallbackReplayMatrix,
-            "tests/certification/diagnostics/materialization.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
         ),
         FoundationalDiagnosticHarnessExpansionEvidence::new(
             FoundationalDiagnosticHarnessExpansionPoint::BlindConsumerInterpretationReplaySuite,
-            "tests/certification/diagnostics/rows.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
         ),
         FoundationalDiagnosticHarnessExpansionEvidence::new(
             FoundationalDiagnosticHarnessExpansionPoint::CertifiedCoverageAttachmentParityMatrix,
-            "tests/certification/diagnostics/certified.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
         ),
     ]
 }

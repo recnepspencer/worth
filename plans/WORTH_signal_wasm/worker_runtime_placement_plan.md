@@ -1,5 +1,7 @@
 # Worker-First Runtime Placement And Main-Thread Host Bridge Plan
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > **Status:** Planned engineering spec
 >
 > **Roadmap parent:** [wasm_product_roadmap.md](./wasm_product_roadmap.md)
@@ -960,7 +962,7 @@ Phase 2 closeout evidence:
   - `cargo test -p worth-signals-wasm --lib worker_runtime`
   - `cargo test -p worth-signals-wasm --lib worker_runtime_bootstrap`
   - `cargo test -p worth-signals-wasm --lib`
-  - `cargo test -p worth-signals-wasm --test worker_boundary_type_surface_compile_fail`
+  - `cargo test -p worth-signal-wasm --test worth_signal_wasm compile_fail::`
 
 ### Phase 3: Main-Thread Host Capability And Host Effect Bridges
 

@@ -1,5 +1,7 @@
 # Milestone 14 Closeout: Bridge-Native Subscription Declaration Families, Admission, And Lifecycle
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 ## Status
 
 Milestone 14 is complete.
@@ -166,7 +168,7 @@ Key proof lanes include:
 Verification baseline at closeout:
 
 - `cargo test -p worth-runtime-bridge subscription -- --nocapture`
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --test-threads=1`
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --test-threads=1`
 - `cargo test -p worth-runtime-bridge`
 
 ## Major QA Findings And How They Were Resolved

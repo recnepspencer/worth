@@ -25,39 +25,39 @@ pub(super) fn certified_surface_evidence() -> Vec<FoundationalTransitionCertifie
             FoundationalTransitionCertifiedSurface::ScopedMergeRequestVocabulary,
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeCategorySubstitutionHostility,
             FoundationalTransitionCompileFailBoundary::ScopedMergeScopeRequiresTypedLoci,
-            "tests/certification/transitions/scoped_merge.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge.rs",
             "tests/ui/transitions/merge_admission/raw_string_cannot_satisfy_merge_scope_api.rs",
-            "tests/certification/transitions/scoped_merge.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::ScopedMergeAdmissionEvidence,
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeProducerDiversityHostility,
             FoundationalTransitionCompileFailBoundary::SelectedNodeAndAspectRequestsAreNotSubstitutable,
-            "tests/certification/transitions/scoped_merge_evidence.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_evidence.rs",
             "tests/ui/transitions/merge_admission/selected_node_cannot_satisfy_selected_aspect_entry_api.rs",
-            "tests/certification/transitions/scoped_merge_evidence.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_evidence.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::ScopedMergeDenialUnavailableTopology,
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeUnavailableDenialHonesty,
             FoundationalTransitionCompileFailBoundary::ScopedMergeScopeRequiresTypedLoci,
-            "tests/certification/transitions/scoped_merge_denials.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_denials.rs",
             "tests/ui/transitions/merge_admission/raw_string_cannot_satisfy_merge_scope_api.rs",
-            "tests/certification/transitions/scoped_merge_posture/mod.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_posture/mod.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::ScopedMergeCanonicalLocatorDiagnostics,
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeCanonicalLocatorStability,
             FoundationalTransitionCompileFailBoundary::SelectedScopeLocatorRequiresTypedLoci,
-            "tests/certification/transitions/scoped_merge_canonical/mod.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_canonical/mod.rs",
             "tests/ui/transitions/merge_admission/raw_string_cannot_satisfy_selected_scope_locator_api.rs",
-            "tests/certification/transitions/scoped_merge_diagnostics/mod.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_diagnostics/mod.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::ScopedMergeAdoptionContract,
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeRuntimeBoundaryHonesty,
             FoundationalTransitionCompileFailBoundary::TransitionReadinessRequiresCertifiedArtifact,
-            "tests/certification/transitions/readiness.rs",
+            "tests/worth_foundational/fast/certification/transitions/readiness.rs",
             "tests/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs",
             "docs/scoped-merge-adoption.md",
         ),
@@ -79,19 +79,19 @@ pub(super) fn synthetic_pressure_evidence() -> Vec<FoundationalTransitionSynthet
     vec![
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeCategorySubstitutionHostility,
-            "tests/certification/transitions/scoped_merge.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeProducerDiversityHostility,
-            "tests/certification/transitions/scoped_merge_evidence.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_evidence.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeUnavailableDenialHonesty,
-            "tests/certification/transitions/scoped_merge_posture/mod.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_posture/mod.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeCanonicalLocatorStability,
-            "tests/certification/transitions/scoped_merge_canonical/mod.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_canonical/mod.rs",
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ScopedMergeRuntimeBoundaryHonesty,
@@ -224,23 +224,23 @@ pub(super) fn phase_gates() -> Vec<FoundationalTransitionPhaseGateEvidence> {
     vec![
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::ScopedMergeRequestVocabulary,
-            "tests/certification/transitions/scoped_merge.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::ScopedMergeAdmissionEvidence,
-            "tests/certification/transitions/scoped_merge_evidence.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_evidence.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::ScopedMergeDenialUnavailableTopology,
-            "tests/certification/transitions/scoped_merge_denials.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_denials.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::ScopedMergeCanonicalLocatorDiagnostics,
-            "tests/certification/transitions/scoped_merge_diagnostics/mod.rs",
+            "tests/worth_foundational/fast/certification/transitions/scoped_merge_diagnostics/mod.rs",
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::ScopedMergeProductionReadiness,
-            "tests/certification/transitions/readiness.rs",
+            "tests/worth_foundational/fast/certification/transitions/readiness.rs",
         ),
     ]
 }

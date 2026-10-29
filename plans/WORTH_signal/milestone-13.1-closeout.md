@@ -4,6 +4,7 @@ Historical record: verification commands, counts, and timings below describe the
 
 Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
 
 > Status: complete; primary verification and fresh frozen-source Sol review
 > accepted
@@ -154,14 +155,13 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml \
 cargo test -q --manifest-path workspaces/worth-query/Cargo.toml --workspace
   passed; largest lanes: 2593, 727, 323, 193, and 148 tests
 
-cargo test -q -p worth-signal-wasm --test installed_scoped_invalidation
+cargo test -q -p worth-signal-wasm --test worth_signal_wasm fast::installed_scoped_invalidation::
   1 passed
 
 cargo check -q -p worth-signal-wasm --target wasm32-unknown-unknown
   passed
 
-cargo test -q -p worth-signal --test milestone_12_compile_time \
-  --test milestone_13_compile_time
+cargo test -q -p worth-signal --test worth_signal compile_fail::milestone_1
   passed
 
 cargo test -q -p worth-signal --doc

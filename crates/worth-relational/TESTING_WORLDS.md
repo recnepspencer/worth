@@ -270,28 +270,27 @@ courts; they are not inferred from the pure oracle.
 
 ## Ordinary and scheduled evidence commands
 
-The ordinary certification command is:
+Integration cases share the `worth_relational` binary, and their paths start
+with a cost class. The world-family filter spans those classes. The ordinary
+certification command is:
 
 ```text
-cargo test -p worth-relational --test relational_certification --no-fail-fast
+cargo test -p worth-relational --test worth_relational relational_certification:: --no-fail-fast
 ```
 
-Two public examples are executable compatibility contracts rather than
-compile-only samples. The `Run tests` step of the `build-and-test` job runs
-`cargo test --workspace`, and that command executes each example's own `main`.
-No separate lane exists or is wanted: the manifest keys alone place these
-examples in the lane that already runs.
+Two public examples are executable compatibility contracts. The ordinary
+`cargo test --workspace` lane executes each example's `main`: Signal includes
+the example source in its integration crate, while Relational declares an
+example with `harness = false`.
 
 | Executable example | Manifest declaration | Local reproduction |
 | --- | --- | --- |
-| `crates/worth-signal/examples/branch_bases.rs` | `[[example]] name = "branch_bases", test = true, harness = false` | `cargo test -p worth-signal --examples` |
+| `crates/worth-signal/examples/branch_bases.rs` | `test = false`; source included by `worth_signal` | `cargo test -p worth-signal --test worth_signal fast::branch_bases_owner_workflow_runs_as_documented -- --exact` |
 | `crates/worth-relational/examples/branch_local_mvcc.rs` | `[[example]] name = "branch_local_mvcc", test = true, harness = false` | `cargo test -p worth-relational --examples` |
 
-Cargo leaves an example at `test = false` by default, so an unregistered example
-builds and never runs while the command above still reports success. `test =
-true` is what makes it evidence, and `harness = false` makes `main` the whole
-test, so there is no `test result:` line to count and the proof is the example's
-own named output.
+For Relational, `test = true` registers execution and `harness = false` makes
+`main` the whole test. Its own named output is the observation. Signal's
+integration test calls the same source and supplies the libtest result.
 
 The complete Scale admission court, maximum 4,096-fork slope, and maximum
 retained-history ceiling are `#[ignore]`d so the ordinary loop stays
@@ -301,25 +300,25 @@ certification` job executes all three on the nightly schedule and on
 
 | Scheduled proof (exact compiled name) | CI step in the `WORTH Relational scheduled certification` job |
 | --- | --- |
-| `scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning` | Run mandatory ignored Scale admission proof |
-| `root_fork_sharing::phase5_standard_fork_copy_slope_is_flat_through_4096_forks` | Run mandatory ignored maximum fork-slope proof |
-| `root_cost_scale_axes::selected_publication_cost_is_flat_through_documented_retention_ceiling` | Run mandatory ignored retained-history ceiling proof |
+| `scale::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning` | Run mandatory ignored Scale admission proof |
+| `scale::relational_certification::root_fork_sharing::phase5_standard_fork_copy_slope_is_flat_through_4096_forks` | Run mandatory ignored maximum fork-slope proof |
+| `scale::relational_certification::root_cost_scale_axes::selected_publication_cost_is_flat_through_documented_retention_ceiling` | Run mandatory ignored retained-history ceiling proof |
 
 Each step runs the command below verbatim, so a local reproduction and its lane
 cannot drift apart:
 
 ```text
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --exact --ignored \
-  --selection scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning
+  --test worth_relational --exact --ignored \
+  --selection scale::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --exact --ignored \
-  --selection root_fork_sharing::phase5_standard_fork_copy_slope_is_flat_through_4096_forks
+  --test worth_relational --exact --ignored \
+  --selection scale::relational_certification::root_fork_sharing::phase5_standard_fork_copy_slope_is_flat_through_4096_forks
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --exact --ignored \
-  --selection root_cost_scale_axes::selected_publication_cost_is_flat_through_documented_retention_ceiling
+  --test worth_relational --exact --ignored \
+  --selection scale::relational_certification::root_cost_scale_axes::selected_publication_cost_is_flat_through_documented_retention_ceiling
 ```
 
 Those are compiled test names, not source paths. The certification target
@@ -357,24 +356,24 @@ cannot drift apart:
 
 ```text
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification \
+  --test worth_relational \
   --selection mvcc_cancellation_publication_boundaries::
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --exact \
-  --selection mvcc_owner_phase_locality::paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked
+  --test worth_relational --exact \
+  --selection exhaustive::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --exact \
-  --selection mvcc_owner_phase_locality::paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked
+  --test worth_relational --exact \
+  --selection exhaustive::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --exact \
-  --selection mvcc_owner_phase_locality::paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked
+  --test worth_relational --exact \
+  --selection exhaustive::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --exact \
-  --selection schema_transition_cancellation::cancelled_schema_transition_leaves_no_target_or_branch_residue
+  --test worth_relational --exact \
+  --selection exhaustive::relational_certification::schema_transition_cancellation::cancelled_schema_transition_leaves_no_target_or_branch_residue
 
 bash scripts/ci/check_relational_allocation_probes.sh
 ```
@@ -448,7 +447,7 @@ generic runtime behavior. The preservation lanes are:
 ```text
 cargo test -p worth-relational --lib tests::domains --no-fail-fast
 cargo test -p worth-relational --lib
-cargo test -p worth-relational --test relational_certification --no-fail-fast
+cargo test -p worth-relational --test worth_relational relational_certification:: --no-fail-fast
 ```
 
 Focused owner-correspondence, branch-reference, and phase-boundary courts remain
@@ -502,11 +501,11 @@ The current boundary evidence commands are:
 
 ```text
 cargo test -p worth-relational --lib
-cargo test -p worth-relational --test relational_certification --no-fail-fast
+cargo test -p worth-relational --test worth_relational relational_certification:: --no-fail-fast
 cargo test -p worth-relational --lib merge_replay_continuity
-cargo test -p worth-relational --test branch_reference_contract --quiet
-cargo test -p worth-relational --test branch_reference_compile_time --quiet
-cargo test -p worth-relational --test phase_boundaries_compile_fail --quiet
+cargo test -p worth-relational --test worth_relational fast::branch_reference_contract:: --quiet
+cargo test -p worth-relational --test worth_relational compile_fail::branch_reference_compile_time:: --quiet
+cargo test -p worth-relational --test worth_relational compile_fail::phase_boundaries_compile_fail:: --quiet
 cargo clippy -p worth-relational --lib --no-deps -- -D warnings
 ```
 

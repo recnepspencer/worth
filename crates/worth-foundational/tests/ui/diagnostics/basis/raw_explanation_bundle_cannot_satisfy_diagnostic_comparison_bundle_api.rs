@@ -4,7 +4,7 @@ use worth_foundational::{
     FoundationalDiagnosticDeliveryClass, FoundationalDiagnosticPartiality, SupportPostureProfile,
 };
 
-#[path = "../../../certification/diagnostics/materialization_support.rs"]
+#[path = "../../../worth_foundational/fixtures/certification/diagnostics/materialization_support.rs"]
 mod materialization_support;
 
 fn require_comparison_bundle(_bundle: &FoundationalDiagnosticComparisonBundle) {}

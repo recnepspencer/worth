@@ -1,5 +1,7 @@
 # Phase 10 Closeout Ledger
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 **Branch:** `query-repair`  
 **Milestone:** 9.6 Bridge Truth Identity Lowering  
 **Started:** 2026-06-16  
@@ -43,7 +45,7 @@ land here.
 - Migrated `replay_tests.rs` from `truth_*_fixture` labels to `truth_snapshot` / `truth_branch` relational constructors
 - Added `tests/subscription_replay_folklore_guard.rs`
 - `cargo test -p worth-runtime-bridge subscription::replay --lib` — **1/1 pass**
-- `cargo test -p worth-runtime-bridge --test subscription_replay_folklore_guard` — **1/1 pass**
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge fast::subscription_replay_folklore_guard::` — **1/1 pass**
 
 ### 2026-06-16 — P10-1 compile-fail matrix
 
