@@ -5801,7 +5801,7 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-The retained scope has seventeen implementation phases; 9, 13, 14, 16, 17 and 18
+The retained scope has seventeen implementation phases; 9, 16, 17 and 18
 remain unfinished.
 
 ### Goal

@@ -5,7 +5,7 @@
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
-> Phase 19 is accepted. Phases 13–14 and 16–18 remain required here.
+> Phases 13–14 and 19 are complete. Phases 16–18 remain unfinished.
 > Addendum 1 defines correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
@@ -1679,7 +1679,7 @@ the proposal supplies neither acceptance permission nor replay authority.
 
 ### Destination Ownership And Module Boundaries
 
-The following tree names owners for the remaining Phases 13–14 and 16–18.
+The following tree names owners for Phases 13–14 and 16–18.
 The generic index topology is governed by 9.19, not a spatial subsystem here.
 Created destinations are populated by their implementing slice, not by
 empty placeholders in this specification change. Implementation planning may
@@ -1735,7 +1735,7 @@ or private adoption is required to close 9.18.1.
 
 ## Phase 13: Honest Compiler Qualification Refusals
 
-**Status: unfinished; required. Priority: P1.**
+**Status: complete. Priority: P1.**
 **Owner:** worth-foundational + Query Admission/Execution.
 **Depends on:** existing canonical sort admission; independent of Phases 6, 8–9
 and 12. Rust 1.99 qualification does not substitute for this repair.
@@ -1765,7 +1765,7 @@ the qualified twin must reach the caller before this phase closes.
 
 ## Phase 14: Preserve Unobserved Field-Write Causes
 
-**Status: unfinished; required. Priority: P2.**
+**Status: complete. Priority: P2.**
 **Owner:** worth-query-execution.
 **Depends on:** existing decision observations and candidate effect lowering;
 independent of the new spatial and async work.
