@@ -1,0 +1,25 @@
+[package]
+"name" = "worth-store-court-layout-indexes"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-store-aspect-native" = { "path" = "../worth-store-aspect-native" }
+"worth-store-budgets" = { "path" = "../worth-store-budgets" }
+"worth-store-contracts" = { "path" = "../worth-store-contracts" }
+"worth-store-layout-indexes" = { "path" = "../worth-store-layout-indexes" }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-security" = { "path" = "../worth-store-security", "features" = ["certification-test-authority"] }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_layout_indexes"
+path = "tests/worth_store_court_layout_indexes.rs"
+
+[lints]
+workspace = true

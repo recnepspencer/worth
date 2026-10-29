@@ -1,0 +1,149 @@
+pub(crate) use {worth_store_physical_format::integrity_declarations::families::free_space::FREE_SPACE_HEADER_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::free_space::FREE_SPACE_MEMBERSHIP_BLOCK_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::root::BOOTSTRAP_CATALOG_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::root::ROOT_ROUTING_BLOCK_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::EXTENT_CHUNK_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::EXTENT_MANIFEST_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::PhysicalIntegrityAlgorithm, worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily, worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary, worth_store_physical_format::integrity_declarations::PhysicalIntegrityFormatDeclaration};
+
+pub(crate) use {crate::phase_4_literal_vectors::oracle::assert_declaration, crate::phase_4_literal_vectors::oracle::assert_literal_vector, crate::phase_4_literal_vectors::oracle::decode_hex, crate::phase_4_literal_vectors::oracle::DeclarationChecksumExpectation, crate::phase_4_literal_vectors::oracle::LiteralChecksum, crate::phase_4_literal_vectors::oracle::LiteralChecksumExpectation, crate::phase_4_literal_vectors::oracle::LiteralVector};
+
+pub(crate) const BOOTSTRAP: &str = concat!(
+    "5752433546524d0001020200004000000101011830000000220000000b000000000000000000000000000000d0131264",
+    "070707070707070707070707070707070b0000000000000002000040000001010118",
+);
+pub(crate) const ROOT_ROUTING: &str = concat!(
+    "5752433546524d00080202000040000001010118300000008000000003000000000000000000000000000000e58dc4c6",
+    "4700000000000000030000000000000000000100010000000b000000000000000000000000000000a1a1a1a1a1a1a1a1",
+    "a1a1a1a1a1a1a1a105000000000000000200000000000000010000000000000013000000000000000700000000000000",
+    "0000000000000000005000000000000017000000000000000000000000000000",
+);
+pub(crate) const SEGMENT_MEMBERSHIP: &str = concat!(
+    "5752433546524d0009020200004000000101011830000000500000000500000000000000000000000000000093c31643",
+    "4900000000000000050000000000000000000100010000000b0000000000000000000000000000000d00000000000000",
+    "1100000000000000050000000000000006000000000000000200000001000000",
+);
+pub(crate) const EXTENT_MANIFEST: &str = concat!(
+    "5752433546524d00060202000040000001010118300000003800000005000000000000000000000000000000c1e5d89d",
+    "222222222222222222222222222222220700000000000000040000000000000006000000000000000040000001000000",
+    "0010000000000000",
+);
+pub(crate) const EXTENT_CHUNK: &str = concat!(
+    "5752433546524d0004020200004000000101011830000000460000000100000000000000000000000000000043f8b3f2",
+    "222222222222222222222222222222220700000000000000040000000000000005000000000000000600000000000000",
+    "00000000000000000600000000000000433945585421",
+);
+pub(crate) const FREE_SPACE_HEADER: &str = concat!(
+    "5752433546524d0007020200004000000101011830000000a800000006000000000000000000000000000000777b8e04",
+    "060000000000000008000000000000000200040000000000020000000000000008000000000000000a00000000000000",
+    "0500000000000000020000000000000001000000000000000600000000000000010000000000000000000000a8308118",
+    "010000000000000007000000000000000000000000000000020000000000000005000000000000000500000000000000",
+    "060000000000000000001000000000000010000000000000",
+);
+pub(crate) const FREE_SPACE_MEMBERSHIP: &str = concat!(
+    "5752433546524d000a0202000040000001010118300000007800000001000000000000000000000000000000a8308118",
+    "080000000000000001000000000000000000020001000000060000000000000000000000000000000100000000000000",
+    "070000000000000004000000000000000200000000000000030000000000000002000000000000000500000000000000",
+    "050000000000000064000000000000000100000000000000",
+);
+
+pub(crate) const DECLARATION_RANGES: &[(
+    PhysicalIntegrityCoverageBoundary,
+    PhysicalIntegrityCoverageBoundary,
+)] = &[
+    (
+        worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(0),
+        worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(44),
+    ),
+    (
+        worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(48),
+        worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::ArtifactEnd,
+    ),
+];
+
+pub(crate) struct Case {
+    pub(crate) name: &'static str,
+    pub(crate) declaration: PhysicalIntegrityFormatDeclaration,
+    pub(crate) family: PhysicalIntegrityArtifactFamily,
+    pub(crate) hex: &'static str,
+    pub(crate) checksum: u32,
+}
+
+pub(crate) fn verify() {
+    for case in cases() {
+        assert_declaration(
+            case.declaration,
+            case.family,
+            2,
+            Some(2),
+            &[DeclarationChecksumExpectation {
+                algorithm: worth_store_physical_format::integrity_declarations::PhysicalIntegrityAlgorithm::Crc32c,
+                ranges: DECLARATION_RANGES,
+                field: (
+                    worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(44),
+                    worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(48),
+                ),
+            }],
+        );
+        let bytes = decode_hex(case.hex);
+        let ranges = [(0, 44), (48, bytes.len())];
+        let checksums = [LiteralChecksumExpectation {
+            checksum: crate::phase_4_literal_vectors::oracle::LiteralChecksum::Crc32c(case.checksum),
+            ranges: &ranges,
+            field: (44, 48),
+        }];
+        assert_literal_vector(LiteralVector {
+            name: case.name,
+            bytes,
+            checksums: &checksums,
+        });
+    }
+}
+
+pub(crate) fn cases() -> [Case; 7] {
+    [
+        Case {
+            name: "bootstrap catalog",
+            declaration: BOOTSTRAP_CATALOG_INTEGRITY_DECLARATION,
+            family: worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::BootstrapCatalog,
+            hex: BOOTSTRAP,
+            checksum: 0x641213d0,
+        },
+        Case {
+            name: "root-routing block",
+            declaration: ROOT_ROUTING_BLOCK_INTEGRITY_DECLARATION,
+            family: worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::RootRoutingBlock,
+            hex: ROOT_ROUTING,
+            checksum: 0xc6c48de5,
+        },
+        Case {
+            name: "segment-membership block",
+            declaration: SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION,
+            family: worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::SegmentMembership,
+            hex: SEGMENT_MEMBERSHIP,
+            checksum: 0x4316c393,
+        },
+        Case {
+            name: "extent manifest",
+            declaration: EXTENT_MANIFEST_INTEGRITY_DECLARATION,
+            family: worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::ExtentManifest,
+            hex: EXTENT_MANIFEST,
+            checksum: 0x9dd8e5c1,
+        },
+        Case {
+            name: "extent chunk",
+            declaration: EXTENT_CHUNK_INTEGRITY_DECLARATION,
+            family: worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::ExtentChunk,
+            hex: EXTENT_CHUNK,
+            checksum: 0xf2b3f843,
+        },
+        Case {
+            name: "free-space header",
+            declaration: FREE_SPACE_HEADER_INTEGRITY_DECLARATION,
+            family: worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::FreeSpaceHeader,
+            hex: FREE_SPACE_HEADER,
+            checksum: 0x048e7b77,
+        },
+        Case {
+            name: "free-space-membership block",
+            declaration: FREE_SPACE_MEMBERSHIP_BLOCK_INTEGRITY_DECLARATION,
+            family: worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::FreeSpaceMembershipBlock,
+            hex: FREE_SPACE_MEMBERSHIP,
+            checksum: 0x188130a8,
+        },
+    ]
+}

@@ -1,0 +1,14 @@
+#[path = "blob_control_record_golden/mod.rs"]
+pub(crate) mod blob_control_record_golden;
+#[path = "c9_scope_identity_contracts/mod.rs"]
+pub(crate) mod c9_scope_identity_contracts;
+#[path = "integrity_declarations/mod.rs"]
+pub(crate) mod integrity_declarations;
+#[path = "manifest_access/mod.rs"]
+pub(crate) mod manifest_access;
+#[path = "physical_record_access/mod.rs"]
+pub(crate) mod physical_record_access;
+#[path = "physical_work_obligation_v6_golden/mod.rs"]
+pub(crate) mod physical_work_obligation_v6_golden;
+#[path = "wal_frame_v1_golden/mod.rs"]
+pub(crate) mod wal_frame_v1_golden;

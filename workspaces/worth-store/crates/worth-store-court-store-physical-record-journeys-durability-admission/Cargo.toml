@@ -1,0 +1,32 @@
+[package]
+"name" = "worth-store-court-store-physical-record-journeys-durability-admission"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"sha2" = { "version" = "^0.10" }
+"tempfile" = { "version" = "^3" }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-proof" = { "path" = "../../../../crates/worth-proof" }
+"worth-signal" = { "path" = "../../../../crates/worth-signal" }
+"worth-store" = { "path" = "../worth-store", "features" = ["certification-test-authority"] }
+"worth-store-contracts" = { "path" = "../worth-store-contracts" }
+"worth-store-io-scheduler" = { "path" = "../worth-store-io-scheduler" }
+"worth-store-physical-backend" = { "path" = "../worth-store-physical-backend", "features" = ["store-runtime-owner", "volatile-sync-for-tests"] }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format", "features" = ["certification-test-authority"] }
+"worth-store-physical-integrity" = { "path" = "../worth-store-physical-integrity" }
+"worth-store-security" = { "path" = "../worth-store-security" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+"worth-store-testkit-store" = { "path" = "../worth-store-testkit-store" }
+"worth-store-wal" = { "path" = "../worth-store-wal" }
+
+[[test]]
+name = "worth_store_court_store_physical_record_journeys_durability_admission"
+path = "tests/worth_store_court_store_physical_record_journeys_durability_admission.rs"
+
+[lints]
+workspace = true

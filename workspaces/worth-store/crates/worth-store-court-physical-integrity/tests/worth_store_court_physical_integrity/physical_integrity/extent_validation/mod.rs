@@ -1,0 +1,14 @@
+#[path = "chunk/mod.rs"]
+pub(crate) mod chunk;
+#[path = "consumption_projection/mod.rs"]
+pub(crate) mod consumption_projection;
+#[path = "literal_vectors/mod.rs"]
+pub(crate) mod literal_vectors;
+#[path = "manifest/mod.rs"]
+pub(crate) mod manifest;
+#[path = "scope_adversaries/mod.rs"]
+pub(crate) mod scope_adversaries;
+#[path = "scrub_membership/mod.rs"]
+pub(crate) mod scrub_membership;
+#[path = "validation_records/mod.rs"]
+pub(crate) mod validation_records;

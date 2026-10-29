@@ -2,3 +2,4 @@
 workspaces/worth-query | worth-query
 workspaces/worth-query-bank-world | worth-query-bank
 . | worth
+workspaces/worth-store | worth-store

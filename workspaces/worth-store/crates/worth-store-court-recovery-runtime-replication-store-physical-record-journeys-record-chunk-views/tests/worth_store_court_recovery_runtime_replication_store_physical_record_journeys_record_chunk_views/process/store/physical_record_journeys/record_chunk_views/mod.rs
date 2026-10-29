@@ -1,0 +1,12 @@
+#[path = "borrowed_access/mod.rs"]
+pub(crate) mod borrowed_access;
+#[path = "failure_lifecycle/mod.rs"]
+pub(crate) mod failure_lifecycle;
+#[path = "policy_boundaries/mod.rs"]
+pub(crate) mod policy_boundaries;
+#[path = "read_close_races/mod.rs"]
+pub(crate) mod read_close_races;
+#[path = "root_capture_races/mod.rs"]
+pub(crate) mod root_capture_races;
+#[path = "stable_reads/mod.rs"]
+pub(crate) mod stable_reads;

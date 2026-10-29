@@ -1,8 +1,10 @@
 [package]
-name = "store-test-runner"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
-publish = false
-default-run = "store-test-runner"
+"name" = "store-test-runner"
+"version" = { "workspace" = true }
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"publish" = false
+"default-run" = "store-test-runner"
+"autotests" = false
+
