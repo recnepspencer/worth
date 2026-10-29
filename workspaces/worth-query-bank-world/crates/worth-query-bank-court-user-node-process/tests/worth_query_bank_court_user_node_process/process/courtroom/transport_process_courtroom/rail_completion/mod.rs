@@ -4,7 +4,7 @@ pub(crate) use worth_query_bank_worlds::facade::courtroom::transport_process_cou
 #[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p worth-query-bank-court-user-node-process --test worth_query_bank_court_user_node_process transport_process_courtroom:: -- --ignored"]
 async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
     let mut rail = RailProcessHandle::spawn_awaiting_completion_installation(
-        &worth_query_bank_worlds::facade::binary_path("cold-bank-rail"),
+        worth_query_bank_worlds::facade::binary_path("cold-bank-rail"),
         "127.0.0.1:0",
     )
     .expect("separate rail process should bind");
