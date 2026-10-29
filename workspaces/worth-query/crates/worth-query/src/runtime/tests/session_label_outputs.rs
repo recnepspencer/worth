@@ -215,7 +215,7 @@ fn display_colliding_preview_labels_produce_distinct_execution_digests() {
 }
 
 #[test]
-fn canonical_session_label_intake_phase_six_outputs_are_non_empty_and_stable() {
+fn canonical_session_label_intake_outputs_are_non_empty_and_stable() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

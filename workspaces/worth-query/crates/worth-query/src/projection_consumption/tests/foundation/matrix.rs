@@ -9,7 +9,7 @@ use super::support::{
 };
 
 #[test]
-fn support_discovery_and_eligibility_stay_in_sync_for_all_phase_one_two_lanes() {
+fn support_discovery_and_eligibility_stay_in_sync_for_all_lanes() {
     for family in all_source_families() {
         let source = test_source(family);
         let report = discover_projection_consumption_support(&source);

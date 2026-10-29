@@ -154,7 +154,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reconciliation_report_covers_remaining_phase_six_boundary_seams() {
+    fn reconciliation_report_covers_remaining_boundary_seams() {
         let report = worth_query_lower_runtime_boundary_reconciliation_report();
 
         for seam_key in REMAINING_PHASE_SIX_BOUNDARY_SEAMS {

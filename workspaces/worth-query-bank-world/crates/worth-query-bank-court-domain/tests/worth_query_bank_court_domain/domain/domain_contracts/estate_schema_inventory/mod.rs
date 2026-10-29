@@ -58,7 +58,7 @@ fn required_estate_topology_and_policy_contributions_are_present() {
 }
 
 #[test]
-fn estate_capabilities_and_installed_phase_seven_programs_are_declared() {
+fn estate_capabilities_and_installed_programs_are_declared() {
     let declaration = BankSchema::declaration().unwrap();
     let members = declaration.erased().members();
     assert_required_subset_present(

@@ -2,7 +2,7 @@ use super::super::WorthQuerySessionLabelError;
 use super::{render_collision_labels, typed_temporal_preview_label};
 
 #[test]
-fn canonical_session_label_phase_five_outputs_are_non_empty_and_stable() {
+fn canonical_session_label_outputs_are_non_empty_and_stable() {
     let typed = typed_temporal_preview_label();
     let strings =
         super::super::WorthQuerySessionLabel::scoped_strs("worth-kernel", ["temporal", "preview"])

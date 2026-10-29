@@ -20,7 +20,7 @@ fn representative_surface_covers_every_crossing_row_once() {
 }
 
 #[test]
-fn representative_surface_uses_runtime_backed_fixtures_for_named_phase_six_seams() {
+fn representative_surface_uses_runtime_backed_fixtures_for_named_seams() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

@@ -307,7 +307,7 @@ fn schema_global_fallback_is_denied_for_tenant_scoped_admission() {
 }
 
 #[test]
-fn support_profile_names_phase_one_deferred_execution_surfaces() {
+fn support_profile_names_deferred_execution_surfaces() {
     let profile = runtime_backed_policy_tenant_admission_support_profile();
 
     assert!(profile

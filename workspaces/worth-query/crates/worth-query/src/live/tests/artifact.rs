@@ -83,7 +83,7 @@ fn public_live_artifact_digest_binds_counter_evidence() {
 }
 
 #[test]
-fn live_execution_report_emits_milestone_five_digest_fields() {
+fn live_execution_report_emits_digest_fields() {
     let preflight = crate::harness::fixtures::execution_preflights::direct_runtime_preflight();
     let live =
         promote_preflight_bundle_to_live(&preflight).expect("detail preflight should promote");

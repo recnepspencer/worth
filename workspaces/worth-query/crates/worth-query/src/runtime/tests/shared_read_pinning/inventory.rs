@@ -7,7 +7,7 @@ use crate::application::{
 use super::*;
 
 #[test]
-fn shared_read_phase_twelve_inventory_rejects_pin_and_retire_residue() {
+fn shared_read_inventory_rejects_pin_and_retire_residue() {
     let workspace_root = workspace_root();
 
     let hot_path_failures = scan_shared_read_pin_hot_path_forbidden_patterns(&workspace_root);
@@ -29,7 +29,7 @@ fn shared_read_phase_twelve_inventory_rejects_pin_and_retire_residue() {
 }
 
 #[test]
-fn shared_read_phase_twelve_inventory_names_required_operations() {
+fn shared_read_inventory_names_required_operations() {
     let operations = shared_read_pinning_operation_inventory()
         .iter()
         .inspect(|row| {

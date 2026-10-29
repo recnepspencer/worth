@@ -126,7 +126,7 @@ fn assert_declares(
 }
 
 #[test]
-fn query_owned_phase_one_entry_points_exist() {
+fn query_owned_entry_points_exist() {
     let _read_method: fn(
         &WorthQueryReadReceipt,
         &CanonicalResultShapeArtifact,
@@ -156,7 +156,7 @@ fn query_owned_phase_one_entry_points_exist() {
 }
 
 #[test]
-fn source_locked_phase_one_authoring_surfaces_exist_for_all_declared_families() {
+fn source_locked_authoring_surfaces_exist_for_all_declared_families() {
     let _relational_row_set_surface: fn(
         &RelationalAuthoritativeRowSetArtifact,
         &str,
@@ -184,7 +184,7 @@ fn source_locked_phase_one_authoring_surfaces_exist_for_all_declared_families() 
 }
 
 #[test]
-fn relational_phase_one_authoring_surfaces_build_declarations() {
+fn relational_authoring_surfaces_build_declarations() {
     let (result_shape, authorized_projection) = projection_artifacts();
     let row_set = relational_row_set();
     let grouped_projection = project_relational_grouped_truth(

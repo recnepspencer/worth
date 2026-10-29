@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn milestone_nine_one_rows_enforce_declared_lane_semantics() {
+fn rows_enforce_declared_lane_semantics() {
     let matrix = MilestoneNineOneCertificationAdapter::
         query_subscription_declaration_and_lowering_parity_test();
     let mut covered = Vec::new();

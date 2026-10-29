@@ -278,7 +278,7 @@ mod tests {
     }
 
     #[test]
-    fn family_inventory_includes_retained_and_live_phase_ten_surfaces() {
+    fn family_inventory_includes_retained_and_live_surfaces() {
         let inventory = projection_consumption_family_inventory();
         let families = inventory
             .rows()
@@ -312,7 +312,7 @@ mod tests {
     }
 
     #[test]
-    fn retained_and_live_certified_surfaces_capture_phase_eleven_admitted_subsets() {
+    fn retained_and_live_certified_surfaces_capture_admitted_subsets() {
         let matrix = projection_consumption_support_matrix();
         let retained_rows = matrix
             .rows()

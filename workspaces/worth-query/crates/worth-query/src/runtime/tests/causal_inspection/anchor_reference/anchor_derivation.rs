@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn phase_one_anchors_cover_changed_suppressed_denied_preview_and_replay_observations() {
+fn anchors_cover_changed_suppressed_denied_preview_and_replay_observations() {
     for (outcome, reason) in [
         (
             CausalObservationOutcome::Changed,

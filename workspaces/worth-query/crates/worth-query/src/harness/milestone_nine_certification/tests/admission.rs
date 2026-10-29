@@ -6,7 +6,7 @@ use crate::harness::certification::{
 };
 
 #[test]
-fn milestone_nine_certification_rows_enforce_declared_lane_semantics() {
+fn certification_rows_enforce_declared_lane_semantics() {
     let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
     let mut covered = Vec::new();
 
@@ -97,7 +97,7 @@ fn milestone_nine_certification_rows_enforce_declared_lane_semantics() {
 }
 
 #[test]
-fn milestone_nine_execution_seam_denials_are_typed() {
+fn execution_seam_denials_are_typed() {
     let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
     let live = matrix
         .rejection_rows
@@ -125,7 +125,7 @@ fn milestone_nine_execution_seam_denials_are_typed() {
 }
 
 #[test]
-fn milestone_nine_policy_narrowing_changes_only_the_admission_disposition() {
+fn policy_narrowing_changes_only_the_admission_disposition() {
     let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
     let row = matrix
         .rows
@@ -148,7 +148,7 @@ fn milestone_nine_policy_narrowing_changes_only_the_admission_disposition() {
 }
 
 #[test]
-fn milestone_nine_work_budget_is_part_of_admission_evidence() {
+fn work_budget_is_part_of_admission_evidence() {
     let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
     let row = matrix
         .rows
@@ -170,7 +170,7 @@ fn milestone_nine_work_budget_is_part_of_admission_evidence() {
 }
 
 #[test]
-fn milestone_nine_runtime_store_and_durable_handoff_is_explicit() {
+fn runtime_store_and_durable_handoff_is_explicit() {
     let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
     let handoff = matrix
         .rows
