@@ -1,5 +1,7 @@
 # Milestone 13.1 Closeout: Cross-Runtime Granular Invalidation
 
+Historical record: verification commands, counts, and timings below describe the milestone checkout and are not current invocation guidance. For current product-frontier court selection and complete Gate commands, see [Query verification](../../workspaces/worth-query/README.md) and [the Gate entry point](../../scripts/ci/query_gate.py). No current target is credited with these historical results.
+
 Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
 
 
@@ -146,7 +148,7 @@ cargo test -q -p worth-runtime-bridge --lib
   965 passed
 
 cargo test --manifest-path workspaces/worth-query/Cargo.toml \
-  -p 'worth-query-court-host*-fast' certification::granular_invalidation:: -- --test-threads=1
+  -p worth-query-certification --test granular_invalidation -- --test-threads=1
   20 passed
 
 cargo test -q --manifest-path workspaces/worth-query/Cargo.toml --workspace

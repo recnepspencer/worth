@@ -1,7 +1,7 @@
 use super::super::*;
 use std::path::PathBuf;
-pub(super) const COURT: &str = "sample-court-host";
-pub(super) const TARGET: &str = "sample_court_host";
+pub(super) const COURT: &str = "sample-court-source";
+pub(super) const TARGET: &str = "sample_court_source";
 pub(super) struct Fixture(pub(super) PathBuf);
 impl Fixture {
     pub(super) fn new() -> Self {
@@ -11,7 +11,7 @@ impl Fixture {
         f.write(CONFIG, "governed | sample\n");
         f.write(EXCEPTIONS, "# no exceptions\n");
         f.write(runtime_roots::CONFIG, "[[roots]]\ntype='foreign::Runtime'\nreason='Synthetic work host'\nowner='governed'\n[[roots]]\ntype='foreign::OtherRuntime'\nreason='Second synthetic work host'\n[[roots]]\ntype='ApplicationRuntime'\nreason='Owned synthetic work host'\n");
-        f.manifest("autotests=false", "", "host");
+        f.manifest("autotests=false", "");
         f.entry("#[test] fn lawful() {}");
         f
     }
@@ -25,8 +25,8 @@ impl Fixture {
         let old = std::fs::read_to_string(p).unwrap();
         self.write(relative, &format!("{old}\n{text}"));
     }
-    pub(super) fn manifest(&self, fields: &str, targets: &str, surface: &str) {
-        self.write("governed/Cargo.toml", &format!("[package]\nname='{COURT}'\nversion='0.1.0'\n{fields}\n[[test]]\nname='{TARGET}'\npath='tests/{TARGET}.rs'\n{targets}\n[package.metadata.worth.court]\nsurface='{surface}'\n"));
+    pub(super) fn manifest(&self, fields: &str, targets: &str) {
+        self.write("governed/Cargo.toml", &format!("[package]\nname='{COURT}'\nversion='0.1.0'\n{fields}\n[[test]]\nname='{TARGET}'\npath='tests/{TARGET}.rs'\n{targets}\n"));
     }
     pub(super) fn entry(&self, source: &str) {
         self.write(&format!("governed/tests/{TARGET}.rs"), source);

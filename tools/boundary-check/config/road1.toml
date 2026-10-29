@@ -840,8 +840,7 @@ internal_packages = [
   "worth-query-testkit-certification-canonical",
   "worth-query-testkit-certification-correction",
   "worth-query-testkit-certification-granular-invalidation",
-  "worth-query-testkit-certification-operation-body",
-  "worth-query-testkit-certification-source-only",
+  "worth-query-testkit-certification-operation",
   "worth-query-testkit-decl",
   "worth-query-testkit-document-retention",
   "worth-query-testkit-host",
@@ -888,8 +887,8 @@ exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src",
   "workspaces/worth-query/crates/worth-query-publication",
   "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_approval/commit_boundary.rs",
-  "workspaces/worth-query/crates/worth-query-court-host-workflow-approval/tests/worth_query_court_host_workflow_approval/certification/application_graph/workflow_approval/commit_boundary/advancement_identity/mod.rs",
-  "workspaces/worth-query/crates/worth-query-court-host-workflow-approval/tests/worth_query_court_host_workflow_approval/certification/application_graph/workflow_approval/commit_boundary/mod.rs",
+  "workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/commit_boundary/advancement_identity/mod.rs",
+  "workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/commit_boundary/mod.rs",
 ]
 forbidden_identifiers = ["publication_boundary"]
 forbidden_identifier_fragments = []
@@ -1821,7 +1820,7 @@ category = "certification-harness"
 reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
 
 [[threading_sites]]
-source = "workspaces/worth-query/crates/worth-query-testkit-certification-source-only/src/certification/application_graph/source_only/stale_retry/race.rs"
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/source_only/stale_retry/race.rs"
 item = "stale_owner"
 kind = "thread-scope"
 count = 1

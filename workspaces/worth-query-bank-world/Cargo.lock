@@ -3303,16 +3303,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-query-bank-court-corrections"
-version = "0.1.0"
-dependencies = [
- "bank-http-adapter",
- "serde_json",
- "tokio",
- "worth-query-bank-testkit-courtroom",
-]
-
-[[package]]
 name = "worth-query-bank-court-domain"
 version = "0.1.0"
 dependencies = [
@@ -3332,51 +3322,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-query-bank-court-estate-dependency-contract"
-version = "0.1.0"
-dependencies = [
- "serde_json",
- "worth-query-bank-testkit-estate-certification",
-]
-
-[[package]]
 name = "worth-query-bank-court-external-rail"
 version = "0.1.0"
 dependencies = [
  "serde_json",
  "tokio",
+ "tokio-rustls",
  "worth-query-bank-testkit",
  "worth-query-bank-testkit-external-rail",
 ]
 
 [[package]]
-name = "worth-query-bank-court-external-rail-tls"
-version = "0.1.0"
-dependencies = [
- "tokio",
- "tokio-rustls",
- "worth-query-bank-testkit-external-rail",
-]
-
-[[package]]
-name = "worth-query-bank-court-http-adapter"
-version = "0.1.0"
-dependencies = [
- "worth-query-bank-testkit-http-adapter",
-]
-
-[[package]]
-name = "worth-query-bank-court-http-workflows"
-version = "0.1.0"
-dependencies = [
- "reqwest 0.12.28",
- "tokio",
- "worth-query-bank-testkit-courtroom",
- "worth-query-host",
-]
-
-[[package]]
-name = "worth-query-bank-court-server"
+name = "worth-query-bank-court-external-rail-server"
 version = "0.1.0"
 dependencies = [
  "bank-domain",
@@ -3387,24 +3344,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-query-bank-court-server-owned-effects"
+name = "worth-query-bank-court-http-adapter"
 version = "0.1.0"
 dependencies = [
- "bank-domain",
- "bank-server",
- "worth-query-bank-testkit-server",
- "worth-query-host",
+ "worth-query-bank-testkit-http-adapter",
 ]
 
 [[package]]
-name = "worth-query-bank-court-server-read-probe"
+name = "worth-query-bank-court-source"
 version = "0.1.0"
 dependencies = [
- "worth-query-bank-testkit-server",
+ "worth-query-bank-testkit-user-node",
 ]
 
 [[package]]
-name = "worth-query-bank-court-transport"
+name = "worth-query-bank-court-user-node"
 version = "0.1.0"
 dependencies = [
  "bank-http-adapter",
@@ -3414,20 +3368,7 @@ dependencies = [
  "tokio",
  "worth-query-bank-testkit",
  "worth-query-bank-testkit-courtroom",
-]
-
-[[package]]
-name = "worth-query-bank-court-user-node"
-version = "0.1.0"
-dependencies = [
- "worth-query-bank-testkit-user-node",
-]
-
-[[package]]
-name = "worth-query-bank-court-workflow-archive"
-version = "0.1.0"
-dependencies = [
- "worth-query-bank-testkit-courtroom",
+ "worth-query-host",
 ]
 
 [[package]]

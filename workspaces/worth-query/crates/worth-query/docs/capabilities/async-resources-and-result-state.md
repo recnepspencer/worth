@@ -71,7 +71,7 @@ retirement remain: they create no successor or new wake custody and do not attes
 to queue/provider cleanup. The existing genuine custodian retains those
 obligations. Lower Native kernels remain their original owners.
 See the [native source contract](../../../../../../crates/worth-runtime-world/README.md#owned-async-source-binding)
-and [compiled lifecycle courts](../../../worth-query-court-query-bridge/tests/worth_query_court_query_bridge/query/installed_operating_world/suite/product_owned_async/mod.rs).
+and [compiled lifecycle courts](../../../worth-query-court-query-installed-operating-world/tests/worth_query_court_query_installed_operating_world/query/installed_operating_world/suite/product_owned_async/mod.rs).
 The installed managed Decl/Host resource endpoint is the separate Phase 8 capability
 in [milestone 9.18.1](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 

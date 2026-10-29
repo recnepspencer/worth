@@ -8,7 +8,7 @@ mod handler;
 #[path = "resource_monitor/journey.rs"]
 mod journey;
 
-pub use worth_query_testkit_certification_source_only::facade::certification::native_workflow_operations::capability::resources::provider as producer;
+pub use worth_query_testkit_certification_operation::facade::certification::native_workflow_operations::capability::resources::provider as producer;
 #[path = "resource_monitor/resource.rs"]
 mod resource;
 #[path = "resource_monitor/source_binding.rs"]

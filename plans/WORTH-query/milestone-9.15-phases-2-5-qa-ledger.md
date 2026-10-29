@@ -1,5 +1,7 @@
 # Milestone 9.15 Phases 2-5 QA Closure Ledger
 
+Historical record: verification commands, counts, and timings below describe the milestone checkout and are not current invocation guidance. For current product-frontier court selection and complete Gate commands, see [Query verification](../../workspaces/worth-query/README.md) and [the Gate entry point](../../scripts/ci/query_gate.py). No current target is credited with these historical results.
+
 Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
 
 
@@ -128,7 +130,7 @@ The findings remain here so closure cannot erase the audit history.
   passed.
 - `cargo test -p worth-query-publication`: package compiles; it currently
   declares no direct tests.
-- `cargo test -q -p 'worth-query-court-host*-fast' query::installed_operating_world::`: 320 passed,
+- `cargo test -q -p worth-query --test installed_operating_world`: 320 passed,
   0 failed, in 3.08s.
 - `cargo test -p worth-query-certification --test compile_certification`: all
   12 harness tests and all registered trybuild cases passed. The host-facade
@@ -149,7 +151,7 @@ The findings remain here so closure cannot erase the audit history.
 
 - `cargo test -p worth-query-execution --no-run`: 0.147s warm.
 - `cargo test -p worth-query-admission --no-run`: 0.138s warm.
-- `cargo test -p 'worth-query-court-host*-fast' query::installed_operating_world:: --no-run`:
+- `cargo test -p worth-query --test installed_operating_world --no-run`:
   23.633s after structural invalidation and 0.552s on the immediate warm rerun.
 - The full installed-world runtime suite completed in 3.08s.
 

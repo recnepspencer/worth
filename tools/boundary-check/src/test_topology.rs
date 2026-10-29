@@ -10,6 +10,8 @@ mod configuration;
 mod construction_factories;
 mod court_manifest;
 mod diff_scope;
+mod frontier_splits;
+mod product_frontier;
 mod production_dependencies;
 mod runtime_roots;
 mod selectors;
@@ -100,6 +102,7 @@ fn validate_configured(
     let manifests = owners(&root)?;
     let stems: Vec<_> = config.workspaces.iter().map(|w| w.stem.as_str()).collect();
     let mut diagnostics = selectors::validate(&root);
+    diagnostics.extend(frontier_splits::validate(&root, &manifests)?);
     let mut source_debt: Option<(source_baseline::Baseline, runtime_roots::Registry)> = None;
     for (manifest, (stem, member)) in &manifests {
         let value = manifest_value(manifest)?;
@@ -118,7 +121,7 @@ fn validate_configured(
             owner.package.contains("-testkit") || worth.and_then(|w| w.get("testkit")).is_some();
         if court {
             diagnostics.extend(court_manifest::product_code(&owner, &value));
-            if let Err(error) = court_manifest::surface(&owner, &value, stem) {
+            if let Err(error) = court_manifest::identity(&owner, &value, stem) {
                 diagnostics.push(error);
             }
             diagnostics.extend(structure_limits::validate(&owner));

@@ -147,7 +147,7 @@ needed. Serialized coordinates locate an occurrence; its live selection owns
 retention. After the final selection is released, subsequent publications can
 retire that optional source history.
 
-The [Bank accounting court](../../../../../worth-query-bank-world/crates/worth-query-bank-court-server/tests/worth_query_bank_court_server/server/ordinary_mutations/recorded_correction/mod.rs)
+The [Bank accounting court](../../../../../worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_mutations/recorded_correction/mod.rs)
 shows closed source operations, later transfers, a freshly authenticated teller,
 original-journal compensation and replay through this entry.
 
@@ -394,7 +394,7 @@ fresh disclosure and ordinary admission on the current target.
 
 The inverse handler writes the domain subject covered by the binding. Native
 candidate validation preserves the original workflow instance and its custody.
-The [document retention example](../../../worth-query-court-host-workflow-approval/tests/worth_query_court_host_workflow_approval/certification/application_graph/workflow_approval/correction/mod.rs)
+The [document retention example](../../../worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/correction/mod.rs)
 shows an approved retention edit corrected after completion, during a live
 successor and after cancellation.
 
@@ -430,7 +430,7 @@ to retain the installed journal reversal's delivery; publish or continue its
 returned owner and close it under a fresh request. The
 [binding](../../../../../worth-query-bank-world/crates/bank-domain/src/schema/approved_payment_correction.rs)
 shows the declaration and original journal projection; the
-[owning journey](../../../../../worth-query-bank-world/crates/worth-query-bank-court-server-owned-effects/tests/worth_query_bank_court_server_owned_effects/process/server/approved_payment_workflow/owner_custody/correction/mod.rs)
+[owning journey](../../../../../worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/process/server_owned_effects/server/approved_payment_workflow/owner_custody/correction/mod.rs)
 shows original rail custody, settlement, compensation and replay.
 
 ## Read original fields of a created output

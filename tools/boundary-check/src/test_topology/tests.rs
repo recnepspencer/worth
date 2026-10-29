@@ -1,5 +1,6 @@
 use super::*;
 mod fixture;
+mod frontiers;
 mod source_ratchet;
 mod workspace_membership;
 use fixture::{Fixture, COURT, TARGET};
@@ -22,7 +23,7 @@ fn law18_v2_refuses_product_integration_targets_outside_tests_directory() {
 #[test]
 fn court_requires_autotests_false() {
     let f = Fixture::new();
-    f.manifest("autotests=true", "", "host");
+    f.manifest("autotests=true", "");
     f.refuses("autotests = false");
 }
 #[test]
@@ -31,7 +32,6 @@ fn law18_refuses_second_explicit_target_even_with_autotests_disabled() {
     f.manifest(
         "autotests=false",
         "[[test]]\nname='extra'\npath='tests/extra/main.rs'\n",
-        "host",
     );
     f.write("governed/tests/extra/main.rs", "#[test] fn extra() {}");
     f.refuses("exactly one integration-test target");
@@ -50,7 +50,11 @@ fn court_refuses_wrong_canonical_target_path() {
 #[test]
 fn law18_v2_refuses_a_misnamed_court() {
     let f = Fixture::new();
-    f.manifest("autotests=false", "", "other");
+    let manifest = std::fs::read_to_string(f.0.join("governed/Cargo.toml")).unwrap();
+    f.write(
+        "governed/Cargo.toml",
+        &manifest.replace(COURT, "wrong-court-host"),
+    );
     f.refuses("misnamed court");
 }
 #[test]
@@ -58,17 +62,7 @@ fn manifest_classes_are_retired() {
     let f = Fixture::new();
     f.append(
         "governed/Cargo.toml",
-        "[package.metadata.worth.court]\nsurface='host'\nclass='fast'\n",
-    );
-    // Replace, rather than duplicate, the metadata table.
-    let text = std::fs::read_to_string(f.0.join("governed/Cargo.toml")).unwrap();
-    let start = text.find("[package.metadata.worth.court]").unwrap();
-    f.write(
-        "governed/Cargo.toml",
-        &format!(
-            "{}[package.metadata.worth.court]\nsurface='host'\nclass=['fast','process']\n",
-            &text[..start]
-        ),
+        "[package.metadata.worth.court]\nclass=['fast','process']\n",
     );
     f.refuses("categories belong in module paths");
 }
@@ -84,7 +78,6 @@ fn law18_v2_refuses_bench_targets_hidden_inside_tests() {
     f.manifest(
         "autotests=false",
         "[[bench]]\nname='hidden'\npath='tests/bench.rs'\nharness=false\n",
-        "host",
     );
     f.write("governed/tests/bench.rs", "fn main() {}");
     f.refuses("court contains product code or a production target");
@@ -178,7 +171,7 @@ fn court_and_testkit_source_ceilings_are_deterministic() {
     }
 }
 #[test]
-fn testkit_name_and_metadata_are_required() {
+fn testkit_names_must_match_their_governed_workspace() {
     let f = Fixture::new();
     f.write(
         "governed/Cargo.toml",

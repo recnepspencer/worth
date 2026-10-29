@@ -117,7 +117,7 @@ class CourtTimingTests(unittest.TestCase):
             manifest = root / "crates" / COURT / "Cargo.toml"
             manifest.parent.mkdir(parents=True)
             manifest.write_text('[package]\nname = "' + COURT + '"\n'
-                                '[package.metadata.worth.court]\nsurface = "host"\n',
+                                '',
                                 encoding="utf-8")
             plan = root / "plan.json"
             plan.write_text(json.dumps([{"court": COURT, "court_after": "fast::publication::case",

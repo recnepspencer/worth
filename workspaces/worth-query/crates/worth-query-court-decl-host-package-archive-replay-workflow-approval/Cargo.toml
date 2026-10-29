@@ -1,0 +1,26 @@
+[package]
+name = "worth-query-court-decl-host-package-archive-replay-workflow-approval"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-query-admission = { path = "../worth-query-admission" }
+worth-query-decl = { path = "../worth-query-decl" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-certification-application-graph = { path = "../worth-query-testkit-certification-application-graph" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+worth-query-testkit-host = { path = "../worth-query-testkit-host" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_decl_host_package_archive_replay_workflow_approval"
+path = "tests/worth_query_court_decl_host_package_archive_replay_workflow_approval.rs"

@@ -7,9 +7,6 @@ version.workspace = true
 license.workspace = true
 publish = false
 
-[package.metadata.worth.court]
-surface = "http-adapter"
-
 [dev-dependencies]
 worth-query-bank-testkit-http-adapter = { path = "../worth-query-bank-testkit-http-adapter" }
 

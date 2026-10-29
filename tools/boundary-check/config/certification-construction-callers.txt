@@ -52,7 +52,7 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_selection/result_set.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_delegation_session.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_elevation/delivery_cutoff/context.rs
-installation workspaces/worth-query/crates/worth-query-court-host/tests/worth_query_court_host/host/canonical_graph_progression/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/canonical_graph_progression/mod.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/publication_limit.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_live_route.rs
@@ -60,8 +60,8 @@ installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/tem
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/conditional_execution.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/conditional_execution/product_readback.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/retained_query_batch/direct_limits.rs
-installation workspaces/worth-query/crates/worth-query-court-host-branches/tests/worth_query_court_host_branches/certification/runtime_world_branching/selected_product_reads/mod.rs
-installation workspaces/worth-query/crates/worth-query-court-host-temporal/tests/worth_query_court_host_temporal/host/temporal_conditional_operation/selected_product_reads/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/runtime_world_branching/selected_product_reads/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/selected_product_reads/mod.rs
 installation workspaces/worth-query/crates/worth-query/src/runtime/tests/graph_read_access/graph_read_access_architectural_closeout/application_query_equivalence/support.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/delivery_tests/committed_live_cause_projects_with_bounded_result_buffer_evidenc.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/cold_and_incremental.rs
@@ -69,7 +69,7 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/disclosure_noninterference/contract_admission/predicate_access.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_guard_basis/root_path_guard_reads_its_pinned_truth_version.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses.rs
-installation workspaces/worth-query/crates/worth-query-court-host-temporal/tests/worth_query_court_host_temporal/host/temporal_conditional_operation/retained_query_batch/pre_kernel_cancellation_keeps_its_real_execution_cause/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/retained_query_batch/pre_kernel_cancellation_keeps_its_real_execution_cause/mod.rs
 # Closed pinned-read reconstruction proofs; each constructs its installed fixture query.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/native_concurrency.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pinning_reasons.rs

@@ -7,9 +7,6 @@ version.workspace = true
 license.workspace = true
 publish = false
 
-[package.metadata.worth.court]
-surface = "estate-certification"
-
 [dev-dependencies]
 bank-server = { workspace = true }
 serde_json = { workspace = true }

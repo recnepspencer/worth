@@ -11,7 +11,7 @@ $testName = switch ($Lane) {
     "Cold" { "workflow_history_locality_smoke" }
     "Diagnostic" { "workflow_history_native_cost_diagnostic" }
 }
-$court = "worth-query-court-application-graph"
+$court = "worth-query-court-decl-host-package-archive-replay-application-graph"
 $testSuffix = "::application_graph::workflow_history_scale::$testName"
 
 # Fixed development qualification envelope, excluding compilation. Sampled

@@ -214,7 +214,7 @@ that value was absent.
 The complete compiling declarations are exercised in
 `worth-query-installation/src/application_query/tests.rs` and the Bank domain.
 The external public progression is exercised in the
-[host graph-progression court](../../../worth-query-court-host/tests/worth_query_court_host/host/canonical_graph_progression/mod.rs).
+[host graph-progression court](../../../worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/canonical_graph_progression/mod.rs).
 
 ## How It Relates To Other Features
 

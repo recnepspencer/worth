@@ -1,0 +1,22 @@
+[package]
+name = "worth-query-bank-court-external-rail-server"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+bank-domain = { workspace = true }
+bank-server = { workspace = true }
+worth-foundational = { workspace = true }
+worth-query-bank-testkit-server = { path = "../worth-query-bank-testkit-server" }
+worth-query-host = { workspace = true }
+
+[[test]]
+name = "worth_query_bank_court_external_rail_server"
+path = "tests/worth_query_bank_court_external_rail_server.rs"
+
+[lints]
+workspace = true

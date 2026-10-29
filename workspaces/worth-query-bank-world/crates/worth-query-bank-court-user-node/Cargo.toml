@@ -7,11 +7,15 @@ version.workspace = true
 license.workspace = true
 publish = false
 
-[package.metadata.worth.court]
-surface = "user-node"
-
 [dev-dependencies]
-worth-query-bank-testkit-user-node = { path = "../worth-query-bank-testkit-user-node" }
+bank-http-adapter = { workspace = true }
+bank-user-node = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+worth-query-bank-testkit = { path = "../worth-query-bank-testkit" }
+worth-query-bank-testkit-courtroom = { path = "../worth-query-bank-testkit-courtroom" }
+worth-query-host = { workspace = true }
 
 [[test]]
 name = "worth_query_bank_court_user_node"

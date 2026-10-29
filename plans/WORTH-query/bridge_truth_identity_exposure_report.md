@@ -1,5 +1,7 @@
 # Bridge Truth Identity Exposure Report
 
+Historical record: verification commands, counts, and timings below describe the milestone checkout and are not current invocation guidance. For current product-frontier court selection and complete Gate commands, see [Query verification](../../workspaces/worth-query/README.md) and [the Gate entry point](../../scripts/ci/query_gate.py). No current target is credited with these historical results.
+
 Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
 
 
@@ -689,7 +691,7 @@ Verification:
 - `cargo check -p worth-query --lib` passed.
 - `cargo test -p worth-query subscription::tests::declaration::bridge_parity --lib` passed.
 - `cargo test -p worth-query subscription::tests::active::active_lifecycle --lib` passed.
-- `cargo test -p 'worth-query-court-host*-fast' query::public_declarative_journeys::causal_inspection_public_dx::` passed.
+- `cargo test -p worth-query --test causal_inspection_public_dx` passed.
 - `cargo test -p worth-query --test phase_boundaries_compile_fail` passed.
 - Captured logs:
   `plans/worth-query/goal_mode_subscription_support_typed_check.txt`,

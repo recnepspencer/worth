@@ -1,5 +1,7 @@
 # Milestone 9.16.1 Canonical Graph Progression Closure Ledger
 
+Historical record: verification commands, counts, and timings below describe the milestone checkout and are not current invocation guidance. For current product-frontier court selection and complete Gate commands, see [Query verification](../../workspaces/worth-query/README.md) and [the Gate entry point](../../scripts/ci/query_gate.py). No current target is credited with these historical results.
+
 Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
 
 
@@ -74,7 +76,8 @@ requirement statuses above.
   passes 404 tests. The governed-live fixture uses its own exactly installed
   operation, while the hostile `TouchAccount` fixture retains no undeclared
   label authority.
-- `cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p worth-query-bank-court-domain-fast domain::domain_contracts::estate_capability_installation:: --quiet` passes 11 real
+- `cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p
+  bank-domain --test estate_capability_installation --quiet` passes 11 real
   consumer tests without granting execution authority from installation alone.
 - The warm-path source guard proves no query/operation obligation
   reconstruction helper and no direct SHA implementation in the installed

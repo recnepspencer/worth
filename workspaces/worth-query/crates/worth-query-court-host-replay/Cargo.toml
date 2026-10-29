@@ -7,9 +7,6 @@ version.workspace = true
 license.workspace = true
 publish = false
 
-[package.metadata.worth.court]
-surface = "host-replay"
-
 [dev-dependencies]
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-query = { path = "../worth-query" }

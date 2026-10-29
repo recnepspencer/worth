@@ -15,7 +15,7 @@ worth-query-replay.workspace = true
 [dev-dependencies]
 worth-query-testkit-certification = { path = "../worth-query-testkit-certification" }
 worth-query-testkit-certification-correction = { path = "../worth-query-testkit-certification-correction" }
-worth-query-testkit-certification-source-only = { path = "../worth-query-testkit-certification-source-only" }
+worth-query-testkit-certification-operation = { path = "../worth-query-testkit-certification-operation" }
 worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
 
 worth-execution = { path = "../../../../crates/worth-execution" }

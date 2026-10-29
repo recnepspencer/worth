@@ -1,4 +1,4 @@
-"""Cargo selections for product unit tests and boundary/class courts."""
+"""Cargo selections for product unit tests and product-frontier courts."""
 from pathlib import Path
 import tomllib
 

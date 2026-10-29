@@ -115,13 +115,13 @@ of avoiding physical proof work. `discard_rule_readable_collections()` removes
 these projections; later reads can reconstruct them without changing truth or
 ordinary Query views.
 
-The [facade journey](../../../worth-query-court-host-application-graph/tests/worth_query_court_host_application_graph/certification/application_graph/relation_laws/derived/court/mod.rs)
+The [facade journey](../../../worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/derived/court/mod.rs)
 uses an authenticated action, real proposed-state rule, negative-adjacency edit,
 physical rewire and discard/rebuild. The [Native audience court](../../../worth-query-execution/src/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience.rs)
 checks that a broad proof cannot lend its physical source access to a narrower
-reader on the same observation. The [logical composition journey](../../../worth-query-court-host-application-graph/tests/worth_query_court_host_application_graph/certification/application_graph/relation_laws/logical/court/mod.rs)
+reader on the same observation. The [logical composition journey](../../../worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/logical/court/mod.rs)
 uses the same source owners for laws, walks, orbits and components. The
-[grant-revocation journey](../../../worth-query-court-host-native-workflows/tests/worth_query_court_host_native_workflows/certification/application_graph/source_only/capability/resources/journeys/mod.rs)
+[grant-revocation journey](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/capability/resources/journeys/mod.rs)
 keeps a derived value available while actual grant revocation denies the action
 before provider access; a derived value cannot replace that grant.
 
@@ -314,7 +314,7 @@ proves the read-only adoption view reports one `GraphRead` row owned by
 Relational and requiring a `GraphReadProduct` terminal.
 
 The executable example is the
-[host graph-progression court](../../../worth-query-court-host/tests/worth_query_court_host/host/canonical_graph_progression/mod.rs).
+[host graph-progression court](../../../worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/canonical_graph_progression/mod.rs).
 It uses the shared Host testkit to exercise the installed read and obligation
 surfaces.
 

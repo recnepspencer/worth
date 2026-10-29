@@ -8,7 +8,7 @@ use super::{
 #[test]
 fn law18_refuses_a_second_implicit_target_and_directory_target() {
     let f = Fixture::new();
-    f.manifest("autotests=true", "", "host");
+    f.manifest("autotests=true", "");
     f.write("governed/tests/extra/main.rs", "#[test] fn extra() {}");
     f.refuses("exactly one integration-test target");
 }
@@ -44,7 +44,7 @@ fn law18_implicit_path_dependency_members_cannot_hide_a_second_target() {
     f.write("Cargo.toml", "[workspace]\nmembers=['owner']\n");
     f.write("owner/Cargo.toml",&format!("[package]\nname='owner'\nversion='0.1.0'\n[dependencies]\nimplicit={{package='{COURT}',path='../implicit'}}\n"));
     f.write("owner/src/lib.rs", "");
-    f.write("implicit/Cargo.toml",&format!("[package]\nname='{COURT}'\nversion='0.1.0'\nautotests=false\n[lib]\npath='outside.rs'\n[package.metadata.worth.court]\nsurface='host'\n[[test]]\nname='{TARGET}'\npath='tests/{TARGET}.rs'\n[[test]]\nname='extra'\npath='tests/extra/main.rs'\n"));
+    f.write("implicit/Cargo.toml",&format!("[package]\nname='{COURT}'\nversion='0.1.0'\nautotests=false\n[lib]\npath='outside.rs'\n[package.metadata.worth.court]\nsurface='source'\n[[test]]\nname='{TARGET}'\npath='tests/{TARGET}.rs'\n[[test]]\nname='extra'\npath='tests/extra/main.rs'\n"));
     f.write("implicit/outside.rs", "");
     f.write(
         &format!("implicit/tests/{TARGET}.rs"),
@@ -60,9 +60,9 @@ fn law18_nested_fixture_workspace_is_governed_but_other_workspaces_are_not() {
         CONFIG,
         "governed | sample\ngoverned/tests/fixtures/court | nested\n",
     );
-    f.write("governed/tests/fixtures/court/Cargo.toml","[package]\nname='nested-court-host'\nversion='0.1.0'\nautotests=false\n[workspace]\n[package.metadata.worth.court]\nsurface='host'\n[[test]]\nname='nested_court_host'\npath='tests/nested_court_host.rs'\n");
+    f.write("governed/tests/fixtures/court/Cargo.toml","[package]\nname='nested-court-source'\nversion='0.1.0'\nautotests=false\n[workspace]\n[package.metadata.worth.court]\nsurface='source'\n[[test]]\nname='nested_court_source'\npath='tests/nested_court_source.rs'\n");
     f.write(
-        "governed/tests/fixtures/court/tests/nested_court_host.rs",
+        "governed/tests/fixtures/court/tests/nested_court_source.rs",
         "mod fast { #[test] fn retired_category() {} }",
     );
     f.write("other/Cargo.toml", "[package]\nname='other'\n[workspace]\n");

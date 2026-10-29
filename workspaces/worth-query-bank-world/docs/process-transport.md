@@ -184,7 +184,7 @@ signing seed, and the same audience, source and key epoch through
 `BankRailCompletionServerInstallation::new`. The installation creates fixed
 estate and payment verifiers; callback bytes cannot add a protocol or replace
 either verifier. The
-[real process setup](../crates/worth-query-bank-court-transport/tests/worth_query_bank_court_transport/process/courtroom/transport_process_courtroom/rail_completion/mod.rs)
+[real process setup](../crates/worth-query-bank-court-user-node/tests/worth_query_bank_court_user_node/process/transport/courtroom/transport_process_courtroom/rail_completion/mod.rs)
 and [payment setup](../crates/worth-query-bank-testkit-courtroom/src/transport_process_courtroom/payment/setup.rs)
 exercise both installed routes. Rotate keys and epochs through an explicit
 deployment overlap and retirement policy; the current single-key process

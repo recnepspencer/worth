@@ -8,14 +8,21 @@ pub(super) struct Member {
     pub(super) manifest: PathBuf,
     pub(super) production_dependencies: Option<Vec<String>>,
     pub(super) all_dependencies: Vec<String>,
+    pub(super) frontier: Option<super::product_frontier::Frontier>,
 }
 
 pub(super) fn manifests(workspace: &Path) -> Result<Vec<Member>, String> {
     let path = workspace.join("Cargo.toml");
     let text = crate::source_documents::read_to_string(&path).map_err(|e| e.to_string())?;
     let manifest: toml::Value = toml::from_str(&text).map_err(|e| e.to_string())?;
-    if manifest.get("workspace").is_some() {
+    let standalone_court = manifest
+        .get("package")
+        .and_then(|p| p.get("name"))
+        .and_then(|n| n.as_str())
+        .is_some_and(|name| name.contains("-court-"));
+    if manifest.get("workspace").is_some() || standalone_court {
         let metadata = crate::cargo_graph::cargo_metadata(workspace, &path)?;
+        let mut frontiers = super::product_frontier::compute(&metadata)?;
         let members: BTreeSet<_> = metadata.workspace_members.into_iter().collect();
         return metadata
             .packages
@@ -33,6 +40,7 @@ pub(super) fn manifests(workspace: &Path) -> Result<Vec<Member>, String> {
                         .collect(),
                 );
                 Ok(Member {
+                    frontier: frontiers.remove(&package.id),
                     manifest,
                     production_dependencies,
                     all_dependencies: package.dependencies.into_iter().map(|d| d.name).collect(),
@@ -45,6 +53,7 @@ pub(super) fn manifests(workspace: &Path) -> Result<Vec<Member>, String> {
             manifest: path,
             production_dependencies: None,
             all_dependencies: Vec::new(),
+            frontier: None,
         }]
     } else {
         Vec::new()

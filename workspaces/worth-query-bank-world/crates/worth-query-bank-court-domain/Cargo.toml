@@ -7,9 +7,6 @@ version.workspace = true
 license.workspace = true
 publish = false
 
-[package.metadata.worth.court]
-surface = "domain"
-
 [dev-dependencies]
 bank-domain = { workspace = true }
 worth-query-bank-testkit-domain = { path = "../worth-query-bank-testkit-domain" }

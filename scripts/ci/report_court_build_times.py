@@ -121,10 +121,7 @@ def read_metadata(root):
             raise ReportError(f"duplicate manifest package name: {name}")
         identity = court_identity(name)
         if identity:
-            court = package.get("metadata", {}).get("worth", {}).get("court", {})
-            if court.get("surface") != identity[1]:
-                raise ReportError(f"missing/mismatched court surface: {path}")
-            metadata[name] = {"surface": court["surface"]}
+            metadata[name] = {"surface": identity[1]}
         elif testkit_package(name):
             metadata[name] = {"surface": None}
     return metadata

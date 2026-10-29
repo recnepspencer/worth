@@ -39,6 +39,29 @@ pub(crate) struct Road1Package {
 pub(crate) struct CargoMetadata {
     pub(crate) workspace_members: Vec<String>,
     pub(crate) packages: Vec<CargoMetadataPackage>,
+    pub(crate) resolve: Option<CargoMetadataResolve>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct CargoMetadataResolve {
+    pub(crate) nodes: Vec<CargoMetadataNode>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct CargoMetadataNode {
+    pub(crate) id: String,
+    pub(crate) deps: Vec<CargoMetadataResolvedDependency>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct CargoMetadataResolvedDependency {
+    pub(crate) pkg: String,
+    pub(crate) dep_kinds: Vec<CargoMetadataDependencyKind>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct CargoMetadataDependencyKind {
+    pub(crate) kind: Option<String>,
 }
 
 #[derive(Deserialize)]

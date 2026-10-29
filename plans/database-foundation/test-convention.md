@@ -18,9 +18,13 @@
 - **A court crate is a leaf package.** Nothing depends on it. It sets `autotests = false` and has exactly one test target, `tests/<crate_snake_name>.rs`, with its modules under `tests/<crate_snake_name>/`. It contains no product code.
 - **Name:** `<workspace>-court-<surface>`.
 - **`<surface>` names the dependency set,** not a cost class and not a milestone. Examples: `decl`, `installation`, `host`, `package-archive`.
-- **Grouping rule (mechanical).** Courts whose resolved normal and dev dependency sets are equal, as `cargo metadata` reports them, belong in one court crate. A court whose dependency set differs, because it needs more or fewer crates, gets its own crate named for what distinguishes it. Two examples:
-  - `host-process` stays separate only if its dependencies differ from `host`'s, for example the rail executable or process-harness crates.
-  - A small court with a narrower dependency set stays separate. Small is cheap when the surface is narrow. Never fold a narrow court into a wider one: that is surface collapse.
+- **Grouping rule (mechanical).** A court's surface is its **product frontier**, computed from `cargo metadata`:
+  1. take the production crates in the court's resolved dependency closure, including those reached through testkits;
+  2. keep only the crates that no other crate in that set depends on.
+  
+  Production crates are workspace members that are not courts, testkits or fixtures. External crates (`serde_json`, `tokio`, `reqwest`) and testkits never distinguish a surface. Courts with equal product frontiers belong in one court crate. A court with a different frontier gets its own crate, named for its frontier. Two examples:
+  - `host-process` stays separate only if its frontier differs from `host`'s, for example because it adds the rail executable or `bank-user-node`.
+  - A court whose frontier is narrower, such as `{worth-query-decl}` against `{worth-query-host}`, stays separate. Never fold a narrow frontier into a wider one: that is surface collapse.
 - **Adding a court** means placing a module in the court crate that matches its dependency set (law 20). A new crate is justified only by a new dependency set or by the size ceiling in §5.
 
 ## 3. Shared fixtures (law 3)
@@ -89,3 +93,11 @@ The amended v3 section 1 retires the earlier claim that constructing any foreign
 value or arbitrary opaque generator makes a court. Their checker tests now prove
 that vocabulary enums and value-only generators pass. Runtime alias, helper,
 struct-literal, macro-argument and factory proofs retain the work-host boundary.
+
+## Product-frontier ruling
+
+For this track, production identities are the governed workspace's `cargo metadata.workspace_members`, excluding courts, testkits and fixture members. The court includes its own normal/dev/build edges; descendants contribute normal/build edges, because their private dev-test dependencies are not compiled by the court. The frontier removes products depended on by another selected product. Names strip the owning product prefix (`worth-query-` or `bank-`), join sorted remaining names, and use `source` for an empty frontier.
+
+The coordinator's amended section2 deliberately retires exact direct-dependency equality and redundant self-declared manifest surfaces. The boundary rule derives names from the resolved graph. Area-owned ceiling exceptions live in `tools/boundary-check/config/court-frontier-splits.toml`; no timing or test-count exemption applies. Each exception names its actual owner selectors and explicitly delegated children. A split parent may retain the canonical frontier name; child courts append their registered area.
+
+The coordinator also authorized the three-file consumer handler-roster repair: the island-coupling operation added in `887b6aa0c9` lacked its negative-fixture registration. Assertions and product validation order remain intact. Source-test migration remains deferred until a separate slice2 landing.

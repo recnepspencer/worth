@@ -1,0 +1,37 @@
+# Only source-ceiling splits may share a computed product frontier.
+# Owners are exact module areas; delegates belong to another registered area.
+
+[[splits]]
+court = "worth-query-court-query"
+frontier = ["worth-query"]
+area = "query"
+owners = ["query"]
+delegates = ["installed_operating_world"]
+
+[[splits]]
+court = "worth-query-court-query-installed-operating-world"
+frontier = ["worth-query"]
+area = "installed-operating-world"
+owners = ["query/installed_operating_world"]
+delegates = ["suite/operation_compatibility", "suite/operation_consumption_cost", "suite/operation_definition", "suite/operation_invalidation", "suite/operation_invalidation_convergence", "suite/operation_invalidation_routing", "suite/operation_invalidation_stale", "suite/operation_lifecycle", "suite/operation_lifecycle_transitions", "suite/operation_lineage", "suite/operation_lineage_conditional", "suite/operation_lineage_promotion", "suite/operation_lineage_replay", "suite/operation_native_access", "suite/operation_native_access_generation", "suite/operation_native_access_hostile", "suite/operation_native_access_matrix", "suite/operation_native_replay_access", "suite/operation_progression", "suite/operation_reexecution", "suite/operation_sharing", "suite/operation_sharing_admission"]
+
+[[splits]]
+court = "worth-query-court-query-installed-operations"
+frontier = ["worth-query"]
+area = "installed-operations"
+owners = ["query/installed_operating_world/suite/operation_compatibility", "query/installed_operating_world/suite/operation_consumption_cost", "query/installed_operating_world/suite/operation_definition", "query/installed_operating_world/suite/operation_invalidation", "query/installed_operating_world/suite/operation_invalidation_convergence", "query/installed_operating_world/suite/operation_invalidation_routing", "query/installed_operating_world/suite/operation_invalidation_stale", "query/installed_operating_world/suite/operation_lifecycle", "query/installed_operating_world/suite/operation_lifecycle_transitions", "query/installed_operating_world/suite/operation_lineage", "query/installed_operating_world/suite/operation_lineage_conditional", "query/installed_operating_world/suite/operation_lineage_promotion", "query/installed_operating_world/suite/operation_lineage_replay", "query/installed_operating_world/suite/operation_native_access", "query/installed_operating_world/suite/operation_native_access_generation", "query/installed_operating_world/suite/operation_native_access_hostile", "query/installed_operating_world/suite/operation_native_access_matrix", "query/installed_operating_world/suite/operation_native_replay_access", "query/installed_operating_world/suite/operation_progression", "query/installed_operating_world/suite/operation_reexecution", "query/installed_operating_world/suite/operation_sharing", "query/installed_operating_world/suite/operation_sharing_admission"]
+delegates = []
+
+[[splits]]
+court = "worth-query-court-decl-host-package-archive-replay-application-graph"
+frontier = ["worth-query-decl", "worth-query-host", "worth-query-package-archive", "worth-query-replay"]
+area = "application-graph"
+owners = ["certification/application_graph"]
+delegates = ["workflow_approval"]
+
+[[splits]]
+court = "worth-query-court-decl-host-package-archive-replay-workflow-approval"
+frontier = ["worth-query-decl", "worth-query-host", "worth-query-package-archive", "worth-query-replay"]
+area = "workflow-approval"
+owners = ["certification/application_graph/workflow_approval"]
+delegates = []

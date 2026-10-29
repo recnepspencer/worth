@@ -2,23 +2,19 @@
 use super::failure;
 use crate::{diagnostics::Diagnostic, source_rules::GovernedCrate};
 
-pub(super) fn surface(
+pub(super) fn identity(
     owner: &GovernedCrate,
     value: &toml::Value,
     stem: &str,
-) -> Result<String, Diagnostic> {
-    let court = value
+) -> Result<(), Diagnostic> {
+    if value
         .get("package")
         .and_then(|p| p.get("metadata"))
         .and_then(|m| m.get("worth"))
         .and_then(|w| w.get("court"))
-        .ok_or_else(|| {
-            failure(
-                &owner.relative_crate_root,
-                "court needs package.metadata.worth.court",
-            )
-        })?;
-    if court.get("class").is_some() {
+        .and_then(|c| c.get("class"))
+        .is_some()
+    {
         return Err(failure(
             &owner.relative_crate_root,
             "court categories belong in module paths, not a manifest class",
@@ -35,27 +31,17 @@ pub(super) fn surface(
             "court must set autotests = false",
         ));
     }
-    let surface = court
-        .get("surface")
-        .and_then(|v| v.as_str())
-        .filter(|v| segment(v))
-        .ok_or_else(|| {
-            failure(
-                &owner.relative_crate_root,
-                "court needs its dependency surface",
-            )
-        })?;
-    let name = format!("{stem}-court-{surface}");
-    let class_suffix = ["-fast", "-exhaustive", "-scale", "-compile-fail"]
-        .iter()
-        .any(|suffix| name.ends_with(suffix));
-    if owner.package != name || class_suffix {
+    if !owner
+        .package
+        .strip_prefix(&format!("{stem}-court-"))
+        .is_some_and(segment)
+    {
         return Err(failure(
             &owner.relative_crate_root,
-            format!("misnamed court: expected `{name}`"),
+            format!("misnamed court: expected `{stem}-court-<product-frontier>`"),
         ));
     }
-    Ok(surface.into())
+    Ok(())
 }
 
 fn segment(value: &str) -> bool {

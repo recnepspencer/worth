@@ -236,7 +236,7 @@ let outcome = owner.advance(&bank.request(&specialist, &scope));
 For a publication interruption, retain the native `Progress` owner. A fresh
 unauthorized recovery returns that owner in `Refused`; recovery under an authorized
 request returns progress and then `Completed` with `Recovered` evidence. It supplies
-no replacement handler result. The [owning estate courts](../crates/worth-query-bank-court-server/tests/worth_query_bank_court_server/server/ordinary_mutations/estate_operations/owning_sources/mod.rs)
+no replacement handler result. The [owning estate courts](../crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_mutations/estate_operations/owning_sources/mod.rs)
 exercise this flow, independent account truth, refusal during close, and witness transfer.
 
 <!-- illustrative -->
@@ -295,7 +295,7 @@ read authority. Later deposits change current activity without retargeting the
 original retained observation. Keep completed custody if `close(&fresh_request)`
 refuses and retry with lawful fresh context.
 
-The [owning deposit court](../crates/worth-query-bank-court-server/tests/worth_query_bank_court_server/server/ordinary_mutations/owning_deposit/mod.rs)
+The [owning deposit court](../crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_mutations/owning_deposit/mod.rs)
 executes the real append-partial, unauthorized recovery, authorized recovery,
 historical read and cancelled-close/fresh-close journey. It also verifies all five
 installed money deliveries and preserves the deployed program capability meaning.
@@ -491,7 +491,7 @@ instance; a fresh authenticated workflow advance observes the owner result.
 Cancellation or definition retirement cannot abandon an operation still in
 owner custody. The
 [compiled payment definition](../crates/bank-server/src/application_definition/workflows.rs)
-and [process court](../crates/worth-query-bank-court-http-workflows/tests/worth_query_bank_court_http_workflows/process/courtroom/transport_process_courtroom/payment/mod.rs)
+and [process court](../crates/worth-query-bank-court-user-node/tests/worth_query_bank_court_user_node/process/http_workflows/courtroom/transport_process_courtroom/payment/mod.rs)
 exercise those paths.
 Clients do not submit callback bytes or interpret a rail transport ACK as a
 completed estate operation. Bank acknowledges callback custody only after
