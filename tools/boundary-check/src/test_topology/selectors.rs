@@ -1,5 +1,5 @@
 //! Governed gates select category prefixes, never behaviour-name regular expressions.
-use super::{category_paths::CATEGORIES, failure};
+use super::failure;
 use crate::diagnostics::Diagnostic;
 use std::path::Path;
 
@@ -7,6 +7,7 @@ pub(super) fn validate(root: &Path) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
     for relative in [
         "scripts/ci/query_gate.py",
+        "scripts/ci/query_gate_courts.py",
         "workspaces/worth-query/.config/nextest.toml",
         "workspaces/worth-query-bank-world/.config/nextest.toml",
     ] {
@@ -23,7 +24,7 @@ pub(super) fn validate(root: &Path) -> Vec<Diagnostic> {
         };
         for suffix in text.split("test(/").skip(1) {
             let expression = suffix.split("/)").next().unwrap_or(suffix);
-            if !CATEGORIES.iter().any(|c| expression == format!("^{c}::")) {
+            if !path_prefix(expression) {
                 diagnostics.push(failure(
                     relative,
                     format!("name regex `{expression}` is forbidden; select a category prefix"),
@@ -42,4 +43,23 @@ pub(super) fn validate(root: &Path) -> Vec<Diagnostic> {
         }
     }
     diagnostics
+}
+
+fn path_prefix(expression: &str) -> bool {
+    expression
+        .strip_prefix('^')
+        .and_then(|s| s.strip_suffix("::"))
+        .is_some_and(|path| {
+            path.split("::").all(|segment| {
+                let segment = segment.strip_prefix("r#").unwrap_or(segment);
+                !segment.is_empty()
+                    && segment
+                        .chars()
+                        .next()
+                        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+                    && segment
+                        .chars()
+                        .all(|c| c.is_ascii_alphanumeric() || c == '_')
+            })
+        })
 }

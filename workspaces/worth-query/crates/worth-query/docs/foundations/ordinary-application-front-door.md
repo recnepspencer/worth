@@ -120,7 +120,7 @@ immutable staged continuation advances only after the original request succeeds;
 a refused or cancelled page preserves the last accepted position. Drop captured
 subjects, pages and cursors when finished to release their retained Native and
 World pins. The [installed history guide](../capabilities/record-and-aspect-history.md)
-documents limits and typed gaps. Compiled [entity audit journeys](../../../worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/mod.rs)
+documents limits and typed gaps. Compiled [entity audit journeys](../../../worth-query-court-host-document-retention/tests/worth_query_court_host_document_retention/certification/application_graph/document_retention_model/record_history/court/mod.rs)
 and the [physical relation journey](../../../worth-query-court-host-application-graph/tests/worth_query_court_host_application_graph/certification/application_graph/relation_laws/history/court/mod.rs)
 show capture, fresh permission, continuation and final release through Decl/Host.
 

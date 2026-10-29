@@ -238,6 +238,7 @@ fn law18_checkout_cannot_disable_the_rule_by_removing_both_config_files() {
 fn query_gate_and_governed_nextest_filters_refuse_name_regexes() {
     for path in [
         "scripts/ci/query_gate.py",
+        "scripts/ci/query_gate_courts.py",
         "workspaces/worth-query/.config/nextest.toml",
     ] {
         let f = Fixture::new();
@@ -246,4 +247,31 @@ fn query_gate_and_governed_nextest_filters_refuse_name_regexes() {
         f.write(path, "filter = 'test(/^process::/)' ");
         assert!(f.messages().is_empty(), "{:?}", f.messages());
     }
+}
+
+#[test]
+fn literal_owner_and_isolation_prefixes_are_valid_but_behaviour_regexes_are_not() {
+    let f = Fixture::new();
+    for prefix in [
+        "^process::serial::",
+        "^certification::application_graph::",
+        "^r#process::",
+    ] {
+        f.write(
+            "workspaces/worth-query/.config/nextest.toml",
+            &format!("filter = 'test(/{prefix}/)'"),
+        );
+        assert!(f.messages().is_empty(), "{:?}", f.messages());
+    }
+    f.write(
+        "workspaces/worth-query/.config/nextest.toml",
+        "filter = 'test(/^process::.*behaviour$/)' ",
+    );
+    f.refuses("name regex");
+}
+#[test]
+fn serial_is_a_category_prefix_not_an_arbitrary_nested_module() {
+    let f = Fixture::new();
+    f.entry("mod process { mod owner { mod serial { #[test] fn case() {} } } }");
+    f.refuses("invalid category path");
 }

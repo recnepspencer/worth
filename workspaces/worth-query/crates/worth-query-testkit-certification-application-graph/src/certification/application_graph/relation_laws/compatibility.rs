@@ -1,6 +1,5 @@
 //! Authored law meaning changes identity and cannot silently reopen old installed truth.
 pub use super::{installation::*, program::GraphProgram, schema::*};
-pub use worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits;
 pub use worth_query_host::facade::{
     application_installation::*,
     declaration::{application_program::*, application_schema::*},
@@ -9,6 +8,7 @@ pub use worth_query_package_archive::facade::{
     decode_application_program_description, encode_application_program_description,
     WorthQueryApplicationProgramArchiveCompatibility, WorthQueryPackageArchiveLimits,
 };
+pub use worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits;
 
 pub fn program<L: LawPolicy>() -> ValidatedApplicationProgram<GraphSchema<L>, GraphProgram<L>> {
     ApplicationProgramAuthoring::begin()

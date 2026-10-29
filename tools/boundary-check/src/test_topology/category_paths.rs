@@ -27,7 +27,8 @@ pub(super) fn validate(owner: &GovernedCrate, target: &Path) -> Vec<Diagnostic> 
         if segments.iter().any(|p| RETIRED.contains(p))
             || segments.iter().skip(1).any(|p| CATEGORIES.contains(p))
             || (segments.contains(&"serial")
-                && !matches!(segments.first(), Some(&"process" | &"compile_fail")))
+                && (!matches!(segments.first(), Some(&"process" | &"compile_fail"))
+                    || segments.get(1) != Some(&"serial")))
         {
             diagnostics.push(failure(
                 &owner.relative_crate_root,

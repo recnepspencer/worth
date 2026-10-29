@@ -1,8 +1,5 @@
 //! Ordinary installation, bootstrap authority and authenticated native mutations.
 pub use super::{operation::*, program::GraphProgram, schema::*};
-pub use worth_query_testkit_document_retention::facade::document_retention_model::{
-    host::host_limits, operator_identity::*,
-};
 pub use std::marker::PhantomData;
 pub use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope, application_entry::*,
@@ -10,6 +7,9 @@ pub use worth_query_host::facade::{
     declaration::application_schema::*,
     declaration::authentication::WorthQueryPrincipalMappingStatus, primary_graph::*,
     runtime::ExecutionAllocationPolicy,
+};
+pub use worth_query_testkit_document_retention::facade::document_retention_model::{
+    host::host_limits, operator_identity::*,
 };
 
 pub struct World<L: LawPolicy> {
