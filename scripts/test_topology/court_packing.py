@@ -57,10 +57,18 @@ def first_fit_decreasing(areas, ceiling):
     return pieces
 
 
-def area_suffix(path, surface):
-    parts = [part.replace('_', '-') for part in path]
-    if parts and (parts[0] == surface or surface.endswith('-' + parts[0])):
-        parts.pop(0)
-    if parts and parts[0].startswith(surface + '-'):
-        parts[0] = parts[0][len(surface) + 1:]
+def area_suffix(path, surface, frontier_stems=()):
+    parts = []
+    stems = sorted({surface, *frontier_stems}, key=lambda s: (-len(s), s))
+    for part in path:
+        part = part.replace('_', '-')
+        for stem in stems:
+            if part == stem:
+                part = ''
+                break
+            if part.startswith(stem + '-'):
+                part = part[len(stem) + 1:]
+                break
+        if part:
+            parts.append(part)
     return '-'.join(parts) or 'entry'

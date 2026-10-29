@@ -45,6 +45,7 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
     nodes = {n['id']: n for n in data['resolve']['nodes']}
     for owner in owners:
         package = owner['cargo']
+        owner['workspace_stem'] = stem
         owner['effective_features'] = nodes[package['id']]['features']
         for index, target in enumerate(owner['targets']):
             identity = package['name'] + '::' + target['cargo']['name']

@@ -101,7 +101,7 @@ def group_courts(units, stem, naming, ceiling=CEILING):
         areas = whole_areas(population, ceiling)
         pieces = first_fit_decreasing(areas, ceiling)
         for piece in pieces:
-            area = area_suffix(piece['areas'][0]['path'], surface) if len(pieces) > 1 or len(signatures[frontier]) > 1 else ''
+            area = area_suffix(piece['areas'][0]['path'], surface, [naming(stem, [f]) for f in frontier]) if len(pieces) > 1 or len(signatures[frontier]) > 1 else ''
             members = [u for a in piece['areas'] for u in a['units']]
             name = base + ('-' + area if area else '')
             court = {'name': name, 'frontier': list(frontier), 'units': members, 'area': area,
