@@ -11,7 +11,7 @@ def references(text, record, bindings):
     i = 0
     while i < len(stream):
         token = stream[i]
-        if token.kind != 'ident' or (i and stream[i - 1].value in (':', '$')):
+        if token.kind != 'ident' or ((i and stream[i - 1].value == '$') or (i >= 2 and stream[i - 1].value == ':' and stream[i - 2].value == ':')):
             i += 1
             continue
         names, j = [token.value], i + 1
@@ -24,10 +24,13 @@ def references(text, record, bindings):
         path = path[:-1] if path and path[-1] == '*' else path
         if not path:
             continue
-        destination = bindings.lookup(record, path, path[0] in ('crate', 'self', 'super'))
-        if destination:
-            canonical = destination[0]['canonical']
+        resolved = bindings.resolve(record, path)
+        if resolved and resolved[0] in ('item', 'case'):
+            canonical = resolved[1]['canonical']
             found[id(canonical)] = canonical
+    for symbol in bindings.trait_symbols(record).values():
+        canonical = symbol[1]['canonical']
+        found[id(canonical)] = canonical
     return list(found.values())
 
 
@@ -47,6 +50,7 @@ def compilation_inputs(model, units):
             selected.append(helper)
             queue.extend(edges[id(helper)])
         result[unit['key']] = selected
+    assign_unreferenced(model, units, edges, result)
     return result
 
 
@@ -99,3 +103,37 @@ def attach_implementations(model, edges):
                     canonical = target[0]['canonical']
                     if canonical is not record:
                         edges[id(canonical)].append(record)
+
+
+def has_meaning(record):
+    from rust_items import items
+    if '_meaning' not in record:
+        record['_meaning'] = any(i.keyword not in ('use', 'inner-attribute') for i in items(record['helper']))
+    return record['_meaning']
+
+
+def assign_unreferenced(model, units, edges, result):
+    assigned = {id(r) for population in result.values() for r in population}
+    for record in model.canonical:
+        if id(record) in assigned or not has_meaning(record):
+            continue
+        candidates = [u for u in units if u['owner'] is record['owner']]
+        if not candidates:
+            continue
+        def distance(unit):
+            left, right = unit['node'].names, record['node'].names
+            prefix = 0
+            for a, b in zip(left, right):
+                if a != b:
+                    break
+                prefix += 1
+            return (unit['target'] != record['target'], -prefix, unit['owner_area'], unit['key'])
+        unit = min(candidates, key=distance)
+        queue = [record]
+        while queue:
+            source = queue.pop()
+            if id(source) in assigned:
+                continue
+            assigned.add(id(source))
+            result[unit['key']].append(source)
+            queue.extend(edges[id(source)])

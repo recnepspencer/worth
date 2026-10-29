@@ -37,13 +37,17 @@ class Bindings:
     def __init__(self, records):
         from rust_items import items
         self.records, self.direct, self.globs, self.locals = records, {}, {}, {}
-        self.used_cache, self.external_cache = {}, {}
+        self.used_cache, self.external_cache, self.symbol_cache = {}, {}, {}
+        self.traits = {}
         for key, record in records.items():
             direct, globs, local = {}, [], set()
+            self.traits[key] = set()
             for item in items(record['node'].own_text()):
                 if item.keyword in ('fn', 'struct', 'enum', 'type', 'trait', 'const', 'static'):
                     direct[item.name] = ('case' if item.test else 'item', record, (item.name,))
                     local.add(item.name)
+                    if item.keyword == 'trait':
+                        self.traits[key].add(item.name)
             for (target, names), child in records.items():
                 if target == record['target'] and len(names) == len(record['node'].names) + 1 and names[:-1] == record['node'].names:
                     direct[names[-1]] = ('module', child, ())
@@ -79,6 +83,15 @@ class Bindings:
         return names
 
     def symbol(self, record, name, trail=()):
+        key = (self.key(record), name)
+        if key in self.symbol_cache:
+            return self.symbol_cache[key]
+        result = self.resolve_symbol(record, name, trail)
+        if result is not None or not trail:
+            self.symbol_cache[key] = result
+        return result
+
+    def resolve_symbol(self, record, name, trail=()):
         marker = (self.key(record), name)
         if marker in trail:
             return None
@@ -186,6 +199,21 @@ class Bindings:
         self.used_cache[key] = names
         return names
 
+    def trait_symbols(self, record, trail=()):
+        if self.key(record) in trail:
+            return {}
+        trail = trail + (self.key(record),)
+        result = {}
+        for name in self.direct[self.key(record)]:
+            value = self.symbol(record, name)
+            if value and value[0] == 'item' and value[2][0] in self.traits[self.key(value[1])]:
+                result[name] = value
+        for path in self.globs[self.key(record)]:
+            value = self.resolve(record, path, imported=True)
+            if value and value[0] == 'module':
+                result.update(self.trait_symbols(value[1], trail))
+        return result
+
     def glob_paths(self, record, names, current_owner):
         target = self.resolve(record, names, imported=True)
         if target is None:
@@ -197,7 +225,7 @@ class Bindings:
             return [(path + ('*',), None)] if path else []
         destination = target[1]
         result = [(p, None) for p in self.external_globs(destination)]
-        for name in sorted(self.used_names(record)):
+        for name in sorted(self.used_names(record) | set(self.trait_symbols(destination))):
             symbol = self.symbol(destination, name)
             path = self.address(symbol, current_owner)
             if path:
@@ -237,7 +265,7 @@ class Bindings:
         i = 0
         while i < len(stream):
             token = stream[i]
-            if token.kind != 'ident' or any(a <= token.start < b for a, b in uses) or (i and stream[i - 1].value in (':', '$')):
+            if token.kind != 'ident' or any(a <= token.start < b for a, b in uses) or ((i and stream[i - 1].value == '$') or (i >= 2 and stream[i - 1].value == ':' and stream[i - 2].value == ':')):
                 i += 1
                 continue
             j, names = i + 1, [token.value]

@@ -14,6 +14,8 @@ def refine(model, units, targets, selections, nodes, repository):
         owner, used = unit['owner'], unit['used']
         package = owner['cargo']
         population = inputs[unit['key']]
+        unit['support_inputs'] = population
+        unit['scope'] = model.record(unit)
         for helper in population:
             used.update(crate_uses(helper['helper'], aliases(package)))
         programs = set()
