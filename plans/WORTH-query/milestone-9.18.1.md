@@ -1872,14 +1872,14 @@ SDK qualification.
 Source review can run alongside Phase 13; closure includes Phase 13's honest
 refusal on an unqualified compiler.
 
-The current qualification candidate selects official stable Rust 1.99.1,
+The qualified workspace and CI toolchain selects official stable Rust 1.99.1,
 full compiler commit `58cf8f9c35b355199727627d07ae34a4e2846d67`, with the
 existing 32/64-bit target boundary. Exact core sort, alloc buffer and compiler
 specialization-owner review preserves the existing bounds and canonical version.
 The [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
-owns the exact compiler identities and upgrade procedure. Public runtime and
-Proprietary SDK qualification remain pending; source eligibility alone does not
-close this phase.
+owns the exact compiler identities and upgrade procedure. Proprietary default
+toolchain adoption and the remaining SDK qualification are unfinished; public
+qualification alone does not close this phase.
 
 ### Requirements And Acceptance
 

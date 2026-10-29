@@ -5857,10 +5857,10 @@ The governing milestone spec is
   private platform workarounds; spatial-dependent locality is required in 9.19
 - proposal acceptance reissuing fresh ordinary requests with replay kept cert-only
 - mandatory exact-release Rust 1.99.x sort qualification and current qualified
-  stable workspace/CI/Proprietary toolchains; the current 1.99.1/full
-  `58cf8f9c35b355199727627d07ae34a4e2846d67` candidate retains the reviewed
-  32/64-bit bounds and older compatibility entries, with public runtime and
-  Proprietary acceptance still pending under the
+  stable workspace/CI/Proprietary toolchains; the qualified workspace/CI 1.99.1/full
+  `58cf8f9c35b355199727627d07ae34a4e2846d67` retains the reviewed
+  32/64-bit bounds and older compatibility entries, with Proprietary default
+  adoption and remaining SDK qualification still required under the
   [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
 - P1 consecutive source undo through ordinary correction requests: reverse B then
   A on one field, preserving genuine live/reapplied divergence and fresh admission
