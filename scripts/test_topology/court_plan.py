@@ -1,4 +1,5 @@
 """Orchestrate inventory, frontier planning, source ownership and reviewable effects."""
+from binary_constraints import report as binary_constraints
 from collections import Counter
 import json
 from pathlib import Path
@@ -166,7 +167,7 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
     executables_before = sum(t['test'] for o in owners for t in o['cargo']['targets'])
     return {'version': 1, 'workspace_manifest': relative(manifest, repository), 'stem': stem,
             'authority': ['docs/coding-guidelines/iteration_laws.md', 'test_convention_v3.md §§2–5'],
-            'targets': targets, 'courts': court_rows, 'testkits': kit_report, 'splits': splits,
+            'targets': targets, 'binary_constraints': binary_constraints(targets, courts), 'courts': court_rows, 'testkits': kit_report, 'splits': splits,
             'category_mapping': mapping or [{'from': k, 'to': v or 'ordinary'} for k, v in sorted(__import__('court_partition').INTERIM.items())],
             'path_rewrites': [json.loads(r) for r in rewrites], 'dev_dependencies_to_drop': drops,
             'selector_changes': selector_changes, 'fixer_work_by_court': work, 'blockers': blockers,
@@ -179,6 +180,7 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
                        'executables_after': executables_before - len(targets) + len(courts) - len(disabled_libraries),
                        'integration_executables_before': len(targets), 'integration_executables_after': len(courts),
                        'lines_moved': sum(len(p.read_bytes().splitlines()) for p in assignments if p.suffix == '.rs'),
+                       'retired_scaffold_lines': sum(len(p.read_bytes().splitlines()) for p in retired if p.suffix == '.rs'),
                        'files_moved': len(assignments), 'work_items': sum(counts.values()),
                        'work_items_by_kind': dict(sorted(counts.items()))}, 'effects': program}
 
