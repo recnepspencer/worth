@@ -196,7 +196,7 @@ impl StagedPhysicalRecovery {
         let crate::entry::AdmittedPlatformAuthority { media, session, .. } = authority;
         drop(media);
         session.block();
-        PhysicalRecoveryOutcome::Blocked(crate::entry::PhysicalRecoveryBlock::new(
+        PhysicalRecoveryOutcome::Blocked(Box::new(crate::entry::PhysicalRecoveryBlock::new(
             crate::entry::PhysicalRecoveryBlockCause::Damage(
                 crate::entry::PhysicalRecoveryBlockKind::Staging,
             ),
@@ -217,7 +217,7 @@ impl StagedPhysicalRecovery {
                 ..crate::entry::PhysicalRecoveryBlockEvidence::default()
             },
             recovery_effects,
-        ))
+        )))
     }
 
     /// Consumes the closed staging generation and executes only the exact

@@ -1882,6 +1882,7 @@ dependencies = [
  "worth-relational",
  "worth-store",
  "worth-store-physical-format",
+ "worth-store-physical-integrity",
  "worth-store-recovery-runtime",
 ]
 

@@ -46,7 +46,7 @@ fn assert_recovers_reads_back_and_reopens(workload: Workload, tail: Tail, key: u
     assert_eq!(reopened.core().recovery_effect_count(), 0);
     let seal = reopened
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("checkpointed publications custody seal");
     let serving = certified_release_serving::admit_serving_with_seal(world.root(), seal);
     world.assert_objects_read_back(&serving);
@@ -59,7 +59,7 @@ fn serve(
 ) -> worth_store::physical_runtime::ServingPhysicalRuntime {
     let seal = pending_successor_above_history::recover(world, stage)
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("recovered publications custody seal");
     certified_release_serving::admit_serving_with_seal(world.root(), seal)
 }

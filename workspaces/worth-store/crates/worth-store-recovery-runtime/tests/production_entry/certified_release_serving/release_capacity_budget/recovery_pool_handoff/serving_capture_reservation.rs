@@ -25,7 +25,7 @@ fn unfundable_capture_reservation_denies_serving_entry_before_any_effect() {
             let policy = core.residency_policy();
             let format = AdmittedPhysicalRecordFormat::admit(policy.record_format());
             let seal = core
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("genuine release seal");
             let TransitionOutcome::Success(serving) =
                 open_with_policy(root, seal, format, policy).into_raw()
@@ -53,7 +53,9 @@ fn unfundable_capture_reservation_denies_serving_entry_before_any_effect() {
             let peer = core
                 .certification_begin_recovery_allocation(NonZeroU64::new(peer_bytes).unwrap())
                 .unwrap();
-            let seal = core.into_checkpoint_custody().expect("fresh genuine seal");
+            let seal = core
+                .certification_release_media_into_checkpoint_custody()
+                .expect("fresh genuine seal");
             let TransitionOutcome::Failed(inspection) =
                 open_with_policy(root, seal, format, policy).into_raw()
             else {

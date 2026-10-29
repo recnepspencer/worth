@@ -60,3 +60,6 @@ mod residency_fixture;
 mod residency_media;
 #[path = "relational_home/residency_process.rs"]
 mod residency_process;
+
+#[path = "relational_home/incarnation.rs"]
+mod incarnation;

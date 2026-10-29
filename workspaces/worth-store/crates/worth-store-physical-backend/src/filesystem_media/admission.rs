@@ -150,7 +150,7 @@ impl QualifiedFilesystemMedia {
 }
 
 impl FilesystemMediaOwner {
-    pub(crate) fn qualify(request: FilesystemQualificationRequest) -> AdmittedFilesystemMedia {
+    pub(crate) fn qualify(mut request: FilesystemQualificationRequest) -> AdmittedFilesystemMedia {
         let Some(access_contract) = request.access.admitted_contract() else {
             return worth_proof::TransitionOutcome::denied(
                 MediaQualificationDenial::UnmanagedWriterPosture {
@@ -161,7 +161,7 @@ impl FilesystemMediaOwner {
         };
         let preflight_counters = Arc::new(super::operation_counters::MediaCounterCells::default());
         let preflight_boundary = super::fault_interposition::MediaFaultInterposer::new(
-            request.fault_schedule,
+            std::mem::take(&mut request.fault_schedule),
             Arc::clone(&preflight_counters),
         );
         if let Some(runtime_incarnation) = request.runtime_incarnation {
@@ -239,6 +239,19 @@ impl FilesystemMediaOwner {
                 )
                 .into()
             }
+        };
+        Self::qualify_held(request, owner)
+    }
+
+    pub(crate) fn qualify_held(
+        request: FilesystemQualificationRequest,
+        owner: Self,
+    ) -> AdmittedFilesystemMedia {
+        let Some(access_contract) = request.access.admitted_contract() else {
+            let denial = MediaQualificationDenial::UnmanagedWriterPosture {
+                counters: Box::new(owner.counters()),
+            };
+            return fail_after_ownership_denial(owner, denial);
         };
         let profile = match super::profile_observation::observe_profile(
             owner.root_directory_handle(),

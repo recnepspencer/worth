@@ -39,7 +39,6 @@ use std::collections::BTreeSet;
 
 use worth_store_physical_format::RecordAnchorName;
 
-use crate::physical_runtime::ordered_journal::is_ordered_journal_name;
 use crate::physical_runtime::ServingPhysicalRuntime;
 
 mod failure;
@@ -65,8 +64,8 @@ pub(in crate::physical_runtime) use membership::AnchoredMembershipCache;
 pub use publication::{AnchoredRecordPublication, AnchoredRecordPublished};
 pub use value::{AnchoredRecord, AnchoredRecordMembership, AnchoredRecordVersion};
 
-/// The name of one anchored record: a valid anchor name that no other Store
-/// door owns.
+/// A well-formed anchored-record name. Publications check the bound runtime's
+/// registry so a journal name cannot become an anchored record.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AnchoredRecordName(RecordAnchorName);
 
@@ -75,16 +74,11 @@ pub struct AnchoredRecordName(RecordAnchorName);
 pub enum AnchoredRecordNameDenial {
     /// Not 1 to 32 bytes of `[a-z0-9.-]`.
     Malformed,
-    /// The name belongs to an ordered journal.
-    ReservedForOrderedJournal,
 }
 
 impl AnchoredRecordName {
     pub fn new(name: &str) -> Result<Self, AnchoredRecordNameDenial> {
         let anchor = RecordAnchorName::new(name).ok_or(AnchoredRecordNameDenial::Malformed)?;
-        if is_ordered_journal_name(anchor) {
-            return Err(AnchoredRecordNameDenial::ReservedForOrderedJournal);
-        }
         Ok(Self(anchor))
     }
 

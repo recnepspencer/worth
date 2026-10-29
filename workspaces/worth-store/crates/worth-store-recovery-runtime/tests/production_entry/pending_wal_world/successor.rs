@@ -48,7 +48,7 @@ pub(super) fn child(root: &Path, marker: &Path, issuer_evidence: [u8; 32], batch
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("prior batch C8 custody seal");
     let serving = super::super::certified_release_serving::admit_serving_with_seal(root, seal);
     park_next_batch(

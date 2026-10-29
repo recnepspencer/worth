@@ -30,7 +30,7 @@ const LOCATION_ENV: &str = "WORTH_RELATIONAL_HOME_RECOVERY_LOCATION";
 const MARKERS_ENV: &str = "WORTH_RELATIONAL_HOME_RECOVERY_MARKERS";
 const RECOVERY_CHILD: &str = "recovery_interruption::recovery_interruption_child";
 
-const STAGES: [Stage; 12] = [
+const STAGES: [Stage; 13] = [
     Stage::StagingMaterialization,
     Stage::StagingSynchronization,
     Stage::CandidateMaterialization,
@@ -43,6 +43,7 @@ const STAGES: [Stage; 12] = [
     Stage::CleanupFreshnessRead,
     Stage::CleanupRemoval,
     Stage::ObligationDischarge,
+    Stage::ServingHandoff,
 ];
 
 // No wildcard: a new Store stage must extend the crash oracle's roster.
@@ -60,6 +61,7 @@ fn asserted_stage_index(stage: Stage) -> usize {
         Stage::CleanupFreshnessRead => 9,
         Stage::CleanupRemoval => 10,
         Stage::ObligationDischarge => 11,
+        Stage::ServingHandoff => 12,
     }
 }
 
@@ -113,11 +115,12 @@ fn prove_stage(
     if let Some(bytes) = &bytes {
         environment.push((process_kill::WAL_SEGMENT_BYTES_ENV, bytes));
     }
-    let end = killed_child::run_and_kill(
+    let end = killed_child::run_and_kill_observing(
         RECOVERY_CHILD,
         &environment,
         &markers.path().join("reached"),
         &markers.path().join("finished"),
+        || super::incarnation::assert_contended(&killed.location),
     );
     assert_eq!(
         end,

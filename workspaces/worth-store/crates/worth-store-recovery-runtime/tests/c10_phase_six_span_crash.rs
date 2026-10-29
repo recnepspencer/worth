@@ -293,7 +293,7 @@ fn recover(
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("sealed span {checkpoint} pages={pages} {pass} must recover: {outcome:?}");
     };
-    handoff
+    *handoff
 }
 
 fn store_identities(marker: &Path, records: &[PersistedRecordIdentity]) {

@@ -113,7 +113,19 @@ pub(crate) fn open_with_faults(
         .admit(format())
         .unwrap();
     let TransitionOutcome::Success(serving) = media
-        .open_record_store(PhysicalRecordOpen::new(format(), access, durability))
+        .open_record_store(
+            PhysicalRecordOpen::new(format(), access, durability).with_journal_registry(
+                worth_store::physical_runtime::OrderedJournalRegistry::declare(
+                    2,
+                    &[
+                        worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
+                        worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
+                    ],
+                    &["home", "relational.checkpoint"],
+                )
+                .unwrap(),
+            ),
+        )
         .into_raw()
     else {
         panic!("a cleanly closed store must open")
@@ -146,7 +158,10 @@ pub(crate) fn serve(root: &Path, stage: &str) -> ServingPhysicalRuntime {
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("{stage} did not recover: {outcome:?}");
     };
-    let seal = handoff.into_core().into_checkpoint_custody().unwrap();
+    let seal = handoff
+        .into_core()
+        .certification_release_media_into_checkpoint_custody()
+        .unwrap();
     certified_release_serving::admit_serving_with_seal(root, seal)
 }
 

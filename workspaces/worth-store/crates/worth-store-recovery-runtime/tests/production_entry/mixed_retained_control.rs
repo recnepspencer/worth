@@ -31,7 +31,7 @@ fn mixed_v1_two_v3_historical_rejoin_opens_then_resealed_v1_denies_serving() {
     let first = recover(world.root());
     let seal = first
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("two real V3 drops must receive Store seal");
     let serving = certified_release_serving::admit_serving_with_seal(world.root(), seal);
     let before_tail = selected_generation(world.root());
@@ -78,14 +78,14 @@ fn mixed_v1_two_v3_historical_rejoin_opens_then_resealed_v1_denies_serving() {
     let original_frame = read_v1_descriptor_frame(world.root(), descriptor);
     let seal = fresh
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("historical-only mixed custody must seal");
     certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 
     let negative = recover(world.root());
     let seal = negative
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("unchanged mixed media must receive a second genuine Store seal");
     reseal_v1_descriptor(world.root(), descriptor, &original_frame);
     certified_release_serving::open_serving_with_seal_expect_mismatch(world.root(), seal);
@@ -100,7 +100,7 @@ fn recover(root: &Path) -> worth_store_recovery_runtime::RecoveredPhysicalRuntim
         }
         panic!("mixed V1 + two V3 C8/Store custody must recover: {outcome:?}");
     };
-    handoff
+    *handoff
 }
 
 fn append_ordinary_tail(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) {

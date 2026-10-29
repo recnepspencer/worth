@@ -74,7 +74,7 @@ fn two_object_pending_final_live_cost_denies_at_peak_minus_one_before_effects() 
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("genuine ordered pending Store custody seal");
     super::super::certified_release_serving::open_serving_with_seal_without_checkpoint(root, seal);
 }

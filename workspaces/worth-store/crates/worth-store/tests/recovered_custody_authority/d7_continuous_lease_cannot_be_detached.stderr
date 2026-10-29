@@ -1,0 +1,15 @@
+error[E0451]: fields `media` and `custody` of struct `RecoveredPhysicalServingHandoff` are private
+ --> tests/recovered_custody_authority/d7_continuous_lease_cannot_be_detached.rs:6:43
+  |
+6 |     let RecoveredPhysicalServingHandoff { media, custody } = handoff;
+  |                                           ^^^^^  ^^^^^^^ private field
+  |                                           |
+  |                                           private field
+
+error[E0451]: fields `media` and `custody` of struct `RecoveredMediaOwnedPhysicalRuntime` are private
+  --> tests/recovered_custody_authority/d7_continuous_lease_cannot_be_detached.rs:12:46
+   |
+12 |     let RecoveredMediaOwnedPhysicalRuntime { media, custody } = admitted;
+   |                                              ^^^^^  ^^^^^^^ private field
+   |                                              |
+   |                                              private field

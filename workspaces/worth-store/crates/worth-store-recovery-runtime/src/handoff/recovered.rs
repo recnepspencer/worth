@@ -36,8 +36,8 @@ impl RecoveredPhysicalRuntimeHandoff {
         &self.core
     }
 
-    /// Consumes the recovery handoff so the recovered Store core can close
-    /// its discovery media before a separate Serving open consumes custody.
+    /// Consumes the recovery handoff, retaining the held media and custody
+    /// together in the recovered Store core.
     pub fn into_core(self) -> RecoveredPhysicalRuntimeCore {
         self.core
     }

@@ -65,10 +65,10 @@ impl AdmittedPhysicalRecovery {
         let AdmittedPlatformAuthority { media, session, .. } = authority;
         drop(media);
         session.refuse();
-        PhysicalRecoveryOutcome::Refused(PhysicalRecoveryRefusal::new(
+        PhysicalRecoveryOutcome::Refused(Box::new(PhysicalRecoveryRefusal::new(
             PhysicalRecoveryRefusalKind::CancelledBeforeDiscovery,
             recovery_effects,
-        ))
+        )))
     }
 
     #[cfg(test)]
