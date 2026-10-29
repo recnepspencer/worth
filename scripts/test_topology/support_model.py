@@ -14,12 +14,9 @@ CONTEXT = {'fast': 'ordinary_context', 'exhaustive': 'reference_context', 'scale
 
 
 class SupportModel:
-    def __init__(self, owners, units, courts, stem, workspace):
+    def __init__(self, owners, stem, workspace):
         self.records, self.canonical = {}, []
         self.stem, self.workspace = stem, workspace
-        owner_courts = defaultdict(set)
-        for unit in units:
-            owner_courts[unit['owner']['cargo']['name']].add(unit['court'])
         shared = {}
         for owner in owners:
             for index, target in enumerate(owner['targets']):
@@ -56,9 +53,7 @@ class SupportModel:
                     canonical = shared.get(cache_key)
                     if canonical is None:
                         route = self.route(record, context_free)
-                        family = owner['cargo']['name'].removeprefix(stem + '-').removeprefix('worth-')
-                        support_owner = stem + '-testkit-' + family if len(record['readers']) > 1 else next(iter(record['readers']), None)
-                        canonical = dict(record, route=route, support_owner=support_owner, users=[])
+                        canonical = dict(record, route=route, support_owner=None, users=[])
                         canonical['canonical'] = canonical
                         shared[cache_key] = canonical
                         self.canonical.append(canonical)
@@ -67,7 +62,8 @@ class SupportModel:
                     record['canonical'] = canonical
                     self.records[(identity, node.names)] = record
         self.bindings = Bindings(self.records)
-        self.propagate_exports()
+
+    def bind(self, units):
         assign_readers(self, units)
         self.canonical.sort(key=lambda r: (r['support_owner'] or '', r['route'], str(r['node'].source)))
         self.ensure_routes()
@@ -86,21 +82,6 @@ class SupportModel:
         if len(record['owner']['targets']) > 1 and not context_free:
             return (target,) + names
         return names
-
-    def propagate_exports(self):
-        while True:
-            changed = False
-            for record in self.records.values():
-                for path in record['imports']:
-                    if not path or path[-1] != '*':
-                        continue
-                    found = self.bindings.lookup(record, path[:-1], path[0] in ('crate', 'self', 'super'))
-                    if found:
-                        before = len(record['exports'])
-                        record['exports'].update(found[0]['exports'])
-                        changed |= before != len(record['exports'])
-            if not changed:
-                return
 
     def ensure_routes(self):
         groups = defaultdict(list)

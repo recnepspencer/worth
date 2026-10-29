@@ -18,8 +18,7 @@ def references(text, record, bindings):
         while j + 2 < len(stream) and [stream[j].value, stream[j + 1].value] == [':', ':'] and stream[j + 2].kind == 'ident':
             names.append(stream[j + 2].value)
             j += 3
-        if len(names) > 1:
-            paths.append(names)
+        paths.append(names)
         i = j
     for path in paths:
         path = path[:-1] if path and path[-1] == '*' else path
@@ -32,21 +31,32 @@ def references(text, record, bindings):
     return list(found.values())
 
 
-def assign_readers(model, units):
-    owner_courts = defaultdict(set)
+def compilation_inputs(model, units):
+    result = {}
     edges = {id(record): references(record['helper'], record, model.bindings) for record in model.canonical}
+    attach_implementations(model, edges)
     for unit in units:
-        owner_courts[unit['owner']['cargo']['name']].add(unit['court'])
         record = model.record(unit)
         queue = [record['canonical']] + references(record['test'], record, model.bindings)
-        visited = set()
+        visited, selected = set(), []
         while queue:
             helper = queue.pop()
             if id(helper) in visited:
                 continue
             visited.add(id(helper))
-            helper['readers'].add(unit['court'])
+            selected.append(helper)
             queue.extend(edges[id(helper)])
+        result[unit['key']] = selected
+    return result
+
+
+def assign_readers(model, units):
+    owner_courts = defaultdict(set)
+    inputs = compilation_inputs(model, units)
+    for unit in units:
+        owner_courts[unit['owner']['cargo']['name']].add(unit['court'])
+        for helper in inputs[unit['key']]:
+            helper['readers'].add(unit['court'])
     for record in model.canonical:
         # Unreferenced declarations still leave the product test tree intact.
         if not record['readers']:
@@ -55,3 +65,37 @@ def assign_readers(model, units):
                 record['readers'].add(min(courts))
         family = record['owner']['cargo']['name'].removeprefix(model.stem + '-').removeprefix('worth-')
         record['support_owner'] = model.stem + '-testkit-' + family if len(record['readers']) > 1 else next(iter(record['readers']), None)
+
+
+def attach_implementations(model, edges):
+    from rust_items import items
+    for record in model.canonical:
+        for item in items(record['helper']):
+            if item.keyword != 'impl' or not item.body:
+                continue
+            stream = tokens(record['helper'][item.start:item.body[0] - 1])
+            start = next(i for i, t in enumerate(stream) if t.value == 'impl') + 1
+            if start < len(stream) and stream[start].value == '<':
+                depth = 1
+                start += 1
+                while start < len(stream) and depth:
+                    depth += (stream[start].value == '<') - (stream[start].value == '>')
+                    start += 1
+            depth, receiver = 0, start
+            for i in range(start, len(stream)):
+                depth += (stream[i].value == '<') - (stream[i].value == '>')
+                if not depth and stream[i].value == 'for':
+                    receiver = i + 1
+                    break
+            for offset in sorted({start, receiver}):
+                if offset >= len(stream) or stream[offset].kind != 'ident':
+                    continue
+                names, i = [stream[offset].value], offset + 1
+                while i + 2 < len(stream) and [stream[i].value, stream[i + 1].value] == [':', ':']:
+                    names.append(stream[i + 2].value)
+                    i += 3
+                target = model.bindings.lookup(record, names)
+                if target:
+                    canonical = target[0]['canonical']
+                    if canonical is not record:
+                        edges[id(canonical)].append(record)

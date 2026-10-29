@@ -1,7 +1,7 @@
 """Assign original test files to their new case/support source and emit path-only bodies."""
 from collections import defaultdict
 
-from court_roots import case_path, insert_context
+from court_roots import case_path, insert_context, module_path
 from module_tree import Node, test_names
 from rust_source import tokens
 from source_rewrite import rewritten_file
@@ -15,7 +15,7 @@ def assign_sources(model, units, assignments, support_roots):
     for unit in units:
         record = model.record(unit)
         unit['case_path'] = case_path(unit, model.workspace)
-        record['test_owner'], record['test_path'] = unit['court'], unit['case_path']
+        record['test_owner'], record['test_path'], record['test_module'] = unit['court'], unit['case_path'], module_path(unit)
         cases[unit['node'].source].append(unit)
     for population in support_roots.values():
         for record in population:
