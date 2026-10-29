@@ -93,7 +93,7 @@ impl RelationalPreparationRuntime {
                     }
                     transaction.validate_staged_branch_locality(&selected, symbols.interner())?;
                     let input = RelationalTransactionValidationInput::from_transaction(transaction);
-                    let identity =
+                    let (identity, source_interpretation) =
                         self.issue_mutation_proposal_identity(transaction.transaction_id, &input)?;
                     transaction.reserve_preparation_client_keys(
                         &mut symbols,
@@ -126,9 +126,10 @@ impl RelationalPreparationRuntime {
                         prepared.schema_authority.as_ref(),
                         &identity,
                         symbols,
-                        validation_input.intent().materialization_mode(),
+                        source_interpretation,
                     )?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
+                    mutation.prepare_managed_sources(*execution, &runtime, selected, &identity)?;
                     let control =
                         crate::validation::engine::InvariantPreparationControl::for_transaction(
                             &validation_input,

@@ -20,6 +20,8 @@ pub(crate) struct AppliedMutationDraft {
     pub(crate) outcome: MutationApplyOutcome,
     pub(crate) identities: PendingMutationIdentities,
     pub(crate) aggregate: Option<crate::aggregate_identity::AggregateProposal>,
+    pub(crate) source_interpretation:
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
 }
 
 impl std::fmt::Debug for AppliedMutationDraft {
@@ -78,8 +80,24 @@ pub(crate) fn apply_mutation_draft(
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
     identity: &crate::mvcc::RelationalMutationProposalIdentity,
     mut symbols: PendingSymbolMeanings,
-    materialization: Option<crate::mvcc::RelationalMaterializationTransactionMode>,
+    source_interpretation: std::sync::Arc<
+        crate::validation::candidate_source::NativeManagedSourceInterpretation,
+    >,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
+    if !identity
+        .source_interpretation()
+        .is_some_and(|owner| std::sync::Arc::ptr_eq(&owner, &source_interpretation))
+    {
+        return Err(crate::transactions::data::TransactionCommitError::conflict(
+            crate::transactions::data::CommitConflict::new(
+                crate::transactions::data::ConflictClass::StaleValidationBasis {
+                    detail: "candidate Source belongs to another proposal owner".into(),
+                },
+            ),
+        )
+        .into());
+    }
+    let materialization = source_interpretation.materialization_mode();
     let version_id = identity.proposed_version_id();
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
@@ -130,6 +148,7 @@ pub(crate) fn apply_mutation_draft(
         materialization,
     );
     Ok(AppliedMutationDraft {
+        source_interpretation,
         aggregate,
         state,
         outcome,

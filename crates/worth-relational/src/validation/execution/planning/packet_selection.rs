@@ -76,7 +76,8 @@ pub(super) fn eligible_registrations<'state>(
             let access = registration.access_contract();
             let has_declared_applicability = !access.affected_entity_kinds.is_empty()
                 || !access.affected_relation_kinds.is_empty();
-            let unrelated = has_declared_applicability
+            let unrelated = registration.managed_sources.is_empty()
+                && has_declared_applicability
                 && touched_kinds
                     .get_or_init(|| {
                         super::custom_applicability::CandidateTouchedKinds::from_request(
@@ -123,6 +124,7 @@ pub(super) fn eligible_registrations<'state>(
                 return None;
             }
             if request.merged_plan().is_some()
+                && registration.managed_sources.is_empty()
                 && has_declared_applicability
                 && !planner.has_applicable_touches()
                 && !work.exceeded()

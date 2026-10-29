@@ -67,12 +67,19 @@ impl RelationalMaterializationPort {
                 execution, &runtime, basis, &records,
             )
             .map_err(RelationalMaterializationError::Commit)?;
+        let records = std::sync::Arc::new(records);
+        let source =
+            crate::validation::candidate_source::NativeMaterializationSource::from_suspension(
+                basis,
+                std::sync::Arc::clone(&records),
+            );
         let mut transaction = runtime
             .begin_branch_transaction(
                 basis,
                 RelationalTransactionIntent::materialization(
                     RelationalMaterializationTransactionMode::Suspend,
-                ),
+                )
+                .with_materialization_source(basis, std::sync::Arc::clone(&source)),
             )
             .map_err(RelationalMaterializationError::TransactionAdmission)?;
         transaction
@@ -93,6 +100,7 @@ impl RelationalMaterializationPort {
                 branch_identity: basis.identity().clone(),
                 source_commit,
                 records,
+                source,
                 producer_publications,
                 producer_records,
             },
@@ -200,7 +208,8 @@ impl RelationalMaterializationPort {
                 basis,
                 RelationalTransactionIntent::materialization(
                     RelationalMaterializationTransactionMode::Rematerialize,
-                ),
+                )
+                .with_materialization_source(basis, std::sync::Arc::clone(&custody.data().source)),
             )
             .map_err(RelationalMaterializationError::TransactionAdmission)?;
         transaction

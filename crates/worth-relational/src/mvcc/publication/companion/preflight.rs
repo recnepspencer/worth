@@ -11,6 +11,7 @@ use crate::runtime::{
 use super::cell::publication_admission::PublicationCellAdmission;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
 use super::{PreparedCompanionBranchCell, ReservedCompanionBranchCell};
+mod cell_swap;
 mod cutover;
 pub use cutover::PreparedPublicationCompanionEffect;
 
@@ -43,6 +44,27 @@ pub enum CompanionPreflightStop {
 
 /// Query-owned preparation runs here, before Relational's irreversible cutover.
 pub trait RelationalPublicationCompanion: Debug + Send + Sync {
+    /// Runs on the actual applied draft before Native's FIRST invariant. It
+    /// prepares only installed derived Source roots, never validates a rule.
+    /// The default consults the original request's validation stage before refusal.
+    fn prepare_managed_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _source: &crate::validation::candidate_source::ManagedIndexSourcePreparation<'_>,
+    ) -> Result<
+        Vec<crate::validation::candidate_source::PreparedManagedIndexSourceRoot>,
+        crate::validation::candidate_source::ManagedIndexSourcePreparationDenial,
+    > {
+        crate::authority::commit::pipeline::consult_stage_control(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )
+        .map_err(|cause| {
+            crate::derived_relation::DerivedRelationReadDenial::Request(cause.into())
+        })?;
+        Err(crate::validation::candidate_source::ManagedIndexSourcePreparationDenial::MissingParticipant)
+    }
+
     fn prepare(
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
@@ -175,14 +197,45 @@ impl<'a> PublicationCompanionPreflight<'a> {
         let core = reserved.into_core();
         Ok(PreparedPublicationCompanionEffect {
             binding: self.binding.clone(),
-            pinned_topology_generation: next_topology_generation - 1,
-            pinned_image,
-            cell: core,
-            next,
-            retired: None,
-            next_topology_generation,
+            primary: Some(cell_swap::PreparedCellSwap {
+                pinned_topology_generation: next_topology_generation - 1,
+                pinned_image,
+                cell: core,
+                next,
+                retired: None,
+                next_topology_generation,
+                publication_admission,
+            }),
+            managed: None,
             completion: None,
-            publication_admission,
         })
+    }
+
+    /// The existing required participant publishes exactly two fixed images:
+    /// consumed-Source marks and managed Source/root state. This is not a list
+    /// of independently registered callbacks or extensible publication effects.
+    /// Both reservations must belong to this candidate and its selected source.
+    /// A refusal releases both reservations and unpublished replacements, including
+    /// a first replacement prepared before the second cell refuses. Dropping the
+    /// sealed effect also releases its unpublished backing. The publication port
+    /// checks the original request and installs both images at the graph's one
+    /// Native-issued publication position; callers cannot supply that position.
+    pub fn seal_managed_source_replacement<
+        Marks: Send + Sync + 'static,
+        Managed: Send + Sync + 'static,
+    >(
+        &mut self,
+        marks: ReservedCompanionBranchCell<Marks>,
+        next_marks: Arc<Marks>,
+        managed: ReservedCompanionBranchCell<Managed>,
+        next_managed: Arc<Managed>,
+    ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
+        if Arc::ptr_eq(&marks.core, &managed.core) {
+            return Err(CompanionPreflightStop::ForeignCell);
+        }
+        let mut effect = self.seal_replacement(marks, next_marks)?;
+        let mut source = self.seal_replacement(managed, next_managed)?;
+        effect.managed = source.primary.take();
+        Ok(effect)
     }
 }

@@ -19,6 +19,8 @@ pub(super) struct SnapshotValidatedCommitExecution {
     merge_execution_authority: Option<crate::transactions::data::PublishedMergeExecutionAuthority>,
     schema_continuity: crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
+    source_interpretation:
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
 }
 
 impl SnapshotValidatedCommitExecution {
@@ -42,6 +44,7 @@ impl SnapshotValidatedCommitExecution {
         Option<crate::transactions::data::PublishedMergeExecutionAuthority>,
         crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     ) {
         (
             self.admitted,
@@ -60,6 +63,7 @@ impl SnapshotValidatedCommitExecution {
             self.merge_execution_authority,
             self.schema_continuity,
             self.deferred_diagnostic_artifacts,
+            self.source_interpretation,
         )
     }
 }
@@ -177,6 +181,7 @@ fn into_snapshot_validated_execution(
         outcome,
         mutation_identities,
         aggregate: _,
+        source_interpretation,
         aggregate_admission: _,
     } = mutated;
     let super::draft_execution::PreparedCommitState {
@@ -207,5 +212,6 @@ fn into_snapshot_validated_execution(
         merge_execution_authority: merge_authority,
         schema_continuity: continuity,
         deferred_diagnostic_artifacts: deferred,
+        source_interpretation,
     }
 }

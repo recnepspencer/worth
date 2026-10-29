@@ -17,7 +17,7 @@ pub struct RelationalMutationProposalIdentity {
     branch_version: RelationalBranchVersion,
     proposed_version_id: VersionId,
     commit_id: crate::history::data::CommitId,
-    suspension_source_version: Option<VersionId>,
+    source_interpretation: crate::validation::candidate_source::NativeSourceInterpretationIdentity,
 }
 
 impl RelationalMutationProposalIdentity {
@@ -28,8 +28,18 @@ impl RelationalMutationProposalIdentity {
     /// Only owner-admitted suspension leaves logical truth unchanged while
     /// removing physical payloads. Ordinary and reconstruction proposals have
     /// no source-view permission.
-    pub(crate) const fn suspension_source_version(&self) -> Option<VersionId> {
-        self.suspension_source_version
+    pub(crate) fn suspension_source_version(&self) -> Option<VersionId> {
+        self.source_interpretation
+            .owner()?
+            .suspension_source_version()
+    }
+
+    pub(crate) fn source_interpretation(
+        &self,
+    ) -> Option<
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
+    > {
+        self.source_interpretation.owner()
     }
 
     pub const fn runtime_instance_id(&self) -> u64 {
@@ -62,8 +72,13 @@ impl crate::runtime::RelationalPreparationRuntime {
         &self,
         transaction_id: TransactionId,
         validation_input: &crate::mvcc::RelationalTransactionValidationInput,
-    ) -> Result<RelationalMutationProposalIdentity, crate::transactions::data::TransactionCommitError>
-    {
+    ) -> Result<
+        (
+            RelationalMutationProposalIdentity,
+            std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
+        ),
+        crate::transactions::data::TransactionCommitError,
+    > {
         let proposed_version_id = self.history.reserve_version_id().ok_or_else(|| {
             crate::transactions::data::TransactionCommitError::publication(
                 crate::publication::data::PublicationError::new(
@@ -88,12 +103,12 @@ impl crate::runtime::RelationalPreparationRuntime {
                 ),
             )
         })?;
-        let suspension_source_version = matches!(
-            validation_input.intent().materialization_mode(),
-            Some(crate::mvcc::RelationalMaterializationTransactionMode::Suspend)
-        )
-        .then(|| validation_input.basis().observation().version_id());
-        Ok(RelationalMutationProposalIdentity {
+        let source = crate::validation::candidate_source::NativeManagedSourceInterpretation::issue(
+            validation_input,
+            proposed_version_id,
+            self.publication_binding(),
+        );
+        let identity = RelationalMutationProposalIdentity {
             runtime_instance_id: self.services.runtime_instance_id(),
             ordinal,
             transaction_id,
@@ -101,7 +116,8 @@ impl crate::runtime::RelationalPreparationRuntime {
             branch_version: validation_input.basis().truth_version(),
             proposed_version_id,
             commit_id,
-            suspension_source_version,
-        })
+            source_interpretation: source.identity(),
+        };
+        Ok((identity, source))
     }
 }

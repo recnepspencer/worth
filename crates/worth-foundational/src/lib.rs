@@ -47,6 +47,7 @@ pub mod facade;
 pub mod geometry_api;
 mod identities;
 mod locators;
+mod managed_index_source;
 mod performance;
 pub mod performance_api;
 pub mod physical_integrity_observation;

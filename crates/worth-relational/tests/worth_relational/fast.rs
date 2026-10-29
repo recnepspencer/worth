@@ -1,4 +1,6 @@
 //! Fast integration courts.
+#[path = "fast/managed_source.rs"]
+mod managed_source;
 #[allow(unused_imports)]
 use crate::*;
 

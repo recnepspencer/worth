@@ -38,6 +38,7 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
     let services = runtime.owner_component_services();
     let identity = runtime.main_branch_identity();
     let (_, basis) = services.basis_port().observe_branch(&identity).unwrap();
+    let logical_basis = basis.clone();
     let pending = services
         .materialization_port()
         .prepare_generated_materialization_suspension(execution, &basis, &[rows[0].0])
@@ -56,6 +57,18 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
             && !capture.proposed.is_empty()
             && !capture.committed.is_empty()));
         for capture in captures.iter() {
+            assert!(
+                capture
+                    .source
+                    .as_ref()
+                    .unwrap()
+                    .proposal
+                    .as_ref()
+                    .unwrap()
+                    .source_interpretation()
+                    .is_none(),
+                "historical receipts must not retain live candidate Source owners"
+            );
             assert!(capture.errors.is_empty(), "{:?}", capture.errors);
             for aggregate in capture.proposed.iter().chain(&capture.committed) {
                 assert_eq!(aggregate.identity(), rows[0].1.identity);
@@ -76,6 +89,14 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
         .unwrap()
         .is_none());
     let (_, basis) = services.basis_port().observe_branch(&identity).unwrap();
+    let stale_source_selection = crate::mvcc::RelationalTransactionIntent::materialization(
+        crate::mvcc::RelationalMaterializationTransactionMode::Rematerialize,
+    )
+    .with_materialization_source(&logical_basis, Arc::clone(&suspended.custody.data().source));
+    assert!(matches!(
+        runtime.begin_branch_transaction(&basis, stale_source_selection),
+        Err(crate::mvcc::RelationalBranchTransactionAdmissionDenial::BasisIdentityMismatch)
+    ));
     let pending = services
         .materialization_port()
         .prepare_generated_rematerialization(
@@ -90,7 +111,25 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
             relations,
         )
         .unwrap();
-    let (candidate, completion, _) = pending.into_parts();
+    let (candidate, completion, evidence) = pending.into_parts();
+    let proposal = evidence.proposal_identity().clone();
+    {
+        let source = proposal
+            .source_interpretation()
+            .expect("prepared Native owner lives until publication");
+        assert_eq!(source.physical_basis(), &basis);
+        assert_eq!(source.proposed_version(), proposal.proposed_version_id());
+        assert_eq!(
+            source.suspension_source_version(),
+            None,
+            "rematerialization never substitutes logical-before for physical proposed Source"
+        );
+        assert_eq!(
+            source.materialization_source().unwrap().basis(),
+            &logical_basis,
+            "genuine suspension custody was attached before validation"
+        );
+    }
     let restored = completion
         .complete(
             runtime
@@ -98,5 +137,9 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
                 .unwrap(),
         )
         .unwrap();
+    assert!(
+        proposal.source_interpretation().is_none(),
+        "settled receipts must not keep interpretation/root backing alive"
+    );
     assert_eq!(records(execution, &runtime, &restored.snapshot), rows);
 }

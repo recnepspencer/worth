@@ -4,6 +4,9 @@ use std::sync::Arc;
 
 use crate::validation::engine::InvariantRuntimeView;
 
+mod descriptor;
+mod managed_source;
+pub use descriptor::CustomInvariantRegistrationError;
 mod panic_value;
 use panic_value::panic_value_message;
 
@@ -311,6 +314,8 @@ fn run_custom_rule_safely<T>(
 pub struct CustomInvariantRegistration {
     descriptor: CustomInvariantDescriptor,
     executable: Arc<dyn ErasedCustomInvariantRule>,
+    pub(crate) managed_sources:
+        Arc<[crate::validation::candidate_source::ManagedIndexSourceProgram]>,
 }
 
 impl fmt::Debug for CustomInvariantRegistration {
@@ -338,6 +343,7 @@ impl CustomInvariantRegistration {
         Ok(Self {
             descriptor,
             executable,
+            managed_sources: Arc::from([]),
         })
     }
 
@@ -376,22 +382,4 @@ impl CustomInvariantRegistration {
     pub(crate) fn executable(&self) -> &Arc<dyn ErasedCustomInvariantRule> {
         &self.executable
     }
-
-    fn validate_descriptor(
-        descriptor: &CustomInvariantDescriptor,
-    ) -> Result<(), CustomInvariantRegistrationError> {
-        if descriptor.identity.rule_id.as_str().trim().is_empty() {
-            return Err(CustomInvariantRegistrationError::EmptyRuleId);
-        }
-        if descriptor.display_name.trim().is_empty() {
-            return Err(CustomInvariantRegistrationError::EmptyDisplayName);
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CustomInvariantRegistrationError {
-    EmptyRuleId,
-    EmptyDisplayName,
 }

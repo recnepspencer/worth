@@ -89,6 +89,7 @@ pub(super) fn prepare_commit_publication_execution(
         publication_snapshot,
         aspect_evaluation_traces,
         aspect_emission_traces,
+        source_interpretation,
     ) = assembled.into_parts();
     let publication = {
         let recovered_codec_publication_custody = admitted
@@ -122,6 +123,7 @@ pub(super) fn prepare_commit_publication_execution(
         )?
     };
     Ok(PreparedCommitPublicationExecution {
+        source_interpretation,
         admitted,
         public_structural_summary,
         invariant_executions,
@@ -145,6 +147,7 @@ pub(crate) fn publish_commit_execution(
     envelope_cell: std::sync::Arc<crate::history::RelationalCommitEnvelopeResidency>,
 ) -> PublishedCommitExecution {
     let PreparedCommitPublicationCompletion {
+        source_interpretation,
         mut admitted,
         public_structural_summary,
         invariant_executions,
@@ -173,6 +176,7 @@ pub(crate) fn publish_commit_execution(
         )
     };
     let (positioned_commit, changed_records) = finalized.into_parts();
+    drop(source_interpretation);
     if let Some(prepared_indexes) = prepared_indexes {
         prepared_indexes.publish(runtime);
     }
@@ -225,6 +229,8 @@ fn publish_prepared_trace_diagnostics(
 }
 
 pub(crate) struct PreparedCommitPublicationExecution {
+    source_interpretation:
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     admitted: super::execution_admission::AdmittedCommitState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
@@ -241,6 +247,8 @@ pub(crate) struct PreparedCommitPublicationExecution {
 }
 
 pub(crate) struct PreparedCommitPublicationCompletion {
+    source_interpretation:
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     admitted: super::execution_admission::AdmittedCommitState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
@@ -324,6 +332,7 @@ impl PreparedCommitPublicationExecution {
     ) {
         let (movement, publication) = self.publication.split();
         let completion = PreparedCommitPublicationCompletion {
+            source_interpretation: self.source_interpretation,
             admitted: self.admitted,
             public_structural_summary: self.public_structural_summary,
             invariant_executions: self.invariant_executions,

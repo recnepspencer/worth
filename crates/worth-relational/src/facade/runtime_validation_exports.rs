@@ -28,6 +28,12 @@ pub use crate::validation::data::{
 };
 pub use crate::validation::engine::InvariantExecutionResult;
 
+pub use crate::validation::candidate_source::{
+    ManagedIndexSourceAvailability, ManagedIndexSourceField, ManagedIndexSourceOccurrence,
+    ManagedIndexSourcePreparation, ManagedIndexSourcePreparationDenial, ManagedIndexSourceProgram,
+    ManagedIndexSourceProjection, ManagedIndexSourceRead, ManagedIndexSourceRows,
+    ManagedIndexSourceScope, PreparedManagedIndexSourceRead, PreparedManagedIndexSourceRoot,
+};
 pub use crate::validation::DuplicateCustomInvariantRegistration;
 
 pub use worth_foundational::facade::AggregateLineageKind;

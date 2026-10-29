@@ -76,7 +76,7 @@ fn prepare_symbol_round(
         runtime,
         input.basis(),
         |symbols, round| {
-            let identity =
+            let (identity, source_interpretation) =
                 round.issue_mutation_proposal_identity(admitted.transaction_id(), input)?;
             let parent_count = admitted
                 .merge_history_plan()
@@ -100,9 +100,10 @@ fn prepare_symbol_round(
                 input.schema_authority(),
                 &identity,
                 symbols,
-                input.intent().materialization_mode(),
+                source_interpretation,
             )?;
             let candidate = round.with_candidate_symbols(mutation.candidate_symbols());
+            mutation.prepare_managed_sources(*execution, &candidate, selected, &identity)?;
             let invariants = candidate.invariant_authority();
             let control = InvariantPreparationControl::for_transaction(
                 input,

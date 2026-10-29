@@ -213,9 +213,9 @@ impl<'runtime> StructuralRelationView<'runtime> {
     }
 }
 
-struct StructuralSource<'borrow, 'runtime> {
-    view: &'borrow StructuralRelationView<'runtime>,
-    reads: Reads,
+pub(crate) struct StructuralSource<'borrow, 'runtime> {
+    pub(crate) view: &'borrow StructuralRelationView<'runtime>,
+    pub(crate) reads: Reads,
 }
 
 impl SourceRead for StructuralSource<'_, '_> {

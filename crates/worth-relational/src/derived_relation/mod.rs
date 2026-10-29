@@ -17,6 +17,7 @@ pub use proof::{
     DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationWalkStep,
     PreparedDerivedRelationRead,
 };
+pub(crate) use structural::StructuralSource;
 pub(crate) use structural::{prepare_changes, read_changes};
 pub use structural::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
 mod read;

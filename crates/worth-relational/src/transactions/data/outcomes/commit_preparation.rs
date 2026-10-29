@@ -15,6 +15,7 @@ pub enum CommitPreparationReason {
     ProposalIdentityOrdinalExhausted,
     SymbolIdentityExhausted,
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
+    ManagedIndexSource,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,6 +25,9 @@ pub struct CommitPreparationError {
     expected_commit_id: Option<u64>,
     expected_version_id: VersionId,
     context: ErrorContext,
+    #[serde(skip)]
+    managed_source:
+        Option<crate::validation::candidate_source::ManagedIndexSourcePreparationDenial>,
 }
 
 impl CommitPreparationError {
@@ -49,6 +53,7 @@ impl CommitPreparationError {
         suggested_fix: SuggestedFix,
     ) -> Self {
         Self {
+            managed_source: None,
             branch_id,
             reason: CommitPreparationReason::SelectedBranchRoot(reason),
             expected_commit_id,
@@ -64,6 +69,7 @@ impl CommitPreparationError {
         expected_version_id: VersionId,
     ) -> Self {
         Self {
+            managed_source: None,
             branch_id,
             reason: CommitPreparationReason::ProposalIdentityOrdinalExhausted,
             expected_commit_id: None,
@@ -81,6 +87,7 @@ impl CommitPreparationError {
         failure: crate::storage::data::RelationalStorageUnavailable,
     ) -> Self {
         Self {
+            managed_source: None,
             branch_id,
             expected_commit_id,
             expected_version_id,
@@ -96,6 +103,7 @@ impl CommitPreparationError {
         expected_version_id: VersionId,
     ) -> Self {
         Self {
+            managed_source: None,
             branch_id,
             reason: CommitPreparationReason::SymbolIdentityExhausted,
             expected_commit_id: None,
@@ -108,6 +116,26 @@ impl CommitPreparationError {
 
     pub fn branch_id(&self) -> &BranchId {
         &self.branch_id
+    }
+
+    pub(crate) fn managed_index_source(
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        cause: crate::validation::candidate_source::ManagedIndexSourcePreparationDenial,
+    ) -> Self {
+        let mut error = Self::selected_branch_root_reference_mismatch(
+            basis.identity().branch_id().clone(),
+            basis.observation().commit_id().map(|id| id.0),
+            basis.observation().version_id(),
+        );
+        error.reason = CommitPreparationReason::ManagedIndexSource;
+        error.managed_source = Some(cause);
+        error
+    }
+
+    pub fn managed_source_denial(
+        &self,
+    ) -> Option<&crate::validation::candidate_source::ManagedIndexSourcePreparationDenial> {
+        self.managed_source.as_ref()
     }
 
     pub const fn reason(&self) -> CommitPreparationReason {
@@ -128,6 +156,10 @@ impl CommitPreparationError {
 
     pub fn detail(&self) -> String {
         match self.reason {
+            CommitPreparationReason::ManagedIndexSource => format!(
+                "managed Source preparation refused: {:?}",
+                self.managed_source
+            ),
             CommitPreparationReason::SymbolIdentityExhausted => format!(
                 "symbol identity exhausted for branch {} at version {}",
                 self.branch_id.0, self.expected_version_id.0

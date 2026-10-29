@@ -11,6 +11,8 @@ use crate::validation::data::{
 use std::sync::Arc;
 
 pub struct CustomInvariantExecutionContext<'runtime> {
+    pub(super) managed_scope:
+        std::sync::Mutex<Option<super::managed_source::ManagedSourceInvocation>>,
     execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     performance: crate::performance::PerformanceAccess<'runtime>,
     observation_kind: InvariantObservationKind,
@@ -142,6 +144,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         let proposal_identity = observation.proposal_identity().cloned();
         Self {
             execution,
+            managed_scope: std::sync::Mutex::new(None),
             performance: runtime.performance_access(),
             observation_kind: observation.kind(),
             version_id,

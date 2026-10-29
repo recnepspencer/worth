@@ -1,23 +1,18 @@
 //! Candidate-bound, callback-free companion installation after Native verifies the head.
+use super::cell_swap::{PreparedCellCutover, PreparedCellSwap};
 use super::{
     CandidateCompanionBinding, CompanionBranchCellCore, CompanionPreflightStop,
     CompanionPublicationCompletionObserver, CompanionRootImage, PublicationCellAdmission,
     PublicationCompanionPreflight,
 };
 use crate::publication::patch::data::PatchStreamPosition;
-use std::sync::{atomic::Ordering, Arc, MutexGuard, TryLockError};
 
 /// Non-cloneable, candidate-bound successor image. Only Relational installs it.
 pub struct PreparedPublicationCompanionEffect {
     pub(super) binding: CandidateCompanionBinding,
-    pub(super) pinned_topology_generation: u64,
-    pub(super) pinned_image: Arc<CompanionRootImage>,
-    pub(super) cell: Arc<CompanionBranchCellCore>,
-    pub(super) next: Arc<CompanionRootImage>,
-    pub(super) retired: Option<Arc<CompanionRootImage>>,
-    pub(super) next_topology_generation: u64,
+    pub(super) primary: Option<PreparedCellSwap>,
+    pub(super) managed: Option<PreparedCellSwap>,
     pub(super) completion: Option<CompanionPublicationCompletionObserver>,
-    pub(super) publication_admission: Option<Arc<PublicationCellAdmission>>,
 }
 
 impl PreparedPublicationCompanionEffect {
@@ -25,7 +20,14 @@ impl PreparedPublicationCompanionEffect {
         &self,
         condition: &super::super::cell::CompanionReadCondition,
     ) -> Result<(), super::CompanionPreflightStop> {
-        condition.matches_reserved(&self.cell, &self.pinned_image)
+        let primary = self.primary.as_ref().expect("sealed primary swap");
+        match condition.matches_reserved(&primary.cell, &primary.pinned_image) {
+            Err(CompanionPreflightStop::ForeignCell) => match &self.managed {
+                Some(managed) => condition.matches_reserved(&managed.cell, &managed.pinned_image),
+                None => Err(CompanionPreflightStop::ForeignCell),
+            },
+            result => result,
+        }
     }
 
     /// The caller funds this scheduling observer before native publication.
@@ -45,17 +47,15 @@ impl PreparedPublicationCompanionEffect {
         &self,
         binding: &CandidateCompanionBinding,
     ) -> Result<(), CompanionPreflightStop> {
-        if self.binding != *binding
-            || self.cell.registration_generation != binding.registration_generation
-        {
+        if self.binding != *binding {
             return Err(CompanionPreflightStop::RegistrationChanged);
         }
-        if !self.cell.reservation_live.load(Ordering::Acquire)
-            || self.cell.topology_generation.load(Ordering::Acquire)
-                != self.pinned_topology_generation
-            || self.pinned_topology_generation.checked_add(1) != Some(self.next_topology_generation)
-        {
-            return Err(CompanionPreflightStop::TopologyPending);
+        self.primary
+            .as_ref()
+            .expect("sealed primary swap")
+            .check(binding.registration_generation)?;
+        if let Some(managed) = &self.managed {
+            managed.check(binding.registration_generation)?;
         }
         Ok(())
     }
@@ -64,48 +64,38 @@ impl PreparedPublicationCompanionEffect {
     pub(crate) fn enter_cutover(
         &mut self,
     ) -> Result<PreparedCompanionCutover<'_>, CompanionPreflightStop> {
-        let current = match self.cell.current.try_lock() {
-            Ok(current) => current,
-            Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
-            Err(TryLockError::WouldBlock) => return Err(CompanionPreflightStop::TopologyPending),
-        };
-        if self.cell.topology_generation.load(Ordering::Acquire) != self.pinned_topology_generation
-            || !Arc::ptr_eq(&*current, &self.pinned_image)
-        {
-            return Err(CompanionPreflightStop::TopologyPending);
-        }
+        // Both guards must be held before Native moves the graph. Failure to
+        // acquire the second drops the first without installing either image.
+        let primary = self
+            .primary
+            .as_mut()
+            .expect("sealed primary swap")
+            .enter()?;
+        let managed = self
+            .managed
+            .as_mut()
+            .map(PreparedCellSwap::enter)
+            .transpose()?;
         Ok(PreparedCompanionCutover {
-            cell: &self.cell,
-            next: &self.next,
-            retired: &mut self.retired,
-            next_topology_generation: self.next_topology_generation,
-            current,
+            primary,
+            managed,
             completion: self.completion.as_ref(),
-            publication_admission: self.publication_admission.as_deref(),
         })
     }
 }
 
 pub(crate) struct PreparedCompanionCutover<'a> {
-    cell: &'a Arc<CompanionBranchCellCore>,
-    next: &'a Arc<CompanionRootImage>,
-    retired: &'a mut Option<Arc<CompanionRootImage>>,
-    next_topology_generation: u64,
-    current: MutexGuard<'a, Arc<CompanionRootImage>>,
+    primary: PreparedCellCutover<'a>,
+    managed: Option<PreparedCellCutover<'a>>,
     completion: Option<&'a CompanionPublicationCompletionObserver>,
-    publication_admission: Option<&'a PublicationCellAdmission>,
 }
 
 impl PreparedCompanionCutover<'_> {
     /// No callbacks, allocation, failure, or retired-payload Drop occur here.
     pub(crate) fn install_at(&mut self, position: PatchStreamPosition) {
-        self.next.position.store(position.0, Ordering::Release);
-        *self.retired = Some(std::mem::replace(&mut *self.current, Arc::clone(self.next)));
-        self.cell
-            .topology_generation
-            .store(self.next_topology_generation, Ordering::Release);
-        if let Some(admission) = self.publication_admission {
-            admission.installed(self.cell);
+        self.primary.install_at(position);
+        if let Some(managed) = &mut self.managed {
+            managed.install_at(position);
         }
         if let Some(completion) = self.completion {
             completion.installed();
@@ -118,6 +108,5 @@ impl Drop for PreparedPublicationCompanionEffect {
         if let Some(completion) = &self.completion {
             completion.abort_uninstalled();
         }
-        self.cell.reservation_live.store(false, Ordering::Release);
     }
 }

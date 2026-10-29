@@ -40,7 +40,9 @@ pub(crate) struct RelationalMaterializationCustodyData {
     pub(crate) branch_identity: super::RelationalBranchIdentity,
     pub(crate) source_commit: CommitId,
     pub(crate) suspension_commit: CommitId,
-    pub(crate) records: Vec<RelationalMaterializationRecord>,
+    pub(crate) records: std::sync::Arc<Vec<RelationalMaterializationRecord>>,
+    pub(crate) source:
+        std::sync::Arc<crate::validation::candidate_source::NativeMaterializationSource>,
     pub(crate) producer_publications: Vec<CommitId>,
     pub(crate) producer_records:
         Vec<crate::history::data::CanonicalRequiredOutputMaterializationRecord>,
@@ -115,7 +117,9 @@ pub struct RelationalMaterializationSuspensionCompletion {
     pub(crate) transaction_id: crate::transactions::data::TransactionId,
     pub(crate) branch_identity: super::RelationalBranchIdentity,
     pub(crate) source_commit: CommitId,
-    pub(crate) records: Vec<RelationalMaterializationRecord>,
+    pub(crate) records: std::sync::Arc<Vec<RelationalMaterializationRecord>>,
+    pub(crate) source:
+        std::sync::Arc<crate::validation::candidate_source::NativeMaterializationSource>,
     pub(crate) producer_publications: Vec<CommitId>,
     pub(crate) producer_records:
         Vec<crate::history::data::CanonicalRequiredOutputMaterializationRecord>,
@@ -136,6 +140,7 @@ impl RelationalMaterializationSuspensionCompletion {
                 source_commit: self.source_commit,
                 suspension_commit: commit.commit.commit_id,
                 records: self.records,
+                source: self.source,
                 producer_publications: self.producer_publications,
                 producer_records: self.producer_records,
             },

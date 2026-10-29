@@ -7,6 +7,7 @@ mod interruption;
 pub use interruption::CustomInvariantInterruption;
 mod read_budget;
 pub use read_budget::CustomInvariantReadBudget;
+mod managed_source;
 #[cfg(test)]
 mod provenance_decode_tests;
 mod registration;

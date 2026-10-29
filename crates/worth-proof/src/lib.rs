@@ -12,6 +12,7 @@ pub mod contracts;
 mod dx;
 mod effect;
 mod linear;
+mod managed_source;
 mod phase;
 pub mod prelude;
 mod proof;
@@ -24,6 +25,10 @@ pub use application_publication::{
     AdmittedRequiredOutputPublication, AdmittedRequiredOutputSuccession,
     InstalledApplicationPublicationAuthority, InstalledApplicationPublicationOwner,
     RequiredOutputPublicationAuthority,
+};
+pub use managed_source::{
+    AdmittedManagedIndexSourceAudience, ManagedIndexSourceAudienceAuthority,
+    ManagedIndexSourceAudienceIssuer,
 };
 mod transition;
 mod type_level;

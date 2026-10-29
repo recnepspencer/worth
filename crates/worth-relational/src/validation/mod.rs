@@ -1,3 +1,4 @@
+pub(crate) mod candidate_source;
 mod custom_registry;
 mod custom_rule;
 pub mod data;
