@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "root": {"max_compiles_per_unit": 1},
+  "query": {"max_compiles_per_unit": 1},
+  "bank": {"max_compiles_per_unit": 1},
+  "store": {"max_compiles_per_unit": 1}
+}
