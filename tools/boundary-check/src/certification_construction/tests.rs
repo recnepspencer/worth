@@ -19,7 +19,7 @@ fn ordinary_consumers_cannot_reference_the_five_sealed_names() {
 
 #[test]
 fn recorded_certification_callers_and_owners_keep_the_construction_doors() {
-    assert!(source_references("workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/conditional_contribution.rs", "fn f() { certification_query(); }").is_empty());
+    assert!(source_references("workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/program_example_authority/product_workflow_support/conditional_contribution.rs", "fn f() { certification_query(); }").is_empty());
     assert!(source_references("workspaces/worth-query/crates/worth-query/src/domain_installation/dependency_impact/compiled/invalidation_manifest/structural_manifest_tests.rs", "fn f() { registered_authoritative_source(); }").is_empty());
     for line in CALLERS.lines().filter(|line| !line.starts_with('#')) {
         let Some((class, path)) = line.split_once(' ') else {

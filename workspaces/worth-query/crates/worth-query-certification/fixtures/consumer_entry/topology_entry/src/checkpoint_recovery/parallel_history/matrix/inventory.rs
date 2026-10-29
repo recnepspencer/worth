@@ -2,7 +2,6 @@
 
 #[cfg(test)]
 mod serial {
-    use super::*;
     #[test]
     fn matrix_rows_name_the_unplaceable_deadline_and_the_separate_placement_proof() {
         let mut rows = Vec::new();

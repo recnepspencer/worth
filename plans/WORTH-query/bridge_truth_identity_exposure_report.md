@@ -689,7 +689,7 @@ Verification:
 - `cargo check -p worth-query --lib` passed.
 - `cargo test -p worth-query subscription::tests::declaration::bridge_parity --lib` passed.
 - `cargo test -p worth-query subscription::tests::active::active_lifecycle --lib` passed.
-- `cargo test -p worth-query-court-host-fast query::public_declarative_journeys::causal_inspection_public_dx::` passed.
+- `cargo test -p 'worth-query-court-host*-fast' query::public_declarative_journeys::causal_inspection_public_dx::` passed.
 - `cargo test -p worth-query --test phase_boundaries_compile_fail` passed.
 - Captured logs:
   `plans/worth-query/goal_mode_subscription_support_typed_check.txt`,

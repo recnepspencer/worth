@@ -1829,9 +1829,9 @@ undo/redo intent and external-effect correlation/dispatch derivation.
 | Check | Result |
 |---|---|
 | `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **79** |
-| `cargo test -p worth-query-court-host-fast query::installed_operating_world::` | **313** |
-| `cargo test -p worth-query-court-host-fast query::public_declarative_journeys::` | **37** |
-| `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::` | **22** |
+| `cargo test -p 'worth-query-court-host*-fast' query::installed_operating_world::` | **313** |
+| `cargo test -p 'worth-query-court-host*-fast' query::public_declarative_journeys::` | **37** |
+| `cargo test -p 'worth-query-court-host*-fast' query::runtime_public_journeys::` | **22** |
 | `cargo test -p worth-query-certification --test compile_certification` | **14** |
 | `cargo test -p worth-query-execution --lib` × 5 | **578, 578, 578, 578, 578** |
 | `RUSTFLAGS=-Dwarnings cargo check` (execution + bank-server) | clean |
@@ -1858,9 +1858,9 @@ undo/redo intent and external-effect correlation/dispatch derivation.
 | Check | Result |
 |---|---|
 | `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **80** |
-| `cargo test -p worth-query-court-host-fast query::installed_operating_world::` | **313** |
-| `cargo test -p worth-query-court-host-fast query::public_declarative_journeys::` | **37** |
-| `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::` | **22** |
+| `cargo test -p 'worth-query-court-host*-fast' query::installed_operating_world::` | **313** |
+| `cargo test -p 'worth-query-court-host*-fast' query::public_declarative_journeys::` | **37** |
+| `cargo test -p 'worth-query-court-host*-fast' query::runtime_public_journeys::` | **22** |
 | `cargo test -p worth-query-certification --test compile_certification` | **14** |
 | `cargo test -p worth-query-execution --lib` × 5 | **578, 578, 578, 578, 578** |
 | `RUSTFLAGS=-Dwarnings cargo check` (execution + bank-server) | clean |
@@ -1890,9 +1890,9 @@ and re-grounds §11 row 11.
 | Check | Result |
 |---|---|
 | `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **81** (80 prior + row-11 session/queue boundary test) |
-| `cargo test -p worth-query-court-host-fast query::installed_operating_world::` | **313** |
-| `cargo test -p worth-query-court-host-fast query::public_declarative_journeys::` | **37** |
-| `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::` | **22** |
+| `cargo test -p 'worth-query-court-host*-fast' query::installed_operating_world::` | **313** |
+| `cargo test -p 'worth-query-court-host*-fast' query::public_declarative_journeys::` | **37** |
+| `cargo test -p 'worth-query-court-host*-fast' query::runtime_public_journeys::` | **22** |
 | `cargo test -p worth-query-certification --test compile_certification` | **14** |
 | `cargo test -p worth-query-execution --lib` × 5 | **579, 579, 579, 579, 579** (578 prior + PB4 residue) |
 | `RUSTFLAGS=-Dwarnings cargo check` (execution + bank-server) | clean |

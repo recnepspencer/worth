@@ -146,7 +146,7 @@ cargo test -q -p worth-runtime-bridge --lib
   965 passed
 
 cargo test --manifest-path workspaces/worth-query/Cargo.toml \
-  -p worth-query-court-host-fast certification::granular_invalidation:: -- --test-threads=1
+  -p 'worth-query-court-host*-fast' certification::granular_invalidation:: -- --test-threads=1
   20 passed
 
 cargo test -q --manifest-path workspaces/worth-query/Cargo.toml --workspace

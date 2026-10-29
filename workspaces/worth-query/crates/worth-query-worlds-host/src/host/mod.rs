@@ -14,7 +14,8 @@ pub mod canonical_graph_progression;
 #[allow(dead_code, unused_imports)]
 #[path = "charged_bytes_derive.rs"]
 pub mod charged_bytes_derive;
-pub use crate::facade::certification::checkpoint_capture;
+#[path = "support/checkpoint_capture.rs"]
+pub mod checkpoint_capture;
 #[allow(dead_code, unused_imports)]
 #[path = "conditional_authoring_surface.rs"]
 pub mod conditional_authoring_surface;

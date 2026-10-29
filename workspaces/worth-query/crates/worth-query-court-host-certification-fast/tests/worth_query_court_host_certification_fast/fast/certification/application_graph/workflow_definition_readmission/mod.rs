@@ -5,7 +5,7 @@ pub(crate) mod current;
 #[test]
 fn workflow_actor_contract_authentic_predecessor_refuses_before_native_restore() {
     let bytes = include_bytes!(
-        "../../../../../../../worth-query-worlds/src/certification/application_graph/workflow_definition_readmission/missing_input.checkpoint"
+        "../../../../../../../worth-query-worlds-certification/src/certification/application_graph/workflow_definition_readmission/missing_input.checkpoint"
     );
     let original = bytes.to_vec();
     let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(original.clone());
@@ -33,7 +33,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
 ) {
     use sha2::{Digest, Sha256};
     let original = include_bytes!(
-        "../../../../../../../worth-query-worlds/src/certification/application_graph/workflow_definition_readmission/missing_input.checkpoint"
+        "../../../../../../../worth-query-worlds-certification/src/certification/application_graph/workflow_definition_readmission/missing_input.checkpoint"
     );
     assert_eq!(&original[40..42], &9u16.to_be_bytes());
     // This original export has no producer rows. The reheadered court therefore

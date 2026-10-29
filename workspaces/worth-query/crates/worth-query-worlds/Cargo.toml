@@ -15,25 +15,13 @@ test = false
 doctest = false
 
 [dependencies]
-serde = { version = "1", features = ["derive", "rc"] }
-sha2 = "0.10"
-worth-execution = { path = "../../../../crates/worth-execution" }
-worth-foundational = { path = "../../../../crates/worth-foundational" }
-worth-harness = { path = "../../../../crates/worth-harness" }
-worth-proof = { path = "../../../../crates/worth-proof" }
-worth-query = { workspace = true }
-worth-query-admission = { path = "../worth-query-admission" }
-worth-query-decl = { workspace = true }
-worth-query-declaration = { path = "../worth-query-declaration" }
-worth-query-execution = { path = "../worth-query-execution" }
-worth-query-host = { workspace = true }
-worth-query-installation = { path = "../worth-query-installation" }
-worth-query-package-archive = { workspace = true }
-worth-query-publication = { path = "../worth-query-publication" }
-worth-query-replay = { workspace = true }
-worth-relational = { path = "../../../../crates/worth-relational" }
-worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
-worth-signal = { path = "../../../../crates/worth-signal" }
+worth-query-worlds-certification = { path = "../worth-query-worlds-certification" }
+worth-query-worlds-decl = { path = "../worth-query-worlds-decl" }
+worth-query-worlds-host = { path = "../worth-query-worlds-host" }
+worth-query-worlds-installation = { path = "../worth-query-worlds-installation" }
+worth-query-worlds-package-archive = { path = "../worth-query-worlds-package-archive" }
+worth-query-worlds-publication = { path = "../worth-query-worlds-publication" }
+worth-query-worlds-query = { path = "../worth-query-worlds-query" }
 
 [lints]
 workspace = true

@@ -1,0 +1,40 @@
+[package]
+name = "worth-query-worlds-installation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+autotests = false
+
+[package.metadata.worth.worlds]
+workspace = "worth-query"
+family = "installation"
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+serde = { version = "1", features = ["derive", "rc"] }
+sha2 = "0.10"
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-harness = { path = "../../../../crates/worth-harness" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-query = { workspace = true }
+worth-query-admission = { path = "../worth-query-admission" }
+worth-query-decl = { workspace = true }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { workspace = true }
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-package-archive = { workspace = true }
+worth-query-publication = { path = "../worth-query-publication" }
+worth-query-replay = { workspace = true }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+
+[lints]
+workspace = true

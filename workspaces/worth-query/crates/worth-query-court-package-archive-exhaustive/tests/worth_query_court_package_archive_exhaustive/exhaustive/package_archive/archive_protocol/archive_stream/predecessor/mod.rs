@@ -2,7 +2,7 @@ pub(crate) use worth_query_worlds::facade::package_archive::archive_protocol::ar
 
 #[test]
 fn original_pre_actor_all_family_package_is_unsupported_intact_without_a_candidate() {
-    let original = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/archive_stream/preactor_2bc_all_families.wqpkg"));
+    let original = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/archive_stream/preactor_2bc_all_families.wqpkg"));
     let submitted = original.to_vec();
     let manifest = decode_manifest_frame(
         &original[..MANIFEST_FRAME_BYTES],

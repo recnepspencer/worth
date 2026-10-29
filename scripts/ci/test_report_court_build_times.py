@@ -27,6 +27,22 @@ def html(units):
 
 
 class CourtTimingTests(unittest.TestCase):
+    def test_measured_world_family_split_keeps_its_library_budget(self):
+        name = "worth-query-worlds-host"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "crates" / name / "Cargo.toml"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(f'[package]\nname = "{name}"\n'
+                                '[package.metadata.worth.worlds]\nworkspace = "worth-query"\n',
+                                encoding="utf-8")
+            metadata = report.read_metadata(root)
+        rows = report.summarize([unit(name=name, target="", seconds=121)],
+                                metadata, {}, {}, True)
+        self.assertEqual(rows[0]["kind"], "worlds")
+        self.assertEqual(rows[0]["budget_seconds"], 121)
+        self.assertEqual(rows[0]["decision"], "split_candidate")
+
     def setUp(self):
         self.metadata = {COURT: {"boundary": "host", "class": "fast"},
                          "worth-query-worlds": {"boundary": None, "class": None}}

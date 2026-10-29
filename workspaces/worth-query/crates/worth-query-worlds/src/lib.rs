@@ -1,4 +1,2 @@
-//! Shared authored worlds for independent integration courts.
-#![recursion_limit = "512"]
-extern crate self as worth_query_worlds;
+//! Compose the authored Query world-family facades for courts and examples.
 pub mod facade;

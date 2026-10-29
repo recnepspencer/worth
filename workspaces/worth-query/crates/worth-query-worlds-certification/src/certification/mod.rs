@@ -6,9 +6,7 @@ pub mod canonical_identity;
 #[allow(dead_code, unused_imports)]
 #[path = "application_graph/canonical_transition.rs"]
 pub mod canonical_transition;
-#[allow(dead_code, unused_imports)]
-#[path = "support/checkpoint_capture.rs"]
-pub mod checkpoint_capture;
+pub use crate::facade::host::checkpoint_capture;
 pub use crate::facade::host::contract;
 pub use crate::facade::host::temporal_conditional_operation::courtroom_support;
 #[allow(dead_code, unused_imports)]

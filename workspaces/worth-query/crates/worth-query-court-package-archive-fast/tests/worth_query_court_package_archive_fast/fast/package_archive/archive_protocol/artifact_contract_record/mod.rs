@@ -3,7 +3,7 @@ pub(crate) use worth_query_worlds::facade::package_archive::archive_protocol::ar
 #[test]
 fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
     let retained16 = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v16.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v16.hex"))
         .trim(),
     );
     let denial =
@@ -17,7 +17,7 @@ fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
     assert_eq!(denial.compatibility().unwrap().observed_version(), 16);
 
     let retained17 = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v17.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v17.hex"))
         .trim(),
     );
     let denial =
@@ -73,7 +73,7 @@ fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
 #[test]
 fn version_eighteen_artifact_contract_frame_matches_the_frozen_vector() {
     let original = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v6.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v6.hex"))
             .trim(),
     );
     let denial =
@@ -87,7 +87,7 @@ fn version_eighteen_artifact_contract_frame_matches_the_frozen_vector() {
     assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
 
     let previous = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v7.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v7.hex"))
             .trim(),
     );
     let previous_denial =
@@ -104,7 +104,7 @@ fn version_eighteen_artifact_contract_frame_matches_the_frozen_vector() {
     );
 
     let displaced = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v13.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v13.hex"))
         .trim(),
     );
     let denial =
@@ -118,7 +118,7 @@ fn version_eighteen_artifact_contract_frame_matches_the_frozen_vector() {
     assert_eq!(denial.compatibility().unwrap().observed_version(), 13);
 
     let retained = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v14.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v14.hex"))
         .trim(),
     );
     let mut old_decoder =
@@ -138,7 +138,7 @@ fn version_eighteen_artifact_contract_frame_matches_the_frozen_vector() {
     let exported = source.export_typed_records().unwrap();
     let artifact = artifact_view(&exported);
     let bytes = encode_record_frame(artifact, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let golden = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v18.hex"))
+    let golden = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v18.hex"))
     .trim();
     assert_eq!(encode_hex(&bytes), golden);
     assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 18);
@@ -300,7 +300,7 @@ fn artifact_decoder_rejects_noncanonical_sequences_without_normalizing() {
 #[test]
 fn retained_version_fifteen_is_refused_before_record_work() {
     let bytes = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v15.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v15.hex"))
         .trim(),
     );
     let mut decoder =

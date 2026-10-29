@@ -98,10 +98,14 @@ def court_identity(name):
     return workspace, match[1], match[2]
 
 
+def worlds_package(name):
+    return name.endswith("-worlds") or "-worlds-" in name
+
+
 def read_metadata(root):
     manifests = set()
     for stem in (root, *root.glob("workspaces/*")):
-        for pattern in ("crates/*court*/Cargo.toml", "crates/*worlds/Cargo.toml"):
+        for pattern in ("crates/*court*/Cargo.toml", "crates/*worlds*/Cargo.toml"):
             manifests.update(stem.glob(pattern))
     metadata = {}
     for path in sorted(manifests):
@@ -115,7 +119,7 @@ def read_metadata(root):
             if court.get("class") != identity[2] or not court.get("boundary"):
                 raise ReportError(f"missing/mismatched court metadata: {path}")
             metadata[name] = {"boundary": court["boundary"], "class": court["class"]}
-        else:
+        elif package.get("metadata", {}).get("worth", {}).get("worlds"):
             metadata[name] = {"boundary": None, "class": None}
     return metadata
 
@@ -146,7 +150,7 @@ def summarize(units, metadata, counts, owners, cold):
     grouped = defaultdict(list)
     for unit in units:
         name = unit["name"]
-        if court_identity(name) or name.endswith("-worlds"):
+        if court_identity(name) or worlds_package(name):
             grouped[name].append(unit)
     if not grouped:
         raise ReportError("no court/worlds compiler units; input may be fully fresh")

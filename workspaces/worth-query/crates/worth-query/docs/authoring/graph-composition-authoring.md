@@ -108,7 +108,7 @@ let receipt = workspace.compose_graph(|graph| {
 ```
 
 The complete compiling journey is
-`worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/query/runtime_public_journeys/graph_composition_public_bridge/mod.rs`. It verifies final rows,
+`worth-query-court-host-query-fast/tests/worth_query_court_host_query_fast/fast/query/runtime_public_journeys/graph_composition_public_bridge/mod.rs`. It verifies final rows,
 ordered program kinds, resolution mapping, and identity-preserving lifecycle
 outcomes through the public facade.
 

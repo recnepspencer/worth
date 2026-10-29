@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/worth-query-worlds",
+    "crates/worth-query-worlds*",
     "crates/worth-query-court-*",
     "crates/worth-query",
     "crates/worth-query-decl",

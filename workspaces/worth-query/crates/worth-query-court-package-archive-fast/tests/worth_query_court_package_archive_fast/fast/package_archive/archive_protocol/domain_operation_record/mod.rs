@@ -3,7 +3,7 @@ pub(crate) use worth_query_worlds::facade::package_archive::archive_protocol::do
 #[test]
 fn version_eighteen_domain_operation_frame_matches_and_decodes_the_frozen_vector() {
     let original = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v6.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v6.hex"))
             .trim(),
     );
     let denial =
@@ -17,7 +17,7 @@ fn version_eighteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
     assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
 
     let previous = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v7.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v7.hex"))
             .trim(),
     );
     let previous_denial =
@@ -34,7 +34,7 @@ fn version_eighteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
     );
 
     let displaced = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v13.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v13.hex"))
             .trim(),
     );
     let denial =
@@ -48,7 +48,7 @@ fn version_eighteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
     assert_eq!(denial.compatibility().unwrap().observed_version(), 13);
 
     let retained = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v14.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v14.hex"))
             .trim(),
     );
     let mut old_decoder =
@@ -65,7 +65,7 @@ fn version_eighteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
     );
 
     let retained16 = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v16.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v16.hex"))
             .trim(),
     );
     let denial =
@@ -79,7 +79,7 @@ fn version_eighteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
     assert_eq!(denial.compatibility().unwrap().observed_version(), 16);
 
     let retained17 = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v17.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v17.hex"))
             .trim(),
     );
     let denial =
@@ -100,7 +100,7 @@ fn version_eighteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
         .unwrap();
     let bytes = encode_record_frame(operation, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
     let golden = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v18.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v18.hex"))
             .trim(),
     );
     assert_eq!(bytes, golden);
@@ -290,7 +290,7 @@ fn collection_field_paths_have_symmetric_encode_and_decode_work() {
 #[test]
 fn retained_version_fifteen_is_refused_before_record_work() {
     let bytes = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v15.hex"))
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-worlds-package-archive/src/package_archive/archive_protocol/domain_operation_record/domain_operation_v15.hex"))
             .trim(),
     );
     let mut decoder =
