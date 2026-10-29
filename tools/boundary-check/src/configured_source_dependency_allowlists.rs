@@ -270,6 +270,7 @@ mod tests {
 
     fn dependency(name: &str) -> CargoMetadataDependency {
         CargoMetadataDependency {
+            kind: None,
             name: name.into(),
             req: "*".into(),
             features: Vec::new(),
@@ -279,6 +280,7 @@ mod tests {
 
     fn pulse_uiautomation_dependency() -> CargoMetadataDependency {
         CargoMetadataDependency {
+            kind: None,
             name: "uiautomation".into(),
             req: "=0.25.0".into(),
             features: vec!["control".into(), "input".into()],
@@ -288,6 +290,7 @@ mod tests {
 
     fn pulse_winsafe_dependency() -> CargoMetadataDependency {
         CargoMetadataDependency {
+            kind: None,
             name: "winsafe".into(),
             req: "=0.0.28".into(),
             features: vec!["user".into()],
@@ -297,6 +300,7 @@ mod tests {
 
     fn pulse_xcap_dependency() -> CargoMetadataDependency {
         CargoMetadataDependency {
+            kind: None,
             name: "xcap".into(),
             req: "=0.9.7".into(),
             features: Vec::new(),

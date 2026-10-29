@@ -73,6 +73,9 @@ fn validate_configured(root: &Path) -> Result<Vec<Diagnostic>, String> {
             if owner.crate_root.join("tests").exists() {
                 diagnostics.push(failure(&relative, "product crate must not contain a tests/ directory; integration tests belong in courts"));
             }
+            if value.get("test").is_some() {
+                diagnostics.push(failure(&relative, "product crate cannot declare integration targets; keep private unit tests in src and integration tests in courts"));
+            }
             let worlds = value
                 .get("package")
                 .and_then(|p| p.get("metadata"))
@@ -101,6 +104,16 @@ fn validate_configured(root: &Path) -> Result<Vec<Diagnostic>, String> {
         let targets = targets::discover(&owner.crate_root, &value)?;
         let mut ordinary = Vec::new();
         for target in &targets {
+            if !target.tested {
+                diagnostics.push(failure(
+                    &relative,
+                    format!(
+                        "court target `{}` cannot disable test execution with test=false",
+                        target.name
+                    ),
+                ));
+            }
+            diagnostics.extend(cost_classes::validate(&owner, &target.path, &class));
             let key = (relative.clone(), target.name.clone());
             if config.exceptions.contains(&key) {
                 seen_exceptions.insert(key);
@@ -110,9 +123,17 @@ fn validate_configured(root: &Path) -> Result<Vec<Diagnostic>, String> {
                         format!("exception `{}` requires an explicit [[test]]", target.name),
                     ));
                 }
+                if target.harness {
+                    diagnostics.push(failure(
+                        &relative,
+                        format!(
+                            "executable exception `{}` must retain harness=false",
+                            target.name
+                        ),
+                    ));
+                }
             } else {
                 ordinary.push(target);
-                diagnostics.extend(cost_classes::validate(&owner, &target.path, &class));
             }
         }
         let canonical = name.replace('-', "_");

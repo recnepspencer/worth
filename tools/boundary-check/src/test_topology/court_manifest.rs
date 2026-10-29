@@ -67,7 +67,7 @@ fn segment(value: &str) -> bool {
 }
 
 pub(super) fn product_code(owner: &GovernedCrate, value: &toml::Value) -> Vec<Diagnostic> {
-    let has_target = ["lib", "bin", "example"]
+    let has_target = ["lib", "bin", "example", "bench"]
         .iter()
         .any(|key| value.get(key).is_some());
     let has_build = value

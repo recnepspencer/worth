@@ -60,13 +60,14 @@ impl<'ast> Visit<'ast> for Tests {
         visit::visit_item_fn(self, function);
     }
     fn visit_item_macro(&mut self, item: &'ast syn::ItemMacro) {
-        if item.mac.path.is_ident("include") || contains_test_attribute(item.mac.tokens.clone()) {
-            self.names.push(
-                item.ident
-                    .as_ref()
-                    .map_or_else(|| "<macro>".into(), ToString::to_string),
-            );
-        }
+        // Item macros can inject a test attribute through a metavariable or
+        // another macro. Place the generator in the class, rather than trying
+        // to predict arbitrary expansion in this source boundary check.
+        self.names.push(
+            item.ident
+                .as_ref()
+                .map_or_else(|| "<item macro>".into(), ToString::to_string),
+        );
     }
 }
 
@@ -88,23 +89,4 @@ fn test_attribute(meta: &syn::Meta) -> bool {
     syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated
         .parse2(list.tokens.clone())
         .is_ok_and(|metas| metas.iter().skip(1).any(test_attribute))
-}
-
-fn contains_test_attribute(tokens: proc_macro2::TokenStream) -> bool {
-    use proc_macro2::TokenTree;
-    let tokens: Vec<_> = tokens.into_iter().collect();
-    for pair in tokens.windows(2) {
-        if matches!(&pair[0], TokenTree::Punct(mark) if mark.as_char() == '#') {
-            if let TokenTree::Group(group) = &pair[1] {
-                if syn::parse2::<syn::Meta>(group.stream()).is_ok_and(|meta| test_attribute(&meta))
-                {
-                    return true;
-                }
-            }
-        }
-    }
-    tokens.into_iter().any(|token| match token {
-        TokenTree::Group(group) => contains_test_attribute(group.stream()),
-        TokenTree::Ident(_) | TokenTree::Punct(_) | TokenTree::Literal(_) => false,
-    })
 }

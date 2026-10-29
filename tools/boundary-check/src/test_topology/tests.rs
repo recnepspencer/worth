@@ -267,3 +267,64 @@ fn law18_v2_workspace_alias_cannot_hide_a_production_fixture_dependency() {
     fixture.write("world/src/lib.rs", "pub fn authored_world() {}\n");
     fixture.refuses("product dependency `sample-worlds` must be in dev-dependencies");
 }
+
+#[test]
+fn law18_v2_refuses_product_integration_targets_outside_tests_directory() {
+    let fixture = Fixture::new();
+    std::fs::remove_file(fixture.0.join(format!("governed/tests/{TARGET}.rs"))).unwrap();
+    std::fs::remove_dir(fixture.0.join("governed/tests")).unwrap();
+    fixture.write(
+        "governed/Cargo.toml",
+        "[package]\nname = 'product'\n[[test]]\nname = 'outside'\npath = 'integration.rs'\n",
+    );
+    fixture.write("governed/integration.rs", "#[test] fn outside() {}\n");
+    fixture.refuses("product crate cannot declare integration targets");
+}
+
+#[test]
+fn law18_v2_refuses_bench_targets_hidden_inside_tests() {
+    let fixture = Fixture::new();
+    fixture.manifest("autotests = false", &format!("[[test]]\nname = '{TARGET}'\n[[bench]]\nname = 'hidden'\npath = 'tests/bench.rs'\nharness = false\n"));
+    fixture.write("governed/tests/bench.rs", "fn main() {}\n");
+    fixture.refuses("court contains product code or a production target");
+}
+
+#[test]
+fn law18_v2_executable_exceptions_cannot_become_unclassed_test_harnesses() {
+    let fixture = Fixture::new();
+    fixture.write(
+        EXCEPTIONS,
+        "governed/Cargo.toml | child | public consumer main\n",
+    );
+    fixture.manifest("", "[[test]]\nname = 'child'\nharness = true\n");
+    fixture.write("governed/tests/child.rs", "#[test] fn escaped() {}\n");
+    fixture.refuses("must retain harness=false");
+    fixture.refuses("`escaped` must be under");
+}
+
+#[test]
+fn law18_v2_metavariable_macro_tests_must_be_generated_inside_the_class() {
+    let fixture = Fixture::new();
+    let source = "macro_rules! cases { ($a:meta) => { #[$a] fn escaped() {} }; } cases!(test);";
+    fixture.entry(source);
+    fixture.refuses("must be under its court class");
+    fixture.entry(&format!("mod fast {{ {source} }}"));
+    assert!(fixture.messages().is_empty(), "{:?}", fixture.messages());
+}
+
+#[test]
+fn law18_v2_refuses_disabling_court_or_exception_test_execution() {
+    let fixture = Fixture::new();
+    fixture.manifest(
+        "autotests = false",
+        &format!("[[test]]\nname = '{TARGET}'\ntest = false\n"),
+    );
+    fixture.refuses("cannot disable test execution");
+    fixture.manifest("autotests = false", &format!("[[test]]\nname = '{TARGET}'\n[[test]]\nname = 'child'\nharness = false\ntest = false\n"));
+    fixture.write(
+        EXCEPTIONS,
+        "governed/Cargo.toml | child | public consumer main\n",
+    );
+    fixture.write("governed/tests/child.rs", "fn main() {}\n");
+    fixture.refuses("court target `child` cannot disable test execution");
+}

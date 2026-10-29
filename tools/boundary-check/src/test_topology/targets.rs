@@ -9,6 +9,7 @@ pub(super) struct Target {
     pub(super) path: PathBuf,
     pub(super) explicit: bool,
     pub(super) harness: bool,
+    pub(super) tested: bool,
 }
 
 pub(super) fn discover(root: &Path, value: &toml::Value) -> Result<Vec<Target>, String> {
@@ -45,6 +46,7 @@ pub(super) fn discover(root: &Path, value: &toml::Value) -> Result<Vec<Target>, 
                     path: source,
                     explicit: false,
                     harness: true,
+                    tested: true,
                 },
             );
         }
@@ -74,6 +76,10 @@ pub(super) fn discover(root: &Path, value: &toml::Value) -> Result<Vec<Target>, 
                 harness: declaration
                     .get("harness")
                     .and_then(|h| h.as_bool())
+                    .unwrap_or(true),
+                tested: declaration
+                    .get("test")
+                    .and_then(|v| v.as_bool())
                     .unwrap_or(true),
             },
         );
