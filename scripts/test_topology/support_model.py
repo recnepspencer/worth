@@ -42,6 +42,12 @@ class SupportModel:
                               'features': sorted(set(owner.get('effective_features', ())) | set(target['cargo'].get('required-features', ())))}
                     ancestors = [self.records[(identity, node.names[:n])] for n in range(len(node.names))]
                     record['attributes'] = ''.join(r['node'].declaration.attributes for r in ancestors if r['node'].declaration)
+                    for ancestor in ancestors:
+                        for item in items(ancestor['node'].own_text()):
+                            if item.keyword == 'inner-attribute':
+                                attribute = ancestor['node'].own_text()[item.start:item.end]
+                                if re.match(r'#\s*!\s*\[\s*cfg(?:_attr)?\b', attribute):
+                                    record['attributes'] += re.sub(r'^(#\s*)!', r'\1', attribute) + '\n'
                     if node.declaration:
                         record['attributes'] += node.declaration.attributes
                     record['attributes'] = re.sub(r'#\s*\[\s*path\s*=\s*(?:r#*".*?"#*|"(?:\\.|[^"\\])*")\s*\]\s*', '', record['attributes'], flags=re.S)

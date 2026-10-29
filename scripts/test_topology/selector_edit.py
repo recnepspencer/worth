@@ -6,7 +6,7 @@ from court_roots import module_path
 from store_partitions import scheduled_areas
 
 
-def selectors(effects, root, workspace, courts, roster):
+def selectors(effects, root, workspace, courts, roster, executables=()):
     result = []
     if workspace == root:
         path = root / 'scripts/ci/query_gate_courts.py'
@@ -25,7 +25,7 @@ def selectors(effects, root, workspace, courts, roster):
     else:
         path = workspace / 'tools/store-test-runner/src/plan/integration_product.rs'
         if path.exists():
-            text = store_runner(courts)
+            text = store_runner(courts, executables)
             effects.write(path, text)
             result.append({'path': str(path.relative_to(root)).replace('\\', '/'),
                            'reason': 'Replace binary-per-file rosters with court binaries and category-prefix partitions; retain sharding and certification dependency features.'})
@@ -45,12 +45,15 @@ def selectors(effects, root, workspace, courts, roster):
     return result
 
 
-def store_runner(courts):
+def store_runner(courts, executables=()):
     rows = []
     for court in courts:
         categories = {u['category'].split('::')[0] if u['category'] else 'ordinary' for u in court['units']}
         rows.append('    (' + json.dumps(court['name']) + ', ' + json.dumps(court['name'].replace('-', '_'))
                     + ', &[' + ', '.join(json.dumps(c) for c in sorted(categories)) + ']),')
+    builds = ['build', '--bins'] + [arg for package in sorted({r['package'] for r in executables}) for arg in ('-p', package)]
+    build_args = ', '.join(json.dumps(arg) + '.into()' for arg in builds)
+    prerequisite = 'TestExecutionUnit::cargo(format!("{lane}::executables"), root, vec![' + build_args + ']), ' if executables else ''
     return '''//! Court selections generated from the applied court plan. Categories are prefixes.
 use std::path::Path;
 use super::TestExecutionUnit;
@@ -83,7 +86,7 @@ fn units(lane: &str, categories: &[&str], shard: Option<(usize, usize)>, root: &
     if let Some((index, count)) = shard {
         args.extend(["--partition".into(), format!("hash:{}/{}", index + 1, count)]);
     }
-    vec![TestExecutionUnit::cargo(format!("{lane}::nextest"), root, args)]
+    vec![EXECUTABLE_PREREQUISITETestExecutionUnit::cargo(format!("{lane}::nextest"), root, args)]
 }
 const COURTS: &[(&str, &str, &[&str])] = &[
-''' + '\n'.join(rows) + '\n];\n'
+''' .replace('EXECUTABLE_PREREQUISITE', prerequisite) + '\n'.join(rows) + '\n];\n'

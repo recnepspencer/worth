@@ -39,12 +39,9 @@ def collect(courts, assignments, repository):
                 if re.search(r'env!\s*\(\s*"CARGO_PKG_NAME"|module_path!\s*\(', text):
                     add(court['name'], 'identity-assertion', source.source,
                         'Package/module identity changed; review assertions and protocols using these macros.')
-                if 'CARGO_BIN_EXE_' in text:
-                    add(court['name'], 'executable-location', source.source,
-                        'Product executable env belongs to its original package; supply the actual built executable path.')
-                if 'CARGO_MANIFEST_DIR' in text:
-                    add(court['name'], 'manifest-context', source.source,
-                        'Literal tests/ paths are rewritten; inspect dynamic paths and nested Cargo subprocesses for old-package assumptions.')
+                if 'CARGO_MANIFEST_DIR' in text and re.search(r'\b(?:strip_prefix|owning_test|read_to_string|read_dir|collect_inc_rs_files)\b', value):
+                    add(court['name'], 'identity-assertion', source.source,
+                        'Filesystem paths are rebound. Review the assertion about which source catalogue or directory owner this proof certifies after migration.')
                 names = [name for name in test_names(text) if re.search(
                     r'(?:^|_)(?:(?:m|d|r|phase|milestone|decision|ticket|req)\d+|(?:phase|milestone|decision|ticket)_(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten))(?:_|$)', name)
                          or name.startswith(('test_', 'it_'))]

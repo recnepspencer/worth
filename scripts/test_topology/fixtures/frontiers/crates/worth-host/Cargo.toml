@@ -17,3 +17,8 @@ path = "tests/suite.rs"
 [[test]]
 name = "wide"
 path = "tests/wide.rs"
+
+[[bin]]
+name = "host-inspect"
+path = "src/inspection.rs"
+test = false
