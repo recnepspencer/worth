@@ -1,0 +1,19 @@
+[package]
+name = "worth-host"
+version.workspace = true
+edition.workspace = true
+autotests = false
+
+[dependencies]
+worth-base = { path = "../worth-base" }
+
+[dev-dependencies]
+worth-extra = { path = "../worth-extra" }
+
+[[test]]
+name = "suite"
+path = "tests/suite.rs"
+
+[[test]]
+name = "wide"
+path = "tests/wide.rs"
