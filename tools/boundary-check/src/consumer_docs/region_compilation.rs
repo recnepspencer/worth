@@ -1,5 +1,5 @@
 //! Configuration on actual Rust items containing or contained by a marked region.
-use super::native_test_cfg;
+use super::native_cfg;
 use syn::{
     spanned::Spanned,
     visit::{self, Visit},
@@ -10,10 +10,12 @@ pub(super) fn validate(
     source: &syn::File,
     first_line: usize,
     last_line: usize,
+    mode: native_cfg::NativeMode,
 ) -> Result<(), String> {
     let mut region = Region {
         first_line,
         last_line,
+        mode,
         refusal: None,
     };
     region.visit_file(source);
@@ -23,6 +25,7 @@ pub(super) fn validate(
 struct Region {
     first_line: usize,
     last_line: usize,
+    mode: native_cfg::NativeMode,
     refusal: Option<String>,
 }
 
@@ -31,7 +34,7 @@ impl Region {
         value.span().start().line <= self.last_line && value.span().end().line >= self.first_line
     }
     fn require_active(&mut self, attributes: &[Attribute]) {
-        match native_test_cfg::active(attributes) {
+        match native_cfg::active(attributes, self.mode) {
             Ok(true) => {}
             Ok(false) => {
                 self.refusal =

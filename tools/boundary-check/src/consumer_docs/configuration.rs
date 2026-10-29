@@ -57,6 +57,8 @@ pub(super) struct DoctestRoot {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct CompiledSource {
+    #[serde(skip)]
+    pub mode: super::native_cfg::NativeMode,
     pub name: String,
     pub crate_root: String,
     pub target: String,
@@ -74,7 +76,7 @@ pub(super) fn confined_path(value: &str) -> bool {
 pub(super) fn load(root: &Path) -> Result<Configuration, String> {
     let text = crate::source_documents::read_to_string(&root.join(CONFIG))
         .map_err(|error| format!("{CONFIG}: {error}"))?;
-    let config: Configuration = toml::from_str(&text).map_err(|error| error.to_string())?;
+    let mut config: Configuration = toml::from_str(&text).map_err(|error| error.to_string())?;
     let mut documents = BTreeSet::new();
     for path in &config.documents {
         if !confined_path(path) || !documents.insert(path.clone()) || !root.join(path).is_file() {
@@ -105,7 +107,7 @@ pub(super) fn load(root: &Path) -> Result<Configuration, String> {
         }
     }
     let mut names = BTreeSet::new();
-    for binding in &config.compiled_sources {
+    for binding in &mut config.compiled_sources {
         if ![
             &binding.name,
             &binding.crate_root,
@@ -124,11 +126,31 @@ pub(super) fn load(root: &Path) -> Result<Configuration, String> {
                 .map_err(|error| error.to_string())?,
         )
         .map_err(|error| error.to_string())?;
-        let registered = binding.target == "src/main.rs"
-            && manifest["package"]
-                .get("autobins")
+        let library = manifest.get("lib");
+        let library_path = library
+            .and_then(|lib| lib.get("path"))
+            .and_then(toml::Value::as_str)
+            .unwrap_or("src/lib.rs");
+        let is_library = binding.target == library_path
+            && (library.is_some()
+                || manifest["package"]
+                    .get("autolib")
+                    .and_then(toml::Value::as_bool)
+                    != Some(false));
+        if is_library
+            && library
+                .and_then(|lib| lib.get("test"))
                 .and_then(toml::Value::as_bool)
-                != Some(false)
+                == Some(false)
+        {
+            binding.mode = super::native_cfg::NativeMode::Library;
+        }
+        let registered = is_library
+            || binding.target == "src/main.rs"
+                && manifest["package"]
+                    .get("autobins")
+                    .and_then(toml::Value::as_bool)
+                    != Some(false)
             || ["bin", "example", "test"].into_iter().any(|kind| {
                 manifest
                     .get(kind)

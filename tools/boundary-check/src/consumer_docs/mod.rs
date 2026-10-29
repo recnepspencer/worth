@@ -8,7 +8,7 @@ mod fences;
 mod generated_regions;
 pub(crate) mod guidance_write;
 mod links;
-mod native_test_cfg;
+mod native_cfg;
 mod navigation;
 mod region_compilation;
 mod source_facts;

@@ -1,7 +1,14 @@
-//! The configuration facts the native topology fixture test build proves.
+//! Native Rust configuration at the Cargo target that owns a document region.
 use syn::{punctuated::Punctuated, Attribute, Expr, Lit, Meta, Token};
 
-pub(super) fn active(attributes: &[Attribute]) -> Result<bool, String> {
+#[derive(Clone, Copy, Default)]
+pub(super) enum NativeMode {
+    #[default]
+    Test,
+    Library,
+}
+
+pub(super) fn active(attributes: &[Attribute], mode: NativeMode) -> Result<bool, String> {
     let mut enabled = true;
     for attribute in attributes {
         if attribute.path().is_ident("cfg_attr") {
@@ -11,15 +18,18 @@ pub(super) fn active(attributes: &[Attribute]) -> Result<bool, String> {
             let predicate = attribute
                 .parse_args::<Meta>()
                 .map_err(|error| error.to_string())?;
-            enabled &= evaluate(&predicate)?;
+            enabled &= evaluate(&predicate, mode)?;
         }
     }
     Ok(enabled)
 }
 
-fn evaluate(predicate: &Meta) -> Result<bool, String> {
+fn evaluate(predicate: &Meta, mode: NativeMode) -> Result<bool, String> {
     match predicate {
-        Meta::Path(path) if path.is_ident("test") => Ok(true),
+        Meta::Path(path) if path.is_ident("test") => Ok(match mode {
+            NativeMode::Test => true,
+            NativeMode::Library => false,
+        }),
         Meta::NameValue(value) if value.path.is_ident("target_family") => {
             if matches!(&value.value, Expr::Lit(value) if matches!(&value.lit, Lit::Str(value) if value.value() == "wasm"))
             {
@@ -35,7 +45,7 @@ fn evaluate(predicate: &Meta) -> Result<bool, String> {
             // Resolve every operand: an unknown condition cannot become true under not().
             let values = predicates
                 .iter()
-                .map(evaluate)
+                .map(|predicate| evaluate(predicate, mode))
                 .collect::<Result<Vec<_>, _>>()?;
             if list.path.is_ident("all") {
                 Ok(values.iter().all(|value| *value))

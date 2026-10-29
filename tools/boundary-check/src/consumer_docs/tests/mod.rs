@@ -4,6 +4,7 @@ mod classification;
 mod compilation_configuration;
 mod debt;
 mod guidance;
+mod library_compilation;
 mod links;
 
 use super::configuration::{CONFIG, DEBT, SOURCE};

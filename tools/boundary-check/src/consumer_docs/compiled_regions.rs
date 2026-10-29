@@ -1,6 +1,6 @@
 //! Compiled fixture region existence and source containment.
 use super::configuration::{confined_path, Configuration, SOURCE};
-use super::{native_test_cfg, region_compilation};
+use super::{native_cfg, region_compilation};
 use crate::source_rules::{parse_crate_modules_where, GovernedCrate};
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -20,7 +20,7 @@ impl FixtureSources {
         if !confined_path(name) || !name.ends_with(".rs") {
             return Err("compiled source must be a Rust path beneath topology_entry/src".into());
         }
-        let source = if let Some(binding) = config
+        let (source, mode) = if let Some(binding) = config
             .compiled_sources
             .iter()
             .find(|item| item.name == name)
@@ -47,7 +47,7 @@ impl FixtureSources {
                     relative_crate_root: binding.crate_root.clone(),
                 },
                 &target,
-                &|module| native_test_cfg::active(&module.attrs) == Ok(true),
+                &|module| native_cfg::active(&module.attrs, binding.mode) == Ok(true),
             )?;
             let reachable = graph.modules.iter().any(|(path, node)| {
                 owner
@@ -58,14 +58,14 @@ impl FixtureSources {
                     == Some(&source)
                     && (0..=path.len()).all(|length| {
                         graph.modules.get(&path[..length]).is_some_and(|ancestor| {
-                            native_test_cfg::active(&ancestor.attributes) == Ok(true)
+                            native_cfg::active(&ancestor.attributes, binding.mode) == Ok(true)
                         })
                     })
             });
             if !reachable {
                 return Err("compiled source is absent from its selected Cargo target".into());
             }
-            source
+            (source, binding.mode)
         } else {
             let owner = root
                 .join(SOURCE)
@@ -84,7 +84,7 @@ impl FixtureSources {
                     "compiled source is absent from the topology fixture module graph".into(),
                 );
             }
-            source
+            (source, native_cfg::NativeMode::Test)
         };
         let text =
             crate::source_documents::read_to_string(&source).map_err(|error| error.to_string())?;
@@ -108,7 +108,7 @@ impl FixtureSources {
             .bytes()
             .filter(|byte| *byte == b'\n')
             .count();
-        region_compilation::validate(&syntax, first_line, last_line)?;
+        region_compilation::validate(&syntax, first_line, last_line, mode)?;
         Ok(())
     }
 }
@@ -121,7 +121,7 @@ fn native_sources(owner: &Path) -> Result<BTreeSet<PathBuf>, String> {
             crate_root: crate_root.clone(),
             relative_crate_root: SOURCE.trim_end_matches("/src").into(),
         },
-        &|module| native_test_cfg::active(&module.attrs) == Ok(true),
+        &|module| native_cfg::active(&module.attrs, native_cfg::NativeMode::Test) == Ok(true),
     )?;
     graph
         .modules
@@ -129,7 +129,8 @@ fn native_sources(owner: &Path) -> Result<BTreeSet<PathBuf>, String> {
         .filter(|(path, _)| {
             (0..=path.len()).all(|length| {
                 graph.modules.get(&path[..length]).is_some_and(|ancestor| {
-                    native_test_cfg::active(&ancestor.attributes) == Ok(true)
+                    native_cfg::active(&ancestor.attributes, native_cfg::NativeMode::Test)
+                        == Ok(true)
                 })
             })
         })
