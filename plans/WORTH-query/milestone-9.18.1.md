@@ -1837,9 +1837,12 @@ stand in for this acceptance.
 ## Phase 17: Proposal Acceptance Through Fresh Ordinary Requests
 
 **Status: unfinished; required. Priority: P3.**
-**Owner:** Query entry/admission + Proprietary authoring.
+**Owner:** Query entry/basis admission, Native/World source-basis receivers and
+Proprietary authoring.
 **Depends on:** ordinary governed application requests and existing source
 operation/correction contracts. Independent of spatial indexing and Phases 8–9.
+The missing ordinary expected-source handoff is a prerequisite delivered within
+this phase, not a reason to substitute a private currentness check.
 
 ### Requirements And Acceptance
 
@@ -1860,6 +1863,160 @@ stale-basis twins. Ordinary production import/dependency checks must reject
 existing audience. Document how the existing request mechanism supplies this
 path, correcting any missing facade integration without introducing a proposal
 executor or using certification replay to simulate ordinary acceptance.
+
+### Current Boundary And Decisive Court
+
+CAD's `CadSession::apply` checks a process-owned model revision, while its installed
+runtime later forks the branch currently selected by the model's head map. The
+counter is not an owner-issued Native/World basis. Query's ordinary fork builder
+admits the source occurrence when creating the fork; it does not consume the
+proposal's previously selected basis. Native already rechecks an admitted fork
+source under its transition coordination, and World carries an expected source
+observation through branch creation. Complete that existing handoff; do not
+duplicate currentness or fork authority in CAD.
+
+The decisive installed journey records a real edit against model A, releases the
+recording request and later accepts under the current caller. Recording must not
+move A's authored-model head. Move A after expected-source comparison but before
+fork creation, and separately while the candidate is being evaluated before
+adoption. Acceptance must refuse the stale selection at the receiving owner, or
+the latter movement must be structurally impossible under an actual exclusive
+model transition. A standalone precheck, an unguarded head-map update or a final
+check after forking a different source cannot pass this court.
+
+Retire and recreate a referenced feature under the same display name, and reopen
+another session whose local handle spelling is again `model-1`. Neither may bind
+the stored proposal to a replacement occurrence. Revoke proposal/result READ and
+mutation authority separately, including on an idempotent acceptance retry. The
+ordinary denial must occur before the protected lookup or effect it governs.
+Include a two-intent refusal and observe the real staged-fork cleanup and published
+model head; report the existing partial, committed, indeterminate or cleanup
+posture without inventing rollback. Observe authored parameters and resulting CAD
+geometry independently of the mechanism being tested.
+
+### Basis, Storage And Admission Contract
+
+- Proposal data retains the genuine model incarnation, typed target occurrences,
+  authored intents and descriptive expected model/product-basis coordinates.
+  A process-local handle, feature name or counter alone is insufficient.
+  Descriptors are comparison data, not read admission, fork custody or permission.
+  No admitted basis, snapshot lease, writer or executable receipt is serialized.
+- A fresh ordinary request admits proposal/model visibility and compares the
+  stored expected selection through the actual Native/World owners. The exact
+  admitted selection then reaches Query's fork receiver and World's existing
+  expected-source creation plan. The receiver must not resample a newer source
+  after comparison. Missing, foreign, retired and stale selections retain typed
+  refusals; equal payloads do not establish the original basis.
+- Expected-source fork construction requires the freshly admitted selection as
+  a nonoptional input. Ordinary unconditional fork-from-current remains a
+  different product operation; it cannot satisfy proposal acceptance. Preserve
+  Native's source-generation/root/version recheck and World component affinity.
+  Reuse their existing evidence and custody rather than adding a second proof
+  registry or a proposal-specific platform executor.
+- Protect adoption of the candidate as the selected model's head with the same
+  expected source. Use the existing owning transition to compare and adopt, or
+  carry a structurally enforced exclusive interval covering selection, fork and
+  adoption. An application convention about exclusive access is not proof.
+  Fork construction consumes the admitted selection into live transition custody;
+  its result retains the candidate and expected-source continuation needed for
+  adoption. A bare branch handle cannot certify that transition. Refusal after a
+  fork exists preserves its actual cleanup or recovery custody and cannot claim
+  that no effect occurred anywhere.
+- Store proposals as ordinary versioned domain entities on a separately owned
+  storage branch, so saving a proposal does not advance the checked authored
+  model head. Its live branch custody belongs to the application runtime, outside
+  the stored record. Specify close, cancellation, unavailable storage and pending
+  cleanup through existing lifecycle owners; no immortal side map or retention
+  ledger substitutes for versioned data.
+- Family-owned `Params<D>` retain their typed meaning in proposal storage. The
+  caller interprets those intents through the existing family inventory and
+  ordinary source operations. Do not widen `ReplaceDefinition` into a replay
+  route or treat realization's later source read as protection for an earlier
+  unguarded replacement.
+- Fresh proposal/model/result disclosure precedes cached-result disclosure at
+  the proposal ingress. Create a new acceptance-attempt idempotency key and reuse
+  it only for retries of that attempt. Do not reuse the recording token or an
+  old continuation. Preserve ordinary operation idempotency; do not move its
+  established semantics merely to conceal an unauthenticated proposal ingress.
+  The accepting host/caller identity governs both loading and execution; stored
+  authorship supplies neither identity nor authority.
+
+### Destination And Delivery Order
+
+`E` marks an existing owner and `C` a responsibility created by this phase.
+Populate destinations only when implementing their responsibility; the tree does
+not authorize empty placeholders or duplicate services.
+
+```text
+worth-query-execution/src/
+  basis/product_branch/
+    creation.rs                         E ordinary fork construction
+    creation/expected_source.rs         C required admitted-selection handoff
+  domain_computation/primary_graph/
+    product_operation/branches.rs        E application lifecycle composition
+worth-runtime-world/src/
+  branch/creation/lowered.rs             E expected composite source
+  lifecycle/owner/branch_service/
+    creation/execution/forks.rs          E component-owner fork and source recheck
+worth-relational/src/branch/
+  owner_services/basis_port.rs           E owner basis readmission/comparison
+  fork_source_validation.rs              E source generation/root/version recheck
+worth-query-certification/fixtures/consumer_entry/consumer_root/src/
+  proposal_acceptance.rs                 C two-facade application journey
+  proposal_acceptance/schema.rs          C ordinary versioned domain declarations
+  proposal_acceptance/courts.rs          C admission, basis and occurrence controls
+worth-cad-entry/src/
+  schema/proposals.rs                   C proposal identity and typed domain links
+  families/operation/schema/proposal.rs C family-owned authored parameter data
+  session/proposals/
+    data.rs                            C stored intent/reference descriptions
+    acceptance.rs                      C fresh request and attempt orchestration
+  session/runtime/proposals/
+    storage.rs                         C ordinary storage-branch custody and I/O
+    source_basis.rs                    C expected fork and model-head adoption join
+worth-cad-entry/tests/operation_family/installed/
+  proposals.rs                         C real CAD acceptance and hostile sequences
+```
+
+Existing owner types construct all admitted selections and transition custody.
+Only audience facades export the ordinary Query workflow; consumer code does not
+import World, Native or cert-only replay to perform it. CAD owns authored intent
+meaning and model-head selection. Cross-domain fork composition remains in Query
+and World, and Native remains authoritative for its source axes. No new Native
+algorithm is required where the existing receiver already proves the contract.
+
+First complete the ordinary expected-basis handoff and its comparison-to-fork
+race court through Decl/Host. Then record one typed proposal, release its original
+request and accept it through the real CAD family path with a freshly admitted
+selection. Expand that same journey with the hostile sequences above and actual
+storage/close lifecycle. Commit reviewed slices; phase acceptance still requires
+the complete public and private journeys and their required repository gates.
+
+The target DX makes the freshly admitted selection explicit; final API names
+are compiled by the two-facade fixture before becoming consumer guidance:
+
+```rust,ignore
+// Target API shape, not an already available consumer recipe.
+let selected = fresh_request.select_expected_basis(&proposal.model, &proposal.basis)?;
+let candidate = application.branches()
+    .fork_expected(selected)
+    .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+    .create(&phase)?;
+// Run ordinary authored requests on candidate; adopt only through the guarded
+// model-head transition that still consumes this expected-source selection.
+```
+
+### Continuing Documentation
+
+For application authors, extend `docs/build-an-application.md` and
+`docs/capability-index.md` with the compiled expected-basis workflow, independent
+READ/mutation refusal, attempt retries and cleanup. Keep the ordinary request
+guide authoritative for admission. For CAD callers, update the entry usage in
+the Proprietary `README.md` and correct the proposal wording in
+`cad/docs/plans/general-modeling.md` to describe reissuing authored requests,
+storage ownership and typed stale/retired outcomes. Consumer guides teach the
+implemented behavior only; they do not advertise this target API before it works
+or contain handoff logistics, qualification counts or milestone history.
 
 ---
 

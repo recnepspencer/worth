@@ -5855,7 +5855,9 @@ The governing milestone spec is
   ordinary callers instead of accounting overflow or cause-erased rejection
 - cell-version/storage/live-at-k evidence at 1, 100 and 10,000 features, without
   private platform workarounds; spatial-dependent locality is required in 9.19
-- proposal acceptance reissuing fresh ordinary requests with replay kept cert-only
+- proposal acceptance reissuing fresh ordinary requests from versioned domain
+  intents, with exact Native/World expected-source fork/adoption and genuine
+  target occurrences; replay remains cert-only
 - mandatory exact-release Rust 1.99.x sort qualification and current qualified
   stable workspace/CI/Proprietary toolchains; the qualified workspace/CI 1.99.1/full
   `58cf8f9c35b355199727627d07ae34a4e2846d67` retains the reviewed
