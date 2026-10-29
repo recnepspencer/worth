@@ -84,6 +84,8 @@ pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Sc
     pub(super) component_selection:
         Option<crate::application_query::ApplicationQueryComponentMeaning>,
     pub(super) orbit: Option<super::ApplicationQueryOrbitMeaning>,
+    pub(super) managed_index: Option<super::ApplicationQueryManagedIndexMeaning>,
+    pub(super) managed_index_recipe: Option<super::ApplicationManagedIndexSelectionRecipe>,
     pub(super) cardinality: ApplicationQueryCardinality,
     pub(super) predicates: Vec<ApplicationQueryPredicate>,
     pub(super) ordering: Vec<ApplicationQueryOrderingTerm>,
@@ -203,6 +205,12 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub const fn lanes(&self) -> ApplicationQueryLaneEligibility {
         self.lanes
+    }
+
+    pub(crate) fn take_managed_index_recipe(
+        &mut self,
+    ) -> Option<super::ApplicationManagedIndexSelectionRecipe> {
+        self.managed_index_recipe.take()
     }
 
     pub fn into_erased(self) -> super::ErasedApplicationQueryDefinition {

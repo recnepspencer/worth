@@ -1,6 +1,6 @@
 //! Fresh descriptor affinity and native-only original query continuity custody.
+use super::SourceFactExpansionControl;
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::QueryCoverageStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::QueryFactCoverage;
 use crate::domain_computation::primary_graph::output_reuse::preflight_stop;
@@ -76,9 +76,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             let prepared = source.admit_fact_materialization(
                 &self.application().primary_provider.graph.layout,
                 &source.query_identifier,
+                SourceFactExpansionControl::in_request(*execution, None),
             )?;
-            let facts =
-                prepared.into_facts(StorageControl::new(execution.allocation_policy(), None))?;
+            let facts = prepared.into_facts()?;
             // Selector addresses do not certify the original query's truth. Its
             // native facts must answer at their exact original selected image.
             let current = first_moved_fact_in(&mut verification, facts.iter())

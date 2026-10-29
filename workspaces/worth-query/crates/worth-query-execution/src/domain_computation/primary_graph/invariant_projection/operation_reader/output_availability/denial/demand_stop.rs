@@ -87,6 +87,9 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
         }
         QueryStop::ForeignClosure => Kind::ForeignSource,
         QueryStop::SourceFacts(stop) => {
+            if let Some(cause) = stop.execution_denial() {
+                return WorthQueryOutputDemandDenial::new(Kind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(*cause)), "source query fact retention");
+            }
             if let Some(interruption) = stop.retention_interruption() {
                 return WorthQueryOutputDemandDenial::new(match interruption {
                     worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => Kind::Cancelled,
@@ -95,6 +98,9 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
             }
             use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenialKind as Source;
             match stop.kind() {
+                Source::ManagedSourceExpansionUnsupported => {
+                    Kind::ManagedSourceExpansionUnsupported
+                }
                 Source::WorkBudgetExceeded => Kind::WorkBudgetExceeded,
                 Source::PreparationMemoryExceeded | Source::RetainedSourceStorageDenied => {
                     Kind::RetentionBudgetExceeded

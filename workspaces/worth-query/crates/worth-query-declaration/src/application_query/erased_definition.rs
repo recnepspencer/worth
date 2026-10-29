@@ -100,6 +100,12 @@ impl ErasedApplicationQueryDefinition {
         self.parts.orbit.as_ref()
     }
 
+    pub fn managed_index(
+        &self,
+    ) -> Option<&crate::application_query::ApplicationQueryManagedIndexMeaning> {
+        self.parts.managed_index.as_ref()
+    }
+
     pub fn root_paths(&self) -> &[ApplicationQueryRootPathMeaning] {
         &self.parts.root_paths
     }

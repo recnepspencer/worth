@@ -15,6 +15,9 @@ use crate::domain_computation::primary_graph::application_query::{
     read_execution::WorthQueryApplicationReadExecutionDenial,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+mod material_ordering;
+mod material_storage;
+use material_storage::MaterialFootprintStorage;
 
 pub(super) fn collect_source_footprints(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -26,7 +29,14 @@ pub(super) fn collect_source_footprints(
     selected_predicate_source: Option<&WorthQueryObservedFieldRevision>,
     root_path_source: Option<&std::collections::BTreeMap<worth_relational::facade::identity::EntityId, std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
     work: &mut ResultTreeWork,
+    material_source: Option<
+        &std::sync::Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
+    >,
 ) -> Result<Vec<WorthQueryObservedSourceFootprint>, WorthQueryApplicationReadExecutionDenial> {
+    let storage = MaterialFootprintStorage::new(execution, material_source);
+    storage.slots::<WorthQueryObservedSourceFootprint>(roots.len())?;
     let mut footprints = allocate_result_vector(roots.len(), "source")?;
     for root in roots {
         let mut footprint = WorthQueryObservedSourceFootprint {
@@ -53,6 +63,7 @@ pub(super) fn collect_source_footprints(
             root,
             work,
             &mut footprint,
+            &storage,
         )?;
         if let Some(source) = selected_predicate_source {
             if source.entity != root.entity_id() {
@@ -68,13 +79,14 @@ pub(super) fn collect_source_footprints(
                 }
                 Some(_) => {}
                 None => {
+                    storage.field_copy(&mut footprint.aspects, source)?;
                     footprint.aspects.push(source.clone());
                     work.charge_source_observation(1, root.result_path())?;
                 }
             }
         }
         work.checkpoint(root.result_path())?;
-        normalize_source_footprint(&mut footprint);
+        storage.normalize(&mut footprint)?;
         work.checkpoint(root.result_path())?;
 
         footprints.push(footprint);
@@ -110,9 +122,11 @@ fn collect_node(
     work: &mut ResultTreeWork,
 
     footprint: &mut WorthQueryObservedSourceFootprint,
+    storage: &MaterialFootprintStorage<'_, '_, '_>,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     footprint.complete &= node.source_dependencies_complete();
     work.checkpoint(node.result_path())?;
+    storage.next(&mut footprint.entities)?;
     footprint.entities.push(node.entity_id());
     work.charge_source_observation(1, node.result_path())?;
     let node_aspect_start = footprint.aspects.len();
@@ -132,6 +146,12 @@ fn collect_node(
             .aspect_contract(field.entity(), field.aspect_key())
             .ok_or_else(|| projection_denial(field.result_path()))?
             .revision();
+        storage.field(
+            &mut footprint.aspects,
+            field.entity(),
+            field.aspect_key(),
+            field.field_key(),
+        )?;
         let entity_name = field.entity().to_owned();
         let aspect = field.aspect_key().clone();
         let field_key = field.field_key().clone();
@@ -201,6 +221,13 @@ fn collect_node(
                 .ok_or_else(|| projection_denial(relation.result_path()))?
                 .revision();
             for entity_id in projected.predicate_sources() {
+                storage.next(&mut footprint.entities)?;
+                storage.field(
+                    &mut footprint.aspects,
+                    relation.child_entity(),
+                    predicate.aspect_key(),
+                    predicate.field_key(),
+                )?;
                 let entity_name = relation.child_entity().to_owned();
                 let aspect = predicate.aspect_key().clone();
                 let field = predicate.field_key().clone();
@@ -228,6 +255,11 @@ fn collect_node(
             }
         }
         let filtered_relation = relation.predicate().is_some();
+        storage.slots::<worth_relational::facade::identity::EntityId>(if filtered_relation {
+            projected.predicate_sources().len()
+        } else {
+            projected.rows().len()
+        })?;
         let mut endpoints = allocate_result_vector(
             if filtered_relation {
                 projected.predicate_sources().len()
@@ -246,6 +278,7 @@ fn collect_node(
                     .map(WorthQueryApplicationProjectionNode::entity_id),
             );
         }
+        storage.next(&mut footprint.adjacencies)?;
         footprint
             .adjacencies
             .push(WorthQueryObservedAdjacencyRevision {
@@ -258,7 +291,7 @@ fn collect_node(
             });
         for child in projected.rows() {
             collect_node(
-                execution, projection, graph, contract, governance, child, work, footprint,
+                execution, projection, graph, contract, governance, child, work, footprint, storage,
             )?;
         }
     }

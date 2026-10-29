@@ -8,7 +8,7 @@ mod builder;
 mod descriptor;
 mod retention;
 mod revisions;
-pub(in crate::domain_computation::primary_graph) use allocation::SourceFactsAllocation;
+pub(in crate::domain_computation) use allocation::SourceFactsAllocation;
 pub(in crate::domain_computation::primary_graph) use builder::{
     SourceFactReadDenial, SourceFactsBuilder,
 };

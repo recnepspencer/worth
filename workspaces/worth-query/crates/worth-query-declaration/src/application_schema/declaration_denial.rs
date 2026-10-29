@@ -21,6 +21,10 @@ pub enum ApplicationSchemaDeclarationDenial {
     UniqueFieldWithoutEqualityIndex,
     InvalidRelationIntegrity,
     InvalidComponentSet,
+    InvalidManagedIndex {
+        index: String,
+        cause: crate::application_query::ApplicationManagedIndexDefinitionDenial,
+    },
     InvalidProjectedMemberDomain {
         domain: String,
         cause: super::ApplicationProjectedMemberDomainDefinitionDenial,

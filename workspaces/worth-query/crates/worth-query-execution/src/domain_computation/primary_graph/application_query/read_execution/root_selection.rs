@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
 mod aggregate;
 mod components;
 mod evidence;
+mod managed_index;
 mod orbit;
 mod path_union;
 mod step_reads;
@@ -55,6 +56,20 @@ pub(super) fn select_bounded_roots(
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     interruption.checkpoint(plan.name)?;
     let contract = plan.contract;
+    if contract.managed_index_selection().is_some() {
+        return managed_index::select(
+            runtime,
+            execution,
+            graph,
+            plan,
+            capture_result_set,
+            spent,
+            interruption,
+        );
+    }
+    if plan.managed_rows.is_some() {
+        return Err(path_union::traversal_denial(plan.name));
+    }
     if contract.component_selection().is_some() {
         let mut work = RootSelectionWork::new(interruption, spent);
         return components::select(execution, runtime, graph, plan, &mut work);
@@ -82,7 +97,8 @@ pub(super) fn select_bounded_roots(
                 spent.root(1);
             }
             let result_set_source = if capture_result_set {
-                let mut source = RootPathSourceBuilder::default();
+                let mut source =
+                    RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;
                 source.observe_entity(execution, plan.root)?;
                 Some(source.finish(execution)?)
             } else {
@@ -175,7 +191,8 @@ fn select_scoped_root(
             field,
         )
     })?;
-    let mut set_source = RootPathSourceBuilder::default();
+    let mut set_source =
+        RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;
     // Observe both matching and filtered subjects: a later guard change can
     // change row presence even when the current result is empty.
     let observed = {

@@ -41,6 +41,16 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::ManagedIndex { definition } => {
+                definition.validate().map_err(|cause| {
+                    ApplicationSchemaDeclarationDenial::InvalidManagedIndex {
+                        index: definition.parts().name.clone(),
+                        cause,
+                    }
+                })?;
+                validate_simple_identifier(&definition.parts().name)?;
+                validate_simple_identifier(&definition.parts().entity)?;
+            }
             ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
                 super::projected_member_domain::validate_member_identifiers(definition)?;
             }

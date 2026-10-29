@@ -71,6 +71,12 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             _marker: PhantomData,
         }
     }
+    pub(crate) fn is_compiled_query(
+        &self,
+        actual: &Arc<WorthQueryCompiledApplicationQuery>,
+    ) -> bool {
+        Arc::ptr_eq(&self.compiled, actual)
+    }
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         self.compiled.binding_identity()
     }

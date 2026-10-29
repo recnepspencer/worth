@@ -30,6 +30,8 @@ pub(super) enum WorthQueryAuthorizedApplicationReadDenial {
     Session,
 }
 
+mod validation;
+pub(in crate::domain_computation::primary_graph::application_query) use validation::validate_before_callback;
 mod ordinary;
 pub(super) use ordinary::{execute_authorized_read, execute_authorized_read_with_access};
 
@@ -62,13 +64,13 @@ fn execute_read_with_security<Schema, Context, Output, Stop>(
 where
     Schema: ApplicationSchema,
 {
-    let security = match index_posture {
-        WorthQueryQueryIndexPosture::HistoricalAllPrimary => {
-            application.admit_query_product_security_basis(execution, security_product, basis)
-        }
-        WorthQueryQueryIndexPosture::SelectedInstalled(prepared) => application
-            .admit_query_prepared_read_security_basis(execution, security_product, basis, prepared),
-    }
+    let security = admit_read_security(
+        execution,
+        application,
+        security_product,
+        basis,
+        index_posture,
+    )
     .map_err(security_denial)?;
     let context = prepare()?;
     execute_graph_read_with_snapshot(
@@ -80,6 +82,27 @@ where
         context,
         perform,
     )
+}
+
+fn admit_read_security<'basis, Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    security_product: &crate::basis::WorthQueryProductObservationLease,
+    basis: &'basis super::basis::WorthQueryApplicationQueryBasisCustody,
+    index_posture: &WorthQueryQueryIndexPosture,
+) -> Result<
+    crate::domain_computation::primary_graph::product_operation::WorthQueryProductSecurityBasis<
+        'basis,
+    >,
+    crate::basis::WorthQueryProductBranchAdmissionDenial,
+> {
+    match index_posture {
+        WorthQueryQueryIndexPosture::HistoricalAllPrimary => {
+            application.admit_query_product_security_basis(execution, security_product, basis)
+        }
+        WorthQueryQueryIndexPosture::SelectedInstalled(prepared) => application
+            .admit_query_prepared_read_security_basis(execution, security_product, basis, prepared),
+    }
 }
 
 pub(super) fn execute_graph_read_with_snapshot<Context, Output, Stop>(

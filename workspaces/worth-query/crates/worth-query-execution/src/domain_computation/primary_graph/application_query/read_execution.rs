@@ -7,7 +7,7 @@ pub(in crate::domain_computation::primary_graph) mod dispatch_witness;
 use cardinality::{validate_cardinality_and_limit, validate_read_cardinality};
 mod entry_observation;
 mod interruption;
-use interruption::ReadInterruption;
+pub(super) use interruption::ReadInterruption;
 mod kernel_capacity;
 mod kernel_outcome;
 mod live_target;
@@ -35,16 +35,23 @@ pub(super) use denial::{
     WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
 };
 pub(super) use kernel_outcome::{
-    project_non_live_kernel_roots, project_non_live_kernel_with_decode,
-    NonLiveKernelReceiptEvidence, ProjectedNonLiveKernelOutcome,
+    project_non_live_kernel_roots, project_non_live_kernel_source,
+    project_non_live_kernel_with_decode, NonLiveKernelReceiptEvidence,
+    ProjectedNonLiveKernelOutcome,
 };
 pub(super) use live_target::read_live_target;
 use root_selection::select_bounded_roots;
+pub(super) use tree_materialization::fallible_heap;
 use tree_materialization::materialize_result_tree;
 use tree_materialization::{OrderedCollectionWindow, ResultTreeCollectionSelection};
 use worth_relational::facade::indexes::{DerivedIndexGenerationId, RelatedEntityOrderingBoundary};
 
 pub(super) struct RawOneShotRows {
+    pub(super) material_source: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
+    >,
     pub(super) rows: WorthQueryApplicationDisclosedProjectionTree,
     pub(super) source_footprints: Vec<super::observed_source::WorthQueryObservedSourceFootprint>,
     pub(super) result_set_source:
@@ -100,6 +107,24 @@ pub(super) fn read_bounded_root_rows<
     spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let read = read_plan::ReadPlan::of(plan);
+    read_bounded_plan_rows(
+        runtime,
+        execution,
+        graph,
+        &read,
+        spent,
+        ReadInterruption::Query(plan.controls.request_scope()),
+    )
+}
+
+pub(super) fn read_bounded_plan_rows(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    read: &read_plan::ReadPlan<'_>,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+    interruption: ReadInterruption<'_>,
+) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let pinned = pin_runtime_read(
         runtime,
         execution,
@@ -107,14 +132,7 @@ pub(super) fn read_bounded_root_rows<
         &[],
         WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
     )?;
-    read_prepared_root_rows(
-        &pinned,
-        execution,
-        graph,
-        &read_plan::ReadPlan::of(plan),
-        spent,
-        ReadInterruption::Query(plan.controls.request_scope()),
-    )
+    read_prepared_root_rows(&pinned, execution, graph, read, spent, interruption)
 }
 
 pub(super) fn read_prepared_root_rows(
@@ -146,6 +164,7 @@ pub(super) fn read_prepared_root_rows(
         ResultTreeCollectionSelection::Complete,
         interruption,
         spent,
+        plan.material_source,
     )?;
     if let Some(components) = selection
         .result_set_source
@@ -161,6 +180,7 @@ pub(super) fn read_prepared_root_rows(
     let actual_work = selection.work_units.saturating_add(tree.work_units);
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
+            material_source: plan.material_source.cloned(),
             rows: tree.rows,
             source_footprints: tree.source_footprints,
             result_set_source: selection.result_set_source,

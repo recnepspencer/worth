@@ -7,6 +7,7 @@ mod capability;
 mod derived_relation;
 mod field;
 mod invariant;
+mod managed_index;
 mod mutation_description;
 mod operation;
 mod principal_binding;
@@ -26,6 +27,9 @@ pub(super) fn append_member(
 ) {
     let prefix = format!("member[{index}]");
     match member {
+        ApplicationSchemaMember::ManagedIndex { definition } => {
+            managed_index::append(basis, &prefix, definition)
+        }
         ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
             projected_member_domain::append(basis, &prefix, definition)
         }

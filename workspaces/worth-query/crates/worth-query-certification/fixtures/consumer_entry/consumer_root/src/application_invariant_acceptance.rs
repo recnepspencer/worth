@@ -6,6 +6,9 @@ mod proof;
 mod resources;
 mod seed;
 
+#[cfg(test)]
+mod managed_index;
+
 pub(crate) use proof::run;
 
 #[cfg(test)]

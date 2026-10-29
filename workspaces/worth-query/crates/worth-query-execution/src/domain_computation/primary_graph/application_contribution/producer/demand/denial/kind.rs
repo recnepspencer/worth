@@ -37,6 +37,8 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// commit, or product occurrence, or is not a product-branch source of the
     /// family's installed query.
     ForeignSource,
+    /// Managed query dependencies have no supported fact-expansion path yet.
+    ManagedSourceExpansionUnsupported,
     /// No installed producer covers this output family and applicability.
     MissingApplicableProducer,
     /// More than one installed producer covers this output family and

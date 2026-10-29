@@ -1,5 +1,10 @@
+mod managed_index_read;
 mod prepared_operation;
 mod resource_read;
+pub use managed_index_read::{
+    admit_prepared_managed_index_read_graph_work, prepare_managed_index_read_graph_work,
+    WorthQueryPreparedManagedIndexReadGraphWork,
+};
 pub use prepared_operation::{
     admit_prepared_application_operation_graph_work, prepare_application_operation_graph_work,
     WorthQueryPreparedApplicationOperationGraphWork,
@@ -261,7 +266,10 @@ fn operation_resource_contract(
                 Some(contract)
             }
             WorthQueryInstalledGraphObligationResourcePosture::ApplicationQuery { .. }
-            | WorthQueryInstalledGraphObligationResourcePosture::ApplicationResource { .. } => None,
+            | WorthQueryInstalledGraphObligationResourcePosture::ApplicationResource { .. }
+            | WorthQueryInstalledGraphObligationResourcePosture::ApplicationManagedIndex {
+                ..
+            } => None,
         })
         .ok_or(WorthQueryGraphWorkAdmissionDenial::IntentMismatch)
 }

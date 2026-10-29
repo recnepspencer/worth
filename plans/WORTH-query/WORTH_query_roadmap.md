@@ -5913,6 +5913,19 @@ in one final cutover, rather than a private SDK refactor after each phase.
 The governing milestone spec is
 [milestone-9.19.md](./milestone-9.19.md).
 
+### Committed Provider Indexes
+
+Declare and install a box or versioned-prefix provider through the same Decl/Host
+contract. Construct and read its index against the admitted committed Source;
+retain the returned owner while using its results. Handle typed stop, allocation,
+version, runtime and basis refusals. Rebuild after eviction with a fresh request,
+and release the final owner when finished. Committed reads retain complete
+conservative Source dependencies.
+
+Follow the [provider lifecycle contract](./milestone-9.19.md#phase-1-declared-providers-and-managed-index-ownership)
+and [application guide](../../docs/build-an-application.md#construct-committed-provider-indexes)
+for the declaration, read, rebuild and cleanup sequence.
+
 ### Must Ship
 
 - one general declared/installed provider extension with honest memory/work

@@ -12,7 +12,7 @@ struct Backing {
 
 /// One conservative read-batch grant, retained by its actual source witnesses.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct SourceFactsAllocation {
+pub(in crate::domain_computation) struct SourceFactsAllocation {
     backing: Mutex<Backing>,
 }
 
@@ -41,7 +41,7 @@ impl SourceFactsAllocation {
         }))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn claim(
+    pub(in crate::domain_computation) fn claim(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         bytes: u64,

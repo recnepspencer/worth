@@ -13,6 +13,11 @@ pub enum WorthQueryInstalledApplicationSchemaDenialKind {
     InvalidInspectionDefinition,
     InspectionBindingMeaningChanged,
     InspectionUnavailable,
+    InvalidManagedIndexDefinition,
+    ManagedIndexBindingMeaningChanged,
+    ManagedIndexSourceUnsupported,
+    ManagedIndexParentUnsupported,
+    ManagedIndexUnavailable,
     ResourceInstallationDenied,
 
     OperationInstallationDenied,

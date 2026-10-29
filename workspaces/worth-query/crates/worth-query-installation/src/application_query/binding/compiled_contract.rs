@@ -77,6 +77,10 @@ impl WorthQueryCompiledApplicationQuery {
         self.authority_identity.as_str()
     }
 
+    pub(in crate::application_query) fn definition(&self) -> &ErasedApplicationQueryDefinition {
+        &self.definition
+    }
+
     pub(crate) fn name(&self) -> &str {
         self.definition.name()
     }

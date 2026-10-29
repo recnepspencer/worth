@@ -69,6 +69,8 @@ use crate::identity::data::{EntityId, RelationId, VersionId};
 use crate::schema::data::SchemaVersionId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 
+/// Identifies a derived-index definition within its owning runtime.
+/// The coordinate grants no read, mutation or lifecycle authority.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct DerivedIndexId(pub u64);
 

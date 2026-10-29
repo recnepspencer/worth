@@ -58,6 +58,9 @@ fn validate_subject(
     intent: WorthQueryGraphWorkIntent,
 ) -> Result<(), DenialKind> {
     let expected = match intent.kind() {
+        WorthQueryGraphWorkIntentKind::ManagedIndexRead => {
+            WorthQueryInstalledGraphObligationSubjectKind::ApplicationManagedIndex
+        }
         WorthQueryGraphWorkIntentKind::ApplicationQueryRead => {
             WorthQueryInstalledGraphObligationSubjectKind::ApplicationQuery
         }
@@ -82,7 +85,8 @@ fn validate_effect_posture(
         WorthQueryGraphWorkIntentKind::ApplicationOperationMutation if !has_mutation => {
             Err(DenialKind::MutationAuthorityRequired)
         }
-        WorthQueryGraphWorkIntentKind::ApplicationQueryRead
+        WorthQueryGraphWorkIntentKind::ManagedIndexRead
+        | WorthQueryGraphWorkIntentKind::ApplicationQueryRead
         | WorthQueryGraphWorkIntentKind::ResourceRead
         | WorthQueryGraphWorkIntentKind::ApplicationOperationRead
             if has_mutation =>
