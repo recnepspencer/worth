@@ -5,8 +5,8 @@
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
-> Phase 19's public implementation is accepted on 2026-10-29; proprietary handoff remains pending.
-> Phases 13–14 and 16–18 remain unfinished. Addendum 1 owns Phase 19's required behavior.
+> Phase 19 is accepted. Phases 13–14 and 16–18 remain required here.
+> Addendum 1 defines correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -1909,7 +1909,7 @@ toolchain/contributor documentation, including the typed unqualified outcome.
 
 ## Phase 19: Consecutive Undo After Verified Source Restoration
 
-**Status: public implementation accepted 2026-10-29; proprietary handoff pending. Priority: P1.**
+**Status: accepted. Priority: P1.**
 **Owner:** Query correction derivation, consuming existing canonical occurrence,
 footprint and correction-lineage owners. **Depends on:** 9.18's recorded source
 capture, ordinary correction binding, exact target ancestry and fresh admission.
@@ -2039,41 +2039,32 @@ This phase closes only after public qualification and the candidate-SDK private
 probe pass, reviewed corrections to the superseded expectation, and required
 repository checks. A plan change or a value-equality shortcut cannot close it.
 
-### Qualified Public Contract And Proprietary Handoff
+### Reverse Consecutive Original Sources
 
-Phase 19's public implementation is qualified at
-`7c77f32d0b45411a07648e31635863b38f48b5bd`, incorporating public `master`
-`c10d772bc47fd5cc2b499ae4de75be7b074a47c7`. Ordinary correction requests can
-reverse each original source after the exact later source occurrences have their
-own performed reversals on the selected ancestry. Canonical occurrence
-cancellation, strict original verification, complete compatible support, current
-authority and stale-target checks remain mandatory. Equal values alone do not
-establish restoration.
+Keep each original performed receipt. After A changes a source from `3` to `7`
+and B changes it to `8`, reverse original B first. Once its reversal is published,
+use a fresh correction request to select original A and reverse it to `3`.
+Select the original receipt for each operation; a reapplication has its own new
+performed receipt.
 
-The [consumer contract](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
-and [compiled correction journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
-cover the ordinary source and correction route. The two
-[Clone observed-field courts](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/observed_fields.rs)
-establish field support. Complete-aspect proof belongs to the Native courts and
-the genuine CAD integration; those field courts do not establish whole-aspect
-coverage. Public qualification includes the affected Native and Query runtime
-courts, retained strict refusal/cancellation controls, affected-owner doctests,
-and normal guidance, generated-context and boundary checks. The later fixture
-and documentation commits require no newer consumer behavior.
+Call `request.retain_current_read()` immediately after an endpoint whose Product
+history must remain readable, and keep the returned observation alive through the
+later correction. Receipts alone do not retain that history. Prepare and publish
+each correction through the ordinary request API, retaining the returned owner
+while publication or recovery is unsettled.
 
-Proprietary consumes immutable SDK
-`c03e2298e9bcdac984099e69642c1e4d59e67753`; all seven root and one probe manifest
-pins, and 17 root and three probe lock packages, select that revision. The private
-handoff candidate incorporates incoming `main`
-`f54ae2564c20eafe4a978e20d359216c1b4cbb78`. Its locked all-target ABI and full
-unfiltered Entry gate pass: 510 tests, five existing skips, all 22 required library
-courts and all three bare/producer/session consecutive-undo journeys. Remaining
-private qualification and private `main` integration belong to the proprietary
-handoff; public acceptance does not certify that unfinished handoff.
+Handle `SourceDiverged` when a live or reapplied overlapping write or changed
+independent dependency blocks the selected source. Equal values alone do not
+establish restoration. Canonical performed cancellation, complete compatible
+field/aspect support, current disclosure and inverse admission still apply.
+Unavailable retained evidence and unsupported shapes return typed refusals. If
+publication finds a stale target, prepare again against the current target while
+keeping the same client key for the same command.
 
-Phases 9, 13, 14, 16, 17 and 18 remain unfinished. Transferred Phases 12 and 15
-remain required in 9.19. Included compiler and typed field-write prerequisites
-do not independently certify their phases.
+Follow the [recorded-source correction guide](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
+for the request, preparation, publication and retry sequence. The
+[compiled correction example](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
+shows the same calls with original receipts and retained endpoint observations.
 
 ## Documentation And Successor Handoff For The Added Phases
 

@@ -833,19 +833,11 @@ Neither derived postings nor serialized receipts extend canonical retention.
 A live generation can be discarded and rebuilt from its still-verified retained
 canonical owners. A checkpoint's decoded index-write descriptions do not carry
 that live verification; decoded-only intervals return incomplete-history refusal
-until a genuine preparation/replay owner can reissue it. Durable restart availability
-for this restoration path is a separate handoff.
+until a genuine preparation/replay owner reissues the live verification.
 
-The [ordinary Numeric journeys](../../../worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
-exercise consecutive originals, empty-list restoration, equal-value and live
-membership round-trip blockers, independent model dependencies, reapplication,
-disjoint preservation and sibling isolation through
-the same request correction API. The required-output reapplication journey uses
-the same installed contribution and program composition. Native's
-[authored-history cases](../../../../../../crates/worth-relational/src/tests/transactions/core/authored_write_history.rs)
-cover actual endpoint moves/no-ops, equal-endpoint physical relation identities,
-retirement, and exact occurrence recovery; its existing durable-medium fixture
-also checks the paired receiver's typed current-head storage refusal.
+See the [compiled correction example](../../../worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
+for selecting original receipts, retaining endpoint observations and publishing
+reversals through the ordinary request API.
 
 Complete authored retirement records the actual prior full-generation publication
 members, deletions, unlinks and endpoints at the selected ancestry and before-image.

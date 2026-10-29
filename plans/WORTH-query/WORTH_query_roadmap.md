@@ -5787,16 +5787,13 @@ with finite provider/ingress/result custody and genuine owned-effect recovery.
 Its combined workflow qualifies populated forks, burned prepared adoptions and
 sibling publications against the actual Native source. Phase 9 remains unfinished.
 
-Phase 19's public implementation is
-accepted on 2026-10-29 at `7c77f32d0b45411a07648e31635863b38f48b5bd`.
-Ordinary consecutive reversal preserves canonical cancellation, complete compatible
-support, live/reapplied divergence and current admission. Proprietary consumes
-immutable SDK `c03e2298e9bcdac984099e69642c1e4d59e67753`; its current ABI and
-unfiltered 510-test Entry gate pass. Remaining private qualification and private
-`main` integration are a separate handoff. The
-[governing Phase 19 contract](milestone-9.18.1.md#phase-19-consecutive-undo-after-verified-source-restoration)
-records proof boundaries and retained-history limits. These prerequisites do not
-independently certify the compiler, field-write or toolchain phases.
+Consecutive original-source correction reverses later sources before earlier
+ones. Retain each original receipt and the required endpoint read observation;
+select each original through a fresh request, then prepare and publish its
+reversal. Live or reapplied overlaps and changed independent dependencies still
+refuse; equal values alone do not establish restoration. Use the
+[recorded-source correction guide](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
+for the ordinary request and retry sequence.
 These additions do not reopen the original phases. The 2026-10-27 Proprietary
 report against SDK `ba86433627` adds compiler and unobserved-write refusals,
 cell-version/live-at-k qualification, fresh ordinary proposal acceptance and
@@ -5805,8 +5802,7 @@ locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
 The retained scope has seventeen implementation phases; 9, 13, 14, 16, 17 and 18
-remain unfinished, alongside the private Phase 19 handoff. The report's original
-pin remains provenance.
+remain unfinished.
 
 ### Goal
 

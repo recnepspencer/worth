@@ -1858,7 +1858,7 @@ Features, connections, and rules come from `installed_program()`, not from
 discovery.
 
 Managed asynchronous resource requests are available through Decl/Host following
-[9.18.1 Phase 8 acceptance](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+[Managed async resource contract](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 [Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
 documents the concrete `request.resources()` start/advance/inspection/close path,
 installed provider, finite ingress, exact selector reclaim and recovery handoff.
