@@ -60,6 +60,10 @@ $startInfo.UseShellExecute = $false
 $startInfo.CreateNoWindow = $true
 $startInfo.RedirectStandardOutput = $true
 $startInfo.RedirectStandardError = $true
+# Match Query gate's harness stack for native application frames.
+if (-not $startInfo.EnvironmentVariables.ContainsKey("RUST_MIN_STACK")) {
+    $startInfo.EnvironmentVariables["RUST_MIN_STACK"] = "16777216"
+}
 $testProcess = New-Object System.Diagnostics.Process
 $testProcess.StartInfo = $startInfo
 $peakPrivateBytes = 0L
