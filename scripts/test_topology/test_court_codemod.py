@@ -81,6 +81,14 @@ class CourtCodemodTests(unittest.TestCase):
         forbidden = {'testkit-visibility', 'testkit-crate-context', 'cross-category-support'}
         self.assertFalse(forbidden & set(self.plan['totals']['work_items_by_kind']))
 
+    def test_ui_programs_refine_dependencies_through_shared_support(self):
+        target = next(t for t in self.plan['targets'] if t['name'] == 'ui_suite')
+        self.assertEqual(target['refined_frontier'], ['worth-extra', 'worth-host'])
+        unit = next(u for c in self.plan['courts'] for u in c['units'] if 'ui_suite' in u['source'])
+        self.assertEqual(unit['source_evidence'][0]['named_crates'], ['worth_extra'])
+        court = next(c for c in self.plan['courts'] if unit in c['units'])
+        self.assertIn('worth-extra', court['dependencies'])
+
     def test_closed_caller_registration_follows_every_compiled_source_slice(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -132,9 +140,9 @@ class CourtCodemodTests(unittest.TestCase):
             subprocess.run(['git', 'init', '-q', str(root)], check=True)
             subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
             before = self.named_tests(root, ['crates/worth-base/tests/base.rs',
-                                           'crates/worth-host/tests/suite.rs', 'crates/worth-host/tests/wide.rs'])
+                                           'crates/worth-host/tests/suite.rs', 'crates/worth-host/tests/wide.rs', 'crates/worth-host/tests/ui_suite.rs'])
             before_bodies = self.named_bodies(root, ['crates/worth-base/tests/base.rs',
-                                                   'crates/worth-host/tests/suite.rs', 'crates/worth-host/tests/wide.rs'])
+                                                   'crates/worth-host/tests/suite.rs', 'crates/worth-host/tests/wide.rs', 'crates/worth-host/tests/ui_suite.rs'])
             first = apply(self.plan, root)
             self.assertGreater(first['moved'], 0)
             self.assertEqual(apply(self.plan, root), {'moved': 0, 'written': 0})

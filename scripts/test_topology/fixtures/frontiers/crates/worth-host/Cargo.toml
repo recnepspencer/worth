@@ -8,6 +8,7 @@ autotests = false
 worth-base = { path = "../worth-base" }
 
 [dev-dependencies]
+trybuild = "=1.0.122"
 worth-extra = { path = "../worth-extra" }
 
 [[test]]
@@ -22,3 +23,7 @@ path = "tests/wide.rs"
 name = "host-inspect"
 path = "src/inspection.rs"
 test = false
+
+[[test]]
+name = "ui_suite"
+path = "tests/ui_suite.rs"

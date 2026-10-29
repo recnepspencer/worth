@@ -159,4 +159,16 @@ def apply(plan, root):
             except OSError:
                 break
             parent = parent.parent
+    test_roots = {row['source'].split('/tests/', 1)[0] + '/tests' for row in program['moves'] if '/tests/' in row['source']}
+    for name in sorted(test_roots):
+        directory = contained(root, name)
+        if not directory.exists():
+            continue
+        for path in sorted([p for p in directory.rglob('*') if p.is_dir()], key=lambda p: -len(p.parts)) + [directory]:
+            if not path.resolve().is_relative_to(root):
+                continue
+            try:
+                path.rmdir()
+            except OSError:
+                pass
     return {'moved': len(moves), 'written': len(writes)}

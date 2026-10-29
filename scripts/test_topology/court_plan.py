@@ -1,5 +1,6 @@
 """Orchestrate inventory, frontier planning, source ownership and reviewable effects."""
 from binary_constraints import report as binary_constraints
+from ui_inputs import refine as refine_ui_inputs
 from executable_paths import ExecutablePaths
 from collections import Counter
 import json
@@ -85,6 +86,8 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
                 unit['dependencies'][0]['features'] = sorted(target['cargo'].get('required-features', []))
                 unit['footprint'] = footprint(unit, compilation_sources)
                 units.append(unit)
+    model = SupportModel(owners, stem, workspace)
+    refine_ui_inputs(model, units, targets, selections, nodes, repository)
     computed = frontiers(data, selections)
     for target in targets:
         target['available_frontier'] = computed[target.pop('available_key')]
@@ -94,7 +97,7 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
     courts, splits = group_courts(units, stem, surface, ceiling)
     assignments, kits = allocate(units, owners, stem, workspace, repository)
     disambiguate(courts)
-    model = SupportModel(owners, units, courts, stem, workspace)
+    model.bind(units)
     support_roots = layout_support(model, kits)
     model.executables = ExecutablePaths(stem, workspace, owners)
     for record in model.canonical:
@@ -236,6 +239,6 @@ def reports(courts, kits, assignments, program, workspace, root, court_deps, kit
                        'required_features': court['required_features'], 'custom_harness': court['custom_harness'],
                        'units': [{'source': relative(u['node'].source, root), 'new_source': relative(u['case_path'], root), 'old_module': '::'.join(u['node'].names),
                                   'owner_area': u['owner_area'], 'category': u['category'] or 'ordinary',
-                                  'evidence': u['evidence'], 'named_crates': sorted(u['used'])} for u in court['units']]})
+                                  'evidence': u['evidence'], 'source_evidence': u['source_evidence'], 'named_crates': sorted(u['used'])} for u in court['units']]})
         court_rows.append(report)
     return court_rows, [{**row(name, kit_deps[name]), 'readers': sorted(kit['readers'])} for name, kit in sorted(kits.items())]
