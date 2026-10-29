@@ -559,7 +559,7 @@ the compiled pair example uses this declaration:
 
 <!-- compiled: relation_pair_declaration.rs -->
 ```rust
-const PAIRED_UNIQUE: ApplicationRelationIntegrity =
+pub const PAIRED_UNIQUE: ApplicationRelationIntegrity =
     ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
         .symmetric()
         .unique(ApplicationRelationUniquenessScope::DirectedSemanticEdge);
@@ -575,12 +575,13 @@ that law, the compiled partition example declares:
 
 <!-- compiled: relation_partition_declaration.rs -->
 ```rust
-const EXPLICIT_CONTEXTS: ApplicationRelationIntegrity = ApplicationRelationIntegrity::new(
+pub const EXPLICIT_CONTEXTS: ApplicationRelationIntegrity = ApplicationRelationIntegrity::new(
     ApplicationRelationEndpoints::new(true, ApplicationRelationCrossContextPolicy::AllowExplicit),
     ApplicationRelationCardinality::unbounded(),
     ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
 );
-const PARTITION_LOCAL: ApplicationRelationIntegrity = EXPLICIT_CONTEXTS.same_partition_endpoints();
+pub const PARTITION_LOCAL: ApplicationRelationIntegrity =
+    EXPLICIT_CONTEXTS.same_partition_endpoints();
 ```
 
 Register `PARTITION_LOCAL` on the relation. Linking an existing node to a new
@@ -594,7 +595,7 @@ uses the authored entity name:
 
 <!-- compiled: relation_minimum_declaration.rs -->
 ```rust
-const MINIMUM_TWO: ApplicationRelationIntegrity =
+pub const MINIMUM_TWO: ApplicationRelationIntegrity =
     ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
         .reaches_at_least(2, &["Node"]);
 ```
