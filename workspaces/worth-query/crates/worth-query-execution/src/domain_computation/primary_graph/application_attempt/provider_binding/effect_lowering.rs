@@ -25,7 +25,7 @@ mod optional_field_patch;
 pub(super) type AspectContracts<'a> = dyn Fn(
         &str,
         &worth_foundational::facade::AspectKey,
-    ) -> Option<&'a worth_foundational::facade::AspectContract>
+    ) -> Option<&'a worth_relational::facade::schema::DeclaredAspectContractBinding>
     + 'a;
 mod unique_values;
 pub(super) use observed_fact_index::ObservedFactIndex;

@@ -69,6 +69,11 @@ fn optional_input_noop_clear_cannot_replace_the_source_created_absent_revision()
 fn optional_whole_aspect_removal_recreation_and_aba_keep_original_cause() {
     super::model::aspect_input::courts::whole_aspect_removal_and_recreation_keep_the_particular_source();
 }
+
+#[test]
+fn installed_scalar_source_producer_query_reject_equal_noop_aba_and_foreign_sources() {
+    super::model::scalar_input::courts::scalar_storage_connects_only_the_actual_performed_occurrence();
+}
 #[test]
 fn optional_whole_aspect_noop_cannot_create_an_absence_revision() {
     super::model::aspect_input::courts::no_op_clear_is_not_the_source_that_created_the_absent_revision();

@@ -1379,7 +1379,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.4 | Independent source/query bindings and permissions | Complete; qualified `21674b9dac` | Integrated regression protection in 9.11 |
 | 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
-| 9.7 | Remaining connection shapes and lifecycle cases | Open | Query scalar end-to-end, cross-subject and retired-output connections |
+| 9.7 | Remaining connection shapes and lifecycle cases | In progress; U64 scalar-input/Struct-output slice qualified | Scalar-output, distinct-subject and retired original output-role connections |
 | 9.8 | Genuine equivalent-output suppression explanations | Open | Actual Signal suppression evidence through the application surface |
 | 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
@@ -1462,7 +1462,7 @@ Do not weaken Required-child semantics or substitute scalar owner tests.
 
 #### Phase 9.7: Remaining Connection Shapes And Lifecycle Cases
 
-**Status: open. Depends on: 9.4-9.6 for their respective meanings.** Complete
+**Status: in progress; U64 scalar-input to Struct-output slice qualified. Depends on: 9.4-9.6 for their respective meanings.** Complete
 the public Query scalar storage/binding journey, connections between distinct
 genuine subjects and connections involving retired output roles. Preserve full
 generations, installed shape/contract interpretation, actual performed reads,
@@ -1472,6 +1472,14 @@ A Native scalar/removal court alone is not a Query end-to-end journey, and a
 replacement generation cannot stand in for a retired original. Required supported
 shapes must be named and qualified; unsupported shapes retain typed refusal.
 This adds no unrestricted path language, causal archive or correction authority.
+
+The bounded scalar journey installs an Optional Scalar aspect with one Required
+`u64` field, ordinary source authoring and a real producer publishing a Struct
+output. It connects the original performed input, source-created Native revision,
+declared role and settled query observation under independent admissions. Equal,
+no-op, ABA, foreign-source and reader-release controls retain their distinct
+meanings. This does not close scalar outputs, distinct subjects or retired
+original output roles; all remain required for 9.7 and parent Phase 9.
 
 #### Phase 9.8: Genuine Equivalent-Output Suppression Explanations
 

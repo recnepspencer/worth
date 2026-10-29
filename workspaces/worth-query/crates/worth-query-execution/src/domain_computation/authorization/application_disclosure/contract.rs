@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use worth_foundational::facade::{AspectMask, AspectValue, DiagnosticMask, ProjectionMask};
+use worth_foundational::facade::{
+    AspectMask, AspectValue, DiagnosticMask, FieldKey, ProjectionMask,
+};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryDisclosurePosture, ApplicationQueryDisclosureRule,
     ApplicationQueryDisclosureSelector, ApplicationQueryInfluenceContract,
@@ -38,6 +40,7 @@ pub(super) struct WorthQueryAdmittedApplicationDisclosureField {
     field: String,
     projection_mask: AspectMask<ProjectionMask>,
     diagnostic_mask: AspectMask<DiagnosticMask>,
+    bound_scalar: bool,
 }
 
 impl WorthQueryAdmittedApplicationDisclosureField {
@@ -51,6 +54,30 @@ impl WorthQueryAdmittedApplicationDisclosureField {
 
     pub(super) const fn diagnostic_mask(&self) -> &AspectMask<DiagnosticMask> {
         &self.diagnostic_mask
+    }
+
+    pub(super) fn is_bound_scalar(&self, field: &str) -> bool {
+        self.bound_scalar && self.field == field
+    }
+
+    pub(super) fn admits_projection_field(&self, field: &FieldKey) -> bool {
+        self.field == field.as_str()
+            && ((self.is_bound_scalar(field.as_str()) && self.projection_mask.is_whole_aspect())
+                || self
+                    .projection_mask
+                    .paths()
+                    .iter()
+                    .any(|path| path.fields() == std::slice::from_ref(field)))
+    }
+
+    pub(super) fn admits_diagnostic_field(&self, field: &str) -> bool {
+        self.field == field
+            && ((self.is_bound_scalar(field) && self.diagnostic_mask.is_whole_aspect())
+                || self
+                    .diagnostic_mask
+                    .paths()
+                    .iter()
+                    .any(|path| matches!(path.fields(), [key] if key.as_str() == field)))
     }
 }
 

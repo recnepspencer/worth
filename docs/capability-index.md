@@ -597,6 +597,18 @@ binding to be a supported Optional EntityField struct; Required and Defaulted
 aspects do not acquire absence permission. Tracked reads retain Optional whole-aspect absence independently of field absence; another field materializing that aspect invalidates the read. See the compiled `optional_aspects.rs`
 example in [build guidance](build-an-application.md#whole-aspect-absence).
 
+For explicit scalar storage, pair `aspect` or `optional_aspect` with
+`scalar_aspect_field(entity, field)`. The aspect must contain exactly that Required
+primitive scalar field; installation refuses extra or optional children and
+structured canonical carriers. `field` continues to declare Struct storage.
+Ordinary field readers/writers and installed query projections use the exact
+scalar binding. Optional-parent reads use `ApplicationQueryOptionalAspectFieldRef`.
+For a source-connected `u64` input, use `U64ApplicationValueBinding`, an ordinary
+producer input query and a Struct output on the same full-generation subject.
+Admit the source-disclosure and output-query bindings independently; scalar
+storage alone supplies no producer connection.
+See [scalar storage and source connections](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#explicit-scalar-aspect-storage).
+
 Ordinary Query reads use installed result cardinality and fresh per-read admission;
 `request.query(intent).limit_results(n).execute()` narrows that cardinality.
 `request.query_batch(intents).execute(&phase)` runs installed read slots under

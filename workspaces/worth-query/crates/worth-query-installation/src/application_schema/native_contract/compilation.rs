@@ -25,12 +25,14 @@ use super::{
 };
 
 mod relation_aspect;
+mod scalar_aspect;
 use relation_aspect::collect_relation_aspects;
 
 pub(super) struct DeclaredAspectSeed {
     identity: AspectIdentity,
     revision: AspectContractRevision,
     absence: AbsenceLaw,
+    scalar_field: Option<FieldKey>,
     fields: BTreeMap<
         FieldKey,
         (
@@ -141,6 +143,7 @@ pub(super) fn collect_declared_aspects(
                 identity: *identity,
                 revision: *revision,
                 absence: *absence,
+                scalar_field: None,
                 fields: BTreeMap::new(),
             },
         );
@@ -218,7 +221,7 @@ pub(super) fn collect_declared_fields(
             ));
         }
     }
-    Ok(())
+    scalar_aspect::collect(schema, aspects)
 }
 
 fn compile_portable_aspect_record(
@@ -236,8 +239,11 @@ fn compile_portable_aspect_record(
     let contract = build_foundational_contract(&aspect_key, &aspect_name, &seed)?;
     admit_declared_projection_mask(&contract, &aspect_name, seed.fields.keys())?;
     let fields = seed.fields.into_keys().collect::<BTreeSet<_>>();
-    let aspect_field = FieldKey::new(aspect_name.clone())
-        .ok_or_else(|| denial(DenialKind::InvalidFieldKey, &aspect_name))?;
+    let aspect_field = match seed.scalar_field {
+        Some(field) => field,
+        None => FieldKey::new(aspect_name.clone())
+            .ok_or_else(|| denial(DenialKind::InvalidFieldKey, &aspect_name))?,
+    };
     Ok(WorthQueryPortableNativeAspectContractRecord::new(
         schema.to_owned(),
         entity,
@@ -298,6 +304,9 @@ pub(super) fn build_foundational_contract(
     aspect_name: &str,
     seed: &DeclaredAspectSeed,
 ) -> Result<AspectContract, WorthQueryApplicationSchemaContractCatalogDenial> {
+    if let Some(field) = &seed.scalar_field {
+        return scalar_aspect::contract(aspect_key, field, seed);
+    }
     let mut fields = seed.fields.iter();
     let (first_key, (first_family, first_presence, _)) = fields
         .next()
@@ -345,10 +354,17 @@ fn admit_declared_projection_mask<'a>(
     aspect: &str,
     fields: impl Iterator<Item = &'a FieldKey>,
 ) -> Result<(), WorthQueryApplicationSchemaContractCatalogDenial> {
-    let mask = aspects()
-        .projection_mask()
-        .fields(fields.map(FieldKey::as_str))
-        .map_err(|_| denial(DenialKind::InvalidFieldKey, aspect))?;
+    let mask = if matches!(
+        contract.shape(),
+        worth_foundational::facade::AspectShape::Scalar(_)
+    ) {
+        aspects().projection_mask().whole_aspect()
+    } else {
+        aspects()
+            .projection_mask()
+            .fields(fields.map(FieldKey::as_str))
+            .map_err(|_| denial(DenialKind::InvalidFieldKey, aspect))?
+    };
     contract
         .admits_projection_mask(&mask)
         .map_err(|_| denial(DenialKind::ProjectionMaskRejected, aspect))

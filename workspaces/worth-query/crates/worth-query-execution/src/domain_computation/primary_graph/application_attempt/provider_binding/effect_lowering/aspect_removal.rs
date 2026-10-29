@@ -13,7 +13,9 @@ pub(super) fn lower(
     basis: PortableAspectContractBasis,
     fields: Vec<AspectFieldLocator>,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
-    let contract = contracts(entity, basis.key()).ok_or_else(progression_denial)?;
+    let contract = &contracts(entity, basis.key())
+        .ok_or_else(progression_denial)?
+        .contract;
     if PortableAspectContractBasis::from_contract(contract) != basis
         || contract.absence() != AbsenceLaw::Optional
     {

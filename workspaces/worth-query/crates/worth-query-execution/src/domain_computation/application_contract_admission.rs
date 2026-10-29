@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
+use worth_foundational::facade::FieldKey;
 use worth_query_installation::facade::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
     WorthQueryCompiledApplicationOperationContracts, WorthQueryOperationGraphReadContract,
@@ -88,11 +88,9 @@ fn installed_atomic_read_count(contract: &WorthQueryOperationGraphReadContract) 
             | WorthQueryOperationGraphReadScope::DerivedSource(_) => None,
             WorthQueryOperationGraphReadScope::Entity(_)
             | WorthQueryOperationGraphReadScope::Relation(_) => count.checked_add(1),
-            WorthQueryOperationGraphReadScope::NativeProjection(scope) => {
-                (!scope.projection().mask().is_whole_aspect())
-                    .then(|| count.checked_add(scope.projection().mask().paths().len()))
-                    .flatten()
-            }
+            WorthQueryOperationGraphReadScope::NativeProjection(scope) => scope
+                .atomic_field_count()
+                .and_then(|fields| count.checked_add(fields)),
         })
         .unwrap_or(usize::MAX)
 }
@@ -116,11 +114,7 @@ fn read_scope_admits_target(
         ) => FieldKey::new(field.clone()).is_some_and(|field| {
             scope.entity().semantic_key() == entity
                 && scope.aspect().as_str() == aspect
-                && scope
-                    .projection()
-                    .mask()
-                    .paths()
-                    .contains(&CanonicalFieldPath::single(field))
+                && scope.admits_field(&field)
         }),
         (
             WorthQueryOperationGraphReadScope::Relation(scope),

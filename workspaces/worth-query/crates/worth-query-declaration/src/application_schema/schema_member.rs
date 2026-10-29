@@ -267,4 +267,10 @@ pub enum ApplicationSchemaMember {
     ProjectedMemberDomain {
         definition: super::ErasedApplicationProjectedMemberDomainDefinition,
     },
+    /// Explicit physical scalar storage for the sole Required child of an aspect.
+    ScalarAspectField {
+        entity: String,
+        aspect: String,
+        field: String,
+    },
 }

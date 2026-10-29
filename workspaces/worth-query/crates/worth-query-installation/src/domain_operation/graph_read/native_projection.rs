@@ -5,9 +5,10 @@ use std::sync::Arc;
 use worth_foundational::facade::{
     canonical_basis_sequence_material, prepare_aspect_contract_for_canonical_basis,
     prepare_aspect_mask_for_canonical_basis, prepare_canonical_basis_bundle,
-    prepare_canonical_export_bundle, AspectContract, AspectMask, CanonicalBasisReadyArtifact,
-    CanonicalEquivalenceBasis, CanonicalExportReadyArtifact, CanonicalProducerShape,
-    CanonicalizationRuleVersion, ProjectionMask,
+    prepare_canonical_export_bundle, AspectBinding, AspectContract, AspectMask, AspectShape,
+    CanonicalBasisReadyArtifact, CanonicalEquivalenceBasis, CanonicalExportReadyArtifact,
+    CanonicalFieldPath, CanonicalProducerShape, CanonicalizationRuleVersion, FieldKey,
+    ProjectionMask,
 };
 
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
@@ -179,6 +180,7 @@ pub struct WorthQueryOperationApplicationProjectionScope {
     entity: String,
     aspect: worth_foundational::facade::AspectKey,
     projection: WorthQueryOperationNativeProjectionContract,
+    binding: AspectBinding,
 }
 
 impl WorthQueryOperationApplicationProjectionScope {
@@ -187,12 +189,14 @@ impl WorthQueryOperationApplicationProjectionScope {
         entity: String,
         aspect: worth_foundational::facade::AspectKey,
         projection: WorthQueryOperationNativeProjectionContract,
+        binding: AspectBinding,
     ) -> Self {
         Self {
             schema,
             entity,
             aspect,
             projection,
+            binding,
         }
     }
 
@@ -210,5 +214,37 @@ impl WorthQueryOperationApplicationProjectionScope {
 
     pub const fn projection(&self) -> &WorthQueryOperationNativeProjectionContract {
         &self.projection
+    }
+
+    /// Checks one logical field against this installed physical projection.
+    pub fn admits_field(&self, field: &FieldKey) -> bool {
+        if let Some(bound) = self.bound_scalar_field() {
+            bound == field
+        } else {
+            self.projection
+                .mask()
+                .paths()
+                .contains(&CanonicalFieldPath::single(field.clone()))
+        }
+    }
+
+    /// Whole Struct projections have no closed atomic field inventory here.
+    pub fn atomic_field_count(&self) -> Option<usize> {
+        if self.projection.mask().is_whole_aspect() {
+            self.bound_scalar_field().map(|_| 1)
+        } else {
+            Some(self.projection.mask().paths().len())
+        }
+    }
+
+    pub(crate) fn bound_scalar_field(&self) -> Option<&FieldKey> {
+        if self.projection.mask().is_whole_aspect()
+            && matches!(self.projection.contract().shape(), AspectShape::Scalar(_))
+            && let AspectBinding::EntityField { field } = &self.binding
+        {
+            Some(field)
+        } else {
+            None
+        }
     }
 }

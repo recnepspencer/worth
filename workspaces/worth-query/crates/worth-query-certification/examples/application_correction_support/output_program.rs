@@ -109,7 +109,13 @@ impl ApplicationFixedActionDelivery<NumericSchema, other_edit::OtherBinding> for
 }
 impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
     type Contributions = (NumericContribution,);
-    type Outputs = ApplicationProgramOutputs<(Root, super::aspect_input::program::Root)>;
+    type Outputs = ApplicationProgramOutputs<(
+        Root,
+        (
+            super::aspect_input::program::Root,
+            super::scalar_input::program::Root,
+        ),
+    )>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("numeric-correction.output-program.v1");
@@ -120,6 +126,8 @@ impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
     }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
+            super::scalar_input::program::source_feature(),
+            super::scalar_input::program::calculation_feature(),
             super::aspect_input::program::source_feature(),
             super::aspect_input::program::calculation_feature(),
             super::compensation_movement::feature(),

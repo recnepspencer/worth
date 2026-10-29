@@ -8,6 +8,30 @@ use super::super::schema_member::ApplicationSchemaMember;
 use super::ApplicationSchemaDeclarationBuilder;
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    /// Stores this aspect as one scalar bound to this exact Required field.
+    /// Declare the parent with `aspect` or `optional_aspect`. Additional fields
+    /// and optional children are rejected when the installed contract is built.
+    pub fn scalar_aspect_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+        mut self,
+        entity: ApplicationEntityRef<Schema, Entity>,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+    ) -> Self
+    where
+        Entity: super::super::ApplicationEntityMarkerIdentity<Schema>,
+        Aspect: ApplicationAspectMarkerIdentity<Schema, Entity>,
+        Field: super::super::ApplicationFieldMarkerIdentity<Schema, Entity, Aspect, Value = Value>,
+        Write: WritePosture,
+        Equality: EqualityPosture,
+        Unit: ApplicationFieldUnit,
+    {
+        self.members
+            .push(ApplicationSchemaMember::ScalarAspectField {
+                entity: entity.name().to_owned(),
+                aspect: field.aspect().to_owned(),
+                field: field.field().to_owned(),
+            });
+        self.push_field(entity, field, false)
+    }
     pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         self,
         entity: ApplicationEntityRef<Schema, Entity>,

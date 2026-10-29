@@ -20,6 +20,8 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<super::calculation::Producer>()?;
         contracts.producer::<super::aspect_input::calculation::Producer>()?;
+        contracts.producer::<super::scalar_input::calculation::Producer>()?;
+        contracts.conditional::<super::scalar_input::readiness::Readiness>()?;
         contracts.conditional::<super::aspect_input::readiness::Readiness>()?;
         contracts.conditional::<super::calculation_readiness::Readiness>()?;
         contracts.conditional::<super::composite_definition_runtime::Conditional>()?;
@@ -30,6 +32,16 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<super::calculation::Binding, _>(super::calculation::Handler)?;
+        setup.handler::<super::scalar_input::authoring::Binding, _>(
+            super::scalar_input::authoring::Handler,
+        )?;
+        setup.handler::<super::scalar_input::calculation::Binding, _>(
+            super::scalar_input::calculation::Handler,
+        )?;
+        setup.producer::<super::scalar_input::calculation::Producer>(
+            super::scalar_input::calculation::Provider,
+        )?;
+        setup.conditional::<super::scalar_input::readiness::Readiness>(())?;
         setup.handler::<super::aspect_input::authoring::Binding, _>(
             super::aspect_input::authoring::Handler,
         )?;

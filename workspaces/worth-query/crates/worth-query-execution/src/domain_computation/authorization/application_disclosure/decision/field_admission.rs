@@ -1,10 +1,10 @@
-use worth_foundational::facade::{AspectFieldLocator, AspectMask, FieldKey, ProjectionMask};
+use worth_foundational::facade::{AspectFieldLocator, FieldKey};
 
 use super::super::contract::WorthQueryAdmittedApplicationDisclosureField;
 
 pub(in crate::domain_computation) struct WorthQueryApplicationInternalProjectionAdmission<'a> {
     field: &'a FieldKey,
-    projection_mask: Option<&'a AspectMask<ProjectionMask>>,
+    admitted: Option<&'a WorthQueryAdmittedApplicationDisclosureField>,
 }
 
 pub(in crate::domain_computation) struct WorthQueryApplicationDisclosedProjectionAdmission;
@@ -13,7 +13,7 @@ impl<'a> WorthQueryApplicationInternalProjectionAdmission<'a> {
     pub(super) const fn public(field: &'a FieldKey) -> Self {
         Self {
             field,
-            projection_mask: None,
+            admitted: None,
         }
     }
 
@@ -21,17 +21,20 @@ impl<'a> WorthQueryApplicationInternalProjectionAdmission<'a> {
         admitted: &'a WorthQueryAdmittedApplicationDisclosureField,
         field: &'a FieldKey,
     ) -> Option<Self> {
-        let projection_mask = admitted.projection_mask();
-        projection_mask_admits(projection_mask, field).then_some(Self {
+        admitted.admits_projection_field(field).then_some(Self {
             field,
-            projection_mask: Some(projection_mask),
+            admitted: Some(admitted),
         })
     }
 
     pub(in crate::domain_computation) fn projection_fields(&self) -> Vec<FieldKey> {
-        match self.projection_mask {
+        match self.admitted {
             None => vec![self.field.clone()],
-            Some(mask) => mask
+            Some(admitted) if admitted.is_bound_scalar(self.field.as_str()) => {
+                vec![self.field.clone()]
+            }
+            Some(admitted) => admitted
+                .projection_mask()
                 .paths()
                 .iter()
                 .flat_map(|path| path.fields())
@@ -62,12 +65,6 @@ impl WorthQueryApplicationDisclosedProjectionAdmission {
         admitted: &WorthQueryAdmittedApplicationDisclosureField,
         field: &FieldKey,
     ) -> Option<Self> {
-        projection_mask_admits(admitted.projection_mask(), field).then_some(Self)
+        admitted.admits_projection_field(field).then_some(Self)
     }
-}
-
-fn projection_mask_admits(mask: &AspectMask<ProjectionMask>, field: &FieldKey) -> bool {
-    mask.paths()
-        .iter()
-        .any(|path| path.fields() == std::slice::from_ref(field))
 }

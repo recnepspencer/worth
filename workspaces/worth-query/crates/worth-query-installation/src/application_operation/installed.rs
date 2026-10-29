@@ -227,6 +227,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
                 binding_identity.clone(),
                 schema.installed_declaration().members(),
                 portable_contract,
+                schema.native_contracts(),
                 operation,
                 input_type,
             )?;

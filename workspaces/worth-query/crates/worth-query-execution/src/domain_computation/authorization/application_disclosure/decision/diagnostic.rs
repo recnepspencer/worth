@@ -144,12 +144,7 @@ fn diagnostic_rule(
         .influence()
         .permits(ApplicationQueryObservableInfluence::Explanation)
         && rule.field().is_some_and(|field| {
-            field.matches(expected)
-                && field
-                    .diagnostic_mask()
-                    .paths()
-                    .iter()
-                    .any(|path| matches!(path.fields(), [key] if key.as_str() == expected.2))
+            field.matches(expected) && field.admits_diagnostic_field(expected.2)
         }))
 }
 

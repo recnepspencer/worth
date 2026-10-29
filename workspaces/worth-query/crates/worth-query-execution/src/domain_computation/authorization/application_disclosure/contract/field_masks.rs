@@ -9,7 +9,8 @@ pub(super) fn admit_field_masks<E>(
     field: (&str, &str, &str),
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
 ) -> Result<WorthQueryAdmittedApplicationDisclosureField, CompilationStop<E>> {
-    let (projection_mask, diagnostic_mask) = admit_categories(layout, selector, field, admit)?;
+    let (projection_mask, diagnostic_mask, bound_scalar) =
+        admit_categories(layout, selector, field, admit)?;
     for text in [field.0, field.1, field.2] {
         pay(admit, CompilationWork::Copy(text.len()))?;
     }
@@ -19,6 +20,7 @@ pub(super) fn admit_field_masks<E>(
         field: field.2.to_string(),
         projection_mask,
         diagnostic_mask,
+        bound_scalar,
     })
 }
 
@@ -33,6 +35,7 @@ pub(in crate::domain_computation) fn admit_field_mask_categories(
     unmetered(admit_categories(layout, selector, field, &mut |_| {
         Ok::<_, std::convert::Infallible>(())
     }))
+    .map(|(projection, diagnostic, _)| (projection, diagnostic))
 }
 
 fn admit_categories<E>(
@@ -40,11 +43,11 @@ fn admit_categories<E>(
     selector: &ApplicationQueryDisclosureSelector,
     field: (&str, &str, &str),
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
-) -> Result<(AspectMask<ProjectionMask>, AspectMask<DiagnosticMask>), CompilationStop<E>> {
+) -> Result<(AspectMask<ProjectionMask>, AspectMask<DiagnosticMask>, bool), CompilationStop<E>> {
     pay(admit, CompilationWork::Copy(field.1.len()))?;
     let aspect_key = AspectKey::new(field.1).ok_or_else(|| denial(field.1))?;
-    let contract = layout
-        .aspect_contract_with_admission(field.0, &aspect_key, &mut |entries, text| {
+    let binding = layout
+        .aspect_binding_with_admission(field.0, &aspect_key, &mut |entries, text| {
             admit(CompilationWork::Lookup {
                 entries,
                 parts: &[text],
@@ -52,6 +55,7 @@ fn admit_categories<E>(
         })
         .map_err(CompilationStop::Admission)?
         .ok_or_else(|| denial(field.1))?;
+    let contract = &binding.contract;
     let projection = selector.projection_mask().ok_or_else(|| denial(field.2))?;
     let diagnostic = selector.diagnostic_mask().ok_or_else(|| denial(field.2))?;
     pay(
@@ -62,8 +66,37 @@ fn admit_categories<E>(
         admit,
         CompilationWork::Copy(diagnostic.owned_allocation_capacity_bytes()),
     )?;
-    let projection = projection.clone();
-    let diagnostic = diagnostic.clone();
+    let bound_scalar = matches!(contract.shape(), AspectShape::Scalar(_));
+    let (projection, diagnostic) = if bound_scalar {
+        let worth_foundational::facade::AspectBinding::EntityField { field: physical } =
+            &binding.binding
+        else {
+            return Err(denial(field.1).into());
+        };
+        pay(
+            admit,
+            CompilationWork::Scan {
+                entries: 1,
+                parts: &[physical.as_str(), field.2],
+            },
+        )?;
+        if physical.as_str() != field.2
+            || !matches!(projection.paths(), [path] if path.fields() == std::slice::from_ref(physical))
+            || !matches!(diagnostic.paths(), [path] if path.fields() == std::slice::from_ref(physical))
+        {
+            return Err(denial(field.2).into());
+        }
+        (
+            worth_foundational::facade::aspects()
+                .projection_mask()
+                .whole_aspect(),
+            worth_foundational::facade::aspects()
+                .diagnostic_mask()
+                .whole_aspect(),
+        )
+    } else {
+        (projection.clone(), diagnostic.clone())
+    };
     // Native StructAspectShape::field performs a linear search. Charge that
     // actual shape and each actual target key before invoking the same policy.
     for paths in [projection.paths(), diagnostic.paths()] {
@@ -86,5 +119,5 @@ fn admit_categories<E>(
     contract
         .admits_diagnostic_mask(&diagnostic)
         .map_err(|_| denial(field.1))?;
-    Ok((projection, diagnostic))
+    Ok((projection, diagnostic, bound_scalar))
 }

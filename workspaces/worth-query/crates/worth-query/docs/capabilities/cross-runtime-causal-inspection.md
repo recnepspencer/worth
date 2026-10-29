@@ -186,6 +186,43 @@ values and retired output roles have distinct meanings. Unsupported nested shape
 refuse. Scalar whole-aspect correspondence is never inferred from a field name or
 from an aspect containing one field.
 
+### Explicit Scalar Aspect Storage
+
+Use `scalar_aspect_field` to bind an aspect's complete scalar value to one exact
+Required field. Declare its parent separately:
+
+```rust,ignore
+let schema = schema
+    .optional_aspect(Number::reference(), ScalarFacts::reference())
+    .scalar_aspect_field(Number::reference(), Value::reference());
+```
+
+The declared field supplies its scalar family and executable value binding.
+Installation requires exactly that field, Required presence and a primitive scalar
+codec. Extra children, optional child presence and structured canonical carriers
+refuse with `InvalidAspectShape`. Ordinary `field` declarations keep Struct storage,
+including when the aspect has only one field. Storage interpretation participates
+in schema identity and value-meaning predecessor comparison.
+
+Use ordinary `DecisionReader::field` and `CandidateWriter::write_field` for the
+bound scalar. Writes lower to the installed whole scalar contract. For a Required
+child beneath an Optional parent, declare and project an
+`ApplicationQueryOptionalAspectFieldRef`; genuine parent absence yields `None`.
+An unrelated field name or nested path grants no scalar read or write.
+
+Keep an ordinary producer-input query separate from governed inspection bindings.
+For a connected scalar input, declare the bound field as `u64` with
+`U64ApplicationValueBinding`. Have the ordinary producer read it and publish its
+declared Struct output role on the same full-generation subject. Observe that
+output through the settled query, then independently admit the retained source
+and query bindings with the inspection call above.
+The source receipt, completed producer read, canonical scalar write and original
+query output revision must still connect. Equal bytes and no-op writes cannot
+supply missing revision or effect evidence. An ABA rewrite does not make a later
+occurrence identical to an earlier one. Read, metadata and
+diagnostic admission remain independent for source and query subjects. Scalar
+storage grants no parent-removal authority or retired-output interpretation.
+
 ### Public Optional Struct Removal
 
 Declare `OperationRemovesAspects<Operation>` with
