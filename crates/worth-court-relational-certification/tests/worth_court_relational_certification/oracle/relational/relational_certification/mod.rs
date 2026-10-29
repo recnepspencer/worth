@@ -1,9 +1,5 @@
 #[path = "baseline_layers/mod.rs"]
 pub(crate) mod baseline_layers;
-#[path = "basis_cost/mod.rs"]
-pub(crate) mod basis_cost;
-#[path = "basis_observation/mod.rs"]
-pub(crate) mod basis_observation;
 #[path = "mvcc_owner_phase_locality/mod.rs"]
 pub(crate) mod mvcc_owner_phase_locality;
 #[path = "mvcc_seeded_model/mod.rs"]
@@ -12,5 +8,3 @@ pub(crate) mod mvcc_seeded_model;
 pub(crate) mod observation_contracts;
 #[path = "owner_service_completion/mod.rs"]
 pub(crate) mod owner_service_completion;
-#[path = "profile_contracts/mod.rs"]
-pub(crate) mod profile_contracts;

@@ -1,13 +1,31 @@
-#[allow(unused_imports)] use crate::product_operation_phase_eleven::ordinary_context::*;
-use {worth_server::WorthServerCompatibilityAdmittedProductMutationCommand, worth_server::WorthServerProductIdempotencyKey, worth_server::WorthServerProductOperationBaseDigest, worth_server::WorthServerProductOperationSurfaceDenialCode, worth_server::WorthServerProductSessionCreationRequest, worth_server::WorthServerWorthNativeProductMutationCommand};
+#[allow(unused_imports)]
+use crate::product_operation_phase_eleven::ordinary_context::*;
+use {
+    worth_server::WorthServerCompatibilityAdmittedProductMutationCommand,
+    worth_server::WorthServerProductIdempotencyKey,
+    worth_server::WorthServerProductOperationBaseDigest,
+    worth_server::WorthServerProductOperationSurfaceDenialCode,
+    worth_server::WorthServerProductSessionCreationRequest,
+    worth_server::WorthServerWorthNativeProductMutationCommand,
+};
 
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_product_operation_phase_eleven_backend as backend};
+pub(crate) use worth_testkit_server::shared_support_product_operation_phase_eleven_backend as backend;
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_product_session_phase_ten_fixture as fixture};
+pub(crate) use worth_testkit_server::shared_support_product_session_phase_ten_fixture as fixture;
 
-use {worth_testkit_server::shared_support_product_operation_phase_eleven_backend::stateful_editor_registration, worth_testkit_server::shared_support_product_operation_phase_eleven_backend::StatefulProductEditorBackend};
-use {worth_testkit_server::shared_support_product_session_phase_ten_fixture::apply_payload, worth_testkit_server::shared_support_product_session_phase_ten_fixture::apply_payload_with_title, worth_testkit_server::shared_support_product_session_phase_ten_fixture::build_server, worth_testkit_server::shared_support_product_session_phase_ten_fixture::direct_session, worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_product_mutation_request_with_basis_and_header, worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_session_request};
+use {
+    worth_testkit_server::shared_support_product_operation_phase_eleven_backend::stateful_editor_registration,
+    worth_testkit_server::shared_support_product_operation_phase_eleven_backend::StatefulProductEditorBackend,
+};
+use {
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::apply_payload,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::apply_payload_with_title,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::build_server,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::direct_session,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_product_mutation_request_with_basis_and_header,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_session_request,
+};
 
 #[test]
 fn worth_native_product_operation_retries_identical_idempotent_mutation_without_second_state_change(
@@ -19,13 +37,16 @@ fn worth_native_product_operation_retries_identical_idempotent_mutation_without_
     let mutation_session = session
         .product_sessions()
         .open_mutation(
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest(initial_basis.as_str())
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest(initial_basis.as_str())
+            .with_expiry_seconds(300),
         )
         .expect("mutation session should open");
     let idempotency_key =
-        worth_server::WorthServerProductIdempotencyKey::new("apply-rename-attempt-1").expect("valid key");
+        worth_server::WorthServerProductIdempotencyKey::new("apply-rename-attempt-1")
+            .expect("valid key");
 
     let first = session
         .product_operations()
@@ -71,7 +92,7 @@ fn worth_native_product_operation_retries_identical_idempotent_mutation_without_
 }
 
 #[test]
-fn compat_product_operation_preserves_phase_eleven_replay_contract_via_request_shaped_command() {
+fn compat_product_operation_preserves_replay_contract_via_request_shaped_command() {
     let backend = worth_testkit_server::shared_support_product_operation_phase_eleven_backend::StatefulProductEditorBackend::new();
     let initial_basis = backend.basis_digest();
     let server = build_server(vec![stateful_editor_registration(backend.clone())]);
@@ -95,9 +116,11 @@ fn compat_product_operation_preserves_phase_eleven_replay_contract_via_request_s
         .product_sessions()
         .open_mutation_for_product_operation(
             &session_request,
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest(initial_basis.as_str())
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest(initial_basis.as_str())
+            .with_expiry_seconds(300),
         )
         .expect("compat mutation session should open");
 
@@ -168,9 +191,11 @@ fn compat_product_operation_reuses_key_with_different_payload_as_conflict() {
         .product_sessions()
         .open_mutation_for_product_operation(
             &session_request,
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest(initial_basis.as_str())
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest(initial_basis.as_str())
+            .with_expiry_seconds(300),
         )
         .expect("compat mutation session should open");
 
@@ -223,9 +248,11 @@ fn product_mutation_without_snapshot_precondition_denies_before_adapter_executio
     let mutation_session = session
         .product_sessions()
         .open_mutation(
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest(initial_basis.as_str())
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest(initial_basis.as_str())
+            .with_expiry_seconds(300),
         )
         .expect("mutation session should open");
 

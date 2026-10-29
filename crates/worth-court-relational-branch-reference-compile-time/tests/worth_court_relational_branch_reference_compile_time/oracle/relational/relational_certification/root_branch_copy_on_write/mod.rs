@@ -2,7 +2,7 @@
 pub(crate) use {std::collections::BTreeSet, worth_relational::facade::history::BranchId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind, worth_relational::facade::inspection::RelationalAuthoritativeAllocationKind, worth_relational::facade::inspection::RelationalBranchSharingCostCounters, worth_relational::facade::inspection::RelationalMvccCostScope, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, crate::relational_certification::ordinary_context::root_branch_copy_on_write::assert_rewire_matches_oracle, crate::relational_certification::ordinary_context::root_branch_copy_on_write::branch_identity, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch, crate::relational_certification::ordinary_context::root_branch_copy_on_write::expected_rewire_from_pure_oracle, crate::relational_certification::ordinary_context::root_branch_copy_on_write::fork_from_main, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, crate::relational_certification::ordinary_context::root_branch_copy_on_write::region_set, crate::relational_certification::ordinary_context::root_branch_copy_on_write::sharing};
 
 #[test]
-fn phase5_forked_topology_write_copies_only_touched_regions() {
+fn forked_topology_write_copies_only_touched_regions() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -64,10 +64,18 @@ fn phase5_forked_topology_write_copies_only_touched_regions() {
 
     let delta = worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId::RewireAuroraPortCall;
     let expected = expected_rewire_from_pure_oracle(&world, delta);
-    let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![rewire.clone()]);
-    let main_cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![main.clone()]);
-    let sibling_cost_scope =
-        worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![sibling.clone()]);
+    let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![rewire.clone()],
+    );
+    let main_cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![main.clone()],
+    );
+    let sibling_cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![sibling.clone()],
+    );
     let batch = lower_supply_chain_production_delta(
         execution,
         &world.runtime,

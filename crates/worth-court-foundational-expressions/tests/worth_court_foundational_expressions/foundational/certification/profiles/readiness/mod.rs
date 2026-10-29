@@ -1,6 +1,13 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::profiles::readiness::*;
-use {std::path::Path};
-use {worth_foundational::certify_foundational_profile_milestone3_production_test_readiness, worth_foundational::foundational_profile_milestone3_readiness_report, worth_foundational::require_foundational_profile_milestone3_production_test_readiness, worth_foundational::FoundationalProfileProductionReadinessCertified, worth_foundational::FoundationalProfileProductionTestReadyArtifact};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::profiles::readiness::*;
+use std::path::Path;
+use {
+    worth_foundational::certify_foundational_profile_milestone3_production_test_readiness,
+    worth_foundational::foundational_profile_milestone3_readiness_report,
+    worth_foundational::require_foundational_profile_milestone3_production_test_readiness,
+    worth_foundational::FoundationalProfileProductionReadinessCertified,
+    worth_foundational::FoundationalProfileProductionTestReadyArtifact,
+};
 
 #[test]
 fn production_readiness_artifact_carries_complete_machine_checkable_inventory() {
@@ -51,9 +58,10 @@ fn production_readiness_surface_evidence_binds_surfaces_to_real_hostile_and_comp
         assert!(crate_root_path(evidence.owning_test_path()).is_file());
         assert!(crate_root_path(evidence.compile_fail_evidence_path()).is_file());
         assert!(
-            evidence
-                .compile_fail_evidence_path()
-                .starts_with("tests/ui/"),
+            crate_root_path(evidence.compile_fail_evidence_path())
+                .canonicalize()
+                .expect("compile-fail fixture exists")
+                .starts_with(compile_fail_fixture_root()),
             "compile-fail evidence must point at a trybuild fixture"
         );
     }

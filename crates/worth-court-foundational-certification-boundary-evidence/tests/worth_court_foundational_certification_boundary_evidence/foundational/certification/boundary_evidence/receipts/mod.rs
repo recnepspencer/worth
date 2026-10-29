@@ -1,7 +1,29 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::boundary_evidence::receipts::*;
-use {worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path, worth_foundational::boundary_evidence_api::lower_lane, worth_foundational::foundational_boundary_evidence_closeout_disposition_definitions, worth_foundational::foundational_boundary_evidence_receipt_kind_definitions, worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle, worth_foundational::FoundationalBoundaryEvidenceCloseoutDisposition, worth_foundational::FoundationalBoundaryEvidenceExecutionPosture, worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary, worth_foundational::FoundationalBoundaryEvidenceReceiptKind, worth_foundational::FoundationalBoundaryEvidenceSourceBasis, worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis, worth_foundational::FoundationalCommitParentageLocator, worth_foundational::FoundationalTransitionLocator};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::boundary_evidence::receipts::*;
+use {
+    worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path,
+    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::foundational_boundary_evidence_closeout_disposition_definitions,
+    worth_foundational::foundational_boundary_evidence_receipt_kind_definitions,
+    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
+    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
+    worth_foundational::FoundationalBoundaryEvidenceCloseoutDisposition,
+    worth_foundational::FoundationalBoundaryEvidenceExecutionPosture,
+    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
+    worth_foundational::FoundationalBoundaryEvidenceReceiptKind,
+    worth_foundational::FoundationalBoundaryEvidenceSourceBasis,
+    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
+    worth_foundational::FoundationalCommitParentageLocator,
+    worth_foundational::FoundationalTransitionLocator,
+};
 
-use {crate::certification::ordinary_context::boundary_evidence::provenance::authority_path, crate::certification::ordinary_context::boundary_evidence::provenance::digest_basis, crate::certification::ordinary_context::boundary_evidence::provenance::profile_basis, crate::certification::ordinary_context::boundary_evidence::provenance::source_basis, crate::certification::ordinary_context::boundary_evidence::provenance::strategy_basis};
+use {
+    crate::certification::ordinary_context::boundary_evidence::provenance::authority_path,
+    crate::certification::ordinary_context::boundary_evidence::provenance::digest_basis,
+    crate::certification::ordinary_context::boundary_evidence::provenance::profile_basis,
+    crate::certification::ordinary_context::boundary_evidence::provenance::source_basis,
+    crate::certification::ordinary_context::boundary_evidence::provenance::strategy_basis,
+};
 
 #[test]
 fn receipt_kind_definitions_are_blind_consumer_interpretable() {
@@ -121,9 +143,14 @@ fn blocked_and_denied_closeout_receipts_preserve_completed_boundary_truth_withou
 fn completed_receipt_families_are_explicit_and_stable() {
     let provenance = boundary_evidence()
         .provenance()
-        .snapshot_bound(worth_foundational::FoundationalBoundaryEvidenceSourceBasis::boundary_artifact(
-            worth_foundational::BoundaryArtifactLocator::new(worth_foundational::BoundaryArtifactId::new(12), worth_foundational::BoundaryArtifactField::Basis),
-        ))
+        .snapshot_bound(
+            worth_foundational::FoundationalBoundaryEvidenceSourceBasis::boundary_artifact(
+                worth_foundational::BoundaryArtifactLocator::new(
+                    worth_foundational::BoundaryArtifactId::new(12),
+                    worth_foundational::BoundaryArtifactField::Basis,
+                ),
+            ),
+        )
         .with_freshness(
             worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture::ReducedRetained,
         )
@@ -186,7 +213,7 @@ fn executed_receipt_semantics_are_stable_across_common_and_direct_construction_p
 }
 
 #[test]
-fn common_path_and_lower_lane_expose_the_same_phase3_surface() {
+fn common_path_and_lower_lane_expose_the_same_surface() {
     assert_eq!(
         boundary_evidence().receipt_kind_definitions(),
         worth_foundational::boundary_evidence_api::lower_lane::receipts::foundational_boundary_evidence_receipt_kind_definitions()

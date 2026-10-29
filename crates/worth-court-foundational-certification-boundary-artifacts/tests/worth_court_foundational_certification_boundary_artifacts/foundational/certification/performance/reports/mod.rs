@@ -1,23 +1,46 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::performance::reports::*;
-use {worth_foundational::performance, worth_foundational::performance_api, worth_foundational::profiles, worth_foundational::CertificationPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceAttachmentDenial, worth_foundational::FoundationalPerformanceAttachmentTargetKind, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceCounterRow, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformanceLayoutIntent, worth_foundational::FoundationalPerformanceReportMaterializationBoundary, worth_foundational::FoundationalPerformanceReportSection, worth_foundational::FoundationalPerformanceReportSectionDecisionCause, worth_foundational::FoundationalPerformanceWorkClass, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::performance::reports::*;
+use {
+    worth_foundational::performance, worth_foundational::performance_api,
+    worth_foundational::profiles, worth_foundational::CertificationPostureProfile,
+    worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalPerformanceAccessPatternPosture,
+    worth_foundational::FoundationalPerformanceAttachmentDenial,
+    worth_foundational::FoundationalPerformanceAttachmentTargetKind,
+    worth_foundational::FoundationalPerformanceBoundary,
+    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
+    worth_foundational::FoundationalPerformanceCounterRow,
+    worth_foundational::FoundationalPerformanceEvidenceStrength,
+    worth_foundational::FoundationalPerformanceExecutionTemperature,
+    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
+    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
+    worth_foundational::FoundationalPerformanceLayoutIntent,
+    worth_foundational::FoundationalPerformanceReportMaterializationBoundary,
+    worth_foundational::FoundationalPerformanceReportSection,
+    worth_foundational::FoundationalPerformanceReportSectionDecisionCause,
+    worth_foundational::FoundationalPerformanceWorkClass,
+    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+};
 
 #[test]
-fn phase6_attachment_targets_fail_closed_by_source_strength() {
+fn attachment_targets_fail_closed_by_source_strength() {
     let bundle = authoritative_bundle();
-    let denial = worth_foundational::performance_api::lower_lane::reports::attach_performance_bundle(
-        worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryReceipt,
-        bundle.clone(),
-    );
+    let denial =
+        worth_foundational::performance_api::lower_lane::reports::attach_performance_bundle(
+            worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryReceipt,
+            bundle.clone(),
+        );
     assert_eq!(
         denial,
         Err(worth_foundational::FoundationalPerformanceAttachmentDenial::ClaimBundlesCannotAttachToBoundaryReceipts)
     );
 
     let policy = policy_receipt();
-    let denial = worth_foundational::performance_api::lower_lane::reports::attach_policy_admission_receipt(
-        worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundarySummary,
-        policy,
-    );
+    let denial =
+        worth_foundational::performance_api::lower_lane::reports::attach_policy_admission_receipt(
+            worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundarySummary,
+            policy,
+        );
     assert_eq!(
         denial,
         Err(worth_foundational::FoundationalPerformanceAttachmentDenial::PolicyReceiptsCannotAttachToBoundarySummaries)
@@ -46,11 +69,12 @@ fn phase6_attachment_targets_fail_closed_by_source_strength() {
 
 #[test]
 fn report_planning_elides_optional_support_rows_under_reduced_richness() {
-    let attached = worth_foundational::performance_api::lower_lane::reports::attach_performance_bundle(
-        worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryArtifact,
-        authoritative_bundle(),
-    )
-    .expect("bundle attachment should build");
+    let attached =
+        worth_foundational::performance_api::lower_lane::reports::attach_performance_bundle(
+            worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryArtifact,
+            authoritative_bundle(),
+        )
+        .expect("bundle attachment should build");
 
     let plan = worth_foundational::performance_api::lower_lane::reports::plan_performance_report(
         worth_foundational::FoundationalPerformanceReportRequest {
@@ -130,11 +154,12 @@ fn explicit_materialization_carries_requested_counter_and_support_rows() {
 
 #[test]
 fn claim_inspection_only_reports_do_not_leak_optional_sections() {
-    let attached = worth_foundational::performance_api::lower_lane::reports::attach_performance_bundle(
-        worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryArtifact,
-        authoritative_bundle(),
-    )
-    .expect("bundle attachment should build");
+    let attached =
+        worth_foundational::performance_api::lower_lane::reports::attach_performance_bundle(
+            worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryArtifact,
+            authoritative_bundle(),
+        )
+        .expect("bundle attachment should build");
 
     let plan = worth_foundational::performance_api::lower_lane::reports::plan_performance_report(
         worth_foundational::FoundationalPerformanceReportRequest {
@@ -174,11 +199,12 @@ fn claim_inspection_only_reports_do_not_leak_optional_sections() {
 
 #[test]
 fn policy_receipt_reports_keep_unavailable_sections_explicit_and_budget_sections_materialized() {
-    let attached = worth_foundational::performance_api::lower_lane::reports::attach_policy_admission_receipt(
-        worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryReport,
-        policy_receipt(),
-    )
-    .expect("policy receipt attachment should build");
+    let attached =
+        worth_foundational::performance_api::lower_lane::reports::attach_policy_admission_receipt(
+            worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryReport,
+            policy_receipt(),
+        )
+        .expect("policy receipt attachment should build");
 
     let plan = worth_foundational::performance_api::lower_lane::reports::plan_performance_report(
         worth_foundational::FoundationalPerformanceReportRequest {

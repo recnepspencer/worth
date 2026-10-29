@@ -2,5 +2,9 @@
 pub(crate) mod combined_cancellation;
 #[path = "combined_race/mod.rs"]
 pub(crate) mod combined_race;
+#[path = "faults/mod.rs"]
+pub(crate) mod faults;
+#[path = "progress/mod.rs"]
+pub(crate) mod progress;
 #[path = "races/mod.rs"]
 pub(crate) mod races;

@@ -217,27 +217,27 @@ pub(super) fn phase_gates() -> Vec<CanonicalPhaseGateEvidence> {
     vec![
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::BasisGrammar,
-            "tests/worth_foundational/fast/certification/canonicalization/basis",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/basis"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::MilestoneOneBasisBuilders,
-            "tests/worth_foundational/fast/certification/canonicalization/digest_preparation",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_preparation"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::EquivalenceAndMismatch,
-            "tests/worth_foundational/fast/certification/canonicalization/equivalence",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/equivalence"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::ExportFixtures,
-            "tests/worth_foundational/fast/certification/canonicalization/export",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/export"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::DigestSlots,
-            "tests/worth_foundational/fast/certification/canonicalization/digest_slots",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_slots"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::ProductionReadiness,
-            "tests/worth_foundational/fast/certification/canonicalization/production_readiness",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/production_readiness"),
         ),
     ]
 }

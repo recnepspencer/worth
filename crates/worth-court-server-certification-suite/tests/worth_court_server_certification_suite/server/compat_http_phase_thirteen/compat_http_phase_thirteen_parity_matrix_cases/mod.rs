@@ -1,12 +1,36 @@
-use {std::sync::atomic::Ordering};
+use std::sync::atomic::Ordering;
 
-use {worth_foundational::facade::DiagnosticRichnessProfile};
-use {worth_server::WorthServerQueryHandoffDenialCode};
+use worth_foundational::facade::DiagnosticRichnessProfile;
+use worth_server::WorthServerQueryHandoffDenialCode;
 
-use {crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_equal, crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_not_equal, crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains, crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle, crate::shared_support_compat_http_phase_thirteen_bundle::AUDIT_EVIDENCE_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::BASIS_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::DECLARATION_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::FAILURE_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::MUTATION_RESULT_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::POLICY_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::PROVENANCE_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::RESPONSE_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::SUPPORT_POSTURE_DIGEST, crate::shared_support_compat_http_phase_thirteen_runtime::buffered_export, crate::shared_support_compat_http_phase_thirteen_runtime::compat_read_with_diagnostics, crate::shared_support_compat_http_phase_thirteen_runtime::direct_and_compat_mutation, crate::shared_support_compat_http_phase_thirteen_runtime::direct_and_compat_read, crate::shared_support_compat_http_phase_thirteen_runtime::finished_incremental_export, crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation, crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_counting_server, crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server, worth_testkit_server::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime, worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions};
+use {
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_equal,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_not_equal,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
+    crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle,
+    crate::shared_support_compat_http_phase_thirteen_bundle::AUDIT_EVIDENCE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::BASIS_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::DECLARATION_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::FAILURE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::MUTATION_RESULT_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::POLICY_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::PROVENANCE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::RESPONSE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::SUPPORT_POSTURE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_runtime::buffered_export,
+    crate::shared_support_compat_http_phase_thirteen_runtime::compat_read_with_diagnostics,
+    crate::shared_support_compat_http_phase_thirteen_runtime::direct_and_compat_mutation,
+    crate::shared_support_compat_http_phase_thirteen_runtime::direct_and_compat_read,
+    crate::shared_support_compat_http_phase_thirteen_runtime::finished_incremental_export,
+    crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation,
+    crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_counting_server,
+    crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
+    worth_testkit_server::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime,
+    worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions,
+};
 
 #[test]
-fn compat_http_phase_thirteen_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
+fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     let server = phase_thirteen_server();
     let (declaration, direct_read, compat_read) = direct_and_compat_read(&server, "users.profile");
     let incremental = finished_incremental_export(&server, "users.profile", 11);
@@ -16,22 +40,23 @@ fn compat_http_phase_thirteen_cross_surface_parity_matrix_stays_narrow_and_retry
         "users.profile",
         worth_foundational::facade::DiagnosticRichnessProfile::Forensic,
     );
-    let basis_denial =
-        match server
-            .compat_http()
-            .read(worth_server::WorthServerCompatibilityExecutionInput::new(
-                worth_testkit_server::shared_support_compat_http_phase_two_runtime::prepared_read_request(
-                    &server,
-                    worth_testkit_server::shared_support_compat_http_phase_two_runtime::read_input("users.profile")
-                        .with_query_pair("basis", "basis:drifted")
-                        .build()
-                        .expect("drifted basis request should validate"),
-                ),
+    let basis_denial = match server
+        .compat_http()
+        .read(worth_server::WorthServerCompatibilityExecutionInput::new(
+        worth_testkit_server::shared_support_compat_http_phase_two_runtime::prepared_read_request(
+            &server,
+            worth_testkit_server::shared_support_compat_http_phase_two_runtime::read_input(
                 "users.profile",
-            )) {
-            worth_proof::TransitionOutcome::Denied(value) => value,
-            other => panic!("expected basis denial, got {other:?}"),
-        };
+            )
+            .with_query_pair("basis", "basis:drifted")
+            .build()
+            .expect("drifted basis request should validate"),
+        ),
+        "users.profile",
+    )) {
+        worth_proof::TransitionOutcome::Denied(value) => value,
+        other => panic!("expected basis denial, got {other:?}"),
+    };
 
     let direct_read_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(DECLARATION_DIGEST, declaration.declaration_digest())

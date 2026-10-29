@@ -1,9 +1,12 @@
 #[allow(unused_imports)]
-pub(crate) use {crate::relational_certification::ordinary_context::root_fork_sharing::fitted_slope, crate::relational_certification::ordinary_context::root_fork_sharing::standard_fanout_samples};
+pub(crate) use {
+    crate::relational_certification::ordinary_context::root_fork_sharing::fitted_slope,
+    crate::relational_certification::ordinary_context::root_fork_sharing::standard_fanout_samples,
+};
 
 #[test]
 #[ignore = "scheduled maximum-scale fork slope"]
-fn phase5_standard_fork_copy_slope_is_flat_through_4096_forks() {
+fn standard_fork_copy_slope_is_flat_through_4096_forks() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

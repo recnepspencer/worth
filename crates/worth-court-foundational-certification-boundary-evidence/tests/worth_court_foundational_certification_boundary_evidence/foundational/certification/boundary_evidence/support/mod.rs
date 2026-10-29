@@ -1,6 +1,29 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::boundary_evidence::support::*;
-use {worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path, worth_foundational::boundary_evidence_api::lower_lane, worth_foundational::foundational_boundary_evidence_support_basis_disclosure_definitions, worth_foundational::foundational_boundary_evidence_support_recovery_posture_definitions, worth_foundational::foundational_boundary_evidence_support_residual_debt_kind_definitions, worth_foundational::foundational_boundary_evidence_support_truth_kind_definitions, worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle, worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture, worth_foundational::FoundationalBoundaryEvidenceLineageSubject, worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary, worth_foundational::FoundationalBoundaryEvidenceSourceBasis, worth_foundational::FoundationalBoundaryEvidenceSupportBasisDisclosure, worth_foundational::FoundationalBoundaryEvidenceSupportConstructionDenial, worth_foundational::FoundationalBoundaryEvidenceSupportRecoveryPosture, worth_foundational::FoundationalBoundaryEvidenceSupportResidualDebtKind, worth_foundational::FoundationalBoundaryEvidenceSupportResidualDebtSet, worth_foundational::FoundationalBoundaryEvidenceSupportTruthKind, worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis, worth_foundational::FoundationalCommitParentageLocator, worth_foundational::FoundationalTransitionLocator};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::boundary_evidence::support::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path,
+    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::foundational_boundary_evidence_support_basis_disclosure_definitions,
+    worth_foundational::foundational_boundary_evidence_support_recovery_posture_definitions,
+    worth_foundational::foundational_boundary_evidence_support_residual_debt_kind_definitions,
+    worth_foundational::foundational_boundary_evidence_support_truth_kind_definitions,
+    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
+    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
+    worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture,
+    worth_foundational::FoundationalBoundaryEvidenceLineageSubject,
+    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
+    worth_foundational::FoundationalBoundaryEvidenceSourceBasis,
+    worth_foundational::FoundationalBoundaryEvidenceSupportBasisDisclosure,
+    worth_foundational::FoundationalBoundaryEvidenceSupportConstructionDenial,
+    worth_foundational::FoundationalBoundaryEvidenceSupportRecoveryPosture,
+    worth_foundational::FoundationalBoundaryEvidenceSupportResidualDebtKind,
+    worth_foundational::FoundationalBoundaryEvidenceSupportResidualDebtSet,
+    worth_foundational::FoundationalBoundaryEvidenceSupportTruthKind,
+    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
+    worth_foundational::FoundationalCommitParentageLocator,
+    worth_foundational::FoundationalTransitionLocator,
+};
 
 #[test]
 fn support_definitions_are_blind_consumer_interpretable() {
@@ -55,7 +78,9 @@ fn support_closeout_preserves_completed_boundary_truth_without_execution() {
     let closeout = boundary_evidence()
         .support()
         .degraded_recovery_report()
-        .with_basis_disclosure(worth_foundational::FoundationalBoundaryEvidenceSupportBasisDisclosure::StaleBasis)
+        .with_basis_disclosure(
+            worth_foundational::FoundationalBoundaryEvidenceSupportBasisDisclosure::StaleBasis,
+        )
         .closed_out_by(
             boundary_evidence()
                 .receipt()
@@ -111,10 +136,14 @@ fn rebuild_and_quarantine_support_require_residual_debt() {
 fn transient_lifecycle_support_is_support_grade_and_subject_explicit() {
     let transient = boundary_evidence()
         .support()
-        .transient_lifecycle(worth_foundational::FoundationalBoundaryEvidenceLineageSubject::new(
-            worth_foundational::BoundaryHandle::new(7),
-        ))
-        .with_basis_disclosure(worth_foundational::FoundationalBoundaryEvidenceSupportBasisDisclosure::ReducedBasis)
+        .transient_lifecycle(
+            worth_foundational::FoundationalBoundaryEvidenceLineageSubject::new(
+                worth_foundational::BoundaryHandle::new(7),
+            ),
+        )
+        .with_basis_disclosure(
+            worth_foundational::FoundationalBoundaryEvidenceSupportBasisDisclosure::ReducedBasis,
+        )
         .with_residual_debt(residual_debt())
         .opened_and_closed_within(
             boundary_evidence()
@@ -127,7 +156,10 @@ fn transient_lifecycle_support_is_support_grade_and_subject_explicit() {
         transient.support_truth_kind(),
         worth_foundational::FoundationalBoundaryEvidenceSupportTruthKind::TransientLifecycleEvidence
     );
-    assert_eq!(transient.subject().handle(), worth_foundational::BoundaryHandle::new(7));
+    assert_eq!(
+        transient.subject().handle(),
+        worth_foundational::BoundaryHandle::new(7)
+    );
 }
 
 #[test]
@@ -168,7 +200,7 @@ fn published_support_semantics_are_stable_across_common_and_direct_construction_
 }
 
 #[test]
-fn common_path_and_lower_lane_expose_the_same_phase5_surface() {
+fn common_path_and_lower_lane_expose_the_same_surface() {
     assert_eq!(
         boundary_evidence().support_truth_kind_definitions(),
         worth_foundational::boundary_evidence_api::lower_lane::support::foundational_boundary_evidence_support_truth_kind_definitions()

@@ -8,7 +8,5 @@ pub(crate) mod cost;
 pub(crate) mod model;
 #[path = "operation_control/mod.rs"]
 pub(crate) mod operation_control;
-#[path = "record_history/mod.rs"]
-pub(crate) mod record_history;
 #[path = "sequential/mod.rs"]
 pub(crate) mod sequential;

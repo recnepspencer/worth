@@ -1,8 +1,39 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::boundary_evidence::lineage::*;
-use {worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path, worth_foundational::boundary_evidence_api::lower_lane, worth_foundational::foundational_boundary_evidence_branch_divergence_posture_definitions, worth_foundational::foundational_boundary_evidence_lineage_outcome_kind_definitions, worth_foundational::foundational_boundary_evidence_lineage_partiality_posture_definitions, worth_foundational::foundational_boundary_evidence_promotion_posture_definitions, worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle, worth_foundational::FoundationalBoundaryEvidenceBranchDivergencePosture, worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture, worth_foundational::FoundationalBoundaryEvidenceLineageConstructionDenial, worth_foundational::FoundationalBoundaryEvidenceLineageOutcomeKind, worth_foundational::FoundationalBoundaryEvidenceLineagePartialityPosture, worth_foundational::FoundationalBoundaryEvidenceLineageSubject, worth_foundational::FoundationalBoundaryEvidenceLineageSubjectSet, worth_foundational::FoundationalBoundaryEvidenceLocality, worth_foundational::FoundationalBoundaryEvidencePromotionPosture, worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary, worth_foundational::FoundationalBoundaryEvidenceReceiptKind, worth_foundational::FoundationalBoundaryEvidenceSourceBasis, worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis, worth_foundational::FoundationalCommitParentageLocator, worth_foundational::FoundationalTransitionLocator};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::boundary_evidence::lineage::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path,
+    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::foundational_boundary_evidence_branch_divergence_posture_definitions,
+    worth_foundational::foundational_boundary_evidence_lineage_outcome_kind_definitions,
+    worth_foundational::foundational_boundary_evidence_lineage_partiality_posture_definitions,
+    worth_foundational::foundational_boundary_evidence_promotion_posture_definitions,
+    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
+    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
+    worth_foundational::FoundationalBoundaryEvidenceBranchDivergencePosture,
+    worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture,
+    worth_foundational::FoundationalBoundaryEvidenceLineageConstructionDenial,
+    worth_foundational::FoundationalBoundaryEvidenceLineageOutcomeKind,
+    worth_foundational::FoundationalBoundaryEvidenceLineagePartialityPosture,
+    worth_foundational::FoundationalBoundaryEvidenceLineageSubject,
+    worth_foundational::FoundationalBoundaryEvidenceLineageSubjectSet,
+    worth_foundational::FoundationalBoundaryEvidenceLocality,
+    worth_foundational::FoundationalBoundaryEvidencePromotionPosture,
+    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
+    worth_foundational::FoundationalBoundaryEvidenceReceiptKind,
+    worth_foundational::FoundationalBoundaryEvidenceSourceBasis,
+    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
+    worth_foundational::FoundationalCommitParentageLocator,
+    worth_foundational::FoundationalTransitionLocator,
+};
 
-use {crate::certification::ordinary_context::boundary_evidence::provenance::authority_path, crate::certification::ordinary_context::boundary_evidence::provenance::digest_basis, crate::certification::ordinary_context::boundary_evidence::provenance::profile_basis, crate::certification::ordinary_context::boundary_evidence::provenance::source_basis, crate::certification::ordinary_context::boundary_evidence::provenance::strategy_basis};
+use {
+    crate::certification::ordinary_context::boundary_evidence::provenance::authority_path,
+    crate::certification::ordinary_context::boundary_evidence::provenance::digest_basis,
+    crate::certification::ordinary_context::boundary_evidence::provenance::profile_basis,
+    crate::certification::ordinary_context::boundary_evidence::provenance::source_basis,
+    crate::certification::ordinary_context::boundary_evidence::provenance::strategy_basis,
+};
 
 #[test]
 fn lineage_definitions_are_blind_consumer_interpretable() {
@@ -40,12 +71,14 @@ fn lineage_definitions_are_blind_consumer_interpretable() {
 
 #[test]
 fn attested_and_replay_derived_continuity_stay_distinct() {
-    let attested = worth_foundational::boundary_evidence_api::common_path::lineage().continuity(subject(1)).attested_by(
-        boundary_evidence()
-            .receipt()
-            .execution(receipt_boundary(1))
-            .with_provenance(historical_provenance()),
-    );
+    let attested = worth_foundational::boundary_evidence_api::common_path::lineage()
+        .continuity(subject(1))
+        .attested_by(
+            boundary_evidence()
+                .receipt()
+                .execution(receipt_boundary(1))
+                .with_provenance(historical_provenance()),
+        );
     let replay = boundary_evidence()
         .lineage()
         .replay_derived_continuity(subject(1))
@@ -185,12 +218,14 @@ fn partiality_and_transient_outcomes_are_explicit() {
 
 #[test]
 fn attested_lineage_semantics_are_stable_across_common_and_direct_construction_paths() {
-    let common_path_lineage = worth_foundational::boundary_evidence_api::common_path::lineage().continuity(subject(10)).attested_by(
-        boundary_evidence()
-            .receipt()
-            .execution(receipt_boundary(10))
-            .with_provenance(historical_provenance()),
-    );
+    let common_path_lineage = worth_foundational::boundary_evidence_api::common_path::lineage()
+        .continuity(subject(10))
+        .attested_by(
+            boundary_evidence()
+                .receipt()
+                .execution(receipt_boundary(10))
+                .with_provenance(historical_provenance()),
+        );
     let direct_path_lineage = boundary_evidence()
         .lineage()
         .continuity(subject(10))
@@ -268,7 +303,7 @@ fn lineage_construction_denials_are_explicit_and_fail_closed() {
 }
 
 #[test]
-fn common_path_and_lower_lane_expose_the_same_phase4_surface() {
+fn common_path_and_lower_lane_expose_the_same_surface() {
     assert_eq!(
         boundary_evidence().lineage_outcome_kind_definitions(),
         worth_foundational::boundary_evidence_api::lower_lane::lineage::foundational_boundary_evidence_lineage_outcome_kind_definitions()
@@ -283,6 +318,9 @@ fn common_path_and_lower_lane_expose_the_same_phase4_surface() {
     );
     let _front_door: worth_foundational::FoundationalBoundaryEvidenceLineageFrontDoor =
         worth_foundational::boundary_evidence_api::common_path::lineage();
-    let _related = worth_foundational::FoundationalBoundaryEvidenceLineageSubjectSet::new(vec![subject(1), subject(2)])
-        .expect("related set");
+    let _related = worth_foundational::FoundationalBoundaryEvidenceLineageSubjectSet::new(vec![
+        subject(1),
+        subject(2),
+    ])
+    .expect("related set");
 }

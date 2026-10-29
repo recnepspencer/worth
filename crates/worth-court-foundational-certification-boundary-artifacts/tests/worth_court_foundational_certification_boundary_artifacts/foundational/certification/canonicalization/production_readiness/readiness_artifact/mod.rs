@@ -48,9 +48,10 @@ fn production_readiness_surface_evidence_binds_surfaces_to_real_hostile_and_blin
         assert!(crate_root_path(evidence.blind_consumer_evidence_path()).is_file());
         assert!(crate_root_path(evidence.compile_fail_evidence_path()).is_file());
         assert!(
-            evidence
-                .compile_fail_evidence_path()
-                .starts_with("tests/ui/"),
+            crate_root_path(evidence.compile_fail_evidence_path())
+                .canonicalize()
+                .expect("compile-fail fixture exists")
+                .starts_with(compile_fail_fixture_root()),
             "compile-fail evidence must be a trybuild fixture"
         );
         if let Some(artifact) = evidence.golden_artifact() {
@@ -79,7 +80,7 @@ fn production_readiness_property_seed_evidence_covers_every_seed() {
     );
     assert!(report.property_seed_evidence().iter().all(|evidence| {
         !evidence.hostile_dimension().trim().is_empty()
-            && canonicalization_test_path(evidence.owning_test()).is_file()
+            && crate_root_path(evidence.owning_test()).is_file()
             && report
                 .harness_expansion_points()
                 .contains(&evidence.harness_lane())
@@ -106,9 +107,13 @@ fn production_readiness_fixture_manifest_covers_every_golden_artifact() {
 fn production_readiness_phase_gates_are_evidence_backed() {
     let report = canonical_milestone2_production_readiness_report();
 
-    assert!(report.phase_gates().iter().all(|evidence| evidence
-        .evidence_path()
-        .starts_with("tests/worth_foundational/fast/certification/")));
+    assert!(report
+        .phase_gates()
+        .iter()
+        .all(|evidence| crate_root_path(evidence.evidence_path())
+            .canonicalize()
+            .expect("phase gate exists")
+            .starts_with(canonicalization_test_root())));
     assert!(report
         .phase_gates()
         .iter()
@@ -122,5 +127,5 @@ fn production_readiness_fixture_manifest_points_at_real_owning_tests() {
     assert!(report
         .fixture_manifest()
         .iter()
-        .all(|fixture| { canonicalization_test_path(fixture.owning_test()).is_file() }));
+        .all(|fixture| { crate_root_path(fixture.owning_test()).is_file() }));
 }

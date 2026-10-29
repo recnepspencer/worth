@@ -1,13 +1,28 @@
-use {worth_foundational::facade::DiagnosticRichnessProfile};
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerBinaryDownloadExecutionInput, worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityExecutionInput, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerQueryHandoffDenialCode};
+use worth_foundational::facade::DiagnosticRichnessProfile;
+use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
+use {
+    worth_server::WorthServerBinaryDownloadExecutionInput,
+    worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityExecutionInput,
+    worth_server::WorthServerCompatibilityRequestInput,
+    worth_server::WorthServerQueryHandoffDenialCode,
+};
 
-use {crate::shared_support_compat_http_phase_ten_assertions::assert_denial};
-use {worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::ambiguous_metadata_upload, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_download_denied, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_denied, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_upload_denied, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_upload_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::non_ascii_metadata_upload, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::prepared_request};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use crate::shared_support_compat_http_phase_ten_assertions::assert_denial;
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::ambiguous_metadata_upload,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::non_ascii_metadata_upload,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_download_denied,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_denied,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_upload_denied,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_upload_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::prepared_request,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider,
+};
 
 #[test]
-fn compat_http_phase_ten_rejects_non_portable_external_names_before_truth_linkage() {
+fn compat_http_rejects_non_portable_external_names_before_truth_linkage() {
     let server =
         build_phase_ten_server_with_workspace_provider(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
             worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
@@ -28,7 +43,9 @@ fn compat_http_phase_ten_rejects_non_portable_external_names_before_truth_linkag
                         .with_method("GET")
                         .with_path("/compat/reads/../secrets")
                         .with_header("accept", "application/json")
-                        .with_diagnostics_profile(worth_foundational::facade::DiagnosticRichnessProfile::Standard)
+                        .with_diagnostics_profile(
+                            worth_foundational::facade::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("path-like read input should validate structurally"),
                 ),
@@ -56,7 +73,9 @@ fn compat_http_phase_ten_rejects_non_portable_external_names_before_truth_linkag
                         .with_method("GET")
                         .with_path("/compat/downloads/folder\\asset")
                         .with_header("accept", "application/octet-stream")
-                        .with_diagnostics_profile(worth_foundational::facade::DiagnosticRichnessProfile::Standard)
+                        .with_diagnostics_profile(
+                            worth_foundational::facade::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("path-like download input should validate structurally"),
                 ),
@@ -85,7 +104,9 @@ fn compat_http_phase_ten_rejects_non_portable_external_names_before_truth_linkag
                         .with_method("GET")
                         .with_path("/compat/reads/files\tasset")
                         .with_header("accept", "application/json")
-                        .with_diagnostics_profile(worth_foundational::facade::DiagnosticRichnessProfile::Standard)
+                        .with_diagnostics_profile(
+                            worth_foundational::facade::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("control-character read input should validate structurally"),
                 ),
@@ -100,7 +121,7 @@ fn compat_http_phase_ten_rejects_non_portable_external_names_before_truth_linkag
 }
 
 #[test]
-fn compat_http_phase_ten_rejects_operation_name_and_path_identity_drift() {
+fn compat_http_rejects_operation_name_and_path_identity_drift() {
     let server =
         build_phase_ten_server_with_workspace_provider(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
             worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
@@ -121,7 +142,9 @@ fn compat_http_phase_ten_rejects_operation_name_and_path_identity_drift() {
                         .with_method("GET")
                         .with_path("/compat/reads/files.asset")
                         .with_header("accept", "application/json")
-                        .with_diagnostics_profile(worth_foundational::facade::DiagnosticRichnessProfile::Standard)
+                        .with_diagnostics_profile(
+                            worth_foundational::facade::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("mismatched read input should validate structurally"),
                 ),
@@ -136,7 +159,7 @@ fn compat_http_phase_ten_rejects_operation_name_and_path_identity_drift() {
 }
 
 #[test]
-fn compat_http_phase_ten_rejects_ambiguous_or_non_ascii_manifest_metadata_keys() {
+fn compat_http_rejects_ambiguous_or_non_ascii_manifest_metadata_keys() {
     let server =
         build_phase_ten_server_with_workspace_provider(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
             worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),

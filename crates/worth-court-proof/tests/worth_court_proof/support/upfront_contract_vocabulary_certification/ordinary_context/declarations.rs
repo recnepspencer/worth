@@ -1,7 +1,8 @@
-pub(crate) use {std::cell::Cell};
-pub(crate) use {std::convert::Infallible};
+use super::owner;
+pub(crate) use std::cell::Cell;
+pub(crate) use std::convert::Infallible;
 
-pub(crate) use {worth_proof::contracts::*};
+pub(crate) use worth_proof::contracts::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum RecoveryTerminal {

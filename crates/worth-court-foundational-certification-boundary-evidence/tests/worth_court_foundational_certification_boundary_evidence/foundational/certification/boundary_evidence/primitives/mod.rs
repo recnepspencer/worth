@@ -1,4 +1,20 @@
-use {worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path, worth_foundational::boundary_evidence_api::lower_lane, worth_foundational::evaluate_boundary_evidence_primitive_legality, worth_foundational::foundational_boundary_evidence_category_definitions, worth_foundational::foundational_boundary_evidence_descriptive_role_definitions, worth_foundational::foundational_boundary_evidence_execution_posture_definitions, worth_foundational::foundational_boundary_evidence_freshness_posture_definitions, worth_foundational::foundational_boundary_evidence_locality_definitions, worth_foundational::foundational_responsibilities, worth_foundational::FoundationalBoundaryEvidenceCategory, worth_foundational::FoundationalBoundaryEvidenceDescriptiveRole, worth_foundational::FoundationalBoundaryEvidenceExecutionPosture, worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture, worth_foundational::FoundationalBoundaryEvidenceLocality, worth_foundational::FoundationalBoundaryEvidencePrimitiveLegalityDenial};
+use {
+    worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path,
+    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::evaluate_boundary_evidence_primitive_legality,
+    worth_foundational::foundational_boundary_evidence_category_definitions,
+    worth_foundational::foundational_boundary_evidence_descriptive_role_definitions,
+    worth_foundational::foundational_boundary_evidence_execution_posture_definitions,
+    worth_foundational::foundational_boundary_evidence_freshness_posture_definitions,
+    worth_foundational::foundational_boundary_evidence_locality_definitions,
+    worth_foundational::foundational_responsibilities,
+    worth_foundational::FoundationalBoundaryEvidenceCategory,
+    worth_foundational::FoundationalBoundaryEvidenceDescriptiveRole,
+    worth_foundational::FoundationalBoundaryEvidenceExecutionPosture,
+    worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture,
+    worth_foundational::FoundationalBoundaryEvidenceLocality,
+    worth_foundational::FoundationalBoundaryEvidencePrimitiveLegalityDenial,
+};
 
 #[test]
 fn boundary_evidence_responsibility_home_is_named_in_the_facade_topology() {
@@ -116,7 +132,7 @@ fn primitive_families_preserve_deterministic_ordering() {
 }
 
 #[test]
-fn primitive_legality_keeps_only_the_phase1_minimum_floor() {
+fn primitive_legality_keeps_only_the_minimum_floor() {
     assert_eq!(
         evaluate_boundary_evidence_primitive_legality(
             worth_foundational::FoundationalBoundaryEvidenceCategory::SupportTruth,
@@ -186,10 +202,11 @@ fn primitive_legality_keeps_only_the_phase1_minimum_floor() {
 }
 
 #[test]
-fn common_path_and_lower_lane_expose_the_same_phase1_surface() {
+fn common_path_and_lower_lane_expose_the_same_surface() {
     assert_eq!(
         boundary_evidence().category_definitions(),
-        worth_foundational::boundary_evidence_api::common_path::boundary_evidence().category_definitions()
+        worth_foundational::boundary_evidence_api::common_path::boundary_evidence()
+            .category_definitions()
     );
     assert_eq!(
         boundary_evidence().locality_definitions(),

@@ -40,3 +40,5 @@ fn cost_reports_are_bound_to_profile_and_seed() {
         Err(worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::CostBudgetError::SchemaMismatch { .. })
     ));
 }
+#[path = "budget_overages/mod.rs"]
+pub(crate) mod budget_overages;

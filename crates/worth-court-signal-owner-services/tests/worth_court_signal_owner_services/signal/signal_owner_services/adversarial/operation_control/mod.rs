@@ -8,6 +8,10 @@ pub(crate) mod cancellation_progress;
 pub(crate) mod close;
 #[path = "close_progress/mod.rs"]
 pub(crate) mod close_progress;
+#[path = "fork_and_advance_progress/mod.rs"]
+pub(crate) mod fork_and_advance_progress;
+#[path = "fork_panic/mod.rs"]
+pub(crate) mod fork_panic;
 #[path = "independent_progress/mod.rs"]
 pub(crate) mod independent_progress;
 #[path = "observation_race/mod.rs"]
@@ -16,3 +20,5 @@ pub(crate) mod observation_race;
 pub(crate) mod panic;
 #[path = "races/mod.rs"]
 pub(crate) mod races;
+#[path = "snapshot_progress/mod.rs"]
+pub(crate) mod snapshot_progress;

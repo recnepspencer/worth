@@ -1,10 +1,27 @@
-use {worth_foundational::facade::DiagnosticRichnessProfile};
-use {worth_server::WorthServerBinaryDownloadAuthorization, worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerQueryHandoffDenialCode};
+use worth_foundational::facade::DiagnosticRichnessProfile;
+use {
+    worth_server::WorthServerBinaryDownloadAuthorization,
+    worth_server::WorthServerBinaryDownloadRequest,
+    worth_server::WorthServerQueryHandoffDenialCode,
+};
 
-use {worth_testkit_server::shared_support_compat_http_phase_nine_runtime as compat_http_phase_nine_runtime, worth_testkit_server::shared_support_compat_http_phase_ten_runtime as compat_http_phase_ten_runtime, crate::shared_support_compat_http_phase_thirteen_assertions::assert_binary_counter, crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_equal, crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains, crate::shared_support_compat_http_phase_thirteen_assertions::assert_external_counters_zero, crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle, crate::shared_support_compat_http_phase_thirteen_bundle::FILE_ENVELOPE_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::METADATA_IDENTITY_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::POLICY_DIGEST, crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server, crate::shared_support_compat_http_phase_thirteen_runtime::upload_with_payload};
+use {
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_binary_counter,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_equal,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_external_counters_zero,
+    crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle,
+    crate::shared_support_compat_http_phase_thirteen_bundle::FILE_ENVELOPE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::METADATA_IDENTITY_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::POLICY_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
+    crate::shared_support_compat_http_phase_thirteen_runtime::upload_with_payload,
+    worth_testkit_server::shared_support_compat_http_phase_nine_runtime as compat_http_phase_nine_runtime,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime as compat_http_phase_ten_runtime,
+};
 
 #[test]
-fn compat_http_phase_thirteen_multipart_and_range_miserable_path_matrix_stays_localized() {
+fn compat_http_multipart_and_range_miserable_path_matrix_stays_localized() {
     let alpha_server = phase_thirteen_server();
     let beta_server = phase_thirteen_server();
     let malformed_server = phase_thirteen_server();

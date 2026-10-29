@@ -1,15 +1,23 @@
-use {worth_foundational::facade::DiagnosticRichnessProfile};
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
+use worth_foundational::facade::DiagnosticRichnessProfile;
+use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
 use {worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerResponseInput};
 
-use {worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_read_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_success};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
-use {worth_testkit_server::shared_support_response_fixture::middleware_mutation_denial, worth_testkit_server::shared_support_response_fixture::query_handoff_durable_denial, worth_testkit_server::shared_support_response_fixture::resolve_blank_principal_denial, worth_testkit_server::shared_support_response_fixture::test_server};
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider;
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_read_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider,
+};
+use {
+    worth_testkit_server::shared_support_response_fixture::middleware_mutation_denial,
+    worth_testkit_server::shared_support_response_fixture::query_handoff_durable_denial,
+    worth_testkit_server::shared_support_response_fixture::resolve_blank_principal_denial,
+    worth_testkit_server::shared_support_response_fixture::test_server,
+};
 
 #[test]
-fn compat_http_phase_eleven_classifies_admitted_and_denied_operations_from_evidence_artifacts_alone(
-) {
+fn compat_http_classifies_admitted_and_denied_operations_from_evidence_artifacts_alone() {
     let server = test_server(
         TestWorkspaceProvider,
         worth_server::WorthServerMiddlewareConfig::builder()
@@ -17,24 +25,21 @@ fn compat_http_phase_eleven_classifies_admitted_and_denied_operations_from_evide
             .expect("middleware config should validate"),
     );
 
-    let request_context_response =
-        server
-            .responses()
-            .shape_with_defaults(worth_server::WorthServerResponseInput::request_context_denied(
-                resolve_blank_principal_denial(&server),
-            ));
-    let middleware_response =
-        server
-            .responses()
-            .shape_with_defaults(worth_server::WorthServerResponseInput::middleware_denied(
-                middleware_mutation_denial(&server),
-            ));
-    let query_handoff_response =
-        server
-            .responses()
-            .shape_with_defaults(worth_server::WorthServerResponseInput::query_handoff_denied(
-                query_handoff_durable_denial(&server),
-            ));
+    let request_context_response = server.responses().shape_with_defaults(
+        worth_server::WorthServerResponseInput::request_context_denied(
+            resolve_blank_principal_denial(&server),
+        ),
+    );
+    let middleware_response = server.responses().shape_with_defaults(
+        worth_server::WorthServerResponseInput::middleware_denied(middleware_mutation_denial(
+            &server,
+        )),
+    );
+    let query_handoff_response = server.responses().shape_with_defaults(
+        worth_server::WorthServerResponseInput::query_handoff_denied(query_handoff_durable_denial(
+            &server,
+        )),
+    );
 
     let request_context_evidence =
         worth_server::WorthServerExternalEvidenceRecord::from_response_envelope(

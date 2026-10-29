@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-pub(crate) use {crate::relational_certification::reference_context::root_cost_scale_axes::assert_flat_history_samples};
+pub(crate) use crate::relational_certification::reference_context::root_cost_scale_axes::assert_flat_history_samples;
 
 #[test]
 #[ignore = "scheduled retained-root ceiling"]
@@ -14,3 +14,5 @@ fn selected_publication_cost_is_flat_through_documented_retention_ceiling() {
     // it preserves a geometric slope without bypassing owner backpressure.
     assert_flat_history_samples(execution, &[1, 63, 3_969]);
 }
+#[path = "publication/mod.rs"]
+pub(crate) mod publication;

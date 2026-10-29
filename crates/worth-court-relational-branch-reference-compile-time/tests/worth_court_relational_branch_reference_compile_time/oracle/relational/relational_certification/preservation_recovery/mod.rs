@@ -7,7 +7,7 @@ pub(crate) use {worth_relational::facade::history::BranchId};
 /// Preservation evidence only: Phase 5 does not claim the Phase-10 recovery-
 /// handle, fresh-process, or durable-owner lifecycle contract.
 #[test]
-fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
+fn checkpoint_preserves_shared_and_rewired_root_shape() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

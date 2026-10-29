@@ -1,6 +1,17 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::readiness::*;
-use {std::path::Path};
-use {worth_foundational::certify_foundational_transition_milestone5_production_test_readiness, worth_foundational::certify_foundational_transition_milestone9_scoped_merge_production_test_readiness, worth_foundational::foundational_transition_milestone5_readiness_report, worth_foundational::foundational_transition_milestone9_scoped_merge_readiness_report, worth_foundational::require_foundational_transition_milestone5_production_test_readiness, worth_foundational::require_foundational_transition_milestone9_scoped_merge_production_test_readiness, worth_foundational::FoundationalTransitionCertifiedSurface, worth_foundational::FoundationalTransitionProductionReadinessCertified, worth_foundational::FoundationalTransitionProductionTestReadyArtifact};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::readiness::*;
+use std::path::Path;
+use {
+    worth_foundational::certify_foundational_transition_milestone5_production_test_readiness,
+    worth_foundational::certify_foundational_transition_milestone9_scoped_merge_production_test_readiness,
+    worth_foundational::foundational_transition_milestone5_readiness_report,
+    worth_foundational::foundational_transition_milestone9_scoped_merge_readiness_report,
+    worth_foundational::require_foundational_transition_milestone5_production_test_readiness,
+    worth_foundational::require_foundational_transition_milestone9_scoped_merge_production_test_readiness,
+    worth_foundational::FoundationalTransitionCertifiedSurface,
+    worth_foundational::FoundationalTransitionProductionReadinessCertified,
+    worth_foundational::FoundationalTransitionProductionTestReadyArtifact,
+};
 
 #[test]
 fn production_readiness_artifact_carries_complete_machine_checkable_inventory() {
@@ -29,7 +40,7 @@ fn production_readiness_artifact_carries_complete_machine_checkable_inventory() 
 }
 
 #[test]
-fn scoped_merge_readiness_artifact_carries_milestone9_basis_and_inventory() {
+fn scoped_merge_readiness_artifact_carries_basis_and_inventory() {
     let readiness =
         certify_foundational_transition_milestone9_scoped_merge_production_test_readiness();
     let report = require_foundational_transition_milestone9_scoped_merge_production_test_readiness(
@@ -59,7 +70,10 @@ fn scoped_merge_readiness_evidence_paths_and_worth_proof_snippets_are_real() {
         assert!(crate_root_path(evidence.compile_fail_evidence_path()).is_file());
         assert!(crate_root_path(evidence.blind_consumer_evidence_path()).is_file());
         assert!(
-            evidence.owning_test_path().starts_with("tests/"),
+            crate_root_path(evidence.owning_test_path())
+                .canonicalize()
+                .expect("owning court test exists")
+                .starts_with(transition_test_root()),
             "scoped surface evidence must name a test owner, not only docs"
         );
     }
@@ -110,9 +124,10 @@ fn production_readiness_surface_evidence_binds_surfaces_to_real_hostile_compile_
         assert!(crate_root_path(evidence.compile_fail_evidence_path()).is_file());
         assert!(crate_root_path(evidence.blind_consumer_evidence_path()).is_file());
         assert!(
-            evidence
-                .compile_fail_evidence_path()
-                .starts_with("tests/ui/"),
+            crate_root_path(evidence.compile_fail_evidence_path())
+                .canonicalize()
+                .expect("compile-fail fixture exists")
+                .starts_with(compile_fail_fixture_root()),
             "compile-fail evidence must point at a trybuild fixture"
         );
     }
@@ -133,7 +148,10 @@ fn production_readiness_hostile_pressures_and_compile_fail_boundaries_have_real_
             .contains(&evidence.boundary()));
         assert!(crate_root_path(evidence.evidence_path()).is_file());
         assert!(
-            evidence.evidence_path().starts_with("tests/ui/"),
+            crate_root_path(evidence.evidence_path())
+                .canonicalize()
+                .expect("compile-fail fixture exists")
+                .starts_with(compile_fail_fixture_root()),
             "compile-fail evidence must point at a trybuild fixture"
         );
     }

@@ -1,13 +1,21 @@
-use {worth_foundational::facade::DiagnosticRichnessProfile};
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperatorEvidenceConfig, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerRequestContextConfig};
+use worth_foundational::facade::DiagnosticRichnessProfile;
+use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
+use {
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperatorEvidenceConfig,
+    worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerRequestContextConfig,
+};
 
-use {worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_read_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_success};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_read_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider,
+};
 
 #[test]
-fn compat_http_phase_eleven_reduced_diagnostics_trim_detail_without_changing_counter_or_policy_truth(
-) {
+fn compat_http_reduced_diagnostics_trim_detail_without_changing_counter_or_policy_truth() {
     let server =
         build_phase_ten_server_with_workspace_provider(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
             worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
@@ -78,7 +86,7 @@ fn compat_http_phase_eleven_reduced_diagnostics_trim_detail_without_changing_cou
 }
 
 #[test]
-fn compat_http_phase_eleven_certification_bundle_honors_server_operator_evidence_minimum_profile() {
+fn compat_http_certification_bundle_honors_server_operator_evidence_minimum_profile() {
     let server = worth_server::WorthServer::builder()
         .with_config(
             worth_server::WorthServerConfig::builder()
