@@ -20,7 +20,7 @@ pub struct Row {
 }
 worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "numeric-full-read.row.v1" });
 worth_query_application_query!(pub FullQuery for NumericSchema, identity "numeric-full-read.query.v1",
-    parameters ParametersBinding, result ResultBinding, scope Number => "Number", name "number");
+    parameters ParametersBinding, result ResultBinding, scope Number => "Number", name "number_full");
 
 macro_rules! result_field {
     ($name:ident, $Slot:ident, $Field:ty, $Value:ty, $Write:ty, $id:literal) => {
