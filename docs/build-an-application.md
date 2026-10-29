@@ -1841,7 +1841,17 @@ continue to refuse publication.
 `WorthQueryProgramApplicationRuntime` dereferences to the primary-graph
 application runtime, so `request(..)`, `discovery()`, `current_world()`,
 `installed_schema()`, `branches()`, and `conditional::<T>()` are all available
-on it. Its own methods:
+on it.
+
+For an isolated branch from a selection already admitted in a host advancement,
+consume that selection with `runtime.branches().fork_expected(selected)` and
+create it with the same runtime's phase. The returned candidate retains its
+source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
+to discard it. Source movement refuses creation, and a refused close retains the
+candidate with its original denial. See
+[fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
+
+Its own methods:
 
 | Method | Returns |
 |---|---|

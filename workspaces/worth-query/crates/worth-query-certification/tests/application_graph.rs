@@ -45,6 +45,8 @@ mod mutation_binding_guard;
 mod native_staging_allocation;
 #[path = "application_graph/producer_predicate_checkpoint.rs"]
 mod producer_predicate_checkpoint;
+#[path = "application_graph/proposal_acceptance.rs"]
+mod proposal_acceptance;
 #[path = "application_graph/recorded_replay_ordering.rs"]
 mod recorded_replay_ordering;
 #[path = "application_graph/relation_laws.rs"]

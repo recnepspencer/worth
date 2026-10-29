@@ -34,7 +34,10 @@ pub(in crate::domain_computation::primary_graph) use security_basis::{
     SelectedPermissionSecurityStop, WorthQuerySelectedPermissionSecurityBasis,
 };
 
-pub use branches::WorthQueryApplicationProductBranches;
+pub use branches::{
+    WorthQueryApplicationProductBranches, WorthQueryExpectedProductBranch,
+    WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
+};
 pub use cleanup::{
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
     WorthQueryApplicationProductBranchCleanupFailure,

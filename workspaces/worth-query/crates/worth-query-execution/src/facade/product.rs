@@ -36,9 +36,10 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalClockObservationOutcome,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionTerminal, WorthQueryConditionalSignalDecision,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
-    WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
-    WorthQueryProductQueryControls, WorthQueryProductTransaction,
+    WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchCloseFailure,
+    WorthQueryExpectedProductBranchFork, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrincipalResolutionMode, WorthQueryProductEntry, WorthQueryProductHistory,
+    WorthQueryProductHistoryEntry, WorthQueryProductQueryControls, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError, WorthQuerySelectedProductOperation,
 };
 pub use worth_runtime_world::facade::{

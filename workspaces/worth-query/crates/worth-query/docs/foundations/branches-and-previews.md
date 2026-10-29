@@ -15,7 +15,8 @@ retained runtime surfaces and never mints product identity.
 
 A **product branch** is a separate public concept. Runtime World owns its
 identity, current composite commit, bounded single-parent history, and exact
-Relational/Signal component composition. Query exposes that owner through:
+Relational/Signal component composition. In a host advancement callback, use
+the supplied `phase` for creation, selection and history traversal:
 
 ```rust,ignore
 let source = application.current_world();
@@ -25,22 +26,54 @@ let branch = application
     .components(|components| {
         components.fork_relational().reuse_exact_signal_basis()
     })
-    .create()?;
-let selected = application.on_branch(branch).select()?;
+    .create(&phase)?;
+let selected = application.on_branch(branch).select(&phase)?;
 
 // After one or more successful transactions advance this branch:
 let page = application
     .branches()
-    .history(branch, NonZeroUsize::new(1).unwrap())?;
-let prior = page.continue_ancestry(NonZeroUsize::new(1).unwrap())?;
+    .history(&phase, branch, NonZeroUsize::new(1))?;
+let prior = page.continue_ancestry(&phase, NonZeroUsize::new(1))?;
 let entry = prior.entries().next().expect("the prior generation is retained");
-let historical = prior.select(&entry)?;
+let historical = prior.select(&phase, &entry)?;
 ```
 
 The component selector has four complete postures: reuse both exact bases,
 fork Relational and reuse Signal, reuse Relational and fork Signal, or fork both.
 The product identity never collapses into either component identity. Branches
 that share Signal may advance their Relational histories independently.
+
+### Fork from an admitted selection
+
+Use `fork_expected` when creation must use a selection already admitted by the
+application. It consumes that selection and refuses if its source has moved.
+The ordinary `fork` operation resolves its source during creation.
+
+```rust,ignore
+let selected = application.on_branch(source).select(&phase)?;
+let candidate = application
+    .branches()
+    .fork_expected(selected)?
+    .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+    .create(&phase)?;
+let branch = candidate.branch();
+```
+
+Run ordinary requests with `.on_branch(branch)`. Keep `candidate` while working:
+it retains the exact source admission alongside the new branch.
+`candidate.expected_source()` returns descriptive information about that source.
+The application's model-state owner chooses which branch subsequent requests use.
+
+Discard the candidate with `candidate.close(&phase)`. A refused close returns
+the candidate and original denial through `failure.into_parts()`; inspect
+`failure.denial()` to select the ordinary retry or pending-cleanup path. A
+`ProductUnpublished` creation outcome retains its existing creation recovery.
+Complete that recovery before issuing another creation attempt.
+
+If the expected source is stale, obtain a fresh selection before creating a
+replacement candidate. A selection from another application is refused.
+
+### Branch history and retirement
 
 To correct a retained operation on a branch, bind an ordinary request with
 `.on_branch(target)` and use its
@@ -77,14 +110,17 @@ reads can defer cleanup; the returned pending cleanup retains the only retry
 authority. A retired occurrence cannot be selected again, even if an
 application later reuses the same display name.
 
-A transaction can therefore run on a fork of the current head and adopt it by
-closing the head it replaces. The adopted fork reads its parent's history as its
-own, so a correction selects a source made on either branch, and retained history
-grows by the same amount for each adoption rather than replaying the journal.
-A refused step on the fork leaves the parent's head and history unchanged; close
-the fork to discard it. The
-[fork-head adoption court](../../../worth-query-certification/examples/application_correction_support/fork_head_adoption.rs)
-runs 100 such cycles.
+Run isolated transaction steps on a fork of the selected branch. Keep the
+application's selected branch in its owning model state, and have that owner
+choose the branch used by subsequent requests after the steps succeed. Use
+`close` to retire a discarded branch and release its resources. A refused step
+on the fork leaves the parent's head and history unchanged.
+
+The fork reads its parent's history as its own, so corrections can select a
+source made on either branch. Retained history grows with the actual authored
+operations across branch selection changes. The
+[fork transaction example](../../../worth-query-certification/examples/application_correction_support/fork_head_adoption.rs)
+shows request execution, explicit branch selection and retirement.
 History pages are branch-occurrence scoped and bounded by the caller's nonzero
 limit. Their entries are descriptive until `select` asks World to issue an
 exact historical observation; copied commit identities cannot perform that

@@ -10,15 +10,17 @@ use worth_runtime_world::facade::{
 };
 
 use super::{WorthQueryProductBranch, WorthQueryProductBranches};
+mod expected_source;
 use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchCreationDenial, WorthQueryProductRuntime,
 };
+use expected_source::ForkSource;
 
 /// In-progress creation from one explicit product occurrence.
 #[must_use = "a product branch fork is configured and created or dropped"]
 pub struct WorthQueryProductBranchFork<'runtime> {
     runtime: &'runtime WorthQueryProductRuntime,
-    source: WorthQueryProductBranch,
+    source: ForkSource,
     intent: Option<WorthQueryProductBranchForkIntent>,
     output_lineage: Option<std::sync::Arc<std::sync::Mutex<
         crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
@@ -48,12 +50,21 @@ impl<'runtime> WorthQueryProductBranches<'runtime> {
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
         WorthQueryProductBranchFork {
             runtime: self.runtime,
-            source,
+            source: ForkSource::Current(source),
             intent: None,
             output_lineage: None,
             application_provider: None,
             source_program_resolver: None,
         }
+    }
+
+    pub(crate) fn fork_expected(
+        self,
+        source: super::WorthQueryProductBranchLease,
+    ) -> WorthQueryProductBranchFork<'runtime> {
+        let mut fork = self.fork(source.product_branch());
+        fork.source = ForkSource::Expected(source);
+        fork
     }
 }
 
@@ -86,6 +97,17 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProductBranch, WorthQueryProductBranchCreateError> {
+        self.create_retaining_source(phase)
+            .map(|(branch, _)| branch)
+    }
+
+    pub(crate) fn create_retaining_source(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        (WorthQueryProductBranch, super::WorthQueryProductBranchLease),
+        WorthQueryProductBranchCreateError,
+    > {
         let phase_request = phase.execution_request_for(self.runtime).map_err(|_| {
             WorthQueryProductBranchCreateError::SourceAdmission(
                 super::WorthQueryProductBranchAdmissionDenial::Refused(
@@ -103,7 +125,7 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             source_program_resolver,
         } = self;
         let application_commit_lane = application_provider.map(|provider| {
-            provider.application_branch_commit_lane_for_occurrence(source.occurrence())
+            provider.application_branch_commit_lane_for_occurrence(source.branch().occurrence())
         });
         let _coordination = application_commit_lane.as_ref().map(|lane| lane.enter());
         let components = intent
@@ -145,8 +167,8 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             ProductBranchCreationPlans::new(relational, signal),
         )
         .expect("generated Query product branch names satisfy World limits");
-        let source = runtime
-            .admit_product_occurrence(source.occurrence())
+        let source = source
+            .admit(runtime)
             .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
         let source_program = source_program_resolver
              .map(|resolver| {
@@ -174,8 +196,9 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
                         .unwrap_or_else(std::sync::PoisonError::into_inner)
                         .register_fork(source.observation(), &observation);
                 }
-                Ok(WorthQueryProductBranch::from_occurrence(
-                    observation.lifecycle_incarnation(),
+                Ok((
+                    WorthQueryProductBranch::from_occurrence(observation.lifecycle_incarnation()),
+                    source,
                 ))
             }
             RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => {

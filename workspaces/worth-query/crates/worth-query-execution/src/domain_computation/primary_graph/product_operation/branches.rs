@@ -9,6 +9,7 @@ use worth_runtime_world::facade::{
 };
 
 use super::WorthQueryApplicationProductBranchCleanup;
+mod expected_source;
 use super::{
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverage,
     WorthQueryProgramAdoptionCoverageDenial,
@@ -18,6 +19,10 @@ use crate::basis::{
     WorthQueryProductBranchRecoveryDenial, WorthQueryProductBranches,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+pub use expected_source::{
+    WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchCloseFailure,
+    WorthQueryExpectedProductBranchFork,
+};
 
 /// The product branch lifecycle of one application runtime: fork branches,
 /// issue program adoption coverage, page through recovery, and find pending

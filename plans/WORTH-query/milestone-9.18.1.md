@@ -1837,6 +1837,12 @@ stand in for this acceptance.
 ## Phase 17: Proposal Acceptance Through Fresh Ordinary Requests
 
 **Status: unfinished; required. Priority: P3.**
+
+The public expected-source fork prerequisite is qualified. It consumes an
+admitted application selection, retains that exact source
+with the created candidate, and preserves candidate/source custody on refused
+close. Stored expected-basis readmission, proposal persistence, guarded model-head
+adoption and the complete private acceptance journey remain unfinished.
 **Owner:** Query entry/basis admission, Native/World source-basis receivers and
 Proprietary authoring.
 **Depends on:** ordinary governed application requests and existing source
