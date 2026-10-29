@@ -116,6 +116,8 @@ pub fn derive_canonical_digest_with_admission<Stop>(
     result.map_err(|stop| stop.preserve(refusal))
 }
 
+/// One compiled derivation. The admission closure is erased before this call.
+#[inline(never)]
 fn derive_canonical_digest_admitted(
     ready: CanonicalDigestDerivationReadyArtifact,
     mut admission: Option<&mut CanonicalResourceAdmission<'_>>,

@@ -113,11 +113,34 @@ pub fn prepare_canonical_basis_sequence(
 pub(super) fn prepare_owned_sequence<Stop>(
     version: CanonicalizationRuleVersion,
     domain: CanonicalBasisDomain,
-    mut entries: Vec<CanonicalBasisEntry>,
+    entries: Vec<CanonicalBasisEntry>,
     mut admit: Option<&mut dyn FnMut(usize, usize) -> Result<(), Stop>>,
 ) -> Result<CanonicalBasisReadyArtifact, super::CanonicalBasisPreparationStop<Stop>> {
+    let mut refusal = None;
+    let result = match admit.as_mut() {
+        Some(admit) => {
+            let mut erased = |work, bytes| {
+                admit(work, bytes).map_err(|stop| {
+                    refusal = Some(stop);
+                })
+            };
+            prepare_owned_sequence_core(version, domain, entries, Some(&mut erased))
+        }
+        None => prepare_owned_sequence_core(version, domain, entries, None),
+    };
+    result.map_err(|stop| stop.restore(refusal))
+}
+
+/// One compiled sequence preparation. `Stop` lives in the shell's output slot.
+#[inline(never)]
+fn prepare_owned_sequence_core(
+    version: CanonicalizationRuleVersion,
+    domain: CanonicalBasisDomain,
+    mut entries: Vec<CanonicalBasisEntry>,
+    mut admit: Option<&mut dyn FnMut(usize, usize) -> Result<(), ()>>,
+) -> Result<CanonicalBasisReadyArtifact, super::CanonicalBasisPreparationStop<()>> {
     use super::CanonicalBasisPreparationStop::{AccountingOverflow, Construction, Resource};
-    if let Some(admit) = admit.as_mut() {
+    if let Some(admit) = admit.as_deref_mut() {
         u32::try_from(entries.len()).map_err(|_| AccountingOverflow)?;
         let domain_width = match domain {
             CanonicalBasisDomain::Future(name) => name.len(),
@@ -164,7 +187,7 @@ pub(super) fn prepare_owned_sequence<Stop>(
         .filter(|entry| entry.domain() == CanonicalBasisDomain::CompatibilityLowering)
         .count() as u32;
 
-    if let Some(admit) = admit.as_mut() {
+    if let Some(admit) = admit.as_deref_mut() {
         let width = super::entry_measurement::measure(&entries, admit)?;
         let comparison_width = width.entry;
         let (work, bytes) =

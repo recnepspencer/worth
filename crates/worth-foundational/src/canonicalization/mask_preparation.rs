@@ -1,6 +1,7 @@
 use worth_proof::{Artifact, TransitionOutcome};
 
 use crate::aspects::{AspectKey, AspectMask, DiagnosticMask, MutationMask, ProjectionMask};
+use crate::CanonicalFieldPath;
 
 use super::{
     prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
@@ -48,7 +49,12 @@ pub fn prepare_aspect_mask_for_digest<Mode>(
 where
     Mode: DigestPreparationMaskMode,
 {
-    let basis = digest_basis_for_aspect_mask(&aspect_key, &mask);
+    let basis = digest_basis_for_aspect_mask_core(
+        &aspect_key,
+        mask.is_whole_aspect(),
+        mask.paths(),
+        Mode::digest_mask_mode(),
+    );
 
     TransitionOutcome::success(Artifact::new(DigestPreparationReadyAspectMask::new(
         aspect_key, mask, basis,
@@ -72,39 +78,45 @@ where
     prepare_canonical_basis_sequence(
         version,
         CanonicalBasisDomain::AspectMask,
-        canonical_basis_for_aspect_mask(&aspect_key, &mask),
+        canonical_basis_for_aspect_mask_core(
+            &aspect_key,
+            mask.is_whole_aspect(),
+            mask.paths(),
+            Mode::digest_mask_mode(),
+        ),
     )
 }
 
-fn canonical_basis_for_aspect_mask<Mode>(
+/// One compiled mask basis. `Mode` only selects [`CanonicalDigestMaskMode`].
+#[inline(never)]
+fn canonical_basis_for_aspect_mask_core(
     aspect_key: &AspectKey,
-    mask: &AspectMask<Mode>,
-) -> Vec<CanonicalBasisEntry>
-where
-    Mode: DigestPreparationMaskMode,
-{
-    digest_basis_for_aspect_mask(aspect_key, mask)
+    whole: bool,
+    paths: &[CanonicalFieldPath],
+    mode: CanonicalDigestMaskMode,
+) -> Vec<CanonicalBasisEntry> {
+    digest_basis_for_aspect_mask_core(aspect_key, whole, paths, mode)
         .into_iter()
         .map(canonical_entry_for_mask_digest_entry)
         .collect()
 }
 
-fn digest_basis_for_aspect_mask<Mode>(
+/// One compiled digest-entry walk for a mask. The mode is a value, not a type.
+#[inline(never)]
+fn digest_basis_for_aspect_mask_core(
     aspect_key: &AspectKey,
-    mask: &AspectMask<Mode>,
-) -> Vec<CanonicalDigestPreparationEntry>
-where
-    Mode: DigestPreparationMaskMode,
-{
-    let mode = Mode::digest_mask_mode();
-    if mask.is_whole_aspect() {
+    whole: bool,
+    paths: &[CanonicalFieldPath],
+    mode: CanonicalDigestMaskMode,
+) -> Vec<CanonicalDigestPreparationEntry> {
+    if whole {
         return vec![CanonicalDigestPreparationEntry::MaskWholeAspect {
             key: aspect_key.clone(),
             mode,
         }];
     }
 
-    mask.paths()
+    paths
         .iter()
         .cloned()
         .map(|path| CanonicalDigestPreparationEntry::MaskFieldPath {

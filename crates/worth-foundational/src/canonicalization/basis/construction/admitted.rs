@@ -18,6 +18,26 @@ pub enum CanonicalBasisPreparationStop<Stop> {
     UnsupportedSortImplementation(super::CanonicalSortImplementationDenial),
 }
 
+impl CanonicalBasisPreparationStop<()> {
+    /// Puts the caller's original refusal back onto a stop whose cause was erased.
+    pub(super) fn restore<Stop>(
+        self,
+        refusal: Option<Stop>,
+    ) -> CanonicalBasisPreparationStop<Stop> {
+        match self {
+            Self::Construction(denial) => CanonicalBasisPreparationStop::Construction(denial),
+            Self::Resource { quote, .. } => CanonicalBasisPreparationStop::Resource {
+                cause: refusal.expect("resource callback retains its original refusal"),
+                quote,
+            },
+            Self::AccountingOverflow => CanonicalBasisPreparationStop::AccountingOverflow,
+            Self::UnsupportedSortImplementation(denial) => {
+                CanonicalBasisPreparationStop::UnsupportedSortImplementation(denial)
+            }
+        }
+    }
+}
+
 /// Moves owned entries through the ordinary canonical validation and sort.
 /// Work and temporary storage are admitted by their owner before use; the
 /// callback does not select canonical meaning or mint readiness proofs.

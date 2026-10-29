@@ -266,11 +266,21 @@ impl FoundationalPolicyAdmissionPerformanceClaimBuilder {
 }
 
 fn finalize_claim<T>(
-    mut state: FoundationalPerformanceClaimBuilderState,
+    state: FoundationalPerformanceClaimBuilderState,
     allowed_boundaries: &[FoundationalPerformanceBoundary],
     allowed_strengths: &[FoundationalPerformanceEvidenceStrength],
     build: impl FnOnce(FoundationalPerformanceClaimPayload) -> T,
 ) -> Result<T, FoundationalPerformanceClaimConstructionDenial> {
+    finalize_claim_core(state, allowed_boundaries, allowed_strengths).map(build)
+}
+
+/// One compiled claim check. The claim constructor is the shell's only generic call.
+#[inline(never)]
+fn finalize_claim_core(
+    mut state: FoundationalPerformanceClaimBuilderState,
+    allowed_boundaries: &[FoundationalPerformanceBoundary],
+    allowed_strengths: &[FoundationalPerformanceEvidenceStrength],
+) -> Result<FoundationalPerformanceClaimPayload, FoundationalPerformanceClaimConstructionDenial> {
     let boundary = state
         .boundary
         .ok_or(FoundationalPerformanceClaimConstructionDenial::MissingBoundary)?;
@@ -348,7 +358,7 @@ fn finalize_claim<T>(
     )
     .map_err(FoundationalPerformanceClaimConstructionDenial::PrimitiveLegality)?;
 
-    Ok(build(FoundationalPerformanceClaimPayload {
+    Ok(FoundationalPerformanceClaimPayload {
         boundary,
         evidence_strength,
         breadth_locality,
@@ -359,7 +369,7 @@ fn finalize_claim<T>(
         included_work: state.included_work,
         excluded_work: state.excluded_work,
         observation_context: state.observation_context,
-    }))
+    })
 }
 
 fn is_optional_observation_work(work: &FoundationalPerformanceWorkClass) -> bool {

@@ -1,17 +1,16 @@
+use js_sys::Function;
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
-#[cfg(test)]
-use std::panic::{catch_unwind, AssertUnwindSafe};
-
-use js_sys::Function;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use worth_signal::facade::runtime::{ObservationNotice, ObservationPolicy, ObservationReadContext};
 
 use crate::boundary::serde::to_js;
 #[cfg(test)]
 mod policy_codec_tests;
+#[cfg(test)]
+use crate::runtime::callback_panic::callback_returned;
 #[cfg(test)]
 use std::rc::Rc;
 
@@ -188,10 +187,21 @@ pub fn callback_stats(scope_id: u64) -> WebCallbackStats {
 }
 
 fn with_registry_mut<R>(scope_id: u64, f: impl FnOnce(&mut WebCallbackRegistry) -> R) -> R {
+    let mut slot = None;
+    let mut f = Some(f);
+    with_registry_mut_core(scope_id, &mut |registry| {
+        slot = Some(f.take().expect("registry callback runs once")(registry));
+    });
+    slot.expect("registry callback stored its output")
+}
+
+/// One compiled registry borrow. The callback's result stays in the shell's slot.
+#[inline(never)]
+fn with_registry_mut_core(scope_id: u64, f: &mut dyn FnMut(&mut WebCallbackRegistry)) {
     WEB_RUNTIME_CALLBACKS.with(|state| {
         let mut state = state.borrow_mut();
         let registry = state.registries.entry(scope_id).or_default();
-        f(registry)
+        f(registry);
     })
 }
 
@@ -235,9 +245,10 @@ impl WebCallbackRegistry {
             }
             #[cfg(test)]
             RegisteredWebCallback::NativeWatch(callback) => {
-                self.record_callback_invocation(
-                    catch_unwind(AssertUnwindSafe(|| callback(notice))).is_ok(),
-                );
+                let mut notice = Some(notice);
+                self.record_callback_invocation(callback_returned(&mut || {
+                    callback(notice.take().expect("watch notice is delivered once"));
+                }));
             }
             RegisteredWebCallback::WasmEffect(_) => {}
             #[cfg(test)]
@@ -256,9 +267,7 @@ impl WebCallbackRegistry {
             }
             #[cfg(test)]
             RegisteredWebCallback::NativeEffect(callback) => {
-                self.record_callback_invocation(
-                    catch_unwind(AssertUnwindSafe(|| callback())).is_ok(),
-                );
+                self.record_callback_invocation(callback_returned(&mut || callback()));
             }
             RegisteredWebCallback::WasmWatch(_) => {}
             #[cfg(test)]

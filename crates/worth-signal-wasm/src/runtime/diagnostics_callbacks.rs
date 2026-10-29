@@ -1,12 +1,11 @@
+use js_sys::Function;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
-#[cfg(test)]
-use std::panic::{catch_unwind, AssertUnwindSafe};
-
-use js_sys::Function;
 use wasm_bindgen::prelude::*;
 
+#[cfg(test)]
+use crate::runtime::callback_panic::callback_returned;
 #[cfg(test)]
 use std::rc::Rc;
 
@@ -99,10 +98,21 @@ fn take_pending_wasm_callback() -> Option<Function> {
 }
 
 fn with_registry_mut<R>(scope_id: u64, f: impl FnOnce(&mut DiagnosticsCallbackRegistry) -> R) -> R {
+    let mut slot = None;
+    let mut f = Some(f);
+    with_registry_mut_core(scope_id, &mut |registry| {
+        slot = Some(f.take().expect("registry callback runs once")(registry));
+    });
+    slot.expect("registry callback stored its output")
+}
+
+/// One compiled registry borrow. The callback's result stays in the shell's slot.
+#[inline(never)]
+fn with_registry_mut_core(scope_id: u64, f: &mut dyn FnMut(&mut DiagnosticsCallbackRegistry)) {
     WEB_RUNTIME_DIAGNOSTICS_CALLBACKS.with(|state| {
         let mut state = state.borrow_mut();
         let registry = state.registries.entry(scope_id).or_default();
-        f(registry)
+        f(registry);
     })
 }
 
@@ -161,7 +171,7 @@ impl DiagnosticsCallbackRegistry {
                 }
                 #[cfg(test)]
                 RegisteredDiagnosticsCallback::Native(callback) => {
-                    let _ = catch_unwind(AssertUnwindSafe(|| callback()));
+                    callback_returned(&mut || callback());
                 }
             }
         }

@@ -23,11 +23,13 @@ pub(in crate::canonicalization) fn prepare_sequence_with_admission<Stop>(
     result.map_err(|stop| stop.preserve(refusal))
 }
 
+/// One compiled sequence admission. The caller's `Stop` stays in the shell.
+#[inline(never)]
 fn prepare_sequence(
     sequence: CanonicalBasisReadyArtifact,
     algorithm_id: CanonicalDigestAlgorithmId,
     budget: CanonicalDigestWorkBudget,
-    admit: &mut impl FnMut(usize, usize) -> Result<(), ()>,
+    admit: &mut dyn FnMut(usize, usize) -> Result<(), ()>,
 ) -> Result<super::CanonicalDigestDerivationReadyArtifact, CanonicalDigestPreparationStop> {
     let bytes = sequence.payload().version().as_str().len();
     let work = bytes

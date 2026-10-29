@@ -54,13 +54,20 @@ impl DiagnosticMaskFrontDoor {
 fn build_single_field_mask<Mode>(
     keys: impl IntoIterator<Item = impl Into<String>>,
 ) -> Result<AspectMask<Mode>, AspectFrontDoorConstructionDenial> {
+    let mut keys = keys.into_iter();
+    collect_single_field_paths(&mut || keys.next().map(Into::into)).map(AspectMask::new)
+}
+
+/// One compiled field-path walk. `Mode` only wraps the finished paths.
+#[inline(never)]
+fn collect_single_field_paths(
+    next_key: &mut dyn FnMut() -> Option<String>,
+) -> Result<Vec<CanonicalFieldPath>, AspectFrontDoorConstructionDenial> {
     let mut paths = Vec::new();
-    for raw_key in keys {
-        let raw_key = raw_key.into();
-        let field_key = FieldKey::new(raw_key.clone()).ok_or(
-            AspectFrontDoorConstructionDenial::InvalidFieldKey(raw_key.clone()),
-        )?;
+    while let Some(raw_key) = next_key() {
+        let field_key = FieldKey::new(raw_key.clone())
+            .ok_or(AspectFrontDoorConstructionDenial::InvalidFieldKey(raw_key))?;
         paths.push(CanonicalFieldPath::single(field_key));
     }
-    Ok(AspectMask::new(paths))
+    Ok(paths)
 }

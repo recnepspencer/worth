@@ -1,8 +1,5 @@
 use std::collections::BTreeMap;
 
-#[cfg(test)]
-use std::panic::{catch_unwind, AssertUnwindSafe};
-
 use js_sys::Function;
 use wasm_bindgen::JsValue;
 
@@ -23,6 +20,8 @@ use super::result_translation::{failure_message_from_js, finish_js_invocation};
 use super::runtime_reads::{
     clear_installed_runtime_reads, install_runtime_callback_reads, InstalledRuntimeCallbackReads,
 };
+#[cfg(test)]
+use crate::runtime::callback_panic::callback_returned;
 
 pub fn invoke_compute(
     token: ComputeCallbackToken,
@@ -110,7 +109,11 @@ fn dispatch_native_callback(
     >,
     installed_runtime_reads: &mut Option<InstalledRuntimeCallbackReads>,
 ) -> Result<ComputeCallbackInvocationResult, ComputeCallbackFailure> {
-    let result = catch_unwind(AssertUnwindSafe(|| callback())).map_err(|_| {
+    let mut produced = None;
+    let panicked = !callback_returned(&mut || {
+        produced = Some(callback());
+    });
+    if panicked {
         clear_installed_runtime_reads(installed_runtime_reads);
         let failure = ComputeCallbackFailure {
             class: ComputeCallbackFailureClass::CallbackThrew,
@@ -119,8 +122,9 @@ fn dispatch_native_callback(
         };
         record_collector_failure();
         record_invocation_failure(&failure);
-        failure
-    })?;
+        return Err(failure);
+    }
+    let result = produced.expect("contained native callback returned");
     let invocation = result.inspect_err(|failure| {
         clear_installed_runtime_reads(installed_runtime_reads);
         record_collector_failure();

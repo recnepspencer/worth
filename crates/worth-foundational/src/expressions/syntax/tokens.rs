@@ -221,8 +221,18 @@ impl<'source> Lexer<'source> {
         Ok(Token::Integer(value))
     }
 
-    fn take_while(&mut self, accept: impl Fn(&u8) -> bool) {
-        while self.bytes.get(self.position).is_some_and(&accept) {
+    fn take_while(&mut self, mut accept: impl Fn(&u8) -> bool) {
+        self.take_while_core(&mut accept);
+    }
+
+    /// One compiled byte walk. The predicate is the shell's only generic call.
+    #[inline(never)]
+    fn take_while_core(&mut self, accept: &mut dyn FnMut(&u8) -> bool) {
+        while self
+            .bytes
+            .get(self.position)
+            .is_some_and(|byte| accept(byte))
+        {
             self.position += 1;
         }
     }

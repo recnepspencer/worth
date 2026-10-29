@@ -86,9 +86,20 @@ pub fn compute_callback_stats() -> ComputeCallbackStats {
 }
 
 pub(super) fn with_registry_mut<R>(f: impl FnOnce(&mut ComputeCallbackStats) -> R) -> R {
+    let mut slot = None;
+    let mut f = Some(f);
+    with_registry_mut_core(&mut |stats| {
+        slot = Some(f.take().expect("registry callback runs once")(stats));
+    });
+    slot.expect("registry callback stored its output")
+}
+
+/// One compiled stats borrow. The callback's result stays in the shell's slot.
+#[inline(never)]
+fn with_registry_mut_core(f: &mut dyn FnMut(&mut ComputeCallbackStats)) {
     COMPUTE_CALLBACKS.with(|registry| {
         let mut borrowed = registry.borrow_mut();
-        f(&mut borrowed.stats)
+        f(&mut borrowed.stats);
     })
 }
 

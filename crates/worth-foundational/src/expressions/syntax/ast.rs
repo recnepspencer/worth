@@ -157,6 +157,12 @@ impl SyntaxNode {
 
     /// A copy with every child replaced by `map(child)`, in `children` order.
     pub(crate) fn map_children(&self, mut map: impl FnMut(NodeId) -> NodeId) -> Self {
+        self.map_children_with(&mut map)
+    }
+
+    /// One compiled child walk. The replacement closure is the shell's only generic call.
+    #[inline(never)]
+    fn map_children_with(&self, map: &mut dyn FnMut(NodeId) -> NodeId) -> Self {
         let mut node = self.clone();
         match &mut node {
             Self::Bool(_) | Self::Integer(_) | Self::Float(_) | Self::String(_) => {}

@@ -1,4 +1,6 @@
 pub mod adapters;
+#[cfg(test)]
+mod callback_panic;
 pub mod compute_callbacks;
 pub mod core;
 pub mod diagnostics_callbacks;

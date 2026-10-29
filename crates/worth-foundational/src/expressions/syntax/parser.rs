@@ -152,13 +152,27 @@ impl Parser<'_, '_> {
         &mut self,
         parse: impl FnOnce(&mut Self) -> ExpressionResult<T>,
     ) -> ExpressionResult<T> {
-        if self.nesting >= self.limits.max_depth {
+        let mut slot = None;
+        let mut parse = Some(parse);
+        let admitted = self.descend(&mut |parser| {
+            slot = Some(parse.take().expect("nested parse runs once")(parser));
+        });
+        if !admitted {
             return Err(self.too_deep(self.span));
         }
+        slot.expect("nested parse stored its output")
+    }
+
+    /// One compiled descent. The parse closure is the shell's only generic call.
+    #[inline(never)]
+    fn descend(&mut self, parse: &mut dyn FnMut(&mut Self)) -> bool {
+        if self.nesting >= self.limits.max_depth {
+            return false;
+        }
         self.nesting += 1;
-        let result = parse(self);
+        parse(self);
         self.nesting -= 1;
-        result
+        true
     }
 
     pub(super) fn expression(&mut self) -> ExpressionResult<NodeId> {

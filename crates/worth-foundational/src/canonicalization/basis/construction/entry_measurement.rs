@@ -11,10 +11,12 @@ pub(super) struct EntryComparisonWidth {
     pub duplicate_clone_bytes: usize,
 }
 
-pub(super) fn measure<Stop>(
+/// One compiled measurement walk. Admission failure is `()`, restored by the caller.
+#[inline(never)]
+pub(super) fn measure(
     entries: &[CanonicalBasisEntry],
-    admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
-) -> Result<EntryComparisonWidth, super::CanonicalBasisPreparationStop<Stop>> {
+    admit: &mut dyn FnMut(usize, usize) -> Result<(), ()>,
+) -> Result<EntryComparisonWidth, super::CanonicalBasisPreparationStop<()>> {
     use super::CanonicalBasisPreparationStop::{AccountingOverflow, Resource};
     let mut width = EntryComparisonWidth::default();
     for entry in entries {
