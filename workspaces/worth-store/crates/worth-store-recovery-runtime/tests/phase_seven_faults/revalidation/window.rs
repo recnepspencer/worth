@@ -54,7 +54,7 @@ pub(super) fn rejoin_denied(
     assert!(indeterminate.reopen_failure().is_none());
     assert!(!indeterminate.checkpoint_residue_indeterminate());
     assert_eq!(indeterminate.recovery_effects(), 0);
-    indeterminate
+    *indeterminate
 }
 
 /// The cleanup debt settled before the rejoin, still named on the outcome.

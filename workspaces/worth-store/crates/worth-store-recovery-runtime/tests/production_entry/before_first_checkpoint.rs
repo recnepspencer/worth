@@ -102,7 +102,7 @@ impl KilledWorld {
 
     fn recover(&self, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
         match WorthStoreRecovery::recover(certified_release_serving::request(&self.root)) {
-            PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
+            PhysicalRecoveryOutcome::Recovered(handoff) => *handoff,
             PhysicalRecoveryOutcome::Blocked(block) => panic!(
                 "{stage} blocked: kind={:?}; artifact={:?}; sources={:?}; cause={:?}; effects={}",
                 block.cause(),
@@ -124,7 +124,7 @@ impl KilledWorld {
         let seal = self
             .recover(stage)
             .into_core()
-            .into_checkpoint_custody()
+            .certification_release_media_into_checkpoint_custody()
             .expect("generation-zero custody seal");
         certified_release_serving::admit_serving_with_seal(&self.root, seal)
     }
@@ -214,7 +214,7 @@ fn assert_recovers_reads_back_and_reopens(write: FirstWrite, key: u8) {
     assert_eq!(reopened.core().recovery_effect_count(), 0);
     let seal = reopened
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("reopened custody seal");
     let serving = certified_release_serving::admit_serving_with_seal(&world.root, seal);
     world.assert_reads_back(&serving);

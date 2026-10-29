@@ -87,7 +87,7 @@ pub(super) fn recover(root: PathBuf, mutation: Mutation) {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("selected C8 custody seal");
     if mutation == Mutation::AfterSealCheckpoint {
         alter_selected_checkpoint(&root.join("families/checkpoint.current"));

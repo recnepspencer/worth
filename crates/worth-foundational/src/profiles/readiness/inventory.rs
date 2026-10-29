@@ -37,42 +37,42 @@ pub(super) fn certified_surface_evidence() -> Vec<FoundationalProfileCertifiedSu
             FoundationalProfileCertifiedSurface::ProfileFamilies,
             FoundationalProfileSyntheticRuntimePressure::FamilyAdjacencyHostility,
             FoundationalProfileCompileFailBoundary::RawLabelsCannotSatisfyProfileFamilyApis,
-            "tests/certification/profiles/composition.rs",
+            "tests/worth_foundational/fast/certification/profiles/composition.rs",
             "tests/ui/profiles/family_boundaries/raw_string_cannot_satisfy_richness_profile.rs",
         ),
         FoundationalProfileCertifiedSurfaceEvidence::new(
             FoundationalProfileCertifiedSurface::ProfileComposition,
             FoundationalProfileSyntheticRuntimePressure::IndependentConstructionParity,
             FoundationalProfileCompileFailBoundary::PartialOrBagConstructionCannotSatisfyProfileSetApis,
-            "tests/certification/profiles/composition.rs",
+            "tests/worth_foundational/fast/certification/profiles/composition.rs",
             "tests/ui/profiles/set_construction/raw_collection_cannot_satisfy_profile_set_api.rs",
         ),
         FoundationalProfileCertifiedSurfaceEvidence::new(
             FoundationalProfileCertifiedSurface::ProgressionAndAttachment,
             FoundationalProfileSyntheticRuntimePressure::AttachmentTargetLaw,
             FoundationalProfileCompileFailBoundary::PlainPayloadCannotSatisfyAttachmentApis,
-            "tests/certification/profiles/progression_and_attachment.rs",
+            "tests/worth_foundational/fast/certification/profiles/progression_and_attachment.rs",
             "tests/ui/profiles/attachment_boundaries/plain_payload_cannot_satisfy_boundary_profiled_api.rs",
         ),
         FoundationalProfileCertifiedSurfaceEvidence::new(
             FoundationalProfileCertifiedSurface::CanonicalIdentityAndDifference,
             FoundationalProfileSyntheticRuntimePressure::IndependentConstructionParity,
             FoundationalProfileCompileFailBoundary::RawDigestCannotSatisfyProfileIdentityApis,
-            "tests/certification/profiles/identity_and_difference.rs",
+            "tests/worth_foundational/fast/certification/profiles/identity_and_difference.rs",
             "tests/ui/profiles/identity_boundaries/raw_digest_cannot_satisfy_profile_identity_api.rs",
         ),
         FoundationalProfileCertifiedSurfaceEvidence::new(
             FoundationalProfileCertifiedSurface::MaterializationAndElision,
             FoundationalProfileSyntheticRuntimePressure::ReducedRichnessSuppression,
             FoundationalProfileCompileFailBoundary::IllegalTargetSurfaceInventoriesCannotBeWorthd,
-            "tests/certification/profiles/materialization.rs",
+            "tests/worth_foundational/fast/certification/profiles/materialization.rs",
             "tests/ui/profiles/materialization_boundaries/target_surface_inventory_fields_are_private.rs",
         ),
         FoundationalProfileCertifiedSurfaceEvidence::new(
             FoundationalProfileCertifiedSurface::CertificationStrengthening,
             FoundationalProfileSyntheticRuntimePressure::ProofBearingCertificationBoundary,
             FoundationalProfileCompileFailBoundary::WrongStrengthProofBearingCertificationCannotSatisfyStrongerApis,
-            "tests/certification/profiles/certification_posture.rs",
+            "tests/worth_foundational/fast/certification/profiles/certification_posture.rs",
             "tests/ui/profiles/certification_boundaries/evidence_backed_artifact_cannot_satisfy_production_certified_boundary_api.rs",
         ),
     ]
@@ -153,31 +153,31 @@ pub(super) fn phase_gates() -> Vec<FoundationalProfilePhaseGateEvidence> {
     vec![
         FoundationalProfilePhaseGateEvidence::new(
             FoundationalProfileMilestone3PhaseGate::TypedFamilies,
-            "tests/certification/profiles/composition.rs",
+            "tests/worth_foundational/fast/certification/profiles/composition.rs",
         ),
         FoundationalProfilePhaseGateEvidence::new(
             FoundationalProfileMilestone3PhaseGate::ComposedProfileSet,
-            "tests/certification/profiles/composition.rs",
+            "tests/worth_foundational/fast/certification/profiles/composition.rs",
         ),
         FoundationalProfilePhaseGateEvidence::new(
             FoundationalProfileMilestone3PhaseGate::ProgressionAndAttachment,
-            "tests/certification/profiles/progression_and_attachment.rs",
+            "tests/worth_foundational/fast/certification/profiles/progression_and_attachment.rs",
         ),
         FoundationalProfilePhaseGateEvidence::new(
             FoundationalProfileMilestone3PhaseGate::CanonicalIdentityAndDifference,
-            "tests/certification/profiles/identity_and_difference.rs",
+            "tests/worth_foundational/fast/certification/profiles/identity_and_difference.rs",
         ),
         FoundationalProfilePhaseGateEvidence::new(
             FoundationalProfileMilestone3PhaseGate::MaterializationAndElision,
-            "tests/certification/profiles/materialization.rs",
+            "tests/worth_foundational/fast/certification/profiles/materialization.rs",
         ),
         FoundationalProfilePhaseGateEvidence::new(
             FoundationalProfileMilestone3PhaseGate::CertificationStrengthening,
-            "tests/certification/profiles/certification_posture.rs",
+            "tests/worth_foundational/fast/certification/profiles/certification_posture.rs",
         ),
         FoundationalProfilePhaseGateEvidence::new(
             FoundationalProfileMilestone3PhaseGate::ProductionReadiness,
-            "tests/certification/profiles/readiness.rs",
+            "tests/worth_foundational/fast/certification/profiles/readiness.rs",
         ),
     ]
 }
@@ -187,7 +187,7 @@ pub(super) fn public_surface_inventory() -> Vec<FoundationalProfilePublicSurface
 }
 
 pub(super) const fn public_surface_evidence_path() -> &'static str {
-    "tests/certification/profiles/grouped_surface.rs"
+    "tests/worth_foundational/fast/certification/profiles/grouped_surface.rs"
 }
 
 pub(super) const fn public_surface_compile_fail_path() -> &'static str {

@@ -7,7 +7,7 @@ the affected integration boundaries without reopening their completed
 portfolios.
 
 The [Database Foundation Roadmap](../database-foundation/roadmap.md) replaces
-the remaining reconstruction-to-integration sequence. Its Milestone 1 through Milestone 5
+the remaining reconstruction-to-integration sequence. Its Milestone 1 through Milestone 4
 program starts from these physical owners and the current semantic runtimes,
 preserves canonical commit authority, and reaches the production-host
 lost-response/retry journey at Milestone 3.

@@ -7,12 +7,12 @@ output=$(mktemp)
 trap 'rm -f "$output"' EXIT
 status=0
 cargo test -p worth-runtime-world \
-  --test runtime_world_certification operation_control:: -- --color never 2>&1 \
+  --test worth_runtime_world operation_control:: -- --color never 2>&1 \
   | tee "$output" || status=$?
 if (( status != 0 )); then
   exit "$status"
 fi
-if ! grep -Eq '^test court::operation_control::[^ ]+ \.\.\. ok$' "$output"; then
+if ! grep -Eq '^test (fast|exhaustive)::court::operation_control::[^ ]+ \.\.\. ok$' "$output"; then
   echo "Runtime World operation-control lane executed zero passing cases" >&2
   exit 1
 fi

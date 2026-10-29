@@ -57,6 +57,7 @@ pub struct RelationalStoreHome {
     runtime: RelationalRuntime,
     cold_source: Arc<crate::cold_source::StoreColdSource>,
     serving: Arc<ServingPhysicalRuntime>,
+    descriptor: HomeDescriptor,
 }
 
 impl RelationalStoreHome {
@@ -113,10 +114,14 @@ impl RelationalStoreHome {
                 return Err(Refusal::RuntimeConstruction(denial));
             }
         };
-        let readmitted = admit_descriptor(&serving, &cold_source, &runtime)
-            .and_then(|()| readmit_history(&serving, &cold_source, &mut runtime, execution));
+        let readmitted =
+            admit_descriptor(&serving, &cold_source, &runtime).and_then(|descriptor| {
+                readmit_history(&serving, &cold_source, &mut runtime, execution)?;
+                Ok(descriptor)
+            });
         match readmitted {
-            Ok(()) => Ok(Self {
+            Ok(descriptor) => Ok(Self {
+                descriptor,
                 runtime,
                 cold_source,
                 serving,
@@ -127,6 +132,16 @@ impl RelationalStoreHome {
                 Err(refusal)
             }
         }
+    }
+
+    /// Stable across every reopen; issued by Store at namespace initialization.
+    pub fn home_identity(&self) -> crate::StableStoreIdentity {
+        self.descriptor.identity
+    }
+
+    /// Durably advanced before this home begins service.
+    pub fn incarnation(&self) -> u64 {
+        self.descriptor.incarnation
     }
 
     /// The live runtime. Its commits are durable before they are visible.
@@ -168,11 +183,7 @@ fn open_physical_store(
     location: &Path,
     opening: PhysicalOpening,
 ) -> Result<ServingPhysicalRuntime, Refusal> {
-    if request::location_is_unused(location)? {
-        physical_store::initialize(location, opening).map_err(Refusal::Physical)
-    } else {
-        physical_store::recover(location, opening).map_err(Refusal::Physical)
-    }
+    physical_store::open(location, opening).map_err(Refusal::Physical)
 }
 
 /// Require the home's descriptor to name this runtime. A Store with no
@@ -182,10 +193,14 @@ fn admit_descriptor(
     serving: &ServingPhysicalRuntime,
     cold_source: &crate::cold_source::StoreColdSource,
     runtime: &RelationalRuntime,
-) -> Result<(), Refusal> {
-    let expected = HomeDescriptor::of(runtime);
+) -> Result<HomeDescriptor, Refusal> {
+    let expected = HomeDescriptor::of(runtime, serving.store_identity());
     match home_descriptor::read(serving).map_err(Refusal::Descriptor)? {
-        Some(found) if found == expected => Ok(()),
+        Some(found) if found.same_binding(&expected) => {
+            let next = found.advanced().map_err(Refusal::Descriptor)?;
+            home_descriptor::publish(serving, &next).map_err(Refusal::Descriptor)?;
+            Ok(next)
+        }
         Some(found) => Err(Refusal::ForeignHome {
             expected: expected.describe(),
             found: found.describe(),
@@ -203,7 +218,9 @@ fn admit_descriptor(
             if has_history {
                 return Err(Refusal::DescriptorMissing);
             }
-            home_descriptor::publish(serving, &expected).map_err(Refusal::Descriptor)
+            let initial = expected.advanced().map_err(Refusal::Descriptor)?;
+            home_descriptor::publish(serving, &initial).map_err(Refusal::Descriptor)?;
+            Ok(initial)
         }
     }
 }

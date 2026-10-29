@@ -16,6 +16,19 @@ use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenia
 mod consecutive_undo;
 
 #[test]
+fn authored_retirement_restores_exact_logical_payload_under_new_physical_identity() {
+    // Real Retire output reads are sealed to retirement metadata. The existing
+    // court crosses an unrelated publication before restoration and also
+    // refuses a wrong original retirement and a wrong restoration key.
+    model::authored_identity_courts::run();
+}
+
+#[test]
+fn compensation_keeps_fresh_authority_and_intervening_movements() {
+    model::compensation_courts::run();
+}
+
+#[test]
 fn retained_reapplication_uses_explicit_alternatives_and_active_consumption() {
     model::tree_reapplication::run();
 }

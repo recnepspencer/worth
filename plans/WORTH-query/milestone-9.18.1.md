@@ -5,8 +5,8 @@
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
-> Phases 13–14 and 16–18 remain required here, including Rust 1.99.x qualification.
-> Addendum 1 adds required P1 Phase 19: correction-aware consecutive source undo.
+> Phase 19 is accepted. Phases 13–14 and 16–18 remain required here.
+> Addendum 1 defines correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -1909,7 +1909,7 @@ toolchain/contributor documentation, including the typed unqualified outcome.
 
 ## Phase 19: Consecutive Undo After Verified Source Restoration
 
-**Status: unfinished; required. Priority: P1.**
+**Status: accepted. Priority: P1.**
 **Owner:** Query correction derivation, consuming existing canonical occurrence,
 footprint and correction-lineage owners. **Depends on:** 9.18's recorded source
 capture, ordinary correction binding, exact target ancestry and fresh admission.
@@ -2039,69 +2039,32 @@ This phase closes only after public qualification and the candidate-SDK private
 probe pass, reviewed corrections to the superseded expectation, and required
 repository checks. A plan change or a value-equality shortcut cannot close it.
 
-### Aspect-Presence Restoration Repair
+### Reverse Consecutive Original Sources
 
-**Qualification held.** The latest private integration at `01817084` after
-incoming `851478c0` exposes `RestoredSupport(UnsupportedFact)` before the
-producer's first B reversal, and the session live-overlap control records actual
-`AspectPresence` rather than the required `SourceDiverged`. The acceptance draft
-below describes older source and is held pending this repair, independent Source
-review, public qualification, uniform immutable SDK repinning and latest-private
-mandatory gates. No earlier green result qualifies the correction.
+Keep each original performed receipt. After A changes a source from `3` to `7`
+and B changes it to `8`, reverse original B first. Once its reversal is published,
+use a fresh correction request to select original A and reverse it to `3`.
+Select the original receipt for each operation; a reapplication has its own new
+performed receipt.
 
-The adversarial boundary is a scalar `EntityMutationIntent::UpdateFields` that
-initializes an absent aspect. Its canonical authored scope is only the exact
-Field, while Native lowering uses `SetWhole`. Selecting only Lifecycle and
-WholeAspect would miss this live blocker even if both endpoint presence booleans
-match. Struct `PatchFields` preserves its aspect container, including an empty
-container, and cannot supply that scalar counterexample.
+Call `request.retain_current_read()` immediately after an endpoint whose Product
+history must remain readable, and keep the returned observation alive through the
+later correction. Receipts alone do not retain that history. Prepare and publish
+each correction through the ordinary request API, retaining the returned owner
+while publication or recovery is unsettled.
 
-Native owns full-generation slot/kind identity, immutable root schema and field
-lowering. Its borrowed `VisibilityProjectionView` receiver must resolve original
-and target entity/kind/aspect against compatible actual installed contract,
-shape and binding, exposing only the scalar EntityField coordinate when needed.
-Query owns canonical interval selection and genuine performed cancellation;
-presence and original-support validation retain their existing owners. Neither
-an aspect name guessed to be a field nor a matching boolean supplies lineage.
-Foreign owners, wildcard generations, wrong kinds, absent contracts and changed
-bindings refuse before effects. No canonical grammar, ledger, control or private
-undo path changes.
+Handle `SourceDiverged` when a live or reapplied overlapping write or changed
+independent dependency blocks the selected source. Equal values alone do not
+establish restoration. Canonical performed cancellation, complete compatible
+field/aspect support, current disclosure and inverse admission still apply.
+Unavailable retained evidence and unsupported shapes return typed refusals. If
+publication finds a stale target, prepare again against the current target while
+keeping the same client key for the same command.
 
-The destination extends the existing Native projection facade with
-`crates/worth-relational/src/visibility/materialization/read_records/projection/aspect_presence_support.rs`.
-It owns paired binding resolution; `view.rs` keeps its schema-plan access private
-to that owner. Query `restored_support/eligibility.rs` selects with both exact
-snapshots held under Native access and releases both on refusal;
-`overlap.rs` selects Lifecycle/WholeAspect and the actual scalar Field. Existing
-canonical cursor, cancellation, strict original/target boolean verification and
-postcommit fact rebasing remain the only authorities. Coordinate copies are
-funded by the original request before construction using existing controls.
-Ordinary writes incur no additional work.
-
-Implement in authority order: add the borrowed Native receiver and typed denial;
-integrate paired-root selection and scalar overlap; add Native regression evidence
-inside the existing authored-write-history family; update consumer guidance.
-Native evidence must observe actual absent-to-present mutation and canonical
-Field-only discovery, refuse incompatible installed bindings with a positive
-target-binding check, and preserve struct container behavior. These are boundary
-tests, not selector-shape mirrors. Existing public consecutive/equal/live/reapply,
-independent-dependency and sibling controls still apply.
-
-Source review must agree the evidence grouping before any Cargo lane is used.
-Then build Native's existing lib target once and run the `authored_write_history`
-family; build the existing Query `application_graph` target once and run its
-`correction::` family. Run affected-owner doctests and the required boundary and
-generated-context commands from AGENTS.md in the serialized lane. Before that
-grant, run only scoped rustfmt, `git diff --check` and
-`scripts/ci/check_workspace_rust_line_caps.sh dirty`.
-
-After public validation and independent final review, commit a new immutable SDK
-and uniformly repin the private root/probe manifests and lockfiles. Root groups
-the producer consecutive Undo and session live-overlap/consecutive Undo cases
-with mandatory latest-private gates; preserve their expected 7 then 3 values and
-strict `SourceDiverged` control. The already-passing bare source probe is not an
-automatic rerun. Keep all original failed evidence. Build grants, final acceptance,
-default integration and commits are outside this source-only turn.
+Follow the [recorded-source correction guide](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
+for the request, preparation, publication and retry sequence. The
+[compiled correction example](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
+shows the same calls with original receipts and retained endpoint observations.
 
 ## Documentation And Successor Handoff For The Added Phases
 

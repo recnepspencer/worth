@@ -1,7 +1,6 @@
 # Milestone 9.19: Managed Advanced Access And Verified Footprints
 
-> **Status:** In progress. Phase 1 product/evidence complete; Phases 2–6 unfinished.
-> Default integration remains pending.
+> **Status:** In progress. Phase 1 complete; Phases 2–6 unfinished.
 > **Scope revised 2026-10-27:** the general managed derived-index extension owns
 > the spatial-index finding formerly assigned to 9.18.1 Phase 12 and the dependent
 > CAD locality qualification from Phase 15. Proprietary cutover is the final phase.
@@ -483,27 +482,22 @@ example for both providers; label candidate/advanced coverage as unfinished.
 This phase closes when the lifecycle and typed failures pass, without claiming
 candidate maintenance, complete advanced membership or Proprietary adoption.
 
-**Completion evidence (2026-10-28).** Independent Source/evidence review and Root
-acceptance establish the bounded committed Public provider lifecycle. The pure
-numerical closed-box/BVH and versioned UTF-8 prefix adapters use the same
-Decl/Host contract. Eleven focused consumer cases pass for typed original-request
-stop after real construction begins, no Ready publication, physical partial
-backing release, fresh-request rebuild with independent reference parity, cache
-survival and final-owner/runtime release. Complementary executable-version,
-runtime, branch, retained-basis and full-generation controls reject before
-callbacks; existing geometry and independent capability/READ controls carry.
-Earlier 28 baseline cases remain distinct. The owning compiled-documentation case
-passes for the exact 27-example inventory and both provider declarations;
-mandatory boundary/context checks pass. See the
+**Use the committed provider lifecycle.** Declare and install the box or
+versioned-prefix provider through the same Decl/Host contract. Construct its root
+from the admitted committed Source, and retain the returned owner while reading
+results. Handle original-request cancellation, allocation and provider failures;
+a stopped construction publishes no Ready root. Use a fresh request to rebuild
+after eviction, and close the final retained owner to release its backing.
+Keep the exact runtime, branch, retained basis and full-generation identity;
+matching values or provider names cannot substitute for those bindings.
+
+Follow the
 [application guide](../../docs/build-an-application.md#construct-committed-provider-indexes),
 [prefix lifecycle](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle.rs),
-[box lifecycle](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/lifecycle.rs)
-and [compiled inventory owner](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/compiled_example_drift.rs).
-Default integration remains pending.
-This completes Phase 1 product/evidence only; Phases 2–6, whole-milestone closure
-and private SDK adoption remain unfinished. Conservative complete Source
-dependencies remain in force; candidate maintenance, advanced membership routing
-and narrowed footprints are not supplied by this qualification.
+and [box lifecycle](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/lifecycle.rs)
+for the declaration, read, rebuild and release sequence. Committed reads retain
+complete conservative Source dependencies; an index result grants no narrower
+read or mutation authority.
 
 ### Phase 2: Incremental Roots And Candidate-State Reads
 

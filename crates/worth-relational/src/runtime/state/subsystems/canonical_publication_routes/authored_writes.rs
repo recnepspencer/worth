@@ -1,4 +1,6 @@
 //! Discardable per-selected-prefix acceleration. No canonical envelope is retained here.
+#[path = "authored_writes/adjacency.rs"]
+mod adjacency;
 #[path = "authored_writes/indexed.rs"]
 mod indexed;
 #[path = "authored_writes/projection.rs"]
@@ -17,12 +19,22 @@ pub(crate) struct AuthoredWriteGeneration {
     pub(crate) writes: ExecutionOrderedMap<Key, Postings>,
     pub(crate) prefix: ExecutionOrderedMap<CommitId, u64>,
     pub(crate) incomplete_indexes: ExecutionOrderedMap<u64, ()>,
+    pub(crate) incomplete_adjacency: ExecutionOrderedMap<u64, AdjacencyHistoryGap>,
     pub(crate) index_coverage: ExecutionOrderedMap<u64, crate::runtime::IndexCatalogCoverage>,
     pub(crate) index_run_start: u64,
     pub(crate) index_run_last: Option<crate::runtime::IndexCatalogCoverage>,
     pub(crate) ordinal: u64,
     pub(crate) unsupported_merge: bool,
     _funding: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
+}
+
+/// Context belongs to the same discardable generation as the incomplete ordinal.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct AdjacencyHistoryGap {
+    pub(crate) commit: CommitId,
+    pub(crate) relation: Option<crate::identity::data::RelationId>,
+    pub(crate) kind: Option<crate::identity::data::KindId>,
+    pub(crate) reason: &'static str,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -119,6 +131,8 @@ pub(crate) fn commit_denial(cause: Denial) -> crate::transactions::data::Transac
         | Denial::GenerationUnavailable
         | Denial::UnsupportedIndexSelector
         | Denial::IncompleteIndexHistory
+        | Denial::IncompleteAdjacencyHistory { .. }
+        | Denial::UnsupportedAdjacencySelector
         | Denial::UnsupportedMergeInterval
         | Denial::NotSelectedPrefix
         | Denial::EmptySelection
@@ -155,6 +169,7 @@ impl AuthoredWriteGeneration {
             execution,
         )?;
         indexed::append(self, execution, context, envelope)?;
+        adjacency::append(self, execution, context, envelope)?;
         projection::append(execution, context, self, envelope)
     }
     pub(super) fn append(

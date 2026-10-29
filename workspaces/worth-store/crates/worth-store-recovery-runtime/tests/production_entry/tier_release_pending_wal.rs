@@ -297,7 +297,7 @@ fn recover_and_open(root: &Path) -> worth_store::physical_runtime::ServingPhysic
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("Store independently sealed mixed Tier/V3 custody");
     super::certified_release_serving::admit_serving_with_seal(root, seal)
 }

@@ -1,6 +1,5 @@
 [package]
 name = "worth-signal"
-autotests = false
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -53,15 +52,3 @@ js-sys = "0.3"
 wasm-bindgen = "0.2"
 [lints]
 workspace = true
-
-[[test]]
-name = "signal_contracts"
-path = "tests/signal_contracts.rs"
-
-[[test]]
-name = "candidate_ticket_contention"
-path = "tests/isolated/candidate_ticket_contention.rs"
-
-[[test]]
-name = "request_differential"
-path = "tests/isolated/request_differential.rs"

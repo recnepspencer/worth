@@ -1,4 +1,4 @@
-//! Phase1 invalidates every root on publication of its actual branch occurrence.
+//! Publication invalidates every root of its actual branch occurrence.
 use super::*;
 use crate::domain_computation::primary_graph::application_query::derived_view::{
     RegisteredDerivedView, ViewChange, ViewPublicationBasis,

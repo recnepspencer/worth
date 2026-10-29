@@ -40,6 +40,12 @@ fn scalar_update_initializes_presence_with_only_an_exact_field_posting() {
         .project_snapshot(&initialized.snapshot)
         .unwrap();
     assert!(present(&after, &execution, entity));
+    assert!(before
+        .compare_entity_aspect_support(&execution, &before, entity, &aspect_key("optional"))
+        .unwrap());
+    assert!(!before
+        .compare_entity_aspect_support(&execution, &after, entity, &aspect_key("optional"))
+        .unwrap());
     assert_eq!(
         before
             .entity_aspect_presence_scalar_field(
@@ -118,6 +124,35 @@ fn scalar_update_initializes_presence_with_only_an_exact_field_posting() {
         .read_truth()
         .project_snapshot(&other.snapshot)
         .unwrap();
+    assert_eq!(
+        before.compare_entity_aspect_support(
+            &execution,
+            &other_view,
+            entity,
+            &aspect_key("optional")
+        ),
+        Err(crate::facade::runtime::RelationalFieldSupportComparisonDenial::ForeignOwner)
+    );
+    let cancelled = worth_execution::CancellationSource::new();
+    let stopped = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        cancelled.token(),
+        None,
+    );
+    cancelled.cancel();
+    assert_eq!(
+        before.compare_entity_aspect_support(
+            &ExecutionRequest::serial(&stopped),
+            &after,
+            entity,
+            &aspect_key("optional")
+        ),
+        Err(
+            crate::facade::runtime::RelationalFieldSupportComparisonDenial::Execution(
+                crate::execution::RelationalExecutionDenialCause::Cancelled
+            )
+        )
+    );
     assert_eq!(
         before.entity_aspect_presence_scalar_field(
             &execution,
@@ -213,6 +248,10 @@ fn paired_presence_refuses_a_changed_installed_entity_field_binding() {
             &aspect_key("optional"),
         ),
         Err(Denial::IncompatibleBinding)
+    );
+    assert_eq!(
+        before.compare_entity_aspect_support(&execution, &after, entity, &aspect_key("optional")),
+        Err(crate::facade::runtime::RelationalFieldSupportComparisonDenial::SourceUnavailable)
     );
     for outcome in [&created, &changed] {
         release_test_commit_snapshot(&runtime, outcome);

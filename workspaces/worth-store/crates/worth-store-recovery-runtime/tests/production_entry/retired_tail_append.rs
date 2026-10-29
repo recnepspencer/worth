@@ -27,7 +27,7 @@ fn retired_physical_tail_slot_forces_fresh_page_with_c9_admissible_wal() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("selected two-batch custody seal");
     let serving = certified_release_serving::admit_serving_with_seal(world.root(), seal);
     let before = SelectedRoot::read(world.root());

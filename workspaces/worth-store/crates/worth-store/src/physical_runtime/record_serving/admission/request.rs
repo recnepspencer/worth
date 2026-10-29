@@ -6,6 +6,8 @@ use super::residency_policy::canonical_residency_policy;
 use crate::physical_runtime::PhysicalWorkProfileDeclaration;
 
 pub struct PhysicalRecordInitialization {
+    pub(in crate::physical_runtime::record_serving) journal_registry:
+        crate::physical_runtime::OrderedJournalRegistry,
     pub(in crate::physical_runtime::record_serving) read_protection:
         crate::physical_runtime::PhysicalReadProtectionPolicy,
     pub(in crate::physical_runtime::record_serving) format: AdmittedPhysicalRecordFormat,
@@ -26,6 +28,7 @@ impl PhysicalRecordInitialization {
         durability: crate::physical_runtime::AdmittedPhysicalDurabilityPolicy,
     ) -> Self {
         Self {
+            journal_registry: Default::default(),
             read_protection: crate::physical_runtime::PhysicalReadProtectionPolicy::default(),
             format,
             placement,
@@ -34,6 +37,14 @@ impl PhysicalRecordInitialization {
             work_profile: PhysicalWorkProfileDeclaration::default(),
             durability,
         }
+    }
+
+    pub fn with_journal_registry(
+        mut self,
+        registry: crate::physical_runtime::OrderedJournalRegistry,
+    ) -> Self {
+        self.journal_registry = registry;
+        self
     }
 
     pub const fn with_residency_policy(
@@ -59,6 +70,8 @@ impl PhysicalRecordInitialization {
 }
 
 pub struct PhysicalRecordOpen {
+    pub(in crate::physical_runtime::record_serving) journal_registry:
+        crate::physical_runtime::OrderedJournalRegistry,
     pub(in crate::physical_runtime::record_serving) recovered_checkpoint_custody:
         Option<crate::physical_runtime::RecoveredPhysicalCheckpointCustody>,
     pub(in crate::physical_runtime::record_serving) read_protection:
@@ -79,6 +92,7 @@ impl PhysicalRecordOpen {
         durability: crate::physical_runtime::AdmittedPhysicalDurabilityPolicy,
     ) -> Self {
         Self {
+            journal_registry: Default::default(),
             recovered_checkpoint_custody: None,
             read_protection: crate::physical_runtime::PhysicalReadProtectionPolicy::default(),
             format,
@@ -87,6 +101,14 @@ impl PhysicalRecordOpen {
             work_profile: PhysicalWorkProfileDeclaration::default(),
             durability,
         }
+    }
+
+    pub fn with_journal_registry(
+        mut self,
+        registry: crate::physical_runtime::OrderedJournalRegistry,
+    ) -> Self {
+        self.journal_registry = registry;
+        self
     }
 
     pub const fn with_residency_policy(

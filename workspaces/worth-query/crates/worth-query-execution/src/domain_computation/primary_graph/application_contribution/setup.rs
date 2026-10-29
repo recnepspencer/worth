@@ -297,7 +297,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
             Denial = super::super::operation_body::WorthQueryOperationBodyDenial,
             Decision = super::super::operation_body::WorthQueryOperationBodyDecision<Schema,
                 <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<Schema>>::Scope>>,
-    {
+{
         let installed = self.require_owned_mutation::<Binding>()?;
         let handler =
             super::super::operation_body::OperationBodyHandler::<Schema, Binding>::install(

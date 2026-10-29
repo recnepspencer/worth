@@ -71,7 +71,12 @@ pub(super) fn validate(
             .relation_arena()
             .get(&entry.id)
             .filter(|row| row.is_live())
-            .ok_or("publication relation generation absent or retired")?;
+            .ok_or_else(|| {
+                Stop::Payload(format!(
+                    "publication relation generation absent or retired; relation={:?}; origin={:?}",
+                    entry.id, origin.commit
+                ))
+            })?;
         let write = partition
             .relation_arena()
             .current_metadata_at(entry.id.slot_index())

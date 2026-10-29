@@ -9,7 +9,7 @@ use crate::PersistedRecordIdentity;
 
 use super::durable_root_routing::{decode_identity, encode_identity};
 
-pub const MAXIMUM_RECORD_ANCHORS: usize = 4;
+pub const MAXIMUM_RECORD_ANCHORS: usize = 32;
 pub const RECORD_ANCHOR_NAME_BYTES: usize = 32;
 pub(super) const RECORD_ANCHOR_ENTRY_BYTES: usize = RECORD_ANCHOR_NAME_BYTES + 24 + 32 + 8;
 pub(super) const RECORD_ANCHOR_TABLE_BYTES: usize =

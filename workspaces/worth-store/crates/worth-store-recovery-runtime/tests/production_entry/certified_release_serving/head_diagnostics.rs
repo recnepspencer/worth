@@ -156,7 +156,13 @@ fn hostile_rereads(root: &Path) {
         panic!("restored actual-media twin must recover: {outcome:?}")
     };
     assert_eq!(handoff.core().recovery_effect_count(), 0);
-    super::open_serving_with_seal(root, handoff.into_core().into_checkpoint_custody().unwrap());
+    super::open_serving_with_seal(
+        root,
+        handoff
+            .into_core()
+            .certification_release_media_into_checkpoint_custody()
+            .unwrap(),
+    );
 }
 
 #[derive(Clone, Copy)]

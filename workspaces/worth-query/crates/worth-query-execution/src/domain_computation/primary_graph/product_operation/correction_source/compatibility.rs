@@ -4,32 +4,99 @@ use super::*;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation;
 use worth_query_declaration::facade::application_aftermath::ApplicationInverseBinding;
 
-pub(super) fn require_compatible_source<Schema, C>(
-    target: &WorthQuerySelectedProductOperation<'_, Schema>,
-    phase: &WorthQueryAdvancementPhase<'_>,
-    source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
+/// The compatibility owner's exact handoff into correction preparation.
+///
+/// This moves existing ancestry and interpretation custody; it retains no Native
+/// reader and does not promise that the target will still be current at use.
+pub(super) struct CheckedCorrectionSource<'check, 'target, 'source, Schema, C, Binding> {
+    target: &'check WorthQuerySelectedProductOperation<'target, Schema>,
+    source: &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
+    ancestry: ProductBranchAncestorSelection,
+    interpretation: WorthQueryProgramSupportInterpretation,
     required_root: Option<crate::equality_type_id::EqualityTypeId>,
-) -> Result<WorthQueryProgramSupportInterpretation, Denial>
+    binding: std::marker::PhantomData<fn() -> (C, Binding)>,
+}
+
+impl<'check, 'target, 'source, Schema, C, Binding>
+    CheckedCorrectionSource<'check, 'target, 'source, Schema, C, Binding>
+{
+    pub(super) fn into_parts(
+        self,
+    ) -> (
+        &'check WorthQuerySelectedProductOperation<'target, Schema>,
+        &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
+        ProductBranchAncestorSelection,
+        WorthQueryProgramSupportInterpretation,
+        Option<crate::equality_type_id::EqualityTypeId>,
+    ) {
+        (
+            self.target,
+            self.source,
+            self.ancestry,
+            self.interpretation,
+            self.required_root,
+        )
+    }
+}
+
+fn require_selected_ancestry<Schema: ApplicationSchema>(
+    target: &WorthQuerySelectedProductOperation<'_, Schema>,
+    source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
+    ancestry: &ProductBranchAncestorSelection,
+) -> Result<(), Denial> {
+    if !std::ptr::eq(target.application(), source.application())
+        || ancestry.source().identity() != source.ancestry().source().identity()
+        || ancestry.target() != target.product().observation()
+    {
+        return Err(Denial::ForeignSelection);
+    }
+    Ok(())
+}
+
+pub(super) fn require_compatible_source<'check, 'target, 'source, Schema, C>(
+    target: &'check WorthQuerySelectedProductOperation<'target, Schema>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    source: &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
+    ancestry: ProductBranchAncestorSelection,
+    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+) -> Result<
+    CheckedCorrectionSource<
+        'check,
+        'target,
+        'source,
+        Schema,
+        C,
+        ApplicationInverseBinding<Schema, C>,
+    >,
+    Denial,
+>
 where
     Schema: ApplicationSchema,
     C: ApplicationCorrectionBinding<Schema>,
 {
+    require_selected_ancestry(target, source, &ancestry)?;
     let interpretation = require_target_program::<Schema, C>(target, source, required_root)?;
-    if matches!(
+    if !matches!(
         super::material::mechanism(source)?,
         worth_query_installation::facade::InstalledCorrectionMechanism::Compensation(_)
     ) {
-        // Historical occurrence/input identify the effect. The declared compensating
-        // action admits current target eligibility through its fresh ordinary reads.
-        return Ok(interpretation);
+        let facts = source
+            .occurrence()
+            .commit_evidence()
+            .rebased_source_facts()
+            .map_err(|_| Denial::SemanticMaterialUnavailable)?;
+        super::restored_support::require(target, phase, source, &facts)?;
     }
-    let facts = source
-        .occurrence()
-        .commit_evidence()
-        .rebased_source_facts()
-        .map_err(|_| Denial::SemanticMaterialUnavailable)?;
-    super::restored_support::require(target, phase, source, &facts)?;
-    Ok(interpretation)
+    // Compensation uses the historical effect/input and fresh ordinary reads;
+    // it deliberately does not claim reverse-restoration eligibility.
+    Ok(CheckedCorrectionSource {
+        target,
+        source,
+        ancestry,
+        interpretation,
+        required_root,
+        binding: std::marker::PhantomData,
+    })
 }
 
 fn require_target_program<Schema, C>(
@@ -64,15 +131,17 @@ where
     Ok(interpretation)
 }
 
-pub(super) fn require_reapplication_program<Schema, C>(
-    target: &WorthQuerySelectedProductOperation<'_, Schema>,
-    source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
+pub(super) fn require_reapplication_program<'check, 'target, 'source, Schema, C>(
+    target: &'check WorthQuerySelectedProductOperation<'target, Schema>,
+    source: &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
+    ancestry: ProductBranchAncestorSelection,
     required_root: Option<crate::equality_type_id::EqualityTypeId>,
-) -> Result<WorthQueryProgramSupportInterpretation, Denial>
+) -> Result<CheckedCorrectionSource<'check, 'target, 'source, Schema, C, C::Source>, Denial>
 where
     Schema: ApplicationSchema,
     C: ApplicationCorrectionBinding<Schema>,
 {
+    require_selected_ancestry(target, source, &ancestry)?;
     let retained = source
         .occurrence()
         .commit_evidence()
@@ -88,7 +157,16 @@ where
     {
         return Err(Denial::ReapplicationUnavailable);
     }
-    require_action_program::<Schema, C::Source>(target, source, required_root)
+    let interpretation =
+        require_action_program::<Schema, C::Source>(target, source, required_root)?;
+    Ok(CheckedCorrectionSource {
+        target,
+        source,
+        ancestry,
+        interpretation,
+        required_root,
+        binding: std::marker::PhantomData,
+    })
 }
 
 fn require_action_program<Schema, Binding>(

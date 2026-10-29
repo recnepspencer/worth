@@ -206,7 +206,7 @@ impl PublicationState {
         let AdmittedPlatformAuthority { media, session, .. } = self.authority;
         drop(media);
         session.block();
-        PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
+        PhysicalRecoveryOutcome::Blocked(Box::new(PhysicalRecoveryBlock::new(
             crate::entry::PhysicalRecoveryBlockCause::Damage(
                 PhysicalRecoveryBlockKind::Publication,
             ),
@@ -228,7 +228,7 @@ impl PublicationState {
                 ..PhysicalRecoveryBlockEvidence::default()
             },
             recovery_effects,
-        ))
+        )))
     }
 
     pub(super) fn indeterminate(
@@ -243,7 +243,7 @@ impl PublicationState {
         let AdmittedPlatformAuthority { media, session, .. } = self.authority;
         drop(media);
         session.publication_indeterminate();
-        PhysicalRecoveryOutcome::PublicationIndeterminate(
+        PhysicalRecoveryOutcome::PublicationIndeterminate(Box::new(
             PhysicalRecoveryPublicationIndeterminate::new(
                 store,
                 session_identity,
@@ -255,6 +255,6 @@ impl PublicationState {
             )
             .with_integrity_observations(self.integrity.into_observations())
             .with_integrity_trace(self.integrity_trace),
-        )
+        ))
     }
 }

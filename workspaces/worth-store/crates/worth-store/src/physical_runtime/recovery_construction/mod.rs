@@ -1,5 +1,10 @@
 mod authority;
 mod handoff;
+mod serving_handoff;
+pub use serving_handoff::{
+    RecoveredMediaAdmissionOutcome, RecoveredMediaOwnedPhysicalRuntime,
+    RecoveredPhysicalServingHandoff,
+};
 mod port;
 mod selected_rejoin;
 

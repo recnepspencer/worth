@@ -44,7 +44,8 @@ pub(crate) fn read_durable_frame<'a>(
         ));
     }
     // Root schema 9 adds a selected tier-epoch anchor to maintenance custody.
-    let supported_root_schema = expected_kind == 2 && matches!(bytes[9], 3 | 4 | 5 | 6 | 7 | 9);
+    let supported_root_schema =
+        expected_kind == 2 && matches!(bytes[9], 3 | 4 | 5 | 6 | 7 | 9 | 12);
     let supported_routing_schema = expected_kind == 8 && bytes[9] == 3;
     if !supported_root_schema
         && !supported_routing_schema
@@ -54,7 +55,7 @@ pub(crate) fn read_durable_frame<'a>(
             OfflineUnsupportedVersionAxis::EnvelopeSchema,
             u64::from(bytes[9]),
             if expected_kind == 2 {
-                "2|3|4|5|6|7|9"
+                "2|3|4|5|6|7|9|12"
             } else if expected_kind == 8 {
                 "2|3"
             } else {

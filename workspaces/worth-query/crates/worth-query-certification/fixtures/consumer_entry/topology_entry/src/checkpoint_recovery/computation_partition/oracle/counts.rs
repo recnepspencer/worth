@@ -177,7 +177,7 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
         );
         demand(&request, &application);
     }
-    let first = growth[0].1[0];
+    let first = &growth[0].1[0];
     for (size, runs) in &growth {
         assert_eq!(
             runs[0].content_leaf_derivations, first.content_leaf_derivations,

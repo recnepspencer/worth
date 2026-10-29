@@ -83,7 +83,7 @@ fn recover_serving(root: &Path) -> worth_store::physical_runtime::ServingPhysica
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("three-V3 selected custody seal");
     super::certified_release_serving::admit_serving_with_seal(root, seal)
 }

@@ -6,7 +6,7 @@ use crate::application_query::ApplicationQueryBindingReference;
 pub enum ApplicationManagedIndexSourceScope {
     SameAdmittedScope,
 }
-/// Phase1 source projection has no replayed or inferred parameters.
+/// Source projection has no replayed or inferred parameters.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationManagedIndexSourceParameters {
     NoParameters,

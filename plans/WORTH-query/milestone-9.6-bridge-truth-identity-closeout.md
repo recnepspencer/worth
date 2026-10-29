@@ -1,5 +1,7 @@
 # WORTH Query Milestone 9.6 Bridge Truth Identity Closeout
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > **Status:** Phase 10 closeout **Closed** for worth-query bridge-truth scope
 > (`query-repair`, 2026-06-16). **One named deferral:** worth-spatial
 > `public_api_contract` integration harness → separate optimization agent
@@ -114,8 +116,8 @@ typed evidence identities:
 
 **Compile-fail (all must pass)**
 
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail`
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_bridge_truth_identity_compile_fail`
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail::`
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_bridge_truth_identity_compile_fail::`
 - `cargo test -p worth-runtime-bridge --test phase_boundaries_bridge_truth_identity_digest`
 - `cargo test -p worth-query --test phase_boundaries_bridge_truth_identity_compile_fail`
 - `cargo test -p worth-query --test phase_boundaries_query_identity_authority_compile_fail`
@@ -124,8 +126,8 @@ typed evidence identities:
 - All other `cargo test -p worth-query --test phase_boundaries_*` suites
 - `cargo test -p worth-topo --test phase_boundaries_query_runtime_phase_eight_compile_fail`
 - `cargo test -p worth-topo --test phase_boundaries_query_runtime_phase_nine_compile_fail`
-- `cargo test -p worth-relational --test phase_boundaries_compile_fail`
-- `cargo test -p worth-signal --test phase_2a_signal_boundaries`
+- `cargo test -p worth-relational --test worth_relational compile_fail::phase_boundaries_compile_fail::`
+- `cargo test -p worth-signal --test worth_signal compile_fail::phase_2a_signal_boundaries::`
 
 **Integration / certification**
 
@@ -135,7 +137,7 @@ typed evidence identities:
 - `cargo test -p worth-spatial --lib`
 - `cargo test -p worth-topo --lib topology_read`
 - `cargo test -p worth-server --test WORTH_native_facade_entry`
-- `cargo test -p worth-server --test compat_http_phase_three`
+- `cargo test -p worth-server --test worth_server fast::compat_http_phase_three::`
 - `cargo test -p worth-runtime-bridge subscription::replay --lib`
 
 **Phase 7 certification lanes (2026-06-15 baseline — re-run for Phase 10)**

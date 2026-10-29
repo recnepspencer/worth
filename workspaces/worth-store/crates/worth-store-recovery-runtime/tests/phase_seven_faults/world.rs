@@ -67,7 +67,7 @@ pub(crate) fn recover_with_schedule(
     let PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
         panic!("cleanup failure cannot invalidate recovered publication")
     };
-    handoff
+    *handoff
 }
 
 pub(crate) fn reopen_with_schedule(

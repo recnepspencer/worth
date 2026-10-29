@@ -51,13 +51,56 @@ pub enum RequiredOutputPublication {
         meaning: RequiredOutputPublicationMeaning,
         roles: Vec<RequiredOutputRoleTarget>,
     },
+    AuthoredRetirement {
+        admission: worth_proof::AdmittedAuthoredOutputRetirement,
+        predecessor: super::RelationalRequiredOutputPublication,
+        roles: Vec<RequiredOutputRoleTarget>,
+    },
 }
 
 impl RequiredOutputPublication {
-    pub(crate) fn running(&self) -> &worth_proof::AdmittedRequiredOutputPublication {
+    pub(crate) fn admitted_by(
+        &self,
+        installed: &super::RelationalInstalledApplicationPublicationAuthority,
+    ) -> bool {
         match self {
-            Self::Birth { admission, .. } => admission,
-            Self::Preserve { admission, .. } => admission.running(),
+            Self::Birth { admission, .. } => installed.authority.admits_required_output(admission),
+            Self::Preserve {
+                admission,
+                predecessor,
+                ..
+            } => installed
+                .authority
+                .admits_required_output_succession(admission, predecessor.authority()),
+            Self::AuthoredRetirement {
+                admission,
+                predecessor,
+                ..
+            } => installed
+                .authority
+                .admits_authored_output_retirement(admission, predecessor.authority()),
+        }
+    }
+
+    pub(crate) fn lineage_attribution(&self) -> (&str, [u8; 32]) {
+        match self {
+            Self::Birth { admission, .. } => {
+                (admission.producer(), *admission.dependency_identity())
+            }
+            Self::Preserve { admission, .. } => (
+                admission.running().producer(),
+                *admission.running().dependency_identity(),
+            ),
+            Self::AuthoredRetirement { predecessor, .. } => {
+                // Provenance of the retired lineage, not a claim that the
+                // authored mutation ran this producer again.
+                let origin = predecessor
+                    .envelope
+                    .required_output_origin
+                    .as_ref()
+                    .expect("Native custody retains its canonical publication");
+                (&origin.producer, origin.dependency_identity)
+            }
         }
     }
 }

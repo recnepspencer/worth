@@ -243,7 +243,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         Query: ApplicationQueryMarkerIdentity<Schema>,
         ScopeSlot: WorthQueryPortableType,
         TargetSlot: WorthQueryPortableType,
-    {
+{
         self.definition.live_cause = Some(ApplicationQueryLiveCauseContract::typed::<
             Schema,
             Query,
@@ -306,7 +306,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         Query: ApplicationQueryMarkerIdentity<Schema>,
         ScopeSlot: WorthQueryPortableType,
         TargetSlot: WorthQueryPortableType,
-    {
+{
         self.definition.live_cause = Some(ApplicationQueryLiveCauseContract::typed::<
             Schema,
             Query,

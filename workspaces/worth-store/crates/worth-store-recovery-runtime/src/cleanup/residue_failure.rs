@@ -24,7 +24,7 @@ pub(super) fn damaged(reopened: ReopenedPhysicalRecovery) -> PhysicalRecoveryOut
     let AdmittedPlatformAuthority { media, session, .. } = state.authority;
     drop(media);
     session.block();
-    PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
+    PhysicalRecoveryOutcome::Blocked(Box::new(PhysicalRecoveryBlock::new(
         crate::entry::PhysicalRecoveryBlockCause::Damage(
             PhysicalRecoveryBlockKind::MediaObservation,
         ),
@@ -44,7 +44,7 @@ pub(super) fn damaged(reopened: ReopenedPhysicalRecovery) -> PhysicalRecoveryOut
             ..PhysicalRecoveryBlockEvidence::default()
         },
         recovery_effects,
-    ))
+    )))
 }
 
 /// A removal that started but did not settle leaves recovery's publication
@@ -63,7 +63,7 @@ pub(super) fn indeterminate(reopened: ReopenedPhysicalRecovery) -> PhysicalRecov
     let AdmittedPlatformAuthority { media, session, .. } = state.authority;
     drop(media);
     session.publication_indeterminate();
-    PhysicalRecoveryOutcome::PublicationIndeterminate(
+    PhysicalRecoveryOutcome::PublicationIndeterminate(Box::new(
         PhysicalRecoveryPublicationIndeterminate::new(
             store,
             session_identity,
@@ -75,5 +75,5 @@ pub(super) fn indeterminate(reopened: ReopenedPhysicalRecovery) -> PhysicalRecov
         )
         .with_integrity_trace(state.integrity_trace)
         .with_integrity_observations(state.integrity.into_observations()),
-    )
+    ))
 }

@@ -141,7 +141,7 @@ impl SelectedPhysicalRecovery {
         let AdmittedPlatformAuthority { media, session, .. } = authority;
         drop(media);
         session.refuse();
-        PhysicalRecoveryOutcome::Refused(
+        PhysicalRecoveryOutcome::Refused(Box::new(
             PhysicalRecoveryRefusal::new(
                 PhysicalRecoveryRefusalKind::CancelledBeforeReconstruction,
                 recovery_effects,
@@ -149,7 +149,7 @@ impl SelectedPhysicalRecovery {
             .with_root_protocol_denials(root_protocol_denials)
             .with_integrity_trace(integrity_trace)
             .with_integrity_observations(integrity.into_observations()),
-        )
+        ))
     }
 
     pub(crate) fn into_parts(

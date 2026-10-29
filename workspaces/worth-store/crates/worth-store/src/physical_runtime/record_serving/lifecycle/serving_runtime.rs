@@ -23,6 +23,7 @@ mod scrub;
 mod terminal_head_retirement;
 
 pub struct ServingPhysicalRuntime {
+    journal_registry: crate::physical_runtime::OrderedJournalRegistry,
     scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,
     blob_declarations: std::sync::Mutex<()>,
     blob_index_publications: std::sync::Mutex<()>,
@@ -36,9 +37,11 @@ pub struct ServingPhysicalRuntime {
 impl ServingPhysicalRuntime {
     pub(in crate::physical_runtime::record_serving) fn from_admission(
         foundation: PhysicalStoreInstanceFoundation,
+        journal_registry: crate::physical_runtime::OrderedJournalRegistry,
     ) -> Result<Self, super::super::RecordServingAdmissionInspectionRequired> {
         match PhysicalStoreInstanceParts::from_record_admission(foundation) {
             Ok(parts) => Ok(Self {
+                journal_registry,
                 scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
                 blob_declarations: std::sync::Mutex::new(()),
                 blob_index_publications: std::sync::Mutex::new(()),

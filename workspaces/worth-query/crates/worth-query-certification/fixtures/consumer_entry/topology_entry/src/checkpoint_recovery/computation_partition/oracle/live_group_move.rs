@@ -101,7 +101,7 @@ fn moves(destinations: [u32; 2]) {
         }
     }
     for (population, destination, moved, value) in &receipts {
-        let first = receipts
+        let first = &receipts
             .iter()
             .find(|(_, target, _, _)| target == destination)
             .unwrap()

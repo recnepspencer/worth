@@ -12,12 +12,14 @@ use worth_relational::facade::runtime::VisibilityProjectionView;
 use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Comparison;
 use worth_relational::facade::transactions::RecordRef;
 
+mod aspect;
+
 pub(super) struct Selection {
     pub(super) keys: ExecutionArray<Key>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
-/// The scalar MVP projects every captured fact or refuses the whole selection.
+/// Project every eligible captured fact or refuse the whole selection.
 pub(super) fn select(
     execution: ExecutionRequest<'_, '_>,
     facts: &FactPayload,
@@ -41,15 +43,15 @@ pub(super) fn select(
                 entity_id, locator, ..
             } => {
                 if entity_id.generation_value() == 0 {
-                    return Err(unsupported("field-generation"));
+                    return Err(unsupported("field-generation", fact));
                 }
                 if locator.aspect().authority()
                     != worth_foundational::facade::LocatorAuthority::Authoritative
                 {
-                    return Err(unsupported("field-authority"));
+                    return Err(unsupported("field-authority", fact));
                 }
                 if locator.field_path().fields().len() != 1 {
-                    return Err(unsupported("field-path"));
+                    return Err(unsupported("field-path", fact));
                 }
                 let roster_work = u64::try_from(locator.field_path().fields().len())
                     .ok()
@@ -79,12 +81,12 @@ pub(super) fn select(
                 ..
             } => {
                 let DerivedIndexKind::EntityField { field_locator } = &definition.kind else {
-                    return Err(unsupported("index-kind"));
+                    return Err(unsupported("index-kind", fact));
                 };
                 // The actual Native receiver admits this exact installed
                 // coordinate grammar; retain Planned descriptors unchanged.
                 if locator.field_path().fields().len() != 1 {
-                    return Err(unsupported("index-path"));
+                    return Err(unsupported("index-path", fact));
                 }
                 super::admit_work(
                     execution,
@@ -96,10 +98,10 @@ pub(super) fn select(
                         ))?,
                 )?;
                 if definition.index_id != *index_id {
-                    return Err(unsupported("index-definition-identity"));
+                    return Err(unsupported("index-definition-identity", fact));
                 }
                 if field_locator != locator {
-                    return Err(unsupported("index-definition-locator"));
+                    return Err(unsupported("index-definition-locator", fact));
                 }
                 let payload = (definition.name.capacity() as u64)
                     .checked_add(
@@ -117,7 +119,9 @@ pub(super) fn select(
                     .ok_or(Stop::SizeOverflow)?;
                 (1, payload)
             }
-            Fact::OptionalAspectAbsent { .. } => return Err(unsupported("OptionalAspectAbsent")),
+            Fact::OptionalAspectAbsent { .. } => {
+                return Err(unsupported("OptionalAspectAbsent", fact))
+            }
             Fact::AspectPresence {
                 entity_id,
                 kind,
@@ -146,27 +150,42 @@ pub(super) fn select(
                     }
                 }
             }
-            Fact::SourceAspectRevision { .. } => return Err(unsupported("SourceAspectRevision")),
-            Fact::SourceAdjacencyRevision { .. } => {
-                return Err(unsupported("SourceAdjacencyRevision"))
+            Fact::SourceAspectRevision {
+                entity_id, aspect, ..
+            } => aspect::measure(execution, original, target, *entity_id, aspect)?,
+            Fact::SourceAdjacencyRevision { anchor, .. } => {
+                if anchor.generation_value() == 0 {
+                    return Err(unsupported("adjacency-generation", fact));
+                }
+                (2, 0)
             }
-            Fact::Relation { .. } => return Err(unsupported("Relation")),
-            Fact::Adjacency { .. } => return Err(unsupported("Adjacency")),
-            Fact::StructuralWalk { .. } => return Err(unsupported("StructuralWalk")),
-            Fact::Aggregate { .. } => return Err(unsupported("Aggregate")),
-            Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection")),
-            Fact::SourcePublication { .. } => return Err(unsupported("SourcePublication")),
-            Fact::RetiredOutputEntity { .. } => return Err(unsupported("RetiredOutputEntity")),
+            Fact::Relation { .. } => return Err(unsupported("Relation", fact)),
+            Fact::Adjacency { .. } => return Err(unsupported("Adjacency", fact)),
+            Fact::StructuralWalk { .. } => return Err(unsupported("StructuralWalk", fact)),
+            Fact::Aggregate { .. } => return Err(unsupported("Aggregate", fact)),
+            Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection", fact)),
+            Fact::SourcePublication { .. } => return Err(unsupported("SourcePublication", fact)),
+            Fact::RetiredOutputEntity { entity_id, .. } => {
+                if entity_id.generation_value() == 0 {
+                    return Err(unsupported("retirement-generation", fact));
+                }
+                // The sealer records the exact committed retirement tuple.
+                // Lifecycle occurrences are selected here; strict original and
+                // target comparison still read that same full-GEN retirement.
+                (1, 0)
+            }
             Fact::WorkflowDefinitionPredecessor { .. } => {
-                return Err(unsupported("WorkflowDefinitionPredecessor"))
+                return Err(unsupported("WorkflowDefinitionPredecessor", fact))
             }
             Fact::WorkflowDefinitionCurrent { .. } => {
-                return Err(unsupported("WorkflowDefinitionCurrent"))
+                return Err(unsupported("WorkflowDefinitionCurrent", fact))
             }
             Fact::WorkflowInstanceCapacity { .. } => {
-                return Err(unsupported("WorkflowInstanceCapacity"))
+                return Err(unsupported("WorkflowInstanceCapacity", fact))
             }
-            Fact::WorkflowHistoryBasis { .. } => return Err(unsupported("WorkflowHistoryBasis")),
+            Fact::WorkflowHistoryBasis { .. } => {
+                return Err(unsupported("WorkflowHistoryBasis", fact))
+            }
         };
         count = count.checked_add(entries).ok_or(Stop::SizeOverflow)?;
         bytes = bytes.checked_add(payload).ok_or(Stop::SizeOverflow)?;
@@ -181,6 +200,34 @@ pub(super) fn select(
     let mut keys = ExecutionRequestArrayBuilder::allocate(execution, count).map_err(array_stop)?;
     for fact in facts.iter() {
         execution.consult().map_err(Stop::Request)?;
+        if let Fact::SourceAdjacencyRevision {
+            relation_kind,
+            anchor,
+            direction,
+            ..
+        } = fact
+        {
+            use worth_relational::facade::history::RelationalTouchAdjacencyDirection as Direction;
+            keys.push(Key::Adjacency {
+                anchor: *anchor,
+                kind: *relation_kind,
+                direction: match direction {
+                    worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing => {
+                        Direction::Outgoing
+                    }
+                    worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming => {
+                        Direction::Incoming
+                    }
+                },
+            })
+            .map_err(array_stop)?;
+            keys.push(Key::Record {
+                record: RecordRef::Entity(*anchor),
+                scope: Scope::Lifecycle,
+            })
+            .map_err(array_stop)?;
+            continue;
+        }
         if let Fact::IndexedEntitySelection {
             definition,
             entity_kind,
@@ -206,8 +253,10 @@ pub(super) fn select(
             Fact::SourceEntity { entity_id }
             | Fact::Entity { entity_id, .. }
             | Fact::SourceFieldRevision { entity_id, .. }
+            | Fact::SourceAspectRevision { entity_id, .. }
             | Fact::Field { entity_id, .. }
-            | Fact::AbsentField { entity_id, .. } => *entity_id,
+            | Fact::AbsentField { entity_id, .. }
+            | Fact::RetiredOutputEntity { entity_id, .. } => *entity_id,
             Fact::AspectPresence { entity_id, .. } => *entity_id,
             _ => unreachable!("fully projected above"),
         };
@@ -216,6 +265,12 @@ pub(super) fn select(
             scope: Scope::Lifecycle,
         })
         .map_err(array_stop)?;
+        if let Fact::SourceAspectRevision {
+            entity_id, aspect, ..
+        } = fact
+        {
+            aspect::append(execution, original, target, *entity_id, aspect, &mut keys)?;
+        }
         if let Fact::AspectPresence {
             entity_id,
             kind,
@@ -271,7 +326,12 @@ fn array_stop(cause: worth_execution::ExecutionRequestArrayDenial) -> Stop {
     }
 }
 
-fn unsupported(reason: &'static str) -> Stop {
+fn unsupported(reason: &'static str, fact: &Fact) -> Stop {
     crate::domain_computation::primary_graph::fact_verification_observation::correction_restored_support_unsupported(reason);
+    crate::domain_computation::primary_graph::fact_verification_observation::correction_rejection(
+        "overlap-selection",
+        Some(fact),
+        &Stop::UnsupportedFact,
+    );
     Stop::UnsupportedFact
 }

@@ -1,5 +1,7 @@
 //! Complete publication position survives total membership replacement.
 use super::*;
+#[path = "retirement/authored.rs"]
+mod authored;
 #[path = "retirement/ordinary.rs"]
 mod ordinary;
 

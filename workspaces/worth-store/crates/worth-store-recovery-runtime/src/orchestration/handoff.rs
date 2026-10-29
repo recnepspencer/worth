@@ -234,7 +234,7 @@ pub(crate) fn finish_recovery_after_cleanup(
     match construction {
         Ok(core) => {
             let session = session.recovered();
-            PhysicalRecoveryOutcome::Recovered(RecoveredPhysicalRuntimeHandoff::new(
+            PhysicalRecoveryOutcome::Recovered(Box::new(RecoveredPhysicalRuntimeHandoff::new(
                 core,
                 RecoveredPhysicalRuntimeHandoffEvidence {
                     store_rejoin_retained_bytes: retained,
@@ -259,11 +259,11 @@ pub(crate) fn finish_recovery_after_cleanup(
                     cleanup,
                     integrity_trace: state.integrity_trace,
                 },
-            ))
+            )))
         }
         Err(denial) => {
             session.publication_indeterminate();
-            PhysicalRecoveryOutcome::PublicationIndeterminate(
+            PhysicalRecoveryOutcome::PublicationIndeterminate(Box::new(
                 PhysicalRecoveryPublicationIndeterminate::new(
                     store,
                     session_identity,
@@ -277,7 +277,7 @@ pub(crate) fn finish_recovery_after_cleanup(
                 .with_integrity_observations(state.integrity.into_observations())
                 .with_handoff_failure(denial)
                 .with_cleanup_posture(cleanup),
-            )
+            ))
         }
     }
 }

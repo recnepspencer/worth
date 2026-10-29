@@ -215,7 +215,7 @@ fn publication_signal_outcome(
     let Err(PhysicalRecoveryOutcome::PublicationIndeterminate(outcome)) = staged.publish() else {
         panic!("publication Signal failure must retain indeterminate evidence")
     };
-    (outcome, expected_candidates)
+    (*outcome, expected_candidates)
 }
 
 fn assert_signal_stage(
@@ -252,7 +252,7 @@ fn publication_fault_outcome(
     let Err(PhysicalRecoveryOutcome::PublicationIndeterminate(outcome)) = staged.publish() else {
         panic!("the activated publication fault must retain indeterminate evidence")
     };
-    outcome
+    *outcome
 }
 
 fn assert_prefix(

@@ -48,12 +48,10 @@ impl WorthQueryPreparedCorrectionSource {
         C: ApplicationCorrectionBinding<Schema>,
         Binding: ApplicationMutationBinding<Schema>,
     >(
-        target: &WorthQuerySelectedProductOperation<'_, Schema>,
+        checked: super::compatibility::CheckedCorrectionSource<'_, '_, '_, Schema, C, Binding>,
         phase: &WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
-        source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
-        ancestry: ProductBranchAncestorSelection,
         alternative_ancestry: Option<(
             ProductBranchAncestorSelection,
             ProductBranchAncestorSelection,
@@ -62,8 +60,6 @@ impl WorthQueryPreparedCorrectionSource {
         key: &WorthQueryCorrectionCommandKey,
         input: &ApplicationEncodedInput<Binding::InputBinding>,
         scope: Binding::ScopeBinding,
-        target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
-        required_root: Option<crate::equality_type_id::EqualityTypeId>,
         workflow: Option<PreparedWorkflowCorrection>,
     ) -> Result<Self, WorthQueryCorrectionDerivationDenial>
     where
@@ -71,6 +67,7 @@ impl WorthQueryPreparedCorrectionSource {
             ApplicationMutationScopeResolution<Schema, Binding::PrincipalIdentity>,
     {
         use WorthQueryCorrectionDerivationDenial as Denial;
+        let (target, source, ancestry, target_program, required_root) = checked.into_parts();
         let binding = target
             .application()
             .installed_schema()

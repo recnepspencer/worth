@@ -5,6 +5,116 @@ fn fork(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, name:
 }
 
 #[test]
+fn closed_original_and_target_keep_exact_history_until_cursor_release() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    let mut runtime = runtime_with_test_schema();
+    let created = create_entity_outcome(&execution, &runtime, "before");
+    let entity = changed_entities(&created)[0];
+    fork(&execution, &runtime, "retained-original");
+    fork(&execution, &runtime, "retained-target");
+    let original_identity = runtime
+        .branch_identity(&BranchId("retained-original".into()))
+        .unwrap();
+    let target_identity = runtime
+        .branch_identity(&BranchId("retained-target".into()))
+        .unwrap();
+    let (_, original) = runtime.observe_branch(&original_identity).unwrap();
+    let changed = update_entity_on_branch(
+        &execution,
+        &runtime,
+        entity,
+        "after",
+        BranchId("retained-target".into()),
+    );
+    let (_, target) = runtime.observe_branch(&target_identity).unwrap();
+    assert!(runtime
+        .delete_branch(&execution, &original_identity)
+        .unwrap()
+        .deleted()
+        .is_some());
+    // The original's immutable ancestry remains usable while the descendant
+    // is live. Closing a branch must not make fresh live admission possible.
+    assert!(matches!(
+        runtime.retain_component_basis(&original),
+        Err(crate::branch::RelationalBranchBasisDenial::UnknownBranch(_))
+    ));
+    assert_eq!(
+        collect(
+            &runtime,
+            execution,
+            cursor(&runtime, execution, &original, &target, entity)
+        )
+        .0,
+        [changed.commit.commit_id]
+    );
+    assert!(runtime
+        .delete_branch(&execution, &target_identity)
+        .unwrap()
+        .deleted()
+        .is_some());
+    assert!(matches!(
+        runtime.retain_component_basis(&target),
+        Err(crate::branch::RelationalBranchBasisDenial::UnknownBranch(_))
+    ));
+    let older = runtime
+        .select_reachable_commit(&target.observation(), created.commit.commit_id)
+        .into_outcome()
+        .unwrap();
+    assert!(matches!(
+        runtime.authored_write_history_cursor(execution, &original, older, &keys(entity)),
+        Err(RelationalAuthoredWriteDenial::NotExactSelection)
+    ));
+    for outcome in [&created, &changed] {
+        release_test_commit_snapshot(&runtime, outcome);
+    }
+    let original_custody = std::sync::Arc::downgrade(&original.inner);
+    let target_custody = std::sync::Arc::downgrade(&target.inner);
+    let cursor = cursor(&runtime, execution, &original, &target, entity);
+    drop(original);
+    drop(target);
+    assert!(original_custody.upgrade().is_some());
+    assert!(target_custody.upgrade().is_some());
+    let foreign = runtime_with_test_schema();
+    assert!(matches!(
+        cursor.prepare_next_page(&foreign, execution, limits(1)),
+        Err(RelationalAuthoredWriteDenial::ForeignOwner)
+    ));
+    let cancelled = worth_execution::CancellationSource::new();
+    let request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        cancelled.token(),
+        None,
+    );
+    let page = cursor
+        .prepare_next_page(&runtime, ExecutionRequest::serial(&request), limits(1))
+        .unwrap();
+    assert_eq!(
+        page.page().entries().next().unwrap().commit_id(),
+        changed.commit.commit_id
+    );
+    cancelled.cancel();
+    assert!(matches!(
+        cursor.accept_page(page),
+        Err(RelationalAuthoredWriteDenial::Request(
+            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        ))
+    ));
+    assert_eq!(
+        collect(&runtime, execution, cursor).0,
+        [changed.commit.commit_id]
+    );
+    assert!(
+        original_custody.upgrade().is_none(),
+        "the last cursor releases original custody"
+    );
+    assert!(
+        target_custody.upgrade().is_none(),
+        "the last cursor releases target custody"
+    );
+}
+
+#[test]
 fn selected_prefix_excludes_siblings_foreign_sources_and_unproven_merges() {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);

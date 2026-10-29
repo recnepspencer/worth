@@ -4,7 +4,7 @@ use super::page::{
 };
 use super::{RelationalAuthoredWriteDenial as Denial, RelationalAuthoredWriteSelector as Key};
 use crate::branch::AdmittedRelationalBranchBasis;
-use crate::change_source::{RelationalRetainedObservation, RelationalSelectedCommit};
+use crate::change_source::RelationalSelectedCommit;
 use crate::history::data::CommitId;
 use crate::runtime::{AuthoredWriteGeneration, RelationalRuntime};
 use std::sync::Arc;
@@ -23,8 +23,8 @@ pub(super) struct RetainedAuthoredWriteSelection {
     generation: AuthoredWriteGeneration,
     keys: worth_execution::ExecutionArray<Key>,
     _key_memory: Option<worth_execution::ExecutionMemoryReservation>,
-    _original: RelationalRetainedObservation,
-    target: RelationalRetainedObservation,
+    _original: AdmittedRelationalBranchBasis,
+    target: AdmittedRelationalBranchBasis,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -56,6 +56,11 @@ impl RelationalRuntime {
         super::run(execution, |context| {
             for key in selectors {
                 super::visit(context)?;
+                if let Key::Adjacency { anchor, .. } = key
+                    && anchor.generation_value() == 0
+                {
+                    return Err(Denial::UnsupportedAdjacencySelector);
+                }
                 if let Key::EntityFieldIndex { definition, .. } = key
                     && !super::RelationalAuthoredEntityIndexDefinition::supports_locator(
                         &definition.locator,
@@ -90,6 +95,23 @@ impl RelationalRuntime {
             let next = original_ordinal
                 .checked_add(1)
                 .ok_or(Denial::SizeOverflow)?;
+            if selectors
+                .iter()
+                .any(|key| matches!(key, Key::Adjacency { .. }))
+            {
+                super::ordered_visit(context, generation.incomplete_adjacency.len(), 8)?;
+                if let Some((&ordinal, gap)) =
+                    generation.incomplete_adjacency.first_at_or_after(&next)
+                {
+                    return Err(Denial::IncompleteAdjacencyHistory {
+                        ordinal,
+                        commit: gap.commit,
+                        relation: gap.relation,
+                        kind: gap.kind,
+                        reason: gap.reason,
+                    });
+                }
+            }
             super::ordered_visit(context, 0, selectors.len() as u64)?;
             if selectors
                 .iter()
@@ -152,12 +174,11 @@ impl RelationalRuntime {
                 super::ordered_visit(context, 0, bytes)?;
                 keys.push(key.clone())?;
             }
-            let original = self
-                .retain_observation_snapshot(original)
-                .map_err(Denial::Retention)?;
-            let target = self
-                .retain_observation_snapshot(&target.observation().admitted_basis())
-                .map_err(Denial::Retention)?;
+            // These sealed bases already own immutable root/history custody.
+            // Sharing it must not readmit a historical commit's closed branch
+            // as a live branch or acquire a second snapshot/retention identity.
+            let original = original.clone();
+            let target = target.observation().admitted_basis();
             Ok(RelationalAuthoredWriteCursor {
                 source: Arc::new(RetainedAuthoredWriteSelection {
                     generation,

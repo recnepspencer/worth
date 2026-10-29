@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::output_binding_identity::OutputBin
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
+mod binding_succession;
 mod checkpoint_locator_copy;
 mod checkpoint_selection_denial;
 mod inherited_settlement;

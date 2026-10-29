@@ -343,7 +343,7 @@ where
     pub(in crate::domain_computation) fn graph_work_resource_support_ref(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
-    {
+{
         self.primary_provider.application_resource_support_ref()
     }
 

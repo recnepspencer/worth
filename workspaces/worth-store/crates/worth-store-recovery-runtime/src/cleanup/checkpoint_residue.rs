@@ -41,7 +41,7 @@ pub(super) fn failure(
     match outcome {
         RecoveryCheckpointResidueOutcome::DeniedBeforeEffect(denial) if quiescent => {
             session.block();
-            PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
+            PhysicalRecoveryOutcome::Blocked(Box::new(PhysicalRecoveryBlock::new(
                 crate::entry::PhysicalRecoveryBlockCause::Damage(
                     PhysicalRecoveryBlockKind::Checkpoint,
                 ),
@@ -62,12 +62,12 @@ pub(super) fn failure(
                     ..PhysicalRecoveryBlockEvidence::default()
                 },
                 recovery_effects,
-            ))
+            )))
         }
         RecoveryCheckpointResidueOutcome::DeniedBeforeEffect(_)
         | RecoveryCheckpointResidueOutcome::Indeterminate => {
             session.publication_indeterminate();
-            PhysicalRecoveryOutcome::PublicationIndeterminate(
+            PhysicalRecoveryOutcome::PublicationIndeterminate(Box::new(
                 PhysicalRecoveryPublicationIndeterminate::new(
                     store,
                     session_identity,
@@ -80,7 +80,7 @@ pub(super) fn failure(
                 .with_integrity_trace(state.integrity_trace)
                 .with_integrity_observations(state.integrity.into_observations())
                 .with_checkpoint_residue_indeterminate(),
-            )
+            ))
         }
         RecoveryCheckpointResidueOutcome::Absent
         | RecoveryCheckpointResidueOutcome::Removed { .. } => {

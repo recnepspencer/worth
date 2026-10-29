@@ -18,7 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) | A source receipt, current principal, target branch and client key; the contribution declares the inverse and disclosure query. Scalar restoration requires exact later source/reversal pairs and retained original field/aspect-presence support under compatible installed bindings. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -414,7 +414,7 @@ The executable [nested-value model](../workspaces/worth-query/crates/worth-query
 and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)
 exercise nondefault values through the entry binding, installed catalog,
 authenticated read and current-format native recovery. The
-[compiler fixtures](../crates/worth-foundational/tests/value_shape/compiler.rs)
+[compiler fixtures](../crates/worth-foundational/tests/worth_foundational/compile_fail/value_shape/compiler.rs)
 cover supported and refused grammar.
 
 Read canonical fields with `reader.field(...)` or the installed query's row
@@ -599,6 +599,15 @@ with value 11. Run it from the repository root:
 ```text
 cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-topology-entry --example required_feature
 ```
+
+`DecisionReader::prior_output_preserved_or_created` selects the latest publication
+of its declared Create/Preserve bindings in one installed output family, exact
+source partition and selected ancestry. The selected typed role must still be
+a live full-generation entity. A stale or missing member is a denial; it never
+falls back to an older binding. Ordinary `prior_output` keeps its exact-binding
+historical meaning. Query owns source-native-version commitment, completed
+dependencies and current publication custody; a separate application command
+nonce is not a replacement for that contract.
 
 ### 3.2 Attach actions to features
 
@@ -1849,7 +1858,7 @@ Features, connections, and rules come from `installed_program()`, not from
 discovery.
 
 Managed asynchronous resource requests are available through Decl/Host following
-[9.18.1 Phase 8 acceptance](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+[Managed async resource contract](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 [Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
 documents the concrete `request.resources()` start/advance/inspection/close path,
 installed provider, finite ingress, exact selector reclaim and recovery handoff.
@@ -5336,53 +5345,24 @@ reads retain their existing contract.
 
 Indexed results retain complete positive, empty and ordering dependencies from
 the original Source, including nonmatching rows. The ordinary `expect_source`
-and `expect_result_set` mutation entrances consume these observations under their
-current admitted advancement. Pending expectations own the Source across
-idempotency resolution; fresh execution then borrows the genuine current
-Execution request to materialize facts. An actual recorded retry skips payload
-materialization. No Execution request or grant is retained across calls.
+and `expect_result_set` mutation entrances consume these observations under the
+current request. Keep the observation until the mutation consumes it. The
+mutation rechecks the complete Source: a previously nonmatching record entering
+an empty prefix invalidates the expectation. If the Source has changed, reread
+and reassess the operation instead of substituting only the returned rows.
+Reuse the operation's idempotency identity for a recorded retry; it does not
+repeat the completed mutation.
 
-Request-bearing producer, workflow and retained-dependency conversion uses that
-same validation and materialization algorithm. Native currentness still checks
-the complete conservative Source facts; a previously nonmatching record entering
-an empty prefix invalidates the original expectation. Full generations,
-conflicting-revision refusals and merged endpoint evidence remain in force.
-Legacy conversion without an Execution request returns
-`ManagedSourceExpansionUnsupported`; an allocation policy alone grants no
-managed expansion. The
-[managed expectation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/expectations/membership.rs)
-exercise the public API, stale nonmatches, empty results and recorded retry.
-Focused managed-fact, prefix and governed-box regressions pass on the current
-implementation. The
-[lifecycle fixtures](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle.rs)
-prove cancellation after the first real node write, fresh-request reconstruction,
-cache survival after the last application handle drops and physical final-owner
-release. The
-[box journeys](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/lifecycle.rs)
-exercise the actual BVH adapter's mid-build stop, partial backing release,
-fresh-request reference parity and final runtime disposal. Their
-[affinity journeys](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/affinity.rs)
-exercise same-runtime branch isolation, a genuinely older retained basis and
-Native-reclaimed scope-slot generation replacement. Complementary
-[prefix installation twins](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/installation.rs)
-and [box basis anchors](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/affinity.rs)
-cover the actual incompatible executable version, foreign runtime/branch and
-retained historical basis before callbacks. All eleven focused consumer cases
-pass on the current fixture source, including exact typed original-request
-cancellation and physical release through both adapters. Allocation observations
-use one consumer executable, one exact case per process and one test thread;
-they do not measure another process's allocations or establish concurrent build
-cost.
-Existing box geometry, version and independent capability/READ controls remain
-carried. Both the pure numerical closed-box and versioned-prefix providers use
-the same Decl/Host contract and independent scan references. The owning
-[compiled-example inventory test](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/compiled_example_drift.rs)
-passed Phase 1 qualification for its 27 examples, including both provider declarations; mandatory
-boundary and context checks pass. Independent review and Root acceptance establish
-[Phase 1 product/evidence completion](../plans/WORTH-query/milestone-9.19.md#phase-1-declared-providers-and-managed-index-ownership).
-Default integration remains pending. Phases 2–6 remain unfinished: incremental candidate roots, advanced
-membership routing, narrowed footprints and final Proprietary adoption are not
-provided by this committed-provider lifecycle qualification.
+Use the request-bearing mutation entrances for indexed observations. A lower-level
+conversion without an Execution request returns `ManagedSourceExpansionUnsupported`;
+supplying an allocation policy alone does not make that conversion available.
+
+An index belongs to its installed provider version, runtime, branch and
+full-generation scope. Open a new registration when any of those changes;
+a handle from another branch, installation or generation cannot be reused.
+Keep result owners only as long as needed, and close the shared registration
+when the application no longer needs the index.
+
 The
 [public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
 shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and

@@ -23,7 +23,10 @@ fn completed_history_seal_denies_changed_head_and_ordinary_control_then_freshly_
                 panic!("real pending second release must recover")
             };
             assert!(handoff.core().recovery_effect_count() > 0);
-            let seal = handoff.into_core().into_checkpoint_custody().unwrap();
+            let seal = handoff
+                .into_core()
+                .certification_release_media_into_checkpoint_custody()
+                .unwrap();
             certified_release_serving::admit_serving_with_seal(world.root(), seal).close();
             let selected = selected_generation(world.root());
 
@@ -91,7 +94,7 @@ fn fresh_completed_seal(root: &Path) -> RecoveredPhysicalCheckpointCustody {
     assert_eq!(handoff.core().recovery_effect_count(), 0);
     handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("completed history must freshly produce a Store seal")
 }
 

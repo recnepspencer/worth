@@ -79,6 +79,37 @@ fn authored_noops_and_whole_aspects_remain_visible_beyond_semantic_revisions() {
             .unwrap(),
         "matching actual support does not erase the four authored occurrences above"
     );
+    assert!(old
+        .compare_entity_aspect_support(&execution, &current, entity, &aspect_key("name"))
+        .unwrap());
+    let different = runtime
+        .read_truth()
+        .project_snapshot(&changed.snapshot)
+        .unwrap();
+    assert!(!old
+        .compare_entity_aspect_support(&execution, &different, entity, &aspect_key("name"))
+        .unwrap());
+    assert_eq!(
+        old.entity_aspect_support_fields(&execution, &current, entity, &aspect_key("name"))
+            .unwrap()
+            .cloned()
+            .collect::<Vec<_>>(),
+        [field_key("name")]
+    );
+    let wrong_generation = EntityId::new(
+        entity.partition_id,
+        entity.local_slot_value(),
+        entity.generation_value() + 1,
+    );
+    assert!(matches!(
+        old.entity_aspect_support_fields(
+            &execution,
+            &current,
+            wrong_generation,
+            &aspect_key("name")
+        ),
+        Err(crate::facade::runtime::RelationalFieldSupportComparisonDenial::SourceUnavailable)
+    ));
     let worker_only = worth_execution::SerialRequest::from_policy(
         &worth_foundational::ExecutionRequestPolicy::for_workers(
             worth_foundational::ExecutionPosture::Serial,
@@ -243,6 +274,23 @@ fn absent_field_writes(execution: ExecutionRequest<'_, '_>) {
             .compare_entity_field_support(&execution, &with_sibling, entity, &locator)
             .unwrap(),
         "an absent selected field does not depend on its sibling's aspect container"
+    );
+    assert!(
+        !absent_container
+            .compare_entity_aspect_support(
+                &execution,
+                &with_sibling,
+                entity,
+                &aspect_key("summary")
+            )
+            .unwrap(),
+        "whole-aspect support distinguishes the genuinely present sibling/container"
+    );
+    assert!(
+        before
+            .compare_entity_aspect_support(&execution, &after, entity, &aspect_key("summary"))
+            .unwrap(),
+        "equal absent-field writes preserve the complete actual aspect value"
     );
     let title = AspectFieldLocator::new(
         LocatorAuthority::Authoritative,

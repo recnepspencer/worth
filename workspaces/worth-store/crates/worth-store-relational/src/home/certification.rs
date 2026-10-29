@@ -13,6 +13,23 @@ use super::{RelationalStoreHome, RelationalStoreHomeOpenRefusal, RelationalStore
 use crate::physical_store::PhysicalOpening;
 
 impl RelationalStoreHome {
+    /// Observe the physically admitted owner immediately before descriptor
+    /// readmission/publication. The observer can arm existing fault and pause
+    /// controls; it supplies neither descriptor bytes nor admission authority.
+    #[doc(hidden)]
+    pub fn certification_open_with_descriptor_observer(
+        request: RelationalStoreHomeRequest,
+        media: FilesystemMediaAdmission,
+        observer: impl FnOnce(&ServingPhysicalRuntime),
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, RelationalStoreHomeOpenRefusal> {
+        let (location, builder) = request.into_parts();
+        let serving =
+            super::open_physical_store(&location, PhysicalOpening::production().with_media(media))?;
+        observer(&serving);
+        Self::admit(serving, builder, execution)
+    }
+
     /// Observe completed cold-port journal reads during production readmission.
     /// The observer receives only the requested position and existing counters;
     /// it cannot supply bytes or change admission. Its owner may park a child
@@ -96,6 +113,7 @@ impl RelationalStoreHome {
             runtime,
             cold_source,
             serving,
+            descriptor: _,
         } = self;
         drop(runtime);
         drop(cold_source);

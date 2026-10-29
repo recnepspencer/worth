@@ -153,6 +153,7 @@ impl PhysicalResidencyStoreWorld {
             configuration.access,
             durability,
         )
+        .with_journal_registry(super::journal_registry::declaration())
         .with_residency_policy(configuration.residency);
         let serving = admit_record_store(media.initialize_record_store(request))?;
         Ok(Self {
