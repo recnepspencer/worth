@@ -1,4 +1,5 @@
 //! Entry binding metadata for the Query-free canonical value contract.
+mod aspect_text;
 mod document;
 mod reference;
 pub use document::{decode_application_document, encode_application_document};
@@ -57,23 +58,16 @@ pub fn decode_application_canonical_value<Value: CanonicalValue>(
     bounds: ValueDecodeBounds,
     binding_identity: crate::portable_identity::WorthQueryPortableTypeIdentity,
 ) -> Result<Value, super::ApplicationValueDecodeDenial> {
-    use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
-    let AspectValue::String(text) = raw else {
-        return Err(super::ApplicationValueDecodeDenial::ScalarFamilyMismatch {
-            binding_identity,
-            expected: ScalarAspectType::String,
-            observed: raw.value_family(),
-        });
-    };
-    let InternedString::Raw(text) = text else {
-        return Err(super::ApplicationValueDecodeDenial::CodecRejected { binding_identity });
-    };
-    decode_canonical_value(text, bounds).map_err(|cause| {
-        super::ApplicationValueDecodeDenial::Canonical {
-            binding_identity,
-            cause,
-        }
-    })
+    let mut decoded = None;
+    aspect_text::with_raw_aspect_text(raw, binding_identity, &mut |text, binding_identity| {
+        decoded = Some(decode_canonical_value(text, bounds).map_err(|cause| {
+            super::ApplicationValueDecodeDenial::Canonical {
+                binding_identity,
+                cause,
+            }
+        }));
+    })?;
+    decoded.expect("raw aspect text runs one canonical decode")
 }
 
 pub fn decode_application_canonical_value_with_admission<Value: CanonicalValue>(
@@ -82,21 +76,16 @@ pub fn decode_application_canonical_value_with_admission<Value: CanonicalValue>(
     binding_identity: crate::portable_identity::WorthQueryPortableTypeIdentity,
     admission: &mut ValueDecodeAdmission<'_>,
 ) -> Result<Value, super::ApplicationValueDecodeDenial> {
-    use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
-    let AspectValue::String(text) = raw else {
-        return Err(super::ApplicationValueDecodeDenial::ScalarFamilyMismatch {
-            binding_identity,
-            expected: ScalarAspectType::String,
-            observed: raw.value_family(),
-        });
-    };
-    let InternedString::Raw(text) = text else {
-        return Err(super::ApplicationValueDecodeDenial::CodecRejected { binding_identity });
-    };
-    decode_canonical_value_with_admission(text, bounds, admission).map_err(|cause| {
-        super::ApplicationValueDecodeDenial::Canonical {
-            binding_identity,
-            cause,
-        }
-    })
+    let mut decoded = None;
+    aspect_text::with_raw_aspect_text(raw, binding_identity, &mut |text, binding_identity| {
+        decoded = Some(
+            decode_canonical_value_with_admission(text, bounds, admission).map_err(|cause| {
+                super::ApplicationValueDecodeDenial::Canonical {
+                    binding_identity,
+                    cause,
+                }
+            }),
+        );
+    })?;
+    decoded.expect("raw aspect text runs one admitted canonical decode")
 }

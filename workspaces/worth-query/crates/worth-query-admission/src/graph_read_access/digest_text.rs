@@ -34,14 +34,42 @@ pub(crate) fn admitted_digest_text<Stop>(
     mut render: impl FnMut(&mut dyn Write) -> fmt::Result,
     mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
 ) -> Result<String, AdmittedDigestTextStop<Stop>> {
-    admit(count_work, 0).map_err(AdmittedDigestTextStop::Admission)?;
+    let mut admission = None;
+    let mut charge = |work: u64, bytes: u64| -> Result<(), ()> {
+        match admit(work, bytes) {
+            Ok(()) => Ok(()),
+            Err(stop) => {
+                admission = Some(stop);
+                Err(())
+            }
+        }
+    };
+    match drive_admitted_digest_text(count_work, &mut render, &mut charge) {
+        Ok(text) => Ok(text),
+        Err(DigestDriveStop::AccountingOverflow) => Err(AdmittedDigestTextStop::AccountingOverflow),
+        Err(DigestDriveStop::Admission) => Err(AdmittedDigestTextStop::Admission(
+            admission.expect("refused digest admission stores its stop"),
+        )),
+    }
+}
+
+enum DigestDriveStop {
+    Admission,
+    AccountingOverflow,
+}
+
+#[inline(never)]
+fn drive_admitted_digest_text(
+    count_work: u64,
+    render: &mut dyn FnMut(&mut dyn Write) -> fmt::Result,
+    admit: &mut dyn FnMut(u64, u64) -> Result<(), ()>,
+) -> Result<String, DigestDriveStop> {
+    admit(count_work, 0).map_err(|_| DigestDriveStop::Admission)?;
     let mut counted = CountedText { bytes: Some(0) };
-    render(&mut counted).map_err(|_| AdmittedDigestTextStop::AccountingOverflow)?;
-    let bytes = counted
-        .bytes
-        .ok_or(AdmittedDigestTextStop::AccountingOverflow)?;
-    let cost = u64::try_from(bytes).map_err(|_| AdmittedDigestTextStop::AccountingOverflow)?;
-    admit(cost, cost).map_err(AdmittedDigestTextStop::Admission)?;
+    render(&mut counted).map_err(|_| DigestDriveStop::AccountingOverflow)?;
+    let bytes = counted.bytes.ok_or(DigestDriveStop::AccountingOverflow)?;
+    let cost = u64::try_from(bytes).map_err(|_| DigestDriveStop::AccountingOverflow)?;
+    admit(cost, cost).map_err(|_| DigestDriveStop::Admission)?;
     let mut output = String::with_capacity(bytes);
     render(&mut output).expect("String formatting cannot fail");
     debug_assert_eq!(output.len(), bytes);

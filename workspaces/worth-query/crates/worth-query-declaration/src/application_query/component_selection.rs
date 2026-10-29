@@ -80,16 +80,24 @@ impl ApplicationQueryComponentMeaning {
     }
     /// Shared pure identity vocabulary; each canonical artifact owns its prefix.
     pub fn visit_canonical_parts(&self, mut visit: impl FnMut(&str, &str)) {
-        for (key, value) in [
-            ("query", self.query_type()),
-            ("slot", self.slot_type()),
-            ("set", self.set()),
-            ("member", self.member()),
-            ("output", self.output_name()),
-            ("selection", self.selection.canonical_name()),
-        ] {
-            visit(key, value);
-        }
+        drive_component_parts(self, &mut visit);
+    }
+}
+
+#[inline(never)]
+fn drive_component_parts(
+    meaning: &ApplicationQueryComponentMeaning,
+    visit: &mut dyn FnMut(&str, &str),
+) {
+    for (key, value) in [
+        ("query", meaning.query_type()),
+        ("slot", meaning.slot_type()),
+        ("set", meaning.set()),
+        ("member", meaning.member()),
+        ("output", meaning.output_name()),
+        ("selection", meaning.selection.canonical_name()),
+    ] {
+        visit(key, value);
     }
 }
 

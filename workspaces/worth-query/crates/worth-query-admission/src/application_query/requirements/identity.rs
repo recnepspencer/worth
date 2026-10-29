@@ -39,33 +39,93 @@ fn for_each_access_entry<'a, Error>(
     relations: impl Iterator<Item = WorthQueryReadGraphRelationView<'a>>,
     mut visit: impl FnMut(AccessEntry<'a>) -> Result<(), Error>,
 ) -> Result<(), Error> {
-    visit(AccessEntry::Digest("graph", planning_graph_identity))?;
-    visit(AccessEntry::Digest("schema-basis", schema_basis))?;
-    visit(AccessEntry::Text("root", root))?;
-    visit(AccessEntry::Text(
+    let mut stop = None;
+    let mut step = |entry: AccessEntry<'a>| -> bool {
+        match visit(entry) {
+            Ok(()) => true,
+            Err(error) => {
+                stop = Some(error);
+                false
+            }
+        }
+    };
+    let mut relations = relations;
+    if drive_access_entries(
+        schema_basis,
+        root,
+        cardinality,
+        planning_graph_identity,
+        lane,
+        maximum_result_count,
+        relation_count,
+        &mut relations,
+        &mut step,
+    ) {
+        Ok(())
+    } else {
+        Err(stop.expect("a refused access visit stores its error"))
+    }
+}
+
+#[inline(never)]
+fn drive_access_entries<'a>(
+    schema_basis: CanonicalDigestId,
+    root: &'a str,
+    cardinality: ApplicationQueryCardinality,
+    planning_graph_identity: CanonicalDigestId,
+    lane: WorthQueryApplicationQueryLane,
+    maximum_result_count: usize,
+    relation_count: usize,
+    relations: &mut dyn Iterator<Item = WorthQueryReadGraphRelationView<'a>>,
+    visit: &mut dyn FnMut(AccessEntry<'a>) -> bool,
+) -> bool {
+    if !visit(AccessEntry::Digest("graph", planning_graph_identity)) {
+        return false;
+    }
+    if !visit(AccessEntry::Digest("schema-basis", schema_basis)) {
+        return false;
+    }
+    if !visit(AccessEntry::Text("root", root)) {
+        return false;
+    }
+    if !visit(AccessEntry::Text(
         "cardinality",
         cardinality_name(cardinality),
-    ))?;
-    visit(AccessEntry::Text("lane", lane.as_str()))?;
-    visit(AccessEntry::Unsigned(
+    )) {
+        return false;
+    }
+    if !visit(AccessEntry::Text("lane", lane.as_str())) {
+        return false;
+    }
+    if !visit(AccessEntry::Unsigned(
         "maximum-result-count",
         maximum_result_count,
-    ))?;
-    visit(AccessEntry::Unsigned("relation-count", relation_count))?;
+    )) {
+        return false;
+    }
+    if !visit(AccessEntry::Unsigned("relation-count", relation_count)) {
+        return false;
+    }
     for (index, relation) in relations.enumerate() {
-        visit(AccessEntry::RelationText(index, "name", relation.relation))?;
-        visit(AccessEntry::RelationText(
+        if !visit(AccessEntry::RelationText(index, "name", relation.relation)) {
+            return false;
+        }
+        if !visit(AccessEntry::RelationText(
             index,
             "direction",
             relation_direction_name(relation.direction),
-        ))?;
-        visit(AccessEntry::RelationUnsigned(
+        )) {
+            return false;
+        }
+        if !visit(AccessEntry::RelationUnsigned(
             index,
             "depth",
             relation.depth,
-        ))?;
+        )) {
+            return false;
+        }
     }
-    Ok(())
+    true
 }
 
 pub(super) fn access_shape_digest(

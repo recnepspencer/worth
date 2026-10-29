@@ -6,13 +6,13 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 use crate::canonical_identity_derivation::WorthQueryCanonicalIdentityStop;
 
 use super::{
-    WorthQueryAdmittedGraphReadRelationDirection, WorthQueryCanonicalGraphReadPlanningInput,
-    WorthQueryGraphReadAccessRequirementRow, WorthQueryGraphReadAccessRequirementSet,
-    WorthQueryGraphReadOrderingPosture, WorthQueryGraphReadPlanningRelation,
-    WorthQueryGraphReadPredicateFamily, WorthQueryGraphReadTraversalOperator,
+    WorthQueryCanonicalGraphReadPlanningInput, WorthQueryGraphReadAccessRequirementRow,
+    WorthQueryGraphReadAccessRequirementSet, WorthQueryGraphReadPlanningRelation,
+    WorthQueryGraphReadTraversalOperator,
 };
 
 mod row_construction;
+mod spec_visit;
 
 use row_construction::build_row;
 
@@ -53,106 +53,25 @@ fn visit_specs<'a, S: RowSink<'a>>(
     input: &'a WorthQueryCanonicalGraphReadPlanningInput,
     sink: &mut S,
 ) -> Result<(), S::Stop> {
-    sink.visit()?;
-    for relation in input.shape().relations() {
-        sink.visit()?;
-        for operator in relation.operators() {
-            sink.visit()?;
-            if *operator == WorthQueryGraphReadTraversalOperator::AggregateSelection {
-                sink.row(RowSpec::Relation {
-                    relation,
-                    operator,
-                    kind: super::WorthQueryGraphReadAccessRequirementKind::AggregateSelection,
-                    basis: RelationRequirementBasis::AggregateSelection,
-                })?;
-                continue;
-            }
-            let forward = RowSpec::Relation {
-                relation,
-                operator,
-                kind: super::WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
-                basis: RelationRequirementBasis::DirectionalAdjacency,
-            };
-            let reverse = RowSpec::Relation {
-                relation,
-                operator,
-                kind: super::WorthQueryGraphReadAccessRequirementKind::ReverseAdjacency,
-                basis: RelationRequirementBasis::ReverseAdjacency,
-            };
-            match operator {
-                WorthQueryGraphReadTraversalOperator::BoundedAncestor
-                | WorthQueryGraphReadTraversalOperator::SharedEndpoint
-                | WorthQueryGraphReadTraversalOperator::SharedAttachment => sink.row(reverse)?,
-                WorthQueryGraphReadTraversalOperator::FrontierSearch => {
-                    sink.row(forward)?;
-                    sink.row(reverse)?;
-                }
-                WorthQueryGraphReadTraversalOperator::AggregateSelection => {}
-                WorthQueryGraphReadTraversalOperator::DeclarationTraversal
-                | WorthQueryGraphReadTraversalOperator::CompleteClosure
-                | WorthQueryGraphReadTraversalOperator::DirectEdge => match relation.direction() {
-                    WorthQueryAdmittedGraphReadRelationDirection::Ancestor => sink.row(reverse)?,
-                    WorthQueryAdmittedGraphReadRelationDirection::Forward
-                    | WorthQueryAdmittedGraphReadRelationDirection::Descendant => {
-                        sink.row(forward)?
-                    }
-                },
-                WorthQueryGraphReadTraversalOperator::SuccessorWalk
-                | WorthQueryGraphReadTraversalOperator::BoundedDescendant
-                | WorthQueryGraphReadTraversalOperator::AnchoredFrontier => sink.row(forward)?,
-            }
-            if !matches!(operator, WorthQueryGraphReadTraversalOperator::DirectEdge) {
-                for kind in [
-                    super::WorthQueryGraphReadAccessRequirementKind::TraversalWorkset,
-                    super::WorthQueryGraphReadAccessRequirementKind::VisitedSet,
-                ] {
-                    sink.row(RowSpec::Relation {
-                        relation,
-                        operator,
-                        kind,
-                        basis: RelationRequirementBasis::TraversalWorkset,
-                    })?;
-                }
-            }
-            if matches!(
-                operator,
-                WorthQueryGraphReadTraversalOperator::AnchoredFrontier
-                    | WorthQueryGraphReadTraversalOperator::SharedEndpoint
-                    | WorthQueryGraphReadTraversalOperator::SharedAttachment
-                    | WorthQueryGraphReadTraversalOperator::FrontierSearch
-            ) {
-                sink.row(RowSpec::Relation {
-                    relation,
-                    operator,
-                    kind: super::WorthQueryGraphReadAccessRequirementKind::DedupSet,
-                    basis: RelationRequirementBasis::TraversalWorkset,
-                })?;
+    let mut stop = None;
+    let mut step = |action: spec_visit::SpecStep<'a>| -> bool {
+        let visited = match action {
+            spec_visit::SpecStep::Visit => sink.visit(),
+            spec_visit::SpecStep::Row(spec) => sink.row(spec),
+        };
+        match visited {
+            Ok(()) => true,
+            Err(error) => {
+                stop = Some(error);
+                false
             }
         }
+    };
+    if spec_visit::drive(input, &mut step) {
+        Ok(())
+    } else {
+        Err(stop.expect("a refused planning-spec visit stores its stop"))
     }
-    if input.shape().component_selection_required() {
-        sink.row(RowSpec::ComponentSelection)?;
-    }
-    sink.row(RowSpec::ResultBuffer)?;
-    if input.shape().predicate_family() != &WorthQueryGraphReadPredicateFamily::None
-        || !input.shape().predicate_fields().is_empty()
-    {
-        sink.row(RowSpec::Predicate)?;
-    }
-    if input.shape().ordering_posture() != &WorthQueryGraphReadOrderingPosture::Unordered {
-        sink.row(RowSpec::Ordering)?;
-    }
-    if input.shape().root_union_dedup_required() {
-        sink.row(RowSpec::RootUnionDedup)?;
-    }
-    if input.shape().relationship_proof_required() {
-        sink.row(RowSpec::Proof)?;
-    }
-    sink.row(RowSpec::Lifecycle)?;
-    if input.live_maintenance_required() {
-        sink.row(RowSpec::LiveMaintenance)?;
-    }
-    Ok(())
 }
 
 struct CountRows<'a, Stop> {
