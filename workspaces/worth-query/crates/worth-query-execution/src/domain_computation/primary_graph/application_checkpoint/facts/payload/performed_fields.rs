@@ -20,7 +20,13 @@ impl FactPayload {
             while chunk.count < chunk.fields.len() {
                 let Some(fact) = reads.next() else { break };
                 control.check_live()?;
-                if matches!(fact, Fact::Field { .. } | Fact::SourceFieldRevision { .. }) {
+                if matches!(
+                    fact,
+                    Fact::Field { .. }
+                        | Fact::AbsentField { .. }
+                        | Fact::OptionalAspectAbsent { .. }
+                        | Fact::SourceFieldRevision { .. }
+                ) {
                     chunk.fields[chunk.count] = Some(fact);
                     chunk.count += 1;
                 }

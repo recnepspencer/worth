@@ -103,6 +103,7 @@ fn original_sources_reverse_consecutively_after_exact_later_reversals() {
         assert_eq!(
             host::read(&host),
             [model::query::Row {
+                operand: None,
                 primary: 3,
                 secondary: 19
             }]

@@ -223,13 +223,12 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
         basis,
         target,
         session,
-        proof: None,
         authorization,
         governance,
         diagnostic,
         source,
         memory,
     };
-    admitted.check(execution)?;
+    drop(admitted.check(execution)?);
     Ok(admitted)
 }

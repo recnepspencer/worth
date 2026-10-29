@@ -315,3 +315,6 @@ mod checkpoint_readmission;
 
 #[path = "native_aspect_mutations/stale_contract.rs"]
 mod stale_contract;
+
+#[path = "native_aspect_mutations/canonical_field_effect.rs"]
+mod canonical_field_effect;

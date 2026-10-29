@@ -35,6 +35,7 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
             super::composite_definition_handler::Handler,
         )?;
         setup.handler::<edit::EditBinding, _>(edit::Handler)?;
+        setup.handler::<super::operand_edit::OperandBinding, _>(super::operand_edit::Handler)?;
         setup.handler::<super::authored_identity_model::CreateBinding, _>(
             super::authored_identity_handlers::Handler,
         )?;

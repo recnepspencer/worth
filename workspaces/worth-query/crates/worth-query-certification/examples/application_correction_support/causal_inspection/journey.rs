@@ -14,10 +14,14 @@ use worth_query_host::facade::{
     application_entry::*,
     application_installation::WorthQueryProgramApplicationRuntime,
     causal_inspection::*,
-    declaration::application_program::ApplicationProgramDefinition,
+    declaration::{
+        application_operation::ApplicationMutationBinding,
+        application_program::ApplicationProgramDefinition,
+    },
     primary_graph::{
         WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryApplicationCommitReceipt,
-        WorthQueryConditionalSignalDecision, WorthQueryPrincipalResolutionMode,
+        WorthQueryApplicationRequiredOutputSource, WorthQueryConditionalSignalDecision,
+        WorthQueryPrincipalResolutionMode,
     },
     runtime::ExecutionAllocationPolicy,
 };
@@ -246,28 +250,60 @@ pub(super) fn perform(
             ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(source) = source else {
-        panic!("ordinary source must perform");
+    let source = match source {
+        WorthQueryApplicationPerformedMutationOutcome::Performed(source) => source,
+        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+            panic!("ordinary source must perform; actual native outcome: {outcome:?}")
+        }
+        _ => panic!("ordinary source must perform; required-output custody was not ready"),
     };
+    let (source, producer, read) = settle_source(application, &request, source, 1);
+    (
+        source,
+        producer.expect("one actual performed producer"),
+        read,
+    )
+}
+
+pub(super) fn settle_source<Binding>(
+    application: &host::OutputHost,
+    request: &WorthQueryApplicationRequest<'_, '_, '_, NumericSchema>,
+    source: WorthQueryPerformedApplicationMutation<NumericSchema, Binding, OutputProgram, Root>,
+    expected_contacts: usize,
+) -> (
+    WorthQueryApplicationCommitReceipt,
+    Option<WorthQueryApplicationCommitReceipt>,
+    WorthQueryApplicationReadObservation,
+)
+where
+    Binding: ApplicationMutationBinding<NumericSchema>
+        + WorthQueryApplicationRequiredOutputSource<
+            NumericSchema,
+            super::super::output_program::Connection,
+        >,
+{
     let receipt = source.receipt().clone();
     let mut started = source
         .start_required_outputs(
             application,
-            &request,
+            request,
             WorthQueryOutputDemandControls::host_policy(),
         )
         .unwrap_or_else(|_| panic!("actual required output starts"));
     let WorthQueryApplicationProgramOutputProgress::Settled(settled) = started
         .required_output_mut()
-        .settle(application, &request)
+        .settle(application, request)
         .unwrap()
     else {
         panic!("the installed arithmetic producer settles");
     };
-    assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        settled.root_producer_contacts_in_this_demand(),
+        expected_contacts
+    );
     (
         receipt,
-        settled.root_receipt().unwrap().clone(),
+        settled.root_receipt().cloned(),
         settled.root_observation().retain(),
     )
 }

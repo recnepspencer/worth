@@ -3,6 +3,7 @@ use super::{edit, schema::*};
 use worth_query_host::facade::declaration::{
     application_operation::*, application_query::*, application_schema::*,
 };
+pub mod absence;
 pub mod capability;
 pub mod independent;
 pub mod journey;

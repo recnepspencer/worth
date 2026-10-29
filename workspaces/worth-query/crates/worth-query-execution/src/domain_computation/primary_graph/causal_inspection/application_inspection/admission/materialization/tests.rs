@@ -84,8 +84,10 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                         &mut memory,
                     )
                     .unwrap_or_else(|_| panic!("genuine fresh preparation must succeed"));
-                    read.check(&execution)
-                        .unwrap_or_else(|_| panic!("real currentness must precede filling"));
+                    drop(
+                        read.check(&execution)
+                            .unwrap_or_else(|_| panic!("real currentness must precede filling")),
+                    );
                     let held = read.memory.as_ref().unwrap().bytes();
                     assert!(held > 0);
                     held_before_report = Some(held);

@@ -5,7 +5,6 @@ impl ObservationConnection<'_, '_> {
     pub(in super::super) fn require_independent_input(
         &self,
         context: &mut MapKernelContext<'_, '_>,
-        execution: &ExecutionRequest<'_, '_>,
         source: &WorthQueryApplicationCommittedChanges,
         inputs: &FactPayload,
         diagnostic: &DiagnosticComparisonAdmission<'_>,
@@ -22,10 +21,7 @@ impl ObservationConnection<'_, '_> {
                 continue;
             };
             // Source disclosure admits this original full subject, not every same-kind entity.
-            if *entity_id != subject
-                || revision.version() != source.commit_reference().version_id
-                || revision.presence() != RelationalFieldPresence::Present
-            {
+            if *entity_id != subject || revision.version() != source.commit_reference().version_id {
                 continue;
             }
             let [field] = locator.field_path().fields() else {
@@ -33,19 +29,13 @@ impl ObservationConnection<'_, '_> {
             };
             for handler in inputs.iter() {
                 checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
-                let Fact::Field {
-                    entity_id: read_entity,
-                    kind,
-                    locator: handler_locator,
-                    ..
-                } = handler
-                else {
+                let Some(read) = PerformedInput::from_fact(handler) else {
                     continue;
                 };
-                if read_entity != entity_id {
+                if read.entity != *entity_id || !read.matches_revision(revision.presence()) {
                     continue;
                 }
-                let Some(owner) = self.layout.entity_name(*kind) else {
+                let Some(owner) = self.layout.entity_name(read.kind) else {
                     continue;
                 };
                 let mut disclosed = false;
@@ -73,20 +63,20 @@ impl ObservationConnection<'_, '_> {
                 };
                 let handler_coordinate = self
                     .layout
-                    .resolve_field_coordinate(self.contracts, owner, handler_locator, |work| {
+                    .resolve_field_coordinate(self.contracts, owner, read.locator, |work| {
                         checkpoint(context, work)
                     })
                     .map_err(MapKernelFailure::Stop)?;
-                if coordinate.entity_kind() != *kind
+                if coordinate.entity_kind() != read.kind
                     || !handler_coordinate.is_some_and(|handler| coordinate.same_field(&handler))
                 {
                     continue;
                 }
-                if source
-                    .committed_field_ref(execution, *entity_id, locator)
-                    .map_err(MapKernelFailure::Stop)?
-                    .is_some()
-                {
+                if read.matches_effect(
+                    source
+                        .field_effect(context, *entity_id, coordinate)
+                        .map_err(MapKernelFailure::Stop)?,
+                ) {
                     return Ok(());
                 }
             }

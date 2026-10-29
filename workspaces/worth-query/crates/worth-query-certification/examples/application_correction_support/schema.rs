@@ -17,6 +17,7 @@ worth_query_application_contribution! {
         corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit, super::source_output_correction::RecordIssued, super::composite_definition_model::CorrectDefinition, super::authored_identity_correction::UndoCreate, super::authored_identity_correction::UndoRetire],
         members: |schema| {
             let schema = super::causal_inspection::declare(schema);
+            let schema = super::operand_edit::declare(schema);
             let schema = super::composite_definition_model::declare(schema);
             let schema = super::authored_identity_model::declare(schema);
             let schema = super::authored_identity_reference::declare(schema);
@@ -29,6 +30,7 @@ worth_query_application_contribution! {
                 .field(Number::reference(), Secondary::reference()).field(Number::reference(), ReadEnabled::reference())
                 .field(Number::reference(), Ceiling::reference())
                 .field(Number::reference(), Calculated::reference())
+                .field(Number::reference(), Operand::reference())
                 .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
                 .principal_binding(ActorBinding::reference())
                 .application_query(query::definition())
@@ -74,3 +76,5 @@ worth_query_principal_binding!(pub ActorBinding in NumericSchema, mapping Extern
     identity: ExternalIdentityField, status: MappingStatusField,
     target: MappingTarget => Principal, principal_identity: PrincipalIdentityField
 });
+
+worth_query_field!(pub Operand for NumericSchema, Number, NumberFacts: optional u64 => U64ApplicationValueBinding, read_write, equality);

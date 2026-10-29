@@ -54,3 +54,13 @@ fn independent_connection_respects_actual_query_parameters_and_empty_output() {
 fn independent_connection_rechecks_current_read_cancellation_and_expiry() {
     super::model::causal_inspection::independent::current_admission_cancellation_and_expiry_precede_connection_discovery();
 }
+
+#[test]
+fn optional_input_clear_and_recreate_connect_only_the_actual_absence_occurrence() {
+    super::model::causal_inspection::absence::present_clear_present_and_absence_aba_keep_the_particular_source();
+}
+
+#[test]
+fn optional_input_noop_clear_cannot_replace_the_source_created_absent_revision() {
+    super::model::causal_inspection::absence::no_op_clear_is_not_the_source_that_created_the_absent_revision();
+}

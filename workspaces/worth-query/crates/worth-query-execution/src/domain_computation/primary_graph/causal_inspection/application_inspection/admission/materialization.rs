@@ -13,7 +13,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<FundedInspectionReport, InspectionAdmissionDenial> {
-        self.check(execution)?;
+        drop(self.check(execution)?);
         let report = report::materialize(
             execution,
             &self.target,
@@ -49,7 +49,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         >,
     ) -> Result<FundedComparisonReport, InspectionAdmissionDenial> {
         let (reason, connection) = self.compare(execution, query, source)?;
-        self.check(execution)?;
+        drop(self.check(execution)?);
         let before = report::materialize(
             execution,
             &self.target,
@@ -58,7 +58,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             self.memory,
         )
         .map_err(InspectionAdmissionDenial::Report)?;
-        self.check(execution)?;
+        drop(self.check(execution)?);
         let after = report::materialize(
             execution,
             &self.target,
@@ -67,7 +67,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             self.memory,
         )
         .map_err(InspectionAdmissionDenial::Report)?;
-        self.check(execution)?;
+        drop(self.check(execution)?);
         let report = report::materialize_comparison(
             execution,
             before,

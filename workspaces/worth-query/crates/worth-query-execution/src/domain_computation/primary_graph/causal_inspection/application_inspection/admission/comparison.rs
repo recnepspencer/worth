@@ -34,7 +34,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         ),
         InspectionAdmissionDenial,
     > {
-        self.check(execution)?;
+        drop(self.check(execution)?);
         let diagnostic = self
             .diagnostic
             .as_ref()

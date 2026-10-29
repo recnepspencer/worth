@@ -10,7 +10,7 @@ use worth_query_host::facade::{
 };
 mod lifecycle;
 mod parameters;
-mod retained_query;
+pub(super) mod retained_query;
 pub use lifecycle::current_admission_cancellation_and_expiry_precede_connection_discovery;
 pub use parameters::no_match_parameters_keep_original_output_evidence_unavailable;
 

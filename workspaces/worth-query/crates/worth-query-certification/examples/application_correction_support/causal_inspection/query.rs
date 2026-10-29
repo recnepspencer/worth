@@ -16,8 +16,11 @@ pub struct InputSlot;
 pub struct OutputSlot;
 worth_query_portable_type!(InputSlot => "numeric-correction.causal-input-slot.v1");
 worth_query_portable_type!(OutputSlot => "numeric-correction.causal-output-slot.v1");
+pub struct OperandSlot;
+worth_query_portable_type!(OperandSlot => "numeric-correction.query-operand-slot.v1");
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Row {
+    pub operand: Option<u64>,
     pub input: u64,
     pub calculated: u64,
 }
@@ -52,6 +55,20 @@ fn output() -> ApplicationQueryResultFieldRef<
 > {
     ApplicationQueryResultFieldRef::new("calculated", Calculated::reference())
 }
+fn operand() -> ApplicationQueryOptionalResultFieldRef<
+    Query,
+    OperandSlot,
+    NumericSchema,
+    Number,
+    NumberFacts,
+    Operand,
+    u64,
+    ReadWrite,
+    EqualityPredicate,
+    NoApplicationUnit,
+> {
+    ApplicationQueryOptionalResultFieldRef::new("operand", Operand::reference())
+}
 pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
         NumericSchema,
@@ -62,6 +79,7 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Paramete
     >::new(Number::reference())
     .field(input())
     .field(output())
+    .optional_field(operand())
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
         "numeric-causal-diagnostic",
@@ -69,6 +87,11 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Paramete
     )
     .disclose_field_by(
         input(),
+        capability::text("calculation"),
+        ApplicationQueryInfluenceContract::permit_all(),
+    )
+    .disclose_optional_field_by(
+        operand(),
         capability::text("calculation"),
         ApplicationQueryInfluenceContract::permit_all(),
     )
@@ -94,6 +117,7 @@ impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
         row: &WorthQueryApplicationProjectionRow<'_, NumericSchema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
+            operand: row.optional_field(operand())?,
             input: row.field(input())?,
             calculated: row.field(output())?,
         })

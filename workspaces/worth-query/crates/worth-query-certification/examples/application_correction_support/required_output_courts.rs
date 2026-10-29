@@ -95,6 +95,7 @@ pub fn run() {
     assert_eq!(
         host::read(&application),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 19
         }]
@@ -118,6 +119,7 @@ pub fn run() {
     assert_eq!(
         host::read(&application),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 19
         }]
@@ -130,6 +132,7 @@ pub fn run() {
     assert_eq!(
         host::read(&application),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 19
         }]
@@ -182,6 +185,7 @@ pub fn run() {
     assert_eq!(
         host::read(&application),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 19
         }]
@@ -249,6 +253,7 @@ pub fn run() {
     assert_eq!(
         host::read(&application),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 19
         }]

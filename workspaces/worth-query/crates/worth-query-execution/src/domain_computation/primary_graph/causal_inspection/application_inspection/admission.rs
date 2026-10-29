@@ -70,7 +70,6 @@ pub(super) struct InspectionRead<'a, 'storage, Schema, Scope> {
     basis: WorthQueryApplicationBasisIdentity,
     target: Arc<WorthQueryApplicationInspectionTarget>,
     session: WorthQueryManagedGraphWorkSession,
-    proof: Option<WorthQuerySessionInspectionReadProof>,
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
     diagnostic: Option<WorthQueryApplicationQueryGovernance>,

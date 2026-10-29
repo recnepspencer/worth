@@ -1591,7 +1591,7 @@ built, hashed tools; generation produced no content change. Every failed receipt
 is retained. Reviewer043 cleared the small fixture join and evidence wording;
 the prerequisite was committed as `8396646380`. This is not phase acceptance.
 
-**Independent source/query connection — focused qualification passed; final review pending.**
+**Independent source/query connection — qualified prerequisite `21674b9dac`.**
 The qualified source-only/coordinate prerequisite was reviewed and committed as
 `8396646380`. Its 31-case selected union, 316 carried doctests and normal gates
 remain historical evidence; they do not qualify this increment.
@@ -1646,15 +1646,114 @@ boundary-check (Road1 valid) and context-check passed with source/input/hash-ver
 own tools; generation produced no content change. All commands used Rust1.99.1,
 six Cargo jobs, 64MiB stack and isolated target `C:/worth-build-cache/targets/9181-phase9`.
 The final packet and all failed/successful receipts are retained at
-`C:/worth-build-cache/phase9-independent-bindings-20261028`. The fixture joins and
-evidence wording require final all-three review before commit. Signal
+`C:/worth-build-cache/phase9-independent-bindings-20261028`. Reviewer049 cleared the fixture joins and final evidence; the exact40-path
+slice was committed/pushed as `21674b9dac`. Signal
 suppression, rich materialization, optional evidence expiry and private consumer
 handoff remain unfinished; this is not whole-Phase9 acceptance.
 
 The independent-binding increment does not widen the present-field semantics.
-Final evidence review, absent shapes, actual suppression, rich materialization,
-optional evidence expiry, private handoff and whole-Phase9 qualification remain open.
+General absent shapes, actual suppression, rich materialization, optional evidence
+expiry, private handoff and whole-Phase9 qualification remain open.
 Request expiry is distinct from expiry of strongly retained immutable evidence.
+
+
+**Canonical absence increment: application8/Execution5 passed; final review pending.** The performed
+field capture now retains genuine completed Field, AbsentField and
+OptionalAspectAbsent observations before normalization. Existing original
+NodeSource field revisions remain authoritative. A match requires the particular
+source commit's Native version and a present/absent status consistent with the
+completed handler read; missing versions remain unavailable.
+
+The Native publication owner interprets canonical field sets, struct/scalar whole
+sets, field clears and whole-aspect removals against the actual installed contract
+identity/revision and physical binding. Scalar field correspondence comes only
+from the exact EntityField binding. Query's canonical occurrence join selects one
+full-GEN record patch and consumes that interpretation for both source and produced
+output. Duplicate/unsupported shapes and nested coordinates refuse; retired output
+roles stay closed. No SDK22 audit/freshness owner is changed.
+
+The numeric Decl/Host fixture adds a real optional operand to its source query,
+handler read and ordinary Calculated write. Two new grouped courts cover
+present/clear/present, absence ABA and a no-op clear without weakening the exact
+source/producer/role assertions. Existing literal row oracles acquire only the
+explicit absent operand. Separate genuine Native fixtures cover scalar whole
+writes and removal/recreation plus struct field clear/replacement. A real installed
+optional-aspect read also tests field-only custody capture. Native2 and Execution6
+passed, as did nine existing application cases. In that historical candidate both
+new absence cases failed original source publication with `Commit(Aborted)`
+before producer/read/connection checks. Their strict expected outputs and
+role/revision assertions were retained and now pass after the repair below.
+The failed source has a concrete contract blocker: EditBinding's RecordedEdit
+inverse demands a read-and-mutated Primary pre-image, which an Operand-only edit
+cannot supply. MissingDemandedField was not dynamically observed; the runtime
+receipt does not expose the internal first denial, so it is not claimed as the
+sole cause.
+
+The correction installs a genuine typed OperandEdit input,
+EditOperand operation, OperandBinding, original-source disclosure and handler
+through NumericContribution. OutputProgram declares its fixed-output action and
+existing calculation connection. It requires program delivery and uses no-aftermath ordinary performed source
+capture; no inverse is invented. The plain mutation lane has a typed
+ApplicationProgramRequired negative control. Reads of Key/Ceiling/Operand and the Operand-only
+write stay explicit. Primary's inverse and strict pre-image demand are unchanged;
+its abandoned Operand enum/read/write path is removed. The existing real
+required-output start/settle step is shared by both typed sources. The absence
+courts keep their exact outputs, ABA/no-op/revision/role and release assertions,
+and add a wrong-Primary-disclosure refusal paired with the genuine positive.
+Native and Query production, independent admissions and metadata are unchanged.
+Reviewer056 cleared the authoring correction and mandatory proof return. The
+new application acquisition first ended101 on an ambiguous observation glob
+import. One explicit application-entry import fixes this narrow fixture join
+without changing behavior or assertions. Its fresh r2 artifact passes all eight
+approved application cases. Both absence journeys now reach actual publication,
+producer read, exact source-created absence revision/canonical occurrence,
+output role/query revision and terminal/release assertions, including unchanged
+15/11/18/11, ABA and no-op controls. Wrong Primary disclosure and missing program
+delivery refusals pass. The failed compiler receipt remains preserved.
+
+A subsequent type-completeness correction removes InspectionRead's
+optional check-completed proof slot. The currentness boundary returns the exact
+existing owner-issued proof only after all original checks and the final request
+stop check succeed. Terminal construction consumes that fresh result directly;
+intermediate preparation/comparison/materialization checks still run and discard
+their local proofs. InspectionTerminal/CompletedInspection retain actual session,
+plan, target and released-basis matching plus consuming report publication. No
+bypass was demonstrated by the former check-then-expect sequence. No new wrapper,
+public proof door, mode enum, extra check, reader or payer is introduced. Fresh
+terminal revalidation and independent source/query governance remain mandatory.
+The existing working plan carries the compact remaining-risk matrix and focused
+currentness/terminal/funding retry selection; no whole-Phase9 proof is inferred.
+
+
+Affected Native24 and Execution/Host233 doctests pass (257 total); verified normal
+guidance/context generation and boundary/context checks pass with no generated
+delta. Failed Native r1/application r1 compiler receipts, application r2's stale
+conditional-contract failures and the two genuine source aborts are preserved.
+Post052 changes include strict fixture API/type joins, the conditional fixture's
+exact optional field shape alignment, failure diagnostics, this ordinary authoring
+correction and honest evidence docs. Reviewer056 cleared that Source; the
+post056 explicit import and final evidence await final persistent review. The
+17 successful cases, 257 doctests and normal results stay attached to their
+pre-correction snapshot. Two current source-owned artifacts pass eight application
+cases and five Execution currentness/comparison/terminal/funding courts. Actual
+Fresh=false, UUIDs, source/executable hashes and unique lists are retained in
+C:/worth-build-cache/phase9-inspection-proof-20261028. Verified normal guidance/
+context generation and boundary/context checks pass, with no generated content
+change. Carry unaffected Native2 and field-copy/supplier/absence proof and the
+unchanged doctest receipts; no all19 or broad docs campaign was repeated.
+Prior 19 runtime/233 doctest/normal results
+remain attached to committed `21674b9dac`; prior31/316 to `8396646380`.
+
+This does not complete the public optional-aspect-removal journey. CandidateWriter
+has no whole-aspect-clear operation or corresponding declared authority. Adding
+that genuine authoring contract and connecting a public removal remains required;
+a field clear cannot counterfeit it. Native scalar interpretation is not proof of
+a Query-installed scalar end-to-end journey. Cross-subject connections, retired
+outputs, Signal suppression, rich materialization, optional evidence expiry and
+private consumer handoff remain open. The approved existing Native lib, Execution
+lib and application_graph qualification groups have run with Rust1.99.1, six jobs,
+64MiB stack and the isolated Phase9 target; no unrelated campaign ran. No new
+implementation commit, private adoption or phase/default acceptance is claimed.
 
 ### Requirements
 

@@ -121,7 +121,6 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
         if let Some(source_diagnostic) = source_diagnostic {
             observed.require_independent_input(
                 context,
-                execution,
                 source.committed_changes(),
                 inputs,
                 source_diagnostic,
@@ -134,9 +133,9 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
                     .subject(),
             )?;
         } else {
-            observed.require_input(context, execution, source.committed_changes(), inputs)?;
+            observed.require_input(context, source.committed_changes(), inputs)?;
         }
-        let role = observed.output_role(context, execution, changes, supplier.correspondence())?;
+        let role = observed.output_role(context, changes, supplier.correspondence())?;
         Ok(WorthQueryApplicationProducerConnection {
             source: source.committed_changes().clone(),
             producer: changes.clone(),

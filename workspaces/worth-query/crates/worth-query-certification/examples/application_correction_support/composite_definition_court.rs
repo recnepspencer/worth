@@ -24,6 +24,7 @@ fn exercise(application: &host::Host) {
     assert_eq!(
         host::read(application),
         [Row {
+            operand: None,
             primary: 23,
             secondary: 7
         }]
@@ -61,6 +62,7 @@ fn exercise(application: &host::Host) {
     assert_eq!(
         host::read(application),
         [Row {
+            operand: None,
             primary: 23,
             secondary: 19
         }]
@@ -95,6 +97,7 @@ fn exercise(application: &host::Host) {
     assert_eq!(
         host::read(application),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 19
         }]

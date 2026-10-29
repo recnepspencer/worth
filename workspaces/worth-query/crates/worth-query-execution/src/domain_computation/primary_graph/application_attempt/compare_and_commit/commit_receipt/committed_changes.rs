@@ -1,4 +1,5 @@
 mod actor_observation;
+mod field_effect;
 use std::{collections::BTreeMap, sync::Arc};
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
@@ -26,47 +27,6 @@ impl WorthQueryApplicationCommittedChanges {
         other: &Self,
     ) -> bool {
         Arc::ptr_eq(&self.envelope, &other.envelope)
-    }
-
-    /// Verify one present field occurrence against this original canonical patch.
-    pub(in crate::domain_computation::primary_graph) fn contains_present_field(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        entity: EntityId,
-        aspect: &worth_foundational::facade::AspectKey,
-        field: &worth_foundational::facade::FieldKey,
-    ) -> Result<bool, worth_execution::MapKernelStop> {
-        let mut found = false;
-        for patch in &self.envelope.patch.authoritative_record_patches {
-            request.check_live()?;
-            if patch.target != RecordRef::Entity(entity) {
-                continue;
-            }
-            let patch = &patch.authoritative_patch;
-            if !patch.changed_aspect_keys().any(|key| key == aspect) {
-                continue;
-            }
-            if patch
-                .struct_set_for(aspect)
-                .and_then(|value| value.get(field))
-                .is_some()
-            {
-                if found {
-                    return Ok(false);
-                }
-                found = true;
-            }
-            for set in patch.field_sets_for(aspect) {
-                request.check_live()?;
-                if &set.field == field {
-                    if found {
-                        return Ok(false);
-                    }
-                    found = true;
-                }
-            }
-        }
-        Ok(found)
     }
 
     pub(in crate::domain_computation::primary_graph) fn from_commit(commit: &CommitResult) -> Self {

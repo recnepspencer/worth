@@ -157,6 +157,16 @@ fn aspect() -> domain::AspectContract {
         )
         .unwrap()
     });
+    // The dependency contract must describe the installed NumberFacts shape;
+    // its projection and predicate still read only Primary.
+    let fields = fields.into_iter().chain([domain::FieldDeclaration::new(
+        domain::FieldKey::new("Operand").unwrap(),
+        domain::ScalarAspectType::UInt64,
+        domain::FieldRequirement::Optional,
+        domain::AbsenceLaw::Optional,
+        domain::AspectEvolutionPolicy::AdditiveFieldsAllowed,
+    )
+    .unwrap()]);
     domain::AspectContract::struct_aspect(
         domain::AspectKey::new("NumberFacts").unwrap(),
         domain::AspectIdentity(0x91800103),

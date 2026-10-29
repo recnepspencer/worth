@@ -19,7 +19,7 @@ pub use patch_errors::{PatchStreamReadError, PatchStreamReadErrorClass};
 pub use patch_ordering::{PatchOrdering, PatchPublicationMode};
 pub use patch_position::PatchStreamPosition;
 pub use published_authoritative_patch::{
-    PublishedAuthoritativeFieldSet, PublishedAuthoritativePatch,
+    PublishedAuthoritativeFieldEffect, PublishedAuthoritativeFieldSet, PublishedAuthoritativePatch,
 };
 pub use record_structural_change::RecordStructuralChange;
 pub use semantic_change::{PublishedAspectChangePrecision, PublishedAuthoritativeAspectChange};

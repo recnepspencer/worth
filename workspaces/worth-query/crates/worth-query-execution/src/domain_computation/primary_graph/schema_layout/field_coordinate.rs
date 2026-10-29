@@ -18,6 +18,14 @@ pub(in crate::domain_computation::primary_graph) struct InstalledFieldCoordinate
     native: &'a WorthQueryInstalledApplicationAspectContract,
 }
 impl InstalledFieldCoordinate<'_> {
+    pub(in crate::domain_computation::primary_graph) fn field(&self) -> &FieldKey {
+        &self.field.locator.field_path().fields()[0]
+    }
+    pub(in crate::domain_computation::primary_graph) fn native(
+        &self,
+    ) -> &WorthQueryInstalledApplicationAspectContract {
+        self.native
+    }
     pub(in crate::domain_computation::primary_graph) fn same_field(&self, other: &Self) -> bool {
         std::ptr::eq(self.field, other.field) && std::ptr::eq(self.native, other.native)
     }
@@ -92,15 +100,21 @@ impl WorthQueryPrimaryGraphLayout {
             let Some(lowered) = self.aspect_contract(entity, aspect) else {
                 return Ok(None);
             };
-            let AspectShape::Struct(shape) = native.contract().shape() else {
-                return Ok(None);
+            let declared = match (native.contract().shape(), native.binding()) {
+                (AspectShape::Struct(shape), AspectBinding::EntityField { .. }) => {
+                    shape.field(field).is_some()
+                }
+                (AspectShape::Scalar(_), AspectBinding::EntityField { field: physical }) => {
+                    physical == field
+                }
+                _ => false,
             };
             if !matches!(native.binding(), AspectBinding::EntityField { .. })
                 || native.contract().identity() != lowered.identity()
                 || native.contract().revision() != lowered.revision()
                 || native.contract().key() != aspect
                 || !native.contains_field(field)
-                || shape.field(field).is_none()
+                || !declared
                 || self.entity_kind(entity) != Some(installed.entity_kind)
             {
                 return Ok(None);

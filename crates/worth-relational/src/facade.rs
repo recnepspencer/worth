@@ -281,9 +281,9 @@ pub mod publication {
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,
         PatchStreamPosition, PatchStreamReadError, PatchStreamReadErrorClass, PatchStreamRequest,
         PublishedAspectChangePrecision, PublishedAuthoritativeAspectChange,
-        PublishedAuthoritativeFieldSet, PublishedAuthoritativePatch,
-        PublishedAuthoritativePatchEnvelope, PublishedAuthoritativeRecordPatch,
-        PublishedRelationBirth, RecordStructuralChange,
+        PublishedAuthoritativeFieldEffect, PublishedAuthoritativeFieldSet,
+        PublishedAuthoritativePatch, PublishedAuthoritativePatchEnvelope,
+        PublishedAuthoritativeRecordPatch, PublishedRelationBirth, RecordStructuralChange,
     };
     pub use crate::publication::{
         PublicationArtifactsAccess, PublicationDiagnosticsAccess, PublicationPatchStreamAccess,

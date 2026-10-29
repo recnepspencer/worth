@@ -1,5 +1,5 @@
 //! The numeric source and its inverse share one declared required output root.
-use super::{calculation, edit, other_edit, program, query, schema::*};
+use super::{calculation, edit, operand_edit, other_edit, program, query, schema::*};
 use worth_query_host::facade::{declaration::application_program::*, primary_graph::*};
 pub struct OutputProgram;
 pub struct CalculationFeature;
@@ -72,6 +72,25 @@ impl WorthQueryApplicationRequiredOutputSource<NumericSchema, Connection>
         })
     }
 }
+impl WorthQueryApplicationRequiredOutputSource<NumericSchema, Connection>
+    for operand_edit::OperandBinding
+{
+    fn demand_from_source(
+        source: &operand_edit::OperandEdit,
+    ) -> Result<calculation::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(calculation::Demand {
+            key: source.key.clone(),
+        })
+    }
+}
+impl ApplicationActionDelivery<NumericSchema, operand_edit::OperandBinding> for Delivery {
+    type Mode = ApplicationFixedDeliveryMode<Root, ApplicationNoProjection>;
+    const IDENTITY: &'static str = "numeric-correction.required-operand-delivery.v1";
+}
+impl ApplicationFixedActionDelivery<NumericSchema, operand_edit::OperandBinding> for Delivery {
+    type Root = Root;
+    type Projection = ApplicationNoProjection;
+}
 impl ApplicationActionDelivery<NumericSchema, edit::EditBinding> for Delivery {
     type Mode = ApplicationFixedDeliveryMode<Root, ApplicationNoProjection>;
     const IDENTITY: &'static str = "numeric-correction.required-edit-delivery.v1";
@@ -109,6 +128,8 @@ impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
             ApplicationFeatureSpec::root::<NumericSchema, program::NumericFeature>()
                 .provides::<SourcePort>()
                 .action::<edit::EditBinding, Delivery>()
+                .finish_action()
+                .action::<operand_edit::OperandBinding, Delivery>()
                 .finish_action()
                 .action::<other_edit::OtherBinding, Delivery>()
                 .finish_action()

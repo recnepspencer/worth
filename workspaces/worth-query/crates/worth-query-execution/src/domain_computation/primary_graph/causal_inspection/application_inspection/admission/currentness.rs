@@ -8,10 +8,12 @@ use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
+    /// Returns this session's exact proof after current authority and request checks.
+    /// Intermediate reads discard it; the terminal obtains its own fresh proof.
     pub(super) fn check(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), InspectionAdmissionDenial> {
+    ) -> Result<WorthQuerySessionInspectionReadProof, InspectionAdmissionDenial> {
         require_request(execution, self.request)?;
         for (target, governance) in std::iter::once((&self.target, &mut self.governance))
             .chain(self.diagnostic.iter_mut().map(|v| (&self.target, v)))
@@ -138,7 +140,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         .map_err(InspectionAdmissionDenial::Storage)?;
         let (checked, proof) = read.map_err(InspectionAdmissionDenial::Read)?;
         checked?;
-        self.proof = Some(proof);
-        require_request(execution, self.request)
+        require_request(execution, self.request)?;
+        Ok(proof)
     }
 }

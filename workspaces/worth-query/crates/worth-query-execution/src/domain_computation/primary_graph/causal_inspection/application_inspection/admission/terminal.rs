@@ -27,12 +27,10 @@ impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Sc
         mut self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<InspectionTerminal<'storage>, InspectionAdmissionDenial> {
-        self.check(execution)?;
+        let proof = self.check(execution)?;
         Ok(InspectionTerminal {
             session: self.session,
-            proof: self
-                .proof
-                .expect("successful Inspection currentness retains its own proof"),
+            proof,
             basis: self.basis,
             request: self.request.clone(),
             authorization: self.authorization,

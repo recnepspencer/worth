@@ -8,6 +8,9 @@ use crate::domain_computation::primary_graph::{
 use worth_execution::MapKernelContext;
 use worth_relational::facade::runtime::RelationalFieldPresence;
 mod input;
+mod performed_input;
+use performed_input::PerformedInput;
+use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as FieldEffect;
 
 type Denial = WorthQueryProducerConnectionDenial;
 type Stop = MapKernelFailure<Denial>;
@@ -23,7 +26,6 @@ impl ObservationConnection<'_, '_> {
     pub(super) fn require_input(
         &self,
         context: &mut MapKernelContext<'_, '_>,
-        execution: &ExecutionRequest<'_, '_>,
         source: &WorthQueryApplicationCommittedChanges,
         inputs: &FactPayload,
     ) -> Result<(), Stop> {
@@ -40,9 +42,7 @@ impl ObservationConnection<'_, '_> {
             let [field] = locator.field_path().fields() else {
                 continue;
             };
-            if revision.version() != source.commit_reference().version_id
-                || revision.presence() != RelationalFieldPresence::Present
-            {
+            if revision.version() != source.commit_reference().version_id {
                 continue;
             }
             for row in self.original.source.original_row_footprints() {
@@ -86,20 +86,25 @@ impl ObservationConnection<'_, '_> {
                             observed.aspect.as_str(),
                             field.as_str(),
                         )
-                        || !self.handler_read(
-                            context,
-                            inputs,
-                            *entity_id,
-                            &observed.entity_name,
-                            source_field,
-                        )?
                     {
                         continue;
                     }
-                    if source
-                        .committed_field_ref(execution, *entity_id, locator)
-                        .map_err(MapKernelFailure::Stop)?
-                        .is_some()
+                    let Some(handler) = self.handler_read(
+                        context,
+                        inputs,
+                        *entity_id,
+                        &observed.entity_name,
+                        source_field,
+                    )?
+                    else {
+                        continue;
+                    };
+                    if handler.matches_revision(revision.presence())
+                        && handler.matches_effect(
+                            source
+                                .field_effect(context, *entity_id, source_field)
+                                .map_err(MapKernelFailure::Stop)?,
+                        )
                     {
                         return Ok(());
                     }
@@ -112,7 +117,6 @@ impl ObservationConnection<'_, '_> {
     pub(super) fn output_role(
         &self,
         context: &mut MapKernelContext<'_, '_>,
-        execution: &ExecutionRequest<'_, '_>,
         changes: &WorthQueryApplicationCommittedChanges,
         correspondence: &WorthQueryApplicationOutputCorrespondence,
     ) -> Result<usize, Stop> {
@@ -154,8 +158,9 @@ impl ObservationConnection<'_, '_> {
                         continue;
                     }
                     if changes
-                        .contains_present_field(execution, entity, &field.aspect, &field.field)
+                        .field_effect(context, entity, coordinate)
                         .map_err(MapKernelFailure::Stop)?
+                        == FieldEffect::Present
                     {
                         return Ok(role);
                     }
@@ -165,39 +170,33 @@ impl ObservationConnection<'_, '_> {
         Err(MapKernelFailure::Domain(Denial::OutputUnconnected))
     }
     /// Only a completed handler read of this full entity and installed field counts.
-    fn handler_read(
+    fn handler_read<'a>(
         &self,
         context: &mut MapKernelContext<'_, '_>,
-        inputs: &FactPayload,
+        inputs: &'a FactPayload,
         entity: worth_relational::facade::identity::EntityId,
         entity_name: &str,
         source: InstalledFieldCoordinate<'_>,
-    ) -> Result<bool, Stop> {
+    ) -> Result<Option<PerformedInput<'a>>, Stop> {
         for fact in inputs.iter() {
             checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
-            let Fact::Field {
-                entity_id,
-                kind,
-                locator,
-                ..
-            } = fact
-            else {
+            let Some(read) = PerformedInput::from_fact(fact) else {
                 continue;
             };
-            if *entity_id != entity || *kind != source.entity_kind() {
+            if read.entity != entity || read.kind != source.entity_kind() {
                 continue;
             }
             let resolved = self
                 .layout
-                .resolve_field_coordinate(self.contracts, entity_name, locator, |work| {
+                .resolve_field_coordinate(self.contracts, entity_name, read.locator, |work| {
                     checkpoint(context, work)
                 })
                 .map_err(MapKernelFailure::Stop)?;
             if resolved.is_some_and(|field| source.same_field(&field)) {
-                return Ok(true);
+                return Ok(Some(read));
             }
         }
-        Ok(false)
+        Ok(None)
     }
     fn projected(&self, entity: &str, aspect: &str, field: &str) -> bool {
         self.diagnostic

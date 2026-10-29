@@ -242,5 +242,27 @@ impl<Query> CapturedFields<'_, Query> {
                 .unwrap()
                 .is_none());
         }
+        let nested = AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            original.aspect().aspect_key().clone(),
+            worth_foundational::facade::CanonicalFieldPath::new(
+                original
+                    .field_path()
+                    .fields()
+                    .iter()
+                    .cloned()
+                    .chain(original.field_path().fields().iter().cloned()),
+            )
+            .unwrap(),
+        );
+        assert!(
+            self.layout
+                .resolve_field_coordinate(self.contracts, owner, &nested, |work| checkpoint(
+                    context, work
+                ))
+                .unwrap()
+                .is_none(),
+            "a nested path cannot borrow the Native top-level field revision"
+        );
     }
 }
