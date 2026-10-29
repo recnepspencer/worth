@@ -156,6 +156,10 @@ class Gate:
     def __init__(self, out):
         self.out = out
         self.env = environment(ROOT)
+        # An explicitly supplied build identity governs this complete gate.
+        # Otherwise environment() issues one identity for all its child builds.
+        if build_id := os.environ.get("WORTH_IMPLEMENTATION_BUILD_ID"):
+            self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = build_id
         self.built = {}
         self.prepared = set()
 

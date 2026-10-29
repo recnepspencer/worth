@@ -188,6 +188,13 @@ class CostClassScheduling(unittest.TestCase):
 
 
 class CourtSelection(unittest.TestCase):
+    def test_explicit_build_identity_reaches_the_complete_gate(self):
+        identity = "00000000-0000-4000-8000-000000000001"
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(
+                query_gate.os.environ, {"WORTH_IMPLEMENTATION_BUILD_ID": identity}):
+            gate = query_gate.Gate(Path(temporary))
+        self.assertEqual(gate.env["WORTH_IMPLEMENTATION_BUILD_ID"], identity)
+
     def write_court(self, root, name, cost_class):
         path = root / "workspaces/worth-query/crates" / name / "Cargo.toml"
         path.parent.mkdir(parents=True)
