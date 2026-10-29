@@ -142,3 +142,11 @@ hand-edit them.
 - Do not perform destructive operations outside the user-authorized scope.
 - Resolve and verify exact targets before deletion or replacement.
 - Prefer recoverable deletion when practical.
+
+## Cursor Cloud specific instructions
+
+- The toolchain is `rust-toolchain.toml` (1.99.1, clippy, rustfmt). `cargo-nextest` is on `PATH` for the root Cargo aliases `inner`, `integration`, and `verify`, and for the Store test runner under `workspaces/worth-store`.
+- `wasm32-unknown-unknown` is installed for Signal WASM package builds. The demo at `apps/WORTH-signal-demo` consumes `crates/worth-signal-wasm/pkg`, which is produced by `wasm-pack` and is not committed.
+- `make ui` builds `worth-ui-platform-pulse` into `target-ui/`. `make platform` builds the root workspace into `target/`. `make ui-run` launches the native Platform Pulse binary.
+- Linux hosts without a hardware Vulkan device execute Platform Pulse on the X11 software profile (`worth_ui_windowing="x11"`, `worth_ui_adapter="software"`) under Xvfb. `python3 scripts/ci/worth_ui_native_platform_lane.py` owns that lane. It needs lavapipe from `mesa-vulkan-drivers`, `libxkbcommon-x11-0`, `libxcb-xkb1`, `xvfb`, and `xrdb`. The default `.cargo/config.toml` profile is Wayland plus hardware Vulkan. A headless product run is `worth-ui-platform-pulse --worth-ui-offscreen-drag` on that X11 software profile. It publishes lifecycle observations, prints per-frame work, and exits.
+- The mixed workflow consumer is `python3 scripts/application_build.py cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --example observable_workflow`. It writes an archive under the temporary directory and exits.
