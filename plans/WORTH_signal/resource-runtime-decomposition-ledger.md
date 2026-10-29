@@ -207,7 +207,7 @@ constructors, or shadow lifecycle implementations.
 
 - `cargo test -p worth-signal --lib resource_runtime`
 - additional focused resource test filters selected from the touched families
-- `cargo test -p worth-signal --test compile_fail` if visibility or proof
+- `cargo test -p worth-signal --test worth_signal compile_fail::tests::resource_api::` if visibility or proof
   boundaries changed
 - `python scripts/quality/scrutinize_rust_functions.py crates/worth-signal/src/logic/transaction/runtime/state/resource.rs crates/worth-signal/src/logic/transaction/runtime/state/resource --relative-to .`
 - `bash scripts/ci/check_workspace_rust_line_caps.sh`

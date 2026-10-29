@@ -20,11 +20,11 @@ pub(crate) fn block_unsupported_scope(
     let AdmittedPlatformAuthority { media, session, .. } = authority;
     drop(media);
     session.block();
-    PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
+    PhysicalRecoveryOutcome::Blocked(Box::new(PhysicalRecoveryBlock::new(
         cause,
         store,
         session_identity,
         evidence,
         recovery_effects,
-    ))
+    )))
 }

@@ -4,14 +4,13 @@ Make Store the durable foundation for Relational and the production application
 host. Preserve the [Store vision](../worth-store/worth_store_vision.md):
 canonical commits, structural deltas, branch history, lineage, schema evolution
 and retention remain meaningful across crashes and restarts.
-
 Milestones are verification boundaries, not sequential build phases.
 Implementation may proceed across several milestones at once. A milestone
 closes when the crash-consistency oracle and its completion requirements cover
-its behavior on the final code. Milestone 3 delivers the first durable
-application journey. Milestone 4 makes the database suitable for sustained use
-with data larger than memory. Milestone 5 completes recovery of the supported
-application runtime.
+its behavior on the final code. Milestone 3 makes the supported application
+runtime durable: every owner recovers through the host-opened home and
+continues working. Milestone 4 makes the database suitable for sustained use
+with data larger than memory and closes this roadmap.
 
 The shared requirements apply to every milestone. The crash-consistency oracle
 comes first, because it decides whether the implementation it judges is
@@ -279,10 +278,20 @@ The retired filesystem path must no longer be an alternative durable engine.
 The oracle runs generated Relational transaction sequences, including the
 supported branch and schema operations, against the memory-only reference.
 
-## Milestone 3: Production host and original-result retry
+## Milestone 3: Durable application runtime
 
-A file-backed application survives lost responses and returns its original
-committed result after restart through the normal Query host.
+A file-backed application opened through the normal Query host survives
+process death with every supported runtime owner intact. After restart it
+returns original results for lost responses, and its recovered owners continue
+working rather than merely display saved data: graph state, application
+occurrences, Signal definitions, programs, workflows and their obligations,
+external custody and corrections.
+
+Milestone 3 is delivered in numbered phases, specified in
+[milestone-3.md](milestone-3.md). Each certified phase may land on master on
+its own. Until the phase that supports a state family lands, operations that
+would create it refuse before their first effect, and opening a home that
+holds it refuses before serving.
 
 ### Requirements
 
@@ -345,9 +354,10 @@ committed result after restart through the normal Query host.
   competing transaction coordinator, idempotency table or recovery authority.
 - An attempt with proven no effect may execute once on retry. An unresolved
   effect must retain its recovery posture until its fate is established.
-- Limit initial operation support honestly. Unsupported effect combinations
-  must refuse before their first effect, and opening a home with unsupported
-  mandatory obligations must refuse before serving.
+- Limit operation support honestly while the phases land. Effect combinations
+  a landed phase does not yet support must refuse before their first effect,
+  and opening a home with unsupported mandatory obligations must refuse before
+  serving.
 
 **Public workflow**
 
@@ -360,6 +370,98 @@ committed result after restart through the normal Query host.
   normal entry points.
 - Explain commitment, retry, close, unsupported homes and recovery at the
   caller's level without requiring physical storage knowledge.
+
+**Signal and mixed-owner publication**
+
+- Persist and reconstruct Signal authored definitions, branch state and the
+  original-owner facts needed to continue editing and evaluation.
+- Keep authored source separate from derived results and runtime scheduling
+  state. Derived values cannot become an authoritative replacement for lost
+  definitions.
+- Recover mixed Relational/Signal publication at the actual owner boundaries.
+  A crash between effects must preserve which owners acted and whether the
+  product head moved.
+- Preserve pending settlement and unpublished owner recovery under their
+  existing owners. Cancellation or caller abandonment cannot erase performed
+  effects.
+- Recover World branches, canonical composite history, retained owner
+  associations and safe identity issuer frontiers across repeated restarts.
+
+**Programs and long-running application work**
+
+- Persist the application program revision and support lifecycle associated
+  with each retained branch and occurrence.
+- Resume program adoption and its recovery obligations under the existing
+  admission and migration contracts.
+- Preserve workflows, their progression, required approvals and the obligations
+  needed to resume after process death.
+- Persist mandatory in-flight work even when clean close would have refused
+  it. Reacquire process resources through fresh authority instead of reviving
+  expired handles.
+- Resume or explicitly terminate conditional work and managed recovery
+  according to their existing lifecycle contracts; loss of process memory is
+  not an implicit successful completion.
+
+**Dispatch, inbound results and external custody**
+
+- Preserve dispatch outbox entries, correlation, idempotency associations,
+  inbound receipts and terminal lookup needed by supported external work.
+- Recover completion and transport custody independently of the caller that
+  initiated the operation.
+- A crash after dispatch but before recording the response must retain an
+  indeterminate external posture until the original owner resolves it.
+- Do not repeat an externally completed effect merely because its local
+  response was lost. Do not claim remote exactly-once behavior beyond the
+  external owner's admitted contract.
+- Recover acknowledgments, duplicate deliveries and required follow-up work
+  without changing the identity of the original logical effect.
+- Keep unknown external effects distinct from proven no effect, compensation
+  and completed work.
+
+**Correction and continued original-owner editing**
+
+- Preserve 9.18 correction occurrences, alternatives, causal links and
+  retained original meaning under their retention and disclosure contracts.
+- Recover native authored ownership material, including membership and
+  incident relation facts required to continue the original owner's work.
+- Preserve the distinction between authored correction and required derived
+  settlement, including recovery when only one has completed.
+- After reopen, support a dependency edit followed by original-owner
+  advancement. Reconstruction cannot replace the owner or silently create a
+  new authoritative object to make the edit succeed.
+- Preserve divergent-branch correction meaning and the selected lineage.
+  Recovery must not consume or substitute an alternative from another branch.
+- Return typed unavailability when optional correction material has expired;
+  do not guess an inverse or reinterpret retained bytes.
+
+**Build identity and derived recovery**
+
+- Preserve authored source and references when the application build identity
+  changes. Mark incompatible derived outputs stale under their existing reuse
+  contracts.
+- Recover or regenerate derived material through the normal demand,
+  dependency, invalidation and settlement owners.
+- Destroying derived caches or durable materializations must not lose
+  authored truth, canonical history or mandatory custody.
+- Do not eagerly regenerate every output merely because the application
+  opened. Required-output and active-demand obligations retain their actual
+  execution and failure semantics.
+- Same-build reuse must preserve ordinary equivalence and ownership checks;
+  persistence does not grant unconditional reuse.
+
+**Complete public cutover**
+
+- Audit production-owned state by its survival requirement: authored truth,
+  mandatory obligations, optional retained material, derived state or
+  process-local resources.
+- Remove remaining competing durable publication/recovery paths and correct
+  capability claims that overstate what reopening resumes.
+- Preserve the declared contract of the explicit memory-only mode while keeping
+  its evidence distinct from durable mode. Application-owned checkpoint
+  transport is retired; the host-opened home is the only durable path.
+- Update the ordinary application, workflow, external recovery and correction
+  guides with supported restart behavior, failures and valid next actions.
+  Executable examples must use the public host and its real owners.
 
 ### Completion requirements
 
@@ -382,6 +484,23 @@ receipt for an attempt that never committed.
 The journey must work on both sides of the first checkpoint. It must reject
 changed-intent retries, competing writable ownership and stale capabilities,
 and recovered service must support a subsequent ordinary mutation.
+
+The same host journey extends to mixed-owner publication, a deferred
+settlement, a workflow mid-run, ambiguous external completion and correction
+on a divergent branch. The oracle runs generated sequences mixing these
+operations, interrupting at every durable boundary and reopening in a fresh
+process.
+
+Recover original occurrences and custody without repeating performed effects.
+Then edit a dependency and advance the original owner. Discarded derived state
+and a changed application build identity are oracle dimensions, not single
+cases; authored meaning, references and mandatory obligations must remain
+correct under both.
+
+Milestone 3 closes the runtime database cutover. Advanced replication,
+backup/PITR, security lifecycle, bulk ingest and broader platform qualification
+remain separate work; their owners and return triggers are recorded in
+[deferred work](../deferred-work.md#worth-store).
 
 ## Milestone 4: Database scale, branches and sustained operation
 
@@ -488,120 +607,4 @@ The oracle runs generated fork, edit, delete, checkpoint and reclamation
 sequences, comparing cold and warm reads against the reference, and interrupts
 reclamation as well as publication.
 
-## Milestone 5: Complete runtime recovery
-
-The supported application runtime resumes authored state, history and mandatory
-obligations through the same durable path. Its recovered owners can continue
-working, rather than merely display saved data.
-
-### Requirements
-
-**Signal and mixed-owner publication**
-
-- Persist and reconstruct Signal authored definitions, branch state and the
-  original-owner facts needed to continue editing and evaluation.
-- Keep authored source separate from derived results and runtime scheduling
-  state. Derived values cannot become an authoritative replacement for lost
-  definitions.
-- Recover mixed Relational/Signal publication at the actual owner boundaries.
-  A crash between effects must preserve which owners acted and whether the
-  product head moved.
-- Preserve pending settlement and unpublished owner recovery under their
-  existing owners. Cancellation or caller abandonment cannot erase performed
-  effects.
-- Recover World branches, canonical composite history, retained owner
-  associations and safe identity issuer frontiers across repeated restarts.
-
-**Programs and long-running application work**
-
-- Persist the application program revision and support lifecycle associated
-  with each retained branch and occurrence.
-- Resume program adoption and its recovery obligations under the existing
-  admission and migration contracts.
-- Preserve workflows, their progression, required approvals and the obligations
-  needed to resume after process death.
-- Persist mandatory in-flight work even when clean close would have refused
-  it. Reacquire process resources through fresh authority instead of reviving
-  expired handles.
-- Resume or explicitly terminate conditional work and managed recovery
-  according to their existing lifecycle contracts; loss of process memory is
-  not an implicit successful completion.
-
-**Dispatch, inbound results and external custody**
-
-- Preserve dispatch outbox entries, correlation, idempotency associations,
-  inbound receipts and terminal lookup needed by supported external work.
-- Recover completion and transport custody independently of the caller that
-  initiated the operation.
-- A crash after dispatch but before recording the response must retain an
-  indeterminate external posture until the original owner resolves it.
-- Do not repeat an externally completed effect merely because its local
-  response was lost. Do not claim remote exactly-once behavior beyond the
-  external owner's admitted contract.
-- Recover acknowledgments, duplicate deliveries and required follow-up work
-  without changing the identity of the original logical effect.
-- Keep unknown external effects distinct from proven no effect, compensation
-  and completed work.
-
-**Correction and continued original-owner editing**
-
-- Preserve 9.18 correction occurrences, alternatives, causal links and
-  retained original meaning under their retention and disclosure contracts.
-- Recover native authored ownership material, including membership and
-  incident relation facts required to continue the original owner's work.
-- Preserve the distinction between authored correction and required derived
-  settlement, including recovery when only one has completed.
-- After reopen, support a dependency edit followed by original-owner
-  advancement. Reconstruction cannot replace the owner or silently create a
-  new authoritative object to make the edit succeed.
-- Preserve divergent-branch correction meaning and the selected lineage.
-  Recovery must not consume or substitute an alternative from another branch.
-- Return typed unavailability when optional correction material has expired;
-  do not guess an inverse or reinterpret retained bytes.
-
-**Build identity and derived recovery**
-
-- Preserve authored source and references when the application build identity
-  changes. Mark incompatible derived outputs stale under their existing reuse
-  contracts.
-- Recover or regenerate derived material through the normal demand,
-  dependency, invalidation and settlement owners.
-- Destroying derived caches or durable materializations must not lose
-  authored truth, canonical history or mandatory custody.
-- Do not eagerly regenerate every output merely because the application
-  opened. Required-output and active-demand obligations retain their actual
-  execution and failure semantics.
-- Same-build reuse must preserve ordinary equivalence and ownership checks;
-  persistence does not grant unconditional reuse.
-
-**Complete public cutover**
-
-- Audit production-owned state by its survival requirement: authored truth,
-  mandatory obligations, optional retained material, derived state or
-  process-local resources.
-- Remove remaining competing durable publication/recovery paths and correct
-  capability claims that overstate what reopening resumes.
-- Preserve the declared contracts of explicit embedded-save and absent modes
-  while keeping their evidence distinct from per-operation durable mode.
-- Update the ordinary application, workflow, external recovery and correction
-  guides with supported restart behavior, failures and valid next actions.
-  Executable examples must use the public host and its real owners.
-
-### Completion requirements
-
-Extend the production host journey to mixed-owner publication, a deferred
-settlement, a workflow mid-run, ambiguous external completion and correction
-on a divergent branch. The oracle runs generated sequences mixing these
-operations, interrupting at every durable boundary and reopening in a fresh
-process.
-
-Recover original occurrences and custody without repeating performed effects.
-Then edit a dependency and advance the original owner. Discarded derived state
-and a changed application build identity are oracle dimensions, not single
-cases; authored meaning, references and mandatory obligations must remain
-correct under both.
-
-This milestone closes the runtime database cutover. Advanced replication,
-backup/PITR, security lifecycle, bulk ingest and broader platform qualification
-remain separate work; their owners and return triggers are recorded in
-[deferred work](../deferred-work.md#worth-store).
+Milestone 4 closes the Database Foundation roadmap.

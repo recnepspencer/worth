@@ -14,13 +14,14 @@ worth_query_application! {
 worth_query_application_contribution! {
     pub contribution NumericContribution in NumericSchema {
         identity: "numeric-correction.application.v1",
-        corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit, super::source_output_correction::RecordIssued, super::composite_definition_model::CorrectDefinition, super::authored_identity_correction::UndoCreate, super::authored_identity_correction::UndoRetire],
+        corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit, super::source_output_correction::RecordIssued, super::composite_definition_model::CorrectDefinition, super::authored_identity_correction::UndoCreate, super::authored_identity_correction::UndoRetire, super::adjacency_link::ReverseLink, super::observed_clone::UndoClone],
         members: |schema| {
             let schema = super::causal_inspection::declare(schema);
             let schema = super::operand_edit::declare(schema);
             let schema = super::composite_definition_model::declare(schema);
             let schema = super::authored_identity_model::declare(schema);
             let schema = super::authored_identity_reference::declare(schema);
+            let schema = super::adjacency_link::declare(schema);
             super::source_output_model::declare(super::compensation_movement::declare(super::calculation::declare(super::adoption::declare(schema)))).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Number::reference())
                 .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
                 .aspect(Principal::reference(), PrincipalFacts::reference()).aspect(Number::reference(), NumberFacts::reference())
@@ -34,6 +35,8 @@ worth_query_application_contribution! {
                 .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
                 .principal_binding(ActorBinding::reference())
                 .application_query(query::definition())
+                .application_query(query::full::definition())
+                .application_query_binding::<query::full::Binding>()
                 .application_query(super::calculation_query::definition())
                 .operation(other_edit::EditOther::reference().definition().no_external_effect().no_aftermath().finish())
                 .operation_projection_work_budget(other_edit::EditOther::reference(), 8)

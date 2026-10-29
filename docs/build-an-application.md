@@ -18,7 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) | A source receipt, current principal, target branch and client key; the contribution declares the inverse and disclosure query. Scalar restoration requires exact later source/reversal pairs and retained original field/aspect-presence support under compatible installed bindings. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -414,7 +414,7 @@ The executable [nested-value model](../workspaces/worth-query/crates/worth-query
 and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)
 exercise nondefault values through the entry binding, installed catalog,
 authenticated read and current-format native recovery. The
-[compiler fixtures](../crates/worth-foundational/tests/value_shape/compiler.rs)
+[compiler fixtures](../crates/worth-foundational/tests/worth_foundational/compile_fail/value_shape/compiler.rs)
 cover supported and refused grammar.
 
 Read canonical fields with `reader.field(...)` or the installed query's row
@@ -599,6 +599,15 @@ with value 11. Run it from the repository root:
 ```text
 cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-topology-entry --example required_feature
 ```
+
+`DecisionReader::prior_output_preserved_or_created` selects the latest publication
+of its declared Create/Preserve bindings in one installed output family, exact
+source partition and selected ancestry. The selected typed role must still be
+a live full-generation entity. A stale or missing member is a denial; it never
+falls back to an older binding. Ordinary `prior_output` keeps its exact-binding
+historical meaning. Query owns source-native-version commitment, completed
+dependencies and current publication custody; a separate application command
+nonce is not a replacement for that contract.
 
 ### 3.2 Attach actions to features
 
@@ -1849,7 +1858,7 @@ Features, connections, and rules come from `installed_program()`, not from
 discovery.
 
 Managed asynchronous resource requests are available through Decl/Host following
-[9.18.1 Phase 8 acceptance](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+[Managed async resource contract](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 [Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
 documents the concrete `request.resources()` start/advance/inspection/close path,
 installed provider, finite ingress, exact selector reclaim and recovery handoff.

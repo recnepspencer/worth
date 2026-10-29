@@ -72,7 +72,15 @@ fn publish_retained(
         prepared_lineage_slot.as_mut(),
         provider.graph.application_publication.as_ref(),
     ) {
-        slot.required_publication = committed.required_output_publication(&publisher.native);
+        // Ordinary authored retirement has Native succession custody, but did
+        // not run a producer or create a producer checkpoint locator.
+        if attempt
+            .idempotency()
+            .producer_dependency_identity()
+            .is_some()
+        {
+            slot.required_publication = committed.required_output_publication(&publisher.native);
+        }
     }
     if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut())
         && let Some(sealed) = witness.finish(

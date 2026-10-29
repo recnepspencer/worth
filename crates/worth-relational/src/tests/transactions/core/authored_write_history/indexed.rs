@@ -19,7 +19,7 @@ fn register(runtime: &RelationalRuntime, locator: AspectFieldLocator) -> Derived
             },
             branch_scoped: true,
         })
-        .expect("actual field index registration succeeds")
+        .expect("actual authored-field index registration succeeds")
 }
 
 fn key(definition: &DerivedIndexDefinition, value: &str) -> RelationalAuthoredWriteSelector {

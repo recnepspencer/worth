@@ -34,6 +34,7 @@ impl RelationalStoreHome {
             runtime,
             cold_source,
             serving,
+            descriptor: _,
         } = self;
         drop(runtime);
         drop(cold_source);

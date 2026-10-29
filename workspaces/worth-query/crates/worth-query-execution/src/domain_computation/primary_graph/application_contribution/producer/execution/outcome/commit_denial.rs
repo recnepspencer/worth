@@ -14,6 +14,7 @@ pub(super) fn stopped(
     cause: Option<Result<Native, Control>>,
     capacity: Option<VerificationCapacityStop>,
     detail: &impl std::fmt::Debug,
+    unobserved_write: Option<&graph::WorthQueryApplicationUnobservedWrite>,
 ) -> WorthQueryOutputDemandDenial {
     use WorthQueryApplicationCommitDenialKind as Kind;
     let execution = cause.map(|cause| (stage, cause));
@@ -25,6 +26,13 @@ pub(super) fn stopped(
         .with_publication_stale(Some(ProducerPublicationStale::CommitProductBasisStale {
             stage,
         })),
+        (_, Kind::UnobservedWrite) => match unobserved_write {
+            Some(cause) => denial(
+                WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()),
+                identity.to_owned(),
+            ),
+            None => failed(identity, detail),
+        },
         (Some((_, cause)), _) => commit_execution_stopped(identity, detail, cause),
         (None, Kind::StorageUnavailable(failure)) => {
             commit_execution_stopped(identity, detail, Ok(Native::StorageUnavailable(failure)))
@@ -35,8 +43,7 @@ pub(super) fn stopped(
         ),
         (
             None,
-            Kind::UnobservedWrite
-            | Kind::ExecutionResource { .. }
+            Kind::ExecutionResource { .. }
             | Kind::ExecutionNestedPatternStopped { .. }
             | Kind::ExecutionWorkerPanicked { .. }
             | Kind::ExecutionUncheckedCustomKernel { .. }
@@ -100,6 +107,7 @@ mod tests {
             Some(Err(Control::Cancelled)),
             None,
             &"stale plus cancellation",
+            None,
         );
         assert_eq!(
             stop.kind(),

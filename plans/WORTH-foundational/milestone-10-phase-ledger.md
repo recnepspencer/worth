@@ -1,5 +1,7 @@
 # Milestone 10 Sequential Phase Ledger
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 This ledger is the certification record for Phases 1–9 of
 [Milestone 10](./milestone-10.md). The implementation accumulated in one
 working candidate, so this is a sequential certification run over the current
@@ -201,7 +203,7 @@ parallelization, or a Store crash/WAL courtroom.
   this ledger and the milestone specification so its fingerprint is stable.
 - LF-normalized packet fingerprint (sorted `path<TAB>sha256` rows):
   `f2506753f77979c8d19abf7f4f1c0a4469e61bf86609244428382ce788e4287b`.
-- Gate commands: `cargo test -p worth-foundational --test certification
+- Gate commands: `cargo test -p worth-foundational --test worth_foundational fast::certification::
   -- --test-threads=1`; profile compile-fail groups and the full
   `compile_time_boundaries` suite; `cargo test -p worth-foundational --lib
   -- --test-threads=1`; `cargo check -p worth-foundational`; `cargo fmt --all
@@ -226,9 +228,8 @@ parallelization, or a Store crash/WAL courtroom.
   stable.
 - LF-normalized packet fingerprint (sorted `path<TAB>sha256` rows):
   `411c30951a0c4ff0efe3fe55372717c5d6db977865c4bf53ca441baba04d8e55`.
-- Gate commands: `cargo test -p worth-foundational --test certification --
-  --test-threads=1` (429/429); `cargo test -p worth-foundational --test
-  compile_time_boundaries -- --test-threads=1` (66/66); `cargo test -p
+- Gate commands: `cargo test -p worth-foundational --test worth_foundational fast::certification:: --
+  --test-threads=1` (429/429); `cargo test -p worth-foundational --test worth_foundational compile_fail::compile_time_boundaries:: -- --test-threads=1` (66/66); `cargo test -p
   worth-foundational --lib -- --test-threads=1` (22/22); focused observation
   disclosure/materialization tests (5/5); optional work disclosure (4/4);
   `cargo fmt --all -- --check`;
@@ -289,7 +290,7 @@ parallelization, or a Store crash/WAL courtroom.
   tests::phase5_state -- --test-threads=1` (34/34) and the same with
   `--features parallel`; `cargo test -p worth-signal --features parallel
   --lib tests::adversarial_parallel -- --test-threads=1` (12 passed, 1
-  ignored); `cargo test -p worth-signal --test phase_5_policy_boundaries --
+  ignored); `cargo test -p worth-signal --test worth_signal phase_5_policy_boundaries:: --
   --test-threads=1` (4/4) in both default and parallel lanes; and the
   telemetry-contract parallel selector (7/7).
 - Broader gates: `cargo test -p worth-signal --lib --quiet` (1239 passed,

@@ -36,7 +36,7 @@ fn maximum_certificate_roster_checkpoints_recovers_and_rejoins() {
             };
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("maximum roster grants genuine C8 custody");
             let recovered_at = started.elapsed();
             let serving = super::admit_serving_with_seal(root, seal);

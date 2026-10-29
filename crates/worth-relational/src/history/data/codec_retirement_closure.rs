@@ -5,7 +5,9 @@ use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 
+mod authored_retirement;
 mod codec_disposition;
+pub(crate) use authored_retirement::select_authored_retirement;
 pub(super) mod materialization;
 mod membership;
 pub(crate) use materialization::{
@@ -107,14 +109,10 @@ impl OwnedCodecRetirementClosure {
                 member.birth_producer.as_str(),
                 &member.birth_dependency,
                 member.posture,
-                match origin.publication {
-                    super::canonical_commit_envelope::CanonicalOutputPublication::Birth | super::canonical_commit_envelope::CanonicalOutputPublication::BirthAfterCodecRetirement { .. } => {
-                        crate::mvcc::RequiredOutputRolePosture::Create
-                    }
-                    super::canonical_commit_envelope::CanonicalOutputPublication::Preserve {
-                        ..
-                    } => crate::mvcc::RequiredOutputRolePosture::Preserve,
-                },
+                origin.publication.predecessor().map_or(
+                    crate::mvcc::RequiredOutputRolePosture::Create,
+                    |_| crate::mvcc::RequiredOutputRolePosture::Preserve,
+                ),
             )
         })
     }

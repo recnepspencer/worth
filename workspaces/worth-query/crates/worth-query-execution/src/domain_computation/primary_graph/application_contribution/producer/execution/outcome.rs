@@ -208,30 +208,17 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                     crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial) => Some(denial),
                     _ => None,
                 });
-            let failure = match (kind, commit_denial.unobserved_write()) {
-                (WorthQueryApplicationCommitDenialKind::UnobservedWrite, Some(cause)) => denial(
-                    WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()),
-                    identity.to_owned(),
-                )
-                .with_commit_denial_kind(kind)
-                .with_commit_execution_denial(
-                    commit_denial
-                        .execution_denial_cause()
-                        .map(|cause| (commit_denial.stage(), cause)),
-                )
-                .with_capacity_stop(capacity),
-                _ => commit_denial::stopped(
-                    identity,
-                    kind,
-                    commit_denial.stage(),
-                    commit_denial.execution_denial_cause(),
-                    capacity,
-                    &commit_denial,
-                ),
-            };
-            Err(failure
-                .with_custom_invariant_denial(commit_denial.custom_invariant_denial().cloned())
-                .with_producer_requirement_denial(requirement))
+            Err(commit_denial::stopped(
+                identity,
+                kind,
+                commit_denial.stage(),
+                commit_denial.execution_denial_cause(),
+                capacity,
+                &commit_denial,
+                commit_denial.unobserved_write(),
+            )
+            .with_custom_invariant_denial(commit_denial.custom_invariant_denial().cloned())
+            .with_producer_requirement_denial(requirement))
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(outcome) => Err(denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,

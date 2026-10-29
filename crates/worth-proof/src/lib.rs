@@ -20,9 +20,10 @@ mod recipe;
 mod release;
 mod source_observation;
 pub use application_publication::{
-    AdmittedCheckpointProgramActivation, AdmittedRequiredOutputPublication,
-    AdmittedRequiredOutputSuccession, InstalledApplicationPublicationAuthority,
-    InstalledApplicationPublicationOwner, RequiredOutputPublicationAuthority,
+    AdmittedAuthoredOutputRetirement, AdmittedCheckpointProgramActivation,
+    AdmittedRequiredOutputPublication, AdmittedRequiredOutputSuccession,
+    InstalledApplicationPublicationAuthority, InstalledApplicationPublicationOwner,
+    RequiredOutputPublicationAuthority,
 };
 mod transition;
 mod type_level;

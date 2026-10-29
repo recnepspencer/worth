@@ -43,7 +43,7 @@ fn recover_and_open(world: PhysicalResidencyStoreWorld) -> u64 {
             let recovered_generation = handoff.core().root().generation();
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("production selected custody seal");
             super::certified_release_serving::open_serving_with_seal(&root, seal);
             recovered_generation

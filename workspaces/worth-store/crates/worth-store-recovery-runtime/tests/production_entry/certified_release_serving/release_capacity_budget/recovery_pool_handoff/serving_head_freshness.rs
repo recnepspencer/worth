@@ -53,7 +53,7 @@ fn sealed_serving_rereads_funded_head_and_denies_post_seal_corruption() {
             let observer = core.certification_residency_allocations();
             assert!(core.selected_head_walk_owned_heap_bytes().unwrap() > 0);
             let seal = core
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("real independent head rejoin");
             let mut changed = original.clone();
             let index = changed.len() / 2;
@@ -84,7 +84,9 @@ fn sealed_serving_rereads_funded_head_and_denies_post_seal_corruption() {
             });
             fs::write(&path, &original).unwrap();
             let fresh = recover_core(root);
-            let seal = fresh.into_checkpoint_custody().unwrap();
+            let seal = fresh
+                .certification_release_media_into_checkpoint_custody()
+                .unwrap();
             let TransitionOutcome::Success(serving) =
                 open_with_policy(root, seal, format, policy).into_raw()
             else {

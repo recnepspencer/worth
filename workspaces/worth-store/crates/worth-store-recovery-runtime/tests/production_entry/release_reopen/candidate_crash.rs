@@ -173,7 +173,7 @@ fn candidate_certificate_serving_child() {
             };
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("selected predecessor Store custody seal");
             if std::env::var_os(RECOVERY_CHILD_CHECKPOINT).is_some() {
                 super::super::certified_release_serving::open_serving_with_seal(&root, seal);

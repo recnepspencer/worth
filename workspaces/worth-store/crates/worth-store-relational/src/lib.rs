@@ -28,9 +28,16 @@ pub use home::{
 pub use home_descriptor::RelationalStoreHomeDescriptorRefusal;
 #[cfg(feature = "certification-test-authority")]
 pub use physical_store::RelationalStoreCertificationProfile;
-pub use physical_store::{RelationalStorePhysicalRefusal, RelationalStorePhysicalStage};
+pub use physical_store::{
+    RelationalStorePhysicalRefusal, RelationalStorePhysicalRefusalKind,
+    RelationalStorePhysicalStage,
+};
 pub use recovered_history::RelationalStoreJournalRefusal;
 pub use recovered_transitions::RelationalStoreTransitionJournalRefusal;
 
 mod cold_source;
 pub use cold_source::RelationalStoreColdReadCounters;
+
+mod journal_registry;
+
+pub use worth_store_physical_format::store_namespace::StableStoreIdentity;

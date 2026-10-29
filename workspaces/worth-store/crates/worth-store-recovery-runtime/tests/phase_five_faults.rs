@@ -340,7 +340,7 @@ fn expect_staging_block(
     else {
         panic!("faulted staging terminates Blocked")
     };
-    blocked
+    *blocked
 }
 
 fn ordinary_limits() -> PhysicalRecoveryLimits {

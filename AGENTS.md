@@ -36,6 +36,8 @@ full.
 - `testing_laws.md` — fixture honesty, independent evidence, real boundaries,
   and compile-cost discipline.
 - `dx_laws.md` — design the developer experience as a real code target.
+- `iteration_laws.md` — iteration speed is architecture: court crates,
+  generated build roles, derived scope, self-checking configuration.
 
 When a law blocks the cheapest local move, the law is right and the move is
 wrong. Take the honest path. If that is genuinely impossible, stop and surface

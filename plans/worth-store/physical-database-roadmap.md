@@ -8,9 +8,9 @@ capability portfolios. The active path to a working database is the
 
 C.1 through C.10 remain historical foundations. Their affected guarantees
 must survive current changes; their completed portfolios are not reopened.
-The new Milestone 1 through Milestone 5 sequence establishes canonical durable publication,
-Relational cutover, the production-host lost-response/retry journey, sustained
-database operation, and complete runtime recovery.
+The new Milestone 1 through Milestone 4 sequence establishes canonical durable publication,
+Relational cutover, the durable application runtime with its lost-response/retry
+journey, and sustained database operation.
 
 C.11's remaining portfolio, C.12, C.13's broad campaign and S.10 through S.12
 are deferred after the working database to the capability triggers in that
@@ -1251,9 +1251,9 @@ the old C.13/Part II entry gate:
 - Milestone 2 cuts Relational onto that boundary and removes its independent durable
   filesystem engine.
 - Milestone 3 proves the real host's mutation, lost response, process death, reopen
-  and original-result retry journey.
+  and original-result retry journey, and closes the declared runtime's complete
+  recovery obligations.
 - Milestone 4 closes larger-than-memory access, branch lifecycle and reclamation.
-- Milestone 5 closes the declared runtime's complete recovery obligations.
 
 Detailed D specifications select the real physical prerequisites and preserve
 their guarantees. A missing physical capability cannot be fabricated by an
@@ -1264,7 +1264,7 @@ qualification.
 
 A future joined qualification program may claim platform readiness only when:
 
-- Database Foundation Milestone 5 and its inherited Milestone 1 through Milestone 4 gates hold
+- Database Foundation Milestone 4 and its inherited Milestone 1 through Milestone 3 gates hold
 - `S.10`, `S.11` and `S.12` are implemented or explicitly scoped with named,
   non-platform-grade debt, and C.12 has rebound the S.9 models to their
   executable owners
@@ -1305,7 +1305,7 @@ Deferred physical capability owners must qualify their real implementation
 before a future consumer advertises the corresponding guarantee. In
 particular, ordinary crash/reopen belongs in Milestone 1 through Milestone 3, whereas S.10's
 broader backup/PITR/repair portfolio remains deferred. S.11 and S.12 are not
-silently earned by Milestone 5.
+silently earned by Milestone 4.
 
 ## Completion Standard
 

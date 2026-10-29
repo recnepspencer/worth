@@ -4,7 +4,51 @@ use model::tree_reapplication::{alternative, reapply, reverse};
 use worth_query_execution::facade::primary_graph::{
     fact_verification_on_this_thread_for_test, WorthQueryExecutionObservation,
 };
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted,
+};
 use worth_query_host::facade::product::WorthQueryApplicationCommitReceipt;
+#[path = "consecutive_undo/adjacency.rs"]
+mod adjacency;
+mod observed_fields;
+
+#[test]
+fn restored_preparation_refuses_an_equal_write_after_its_exact_target() {
+    let host = host::install();
+    host::edit(&host, Value::Primary(3), "prepared-initial");
+    let a = host::edit(&host, Value::Primary(7), "prepared-original-a");
+    let _a_pin = pin_current(&host, &a);
+    let b = host::edit(&host, Value::Primary(8), "prepared-original-b");
+    let _b_pin = pin_current(&host, &b);
+    let undone = reverse(&host, &b, "prepared-reverse-b");
+    let _undone_pin = pin_current(&host, &undone);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    let limits = WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::MIN);
+    let selected = request.corrections().select(&a, limits).unwrap();
+    let prepared = request
+        .corrections()
+        .reverse(&selected)
+        .idempotency("prepared-restored-a")
+        .limits(limits)
+        .prepare()
+        .unwrap();
+    let WorthQueryApplicationCorrectionPreparation::Prepared(prepared) = prepared else {
+        panic!("exact later reversal restores original A for preparation");
+    };
+    // Matching support values cannot keep an old target admission current.
+    let equal = host::edit(&host, Value::Primary(7), "prepared-equal-after-target");
+    let outcome = prepared.publish().unwrap();
+    assert!(
+        matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(denial))
+            if denial.kind() == WorthQueryApplicationCommitDenialKind::ProductBasisStale),
+        "{outcome:?}"
+    );
+    let _unchanged_head = pin_current(&host, &equal);
+    assert_eq!(host::read(&host)[0].primary, 7);
+    diverged(&host, &a);
+}
 
 fn diverged(host: &host::Host, source: &WorthQueryApplicationCommitReceipt) {
     let scope = request_scope();

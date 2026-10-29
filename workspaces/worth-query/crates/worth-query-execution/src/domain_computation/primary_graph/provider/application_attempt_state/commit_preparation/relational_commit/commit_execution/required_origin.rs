@@ -1,5 +1,6 @@
 //! Bind complete installed-family publication at the actual precommit image.
 use super::*;
+mod authored_retirement;
 use crate::domain_computation::primary_graph::PreparedPrerequisiteClaims;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -22,13 +23,13 @@ pub(super) fn bind(
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let Some(required) = required else {
-        return Ok(proposal);
+        return authored_retirement::bind(proposal, execution, before, provider, attempt);
     };
     let Some(publisher) = &provider.graph.application_publication else {
         return Ok(proposal);
     };
     let Some(dependency) = attempt.idempotency().producer_dependency_identity() else {
-        return Ok(proposal);
+        return authored_retirement::bind(proposal, execution, before, provider, attempt);
     };
     let mismatch = || native_output_witness_stop(CompanionPreflightStop::SelectedSourceMismatch);
     let Some(partition) = attempt.idempotency().source_partition_identity() else {
@@ -107,7 +108,18 @@ pub(super) fn bind(
         source_partition: partition,
         source_epoch,
     };
-    let warm = head.as_ref().and_then(|head| head.warm_publication());
+    let retired = provider
+        .graph
+        .with_runtime(execution, |runtime| {
+            runtime.readmit_authored_output_retirement_successor(
+                execution,
+                &publisher.native,
+                native_basis,
+                &meaning,
+            )
+        })
+        .map_err(transaction_commit_stop)?;
+    let warm = retired.or_else(|| head.as_ref().and_then(|head| head.warm_publication()));
     let absence = if warm.is_some() {
         None
     } else {

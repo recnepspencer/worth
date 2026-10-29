@@ -10,7 +10,13 @@ impl PhysicalRecordArtifactTree<'_> {
         let family = self.tree.directory_exists(&self.record_family)?;
         let staging = self.tree.directory_exists(&self.record_staging)?;
         if !family && !staging {
-            return Ok(RecordFamilyInventory::ProvenAbsent);
+            let other_store_artifacts = self.tree.directory_has_entries(&self.families)?
+                || self.tree.directory_has_entries(&self.staging)?;
+            return Ok(if other_store_artifacts {
+                RecordFamilyInventory::Residue
+            } else {
+                RecordFamilyInventory::ProvenAbsent
+            });
         }
         let catalog = self
             .tree

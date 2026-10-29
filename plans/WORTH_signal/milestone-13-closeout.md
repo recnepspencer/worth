@@ -1,5 +1,7 @@
 # Milestone 13 Closeout: Locality-First Frontier Execution
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > **Status:** Completed
 >
 > **Plan:** [milestone-13-plan.md](./milestone-13-plan.md)
@@ -112,7 +114,7 @@ cargo test -q -p worth-signal --features parallel --lib
 cargo test -q -p worth-signal --doc
 3 passed; 0 failed
 
-cargo test -q -p worth-signal --test milestone_13_compile_time
+cargo test -q -p worth-signal --test worth_signal compile_fail::milestone_13_compile_time::
 4 passed; 0 failed
 
 cargo test --release -q -p worth-signal scheduled_run_seals_all_declared_scale_contracts --lib -- --ignored

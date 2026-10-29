@@ -91,7 +91,7 @@ fn serve_under(world: &PendingWalWorld, need: u64, stage: &str) -> ServingPhysic
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("recovered custody seal");
     certified_release_serving::admit_serving_with_seal(world.root(), seal)
 }

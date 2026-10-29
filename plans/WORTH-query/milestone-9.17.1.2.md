@@ -1,5 +1,7 @@
 # Milestone 9.17.1.2: Final Owner Services And Signal Independent Progress
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > **Status:** Completed.
 >
 > **Product posture:** This is a corrective predecessor to Milestone 9.17.2.
@@ -484,7 +486,7 @@ Stubs, private-cell tests, and worker summaries never certify public services.
   add only their `pub use` line, exact facade entries, and
   `#[path = "relational_certification/owner_service_completion.rs"] mod owner_service_completion;`; run
   `cargo test -p worth-relational --features test-operation-control
-  --test relational_certification owner_service_completion`;
+  --test worth_relational owner_service_completion`;
 - **Signal kernel lane:** own Signal `owner_services/mod.rs`, lifecycle state,
   registry, execution cell, unavailable posture, counters, and their unit tests;
   run `cargo test -p worth-signal --lib branch::owner_services::`;
@@ -733,8 +735,8 @@ one green test containing an empty or shortened loop is insufficient.
 The planned commands are:
 
 ```text
-bash scripts/ci/run_relational_named_test_selection.sh --test relational_certification --selection owner_service_completion::
-cargo test -p worth-signal --test signal_owner_services
+bash scripts/ci/run_relational_named_test_selection.sh --test worth_relational --selection owner_service_completion::
+cargo test -p worth-signal --test worth_signal signal_owner_services::
 cargo test -p worth-relational --all-features --all-targets
 cargo test -p worth-signal --all-targets
 cargo test -p worth-signal --doc
@@ -750,7 +752,7 @@ For each of the six feature configurations, CI additionally runs:
 
 ```text
 cargo test -p worth-signal --no-default-features --features <configuration> --all-targets
-bash scripts/ci/run_signal_owner_service_selection.sh --test signal_owner_services --no-default-features --features <configuration>,test-operation-control --selection operation_control::
+bash scripts/ci/run_signal_owner_service_selection.sh --test worth_signal --no-default-features --features <configuration>,test-operation-control --selection operation_control::
 ```
 
 The default-feature and `profile-extended,parallel` operation-control selectors

@@ -44,7 +44,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     SourceRetired,
     SourceChanged,
     AmbiguousRelation,
-    /// An existing field write lacks its exact completed decision read.
+    /// An existing field write has no exact completed decision observation.
     UnobservedWrite,
     UndeclaredEffect,
     InvalidEffectValue,

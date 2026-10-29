@@ -5,6 +5,7 @@ use super::super::{
 use super::{cancellation, overlap, WorthQueryCorrectionRestoredSupportDenial as Stop};
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::fact_verification_observation::correction_rejection;
 use crate::domain_computation::primary_graph::{
     exact_basis_access::open_exact_basis_snapshot,
     output_reuse::{first_moved_fact, retained_fact_denial},
@@ -16,6 +17,9 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
     history::RelationalAuthoredWritePageLimits, runtime::RelationalRuntime,
 };
+
+#[cfg(test)]
+mod retirement;
 
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn require<
     Schema: ApplicationSchema,
@@ -73,6 +77,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                         .ok_or(Denial::SemanticMaterialUnavailable)?;
                     overlap::select(execution, facts, &original_view, &target_view)
                         .map_err(Denial::RestoredSupport)
+                        .inspect_err(|cause| correction_rejection("overlap-selection", None, cause))
                 },
             )
         })?;
@@ -92,7 +97,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                     .map_err(|cause| Denial::RestoredSupport(Stop::Selection(cause)))?;
                 let mut cursor = runtime
                     .authored_write_history_cursor(execution, original, selected, &selection.keys)
-                    .map_err(|cause| Denial::RestoredSupport(Stop::Native(cause)))?;
+                    .map_err(|cause| Denial::RestoredSupport(Stop::Native(cause)))
+                    .inspect_err(|cause| correction_rejection("canonical-history", None, cause))?;
                 let mut occurrences = cancellation::Occurrences::default();
                 loop {
                     // A physical paging granule, not a semantic history ceiling.
@@ -109,7 +115,10 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                                     .expect("positive storage bound"),
                             },
                         )
-                        .map_err(|cause| Denial::RestoredSupport(Stop::Native(cause)))?;
+                        .map_err(|cause| Denial::RestoredSupport(Stop::Native(cause)))
+                        .inspect_err(|cause| {
+                            correction_rejection("canonical-history-page", None, cause)
+                        })?;
                     for occurrence in page.entries() {
                         // The occurrence shares admitted canonical material; only these
                         // new immutable cells are quoted. No receipt payload is cloned.
@@ -129,7 +138,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                 }
                 Ok::<_, Denial>(occurrences)
             })?;
-    cancellation::require(target, execution, &occurrences)?;
+    cancellation::require(target, execution, &occurrences)
+        .inspect_err(|cause| correction_rejection("canonical-cancellation", None, cause))?;
     application
         .primary_provider
         .graph
@@ -189,28 +199,79 @@ fn compare(
         .project_snapshot(target)
         .ok_or(Denial::SemanticMaterialUnavailable)?;
     for fact in facts.iter() {
-        match fact {
-            Fact::SourceFieldRevision {
-                entity_id, locator, ..
-            } => {
-                if !original_view
-                    .compare_entity_field_support(&execution, &target_view, *entity_id, locator)
-                    .map_err(|cause| Denial::RestoredSupport(Stop::FieldSupport(cause)))?
-                {
-                    return Err(Denial::SourceDiverged);
-                }
+        compare_fact(
+            runtime,
+            execution,
+            target,
+            &original_view,
+            &target_view,
+            fact,
+        )
+        .inspect_err(|cause| {
+            correction_rejection("paired-support-comparison", Some(fact), cause)
+        })?;
+    }
+    Ok(())
+}
+
+fn compare_fact(
+    runtime: &RelationalRuntime,
+    execution: ExecutionRequest<'_, '_>,
+    target: &worth_relational::facade::snapshots::SnapshotHandle,
+    original_view: &worth_relational::facade::runtime::VisibilityProjectionView,
+    target_view: &worth_relational::facade::runtime::VisibilityProjectionView,
+    fact: &Fact,
+) -> Result<(), Denial> {
+    match fact {
+        Fact::SourceAspectRevision {
+            entity_id, aspect, ..
+        } => {
+            if !original_view
+                .compare_entity_aspect_support(&execution, target_view, *entity_id, aspect)
+                .map_err(|cause| Denial::RestoredSupport(Stop::FieldSupport(cause)))?
+            {
+                return Err(Denial::SourceDiverged);
             }
-            _ => match first_moved_fact(&execution, runtime, target, std::iter::once(fact)) {
-                Ok(None) => {}
-                Ok(Some(_)) => return Err(Denial::SourceDiverged),
-                Err(cause) => {
-                    return Err(Denial::DependencyComparison(retained_fact_denial(
-                        cause,
-                        "restored correction support",
-                    )))
-                }
-            },
         }
+        Fact::SourceAdjacencyRevision {
+            relation_kind,
+            anchor,
+            direction,
+            ..
+        } => {
+            if !original_view
+                .compare_adjacency_support(
+                    &execution,
+                    target_view,
+                    *anchor,
+                    *relation_kind,
+                    *direction,
+                )
+                .map_err(|cause| Denial::RestoredSupport(Stop::Adjacency(cause)))?
+            {
+                return Err(Denial::SourceDiverged);
+            }
+        }
+        Fact::SourceFieldRevision {
+            entity_id, locator, ..
+        } => {
+            if !original_view
+                .compare_entity_field_support(&execution, target_view, *entity_id, locator)
+                .map_err(|cause| Denial::RestoredSupport(Stop::FieldSupport(cause)))?
+            {
+                return Err(Denial::SourceDiverged);
+            }
+        }
+        _ => match first_moved_fact(&execution, runtime, target, std::iter::once(fact)) {
+            Ok(None) => {}
+            Ok(Some(_)) => return Err(Denial::SourceDiverged),
+            Err(cause) => {
+                return Err(Denial::DependencyComparison(retained_fact_denial(
+                    cause,
+                    "restored correction support",
+                )))
+            }
+        },
     }
     Ok(())
 }
@@ -220,13 +281,22 @@ fn strict(
     execution: ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     facts: &FactPayload,
-    subject: &str,
+    subject: &'static str,
 ) -> Result<(), Denial> {
     match first_moved_fact(&execution, runtime, snapshot, facts.iter()) {
         Ok(None) => Ok(()),
-        Ok(Some(_)) => Err(Denial::SourceDiverged),
-        Err(cause) => Err(Denial::DependencyComparison(retained_fact_denial(
-            cause, subject,
-        ))),
+        Ok(Some(fact)) => {
+            correction_rejection(subject, Some(fact), &Denial::SourceDiverged);
+            Err(Denial::SourceDiverged)
+        }
+        Err(cause) => {
+            let fact = match &cause {
+                crate::domain_computation::primary_graph::output_reuse::RetainedFactStop::Unavailable(fact) => Some(*fact),
+                _ => None,
+            };
+            let denial = Denial::DependencyComparison(retained_fact_denial(cause, subject));
+            correction_rejection(subject, fact, &denial);
+            Err(denial)
+        }
     }
 }

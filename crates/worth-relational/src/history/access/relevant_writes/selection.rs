@@ -1,4 +1,5 @@
-use crate::identity::data::KindId;
+use crate::history::data::RelationalTouchAdjacencyDirection;
+use crate::identity::data::{EntityId, KindId};
 use crate::indexes::data::DerivedIndexId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::transactions::data::RecordRef;
@@ -50,6 +51,12 @@ pub enum RelationalAuthoredWriteScope {
 /// authored history only after the runtime admits both actual source roots.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RelationalAuthoredWriteSelector {
+    /// Complete live membership, including future entrants into an empty list.
+    Adjacency {
+        anchor: EntityId,
+        kind: KindId,
+        direction: RelationalTouchAdjacencyDirection,
+    },
     Record {
         record: RecordRef,
         scope: RelationalAuthoredWriteScope,
@@ -64,6 +71,7 @@ pub enum RelationalAuthoredWriteSelector {
 impl worth_execution::ChargedBytes for RelationalAuthoredWriteSelector {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
+            Self::Adjacency { .. } => 0,
             Self::EntityFieldIndex {
                 definition, value, ..
             } => definition

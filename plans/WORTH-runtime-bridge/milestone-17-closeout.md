@@ -1,5 +1,7 @@
 # Milestone 17 Closeout: Temporal And Async Bridge Basis, Causality, And Certification
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 ## Status
 
 Milestone 17 is complete.
@@ -241,7 +243,7 @@ Current verification passed with:
 - `cargo test -p worth-runtime-bridge certification_closeout_phase_18 -- --nocapture`
 - `cargo test -p worth-runtime-bridge suites_38_50 -- --nocapture`
 - `cargo test -p worth-runtime-bridge subscription_certification -- --nocapture`
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_compile_fail -- --nocapture`
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_compile_fail:: -- --nocapture`
 - `cargo test -p worth-runtime-bridge`
 
 ## Close Condition Met

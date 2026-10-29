@@ -308,7 +308,17 @@ fn open_serving_inner_with_format(
     else {
         panic!("serving durability after C8 must admit")
     };
-    let open = PhysicalRecordOpen::new(format, access, durability);
+    let open = PhysicalRecordOpen::new(format, access, durability).with_journal_registry(
+        worth_store::physical_runtime::OrderedJournalRegistry::declare(
+            2,
+            &[
+                worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
+                worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
+            ],
+            &["home", "relational.checkpoint"],
+        )
+        .unwrap(),
+    );
     let open = match policy {
         Some(policy) => open.with_residency_policy(policy),
         None => open,

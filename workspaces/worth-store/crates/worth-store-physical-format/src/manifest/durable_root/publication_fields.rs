@@ -12,9 +12,9 @@ pub(super) fn decode(
 ) -> Result<DecodedPublicationFields, RootManifestDenial> {
     match schema {
         2 | 3 if payload.len() == LEGACY_ROOT_PAYLOAD_BYTES => Ok((None, None, None)),
-        4 | 5 | 6 | 7 | 9 | 10 | 11
+        4 | 5 | 6 | 7 | 9 | 10 | 12
             if payload.len()
-                == if schema == 11 {
+                == if schema == 12 {
                     ANCHORED_ROOT_PAYLOAD_BYTES
                 } else if schema == 10 {
                     HEAD_BOUND_ROOT_PAYLOAD_BYTES

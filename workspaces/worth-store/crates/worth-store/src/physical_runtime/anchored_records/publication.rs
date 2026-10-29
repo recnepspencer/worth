@@ -107,6 +107,13 @@ impl AnchoredRecords<'_> {
         &self,
         publication: AnchoredRecordPublication,
     ) -> Result<AnchoredRecordPublished, Failure> {
+        if self
+            .runtime
+            .journal_registry()
+            .reserves(publication.name.anchor())
+        {
+            return Err(Failure::ReservedForOrderedJournal);
+        }
         let mut state = self.runtime.anchored_record_state();
         let name = publication.name;
         if state.unresolved.contains(&name.anchor()) {

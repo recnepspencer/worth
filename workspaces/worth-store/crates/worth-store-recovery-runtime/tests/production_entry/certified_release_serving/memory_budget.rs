@@ -131,7 +131,7 @@ fn selected_release_source_memory_denies_before_effects_and_sufficient_twin_open
             // peak always denies first; `wal_inventory/tests/resident_ceiling.rs` owns it.
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("sufficient V2 source admission yields checkpoint seal");
             super::open_serving_with_seal(&root, seal);
         })

@@ -1,4 +1,5 @@
 //! Current numeric rows; a filtered-out subject cannot disclose its correction history.
+pub mod full;
 use super::schema::*;
 use worth_query_host::facade::{
     declaration::{application_query::*, application_schema::*},
