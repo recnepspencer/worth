@@ -20,6 +20,12 @@ pub struct IndependentModel {
     pub products: BTreeMap<BranchName, ExpectedProduct>,
 }
 
+impl Default for IndependentModel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IndependentModel {
     pub fn new() -> Self {
         Self {

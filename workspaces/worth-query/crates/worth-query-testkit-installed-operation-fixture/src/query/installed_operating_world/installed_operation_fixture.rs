@@ -21,6 +21,7 @@ pub mod provisional_discard;
 pub mod read_operation_types;
 pub mod required_domains;
 pub mod semantic_drift;
+mod settled_projection;
 pub mod touch_package;
 pub mod workflow;
 #[path = "installed_operation_fixture/workflow_lifecycle_runtime.rs"]
@@ -95,6 +96,7 @@ pub use read_operation_types::{
 };
 pub use required_domains::{required_domain_runtime, AuxiliaryDomain};
 pub use semantic_drift::semantic_drift_workspace;
+pub use settled_projection::SettledProjection;
 pub use touch_package::federated_touch_package;
 pub use workflow::*;
 pub use workflow_lifecycle_runtime::failing_controlled_workflow_workspace;

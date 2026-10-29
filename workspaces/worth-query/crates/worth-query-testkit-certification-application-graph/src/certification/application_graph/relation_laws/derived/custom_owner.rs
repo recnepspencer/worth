@@ -2,6 +2,12 @@
 pub use super::super::operation::GraphDenial;
 pub use super::*;
 pub struct Owner<L: LawPolicy>(pub std::marker::PhantomData<fn() -> L>);
+impl<L: LawPolicy> Default for Owner<L> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<L: LawPolicy> Owner<L> {
     pub fn new() -> Self {
         Self(std::marker::PhantomData)

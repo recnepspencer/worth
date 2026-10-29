@@ -1,5 +1,11 @@
 pub use super::*;
 
+impl Default for PublicBridgeRuntimeHarness {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PublicBridgeRuntimeHarness {
     pub fn new() -> Self {
         Self {

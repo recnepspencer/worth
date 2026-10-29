@@ -3,7 +3,7 @@ pub use std::sync::Arc;
 
 pub use worth_query::facade::domain;
 
-pub use super::super::graph_read_material::graph_read_material;
+pub use worth_query_testkit_installed_operation_fixture::facade::query::suite::graph_read_material::graph_read_material;
 
 #[derive(Clone, Copy, Debug)]
 pub struct RemoteA;

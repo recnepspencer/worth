@@ -27,7 +27,6 @@ pub mod execution_resource_admission;
 pub mod graph_participation;
 pub mod graph_provider_execution;
 pub use worth_query_testkit_installed_operation_fixture::facade::query::suite::graph_provider_step;
-pub mod graph_read_material;
 pub use worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture;
 pub mod operating_world;
 pub mod operating_world_atomicity;

@@ -3,7 +3,7 @@ pub use std::sync::{Arc, Mutex};
 pub use worth_proof::TransitionOutcome;
 pub use worth_query::facade::domain;
 
-pub use super::graph_read_material::graph_read_material;
+pub use worth_query_testkit_installed_operation_fixture::facade::query::suite::graph_read_material::graph_read_material;
 pub use super::installed_operation_fixture::{
     configured_runtime_for_package, configured_runtime_for_partial_effect_package,
     configured_runtime_for_understated_cost_package, federated_operation_contract_drift_package,

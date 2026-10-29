@@ -1,5 +1,3 @@
-#![allow(dead_code)] // This fixture is compiled by several independent certification targets.
-
 pub use std::future::Future;
 pub use std::pin::pin;
 pub use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};

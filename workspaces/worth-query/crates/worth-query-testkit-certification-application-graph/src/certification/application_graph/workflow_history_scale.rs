@@ -36,6 +36,12 @@ pub struct HistoryCourt {
     pub history: u64,
 }
 
+impl Default for HistoryCourt {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HistoryCourt {
     pub fn new() -> Self {
         Self::with_budget(WorthQueryWorkflowHistoryReconstructionBudget::standard())

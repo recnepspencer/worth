@@ -7,7 +7,10 @@ pub use worth_foundational::facade::{
 pub use worth_proof::TransitionOutcome;
 pub use worth_query::facade::{domain, foundation, runtime};
 
-pub use super::{configured_runtime, GeometryDomain, ReadExecutionInput, ReadFamily, ReadVertex};
+pub use super::{
+    configured_runtime, GeometryDomain, ReadExecutionInput, ReadFamily, ReadVertex,
+    SettledProjection,
+};
 
 pub type InvalidationLease = domain::WorthQuerySharedLiveProjectionLease<
     GeometryDomain,
@@ -73,22 +76,18 @@ pub fn shared_native_leases_with_invalidation(
     (workspace, subject, candidate)
 }
 
-pub fn settle_native(
-    workspace: &mut runtime::WorthQueryWorkspace,
-) -> super::super::operation_sharing::SettledProjection {
+pub fn settle_native(workspace: &mut runtime::WorthQueryWorkspace) -> SettledProjection {
     settle_native_lane(workspace, false)
 }
 
-pub fn settle_native_derived(
-    workspace: &mut runtime::WorthQueryWorkspace,
-) -> super::super::operation_sharing::SettledProjection {
+pub fn settle_native_derived(workspace: &mut runtime::WorthQueryWorkspace) -> SettledProjection {
     settle_native_lane(workspace, true)
 }
 
 pub fn settle_native_lane(
     workspace: &mut runtime::WorthQueryWorkspace,
     derived: bool,
-) -> super::super::operation_sharing::SettledProjection {
+) -> SettledProjection {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())

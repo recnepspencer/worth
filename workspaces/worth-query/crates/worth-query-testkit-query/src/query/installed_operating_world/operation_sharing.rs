@@ -2,14 +2,8 @@ pub use worth_query::facade::{domain, foundation, read, runtime};
 
 pub use super::installed_operation_fixture::{
     configured_runtime, GeometryDomain, ReadExecutionInput, ReadFamily, ReadVertex,
+    SettledProjection,
 };
-
-pub type SettledProjection = domain::WorthQuerySettledDomainProjection<
-    GeometryDomain,
-    ReadVertex,
-    ReadFamily,
-    foundation::ObservationLaneWitness,
->;
 
 pub fn settle(workspace: &mut runtime::WorthQueryWorkspace) -> SettledProjection {
     let installed = workspace.domain(GeometryDomain).unwrap();
