@@ -13,7 +13,10 @@ pub fn discover_definition_metadata(
     >,
     branch: WorthQueryProductBranch,
     identity: &ApplicationWorkflowDefinitionIdentity,
-) -> Result<WorthQueryWorkflowDefinitionDiscovery, ()> {
+) -> Result<
+    WorthQueryWorkflowDefinitionDiscovery,
+    worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind,
+> {
     let scope = request_scope();
     let principal = authenticate_operator(application.runtime().installed_schema(), &scope);
     let request = application
@@ -27,7 +30,7 @@ pub fn discover_definition_metadata(
         Ok(view)=>Ok(view.definition().clone()),
         Err(WorthQueryWorkflowObservationDenial::Read(worth_query_host::facade::application_discovery::WorthQueryWorkflowReadDenial::Installation(cause)))=>{
             assert_eq!(cause.kind(),worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy);
-            Err(())
+            Err(cause.kind())
         },
         Err(other)=>panic!("Disabled metadata must refuse at its installed policy, not another gate: {other:?}"),
     }

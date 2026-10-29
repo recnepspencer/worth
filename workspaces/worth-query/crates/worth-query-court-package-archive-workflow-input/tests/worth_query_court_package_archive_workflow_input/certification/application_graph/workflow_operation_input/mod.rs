@@ -32,7 +32,7 @@ fn ordinary_publication_refuses_zero_and_two_inputs_before_publication() {
             runtime.current_world(),
             &ApplicationWorkflowDefinitionIdentity::new("input-cardinality").unwrap()
         ),
-        Err(())
+        Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy)
     );
     let published = runtime
         .with_host_advancement(|phase| {
@@ -59,7 +59,7 @@ fn authentic_predecessor_draft_cannot_import_executable_meaning() {
     // Captured with the original production validator and writer, before the
     // guarded-input requirement was enforced. No bytes are converted on import.
     let bytes = include_bytes!(
-        "../../../../../../../worth-query-worlds-certification/src/certification/application_graph/workflow_definition_readmission/missing_input.wqwd"
+        "../../../../../../../worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_definition_readmission/missing_input.wqwd"
     );
     let original = bytes.to_vec();
     let denial = decode_workflow_definition_draft(bytes, WorthQueryPackageArchiveLimits::DEFAULT)

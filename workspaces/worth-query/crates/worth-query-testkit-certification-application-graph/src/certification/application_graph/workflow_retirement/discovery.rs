@@ -17,7 +17,10 @@ pub fn discover(
     application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
     identity: &ApplicationWorkflowDefinitionIdentity,
-) -> Result<WorthQueryWorkflowDefinitionDiscovery, ()> {
+) -> Result<
+    WorthQueryWorkflowDefinitionDiscovery,
+    worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind,
+> {
     super::super::document_retention_model::workflow::discover_definition_metadata(
         application,
         branch,

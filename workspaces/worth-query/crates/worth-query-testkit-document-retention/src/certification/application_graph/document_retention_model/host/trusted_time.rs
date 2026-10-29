@@ -28,6 +28,12 @@ pub struct CertificationTrustedTime {
     pub unavailable: Arc<AtomicBool>,
 }
 
+impl Default for CertificationTrustedTime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CertificationTrustedTime {
     pub fn new() -> Self {
         Self {

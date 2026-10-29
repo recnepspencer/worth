@@ -261,7 +261,7 @@ fn assert_discovery_disabled(
         application.runtime().current_world(),
         identity,
     );
-    assert_eq!(result, Err(()));
+    assert_eq!(result, Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy));
 }
 
 /// A proposed retention reviewed up to its approval.

@@ -40,6 +40,12 @@ impl Clone for CertificationAuthenticationClockSource {
     }
 }
 
+impl Default for CertificationAuthenticationClockSource {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CertificationAuthenticationClockSource {
     pub fn new() -> Self {
         Self {
