@@ -281,3 +281,6 @@ pub fn support_contract() -> domain::WorthQueryOperationSupportRequirements {
         conditional_temporal_or_on_demand: required,
     }
 }
+
+#[path = "contract/consumer_entry.rs"]
+mod consumer_entry;
