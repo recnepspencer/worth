@@ -13,7 +13,7 @@ use worth_relational::facade::indexes::{
     BoundedIndexParityMode, PreparedEntityFieldLookup,
 };
 
-use super::indexed_selection::selection_denial;
+use super::indexed_selection::{selection_denial, typed_entity_selection};
 use super::{
     WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
     WorthQueryInvariantDecisionPlanDenialKind,
@@ -81,27 +81,48 @@ impl<Schema: ApplicationSchema, Operation>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let native =
+            self.prepare_named_entity_selection(field.entity(), field.aspect(), field.field())?;
+        Ok(WorthQueryPreparedEntitySelection {
+            field,
+            native,
+            snapshot: self.reader.snapshot.clone(),
+            authority_identity: self.reader.authority_identity,
+            binding_identity: self.binding_identity.clone(),
+            runtime_authority: self.runtime_authority,
+            admission_identity: self.admission_identity,
+            _operation: PhantomData,
+        })
+    }
+
+    #[inline(never)]
+    fn prepare_named_entity_selection(
+        &mut self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Result<PreparedEntityFieldLookup, HandlerExecutionDenial> {
         let execution = self.reader.execution;
         self.reader
             .retention_control
             .check_live()
             .map_err(HandlerExecutionDenial::new)?;
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Field {
-            entity: field.entity().to_owned(),
-            aspect: field.aspect().to_owned(),
-            field: field.field().to_owned(),
+            entity: entity.to_owned(),
+            aspect: aspect.to_owned(),
+            field: field.to_owned(),
         })
         .map_err(HandlerExecutionDenial::new)?;
         let layout = self
             .reader
             .layout
-            .equality_field(field.entity(), field.aspect(), field.field())
+            .equality_field(entity, aspect, field)
             .ok_or_else(|| {
                 selection_denial(
                     WorthQueryEntityResolutionDenialKind::Refused(
                         ResolutionRefusal::FieldNotInstalled,
                     ),
-                    field.field(),
+                    field,
                 )
             })?;
         let index = layout.equality_index_id.ok_or_else(|| {
@@ -109,7 +130,7 @@ impl<Schema: ApplicationSchema, Operation>
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::EqualityIndexUnavailable,
                 ),
-                field.field(),
+                field,
             )
         })?;
         let view = self
@@ -122,7 +143,7 @@ impl<Schema: ApplicationSchema, Operation>
                     WorthQueryEntityResolutionDenialKind::Refused(
                         ResolutionRefusal::EqualityIndexUnavailable,
                     ),
-                    field.field(),
+                    field,
                 )
             })?;
         let native = self
@@ -143,28 +164,18 @@ impl<Schema: ApplicationSchema, Operation>
                         WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None),
                     );
                 }
-
                 selection_denial(
                     WorthQueryEntityResolutionDenialKind::Refused(
                         ResolutionRefusal::EqualityIndexUnavailable,
                     ),
-                    field.field(),
+                    field,
                 )
             })?;
         self.reader
             .retention_control
             .check_live()
             .map_err(HandlerExecutionDenial::new)?;
-        Ok(WorthQueryPreparedEntitySelection {
-            field,
-            native,
-            snapshot: self.reader.snapshot.clone(),
-            authority_identity: self.reader.authority_identity,
-            binding_identity: self.binding_identity.clone(),
-            runtime_authority: self.runtime_authority,
-            admission_identity: self.admission_identity,
-            _operation: PhantomData,
-        })
+        Ok(native)
     }
 
     pub fn decision_select_entities_prepared<Entity, Aspect, Field, Value, Write, Unit>(
@@ -188,30 +199,60 @@ impl<Schema: ApplicationSchema, Operation>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let selected = self.select_prepared_named_entities(
+            &prepared.native,
+            &prepared.snapshot,
+            prepared.authority_identity,
+            &prepared.runtime_authority,
+            &prepared.binding_identity,
+            &prepared.admission_identity,
+            prepared.field.entity(),
+            prepared.field.field(),
+            &mut || Field::Binding::encode(&value).map_err(|_| ()),
+            candidate_limit,
+        )?;
+        Ok(typed_entity_selection(selected))
+    }
+
+    /// A foreign prepared identity is refused before the budget check and before encoding.
+    #[inline(never)]
+    fn select_prepared_named_entities(
+        &mut self,
+        native: &PreparedEntityFieldLookup,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        authority_identity: u64,
+        runtime_authority: &crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: &ApplicationSchemaBindingIdentity,
+        admission_identity: &Option<WorthQueryOperationAdmissionIdentity>,
+        entity: &str,
+        field: &str,
+        encode: &mut dyn FnMut() -> Result<worth_foundational::facade::AspectValue, ()>,
+        candidate_limit: usize,
+    ) -> Result<super::indexed_selection::RetainedEntitySelection, HandlerExecutionDenial> {
         let execution = self.reader.execution;
-        if prepared.authority_identity != self.reader.authority_identity
-            || prepared.snapshot != *self.reader.snapshot
-            || prepared.snapshot.runtime_instance_id() != self.reader.runtime.runtime_instance_id()
-            || prepared.runtime_authority != self.runtime_authority
-            || prepared.binding_identity != *self.binding_identity
-            || prepared.admission_identity != self.admission_identity
+        if authority_identity != self.reader.authority_identity
+            || snapshot != self.reader.snapshot
+            || snapshot.runtime_instance_id() != self.reader.runtime.runtime_instance_id()
+            || runtime_authority != &self.runtime_authority
+            || binding_identity != self.binding_identity
+            || admission_identity != &self.admission_identity
         {
             return Err(HandlerExecutionDenial::new(
                 WorthQueryInvariantDecisionPlanDenial::new(
                     WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
-                    prepared.field.field(),
+                    field,
                 ),
             ));
         }
         let control = self.reader.retention_control;
         control.check_live().map_err(HandlerExecutionDenial::new)?;
-        self.require_selection_budget(candidate_limit, prepared.field.field())?;
-        let value = Field::Binding::encode(&value).map_err(|_| {
+        self.require_selection_budget(candidate_limit, field)?;
+        let value = encode().map_err(|_| {
             selection_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::ValueEncodingRejected,
                 ),
-                prepared.field.field(),
+                field,
             )
         })?;
         let outcome = self
@@ -219,7 +260,7 @@ impl<Schema: ApplicationSchema, Operation>
             .runtime
             .index_access()
             .execute_prepared_entity_field_lookup(
-                &prepared.native,
+                native,
                 &value,
                 candidate_limit,
                 BoundedIndexParityMode::Production,
@@ -264,10 +305,10 @@ impl<Schema: ApplicationSchema, Operation>
                             WorthQueryEntityResolutionDenialKind::Stopped(
                                 NativeReadStop::WorkExhausted,
                             ),
-                            prepared.field.field(),
+                            field,
                         );
                     }
-                    selection_denial(kind, prepared.field.field())
+                    selection_denial(kind, field)
                 }
                 Stop::AccountingOverflow => {
                     let cause = NativeReadStop::WorkCounterOverflow;
@@ -280,7 +321,7 @@ impl<Schema: ApplicationSchema, Operation>
                     WorthQueryEntityResolutionDenialKind::Refused(
                         ResolutionRefusal::EqualityIndexUnavailable,
                     ),
-                    prepared.field.field(),
+                    field,
                 ),
             })?;
         if !self
@@ -290,7 +331,7 @@ impl<Schema: ApplicationSchema, Operation>
         {
             return Err(selection_denial(
                 WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
-                prepared.field.field(),
+                field,
             ));
         }
         self.reader
@@ -303,13 +344,13 @@ impl<Schema: ApplicationSchema, Operation>
                         maximum: candidate_limit,
                     },
                 ),
-                prepared.field.field(),
+                field,
             ));
         }
-        self.retain_entity_selection(
-            prepared.field,
-            prepared.native.entity_kind(),
-            prepared.native.field_locator().clone(),
+        self.retain_named_entity_selection(
+            entity,
+            native.entity_kind(),
+            native.field_locator().clone(),
             value,
             candidate_limit,
             outcome,

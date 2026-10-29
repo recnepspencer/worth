@@ -77,29 +77,18 @@ impl<Schema: ApplicationSchema> WorthQueryRetainedSnapshotRead<'_, '_, '_, Schem
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        if let Some(cause) = self.native_stop.get() {
-            return Err(
-                WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None),
-            );
-        }
-        if let Some(cause) = self.decode.denial() {
-            return Err(WorthQueryInvariantProjectionDenial::value_decode_stopped(
-                cause, None,
-            ));
-        }
-        let snapshot = self.snapshot;
-        if identity.authority_identity != snapshot.authority_identity
-            || identity.entity.as_ref() != field.entity()
-        {
-            return Ok(None);
-        }
-        let Some(locator) = snapshot
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())
-            .cloned()
+        let local_identity = identity.authority_identity == self.snapshot.authority_identity
+            && identity.entity.as_ref() == field.entity();
+        let Some(locator) = self.prepare_retained_field(
+            local_identity,
+            field.entity(),
+            field.aspect(),
+            field.field(),
+        )?
         else {
             return Ok(None);
         };
+        let snapshot = self.snapshot;
         let observed = snapshot.graph.with_runtime(self.execution, |runtime| {
             super::super::application_attempt::observe_field_value_borrowed(
                 runtime,
@@ -129,5 +118,35 @@ impl<Schema: ApplicationSchema> WorthQueryRetainedSnapshotRead<'_, '_, '_, Schem
             self.native_stop.set(Some(cause));
             WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None)
         })
+    }
+
+    /// An existing stop is a denial. A non-local identity or a missing locator is absence.
+    #[inline(never)]
+    fn prepare_retained_field(
+        &self,
+        local_identity: bool,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Result<Option<worth_foundational::facade::AspectFieldLocator>, WorthQueryInvariantProjectionDenial>
+    {
+        if let Some(cause) = self.native_stop.get() {
+            return Err(
+                WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None),
+            );
+        }
+        if let Some(cause) = self.decode.denial() {
+            return Err(WorthQueryInvariantProjectionDenial::value_decode_stopped(
+                cause, None,
+            ));
+        }
+        if !local_identity {
+            return Ok(None);
+        }
+        Ok(self
+            .snapshot
+            .layout
+            .field_locator(entity, aspect, field)
+            .cloned())
     }
 }

@@ -1,7 +1,9 @@
 //! Privileged pinned relation payload reads. This door is not forwarded to operation readers.
 use super::{WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantRelation};
 use worth_execution::{MapKernelStop, WorkCeilingDenial};
-use worth_foundational::facade::ContractValidatedAspectValueView;
+use worth_foundational::facade::{
+    AspectContractRevision, AspectIdentity, AspectValue, ContractValidatedAspectValueView,
+};
 use worth_query_declaration::facade::application_schema::{
     ApplicationAspectMarkerIdentity, ApplicationFieldMarkerIdentity,
 };
@@ -9,7 +11,27 @@ use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationRelationFieldRef,
     ApplicationSchema,
 };
+use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::storage::RecordLifecycleState;
+
+struct NamedRelationField<'a> {
+    relation_id: RelationId,
+    relation: &'a str,
+    from_entity: &'a str,
+    to_entity: &'a str,
+    aspect: &'a str,
+    field: &'a str,
+    from_id: EntityId,
+    to_id: EntityId,
+    from_kind: KindId,
+    to_kind: KindId,
+    from_authority: u64,
+    to_authority: u64,
+    from_name: &'a str,
+    to_name: &'a str,
+    aspect_identity: AspectIdentity,
+    contract_revision: AspectContractRevision,
+}
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
     /// Read one actual field under bootstrap-minted broad invariant authority.
@@ -26,29 +48,72 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         Field::Binding: ApplicationReadableScalarValueBinding,
         Unit: ApplicationFieldUnit,
     {
+        let relation = field.relation();
+        let decoder = self.value_decode;
+        let mut decoded = None;
+        let visited = self.read_named_relation_field(
+            &NamedRelationField {
+                relation_id: identity.relation_id(),
+                relation: relation.name(),
+                from_entity: relation.from(),
+                to_entity: relation.to(),
+                aspect: field.aspect(),
+                field: field.field(),
+                from_id: identity.from().entity_id,
+                to_id: identity.to().entity_id,
+                from_kind: identity.from().kind,
+                to_kind: identity.to().kind,
+                from_authority: identity.from().authority_identity,
+                to_authority: identity.to().authority_identity,
+                from_name: identity.from().entity.as_ref(),
+                to_name: identity.to().entity.as_ref(),
+                aspect_identity: Aspect::ASPECT_IDENTITY,
+                contract_revision: Aspect::CONTRACT_REVISION,
+            },
+            &mut |raw| {
+                decoded = Some(decoder.decode_relation::<Field::Binding>(
+                    relation.name(),
+                    field.aspect(),
+                    field.field(),
+                    raw,
+                ));
+            },
+        );
+        visited.and_then(|_| decoded.flatten())
+    }
+
+    /// Locality stays ahead of the aspect-contract check. The decoded value
+    /// stays with the shell; this function only reports that the visit ran.
+    #[inline(never)]
+    fn read_named_relation_field(
+        &mut self,
+        subject: &NamedRelationField<'_>,
+        decode: &mut dyn FnMut(&AspectValue),
+    ) -> Option<()> {
         if self.native_read_stop.is_some() || self.value_decode.stopped() {
             return None;
         }
-        let relation = field.relation();
-        let layout = self.layout.relation(relation.name())?;
-        if !self.identity_is_local(identity.from(), relation.from())
-            || !self.identity_is_local(identity.to(), relation.to())
-            || identity.from().kind != layout.from
-            || identity.to().kind != layout.to
+        let layout = self.layout.relation(subject.relation)?;
+        if subject.from_authority != self.authority_identity
+            || subject.from_name != subject.from_entity
+            || subject.to_authority != self.authority_identity
+            || subject.to_name != subject.to_entity
+            || subject.from_kind != layout.from
+            || subject.to_kind != layout.to
         {
             return None;
         }
         let contract = self
             .layout
-            .relation_aspect_contract(relation.name(), field.aspect())?;
-        if contract.identity() != Aspect::ASPECT_IDENTITY
-            || contract.revision() != Aspect::CONTRACT_REVISION
+            .relation_aspect_contract(subject.relation, subject.aspect)?;
+        if contract.identity() != subject.aspect_identity
+            || contract.revision() != subject.contract_revision
         {
             return None;
         }
         let locator =
             self.layout
-                .relation_field_locator(relation.name(), field.aspect(), field.field())?;
+                .relation_field_locator(subject.relation, subject.aspect, subject.field)?;
         let [key] = locator.field_path().fields() else {
             return None;
         };
@@ -58,7 +123,6 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         if !self.work_budget.consume(work) {
             return None;
         }
-        let decoder = self.value_decode;
         let (value, _) = match self.execution.run_native_with_checkpoint(|context| {
             if context.has_accounting() {
                 context.checkpoint(work as u64)?;
@@ -66,12 +130,12 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 context.poll()?;
             }
             let observed = projection
-                .read_exact_relation_state(self.execution,identity.relation_id(), |record, state| {
-                    if record.relation_id != identity.relation_id()
+                .read_exact_relation_state(self.execution, subject.relation_id, |record, state| {
+                    if record.relation_id != subject.relation_id
                         || record.kind_id != layout.kind
                         || record.lifecycle != RecordLifecycleState::Live
-                        || record.source != identity.from().entity_id()
-                        || record.target != identity.to().entity_id()
+                        || record.source != subject.from_id
+                        || record.target != subject.to_id
                     {
                         return None;
                     }
@@ -80,17 +144,17 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                         return None;
                     };
                     let raw = value.get(key)?;
-                    decoder.decode_relation::<Field::Binding>(
-                        relation.name(),
-                        field.aspect(),
-                        field.field(),
-                        raw,
-                    )
+                    decode(raw);
+                    Some(())
                 })
                 .map_err(|cause| match cause {
-                    worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {self.native_read_stop.get_or_insert(cause);},
-                    worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {},
-                }).ok().flatten();
+                    worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                        self.native_read_stop.get_or_insert(cause);
+                    }
+                    worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {}
+                })
+                .ok()
+                .flatten();
             Ok::<_, MapKernelStop>(observed)
         }) {
             Ok(value) => value,
@@ -100,11 +164,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             }
         };
         match value {
-            Ok(value) => {
+            Ok(_value) => {
                 self.work.record_fields(1);
                 self.realized_scope
-                    .record_relation(identity.from().entity_id(), identity.to().entity_id());
-                value.flatten()
+                    .record_relation(subject.from_id, subject.to_id);
+                Some(())
             }
             Err(cause) => {
                 self.native_read_stop

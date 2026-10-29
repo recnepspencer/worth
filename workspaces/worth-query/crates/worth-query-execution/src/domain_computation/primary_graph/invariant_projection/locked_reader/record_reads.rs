@@ -1,6 +1,8 @@
 //! Entity/field reads of the selected native snapshot.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_relational::facade::identity::{EntityId, KindId};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 #[cfg(test)]
@@ -39,19 +41,44 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let entity = field.entity();
+        let (entity_id, kind) = self.resolve_named_entity(
+            entity,
+            field.aspect(),
+            field.field(),
+            &mut || Field::Binding::encode(&value).map_err(|_| ()),
+        )?;
+        Ok(WorthQueryInvariantEntityIdentity {
+            entity_id,
+            kind,
+            entity: Arc::from(entity),
+            authority_identity: self.authority_identity,
+            _marker: PhantomData,
+        })
+    }
+
+    /// The shell keeps the typed encode. Budget is refused before that encode runs.
+    #[inline(never)]
+    fn resolve_named_entity(
+        &mut self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+        encode: &mut dyn FnMut() -> Result<AspectValue, ()>,
+    ) -> Result<(EntityId, KindId), WorthQueryEntityResolutionDenial> {
         let execution = self.execution;
         if !self.work_budget.can_afford(3) {
             return Err(WorthQueryEntityResolutionDenial::new(
                 WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
-                field.field(),
+                field,
             ));
         }
-        let value = Field::Binding::encode(&value).map_err(|_| {
+        let value = encode().map_err(|_| {
             WorthQueryEntityResolutionDenial::new(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::ValueEncodingRejected,
                 ),
-                field.field(),
+                field,
             )
         })?;
         let truth = self.entity_resolution.at_snapshot(
@@ -59,13 +86,8 @@ where
             self.snapshot,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )?;
-        let (resolved, examined) = truth.resolve_with_work(
-            execution,
-            field.entity(),
-            field.aspect(),
-            field.field(),
-            value,
-        );
+        let (resolved, examined) =
+            truth.resolve_with_work(execution, entity, aspect, field, value);
         let admitted = self.work_budget.consume(1 + examined);
         if admitted {
             self.work.record_lookup(examined);
@@ -78,17 +100,11 @@ where
         if !admitted {
             return Err(WorthQueryEntityResolutionDenial::new(
                 WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
-                field.field(),
+                field,
             ));
         }
         self.realized_scope.record(resolved.entity_id());
-        Ok(WorthQueryInvariantEntityIdentity {
-            entity_id: resolved.entity_id(),
-            kind: resolved.entity_kind(),
-            entity: Arc::from(field.entity()),
-            authority_identity: self.authority_identity,
-            _marker: PhantomData,
-        })
+        Ok((resolved.entity_id(), resolved.entity_kind()))
     }
 
     pub fn resolve_optional_entity<Aspect, Entity, Field, Value, Write, Unit>(
@@ -141,22 +157,15 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let local_identity = self.identity_is_local(identity, field.entity());
+        let locator = self.prepare_field_read(
+            identity.entity_id,
+            local_identity,
+            field.entity(),
+            field.aspect(),
+            field.field(),
+        )?;
         let execution = self.execution;
-        if self.native_read_stop.is_some() || self.value_decode.stopped() {
-            return None;
-        }
-        if !self.identity_is_local(identity, field.entity()) {
-            return None;
-        }
-        if !self.work_budget.can_afford(1) {
-            return None;
-        }
-        assert!(self.work_budget.consume(1), "projection work was admitted");
-        self.realized_scope.record(identity.entity_id);
-        let locator = self
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())?
-            .clone();
         let reads = &mut self.work;
         let decoder = self.value_decode;
         let observed = crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
@@ -179,6 +188,28 @@ where
                 None
             }
         }
+    }
+
+    /// Stop or a non-local identity returns before any charge. A missing locator
+    /// returns after the admitted unit is consumed, and does not observe.
+    #[inline(never)]
+    pub(super) fn prepare_field_read(
+        &mut self,
+        entity_id: EntityId,
+        local_identity: bool,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<AspectFieldLocator> {
+        if self.native_read_stop.is_some() || self.value_decode.stopped() || !local_identity {
+            return None;
+        }
+        if !self.work_budget.can_afford(1) {
+            return None;
+        }
+        assert!(self.work_budget.consume(1), "projection work was admitted");
+        self.realized_scope.record(entity_id);
+        self.layout.field_locator(entity, aspect, field).cloned()
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn identity_is_local<

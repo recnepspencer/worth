@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryManagedComputationResourceDenial,
 };
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_relational::facade::identity::{EntityId, KindId};
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
     /// Same canonical equivalence owner as native signing consequences. Both present
@@ -72,6 +73,28 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         locator: &AspectFieldLocator,
         observe: impl FnOnce(Option<&AspectValue>) -> Result<Output, HandlerExecutionDenial>,
     ) -> Result<Output, HandlerExecutionDenial> {
+        let mut output = None;
+        let mut observe = Some(observe);
+        self.observe_named_body_scalar(
+            identity.entity_id,
+            identity.kind,
+            locator,
+            &mut |raw| assign_body_output(&mut observe, &mut output, raw),
+        )?;
+        Ok(output.expect("body scalar observation stored its output"))
+    }
+
+    /// Work exhaustion and a missing fact stay errors. The caller's value stays in the shell.
+    #[inline(never)]
+    fn observe_named_body_scalar(
+        &mut self,
+        entity_id: EntityId,
+        kind: KindId,
+        locator: &AspectFieldLocator,
+        observe: &mut dyn for<'raw> FnMut(
+            Option<&'raw AspectValue>,
+        ) -> Result<(), HandlerExecutionDenial>,
+    ) -> Result<(), HandlerExecutionDenial> {
         if !self.work_budget.can_afford(1) {
             return Err(HandlerExecutionDenial::new(
                 WorthQueryAdvancementDenial::Resource(
@@ -83,16 +106,25 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             self.work_budget.consume(1),
             "the same owner preflighted one work unit"
         );
-        self.realized_scope.record(identity.entity_id);
-        let reads = &mut self.work;
-        match crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
-            self.runtime, self.execution, self.snapshot, identity.entity_id, identity.kind,
-            locator, |raw| {
-                reads.record_fields(1);
-                observe(raw)
-            },
-        ) {
-            Ok(Some(value)) => value,
+        self.realized_scope.record(entity_id);
+        let observed = {
+            let reads = &mut self.work;
+            crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
+                self.runtime,
+                self.execution,
+                self.snapshot,
+                entity_id,
+                kind,
+                locator,
+                |raw| {
+                    reads.record_fields(1);
+                    observe(raw)
+                },
+            )
+        };
+        match observed {
+            Ok(Some(Ok(()))) => Ok(()),
+            Ok(Some(Err(error))) => Err(error),
             Ok(None) => Err(HandlerExecutionDenial::new(
                 WorthQueryApplicationAttemptDenial::new(
                     WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
@@ -101,7 +133,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             )),
             Err(cause) => {
                 self.native_read_stop.get_or_insert(cause);
-                Err(HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::from(cause)))
+                Err(HandlerExecutionDenial::new(
+                    WorthQueryApplicationAttemptDenial::from(cause),
+                ))
             }
         }
     }
@@ -116,4 +150,16 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
     ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
         self.body_scalar_observe(identity, locator, |value| value.map(capture).transpose())
     }
+}
+
+fn assign_body_output<'raw, Output>(
+    observe: &mut Option<
+        impl for<'value> FnOnce(Option<&'value AspectValue>) -> Result<Output, HandlerExecutionDenial>,
+    >,
+    output: &mut Option<Output>,
+    raw: Option<&'raw AspectValue>,
+) -> Result<(), HandlerExecutionDenial> {
+    let observe = observe.take().expect("single body scalar observation");
+    *output = Some(observe(raw)?);
+    Ok(())
 }

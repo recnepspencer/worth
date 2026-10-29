@@ -6,7 +6,8 @@ use worth_query_installation::facade::{
     WritePosture,
 };
 
-use worth_relational::facade::identity::EntityId;
+use std::sync::Arc;
+use worth_relational::facade::identity::{EntityId, KindId};
 
 use super::decision_reads::DecisionReadOutcome;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
@@ -120,20 +121,24 @@ where
         Relation: OperationReads<Operation>,
     {
         let _execution = self.reader.execution;
-        let target = relation_target(&relation);
-        self.admit_decision_target(&target)
-            .map_err(|denial| decision_traversal_denial(&denial))?;
-        self.recorded_adjacency(
-            &target,
+        let records = self.decision_named_relations(
+            relation.name(),
+            relation.from(),
+            relation.to(),
             from.entity_id,
+            from.kind,
+            &from.entity,
+            from.authority_identity,
             WorthQueryApplicationAdjacencyDirection::Outgoing,
-            |reader| reader.relations_from(relation, from),
-        )
+        )?;
+        Ok(records
+            .into_iter()
+            .map(super::super::traversal::project_named_relation)
+            .collect())
     }
 
     pub fn decision_relations_to<Relation, From, To>(
         &mut self,
-
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         to: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<
@@ -144,15 +149,57 @@ where
         Relation: OperationReads<Operation>,
     {
         let _execution = self.reader.execution;
-        let target = relation_target(&relation);
+        let records = self.decision_named_relations(
+            relation.name(),
+            relation.from(),
+            relation.to(),
+            to.entity_id,
+            to.kind,
+            &to.entity,
+            to.authority_identity,
+            WorthQueryApplicationAdjacencyDirection::Incoming,
+        )?;
+        Ok(records
+            .into_iter()
+            .map(super::super::traversal::project_named_relation)
+            .collect())
+    }
+
+    /// Admission stays ahead of locality. The walk itself compares the anchor.
+    #[inline(never)]
+    fn decision_named_relations(
+        &mut self,
+        relation: &str,
+        from_entity: &str,
+        to_entity: &str,
+        anchor_id: EntityId,
+        anchor_kind: KindId,
+        anchor_name: &Arc<str>,
+        anchor_authority: u64,
+        direction: WorthQueryApplicationAdjacencyDirection,
+    ) -> Result<
+        Vec<super::super::traversal::NamedObservedRelation>,
+        WorthQueryInvariantProjectionTraversalDenial,
+    > {
+        let target = ApplicationOperationDecisionReadTarget::Relation {
+            relation: relation.to_string(),
+            from: from_entity.to_string(),
+            to: to_entity.to_string(),
+        };
         self.admit_decision_target(&target)
             .map_err(|denial| decision_traversal_denial(&denial))?;
-        self.recorded_adjacency(
-            &target,
-            to.entity_id,
-            WorthQueryApplicationAdjacencyDirection::Incoming,
-            |reader| reader.relations_to(relation, to),
-        )
+        self.recorded_adjacency(&target, anchor_id, direction, |reader| {
+            reader.read_named_relations(
+                relation,
+                from_entity,
+                to_entity,
+                anchor_id,
+                anchor_kind,
+                anchor_name,
+                anchor_authority,
+                direction,
+            )
+        })
     }
 
     /// Runs one adjacency read and records its fact whatever the read

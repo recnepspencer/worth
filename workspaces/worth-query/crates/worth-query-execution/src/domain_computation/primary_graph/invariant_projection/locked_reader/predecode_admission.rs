@@ -43,20 +43,14 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        if self.native_read_stop.is_some()
-            || self.value_decode.stopped()
-            || !self.identity_is_local(identity, field.entity())
-            || !self.work_budget.can_afford(1)
-        {
-            return Ok(Ok(None));
-        }
-        assert!(self.work_budget.consume(1), "projection work was admitted");
-        self.realized_scope.record(identity.entity_id);
-        let Some(locator) = self
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())
-            .cloned()
-        else {
+        let local_identity = self.identity_is_local(identity, field.entity());
+        let Some(locator) = self.prepare_field_read(
+            identity.entity_id,
+            local_identity,
+            field.entity(),
+            field.aspect(),
+            field.field(),
+        ) else {
             return Ok(Ok(None));
         };
         let reads = &mut self.work;
