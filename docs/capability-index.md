@@ -744,3 +744,16 @@ remain accepted; no checkpoint version was reinterpreted or migrated. A payload
 with extra fields that an older reader happened to ignore is outside this
 compatibility window and now refuses. Future field additions require an explicit
 protocol/version admission decision rather than silent forward compatibility.
+
+### Phase19 whole-aspect correction receiving candidate
+
+The current Source candidate extends restored support for genuine
+`SourceAspectRevision` witnesses. Native resolves the complete installed scalar or
+struct field roster at both exact full-generation roots and compares whole-aspect
+presence/content under compatible bindings. Query selects Lifecycle, WholeAspect
+and those actual Field coordinates, retaining strict original verification and
+canonical cancellation. This is not revision-equality cancellation or a waiver for
+BODY retirement data. It addresses six observed private overlap-selection refusals;
+focused Native3/QueryExecution1 qualification and normal guidance/context gates
+now pass. Immutable private adoption remains pending;
+no private restoration or Phase19 acceptance is claimed.

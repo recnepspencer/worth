@@ -3,6 +3,7 @@ mod adjacency_revision;
 mod adjacency_support;
 pub use adjacency_support::RelationalAdjacencySupportDenial;
 mod admitted_snapshot;
+mod aspect_field_support;
 mod aspect_presence_support;
 mod aspect_versions;
 pub use aspect_presence_support::RelationalAspectPresenceSupportDenial;

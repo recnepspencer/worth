@@ -997,3 +997,23 @@ receipt can still name the original branch.
 
 - [Ordinary application entry](../foundations/ordinary-application-front-door.md)
 - [External effects and recovery](application-aftermath-and-recovery.md)
+
+### Current whole-aspect receiving correction (focused qualification)
+
+The private current-contract producer consecutive Undo has now executed PASS
+through7 then3. Six restoration courts next reached unsupported
+`SourceAspectRevision` at overlap selection, on the genuine BODY Retirement aspect.
+The new Native field-set receiver supplies compatible installed scalar/struct
+coordinates and compares complete aspect presence/content at exact fullGEN roots.
+Query includes every corresponding Field writer alongside Lifecycle/WholeAspect;
+strict original revision verification and all canonical cancellation remain.
+
+Reviewer079 cleared the Source. The three Native cases and one QueryExecution
+case passed in two current own-source artifacts, each executed once/nonignored.
+Guidance/context generation and normal boundary/context checks passed without
+generated deltas. Rust is unchanged from the reviewed Source. Equal payload never
+cancels an independent authored write. Immutable adoption and actual private restoration qualification remain pending.
+BODY occurrence is retained. The separate session court passed live SourceDiverged
+and BUndo7, then hit a canonical rational fixture spelling mismatch before AUndo;
+its unchanged exact source equality is preserved by authoring canonical literals.
+No private broad gate, Phase19 or default acceptance follows from this partial proof.

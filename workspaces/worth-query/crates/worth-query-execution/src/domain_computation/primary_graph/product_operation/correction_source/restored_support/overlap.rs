@@ -12,6 +12,8 @@ use worth_relational::facade::runtime::VisibilityProjectionView;
 use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Comparison;
 use worth_relational::facade::transactions::RecordRef;
 
+mod aspect;
+
 pub(super) struct Selection {
     pub(super) keys: ExecutionArray<Key>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -148,9 +150,9 @@ pub(super) fn select(
                     }
                 }
             }
-            Fact::SourceAspectRevision { .. } => {
-                return Err(unsupported("SourceAspectRevision", fact))
-            }
+            Fact::SourceAspectRevision {
+                entity_id, aspect, ..
+            } => aspect::measure(execution, original, target, *entity_id, aspect)?,
             Fact::SourceAdjacencyRevision { anchor, .. } => {
                 if anchor.generation_value() == 0 {
                     return Err(unsupported("adjacency-generation", fact));
@@ -251,6 +253,7 @@ pub(super) fn select(
             Fact::SourceEntity { entity_id }
             | Fact::Entity { entity_id, .. }
             | Fact::SourceFieldRevision { entity_id, .. }
+            | Fact::SourceAspectRevision { entity_id, .. }
             | Fact::Field { entity_id, .. }
             | Fact::AbsentField { entity_id, .. }
             | Fact::RetiredOutputEntity { entity_id, .. } => *entity_id,
@@ -262,6 +265,12 @@ pub(super) fn select(
             scope: Scope::Lifecycle,
         })
         .map_err(array_stop)?;
+        if let Fact::SourceAspectRevision {
+            entity_id, aspect, ..
+        } = fact
+        {
+            aspect::append(execution, original, target, *entity_id, aspect, &mut keys)?;
+        }
         if let Fact::AspectPresence {
             entity_id,
             kind,

@@ -19,6 +19,8 @@ use worth_relational::facade::{
 };
 
 #[cfg(test)]
+mod aspect;
+#[cfg(test)]
 mod retirement;
 
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn require<
@@ -223,6 +225,16 @@ fn compare_fact(
     fact: &Fact,
 ) -> Result<(), Denial> {
     match fact {
+        Fact::SourceAspectRevision {
+            entity_id, aspect, ..
+        } => {
+            if !original_view
+                .compare_entity_aspect_support(&execution, target_view, *entity_id, aspect)
+                .map_err(|cause| Denial::RestoredSupport(Stop::FieldSupport(cause)))?
+            {
+                return Err(Denial::SourceDiverged);
+            }
+        }
         Fact::SourceAdjacencyRevision {
             relation_kind,
             anchor,
