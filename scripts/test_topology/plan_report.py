@@ -11,6 +11,7 @@ def markdown(plan):
     for court in plan['courts']:
         rows.append('| ' + court['name'] + ' | ' + ', '.join(court['frontier']) + ' | ' + str(court['rust_lines'])
                     + ' | ' + ', '.join(court['categories']) + ' |')
+    rows += ['', '## Executable destinations and separation', '', '```json', json.dumps(plan['binary_constraints'], indent=2, sort_keys=True), '```']
     rows += ['', '## Testkits', '']
     for kit in plan['testkits']:
         rows.append('- ' + kit['name'] + ': ' + str(kit['rust_lines']) + ' Rust lines; readers: ' + ', '.join(kit['readers']))

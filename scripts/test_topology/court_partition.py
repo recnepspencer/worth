@@ -91,6 +91,9 @@ def group_courts(units, stem, naming, ceiling=CEILING):
     for unit in units:
         grouped[(tuple(unit['frontier']), tuple(unit.get('required_features', ())), unit.get('custom_harness', ''))].append(unit)
     courts, splits = [], []
+    signatures = defaultdict(set)
+    for frontier, features, custom in grouped:
+        signatures[frontier].add((features, custom))
     for (frontier, features, custom), population in sorted(grouped.items()):
         surface = naming(stem, frontier)
         base = stem + '-court-' + surface
@@ -98,20 +101,16 @@ def group_courts(units, stem, naming, ceiling=CEILING):
         areas = whole_areas(population, ceiling)
         pieces = first_fit_decreasing(areas, ceiling)
         for piece in pieces:
-            area = area_suffix(piece['areas'][0]['path'], surface) if len(pieces) > 1 else ''
+            area = area_suffix(piece['areas'][0]['path'], surface) if len(pieces) > 1 or len(signatures[frontier]) > 1 else ''
             members = [u for a in piece['areas'] for u in a['units']]
             name = base + ('-' + area if area else '')
-            if features:
-                name += '-with-' + '-'.join(features)
-            if custom:
-                name += '-' + custom.replace('_', '-')
             court = {'name': name, 'frontier': list(frontier), 'units': members, 'area': area,
                      'packing_lines': piece['lines'], 'packing_areas': [a['path'] for a in piece['areas']],
                      'required_features': list(features), 'custom_harness': custom}
             courts.append(court)
             for member in members:
                 member['court'] = name
-            if len(pieces) > 1:
+            if area:
                 splits.append({'court': name, 'frontier': list(frontier), 'area': area,
                                'owners': sorted({u['owner_area'] for u in members}), 'delegates': []})
     for split in splits:
