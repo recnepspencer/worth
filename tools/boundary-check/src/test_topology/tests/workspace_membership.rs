@@ -15,7 +15,11 @@ fn law18_refuses_a_second_implicit_target_and_directory_target() {
 #[test]
 fn law18_workspace_membership_does_not_annex_other_workspaces_or_fixtures() {
     let f = Fixture::new();
-    std::fs::remove_file(f.0.join("governed/Cargo.toml")).unwrap();
+    let manifest = std::fs::read_to_string(f.0.join("governed/Cargo.toml")).unwrap();
+    f.write(
+        "governed/Cargo.toml",
+        manifest.strip_prefix("[workspace]\n").unwrap(),
+    );
     f.write(CONFIG, ". | sample\n");
     f.write(
         "Cargo.toml",
@@ -36,7 +40,7 @@ fn law18_workspace_membership_does_not_annex_other_workspaces_or_fixtures() {
     f.write("other/tests/untouched.rs", "#[test] fn untouched() {}");
     let messages = f.messages();
     assert_eq!(messages.len(), 1, "{messages:?}");
-    assert!(messages[0].contains("product crate"));
+    assert!(messages[0].contains("product crate"), "{messages:?}");
 }
 #[test]
 fn law18_implicit_path_dependency_members_cannot_hide_a_second_target() {
