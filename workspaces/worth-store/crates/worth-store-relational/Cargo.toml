@@ -12,6 +12,8 @@ description = "A Relational home on Worth Store: durable canonical commits, chec
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-relational = { path = "../../../../crates/worth-relational" }
+worth-store-physical-format.workspace = true
+worth-store-physical-integrity.workspace = true
 worth-store.workspace = true
 worth-store-recovery-runtime.workspace = true
 
@@ -19,7 +21,6 @@ worth-store-recovery-runtime.workspace = true
 sha2 = "0.10"
 tempfile = "3"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
-worth-store-physical-format.workspace = true
 
 [features]
 certification-test-authority = [

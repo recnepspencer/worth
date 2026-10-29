@@ -113,7 +113,7 @@ fn block(
     let AdmittedPlatformAuthority { media, session, .. } = input.authority;
     drop(media);
     session.block();
-    PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
+    PhysicalRecoveryOutcome::Blocked(Box::new(PhysicalRecoveryBlock::new(
         crate::entry::PhysicalRecoveryBlockCause::Damage(PhysicalRecoveryBlockKind::Staging),
         store,
         session_identity,
@@ -130,7 +130,7 @@ fn block(
             ..PhysicalRecoveryBlockEvidence::default()
         },
         recovery_effects,
-    ))
+    )))
 }
 
 fn empty_execution(

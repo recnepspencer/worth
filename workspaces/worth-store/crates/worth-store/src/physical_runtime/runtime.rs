@@ -81,6 +81,15 @@ impl AdmittedPhysicalRuntime {
         super::media_ownership::try_admit(self, admission)
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub fn try_admit_initializing_home_media(
+        self,
+        home: worth_store_physical_backend::QualifiedRecoveryFilesystemMedia,
+        admission: super::FilesystemMediaAdmission,
+    ) -> super::MediaAdmissionOutcome {
+        super::media_ownership::admit_home(self, admission, home)
+    }
+
     pub(super) fn into_core(self) -> PhysicalRuntimeCore {
         self.core
     }

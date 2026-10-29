@@ -19,7 +19,7 @@ fn two_completed_releases_without_ordinary_tail_serve_checkpoint_and_reopen_exac
                 panic!("real pending second release must recover")
             };
             assert!(handoff.core().recovery_effect_count() > 0);
-            let seal = handoff.into_core().into_checkpoint_custody().unwrap();
+            let seal = handoff.into_core().certification_release_media_into_checkpoint_custody().unwrap();
             let serving = certified_release_serving::admit_serving_with_seal(world.root(), seal);
             serving.close();
             let selected = selected_generation(world.root());
@@ -45,7 +45,7 @@ fn two_completed_releases_without_ordinary_tail_serve_checkpoint_and_reopen_exac
                 "completed releases must not be repeated");
             assert_eq!(selected_generation(world.root()), selected);
             assert_eq!(fs::read(world.root().join("families/checkpoint.current")).unwrap(), checkpoint);
-            let seal = handoff.into_core().into_checkpoint_custody()
+            let seal = handoff.into_core().certification_release_media_into_checkpoint_custody()
                 .expect("independently verified completed history must issue a seal");
             let allocations = seal.certification_residency_allocations();
             let recovery = worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(
@@ -67,7 +67,7 @@ fn two_completed_releases_without_ordinary_tail_serve_checkpoint_and_reopen_exac
                 panic!("completed-history checkpoint must freshly recover")
             };
             assert_eq!(handoff.core().recovery_effect_count(), 0);
-            let seal = handoff.into_core().into_checkpoint_custody().unwrap();
+            let seal = handoff.into_core().certification_release_media_into_checkpoint_custody().unwrap();
             certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
             assert_eq!(selected_root_heads(world.root()), expected_heads,
                 "fresh Serving must preserve exact A/B custody");

@@ -6,12 +6,14 @@ use worth_store_recovery_physics::{PhysicalRedoTargetIdentity, RecoveryPlanningC
 
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
+/// Terminal recovery payloads use bounded heap storage, so schema width does
+/// not inflate every outcome while it is matched or returned.
 #[derive(Debug)]
 pub enum PhysicalRecoveryOutcome {
-    Recovered(crate::handoff::RecoveredPhysicalRuntimeHandoff),
-    Refused(PhysicalRecoveryRefusal),
-    Blocked(PhysicalRecoveryBlock),
-    PublicationIndeterminate(PhysicalRecoveryPublicationIndeterminate),
+    Recovered(Box<crate::handoff::RecoveredPhysicalRuntimeHandoff>),
+    Refused(Box<PhysicalRecoveryRefusal>),
+    Blocked(Box<PhysicalRecoveryBlock>),
+    PublicationIndeterminate(Box<PhysicalRecoveryPublicationIndeterminate>),
 }
 
 impl PhysicalRecoveryOutcome {
@@ -20,9 +22,9 @@ impl PhysicalRecoveryOutcome {
         observations: super::PhysicalRecoveryIntegrityObservations,
     ) -> Self {
         match self {
-            Self::Blocked(blocked) => {
-                Self::Blocked(blocked.with_integrity_observations(observations))
-            }
+            Self::Blocked(blocked) => Self::Blocked(Box::new(
+                (*blocked).with_integrity_observations(observations),
+            )),
             _ => unreachable!("planning denial construction always yields a blocked outcome"),
         }
     }
@@ -368,10 +370,12 @@ impl PhysicalRecoveryOutcome {
                 block.evidence.integrity_trace.append(trace);
                 Self::Blocked(block)
             }
-            Self::Refused(refusal) => Self::Refused(refusal.with_integrity_trace(trace)),
-            Self::PublicationIndeterminate(indeterminate) => {
-                Self::PublicationIndeterminate(indeterminate.with_integrity_trace(trace))
+            Self::Refused(refusal) => {
+                Self::Refused(Box::new((*refusal).with_integrity_trace(trace)))
             }
+            Self::PublicationIndeterminate(indeterminate) => Self::PublicationIndeterminate(
+                Box::new((*indeterminate).with_integrity_trace(trace)),
+            ),
             Self::Recovered(recovered) => Self::Recovered(recovered),
         }
     }

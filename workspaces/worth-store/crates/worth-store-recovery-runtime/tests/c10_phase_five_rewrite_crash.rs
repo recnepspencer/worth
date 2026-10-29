@@ -319,7 +319,7 @@ fn recover(root: &Path) -> worth_store_recovery_runtime::RecoveredPhysicalRuntim
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("killed rewrite must recover");
     };
-    handoff
+    *handoff
 }
 
 fn retirements(

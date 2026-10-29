@@ -207,7 +207,7 @@ fn pending_wal_world_reaches_verified_c8_and_sealed_serving() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("C8 pending V3 custody seal");
     super::certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 }
@@ -240,7 +240,7 @@ fn second_v3_descriptor_after_certified_retirement_checkpoint_is_durable() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("second V3 selected custody seal");
     super::certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 }
@@ -280,7 +280,7 @@ fn distinct_v3_descriptor_before_checkpoint_is_durable() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("two-batch C8/Store custody seal");
     super::certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 }

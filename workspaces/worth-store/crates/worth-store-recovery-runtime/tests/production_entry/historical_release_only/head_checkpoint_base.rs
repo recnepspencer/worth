@@ -25,7 +25,10 @@ fn run() {
     // Serving, which then publishes the first head-bearing checkpoint.
     let first = recover(root, "A pending WAL");
     assert!(first.core().recovery_effect_count() > 0);
-    let seal = first.into_core().into_checkpoint_custody().unwrap();
+    let seal = first
+        .into_core()
+        .certification_release_media_into_checkpoint_custody()
+        .unwrap();
     let serving = certified_release_serving::admit_serving_with_seal(root, seal);
     checkpoint(&serving, [0xca; 32]);
     serving.close();
@@ -51,7 +54,10 @@ fn run() {
 
     let second = recover(root, "B pending WAL");
     assert!(second.core().recovery_effect_count() > 0);
-    let seal = second.into_core().into_checkpoint_custody().unwrap();
+    let seal = second
+        .into_core()
+        .certification_release_media_into_checkpoint_custody()
+        .unwrap();
     certified_release_serving::admit_serving_with_seal(root, seal).close();
     let selected = selected_generation(root);
     let expected_heads = completed_tip::selected_root_heads(root);
@@ -83,7 +89,10 @@ fn run() {
         fs::read(root.join("families/checkpoint.current")).unwrap(),
         checkpoint_bytes
     );
-    let seal = completed.into_core().into_checkpoint_custody().unwrap();
+    let seal = completed
+        .into_core()
+        .certification_release_media_into_checkpoint_custody()
+        .unwrap();
     let serving = certified_release_serving::admit_serving_with_seal(root, seal);
     checkpoint(&serving, [0xcb; 32]);
     serving.close();
@@ -98,7 +107,10 @@ fn run() {
     );
     let final_reopen = recover(root, "head-bearing successor checkpoint");
     assert_eq!(final_reopen.core().recovery_effect_count(), 0);
-    let seal = final_reopen.into_core().into_checkpoint_custody().unwrap();
+    let seal = final_reopen
+        .into_core()
+        .certification_release_media_into_checkpoint_custody()
+        .unwrap();
     certified_release_serving::open_serving_with_seal_without_checkpoint(root, seal);
 }
 
@@ -107,7 +119,7 @@ fn recover(
     stage: &str,
 ) -> worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff {
     match WorthStoreRecovery::recover(certified_release_serving::request(root)) {
-        PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
+        PhysicalRecoveryOutcome::Recovered(handoff) => *handoff,
         PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "{stage} blocked: kind={:?}; artifact={:?}; cause={:?}; effects={}",
             block.cause(),

@@ -192,7 +192,7 @@ fn kill_after_final_wal(directory: &Path) {
 
 fn recover(root: &Path) -> RecoveredPhysicalRuntimeHandoff {
     match WorthStoreRecovery::recover(recovery_request(root)) {
-        PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
+        PhysicalRecoveryOutcome::Recovered(handoff) => *handoff,
         outcome => panic!("final copy recovery blocked: {outcome:?}"),
     }
 }

@@ -1,3 +1,4 @@
+mod anchor_table;
 use super::super::{
     OfflineIntegrityObservationCounters, OfflineIntegrityOutcome, OfflinePhysicalDamageCause,
     OfflinePhysicalFormatField,
@@ -19,6 +20,7 @@ pub(crate) fn expected_root_manifest_bytes(bytes: &[u8]) -> usize {
         Some(4 | 5) => DIRECTORY_BOUND_ROOT_MANIFEST_BYTES,
         Some(6 | 7) => QUARANTINE_BOUND_ROOT_MANIFEST_BYTES,
         Some(9) => TIER_ANCHORED_ROOT_MANIFEST_BYTES,
+        Some(12) => 3808,
         _ => ROOT_MANIFEST_BYTES,
     }
 }
@@ -100,7 +102,10 @@ pub(crate) fn read_root_manifest(
         next_block,
         next_segment_block,
     )?;
-    let anchored = bytes[9] == 9;
+    let anchored = bytes[9] >= 9;
+    if bytes[9] == 12 {
+        anchor_table::validate(frame.payload)?;
+    }
     if frame.payload.len() >= 496 {
         validate_derived_directory_binding(frame.payload, generation, !anchored)?;
     }
@@ -109,15 +114,16 @@ pub(crate) fn read_root_manifest(
     }
     let tier_epoch_anchor = if anchored {
         let anchor: [u8; 32] = frame.payload[528..560].try_into().expect("schema9 width");
-        if anchor == [0; 32] {
+        if anchor == [0; 32] && bytes[9] == 9 {
             return Err(malformed_manifest());
         }
-        Some(anchor)
+        (anchor != [0; 32]).then_some(anchor)
     } else {
         None
     };
     let mut payload = [0; 560];
-    payload[..frame.payload.len()].copy_from_slice(frame.payload);
+    let retained = frame.payload.len().min(payload.len());
+    payload[..retained].copy_from_slice(&frame.payload[..retained]);
     Ok(OfflineRootManifestFacts {
         generation,
         format: frame.format,
@@ -380,3 +386,6 @@ fn pointer_damage(offset: u64, length: u64) -> OfflineIntegrityOutcome {
         super::super::OfflinePhysicalBlastRadius::ReachableRootSubtree,
     ))
 }
+
+#[cfg(test)]
+mod schema_twelve_tests;

@@ -19,7 +19,7 @@ fn pending_v3_sealed_serving_can_checkpoint_the_recovered_release() {
             };
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("pending V3 selected custody seal");
             open_serving_with_seal(&root, seal);
             let after = std::fs::read(&checkpoint_path).expect("selected release checkpoint");

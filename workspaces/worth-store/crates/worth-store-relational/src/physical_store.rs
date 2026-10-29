@@ -2,7 +2,9 @@
 //! only ever recovered. A home never opens a Store that recovery has not
 //! admitted, and never initializes over existing data.
 
+mod media_admission;
 mod profile;
+mod recovery_refusal;
 
 pub(crate) use profile::placement;
 #[cfg(feature = "certification-test-authority")]
@@ -14,12 +16,12 @@ use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, MediaOwnedPhysicalRuntime,
     PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalRecoveryProcessYieldpoint,
-    PhysicalRuntimeAdmission, PhysicalStore, RecoveredPhysicalCheckpointCustody,
+    PhysicalRuntimeAdmission, PhysicalStore, RecoveredPhysicalServingHandoff,
     ServingPhysicalRuntime,
 };
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimits, PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome,
-    PhysicalRecoveryPlatformAuthority, WorthStoreRecovery,
+    PhysicalRecoveryPlatformAdmissionError, PhysicalRecoveryPlatformAuthority, WorthStoreRecovery,
 };
 
 /// Which physical step refused, so a caller can tell an unusable location
@@ -41,6 +43,8 @@ pub enum RelationalStorePhysicalStage {
 pub struct RelationalStorePhysicalRefusal {
     stage: RelationalStorePhysicalStage,
     detail: String,
+    kind: RelationalStorePhysicalRefusalKind,
+    recovery_effects: Option<u64>,
 }
 
 impl RelationalStorePhysicalRefusal {
@@ -48,7 +52,18 @@ impl RelationalStorePhysicalRefusal {
         Self {
             stage,
             detail: detail.into(),
+            kind: RelationalStorePhysicalRefusalKind::PhysicalStep,
+            recovery_effects: None,
         }
+    }
+
+    /// Recovery effects already performed when the physical refusal was decided.
+    pub fn recovery_effects(&self) -> Option<u64> {
+        self.recovery_effects
+    }
+
+    pub fn kind(&self) -> RelationalStorePhysicalRefusalKind {
+        self.kind
     }
 
     pub fn stage(&self) -> RelationalStorePhysicalStage {
@@ -58,6 +73,13 @@ impl RelationalStorePhysicalRefusal {
     pub fn detail(&self) -> &str {
         &self.detail
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RelationalStorePhysicalRefusalKind {
+    PhysicalStep,
+    MutationOwnerContended,
+    UnsupportedRootSchema { observed: u32 },
 }
 
 type Refusal = RelationalStorePhysicalRefusal;
@@ -99,18 +121,23 @@ impl PhysicalOpening {
 }
 
 /// Create a new, empty Store at `root`.
+#[cfg(test)]
 pub(crate) fn initialize(
     root: &Path,
     opening: PhysicalOpening,
 ) -> Result<ServingPhysicalRuntime, Refusal> {
-    let media = admit_media(root, opening.media)?;
-    let durability = admit_durability(&media)?;
+    initialize_owned(media_admission::admit_fresh(root, opening.media)?)
+}
+
+fn initialize_owned(media: MediaOwnedPhysicalRuntime) -> Result<ServingPhysicalRuntime, Refusal> {
+    let durability = admit_durability(media.physical_durability_admission_basis())?;
     let request = PhysicalRecordInitialization::new(
         profile::record_format(),
         profile::placement(),
         profile::access(),
         durability,
-    );
+    )
+    .with_journal_registry(crate::journal_registry::registry());
     match media.initialize_record_store(request).into_raw() {
         TransitionOutcome::Success(serving) => Ok(serving),
         TransitionOutcome::Denied(denial) => {
@@ -127,18 +154,37 @@ pub(crate) fn initialize(
 
 /// Recover the Store at `root` through the production recovery entry and
 /// open it for serving under the custody recovery established.
-pub(crate) fn recover(
+fn recover(
     root: &Path,
     opening: PhysicalOpening,
+    held: worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
 ) -> Result<ServingPhysicalRuntime, Refusal> {
-    let custody = recover_custody(root, opening.recovery_yieldpoint)?;
-    let media = admit_media(root, opening.media)?;
-    let durability = admit_durability(&media)?;
-    let open = PhysicalRecordOpen::new(profile::record_format(), profile::access(), durability);
-    let open = match custody {
-        Some(custody) => open.with_recovered_checkpoint_custody(custody),
-        None => open,
+    let handoff = recover_custody(root, opening.recovery_yieldpoint.clone(), held)?;
+    if let Some(yieldpoint) = &opening.recovery_yieldpoint
+        && yieldpoint
+            .pause_after(
+                worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::ServingHandoff,
+            )
+            .is_interrupted()
+    {
+        return Err(Refusal::new(Stage::Recovery, "serving handoff interrupted"));
+    }
+    let admission = PhysicalRuntimeAdmission::new(root)
+        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
+    let runtime = PhysicalStore::admit(admission)
+        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
+    let media = match handoff.admit_serving(runtime, opening.media).into_raw() {
+        TransitionOutcome::Success(media) => media,
+        other => {
+            return Err(Refusal::new(
+                Stage::MediaAdmission,
+                unfinished_outcome(&other),
+            ))
+        }
     };
+    let durability = admit_durability(media.physical_durability_admission_basis())?;
+    let open = PhysicalRecordOpen::new(profile::record_format(), profile::access(), durability)
+        .with_journal_registry(crate::journal_registry::registry());
     match media.open_record_store(open).into_raw() {
         TransitionOutcome::Success(serving) => Ok(serving),
         TransitionOutcome::Denied(denial) => {
@@ -156,13 +202,18 @@ pub(crate) fn recover(
 fn recover_custody(
     root: &Path,
     yieldpoint: Option<PhysicalRecoveryProcessYieldpoint>,
-) -> Result<Option<RecoveredPhysicalCheckpointCustody>, Refusal> {
+    media: worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
+) -> Result<RecoveredPhysicalServingHandoff, Refusal> {
     let limits = PhysicalRecoveryLimits::admit(profile::recovery_limits())
         .map_err(|denial| Refusal::new(Stage::RecoveryAdmission, format!("{denial:?}")))?;
     let configuration = profile::recovery_configuration();
-    let authority =
-        PhysicalRecoveryPlatformAuthority::acquire(root.to_owned(), configuration.clone(), limits)
-            .map_err(|error| Refusal::new(Stage::RecoveryAdmission, format!("{error:?}")))?;
+    let authority = PhysicalRecoveryPlatformAuthority::from_held_media(
+        root.to_owned(),
+        configuration.clone(),
+        limits,
+        media,
+    )
+    .map_err(recovery_admission_refusal)?;
     let backend = authority.qualified_backend_profile().clone();
     let request = PhysicalRecoveryOpenRequest::declare(
         root.to_owned(),
@@ -178,32 +229,11 @@ fn recover_custody(
         }
     };
     match outcome {
-        PhysicalRecoveryOutcome::Recovered(handoff) => {
-            Ok(handoff.into_core().into_checkpoint_custody())
-        }
-        other => Err(Refusal::new(Stage::Recovery, format!("{other:?}"))),
-    }
-}
-
-fn admit_media(
-    root: &Path,
-    media: FilesystemMediaAdmission,
-) -> Result<MediaOwnedPhysicalRuntime, Refusal> {
-    let admission = PhysicalRuntimeAdmission::new(root)
-        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
-    let runtime = PhysicalStore::admit(admission)
-        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
-    match runtime.try_admit_filesystem_media(media).into_raw() {
-        TransitionOutcome::Success(media) => Ok(media),
-        TransitionOutcome::Denied(denial) => {
-            let reason = format!("{:?}", denial.reason());
-            denial.into_runtime().close();
-            Err(Refusal::new(Stage::MediaAdmission, reason))
-        }
-        _ => Err(Refusal::new(
-            Stage::MediaAdmission,
-            "filesystem media admission did not complete",
-        )),
+        PhysicalRecoveryOutcome::Recovered(handoff) => handoff
+            .into_core()
+            .into_serving_handoff()
+            .ok_or_else(|| Refusal::new(Stage::Recovery, "selected custody missing")),
+        other => Err(recovery_refusal::classify(other)),
     }
 }
 
@@ -223,16 +253,53 @@ pub(crate) fn unfinished_outcome<S, D, Def, St, Reb, F>(
 }
 
 fn admit_durability(
-    media: &MediaOwnedPhysicalRuntime,
+    basis: Result<
+        worth_store::physical_runtime::PhysicalDurabilityAdmissionBasis,
+        worth_store::physical_runtime::BackendCapabilityAdmissionDenial,
+    >,
 ) -> Result<worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy, Refusal> {
-    let basis = media
-        .physical_durability_admission_basis()
-        .map_err(|error| Refusal::new(Stage::DurabilityAdmission, format!("{error:?}")))?;
+    let basis =
+        basis.map_err(|error| Refusal::new(Stage::DurabilityAdmission, format!("{error:?}")))?;
     match profile::durability().admit(basis).into_raw() {
         TransitionOutcome::Success(policy) => Ok(policy),
         other => Err(Refusal::new(
             Stage::DurabilityAdmission,
             unfinished_outcome(&other),
         )),
+    }
+}
+
+fn recovery_admission_refusal(error: PhysicalRecoveryPlatformAdmissionError) -> Refusal {
+    let mut refusal = Refusal::new(Stage::RecoveryAdmission, format!("{error:?}"));
+    if let PhysicalRecoveryPlatformAdmissionError::BackendQualification(cause) = error {
+        use worth_store::physical_runtime::RecoveryFilesystemQualificationError as Cause;
+        if cause == Cause::OwnershipContended {
+            refusal.kind = RelationalStorePhysicalRefusalKind::MutationOwnerContended;
+        }
+    }
+    refusal
+}
+
+pub(crate) fn open(
+    root: &Path,
+    opening: PhysicalOpening,
+) -> Result<ServingPhysicalRuntime, Refusal> {
+    std::fs::create_dir_all(root)
+        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, error.to_string()))?;
+    let held = opening.media.qualify_home(root).map_err(|error| {
+        recovery_admission_refusal(
+            PhysicalRecoveryPlatformAdmissionError::BackendQualification(error),
+        )
+    })?;
+    match held
+        .store_presence()
+        .map_err(|error| Refusal::new(Stage::RecoveryAdmission, format!("{error:?}")))?
+    {
+        worth_store::physical_runtime::RecoveryStorePresence::ProvenAbsent => initialize_owned(
+            media_admission::admit_for_initialization(root, held, opening.media)?,
+        ),
+        worth_store::physical_runtime::RecoveryStorePresence::ExistingArtifacts => {
+            recover(root, opening, held)
+        }
     }
 }

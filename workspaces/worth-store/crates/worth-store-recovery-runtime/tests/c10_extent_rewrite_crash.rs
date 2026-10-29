@@ -331,7 +331,7 @@ fn recover_until_settled(marker: &Path, root: &Path) -> ((Vec<u8>, u64), (Vec<u8
 
 fn recover(root: &Path) -> RecoveredPhysicalRuntimeHandoff {
     match WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits())) {
-        PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
+        PhysicalRecoveryOutcome::Recovered(handoff) => *handoff,
         _ => panic!("killed extent rewrite must recover"),
     }
 }

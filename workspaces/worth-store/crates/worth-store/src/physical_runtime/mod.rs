@@ -225,18 +225,13 @@ pub use ordered_journal::{
     OrderedJournal, OrderedJournalDenial, OrderedJournalEntry, OrderedJournalName,
     OrderedJournalNameDenial, OrderedJournalPayload, OrderedJournalPublication,
     OrderedJournalPublicationFailure, OrderedJournalPublished, OrderedJournalReadFailure,
-    OrderedJournalResolution, RELATIONAL_BRANCH_TRANSITIONS, RELATIONAL_CANONICAL_COMMITS,
+    OrderedJournalRegistry, OrderedJournalRegistryDenial, OrderedJournalResolution,
+    RELATIONAL_BRANCH_TRANSITIONS, RELATIONAL_CANONICAL_COMMITS,
 };
 pub use record_serving::PhysicalIntegrityScrubReadDeferral;
 pub use record_serving::*;
 #[cfg(feature = "recovery-runtime-owner")]
-pub use recovery_construction::{
-    ExceededSelectedWalInventoryBound, PhysicalRecoveryConstructionAuthority,
-    PhysicalRecoveryConstructionPort, PhysicalRecoveryRejoinResidentBoundary,
-    PhysicalRecoverySelectedRejoinMismatch, PhysicalRecoveryWalResidentStage,
-    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
-    SelectedWalInventoryBound,
-};
+pub use recovery_construction::*;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_coordination::{
     AbsentCheckpointWitness, ClosedPhysicalRecoveryCleanup,
@@ -367,8 +362,8 @@ pub use worth_store_physical_backend::{
     RecoveryFilesystemQualificationError, RecoveryReopenReadOutcome,
     RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
     RecoveryStagingIndeterminatePhysical, RecoveryStagingWriteDisposition,
-    RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity, StreamArtifact, Uncharged,
-    UnchargedRead, WalInventoryOutcome,
+    RecoveryStagingWriteOutcome, RecoveryStorePresence, RecoveryWalObservationIdentity,
+    StreamArtifact, Uncharged, UnchargedRead, WalInventoryOutcome,
 };
 
 pub use work::PhysicalEffectRecoveryObligation;
@@ -397,3 +392,7 @@ pub mod production {
         PhysicalMutationPauseGate,
     };
 }
+
+pub use worth_store_physical_backend::{
+    BackendCapabilityAdmissionDenial, PhysicalDurabilityAdmissionBasis,
+};

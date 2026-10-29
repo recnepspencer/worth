@@ -54,19 +54,24 @@ fn advances_are_sequential_compare_and_set() {
 #[test]
 fn tables_stay_sorted_and_bounded() {
     let mut table = RecordAnchorTable::EMPTY;
-    for anchor in ["d", "b", "c", "a"] {
-        table = table.advanced(advance(anchor, 0, 1)).unwrap();
+    for index in (0..32).rev() {
+        table = table
+            .advanced(advance(&format!("a{index:02}"), 0, 1))
+            .unwrap();
     }
     let names: Vec<_> = table
         .iter()
         .map(|anchor| anchor.name().as_str().to_owned())
         .collect();
-    assert_eq!(names, ["a", "b", "c", "d"]);
     assert_eq!(
-        table.advanced(advance("e", 0, 1)),
+        names,
+        (0..32).map(|i| format!("a{i:02}")).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        table.advanced(advance("overflow", 0, 1)),
         Err(RecordAnchorAdvanceDenial::TableFull)
     );
-    assert!(table.advanced(advance("c", 1, 2)).is_ok());
+    assert!(table.advanced(advance("a31", 1, 2)).is_ok());
 }
 
 #[test]
@@ -125,7 +130,7 @@ mod root_layout {
     }
 
     #[test]
-    fn anchored_roots_use_schema_eleven_and_round_trip() {
+    fn anchored_roots_use_schema_twelve_and_round_trip() {
         let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
         let anchors = RecordAnchorTable::EMPTY
             .advanced(advance("journal", 0, 2))
@@ -133,13 +138,13 @@ mod root_layout {
         let root = anchored_root(anchors).unwrap();
         let bytes = root.encode(format);
         assert_eq!(bytes.len(), root.encoded_frame_bytes());
-        assert_eq!(bytes[9], 11);
+        assert_eq!(bytes[9], 12);
         let (decoded, _) = DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
         assert_eq!(decoded, root);
         assert_eq!(decoded.record_anchors(), anchors);
 
         let plain = anchored_root(RecordAnchorTable::EMPTY).unwrap();
-        assert_ne!(plain.encode(format)[9], 11);
+        assert_ne!(plain.encode(format)[9], 12);
         assert!(DurablePhysicalRootManifest::maximum_encoding_scratch_bytes() >= bytes.len());
     }
 
@@ -152,7 +157,7 @@ mod root_layout {
     }
 
     #[test]
-    fn schema_eleven_refuses_an_empty_or_damaged_table() {
+    fn schema_twelve_refuses_an_empty_or_damaged_table() {
         let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
         let anchors = RecordAnchorTable::EMPTY
             .advanced(advance("journal", 0, 2))

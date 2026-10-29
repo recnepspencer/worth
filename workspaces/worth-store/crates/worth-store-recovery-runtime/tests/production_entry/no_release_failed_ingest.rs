@@ -132,7 +132,7 @@ fn exercise(tier: bool, mutate_after_seal: bool) {
                 .expect("genuine selected failed-ingest descriptor");
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("positive NoRelease serving seal");
             if mutate_after_seal {
                 alter_selected_control(&root, control);

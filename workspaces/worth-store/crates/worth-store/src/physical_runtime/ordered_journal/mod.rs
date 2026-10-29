@@ -27,8 +27,9 @@ mod frame;
 mod lookup;
 mod name;
 mod publication;
+mod registry;
+pub use registry::{OrderedJournalRegistry, OrderedJournalRegistryDenial};
 
-pub(in crate::physical_runtime) use name::is_ordered_journal_name;
 pub use name::{
     OrderedJournalName, OrderedJournalNameDenial, RELATIONAL_BRANCH_TRANSITIONS,
     RELATIONAL_CANONICAL_COMMITS,
@@ -223,6 +224,7 @@ pub enum OrderedJournalReadFailure {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum OrderedJournalDenial {
+    Unregistered,
     ServingRequiresInspection,
 }
 

@@ -1,5 +1,6 @@
 mod canonical_durability;
 mod configuration;
+mod journal_registry;
 mod observed_allocation;
 mod record_chunk_world;
 #[cfg(test)]
