@@ -163,8 +163,14 @@ pub(super) fn select(
             Fact::Aggregate { .. } => return Err(unsupported("Aggregate", fact)),
             Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection", fact)),
             Fact::SourcePublication { .. } => return Err(unsupported("SourcePublication", fact)),
-            Fact::RetiredOutputEntity { .. } => {
-                return Err(unsupported("RetiredOutputEntity", fact))
+            Fact::RetiredOutputEntity { entity_id, .. } => {
+                if entity_id.generation_value() == 0 {
+                    return Err(unsupported("retirement-generation", fact));
+                }
+                // The sealer records the exact committed retirement tuple.
+                // Lifecycle occurrences are selected here; strict original and
+                // target comparison still read that same full-GEN retirement.
+                (1, 0)
             }
             Fact::WorkflowDefinitionPredecessor { .. } => {
                 return Err(unsupported("WorkflowDefinitionPredecessor", fact))
@@ -246,7 +252,8 @@ pub(super) fn select(
             | Fact::Entity { entity_id, .. }
             | Fact::SourceFieldRevision { entity_id, .. }
             | Fact::Field { entity_id, .. }
-            | Fact::AbsentField { entity_id, .. } => *entity_id,
+            | Fact::AbsentField { entity_id, .. }
+            | Fact::RetiredOutputEntity { entity_id, .. } => *entity_id,
             Fact::AspectPresence { entity_id, .. } => *entity_id,
             _ => unreachable!("fully projected above"),
         };

@@ -18,6 +18,9 @@ use worth_relational::facade::{
     history::RelationalAuthoredWritePageLimits, runtime::RelationalRuntime,
 };
 
+#[cfg(test)]
+mod retirement;
+
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn require<
     Schema: ApplicationSchema,
 >(

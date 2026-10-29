@@ -6,9 +6,22 @@ use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 
 #[test]
 fn aba_requires_current_producer_receipt_and_full_generation_output_lineage() {
+    aba("intervening", "INTERVENING");
+}
+
+#[test]
+fn equivalent_outputs_cannot_reuse_an_earlier_same_producer_source_epoch() {
+    // The genuine producer uppercases the title. Source A and B differ while
+    // their produced values are equal; each actual Preserve publication must
+    // still supersede its old receipt, including on the return to A.
+    aba("ASSEMBLY β", "ASSEMBLY Β");
+}
+
+fn aba(b_title: &str, b_caption: &str) {
     let a = model::authored_value();
     let mut b = a.clone();
-    b.title = "intervening".into();
+    b.title = b_title.into();
+    assert_ne!(a, b);
     let application = host::install(a.clone()).unwrap();
     let source_id = host::source_id(&application);
     let scope = request_scope();
@@ -46,7 +59,7 @@ fn aba_requires_current_producer_receipt_and_full_generation_output_lineage() {
     assert_eq!(
         host::read_derived(&application),
         output::DerivedV1 {
-            caption: "INTERVENING".into(),
+            caption: b_caption.into(),
             rank_sum: 12,
             tags: vec!["left".into(), "right".into()],
         }
@@ -158,7 +171,7 @@ fn aba_requires_current_producer_receipt_and_full_generation_output_lineage() {
     assert_eq!(
         host::read_derived(&application),
         output::DerivedV1 {
-            caption: "INTERVENING".into(),
+            caption: b_caption.into(),
             rank_sum: 12,
             tags: vec!["left".into(), "right".into()],
         }

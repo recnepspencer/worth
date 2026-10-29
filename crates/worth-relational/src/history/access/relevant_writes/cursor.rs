@@ -4,7 +4,7 @@ use super::page::{
 };
 use super::{RelationalAuthoredWriteDenial as Denial, RelationalAuthoredWriteSelector as Key};
 use crate::branch::AdmittedRelationalBranchBasis;
-use crate::change_source::{RelationalRetainedObservation, RelationalSelectedCommit};
+use crate::change_source::RelationalSelectedCommit;
 use crate::history::data::CommitId;
 use crate::runtime::{AuthoredWriteGeneration, RelationalRuntime};
 use std::sync::Arc;
@@ -23,8 +23,8 @@ pub(super) struct RetainedAuthoredWriteSelection {
     generation: AuthoredWriteGeneration,
     keys: worth_execution::ExecutionArray<Key>,
     _key_memory: Option<worth_execution::ExecutionMemoryReservation>,
-    _original: RelationalRetainedObservation,
-    target: RelationalRetainedObservation,
+    _original: AdmittedRelationalBranchBasis,
+    target: AdmittedRelationalBranchBasis,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -174,12 +174,11 @@ impl RelationalRuntime {
                 super::ordered_visit(context, 0, bytes)?;
                 keys.push(key.clone())?;
             }
-            let original = self
-                .retain_observation_snapshot(original)
-                .map_err(Denial::Retention)?;
-            let target = self
-                .retain_observation_snapshot(&target.observation().admitted_basis())
-                .map_err(Denial::Retention)?;
+            // These sealed bases already own immutable root/history custody.
+            // Sharing it must not readmit a historical commit's closed branch
+            // as a live branch or acquire a second snapshot/retention identity.
+            let original = original.clone();
+            let target = target.observation().admitted_basis();
             Ok(RelationalAuthoredWriteCursor {
                 source: Arc::new(RetainedAuthoredWriteSelection {
                     generation,

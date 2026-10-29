@@ -764,6 +764,24 @@ field because lowering can initialize the aspect. Struct field patches preserve
 the aspect container. Both the original and target presence booleans must still
 match the captured fact; canonical cancellation remains required even when the
 boolean never changed. A changed binding refuses before correction effects.
+The receiving path also selects a sealed retired output's exact
+full-generation entity Lifecycle. Original and target reads must both prove
+its actual kind, creation version and deletion version through Native's
+request-taking retirement reader. Missing or live records and different
+generations cannot supply that tuple. A replacement's live fields never supply
+the retired entity's former payload; the declared recorded inverse still owns
+the authored fields used for a fresh physical restoration. Canonical overlap
+and cancellation remain required before this comparison.
+
+Historical authored-write cursors now share the original and target's already
+admitted immutable basis custody. Closing either live branch does not require
+reopening it to read that selected history. Runtime affinity, exact selected
+commit/prefix, full-generation coverage, request and canonical-storage checks
+remain in force, and the last cursor releases its custody. Fresh live-branch
+admission still refuses a closed branch. Current focused qualification passed Native4, QueryExecution2 and eight public
+application cases, including these two receiving courts. These public results
+do not establish private correction success.
+
 Native resolves the actual single-field Authoritative or Planned index descriptor;
 Query preserves that descriptor rather than relabeling it as permission.
 The latter include exact positive and empty index support: authored equal-key
@@ -880,17 +898,39 @@ failure remains retained. Current normal guidance and context generation,
 complete generated-delta inspection, boundary check and context check pass.
 There was no generated or facade snapshot delta. Unchanged Native history and
 publication proofs and the 146 unaffected doctests carry their actual prior
-results; they were not rerun or counted as new proof. Final evidence review and
-a qualified immutable adoption remain pending; Phase19 remains open.
+results; they were not rerun or counted as new proof. Those results qualified
+immutable fa357, followed by reviewed private adoption and the diagnostic run
+below. Reviewer070 cleared the receiving Source; its focused public qualification
+passed as recorded below. Phase19 remains open.
 
 The existing passive observer retains the first correction rejection stage,
 exact fact coordinate when known and typed denial before consumer categorization.
 Returned publication errors retain predecessor/candidate relation and basis
-context. Private Entry remains failed; its six unsupported classes, first
-producer rejection, session Native subtype and exact CAD incomplete-history
-occurrence remain unknown. One focused diagnostic acquisition follows only
-a publicly qualified immutable SDK and separately reviewed adoption. These
-public results authorize no consumer SourceOccurrence/read/inverse cutover.
+context. The single focused private acquisition on immutable fa357 executed all
+ten original cases: two passed and eight failed. Six stop at the explicit
+`RetiredOutputEntity` overlap refusal; their later restoration assertions are
+unreached. Producer B Undo restores parameter7, then paired comparison rejects
+the genuinely read `first_Parameters.SourceOccurrence`; the recorded inverse
+captures Parameters alone. Session history refuses Native retention with
+`UnknownBranch`; which endpoint's retain call failed is not observed. The old
+149 inner causes and incomplete-history ordinal remain unknown. The two current
+private passes and all failure receipts are preserved; no new private result
+is claimed for the current receiving changes.
+
+Query's observed-source commitment includes actual Native versions and the
+complete source footprint. Completed dependencies, the current selected lineage
+head, settlement custody and exact correspondence govern output freshness.
+The additional public court passed SAME-Preserve A/B/A with
+different source values that produce identical outputs. It still requires
+distinct actual receipts, full-generation identity, superseded old settlements
+and unchanged zero-contact retry. Equal produced values do not prove current
+publication. The current qualification passed all14 exact cases once, with none ignored,
+from three verified own-source artifacts. Normal guidance and context generation,
+complete generated-delta inspection, boundary check and context check passed.
+Generation changed no guidance or context content; unchanged146doctests carry
+their prior results. No compiler or fixture correction was needed. Final
+Source/evidence review remains pending. These proofs authorize no consumer
+SourceOccurrence/read/inverse cutover; that requires a separately reviewed coherent consumer contract.
 
 The caller needs current disclosure and current admission for the inverse.
 Another authorized actor can correct the source after the original actor's
