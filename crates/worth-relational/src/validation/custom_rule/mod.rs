@@ -1,6 +1,7 @@
 //! Runtime-bound custom invariant planning and execution.
 
 mod affected_record_filter;
+mod derived_changes;
 mod execution_context;
 mod interruption;
 pub use interruption::CustomInvariantInterruption;

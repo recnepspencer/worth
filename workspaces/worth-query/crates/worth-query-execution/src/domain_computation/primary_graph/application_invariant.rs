@@ -50,7 +50,8 @@ pub use typed_view::{
     WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantReadView,
     WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantScopePlanner,
     WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
-    WorthQueryApplicationInvariantWalkStep,
+    WorthQueryApplicationInvariantWalkStep, WorthQueryInvariantDerivedChanges,
+    WorthQueryPreparedInvariantDerivedChanges,
 };
 
 /// Supplies domain validation without supplying its own installation authority.

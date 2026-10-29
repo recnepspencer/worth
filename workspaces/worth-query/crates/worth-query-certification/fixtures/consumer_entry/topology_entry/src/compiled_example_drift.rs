@@ -59,6 +59,7 @@ fn compiled_examples_match_consumer_documents() {
             "relation_minimum_declaration.rs".to_owned(),
             "planar_invariant/evaluation.rs".to_owned(),
             "invariant_reads.rs".to_owned(),
+            "candidate_source_changes.rs".to_owned(),
             "managed_prefix_index.rs".to_owned(),
             "managed_box_index.rs".to_owned(),
             "checkpoint_recovery/computation_partition/oracle/collection/lifecycle/binding.rs"

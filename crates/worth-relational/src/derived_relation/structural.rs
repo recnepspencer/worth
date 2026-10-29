@@ -14,6 +14,10 @@ use crate::validation::data::{
 };
 use std::sync::Arc;
 
+mod changes;
+pub(crate) use changes::{prepare as prepare_changes, read as read_changes};
+pub use changes::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
+
 impl<'runtime> StructuralRelationView<'runtime> {
     /// Creates only a sealed lookup key, without reading graph data. Evaluation
     /// can therefore reject an unprepared root before any source acquisition.

@@ -5377,7 +5377,7 @@ Existing box geometry, version and independent capability/READ controls remain
 carried. Both the pure numerical closed-box and versioned-prefix providers use
 the same Decl/Host contract and independent scan references. The owning
 [compiled-example inventory test](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/compiled_example_drift.rs)
-passes for all 27 examples, including both provider declarations; mandatory
+passed Phase 1 qualification for its 27 examples, including both provider declarations; mandatory
 boundary and context checks pass. Independent review and Root acceptance establish
 [Phase 1 product/evidence completion](../plans/WORTH-query/milestone-9.19.md#phase-1-declared-providers-and-managed-index-ownership).
 Default integration remains pending. Phases 2–6 remain unfinished: incremental candidate roots, advanced
@@ -5429,6 +5429,50 @@ distinct Source occurrences with equal bounds remain distinct rows. The
 and [governed grant lifecycle](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/authority.rs)
 show ordinary final ordering, explicit rebuild and separate capability/READ
 revocation handling.
+
+### Prepare candidate structural Source changes
+
+An installed invariant's planner can acquire
+`prepare_derived_relation_changes(&binding)` through the existing Native
+before/after source owner. Retain the returned proof in the rule's `Scope`, then
+use `context.derived_relation_changes(&binding, &prepared)` during evaluation.
+Both calls use the genuine current candidate; a descriptor, entity coordinate
+or previous proposal cannot replace that custody. The full recipe's declared
+read and affected kinds govern preparation, and evaluation freshly checks its
+reader audience. Structural inverse-prefix support includes empty adjacency.
+Application code uses the ordinary `worth-query-host` audience. The
+[internal engine handoff](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md#candidate-structural-source-changes)
+describes the corresponding Native boundary.
+
+<!-- compiled: candidate_source_changes.rs -->
+```rust
+pub fn prepare_changes<S, R, F, T>(
+    planner: &WorthQueryApplicationInvariantScopePlanner<'_, '_, S>,
+    binding: &WorthQueryApplicationInvariantDerivedRelationBinding<S, R, F, T>,
+) -> Result<WorthQueryPreparedInvariantDerivedChanges<S, R, F, T>, WorthQueryInvariantAccessDenial>
+{
+    planner.prepare_derived_relation_changes(binding)
+}
+
+pub fn read_changes<S, R, F, T>(
+    context: &WorthQueryApplicationInvariantContext<'_, '_, S>,
+    binding: &WorthQueryApplicationInvariantDerivedRelationBinding<S, R, F, T>,
+    prepared: &WorthQueryPreparedInvariantDerivedChanges<S, R, F, T>,
+) -> Result<usize, WorthQueryInvariantAccessDenial> {
+    Ok(context
+        .derived_relation_changes(binding, prepared)?
+        .affected_roots()
+        .len())
+}
+```
+
+Three focused Native source courts and the owning compiled-example inventory
+test pass for this structural custody prerequisite.
+It does not yet provide incremental managed roots, committed `DecisionReader`
+index reads or atomic graph/root publication. Projected scalar changes also need
+per-entry dependency routing. Those remain Phase 2 obligations; complete
+conservative Source invalidation and the later membership/footprint limits above
+remain unchanged.
 
 ### Ordinary Query resource policies
 

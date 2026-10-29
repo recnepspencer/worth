@@ -6,9 +6,10 @@ pub use crate::aggregate_identity::{
     PreparedAggregateCensus,
 };
 pub use crate::derived_relation::{
-    DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial,
-    DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationReads,
-    DerivedRelationWalkStep, PinnedDerivedRelationRead, PreparedDerivedRelationRead,
+    DerivedRelationAdjacency, DerivedRelationChangeData, DerivedRelationData,
+    DerivedRelationReadDenial, DerivedRelationReadIdentity, DerivedRelationReadShape,
+    DerivedRelationReads, DerivedRelationWalkStep, PinnedDerivedRelationRead,
+    PreparedDerivedRelationChanges, PreparedDerivedRelationRead,
 };
 pub use crate::validation::data::{
     CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,

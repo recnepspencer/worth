@@ -161,6 +161,37 @@ Useful events include:
 
 ## Current Limits
 
+### Candidate Structural Source Changes
+
+The canonical-validation examples above target the internal engine audience.
+Application invariants use `worth-query-decl` and `worth-query-host`, rather
+than the engine facade. The
+[compiled application preparation/evaluation example](../../../../../../docs/build-an-application.md#prepare-candidate-structural-source-changes)
+shows the public handoff: retain paired Native source custody in `prepare_scope`,
+keep `WorthQueryPreparedInvariantDerivedChanges` in the rule's owned `Scope`,
+then reborrow it during `evaluate`.
+
+Native acquires the planner's real record frontier and both before/after relation
+endpoints, then uses its existing inverse-prefix evaluator. Empty support remains
+retained. Preparation requires complete declared read and affected-kind coverage
+of the recipe. Evaluation rechecks the exact installed definition, original
+proposal, both view versions and current reader audience; a retained proof from
+another proposal or a narrower reader refuses. The proof retains source backing
+and its original payer, without retaining an Execution request or granting reads
+from descriptive coordinates.
+
+Three focused Native source courts and the owning compiled-example inventory
+test pass for this structural custody prerequisite. The courts cover paired
+pullback, empty support, exact proposal/read audiences and incomplete affected
+declarations. It supplies structural pullback only: scalar projection changes
+still need the projection's per-entry
+dependency routing. It does not yet stage incremental managed provider roots,
+add managed-index reads to `DecisionReader`, or publish graph/index roots
+atomically. Those remain required Phase 2 work. Complete conservative Source
+dependencies remain in force; Phases 3–6 remain unfinished.
+
+### Canonical Query Validation
+
 - Validation is stable for canonical legality and identity freezing.
 - `ValidationWarning` currently has no public warning families; legality is
   modeled primarily through success events or typed failures.

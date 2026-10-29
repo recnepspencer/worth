@@ -16,7 +16,11 @@ use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
 use super::read_observation::InvariantReadObservation;
 
 pub(super) mod component;
+mod derived_changes;
 mod derived_component;
+pub use derived_changes::{
+    WorthQueryInvariantDerivedChanges, WorthQueryPreparedInvariantDerivedChanges,
+};
 pub use derived_component::{
     WorthQueryApplicationInvariantGraphComponent, WorthQueryApplicationInvariantGraphComponents,
 };

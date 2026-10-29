@@ -19,7 +19,8 @@ pub use crate::domain_computation::primary_graph::application_invariant::{
     WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantWalk,
     WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
     WorthQueryEmptyInvariantRefusal, WorthQueryInvariantAccessDenial,
-    WorthQueryInvariantAccessDenialKind, WorthQueryInvariantRefusalDecodeDenial,
+    WorthQueryInvariantAccessDenialKind, WorthQueryInvariantDerivedChanges,
+    WorthQueryInvariantRefusalDecodeDenial, WorthQueryPreparedInvariantDerivedChanges,
 };
 pub use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionWork;
 pub use crate::domain_computation::primary_graph::{
