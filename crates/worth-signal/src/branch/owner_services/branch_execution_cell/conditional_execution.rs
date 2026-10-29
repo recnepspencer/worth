@@ -118,8 +118,10 @@ where
             .iter()
             .map(|transition| transition.inner.targets.len())
             .sum();
-        let application = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let application = partition
+        let mut returned = None;
+        let application = crate::panic_boundary::catch_operation(&mut || {
+            returned = Some((|| {
+                let application = partition
                 .execute(state.conditional_execution_graph_mut(), |graph| {
                     for transition in transitions {
                         let changes = super::committed_patch_delivery::admit_changes(
@@ -142,11 +144,16 @@ where
                     Ok::<_, Denial>(())
                 })
                 .map_err(Denial::SlotAdmission)?;
-            application?;
-            partition
-                .prepare_persistent_fork_readiness(&mut work)
-                .map_err(Denial::SlotAdmission)
-        }));
+                application?;
+                partition
+                    .prepare_persistent_fork_readiness(&mut work)
+                    .map_err(Denial::SlotAdmission)
+            })());
+        });
+        let application = match application {
+            Ok(()) => Ok(returned.expect("fork readmission returned")),
+            Err(payload) => Err(payload),
+        };
         match application {
             Ok(result) => result?,
             Err(payload) => {
@@ -279,18 +286,27 @@ where
         {
             return Err(Denial::DefinitionMismatch);
         }
-        let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            super::super::conditional_execution::execute_conditional_against_graph(
-                work,
-                state.conditional_execution_graph_mut(),
-                evaluation,
-                evaluation_state,
-                request,
-                condition,
-                comparator,
-                compute,
-            )
-        }));
+        let mut request = Some(request);
+        let mut compute = Some(compute);
+        let mut returned = None;
+        let execution = crate::panic_boundary::catch_operation(&mut || {
+            returned = Some(
+                super::super::conditional_execution::execute_conditional_against_graph(
+                    work,
+                    state.conditional_execution_graph_mut(),
+                    evaluation,
+                    evaluation_state,
+                    request.take().expect("one conditional request"),
+                    condition,
+                    comparator,
+                    compute.take().expect("one conditional computation"),
+                ),
+            );
+        });
+        let execution = match execution {
+            Ok(()) => Ok(returned.expect("cell conditional execution returned")),
+            Err(payload) => Err(payload),
+        };
         match execution {
             Ok(completion) => completion,
             Err(payload) => {

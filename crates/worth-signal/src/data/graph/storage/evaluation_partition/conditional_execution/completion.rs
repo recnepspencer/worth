@@ -1,5 +1,3 @@
-use std::panic::{catch_unwind, AssertUnwindSafe};
-
 #[cfg(test)]
 mod tests;
 
@@ -20,13 +18,22 @@ pub(super) fn finish_attempt(
     attempt: SignalConditionalAttemptOutcome,
     work: &mut crate::data::retained_storage::RetainedStoragePreparation,
 ) -> ActivatedConditionalOutcome {
-    let finished = catch_unwind(AssertUnwindSafe(|| {
-        graph.finish_optional_observation_session_with_work(
-            &observation,
-            &mut crate::logic::evaluation::EvaluationWork::Conditional(work),
-        )
-    }));
-    let cleanup = catch_unwind(AssertUnwindSafe(|| drop(observation)));
+    let mut observation = Some(observation);
+    let mut finished_session = None;
+    let finished = crate::panic_boundary::catch_operation(&mut || {
+        finished_session = Some(
+            graph.finish_optional_observation_session_with_work(
+                observation
+                    .as_ref()
+                    .expect("observation remains for finish"),
+                &mut crate::logic::evaluation::EvaluationWork::Conditional(work),
+            ),
+        );
+    })
+    .map(|()| finished_session.expect("observation finish returned"));
+    let cleanup = crate::panic_boundary::catch_operation(&mut || {
+        drop(observation.take().expect("one observation drop"));
+    });
     match attempt {
         SignalConditionalAttemptOutcome::Unwound { payload, counters } => {
             ActivatedConditionalOutcome::Unwound {

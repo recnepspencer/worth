@@ -1,4 +1,3 @@
-use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 
 #[cfg(test)]
@@ -211,13 +210,19 @@ where
                 state.costs.owner_acquisition_contacts.saturating_add(1);
             state.costs.record_component_contact(request.component());
         }
-        let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut retain = Some(|| {
             let basis_order = retained_order
                 .unwrap_or_else(|| super::ComponentBasisOrder::from_admitted(request.component()));
             self.retain_component(request.component())
                 .map(|lease| (lease, basis_order))
-        }))
-        .unwrap_or(Err(RetentionObligationDenial::OwnerOperationPanicked));
+        });
+        let mut outcome = None;
+        let result = match super::unwind_boundary::catch_owner_operation(&mut || {
+            outcome = Some(retain.take().expect("one component retention")());
+        }) {
+            Ok(()) => outcome.expect("component retention returned"),
+            Err(_) => Err(RetentionObligationDenial::OwnerOperationPanicked),
+        };
         let mut state = self.lock();
         state.flights.remove(&key);
         state.active_reservations -= 1;

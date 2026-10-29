@@ -5,7 +5,7 @@ use crate::logic::transaction::runtime::transaction::{
     SignalTransaction, TransactionCommitPosture, TransactionExecutionState, TransactionResult,
     TransactionRollbackPacketSet, TransactionScratch,
 };
-use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
+use std::panic::resume_unwind;
 
 use super::super::super::runtime_observation::RuntimeObservationRegistry;
 use super::authority::BranchState;
@@ -96,13 +96,21 @@ where
             started_at: RuntimeInstant::now(),
             commit_posture: TransactionCommitPosture::Visible,
         };
-        match catch_unwind(AssertUnwindSafe(|| apply(&mut transaction))) {
-            Ok(Ok(())) => Ok(transaction.commit()),
-            Ok(Err(error)) => match transaction.rollback_for_canonical_owner() {
-                Ok(_) => Ok(Err(error)),
-                Err(rollback_error) => panic!(
-                    "Signal canonical transaction rollback failed while containing a caller error: {rollback_error}"
-                ),
+        let mut apply = Some(apply);
+        let mut applied = None;
+        match crate::panic_boundary::catch_operation(&mut || {
+            applied = Some(apply.take().expect("one canonical transaction")(
+                &mut transaction,
+            ));
+        }) {
+            Ok(()) => match applied.expect("canonical transaction returned") {
+                Ok(()) => Ok(transaction.commit()),
+                Err(error) => match transaction.rollback_for_canonical_owner() {
+                    Ok(_) => Ok(Err(error)),
+                    Err(rollback_error) => panic!(
+                        "Signal canonical transaction rollback failed while containing a caller error: {rollback_error}"
+                    ),
+                },
             },
             Err(payload) => match transaction.rollback_for_canonical_owner() {
                 Ok(_) => Err(SignalCanonicalCallerUnwind::after_successful_rollback(

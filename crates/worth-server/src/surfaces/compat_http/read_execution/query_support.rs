@@ -82,10 +82,32 @@ pub(super) fn runtime_error_outcome<T>(
     prepared_request: &WorthServerCompatibilityPreparedRequest,
     error: worth_query::facade::runtime::WorthQueryRuntimeError,
 ) -> WorthServerCompatibilityExecutionOutcome<T> {
+    compatibility_runtime_error(prepared_request, error).into_outcome()
+}
+
+enum CompatibilityRuntimeError {
+    Denied(WorthServerQueryHandoffDenial),
+    Failed(WorthServerQueryHandoffFailure),
+}
+
+impl CompatibilityRuntimeError {
+    fn into_outcome<T>(self) -> WorthServerCompatibilityExecutionOutcome<T> {
+        match self {
+            Self::Denied(denial) => TransitionOutcome::Denied(denial),
+            Self::Failed(failure) => TransitionOutcome::Failed(failure),
+        }
+    }
+}
+
+#[inline(never)]
+fn compatibility_runtime_error(
+    prepared_request: &WorthServerCompatibilityPreparedRequest,
+    error: worth_query::facade::runtime::WorthQueryRuntimeError,
+) -> CompatibilityRuntimeError {
     match error {
         worth_query::facade::runtime::WorthQueryRuntimeError::MissingLiveView(_)
         | worth_query::facade::runtime::WorthQueryRuntimeError::MissingLiveSubscription(_) => {
-            TransitionOutcome::Denied(crate::WorthServerQueryHandoffDenial::new(
+            CompatibilityRuntimeError::Denied(crate::WorthServerQueryHandoffDenial::new(
                 crate::WorthServerQueryHandoffDenialCode::RetainedQueryArtifactUnavailable,
                 prepared_request
                     .admission()
@@ -94,7 +116,7 @@ pub(super) fn runtime_error_outcome<T>(
                 error.to_string(),
             ))
         }
-        _ => TransitionOutcome::Failed(WorthServerQueryHandoffFailure::new(
+        _ => CompatibilityRuntimeError::Failed(WorthServerQueryHandoffFailure::new(
             "compatibility_query_execution_failed",
         )),
     }

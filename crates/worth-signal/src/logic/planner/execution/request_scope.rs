@@ -49,25 +49,39 @@ pub(crate) fn run_signal_preparation_request<R>(
         &mut SignalPreparationBudget,
     ) -> Result<R, SignalError>,
 ) -> Result<(R, worth_foundational::ExecutionReport), SignalError> {
-    request
+    let mut prepared = None;
+    let report = request
         .in_scope(|lease| {
             // Preparation shares the process and every active ancestor, even
             // when this request has a larger (or absent) ceiling of its own.
             let memory = worth_execution::ExecutionMemoryReservation::available_in_scope(lease);
-            run_signal_request_in_scope(memory, lease, &mut prepare)
+            run_signal_request_in_scope(memory, lease, &mut |work, progress, preparation| {
+                match prepare(work, progress, preparation) {
+                    Ok(value) => {
+                        prepared = Some(value);
+                        Ok(())
+                    }
+                    Err(error) => Err(error),
+                }
+            })
         })
-        .map_err(SignalError::execution_scope_denied)?
+        .map_err(SignalError::execution_scope_denied)??;
+    Ok((
+        prepared.expect("completed Signal request scan has a result"),
+        report,
+    ))
 }
 
-fn run_signal_request_in_scope<R>(
+#[inline(never)]
+fn run_signal_request_in_scope(
     memory: Option<u64>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    execute: &mut impl FnMut(
+    execute: &mut dyn FnMut(
         &mut MapKernelContext<'_, '_>,
         &mut SignalPublicationProgress,
         &mut SignalPreparationBudget,
-    ) -> Result<R, SignalError>,
-) -> Result<(R, worth_foundational::ExecutionReport), SignalError> {
+    ) -> Result<(), SignalError>,
+) -> Result<worth_foundational::ExecutionReport, SignalError> {
     let identity = PartitionIdentity::new(1);
     let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).map_err(
         |denial| SignalError::internal(format!("signal request admission failed: {denial:?}")),
@@ -109,8 +123,6 @@ fn run_signal_request_in_scope<R>(
             reason, boundary, progress, physical,
         ));
     }
-    Ok((
-        complete.expect("completed Signal request scan has a result")?,
-        physical,
-    ))
+    complete.expect("completed Signal request scan has a result")?;
+    Ok(physical)
 }

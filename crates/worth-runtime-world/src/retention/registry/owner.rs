@@ -35,6 +35,7 @@ mod component_basis_order;
 mod history_claims;
 mod inspection;
 mod retained_pins;
+mod unwind_boundary;
 use component_basis_order::ComponentBasisOrder;
 use retained_pins::RetainedComponentPins;
 

@@ -1,3 +1,5 @@
+use std::panic::{catch_unwind, AssertUnwindSafe};
+
 use super::*;
 use crate::data::aspect::{AspectMask, SignalAspectLoweringOwner};
 use crate::data::comparator::DefaultComparatorPolicyResolver;

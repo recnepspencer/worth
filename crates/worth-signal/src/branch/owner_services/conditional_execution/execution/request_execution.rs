@@ -63,20 +63,27 @@ where
             kernel_request = kernel_request.force_on_demand();
         }
         let slot_reused = evaluation_state.slot.is_some();
-        let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            cell.execute_conditional(
+        let mut kernel_request = Some(kernel_request);
+        let mut compute = Some(compute);
+        let mut returned = None;
+        let execution = crate::panic_boundary::catch_operation(&mut || {
+            returned = Some(cell.execute_conditional(
                 work,
                 &admission,
                 &self.basis,
                 &self.definition,
                 evaluation,
                 &mut evaluation_state,
-                kernel_request,
+                kernel_request.take().expect("one conditional request"),
                 condition,
                 comparator,
-                compute,
-            )
-        }));
+                compute.take().expect("one conditional computation"),
+            ));
+        });
+        let execution = match execution {
+            Ok(()) => Ok(returned.expect("conditional cell execution returned")),
+            Err(payload) => Err(payload),
+        };
         match execution {
             Ok(Ok(completion)) => Ok(completion.with_slot_reuse(slot_reused)),
             Ok(Err(denial)) => Err(denial),

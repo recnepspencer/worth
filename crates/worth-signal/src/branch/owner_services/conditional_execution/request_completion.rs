@@ -11,10 +11,13 @@ pub(super) fn run_conditional_request<R>(
     let mut execute = Some(execute);
     let mut unwind = None;
     let result = crate::logic::planner::run_signal_preparation_request(request, |work, _, _| {
-        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            execute.take().expect("one conditional request scan step")(work)
-        })) {
-            Ok(result) => Ok(Some(result)),
+        let mut returned = None;
+        match crate::panic_boundary::catch_operation(&mut || {
+            returned = Some(execute.take().expect("one conditional request scan step")(
+                work,
+            ));
+        }) {
+            Ok(()) => Ok(returned),
             Err(payload) => {
                 unwind = Some(payload);
                 Ok(None)

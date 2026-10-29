@@ -1,5 +1,3 @@
-#[cfg(test)]
-use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 
 use super::super::super::component_obligation::RetentionControlSurface;
@@ -181,7 +179,14 @@ where
         state.costs.owner_release_contacts = state.costs.owner_release_contacts.saturating_add(1);
         drop(state);
 
-        let result = catch_unwind(AssertUnwindSafe(|| self.release_component(lease)));
+        let mut release = Some(lease);
+        let mut outcome = None;
+        let result = match super::unwind_boundary::catch_owner_operation(&mut || {
+            outcome = Some(self.release_component(release.take().expect("one component release")));
+        }) {
+            Ok(()) => Ok(outcome.expect("component release returned")),
+            Err(payload) => Err(payload),
+        };
         let mut state = self.lock();
         state.flights.remove(&key);
         match result {

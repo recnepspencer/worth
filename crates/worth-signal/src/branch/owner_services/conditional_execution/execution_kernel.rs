@@ -50,14 +50,30 @@ pub(in crate::branch::owner_services) fn execute_conditional_against_graph(
             .map_err(Denial::SlotAdmission)?;
         evaluation_state.slot = Some(SignalConditionalExecutionSlot { partition });
     }
-    let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        evaluation_state
-            .slot
-            .as_mut()
-            .expect("slot was admitted above")
-            .partition
-            .execute_conditional(request_work, graph, request, condition, comparator, compute)
-    }));
+    let mut request = Some(request);
+    let mut compute = Some(compute);
+    let mut returned = None;
+    let execution = crate::panic_boundary::catch_operation(&mut || {
+        returned = Some(
+            evaluation_state
+                .slot
+                .as_mut()
+                .expect("slot was admitted above")
+                .partition
+                .execute_conditional(
+                    request_work,
+                    graph,
+                    request.take().expect("one conditional request"),
+                    condition,
+                    comparator,
+                    compute.take().expect("one conditional computation"),
+                ),
+        );
+    });
+    let execution = match execution {
+        Ok(()) => Ok(returned.expect("conditional execution returned")),
+        Err(payload) => Err(payload),
+    };
     match execution {
         Ok(Ok(completion)) => Ok(SignalConditionalServiceCompletion::from_partition(
             completion, evaluation,

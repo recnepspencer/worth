@@ -248,6 +248,19 @@ impl ProductUnpublishedRecoveryCatalog {
     where
         F: FnOnce(&ProductUnpublishedOwnerEffectsRecord) -> bool,
     {
+        let mut eligible = Some(eligible);
+        self.remove_record_if_exclusive_core(handle, &mut |record| {
+            eligible.take().expect("one recovery eligibility check")(record)
+        })
+    }
+
+    #[inline(never)]
+    fn remove_record_if_exclusive_core(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+        eligible: &mut dyn FnMut(&ProductUnpublishedOwnerEffectsRecord) -> bool,
+    ) -> Result<Option<Arc<ProductUnpublishedOwnerEffectsRecord>>, RecoveryRecordRemovalDenial>
+    {
         if handle.catalog_affinity() != self.affinity() {
             return Ok(None);
         }

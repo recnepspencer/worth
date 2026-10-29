@@ -1,4 +1,5 @@
 //! Atomic installation of cumulative retained node evaluation changes.
+mod full_draft;
 mod reservation_admission;
 mod selected_epoch;
 mod selection_admission;
@@ -11,7 +12,7 @@ use crate::data::persistent_vector::{
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStoragePreparation as Preparation,
     RetainedStoragePreparationDenial, SignalConditionalRetentionDenial,
-    SignalConditionalRetentionLedger, SignalConditionalRetentionReservation,
+    SignalConditionalRetentionReservation,
 };
 use std::sync::Arc;
 
@@ -161,130 +162,6 @@ pub(crate) struct OperationalNodePayload {
 pub(crate) enum SelectedNodeDraft {
     ProducerFull(RetainedNodePayload),
     ConsumerOperational(OperationalNodePayload),
-}
-
-impl NodeArena {
-    /// The ceiling covers the three installed evaluation representations,
-    /// including untouched backing. The ledger reserves selected payload clones
-    /// and staged roots before their allocations. New payload allocations made
-    /// by the callback and its returned output require caller reservations.
-    pub(crate) fn prepare_retained_node_edits_with_work<R>(
-        &self,
-        ledger: &Arc<SignalConditionalRetentionLedger>,
-        indices: &[usize],
-        maximum: Option<Charge>,
-        work: &mut Preparation,
-        edit: impl FnOnce(&mut [RetainedNodePayload], &mut Preparation) -> R,
-    ) -> Result<RetainedNodeEditPreparation<R>, RetainedNodeEditDenial> {
-        self.validate_retained_node_selection(indices, work)?;
-        work.reserve_visits(indices.len())
-            .map_err(RetainedNodeEditDenial::Accounting)?;
-        let draft_custody = reservation_admission::reserve_payload_draft::<RetainedNodePayload>(
-            self,
-            indices.len(),
-            ledger,
-            work,
-        )?;
-        let mut payloads = indices
-            .iter()
-            .map(|&index| RetainedNodePayload {
-                hot: self.hot[index]
-                    .as_ref()
-                    .expect("validated hot payload")
-                    .clone(),
-                warm: self.warm[index].clone(),
-                cold: self.cold[index].clone(),
-            })
-            .collect::<Vec<_>>();
-        let output = edit(&mut payloads, work);
-        let mut staged = NodeEvaluationRoots {
-            hot: self.hot.clone(),
-            warm: self.warm.clone(),
-            cold: self.cold.clone(),
-            custody: self.retained_node_custody.clone(),
-        };
-        let prepared = (|| {
-            let mut charge = Charge::ZERO;
-            for (&index, payload) in indices.iter().zip(payloads) {
-                let RetainedNodePayload { hot, warm, cold } = payload;
-                let before = [
-                    staged
-                        .hot
-                        .prepared_retained_charge()
-                        .map_err(map_mutation_denial)?,
-                    staged
-                        .warm
-                        .prepared_retained_charge()
-                        .map_err(map_mutation_denial)?,
-                    staged
-                        .cold
-                        .prepared_retained_charge()
-                        .map_err(map_mutation_denial)?,
-                ];
-                let hot = staged
-                    .hot
-                    .prepare_retained_replacement(index, Some(hot), work)
-                    .map_err(|(_, denial)| map_mutation_denial(denial))?;
-                let warm = staged
-                    .warm
-                    .prepare_retained_replacement(index, warm, work)
-                    .map_err(|(_, denial)| map_mutation_denial(denial))?;
-                let cold = staged
-                    .cold
-                    .prepare_retained_replacement(index, cold, work)
-                    .map_err(|(_, denial)| map_mutation_denial(denial))?;
-                let required = publication_peak_charge(
-                    before,
-                    [
-                        hot.required_charge(),
-                        warm.required_charge(),
-                        cold.required_charge(),
-                    ],
-                )
-                .map_err(RetainedNodeEditDenial::Accounting)?;
-                if let Some(maximum) = maximum.filter(|maximum| required > *maximum) {
-                    return Err(RetainedNodeEditDenial::CapacityExhausted { maximum, required });
-                }
-                let custody = reservation_admission::reserve_staged_roots(ledger, required)?;
-                // All three destination borrows remain held through admission.
-                // No selected lane allocates replacement storage before this
-                // ceiling for every publication prefix has been checked.
-                let hot_charge = hot
-                    .publish(required)
-                    .map_err(|(_, d)| map_capacity_denial(d))?;
-                let warm_charge = warm
-                    .publish(required)
-                    .map_err(|(_, d)| map_capacity_denial(d))?;
-                let cold_charge = cold
-                    .publish(required)
-                    .map_err(|(_, d)| map_capacity_denial(d))?;
-                staged.custody = Some(custody);
-                charge = hot_charge
-                    .checked_add(warm_charge)
-                    .and_then(|n| n.checked_add(cold_charge))
-                    .map_err(RetainedNodeEditDenial::Accounting)?;
-            }
-            Ok(charge)
-        })();
-        let charge = match prepared {
-            Ok(charge) => charge,
-            Err(denial) => return Ok(RetainedNodeEditPreparation::Rejected { output, denial }),
-        };
-        Ok(RetainedNodeEditPreparation::Ready(
-            PreparedRetainedNodeEdit {
-                original: NodeEvaluationRoots {
-                    hot: self.hot.clone(),
-                    warm: self.warm.clone(),
-                    cold: self.cold.clone(),
-                    custody: self.retained_node_custody.clone(),
-                },
-                staged,
-                output,
-                charge,
-                _preparation_custody: draft_custody,
-            },
-        ))
-    }
 }
 
 fn map_mutation_denial(denial: RetainedVectorMutationDenial) -> RetainedNodeEditDenial {

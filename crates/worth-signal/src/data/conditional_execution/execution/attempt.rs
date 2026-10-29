@@ -36,12 +36,21 @@ impl SignalGraph {
             comparator: comparator_resolver,
             compute: Some(compute),
         };
-        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            execute_conditional_attempt(self, request, providers, &mut counters, work)
-        })) {
-            Ok(result) => SignalConditionalAttemptOutcome::Completed(
-                result.map_err(|error| SignalConditionalExecutionFailure { error, counters }),
-            ),
+        let mut returned = None;
+        let caught = {
+            let mut attempt =
+                Some(|| execute_conditional_attempt(self, request, providers, &mut counters, work));
+            crate::panic_boundary::catch_operation(&mut || {
+                returned = Some(attempt.take().expect("one conditional attempt")());
+            })
+        };
+        match caught {
+            Ok(()) => {
+                let result = returned.expect("conditional attempt returned");
+                SignalConditionalAttemptOutcome::Completed(
+                    result.map_err(|error| SignalConditionalExecutionFailure { error, counters }),
+                )
+            }
             Err(payload) => SignalConditionalAttemptOutcome::Unwound { payload, counters },
         }
     }

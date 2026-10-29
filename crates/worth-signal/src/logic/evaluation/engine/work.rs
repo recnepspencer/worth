@@ -44,6 +44,30 @@ impl EvaluationWork<'_, '_> {
         maximum_waiter_visits: Option<usize>,
         prepare: impl FnOnce(&mut RetainedStoragePreparation) -> Result<R, SignalError>,
     ) -> Result<R, SignalError> {
+        let mut output = None;
+        let mut prepare = Some(prepare);
+        self.with_waiter_limit_core(maximum_waiter_visits, &mut |preparation| match prepare
+            .take()
+            .expect("one waiter preparation")(
+            preparation
+        ) {
+            Ok(value) => {
+                output = Some(value);
+                Ok(())
+            }
+            Err(error) => Err(error),
+        })?;
+        Ok(output.expect("waiter preparation succeeded"))
+    }
+
+    #[inline(never)]
+    fn with_waiter_limit_core(
+        &mut self,
+        maximum_waiter_visits: Option<usize>,
+        prepare: &mut dyn for<'observer> FnMut(
+            &mut RetainedStoragePreparation<'observer>,
+        ) -> Result<(), SignalError>,
+    ) -> Result<(), SignalError> {
         match self {
             Self::Ordinary => prepare(&mut RetainedStoragePreparation::new(maximum_waiter_visits)),
             Self::RequestCheckpoint(_) => Err(SignalError::internal(

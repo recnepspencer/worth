@@ -143,6 +143,7 @@ pub mod diagnostics;
 pub mod easy;
 mod logic;
 pub(crate) mod observation;
+mod panic_boundary;
 #[cfg(not(test))]
 mod presentation;
 #[cfg(test)]

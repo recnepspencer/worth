@@ -140,18 +140,29 @@ where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
         use crate::branch::SignalBranchAdvanceCompletion;
-        let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let owner = self
-                .upgrade_owner()
-                .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
-            let admission = owner.admit().map_err(map_advance_admission_denial)?;
-            let branch_id = expected.owner_branch_id();
-            let cell = owner
-                .lookup_cell(&admission, branch_id)
-                .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
-            let output = owner.reserve_advance_output(&admission, &cell)?;
-            Ok(output.advance(execution, expected, runtime_ctx, cancellation, apply))
-        }));
+        let mut execution = Some(execution);
+        let mut apply = Some(apply);
+        let mut returned = None;
+        let execution = crate::panic_boundary::catch_operation(&mut || {
+            let execution = execution.take().expect("one exact advance");
+            let apply = apply.take().expect("one exact advance");
+            returned = Some((|| -> Result<_, SignalBranchAdvanceDenial> {
+                let owner = self
+                    .upgrade_owner()
+                    .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
+                let admission = owner.admit().map_err(map_advance_admission_denial)?;
+                let branch_id = expected.owner_branch_id();
+                let cell = owner
+                    .lookup_cell(&admission, branch_id)
+                    .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
+                let output = owner.reserve_advance_output(&admission, &cell)?;
+                Ok(output.advance(execution, expected, runtime_ctx, cancellation, apply))
+            })());
+        });
+        let execution = match execution {
+            Ok(()) => Ok(returned.expect("exact advance returned")),
+            Err(payload) => Err(payload),
+        };
         match execution {
             Ok(Ok(completion)) => completion,
             Ok(Err(denial)) => SignalBranchAdvanceCompletion::returned(Err(denial)),
@@ -201,32 +212,45 @@ where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
         use crate::branch::SignalBranchAdvanceCompletion;
-        let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let admitted = publication
-                .as_ref()
-                .expect("the original publication remains admitted");
-            self.validate_conditional_definition_publication(admitted, expected)?;
-            let owner = self
-                .upgrade_owner()
-                .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
-            let admission = owner.admit().map_err(map_advance_admission_denial)?;
-            let branch_id = expected.owner_branch_id();
-            let cell = owner
-                .lookup_cell(&admission, branch_id)
-                .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
-            if admitted.incarnation() != cell.incarnation() {
-                return Err(SignalBranchAdvanceDenial::ConditionalDefinitionPublicationMismatch);
-            }
-            let output = owner.reserve_advance_output(&admission, &cell)?;
-            Ok(output.advance_conditional_definition(
-                execution,
-                expected,
-                runtime_ctx,
-                cancellation,
-                apply,
-                publication,
-            ))
-        }));
+        let mut execution = Some(execution);
+        let mut apply = Some(apply);
+        let mut returned = None;
+        let execution = crate::panic_boundary::catch_operation(&mut || {
+            let execution = execution.take().expect("one definition advance");
+            let apply = apply.take().expect("one definition advance");
+            returned = Some((|| -> Result<_, SignalBranchAdvanceDenial> {
+                let admitted = publication
+                    .as_ref()
+                    .expect("the original publication remains admitted");
+                self.validate_conditional_definition_publication(admitted, expected)?;
+                let owner = self
+                    .upgrade_owner()
+                    .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
+                let admission = owner.admit().map_err(map_advance_admission_denial)?;
+                let branch_id = expected.owner_branch_id();
+                let cell = owner
+                    .lookup_cell(&admission, branch_id)
+                    .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
+                if admitted.incarnation() != cell.incarnation() {
+                    return Err(
+                        SignalBranchAdvanceDenial::ConditionalDefinitionPublicationMismatch,
+                    );
+                }
+                let output = owner.reserve_advance_output(&admission, &cell)?;
+                Ok(output.advance_conditional_definition(
+                    execution,
+                    expected,
+                    runtime_ctx,
+                    cancellation,
+                    apply,
+                    publication,
+                ))
+            })());
+        });
+        let execution = match execution {
+            Ok(()) => Ok(returned.expect("definition advance returned")),
+            Err(payload) => Err(payload),
+        };
         match execution {
             Ok(Ok(completion)) => completion,
             Ok(Err(denial)) => SignalBranchAdvanceCompletion::returned(Err(denial)),

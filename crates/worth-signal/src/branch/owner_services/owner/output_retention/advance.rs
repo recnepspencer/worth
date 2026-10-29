@@ -1,5 +1,3 @@
-use std::panic::{catch_unwind, AssertUnwindSafe};
-
 use super::SignalAdvanceOutputReservation;
 use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::owner_services::SignalOwnerCancellationToken;
@@ -74,20 +72,28 @@ where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
         let mut completed = None;
-        let execution = catch_unwind(AssertUnwindSafe(|| {
-            self.cell.advance_into(
-                execution,
-                self.admission,
-                expected,
-                runtime_ctx,
-                cancellation,
-                apply,
-                &mut completed,
-                definition_publication
-                    .as_ref()
-                    .map(|publication| publication.advance_scope()),
-            )
-        }));
+        let mut execution = Some(execution);
+        let mut apply = Some(apply);
+        let mut advanced = None;
+        let execution = match crate::panic_boundary::catch_operation(&mut || {
+            advanced = Some(
+                self.cell.advance_into(
+                    execution.take().expect("one branch advance"),
+                    self.admission,
+                    expected,
+                    runtime_ctx,
+                    cancellation,
+                    apply.take().expect("one branch advance"),
+                    &mut completed,
+                    definition_publication
+                        .as_ref()
+                        .map(|publication| publication.advance_scope()),
+                ),
+            );
+        }) {
+            Ok(()) => Ok(advanced.expect("branch advance returned")),
+            Err(payload) => Err(payload),
+        };
         let Some(completed) = completed else {
             return match execution {
                 Ok(Err(denial)) => SignalBranchAdvanceCompletion::returned(Err(denial)),
@@ -114,10 +120,10 @@ where
         if let Err(payload) = execution {
             return SignalBranchAdvanceCompletion::unwound(Some(outcome), payload);
         }
-        match catch_unwind(AssertUnwindSafe(|| {
+        match crate::panic_boundary::catch_operation(&mut || {
             self.admission
                 .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
-        })) {
+        }) {
             Ok(()) => SignalBranchAdvanceCompletion::returned(Ok(outcome)),
             Err(payload) => SignalBranchAdvanceCompletion::unwound(Some(outcome), payload),
         }

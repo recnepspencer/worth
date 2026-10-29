@@ -158,8 +158,9 @@ where
         if cell.incarnation() != self.incarnation {
             return Err(Denial::StaleBasisAdmission);
         }
-        let prepared = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            cell.readmit_conditional_evaluation(
+        let mut returned = None;
+        let prepared = crate::panic_boundary::catch_operation(&mut || {
+            returned = Some(cell.readmit_conditional_evaluation(
                 &admission,
                 &self.basis,
                 &self.definition,
@@ -169,8 +170,12 @@ where
                 request.transitions,
                 &target_basis,
                 &mut admission_custody,
-            )
-        }));
+            ));
+        });
+        let prepared = match prepared {
+            Ok(()) => Ok(returned.expect("conditional readmission returned")),
+            Err(payload) => Err(payload),
+        };
         let (contract_binding, partition, counters) = match prepared {
             Ok(result) => result?,
             Err(payload) => {

@@ -2,15 +2,35 @@
 use super::selection_admission::map_clone_work_denial;
 use super::{
     map_capacity_denial, map_mutation_denial, publication_peak_charge, reservation_admission,
-    NodeArena, NodeEvaluationRoots, OperationalNodePayload, PreparedRetainedNodeEdit,
-    RetainedNodeEditDenial, RetainedNodeEditPreparation, RetainedNodePayload, SelectedNodeDraft,
-    SelectedNodeRole,
+    NodeArena, NodeEvaluationRoots, OperationalNodePayload, RetainedNodeEditDenial,
+    RetainedNodeEditPreparation, RetainedNodePayload, SelectedNodeDraft, SelectedNodeRole,
 };
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStoragePreparation as Work,
     SignalConditionalRetentionLedger,
 };
 use std::sync::Arc;
+
+enum SelectedEpochEditCallback<'payload, 'observer> {
+    Edit(
+        &'payload mut [SelectedNodeDraft],
+        &'payload mut Work<'observer>,
+    ),
+    DropOutput,
+}
+
+struct ProducedEpochOutputGuard<'edit, 'observer> {
+    edit: &'edit mut dyn for<'payload> FnMut(SelectedEpochEditCallback<'payload, 'observer>),
+    armed: bool,
+}
+
+impl Drop for ProducedEpochOutputGuard<'_, '_> {
+    fn drop(&mut self) {
+        if self.armed {
+            (self.edit)(SelectedEpochEditCallback::DropOutput);
+        }
+    }
+}
 
 impl NodeArena {
     pub(crate) fn prepare_selected_epoch_nodes<R>(
@@ -21,6 +41,37 @@ impl NodeArena {
         work: &mut Work,
         edit: impl FnOnce(&mut [SelectedNodeDraft], &mut Work) -> R,
     ) -> Result<RetainedNodeEditPreparation<R>, RetainedNodeEditDenial> {
+        let mut output = None;
+        let mut edit = Some(edit);
+        let staged = self.prepare_selected_epoch_nodes_core(
+            ledger,
+            selections,
+            maximum,
+            work,
+            &mut |step| match step {
+                SelectedEpochEditCallback::Edit(payloads, preparation) => {
+                    output = Some(edit.take().expect("one selected epoch edit")(
+                        payloads,
+                        preparation,
+                    ));
+                }
+                SelectedEpochEditCallback::DropOutput => {
+                    output.take();
+                }
+            },
+        )?;
+        Ok(staged.with_output(output.expect("selected epoch edit produced its output")))
+    }
+
+    #[inline(never)]
+    fn prepare_selected_epoch_nodes_core(
+        &self,
+        ledger: &Arc<SignalConditionalRetentionLedger>,
+        selections: &[(usize, SelectedNodeRole)],
+        maximum: Option<Charge>,
+        work: &mut Work,
+        edit: &mut dyn for<'payload> FnMut(SelectedEpochEditCallback<'payload, '_>),
+    ) -> Result<super::full_draft::StagedRetainedNodeEditResult, RetainedNodeEditDenial> {
         self.validate_epoch_selection(selections, work)?;
         work.reserve_visits(selections.len())
             .map_err(RetainedNodeEditDenial::Accounting)?;
@@ -54,7 +105,8 @@ impl NodeArena {
                 }
             })
             .collect::<Vec<_>>();
-        let output = edit(&mut payloads, work);
+        edit(SelectedEpochEditCallback::Edit(&mut payloads, work));
+        let mut produced = ProducedEpochOutputGuard { edit, armed: true };
         let mut staged = NodeEvaluationRoots {
             hot: self.hot.clone(),
             warm: self.warm.clone(),
@@ -142,10 +194,16 @@ impl NodeArena {
         })();
         let charge = match prepared {
             Ok(charge) => charge,
-            Err(denial) => return Ok(RetainedNodeEditPreparation::Rejected { output, denial }),
+            Err(denial) => {
+                produced.armed = false;
+                return Ok(super::full_draft::StagedRetainedNodeEditResult::Rejected(
+                    denial,
+                ));
+            }
         };
-        Ok(RetainedNodeEditPreparation::Ready(
-            PreparedRetainedNodeEdit {
+        produced.armed = false;
+        Ok(super::full_draft::StagedRetainedNodeEditResult::Ready(
+            super::full_draft::StagedRetainedNodeEdit {
                 original: NodeEvaluationRoots {
                     hot: self.hot.clone(),
                     warm: self.warm.clone(),
@@ -153,9 +211,8 @@ impl NodeArena {
                     custody: self.retained_node_custody.clone(),
                 },
                 staged,
-                output,
                 charge,
-                _preparation_custody: draft_custody,
+                preparation_custody: draft_custody,
             },
         ))
     }

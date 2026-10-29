@@ -101,18 +101,25 @@ where
             kernel_request = kernel_request.force_on_demand();
         }
         let slot_reused = evaluation_state.slot.is_some();
-        let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            super::execute_conditional_against_graph(
+        let mut kernel_request = Some(kernel_request);
+        let mut compute = Some(compute);
+        let mut returned = None;
+        let execution = crate::panic_boundary::catch_operation(&mut || {
+            returned = Some(super::execute_conditional_against_graph(
                 work,
                 transaction.conditional_execution_graph_mut(),
                 evaluation,
                 &mut evaluation_state,
-                kernel_request,
+                kernel_request.take().expect("one conditional request"),
                 condition,
                 comparator,
-                compute,
-            )
-        }));
+                compute.take().expect("one conditional computation"),
+            ));
+        });
+        let execution = match execution {
+            Ok(()) => Ok(returned.expect("nested conditional execution returned")),
+            Err(payload) => Err(payload),
+        };
         match execution {
             Ok(Ok(completion)) => Ok(completion.with_slot_reuse(slot_reused)),
             Ok(Err(denial)) => Err(denial),
