@@ -9,13 +9,38 @@ import importlib.util
 from pathlib import Path
 
 
-def frontiers(metadata, selections):
+def package_roles(metadata):
+    path = Path(__file__).resolve().parents[2] / 'tools/boundary-check/src/test_topology/product_roles.py'
+    spec = importlib.util.spec_from_file_location('_a2_product_roles', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    # Existing court names certify production roots after tests leave their owners.
+    rows = graph_reporter().measure(metadata)['packages']
+    established = set()
+    for row in rows:
+        if row['role'] == 'court':
+            stem, label = row['package'].split('-court-', 1)
+            frontier = row['product_frontier']
+            if label == surface(stem, frontier) or label.startswith(surface(stem, frontier) + '-'):
+                established.update(frontier)
+    return module.classify(metadata, established)
+
+
+def graph_reporter():
     report_path = Path(__file__).resolve().parents[1] / 'ci' / 'report_test_topology.py'
     spec = importlib.util.spec_from_file_location('_a2_topology_graph', report_path)
     reporter = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(reporter)
     reporter.rust_lines = lambda _directory: 0
+    return reporter
+
+
+def frontiers(metadata, selections):
+    reporter = graph_reporter()
     data = copy.deepcopy(metadata)
+    roles = package_roles(metadata)
+    data['workspace_members'] = [identity for identity in data['workspace_members']
+                                 if roles[identity] in ('product', 'court')]
     for key, package_ids in sorted(selections.items()):
         identity = 'codemod-court-' + key
         data['workspace_members'].append(identity)

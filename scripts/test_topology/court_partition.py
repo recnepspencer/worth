@@ -1,7 +1,7 @@
 """Category evidence and deterministic area partitioning, independent of effects."""
 from collections import defaultdict
-import os
 import re
+from court_packing import assign_file_weights, whole_areas, first_fit_decreasing, area_suffix
 
 from module_tree import test_names, tree_text
 from rust_source import code
@@ -71,8 +71,8 @@ def area_units(tree, ceiling=CEILING, forced_areas=()):
         category = node.names and node.names[-1] in (*INTERIM, *CATEGORIES)
         lines = sum(len(n.own_text().splitlines()) for n in node.walk())
         forced = any(tuple(area[:len(node.names)]) == node.names and tuple(area) != node.names for area in forced_areas)
-        if node.children and (not node.names or category or lines > ceiling or forced):
-            if test_names(node.own_text()):
+        if node.children:
+            if test_names(node.own_text()) or opaque_items(node.own_text()):
                 # Root tests cannot be copied to their children. Retain this unit,
                 # with its child test modules delegated to independent units.
                 result.append({'node': node, 'ancestors': ancestors, 'own_only': True})
@@ -86,21 +86,32 @@ def area_units(tree, ceiling=CEILING, forced_areas=()):
 
 
 def group_courts(units, stem, naming, ceiling=CEILING):
+    assign_file_weights(units)
     grouped = defaultdict(list)
     for unit in units:
-        grouped[tuple(unit['frontier'])].append(unit)
+        grouped[(tuple(unit['frontier']), tuple(unit.get('required_features', ())), unit.get('custom_harness', ''))].append(unit)
     courts, splits = [], []
-    for frontier, population in sorted(grouped.items()):
-        base = stem + '-court-' + naming(stem, frontier)
-        total = measured_lines(population)
-        groups = [('', population)] if total <= ceiling else split_areas(population, ceiling)
-        for area, members in groups:
+    for (frontier, features, custom), population in sorted(grouped.items()):
+        surface = naming(stem, frontier)
+        base = stem + '-court-' + surface
+        total = sum(u['packing_lines'] for u in population)
+        areas = whole_areas(population, ceiling)
+        pieces = first_fit_decreasing(areas, ceiling)
+        for piece in pieces:
+            area = area_suffix(piece['areas'][0]['path'], surface) if len(pieces) > 1 else ''
+            members = [u for a in piece['areas'] for u in a['units']]
             name = base + ('-' + area if area else '')
-            court = {'name': name, 'frontier': list(frontier), 'units': members, 'area': area}
+            if features:
+                name += '-with-' + '-'.join(features)
+            if custom:
+                name += '-' + custom.replace('_', '-')
+            court = {'name': name, 'frontier': list(frontier), 'units': members, 'area': area,
+                     'packing_lines': piece['lines'], 'packing_areas': [a['path'] for a in piece['areas']],
+                     'required_features': list(features), 'custom_harness': custom}
             courts.append(court)
             for member in members:
                 member['court'] = name
-            if len(groups) > 1:
+            if len(pieces) > 1:
                 splits.append({'court': name, 'frontier': list(frontier), 'area': area,
                                'owners': sorted({u['owner_area'] for u in members}), 'delegates': []})
     for split in splits:
@@ -111,29 +122,3 @@ def group_courts(units, stem, naming, ceiling=CEILING):
                                      and other['frontier'] == split['frontier']
                                      for child in other['owners'] if child.startswith(owner + '/')})
     return courts, splits
-
-
-def split_areas(units, ceiling):
-    result = []
-
-    def descend(population, depth):
-        lines = measured_lines(population)
-        keys = {tuple(u['owner_area'].split('/')[:depth]) for u in population}
-        if lines <= ceiling or (len(keys) == 1 and all(len(u['owner_area'].split('/')) <= depth for u in population)):
-            # Areas are semantic prefixes, never numbered size buckets.
-            area = '-'.join(os.path.commonprefix([list(k) for k in sorted(keys)]))
-            if not area:
-                raise ValueError('a ceiling split has no semantic owning area')
-            result.append((area.replace('_', '-'), population))
-            return
-        buckets = defaultdict(list)
-        for unit in population:
-            buckets[tuple(unit['owner_area'].split('/')[:depth])].append(unit)
-        if len(buckets) == 1:
-            descend(population, depth + 1)
-        else:
-            for key in sorted(buckets):
-                descend(buckets[key], depth + 1)
-
-    descend(units, 1)
-    return result

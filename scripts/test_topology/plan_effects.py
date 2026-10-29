@@ -21,6 +21,7 @@ class Effects:
         self.root = root.resolve()
         self.moves = []
         self.writes = {}
+        self.removals = []
 
     def move(self, source, destination):
         if source.resolve() == destination.resolve():
@@ -37,9 +38,18 @@ class Effects:
             before = path.read_bytes() if path.exists() else b''
         self.writes[name] = {'path': name, 'before_sha256': digest(before), 'content': content}
 
+    def retire_scaffold(self, path):
+        self.removals.append({'path': relative(path, self.root), 'sha256': digest(path.read_bytes()),
+                              'reason': 'v3 replaces this module-only aggregation with generated court roots; it owns no test bodies or helper definitions.'})
+
     def program(self):
+        for move in self.moves:
+            write = self.writes.get(move['destination'])
+            if write and write['before_sha256'] == digest(b''):
+                write['before_sha256'] = move['sha256']
         return {'moves': sorted(self.moves, key=lambda r: r['source']),
-                'writes': [self.writes[k] for k in sorted(self.writes)]}
+                'writes': [self.writes[k] for k in sorted(self.writes)],
+                'retired_scaffolds': sorted(self.removals, key=lambda r: r['path'])}
 
 
 def contained(root, name):
@@ -89,6 +99,13 @@ def apply(plan, root):
     # Validate every byte and destination before taking the first effect. Replays
     # accept only the original or final bytes, never a silently changed third tree.
     moves, writes = [], []
+    removals = []
+    for row in program.get('retired_scaffolds', []):
+        path = contained(root, row['path'])
+        if path.exists():
+            if digest(path.read_bytes()) != row['sha256']:
+                raise ValueError('scaffold precondition changed: ' + row['path'])
+            removals.append(path)
     for move in program['moves']:
         source, destination = (contained(root, move[k]) for k in ('source', 'destination'))
         if source.exists():
@@ -122,8 +139,16 @@ def apply(plan, root):
     for path, content in writes:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
+    for path in removals:
+        tracked = subprocess.run(['git', 'ls-files', '--error-unmatch', '--', relative(path, root)],
+                                 cwd=command_path(root), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        if tracked:
+            subprocess.run(['git', '-c', 'core.longpaths=true', 'rm', '-f', '--', relative(path, root)], cwd=command_path(root), check=True,
+                           stdout=subprocess.DEVNULL)
+        else:
+            path.unlink()
     # Remove only empty source parents; assets and untracked files are never erased.
-    for source, _destination in moves:
+    for source in [source for source, _destination in moves] + removals:
         parent = source.parent
         while parent != root:
             if not parent.exists():

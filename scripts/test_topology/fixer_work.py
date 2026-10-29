@@ -29,10 +29,6 @@ def collect(courts, assignments, repository):
                 text, context = source.own_text(), private_context(source)
                 value = code(text)
                 assignment = assignments.get(source.source)
-                if assignment and '-testkit' in assignment['owner'] and context['restricted_visibility']:
-                    symbols = re.findall(r'\bpub\s*\(\s*(?:crate|super)\s*\)\s+(?:async\s+)?(?:fn|struct|enum|trait|type|const|static|mod|use)\s+(\w+)', text)
-                    add(court['name'], 'testkit-visibility', source.source,
-                        'Shared support keeps its original restricted visibility; grant only the necessary testkit facade exports.', symbols)
                 if re.search(r'\bmacro_rules\s*!|\$\s*crate\b', value):
                     add(court['name'], 'macro-context', source.source,
                         'Check macro expansion against its new crate/module owner; no expansion was guessed.')
@@ -49,20 +45,11 @@ def collect(courts, assignments, repository):
                 if 'CARGO_MANIFEST_DIR' in text:
                     add(court['name'], 'manifest-context', source.source,
                         'Literal tests/ paths are rewritten; inspect dynamic paths and nested Cargo subprocesses for old-package assumptions.')
-                if re.search(r'\bfeature\s*=\s*"', text):
-                    add(court['name'], 'feature-configuration', source.source,
-                        'cfg(feature) belongs to the old product package. Courts declare no features; replace this conditional through the owned control/observer contract before certification.')
-                if any(name in context['crate_paths'] for name in ('fast', 'exhaustive', 'scale', 'serial', 'compile_fail')):
-                    add(court['name'], 'cross-category-support', source.source,
-                        'Module paths are rebased. Shared helpers exported by another category may require extraction to a testkit; courts cannot depend on each other.', context['crate_paths'])
                 names = [name for name in test_names(text) if re.search(
                     r'(?:^|_)(?:(?:m|d|r|phase|milestone|decision|ticket|req)\d+|(?:phase|milestone|decision|ticket)_(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten))(?:_|$)', name)
                          or name.startswith(('test_', 'it_'))]
                 if names:
                     add(court['name'], 'behaviour-name', source.source,
                         'v3 behaviour names need an explicit traceability-preserving rename; codemod keeps all test names.', names)
-                if assignment and '-testkit' in assignment['owner'] and context['crate_paths']:
-                    add(court['name'], 'testkit-crate-context', source.source,
-                        'Crate-relative support imports must refer to the owning testkit facade.', context['crate_paths'])
     return {name: sorted(rows, key=lambda r: (r['kind'], r['source'], r['reason']))
             for name, rows in sorted(result.items())}

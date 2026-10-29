@@ -2,6 +2,8 @@
 from collections import Counter
 import copy
 import json
+import re
+import stat
 from pathlib import Path
 import shutil
 import subprocess
@@ -64,6 +66,18 @@ class CourtCodemodTests(unittest.TestCase):
         kit = next(k for k in self.plan['testkits'] if k['name'] == 'worth-testkit-host')
         self.assertEqual(len(kit['readers']), 2)
 
+    def test_visibility_and_cross_category_paths_are_mechanical(self):
+        writes = self.plan['effects']['writes']
+        declarations = next(w['content'] for w in writes if '/support/declarations.rs' in w['path'])
+        self.assertIn('pub struct Value', declarations)
+        self.assertIn('pub amount: u32', declarations)
+        self.assertIn('pub fn shared_value', declarations)
+        model = next(w['content'] for w in writes if '/model/mod.rs' in w['path'])
+        self.assertIn('crate::plain::ordinary_context::cross_category_value()', model)
+        self.assertNotIn('crate::fast::', model)
+        forbidden = {'testkit-visibility', 'testkit-crate-context', 'cross-category-support'}
+        self.assertFalse(forbidden & set(self.plan['totals']['work_items_by_kind']))
+
     def test_asset_rewrites_cover_include_and_manifest_join(self):
         rewrites = [r for r in self.plan['path_rewrites'] if r['source'].endswith('fast/plain.rs')]
         self.assertIn('include_str', {r['kind'] for r in rewrites})
@@ -77,6 +91,10 @@ class CourtCodemodTests(unittest.TestCase):
         self.assertTrue(plan['splits'])
         self.assertTrue(all(s['area'] and s['owners'] for s in plan['splits']))
         self.assertTrue(all('bucket' not in s['area'] for s in plan['splits']))
+        for a in plan['courts']:
+            for b in plan['courts']:
+                if a['name'] < b['name'] and a['frontier'] == b['frontier']:
+                    self.assertGreater(a['packing_lines'] + b['packing_lines'], 55)
 
     def test_plan_is_byte_deterministic(self):
         other = build(self.root / 'Cargo.toml', self.root, copy.deepcopy(self.data))
@@ -101,8 +119,9 @@ class CourtCodemodTests(unittest.TestCase):
             after_targets = [f'crates/{c["name"]}/tests/{c["name"].replace("-", "_")}.rs' for c in self.plan['courts']]
             expected = Counter()
             for body, count in before_bodies.items():
-                for rewrite in self.plan['path_rewrites']:
-                    body = body.replace(rewrite['before'], rewrite['after'])
+                replacements = {r['before']: r['after'] for r in self.plan['path_rewrites'] if r['before']}
+                pattern = '|'.join(re.escape(v) for v in sorted(replacements, key=lambda v: (-len(v), v)))
+                body = re.sub(pattern, lambda m: replacements[m[0]], body)
                 expected[body] += count
             self.assertEqual(expected, self.named_bodies(root, after_targets))
             self.assertFalse((root / 'crates/worth-host/tests').exists())
@@ -135,7 +154,10 @@ class CourtCodemodTests(unittest.TestCase):
             self.assertEqual(apply(self.plan, root), {'moved': 0, 'written': 0})
             self.assertTrue(all(filesystem_path(root / m['destination']).is_file() for m in self.plan['effects']['moves']))
             self.assertTrue(root.resolve().is_relative_to(Path(folder).resolve()))
-            shutil.rmtree(filesystem_path(root))
+            def writable(function, path, error):
+                Path(path).chmod(stat.S_IWRITE)
+                function(path)
+            shutil.rmtree(filesystem_path(root), onexc=writable)
 
     def test_source_scan_excludes_comments_strings_and_shadow_names(self):
         source = '// use unused::Thing;\nlet s = "unused::Thing"; use host as h; extern crate extra; h::run();'

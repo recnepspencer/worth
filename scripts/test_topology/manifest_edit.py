@@ -89,7 +89,9 @@ def dependencies(rows, destination):
             grouped[key] = dict(row, features=list(row.get('features', [])))
             continue
         old = grouped[key]
-        if (old.get('path'), old.get('requirement'), old['package']) != (row.get('path'), row.get('requirement'), row['package']):
+        old_source = ('path', str(Path(old['path']).resolve())) if old.get('path') else ('registry', old.get('requirement'))
+        new_source = ('path', str(Path(row['path']).resolve())) if row.get('path') else ('registry', row.get('requirement'))
+        if (old_source, old['package']) != (new_source, row['package']):
             raise ValueError('dependency alias collision: ' + row['alias'])
         old['features'] = sorted(set(old['features']) | set(row.get('features', [])))
         old['default_features'] |= row['default_features']

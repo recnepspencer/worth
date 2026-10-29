@@ -26,13 +26,21 @@ dev-dependency they name.
 
 Source inventory and module resolution precede ownership. Compilation readers
 own Rust source; inspecting another court's source as data does not change its
-compilation owner. Shared support gets one testkit module tree, preserving its
-ancestry and original visibility. Visibility, macro expansion, dynamic manifest
-paths, package identity assertions, feature conditions, behaviour-name decisions
-and cross-category support are handed to fixers by court. The codemod does not
-expand macros, grant visibility, rename behaviours, or invent category evidence.
-It preserves feature predicates for explicit semantic repair; a plan is not a
-claim that those predicates are already meaningful in the new package.
+compilation owner. Shared support gets a canonical module tree. Its actual lexical readers determine
+whether it is local to one court (outside the category modules) or shared through
+a testkit. Test-only declarations, fields and module paths are made public as
+needed by that new ownership; every visibility and path edit is recorded.
+Feature predicates are bound to the original resolved package/target feature
+context without introducing court features. Macro expansion, identity assertions,
+behaviour names and classification choices remain explicit fixer work. Dynamic
+filesystem and executable contexts are still reported pending their mechanical
+path conversion.
+
+Oversized frontiers use first-fit decreasing of whole origin/module areas,
+sorted by descending source charge and then module path. Only an oversized area
+is descended. Charges include source and generated module overhead; reports also
+show the actual emitted Rust lines. Split names omit a repeated frontier stem.
+
 
 Effects include the complete generated manifests/module roots, original/final
 hash preconditions, and every module, filesystem, fixture-manifest and Rust path

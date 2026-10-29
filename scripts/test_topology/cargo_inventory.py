@@ -6,6 +6,7 @@ import tomllib
 
 from module_tree import read_tree
 from rust_source import crate_uses
+from frontier_adapter import package_roles
 
 
 def metadata(manifest):
@@ -33,8 +34,9 @@ def role(package, members):
 def inventory(data, root):
     result = []
     members = set(data['workspace_members'])
+    roles = package_roles(data)
     for package in sorted(data['packages'], key=lambda p: p['name']):
-        if role(package, members) != 'product':
+        if roles.get(package['id']) not in ('product', 'testkit', 'tool'):
             continue
         package_root = Path(package['manifest_path']).resolve().parent
         targets = []
@@ -45,6 +47,7 @@ def inventory(data, root):
         tests = package_root / 'tests'
         files = sorted(p for p in tests.rglob('*') if p.is_file()) if tests.exists() else []
         result.append({'cargo': package, 'root': package_root, 'targets': targets,
+                       'role': roles[package['id']],
                        'files': files,
                        'manifest': tomllib.loads(Path(package['manifest_path']).read_text(encoding='utf-8'))})
     return result

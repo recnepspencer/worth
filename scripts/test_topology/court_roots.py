@@ -1,11 +1,12 @@
-"""Generate one binary and category-first module tree for each product frontier."""
+"""One binary and category-first test tree, with support outside category modules."""
 from collections import defaultdict
 import json
-import re
+from pathlib import Path
 
 from court_partition import CATEGORIES, INTERIM
-from module_tree import without_tests
+from rust_items import items
 from source_rewrite import relpath
+from cfg_context import rebind
 
 
 def area_names(names):
@@ -24,84 +25,58 @@ def target_area(unit):
 
 def module_path(unit):
     category = tuple(unit['category'].split('::')) if unit['category'] else ()
-    return category + (origin_name(unit['owner']),) + target_area(unit) + area_names(unit['node'].names)
+    return category + (origin_name(unit['owner']),) + target_area(unit) + area_names(unit['node'].names) + tuple(unit.get('module_context', ()))
 
 
-def prologue(text):
-    # Context comes from existing ancestor scopes. Generated files cannot put an
-    # inner doc comment after another ancestor's items.
-    return re.sub(r'(?m)^(\s*)//!', r'\1//', text).strip() + '\n'
+def case_path(unit, workspace):
+    name = unit['court']
+    return workspace / 'crates' / name / 'tests' / name.replace('-', '_') / Path(*module_path(unit)) / 'mod.rs'
 
 
-def render(court, workspace, assignments, aliases, effects, unit_text, context_text):
+def insert_context(text, context):
+    parsed = items(text)
+    first = next((item.start for item in parsed if item.keyword != 'inner-attribute'), len(text))
+    return text[:first] + context + text[first:]
+
+
+def render(court, workspace, effects, model, unit_text, local_support=''):
     name = court['name']
-    base = workspace / 'crates' / name
-    binary = base / 'tests' / (name.replace('-', '_') + '.rs')
+    binary = workspace / 'crates' / name / 'tests' / (name.replace('-', '_') + '.rs')
     directory = binary.with_suffix('')
-    scopes, mounts, support = defaultdict(set), {}, {}
+    scopes, mounts = defaultdict(list), {}
     for unit in court['units']:
-        node, path = unit['node'], module_path(unit)
-        root = unit['owner']['targets'][unit['target_index']]['tree']
-        origin_path = (tuple(unit['category'].split('::')) if unit['category'] else ()) + (origin_name(unit['owner']),) + target_area(unit)
-        if root is not node or not unit['own_only']:
-            context_path = origin_path if target_area(unit) else ()
-            scopes[context_path].add(prologue(context_text(without_tests(root.own_text()), unit, root.source)))
-        for ancestor in unit['ancestors'][1:]:
-            ancestor_path = tuple(unit['category'].split('::')) if unit['category'] else ()
-            ancestor_path += (origin_name(unit['owner']),) + target_area(unit) + area_names(ancestor.names)
-            scopes[ancestor_path].add(prologue(context_text(without_tests(ancestor.own_text()), unit, ancestor.source)))
-        scopes[origin_path].add('#[allow(unused_imports)]\nuse crate::*;\n')
-        for shared in unit['support']:
-            if len(shared.names) == 1:
-                key = (origin_path if target_area(unit) else (), shared.names[-1])
-                if key in support and support[key].source != shared.source:
-                    raise ValueError('root support alias collision: ' + shared.names[-1])
-            else:
-                parent = origin_path + area_names(shared.names[:-1])
-                key = (parent, shared.names[-1])
-            support[key] = shared
-        if unit['own_only']:
-            target = directory.joinpath(*path, 'mod.rs')
-            scopes[path].add(prologue(unit_text(unit, target)))
-        else:
-            if path in mounts and mounts[path][0].source != node.source:
-                raise ValueError('module path collision: ' + '::'.join(path))
-            mounts[path] = (node, unit)
-    all_paths = set(scopes) | set(mounts) | {path for path, _alias in support}
-    for path in list(all_paths):
-        all_paths.update(path[:i] for i in range(len(path)))
-    source_for = {path: directory.joinpath(*path, 'mod.rs') if path else binary for path in all_paths}
-    for (parent, alias), node in sorted(support.items()):
-        attrs = re.sub(r'#\s*\[\s*path\s*=\s*(?:r#*".*?"#*|"(?:\\.|[^"\\])*")\s*\]\s*', '', node.declaration.attributes, flags=re.S) if node.declaration else ''
-        assignment = assignments.get(node.source)
-        if assignment and '-testkit' in assignment['owner']:
-            line = attrs + 'pub(crate) use ' + assignment['owner'].replace('-', '_') + '::' + aliases[node.source] + ' as ' + alias + ';\n'
-        else:
-            target = assignment['destination'] if assignment else node.source
-            line = attrs + '#[path = ' + json.dumps(relpath(target, source_for[parent].parent)) + ']\npub(crate) mod ' + alias + ';\n'
-        scopes[parent].add(line)
-    for path in sorted(all_paths, key=lambda p: (len(p), p)):
+        path = module_path(unit)
         if path in mounts:
-            node, unit = mounts[path]
-            # A source unit already includes its descendants. Its physical source
-            # is mounted directly; wrappers exist only above the selected unit.
-            continue
-        source = source_for[path]
-        text = ''.join(sorted(scopes[path]))
-        children = sorted(p for p in all_paths if len(p) == len(path) + 1 and p[:-1] == path)
-        for child_path in children:
-            attrs = ''
-            if child_path in mounts:
-                node, unit = mounts[child_path]
-                assignment = assignments.get(node.source)
-                target = assignment['destination'] if assignment else node.source
-                if node.offset:
-                    target = directory.joinpath(*child_path).with_suffix('.rs')
-                    effects.write(target, unit_text(unit, target))
-                if node.declaration:
-                    attrs = re.sub(r'#\s*\[\s*path\s*=\s*(?:r#*".*?"#*|"(?:\\.|[^"\\])*")\s*\]\s*', '', node.declaration.attributes, flags=re.S)
-            else:
-                target = source_for[child_path]
-            text += attrs + '#[path = ' + json.dumps(relpath(target, source.parent)) + ']\npub(crate) mod ' + child_path[-1] + ';\n'
+            raise ValueError('test module collision: ' + '::'.join(path))
+        mounts[path] = unit
+    paths = set(scopes) | set(mounts) | {()}
+    for path in list(paths):
+        paths.update(path[:i] for i in range(len(path)))
+    files = {path: directory.joinpath(*path, 'mod.rs') if path else binary for path in paths}
+    for path in sorted(paths):
+        source = files[path]
+        if path in mounts:
+            text = unit_text(mounts[path], source)
+        else:
+            text = ''.join(sorted(set(scopes[path])))
+        if not path:
+            text += local_support
+        for child in sorted(p for p in paths if len(p) == len(path) + 1 and p[:-1] == path):
+            unit = mounts.get(child)
+            attributes = rebind(model.record(unit)['attributes'], model.record(unit)['features'])[0] if unit else ''
+            text += attributes + '#[path = ' + json.dumps(relpath(files[child], source.parent)) + ']\npub(crate) mod ' + child[-1] + ';\n'
         effects.write(source, text)
     return binary
+
+
+def disambiguate(courts):
+    contexts = {'fast': 'ordinary_context', 'exhaustive': 'reference_context', 'scale': 'growth_context', 'serial': 'isolated_context'}
+    for court in courts:
+        grouped = defaultdict(list)
+        for unit in court['units']:
+            grouped[module_path(unit)].append(unit)
+        for path, population in grouped.items():
+            if len(population) > 1:
+                for unit in population:
+                    first = unit['node'].names[0] if unit['node'].names else 'root'
+                    unit['module_context'] = (contexts.get(first, first + '_context'),)
