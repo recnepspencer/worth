@@ -2,6 +2,7 @@
 import hashlib
 from pathlib import Path
 import subprocess
+from filesystem_path import filesystem_path, command_path
 
 
 def digest(data):
@@ -48,8 +49,42 @@ def contained(root, name):
     return path
 
 
+def move_groups(root, moves):
+    """Use maximal unchanged subtrees, without absorbing unplanned files."""
+    tracked = set(subprocess.check_output(['git', '-c', 'core.longpaths=true', 'ls-files', '-z'], cwd=command_path(root)).decode('utf-8').split('\0'))
+    mapping = dict(moves)
+    candidates = {}
+    for source, destination in moves:
+        for directory in source.parents:
+            if directory == root:
+                break
+            candidates.setdefault(directory, set()).add(source)
+            if directory.name == 'tests':
+                break
+    covered, result = set(), []
+    for directory, sources in sorted(candidates.items(), key=lambda item: (len(item[0].parts), str(item[0]))):
+        if sources & covered or len(sources) < 2:
+            continue
+        first = min(sources)
+        destination = mapping[first]
+        for _part in first.relative_to(directory).parts:
+            destination = destination.parent
+        if destination.exists() or any(mapping[p] != destination / p.relative_to(directory) for p in sources):
+            continue
+        if any(relative(p, root) not in tracked for p in sources):
+            continue
+        actual = {p.resolve() for p in directory.rglob('*') if p.is_file()}
+        if actual != sources:
+            continue
+        result.append((directory, destination, True))
+        covered.update(sources)
+    result.extend((source, destination, relative(source, root) in tracked)
+                  for source, destination in moves if source not in covered)
+    return sorted(result, key=lambda row: str(row[0]))
+
+
 def apply(plan, root):
-    root = root.resolve()
+    root = filesystem_path(root.resolve())
     program = plan['effects']
     # Validate every byte and destination before taking the first effect. Replays
     # accept only the original or final bytes, never a silently changed third tree.
@@ -76,13 +111,12 @@ def apply(plan, root):
         if digest(before) != expected and not (not path.exists() and moved.get(write['path']) == expected):
             raise ValueError('write precondition changed: ' + write['path'])
         writes.append((path, final))
-    for source, destination in moves:
+    groups = move_groups(root, moves) if moves else []
+    for source, destination, tracked in groups:
         destination.parent.mkdir(parents=True, exist_ok=True)
-        tracked = subprocess.run(['git', 'ls-files', '--error-unmatch', '--', relative(source, root)],
-                                 cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
         if tracked:
-            subprocess.run(['git', 'mv', '--', relative(source, root), relative(destination, root)],
-                           cwd=root, check=True)
+            subprocess.run(['git', '-c', 'core.longpaths=true', 'mv', '--', relative(source, root), relative(destination, root)],
+                           cwd=command_path(root), check=True)
         else:
             source.rename(destination)
     for path, content in writes:
@@ -92,6 +126,9 @@ def apply(plan, root):
     for source, _destination in moves:
         parent = source.parent
         while parent != root:
+            if not parent.exists():
+                parent = parent.parent
+                continue
             try:
                 parent.rmdir()
             except OSError:

@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 
 from rust_source import code, modules, tokens, string_value, pairs, replace_spans
+from filesystem_path import filesystem_path
 
 
 @dataclass
@@ -40,7 +41,7 @@ def read_tree(source, names=(), active=(), declaration=None, text=None, offset=0
     source = source.resolve()
     if depth > 100:
         raise ValueError('module recursion at ' + str(source))
-    text = source.read_text(encoding='utf-8') if text is None else text
+    text = filesystem_path(source).read_text(encoding='utf-8') if text is None else text
     node = Node(source, names, text, declaration=declaration, offset=offset)
     ordinary = module_directory or (source.parent if not names or source.name == 'mod.rs'
                                      else source.with_suffix(''))
@@ -55,7 +56,7 @@ def read_tree(source, names=(), active=(), declaration=None, text=None, offset=0
                 target = path_base / item.path
             else:
                 options = [ordinary / (item.name + '.rs'), ordinary / item.name / 'mod.rs']
-                found = [p for p in options if p.is_file()]
+                found = [p for p in options if filesystem_path(p).is_file()]
                 if len(found) != 1:
                     raise ValueError(f'{source}: module {item.name} has {len(found)} source candidates')
                 target = found[0]
@@ -112,7 +113,7 @@ def source_files(node):
 
 
 def tree_text(node):
-    return '\n'.join(path.read_text(encoding='utf-8') for path in sorted(source_files(node)))
+    return '\n'.join(filesystem_path(path).read_text(encoding='utf-8') for path in sorted(source_files(node)))
 
 
 def literal_references(node, package_root):
