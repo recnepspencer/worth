@@ -4,6 +4,7 @@
 //! typed outcome before any effect, and a retry of a recorded start still
 //! replays.
 
+pub use worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind;
 pub use worth_query_host::facade::{
     application_discovery::WorthQueryWorkflowDefinitionDiscovery,
     declaration::application_program::ApplicationWorkflowDefinitionIdentity,

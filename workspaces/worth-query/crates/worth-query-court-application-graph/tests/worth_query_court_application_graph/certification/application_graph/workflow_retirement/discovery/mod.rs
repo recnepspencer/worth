@@ -6,7 +6,10 @@ fn workflow_actor_contract_disabled_discovery_preserves_native_start_currentness
     let main = application.runtime().current_world();
     let draft = terminal_definition("completed");
     let identity = draft.identity().clone();
-    assert_eq!(discover(&application, main, &identity), Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy),);
+    assert_eq!(
+        discover(&application, main, &identity),
+        Err(WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy),
+    );
 
     let first = expect_published(
         "first revision",
@@ -17,7 +20,10 @@ fn workflow_actor_contract_disabled_discovery_preserves_native_start_currentness
             601,
         ),
     );
-    assert_eq!(discover(&application, main, &identity), Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy));
+    assert_eq!(
+        discover(&application, main, &identity),
+        Err(WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy)
+    );
     let recorded = expect_started(start_instance(&application, first.clone(), 602));
     let second = expect_published(
         "second revision",
@@ -51,7 +57,10 @@ fn workflow_actor_contract_disabled_discovery_preserves_native_start_currentness
     assert_ne!(started, recorded, "the refused key recorded nothing");
 
     expect_retired(retire_definition(&application, second.clone(), 605));
-    assert_eq!(discover(&application, main, &identity), Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy),);
+    assert_eq!(
+        discover(&application, main, &identity),
+        Err(WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy),
+    );
     expect_retired_start(start_instance(&application, second, 606));
     let _reopened_definition = expect_published(
         "reopened lineage",
@@ -62,7 +71,10 @@ fn workflow_actor_contract_disabled_discovery_preserves_native_start_currentness
             607,
         ),
     );
-    assert_eq!(discover(&application, main, &identity), Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy));
+    assert_eq!(
+        discover(&application, main, &identity),
+        Err(WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy)
+    );
 }
 
 #[test]
@@ -91,7 +103,13 @@ fn workflow_actor_contract_disabled_discovery_preserves_fork_start_control() {
             612,
         ),
     );
-    assert_eq!(discover(&application, fork, &identity), Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy));
-    assert_eq!(discover(&application, main, &identity), Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy));
+    assert_eq!(
+        discover(&application, fork, &identity),
+        Err(WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy)
+    );
+    assert_eq!(
+        discover(&application, main, &identity),
+        Err(WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy)
+    );
     expect_started(start_instance(&application, first, 613));
 }

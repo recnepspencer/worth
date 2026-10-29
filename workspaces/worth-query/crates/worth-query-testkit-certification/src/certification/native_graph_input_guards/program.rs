@@ -1,10 +1,10 @@
 //! Native declaration and installation are the only operation implementation.
-pub use super::{actions::*, schema::*};
+pub use super::actions::*;
 pub use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
     },
-    declaration::{application_program::*, application_schema::*},
+    declaration::application_program::*,
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 pub struct Contribution;

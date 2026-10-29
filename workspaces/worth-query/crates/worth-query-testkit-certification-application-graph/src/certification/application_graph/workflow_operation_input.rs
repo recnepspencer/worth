@@ -11,6 +11,7 @@ pub use super::document_retention_model::{
 };
 pub use worth_query_decl::facade::application_program::*;
 pub use worth_query_host::facade::application_entry::*;
+pub use worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind;
 pub use worth_query_package_archive::facade::{
     decode_workflow_definition_draft, WorthQueryPackageArchiveLimits,
 };

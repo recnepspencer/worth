@@ -1,8 +1,8 @@
 //! Independent snapshot-identity readback distinguishes retention from retirement.
 pub use super::{schema::*, selection_schema::*};
 pub use worth_query_decl::facade::{
-    application_query::*, application_schema::*, worth_query_application_query,
-    worth_query_portable_type, worth_query_query_binding, worth_query_structured_value_binding,
+    application_query::*, worth_query_application_query, worth_query_portable_type,
+    worth_query_query_binding, worth_query_structured_value_binding,
 };
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,

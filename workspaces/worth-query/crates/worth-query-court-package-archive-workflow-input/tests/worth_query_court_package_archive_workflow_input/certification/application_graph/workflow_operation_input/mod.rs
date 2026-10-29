@@ -32,7 +32,7 @@ fn ordinary_publication_refuses_zero_and_two_inputs_before_publication() {
             runtime.current_world(),
             &ApplicationWorkflowDefinitionIdentity::new("input-cardinality").unwrap()
         ),
-        Err(worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy)
+        Err(WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy)
     );
     let published = runtime
         .with_host_advancement(|phase| {

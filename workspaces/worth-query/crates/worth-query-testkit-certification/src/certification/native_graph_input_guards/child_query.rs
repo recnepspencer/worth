@@ -1,8 +1,8 @@
 //! Governed projection proves distinct child entities and the actual nested parent relation.
-pub use super::{child_actions::*, schema::*};
+pub use super::child_actions::*;
 pub use worth_query_decl::facade::{
-    application_query::*, application_schema::*, worth_query_application_query,
-    worth_query_portable_type, worth_query_query_binding, worth_query_structured_value_binding,
+    application_query::*, worth_query_application_query, worth_query_portable_type,
+    worth_query_query_binding, worth_query_structured_value_binding,
 };
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,

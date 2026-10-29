@@ -8,7 +8,7 @@ pub use crate::facade::certification::peer_audit::{
     Journal, JournalActor, JournalName, JournalRevision, ParentJournal,
 };
 pub use worth_query_decl::facade::{
-    application_query::ApplicationQueryRootPath, application_schema::*, worth_query_operation,
+    application_query::ApplicationQueryRootPath, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
     worth_query_operation_writes, worth_query_structured_value_binding,
 };
