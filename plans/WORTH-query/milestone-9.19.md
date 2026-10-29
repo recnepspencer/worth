@@ -124,6 +124,54 @@ Proprietary acceptance repeats the decisive geometry boundary through the actual
 CAD installation and METABOSS workload. Earlier public passes do not claim private
 adoption, and private production code is not rewritten after each public phase.
 
+### Phase 2 Court: The Unopened Affected Scope
+
+Install one ordinary public catalog with two distinct Directory scopes A and B,
+the same Item/Contains kinds, and lawful many-directory membership. Author all
+records and memberships through installed operations. A shared item x belongs
+to A and B; another item y in B has the name `taken`. The principal is lawfully
+admitted for the operation and public reads in both directories. Open only A's
+public prefix index. No public handle, cached session or caller-supplied scope
+list for B participates in the mutation.
+
+The installed uniqueness rule declares the prefix index as its Source scope.
+Its query finds possible equal names and its own string owner checks exact
+equality. An ordinary rename scoped to A changes x from `free` to `taken`.
+The declared mutation lawfully writes x's name; it does not write B or y.
+Native must discover both Source scopes from the actual inverse Contains paths,
+prepare both candidate roots before any invariant, and invoke the existing rule
+in B as well as A. Only B violates the rule. Require the rule's typed refusal
+at B, unchanged committed graph/index answers, and release of staged backing.
+A refusal caused by unavailable B, setup or READ denial is not this result:
+the requirement explicitly admits cold reconstruction, and the fixture proves
+that B's Source was acquired, its root prepared and its real rule invoked.
+
+Use an independent authored exhaustive scan per directory for committed and
+candidate expectations. A fresh rename to a distinct name commits; a subsequent
+admitted public open/read in B must attach the published root, perform no new
+Source/provider rebuild, and equal the scan. Reusing only A's open root,
+selecting the initiating scope, reading a committed root in the candidate rule,
+or treating a skipped B invocation as a pass must make this court fail.
+
+In the same focused family, ordinary membership creation/rewiring introduces
+x into a previously empty or newly created directory. The real declared
+create/share operation includes the required entity/relation roles and rights;
+Native's created-record correspondence supplies its full identity. A rule whose
+violation exists only after that membership change must run for the new Source
+scope despite its empty before-image and absent public cache. Retirement and
+rewiring cover leaving scopes too. Literal IDs or a manually assembled candidate
+cannot establish these outcomes. An unopened small scope is a visible cold lane;
+it is not used to claim warm locality.
+
+Pair this boundary with genuine sibling-branch, retained-basis, full-generation,
+executable-version and observation/audience twins, plus cancellation of the
+original request after actual root preparation. Require no matching publication,
+unchanged retained committed answers and physical staged-backing release.
+Separate request/failure outcomes from a domain-rule refusal. Reuse meaningful
+existing controls rather than multiplying their Cartesian product. After both
+providers work, the 1,000/2,000 geometry court measures the whole warm Source,
+reverse-scope, provider and invariant preparation path, not just the query kernel.
+
 ## Product Decision Lock
 
 1. Access products are derived managed resources, never authoritative truth.
@@ -204,17 +252,8 @@ never imports the cert-only replay facade into production.
 schema.managed_index::<CellCandidates>(cell_candidates_definition());
 setup.managed_index::<CellCandidates, _>(CellIndexProvider::new())?;
 
-// Both receivers carry their actual admitted basis; the declaration grants none.
-let discovered = decision_reader.index_query(
-    CellCandidates::reference(), &Overlap::new(probe),
-)?;
-let proposed = invariant_context.view().index_query(
-    CellCandidates::reference(), &Overlap::new(candidate_probe),
-)?;
-// The same entrance supports a different provider and typed query grammar.
-let names = decision_reader.index_query(
-    NamesByPrefix::reference(), &Prefix::new("motor"),
-)?;
+// Phase 2's Source/scope declaration and its two differently admitted readers
+// are specified below. An index reference alone opens neither reader.
 ```
 
 Each implementing phase replaces its applicable sketch with a compiled public
@@ -225,32 +264,40 @@ free-standing provider callback becomes an ordinary application read surface.
 
 ```text
 workspaces/worth-query/crates/
-  worth-query-declaration/src/application_query/
-    managed_index/                       N portable provider/source/query meaning
+  worth-query-declaration/src/
+    application_query/managed_index/     E public provider/source/query meaning
+      invariant_source.rs               N explicit Source-scoped rule requirement
+    application_schema/invariant.rs     E definition binds that requirement
+    application_operation/              E declared Parent index preparation reads
   worth-query-installation/src/application_query/
-    managed_index/                       N exact provider and source binding
-    access_strategy/                     N existing graph-read strategy realization
+    managed_index/                       E exact provider and public Parent binding
+      invariant_source/                 N installed rule/Source/scope association
+        projection.rs                   N exact physical fields and path lowering
+        scope_pullback.rs               N complete before/after scope program
+    access_strategy/                     N planned graph-read strategy realization
       contract.rs
       graph_read_requirement_binding.rs
       membership.rs
   worth-query-admission/src/
     graph_read_access/                   E original access-plan admission
-    managed_index/                       N committed/candidate eligibility
+    managed_index/                       N public committed-read eligibility
   worth-query-execution/src/domain_computation/primary_graph/
     application_query/derived_view/      E one retained-view lifecycle
-      managed_index/                     N provider roots, candidate staging and queries
-        provider/
-        root/
-        candidate/
-        dependency/
-          source/
-          query/
-          routing/
-        lifecycle/
+      registry/                         E registration, retention and disposal
+      publication.rs                    E DependencyIndex; extend Source routing
+    application_query/managed_index/     E provider root/storage owner, not a new registry
+      nodes/                            E immutable pages and checked coordinates
+      source/                           N replace dense cold-image-only internals
+        occurrences.rs                  N persistent full-generation Source rows
+        dependencies.rs                 N complete per-entry and absence support
+      candidate/                        N pure maintenance and staged payload adapter
+        preparation.rs
+        publication.rs
+      retention/                        E one registered resource and root lifetime
     application_invariant/typed_view/
       managed_index/                     N candidate-root read adapter
-    invariant_projection/operation_reader/
-      managed_index/                     N committed-root preparation adapter
+    handler/invariant/
+      managed_index.rs                   N admitted DecisionReader adapter
     access_strategy/                     N candidate/refinement/evidence orchestration
       coverage/
       exact_refinement/
@@ -267,12 +314,29 @@ workspaces/worth-query/crates/
     managed_index/                       N shared lifecycle/provider courts
     managed_access/                      N membership, disclosure and footprint courts
 crates/worth-relational/src/
-  validation/custom_rule/                E exact candidate source custody
-  authority/commit/                      E existing commit-boundary handoff
+  schema/registry_custody.rs             E exact selected schema/definition owner
+  derived_relation/structural/
+    candidate_source/                   N Native Source scope/projection custody
+      association.rs                    N bind the installed physical Source plan
+      scope.rs                          N affected scope closure, including absence
+      projection.rs                     N admitted before/after row acquisition
+      loan.rs                           N reborrow for each actual observation
+  validation/custom_rule/                E real rule receivers and scoped invocations
+  authority/commit/phases/
+    applied_mutation.rs                 E owns candidate-lived prepared Source/roots
+  mvcc/validation/proposal_round.rs      E prepare before first invariant
+  mvcc/publication/companion/            E exact cell matching and atomic cutover
+crates/worth-proof/src/
+  managed_source.rs                     N concrete Source-audience legality witness
+crates/worth-foundational/src/
+  managed_source.rs                     N portable Source association identity only
 ```
 
-`E` means an existing owner to extend; `N` means a created destination populated
-by its implementing phase. Paths name responsibilities, not empty placeholders.
+`E` means an existing owner to extend; `N` means a planned destination populated
+by its implementing phase, not an instruction to create empty placeholders now.
+The Source subtree replaces the cold-image-only representation; it does not add
+another Source cache. Later access/membership/footprint destinations remain
+committed successors, not Phase 2 implementation scope.
 Provider construction, maintenance and query mechanics are children of their pure
 value/domain owner, outside the generic framework. Name-prefix and geometry
 providers must enter as siblings there without changing the framework facade or
@@ -376,14 +440,348 @@ Phase 2 remains partial. The qualified paired structural Source prerequisite now
 has focused passing node-backing and pure value evidence: two Query backing
 courts, eight consumer cases and one compiled inventory case. Immutable node-page
 edits and pure prefix/box insertion, retirement and refitting mechanics are
-implemented. The
-backing shares unchanged pages; value mechanisms accept generic occurrence keys.
+implemented. The backing shares unchanged pages; value mechanisms accept generic
+occurrence keys.
 The application adapters still consume cold Source ordinals. Admitted projected
 row deltas and full-generation occurrence issuance, scalar/per-entry and indirect
 routing, preparation before Native's first invariant, both managed-index read
 postures and atomic graph/root publication/cleanup are not implemented by this
 backing work. The required 1,000/2,000 growth court is also pending; local algorithm
 checks cannot substitute for Source acquisition and scope maintenance evidence.
+
+#### Explicit Source And Scope Association
+
+This section decides the missing authority contract; its APIs and types are
+implementation destinations, not claims of availability or qualification.
+
+`ApplicationInvariantDefinition<Schema, Rule>::managed_index_source(Index::reference())`
+declares a Source-scoped invariant. The index's actual installed Source query
+defines the scope entity, row projection and membership paths. The rule's existing
+read/applicability contract must cover every physical entity/relation kind in
+those paths and projections. Installation refuses an incomplete declaration;
+it does not repair it by silently widening access. The requirement is canonical
+portable definition meaning and participates in schema/program version identity.
+
+One requirement determines the invocation scope. Additional index requirements
+may share that exact Source scope type and compiled scope meaning; incompatible
+scope joins refuse at installation, never become an implicit global scope or
+Cartesian execution. The first prefix and box rules each use one requirement.
+This constraint does not remove either provider, indirect geometry or growth
+from Phase 2.
+
+Installation produces `InstalledInvariantIndexAssociation<Schema, Rule, Index>`
+by binding the real invariant, provider/version, Source query/binding, selected
+schema, full physical projection, membership/predicate paths and scope pullback.
+It also binds the Source root kind, scope kind, field locators/value codecs,
+relation orientation, endpoint roles, nested projection dependencies, lifecycle
+and absence interpretation, ordering, deduplication and result limits. Index,
+scope, rule and Source names/digests describe the association; none admits reads.
+Native binds its physical acquisition program to the real selected schema owner.
+Query continues to own query lowering, codecs and provider mechanics. This
+extends existing schema definitions and dependency postings, not a mutable
+Source/index truth registry or a second evaluator.
+
+Public `SameAdmittedScope` and `NoParameters` keep their existing meaning.
+Invariant access is a separate installed Native audience; it does not acquire a
+public principal, borrow a public session or turn rule kind access into Parent
+READ authority. Conversely a public principal/operation grant cannot authorize
+Native invariant projection. Public Source restrictions still apply: public
+authorization/disclosure, no disclosure rules or capability, no Source parameters,
+continuation/live/component/orbit selection or recursive managed selection.
+The compiler must also prove that Source row meaning is independent of public
+principal identity; admission may refuse a public read but cannot change the
+canonical Source image to an audience-filtered subset.
+
+The compiler lowers every supported Source root/projection path and guard to
+finite physical forward acquisition and reverse scope/dependency paths, using
+the existing path/derived-relation owners. This includes endpoints whose scalar
+values determine an edge's box. Missing inverse support, ambiguous occurrence
+identity, unsupported expressions or unprovable complete audience fail with
+`UnsupportedInvariantSource` at installation. Required prefix and box shapes,
+including endpoint dependencies, must be implemented before Phase 2 closes;
+today's narrower API is not permission to omit them. There is no user callback
+to supply a supposedly complete scope list or validate arbitrary raw facts.
+
+#### Complete Scope Discovery And Incremental Source
+
+Native starts from the applied mutation's complete direct record lifecycle,
+field/aspect revisions, created full-generation identities, relation endpoint
+changes and adjacency deltas, including owner-induced/cascade changes rather
+than only the authored operation batch, with genuine before/after access.
+Query's existing `DependencyIndex` gains compiled Source-definition/entry targets
+at the same owner; it routes relevant physical changes without scanning installed
+queries or all scopes. Structural before/after pullback and scalar per-entry routing
+are complementary. The qualified structural frontier alone is not a row delta
+or row-read grant.
+
+For every changed dependency, run the compiled inverse projection and membership
+prefixes on both sides, then pull back to every Source scope. Preserve empty
+prefix support and nonmatching guard inputs. Union and canonically deduplicate
+scope occurrences from before and after. Scope entity creation/retirement seeds
+the closure independently of positive membership. A newly matching row, deleted
+member, rewired endpoint, newly reachable scope or empty Source must therefore
+be found even when no public query/root has ever been opened there. The initiating
+operation scope, retained rows, current public registrations and positive hits
+cannot bound this universe. Missing support refuses preparation; it is never an
+exact-empty closure or a request to sweep the world.
+
+Native issues a complete `PreparedManagedIndexScopeClosure` for this exact
+proposal and installed association. The existing invariant engine schedules the
+rule once for each affected live Source scope, including cold scopes, and joins
+all those invocation results into the required invariant receipt. A missing,
+stopped or refused invocation cannot satisfy producer-required invariant admission.
+For several compatible requirements, use the union of their affected scopes
+and prepare every required index at each invocation scope. An unchanged index
+can share its exact current payload; it cannot borrow a different scope's root.
+The rule's ordinary scope planner can refine its business work inside that
+invocation, but cannot select which affected Source scopes receive an invocation.
+Retired scopes carry an exact before/present-after/absent disposition for cleanup;
+absence is not an unreadable scope that can silently skip a surviving rule.
+
+Source rows use framework-issued full-generation entity/record occurrences,
+qualified by the Source scope and installed projection route. Entity-deduplicated
+Source paths retain that installed deduplication meaning; where occurrence
+multiplicity is semantic, the installed path support contributes its genuine
+full-generation relation occurrences. An unprovable key shape refuses. Cold
+dense ordinals remain temporary enumeration coordinates and never become update
+identity, permission or currentness. Retire/recreate cannot reuse an occurrence.
+
+The existing Source owner becomes persistent per-entry projection/dependency
+storage, retaining nonmatches, empty membership and complete source support.
+Warm preparation reborrows admitted before/after values only for the changed
+closure, updates those entries and provider paths, and shares unchanged immutable
+backing. It may not clone/sort/rebuild the complete Source image, all provider
+nodes or a separate authoritative-looking row cache. Whole-Source dependency
+semantics remain conservative: all influencing Source changes invalidate a
+dependent observation. A Source-owner equivalence/currentness proof must preserve
+that complete roster and be consumed by the original materialization owner;
+an index generation, provider assertion or returned-row list cannot replace it.
+No result-predicate membership or conflict narrowing is granted before Phases 3–4.
+
+#### Native Preparation Audience And Proof Placement
+
+The Native commit owner inserts a derived preparation phase after
+`apply_mutation_draft` has produced the real candidate and BEFORE
+`enforce_commit_boundary_for_selected_branch` or any later invariant execution.
+It admits the exact compiled physical Source program under the installed rule's
+complete read/affected audience and existing operation/schema law, using the
+original execution request. This is an installed derived-resource preparation
+phase, not a generic callback validator or an after-publication notification.
+
+Native mints candidate-lived before/after Source custody bound to the real
+runtime owner, selected branch/incarnation and committed basis, unique proposal,
+selected schema/definition/version, installed association, exact audience and
+full-generation scope/row occurrences. Before is the immutable predecessor;
+after is the actually applied candidate. No raw WorkingState or freely reusable
+read handle crosses the facade. Query receives only the compiled projection and
+change loans needed for the generic provider update. Roots for ALL affected
+scopes are prepared and sealed before the first invariant. Failure drops the
+entire staged set; there is no partial-success visibility.
+
+`PreparedManagedIndexSource` owns immutable data/support and original payer
+custody, not an Execution grant. Each real planner/evaluation observation asks
+Native to reborrow it. Native checks its actual observation, proposal, selected
+before/after basis, posture, definition/version and complete declared audience,
+then mints a loan bound to that particular observation. Different validation
+families receive different loans. Existing `InvariantSourceAffinity` and
+observation-specific prepared-read comparisons remain strict; equal proposal
+ordinals do not make observations equal. A retained loan from another observation,
+proposal, sibling branch, generation or audience fails before provider callbacks.
+No request or active loan survives its borrowing phase.
+Native constructs those observations with a borrow of the same owned applied
+draft/selected-basis association. It does not authenticate an arbitrary
+observation by comparing caller-visible proposal or root numbers. Query separately
+binds the Source loan to its genuine selected composite product read lease;
+Relational does not mint Runtime World's branch/incarnation or publication proof.
+
+The admission checks use the complete installed Source audience even if one
+rule evaluation reads fewer fields. An underdeclared affected relation kind
+refuses installation of the new association. Native must also refuse reborrowing
+into a narrower receiving audience, even when another lawful change schedules
+that receiver; missing access must not masquerade as no applicable work. Existing
+observation-specific controls and the qualified underdeclaration court carry
+their current boundary, without claiming they prove the new scope scheduler.
+
+Type placement is mandatory, not left to naming preference:
+
+- Concrete legality witness `AdmittedManagedIndexSourceAudience` belongs in
+  `worth-proof`; it is bound to the installed Native issuer occurrence, not a
+  generic marker. Only the owning Native admission path mints a witness accepted
+  by its bound consumer. A caller-created foreign issuer proves nothing there.
+- Portable Source association/schema/version commitments belong in
+  `worth-foundational`; portable Query declarations assemble this meaning.
+  Serialization or a matching digest cannot construct an admitted witness.
+- Installed Native handles, the prepared scope closure, Source bodies and
+  observation loans stay in Relational. Their live schema/candidate association,
+  request borrowing and Drop/cleanup require the runtime owner.
+- Persistent provider payloads, canonical root association and read adapters
+  stay in Query's existing managed resource owner. Pure prefix/box nodes and
+  numerical semantics remain with their value owners. Source keys and node
+  coordinates are descriptive, never authorities.
+
+Existing manifests provide `worth-proof` and `worth-foundational` to Native and
+Query Installation/Execution; Declaration already has foundational vocabulary.
+Do not hand-roll proof types in Declaration or add a substrate dependency cycle.
+
+#### One Resource, Two Read Postures And Atomic Publication
+
+The existing managed-view registry remains the sole registration/retention/
+eviction/disposal owner. Its canonical material association is exact installed
+Source/projection and provider version, runtime/branch incarnation, Source scope
+full identity and Native-selected basis. Immutable material may be shared across
+public and invariant readers only when that association and complete Source
+meaning match. Existing principal-specific public associations remain access
+leases over that resource, not Native grants or a second independently updated
+root. No root availability, result count or diagnostics escape before the
+respective reader's current admission.
+
+Concretely, that registry owns the registered branch resource and its leases;
+the existing Native companion machinery holds its selected
+`CompanionBranchCell<ManagedIndexBranchImage>`. The immutable persistent directory
+in that image contains the canonical Source/root associations. Registry entries
+refer to this owner; they do not maintain another mutable copy of its roots.
+Retained images remain valid temporal shares. Registration/retention limits and
+original allocation admission remain explicit, but neither those entries nor
+their capacity can be used as the affected-scope discovery universe.
+Fork sharing requires a fresh association from the actual Native/World fork
+owners and their retained source image; equal branch names or copied root IDs
+cannot confer it. Sharing immutable bytes does not share a read loan.
+
+`DecisionReader` uses the installed Parent query binding explicitly declared by
+its operation. The Parent's scope mapping must equal the operation's genuine
+admitted scope and Source correspondence; incompatible mappings fail at install.
+Input values supply ordinary probe/parameters, never scope authority. Fresh
+principal, capability, purpose, Parent/Source READ and exact current product-basis
+admission still run. A maintained root cannot replay the public terminal/grant
+that originally built it. Retained decision expectations keep owned Source
+custody and reborrow the genuine consuming request after idempotency resolution.
+
+The installed invariant receives its pre-staged Source-scope root pair through
+its own Native association. Its context may query only that invocation's frozen
+scope and declared Source fields. The returned rows are reborrowed Native Source
+rows, not public disclosure grants, entity mutation handles or verified footprints.
+Query uses the same provider build/update/query contract in both postures.
+Invariant results leave this boundary through the existing declared refusal
+binding and disclosure/diagnostic policy. The Native loan does not authorize
+exporting raw scope identities, hidden rows or availability metadata to a public
+caller. Phase 2 does not self-certify Phase 3 noninterference or membership.
+
+Prepared roots move with `AppliedMutationDraft` through validated proposal and
+the existing single-use Native commit candidate. Extend the existing companion
+cell/publication owner to carry this already-prepared Query payload; the public
+companion preflight callback alone is too late to prepare it. Before any graph
+movement Native checks the exact selected predecessor image, registration/schema
+generation and candidate/root association, then holds the fixed cutover cells.
+Matching graph, Source and provider root images become visible together at the
+existing canonical/World publication boundary. No allocation, fallible work,
+provider callback or final backing destruction runs in that swap. No reader may
+select a new graph with an old root or the converse. Native publishes only the
+prepared payload judged by the invariant; it cannot rebuild it at publication.
+
+Refusal, cancellation, stale basis, failed validation or discard leaves every
+committed image unchanged and releases staged Source/pages/pins after locks are
+released. Retained old roots and sibling branches remain usable under their own
+admission. A genuinely indeterminate/unpublished World outcome retains candidate
+custody in the existing unresolved-publication owner until settlement; it is not
+misreported as a clean refusal or disposed early. Runtime/fork/rebuild/eviction
+must propagate this same owner. Closing a public lease alone does not destroy a
+required registered root; final relevant owners still determine physical release.
+Maintaining is candidate-local: a refused candidate must not mark its unchanged
+committed predecessor failed or evicted merely because preparation stopped.
+
+#### Proposed Decl/Host DX
+
+These planned calls fix the responsibility boundary. They must become compiled
+examples at implementation; the sketches are not additional governed examples
+or claims that current Source exposes them.
+
+```rust,ignore
+// Existing schema/provider installation remains unchanged.
+let rule = uniqueness_definition()
+    .managed_index_source(NamesByPrefix::reference())
+    .managed_index_cold_sources(ApplicationManagedIndexColdSource::AdmitRebuild);
+schema.invariant(rule);
+// This adds an installed Parent-read requirement, not a mutation permission.
+let rename = rename_definition().managed_index_read::<PrefixBinding>();
+```
+
+```rust,ignore
+// In prepare_decision: Parent input is admitted against this operation's scope.
+let before = decision.index_query::<PrefixBinding>(&FindPrefix {
+    directory: input.directory.clone(), prefix: input.name.clone(),
+})?;
+```
+
+```rust,ignore
+// Called by the existing rule engine for EACH Native-discovered Source scope.
+// This retains pre-first-invariant preparation; it builds no root lazily.
+let index = planner.retain_managed_index(NamesByPrefix::reference())?;
+// Store `index` in the existing rule Scope, alongside other prepared inputs.
+// During evaluate, Native reborrows for this particular real observation:
+let pair = context.managed_index(&scope.index)?;
+let before = pair.committed().query(&Prefix { prefix: name.clone() })?;
+let after = pair.proposed().query(&Prefix { prefix: name.clone() })?;
+// The rule's own string owner performs exact uniqueness refinement on `after`.
+```
+
+The ordinary declared invariant read/applicability closure is still required.
+`retain_managed_index` has no caller scope/root argument; a reference to an
+undeclared index or an unfrozen scope is denied. The actual box adapter uses
+these same entrances with its validated dimensional/frame/versioned probe.
+
+#### Failure, Cost, Compatibility And Cutover
+
+The requirement's cold posture defaults to `Refuse`; `AdmitRebuild` explicitly
+permits Native to attempt reconstruction of an affected cold/new/evicted Source
+scope under its installed audience and original request. It is not a successful
+admission by declaration. Public rebuild remains its separate admitted lifecycle
+door. An existing live but unavailable scope returns typed `RootUnavailable`
+unless reconstruction is admitted and completes; an interrupted traversal never
+becomes empty or stale fallback. Retired scopes instead have Native's exact
+retirement disposition. Projection/value/provider failures preserve their causes;
+foreign association, incomplete scope support, audience mismatch and changed
+definition/basis remain distinct typed refusals at their owning boundary.
+
+All Source gathering, reverse acquisition, allocation, node editing and cleanup
+belong to the original operation/request and its existing payer/allocation
+controls. Check interruption before effects, during each bounded acquisition/edit
+and before sealing/publication. Retained reservations follow actual backing;
+clones are only immutable temporal/reader shares. Preserve checked arithmetic,
+ordinary allocation failure and final release, without a new cost ledger.
+
+For direct delta D, actual inverse/indirect support H, affected scope count A and
+changed Source occurrences C, warm acquisition/routing follows D + H + A plus
+indexed dependency lookups and the touched persistent paths. Provider updates
+cost O(C log N) for these AVL adapters, with the existing 32-node page granule and
+bounded directory paths. Scope validation and complete Source currentness are
+inside this bound; a later hidden full-roster materialization fails it. Relevant
+Source-dependent observation fan-out remains explicit and conservative, while
+unrelated scopes, queries and Source rows are not visited. Cold reconstruction
+may be O(N) for the admitted scope and is reported as cold, never amortized into
+the warm slope. Real fan-out/dense output may grow; no constant-time claim or
+arbitrary refusal ceiling conceals it. The existing 1,000/2,000 geometry court
+must measure Source/reverse/scope work as well as provider work after both
+providers are integrated, with declared growth/headroom, not fitted exact counts.
+
+Version the added invariant requirement and canonical Source-plan meaning.
+Existing public Phase 1 declarations retain their meaning and need not opt into
+invariant access. An old or incompatible plan/root cannot satisfy the new loan;
+installation refuses or a fresh binding rebuilds under admission. Do not
+reinterpret archive bytes or add feature/profile compatibility lanes. Native
+ordinary graph law, ScopeAdmission and capability owners stay unchanged.
+Public-only declarations without the new invariant association retain their
+admitted cold/unavailable behavior; they are not evidence of maintained invariant
+access. At the completed cutover, their conservative eviction also belongs to
+the same Native-coordinated resource owner. There cannot be a late updater and
+an atomic updater competing for one registration.
+
+At cutover, replace dense-ordinal update assumptions and the managed-index arm's
+unconditional late eviction with the new staged path only after both readers
+consume genuine custody. Remove its late `prepare_transition`/post-publication
+root mutation path; retain other managed views at their actual owners. There
+must be no second ordinary root updater, callback validator, permission replay
+or Source cache. Prefix can establish the first complete vertical; box and the
+real growth proof remain Phase 2 requirements, not a phase/roadmap reshuffle.
 
 **Requirements.** Supply source insertions, retirements, updates and generation
 changes, plus indirect dependency changes, through tracked source access. The
@@ -413,8 +811,16 @@ observations cover maintenance and scope acquisition, not only the query kernel.
 **Documentation and completion.** Extend `docs/build-an-application.md` and
 `workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md`
 with compiled preparation/candidate examples, atomicity and unavailable/rebuild
-semantics. Close when both providers pass root/currentness/refusal and growth
-evidence. No private pin, adapter rewrite or CAD cutover is required here.
+semantics. The application guide owns the ordinary two-facade examples, cold
+policy and independent READ explanation. The internal schema-validation guide
+owns Native invariant audience/staging/atomicity explanation and links directly
+to the governed compiled application examples; do not register its internal
+engine examples as consumer documentation. The capability index must lead to
+both read postures and their typed limits. Preserve the owning compiled-region
+inventory, facade and boundary/context checks when the implementation lands.
+Close when both providers pass the unopened/new-scope court above,
+root/currentness/refusal and growth evidence. No private pin, adapter rewrite or
+CAD cutover is required here.
 
 ### Phase 3: Complete Membership, Exact Refinement And Disclosure
 
