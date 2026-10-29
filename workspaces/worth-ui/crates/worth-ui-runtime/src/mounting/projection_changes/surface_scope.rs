@@ -2,11 +2,12 @@ use super::{UiMountedProjectionChangeSnapshot, UiMountedProjectionChanges};
 use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSemanticSurfaceIdentity};
 
 impl UiMountedProjectionChangeSnapshot {
+    #[inline(never)]
     pub(crate) fn for_surfaces(
         self,
         surfaces: &[UiSemanticSurfaceIdentity],
         all_bound_surfaces: bool,
-        instance_surface: impl Fn(UiMountedInstanceIdentity) -> Option<UiSemanticSurfaceIdentity>,
+        instance_surface: &dyn Fn(UiMountedInstanceIdentity) -> Option<UiSemanticSurfaceIdentity>,
     ) -> (Self, usize) {
         if all_bound_surfaces {
             return (self, 0);

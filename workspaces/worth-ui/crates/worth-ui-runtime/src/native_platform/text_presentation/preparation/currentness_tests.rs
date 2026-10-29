@@ -35,7 +35,7 @@ fn unchanged_successor_carries_empty_demand_while_physical_sample_keeps_current_
         prepare_mounted_semantic_text(
             UiMountedPresentationWorkView::Unchanged(&unchanged),
             dpi,
-            |_| panic!("unchanged commands must not resolve layout"),
+            &|_| panic!("unchanged commands must not resolve layout"),
         )
     else {
         panic!("mounted successor must carry currentness through host acceptance")
@@ -75,7 +75,7 @@ fn unchanged_successor_carries_empty_demand_while_physical_sample_keeps_current_
     assert!(prepare_mounted_semantic_text(
         UiMountedPresentationWorkView::Sample(&sample),
         dpi,
-        |_| panic!("physical sample must not resolve layout")
+        &|_| panic!("physical sample must not resolve layout")
     )
     .is_none());
 }

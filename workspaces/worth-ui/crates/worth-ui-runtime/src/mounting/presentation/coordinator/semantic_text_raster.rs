@@ -42,7 +42,7 @@ pub(super) fn present(
         requirement,
         dpi,
         host_lineage,
-        |identity| presentation_work.resolve_layout(identity),
+        &|identity| presentation_work.resolve_layout(identity),
     );
     let preparation = preparation?;
     let prepared = match preparation {
@@ -62,8 +62,8 @@ pub(super) fn present(
         requirement,
         host_lineage,
         &prepared,
-        |identity| presentation_work.resolve_layout(identity),
-        |text_raster_work| {
+        &|identity| presentation_work.resolve_layout(identity),
+        &mut |text_raster_work| {
             let view = start.authority.bind(
                 super::super::consumption_view::UiRuntimeMountedFrameConsumptionInput {
                     attempt: start.attempt,

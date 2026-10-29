@@ -23,6 +23,17 @@ impl WorthUiApplicationSessionState {
         &mut self,
         collect_sources: impl FnOnce(&mut WorthUiFrameworkTurn<'_>),
     ) -> WorthUiApplicationFrameworkTurnCompletion<'_> {
+        let mut collect_sources = Some(collect_sources);
+        self.finish_application_framework_turn(&mut |turn| {
+            collect_sources.take().expect("source collection runs once")(turn);
+        })
+    }
+
+    #[inline(never)]
+    fn finish_application_framework_turn(
+        &mut self,
+        collect_sources: &mut dyn FnMut(&mut WorthUiFrameworkTurn<'_>),
+    ) -> WorthUiApplicationFrameworkTurnCompletion<'_> {
         let generation_identity = self.app.generation_identity().clone();
         let visual_trace_source = self.app.visual_trace_source();
         let graph = self.app.graph();
@@ -31,7 +42,9 @@ impl WorthUiApplicationSessionState {
         let intent_execution_bindings = self.app.prepared_authority().intent_execution_bindings();
         let consumed_facts = self.app.prepared_authority().consumed_fact_index();
         let active_plan_digest = self.runtime.active.active_plan_ref().digest().as_u64();
-        let completion = self.runtime.execute_framework_turn(collect_sources);
+        let completion = self
+            .runtime
+            .execute_framework_turn(|turn| collect_sources(turn));
         WorthUiApplicationFrameworkTurnCompletion {
             generation_identity,
             visual_trace_source,

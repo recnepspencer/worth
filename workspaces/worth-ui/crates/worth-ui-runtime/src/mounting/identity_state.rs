@@ -185,7 +185,7 @@ impl UiMountedIdentityState {
                 .iter()
                 .all(|surface| self.bindings.contains_key(surface));
         self.projection_change_snapshot()
-            .for_surfaces(surfaces, all, |instance| {
+            .for_surfaces(surfaces, all, &|instance| {
                 self.instances
                     .get(&instance)
                     .map(|record| record.basis.semantic_surface_identity())

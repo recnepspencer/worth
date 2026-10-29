@@ -44,85 +44,21 @@ impl UiChangeClassifier {
             fact_limit,
             classify_source,
         } = request;
-        require_basis(&set, expected_session, expected_source_basis)?;
-        let turn = set.turn();
-        let observation_count = set.summary().admitted_count();
-        let mut facts = Vec::new();
-        let mut source_succession = None;
         let mut classify_source = Some(classify_source);
-
-        for observation in set.into_observations() {
-            match observation.into_payload() {
-                UiAdmittedObservationPayload::Source(candidate) => {
-                    let source = classify_source
-                        .take()
-                        .expect("source duplicate policy admits at most one source observation");
-                    match source(candidate)? {
-                        UiAuthoredSourceClassification::ObservedNoChange => {}
-                        UiAuthoredSourceClassification::EvidenceOnly(succession) => {
-                            source_succession = Some(succession);
-                        }
-                        UiAuthoredSourceClassification::Changed {
-                            facts: source_facts,
-                            succession,
-                        } => {
-                            append_bounded(&mut facts, source_facts, fact_limit)?;
-                            source_succession = Some(succession);
-                        }
-                    }
-                }
-                UiAdmittedObservationPayload::Host(observation) => {
-                    push_bounded(&mut facts, owner::host::classify(observation)?, fact_limit)?;
-                }
-                UiAdmittedObservationPayload::PointerPresence(transition) => {
-                    let expected_generation =
-                        crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
-                            expected_session,
-                            &predecessor_generation,
-                        );
-                    if transition.generation() != &expected_generation {
-                        return Err(UiChangeClassificationDenial::ForeignApplicationGeneration);
-                    }
-                    push_bounded(
-                        &mut facts,
-                        owner::pointer_presence::classify(transition),
-                        fact_limit,
-                    )?;
-                }
-                UiAdmittedObservationPayload::Measurement(result) => {
-                    push_bounded(&mut facts, owner::measurement::classify(result), fact_limit)?;
-                }
-                UiAdmittedObservationPayload::Query(observation) => {
-                    push_bounded(&mut facts, owner::query::classify(observation), fact_limit)?;
-                }
-                UiAdmittedObservationPayload::IntentPosture(observation) => {
-                    push_bounded(&mut facts, owner::intent::classify(observation), fact_limit)?;
-                }
-                UiAdmittedObservationPayload::CommittedScrollExtent(observation) => {
-                    push_bounded(
-                        &mut facts,
-                        owner::runtime_state::classify_scroll(observation),
-                        fact_limit,
-                    )?;
-                }
-                UiAdmittedObservationPayload::CommittedPortalAnchor(observation) => {
-                    push_bounded(
-                        &mut facts,
-                        owner::runtime_state::classify_portal(observation),
-                        fact_limit,
-                    )?;
-                }
-            }
-        }
-
-        let basis = super::UiChangeClassificationBasis::new(
+        classify_observations(
+            set,
             expected_session,
             expected_source_basis,
-            turn,
-            observation_count,
             predecessor_generation,
-        );
-        Ok(resolve_outcome(basis, facts, source_succession))
+            fact_limit,
+            &mut |candidate| {
+                classify_source
+                    .take()
+                    .expect("source duplicate policy admits at most one source observation")(
+                    candidate,
+                )
+            },
+        )
     }
 
     pub(crate) fn classify_intent_consequence(
@@ -177,6 +113,95 @@ impl UiChangeClassifier {
             None,
         )
     }
+}
+
+#[inline(never)]
+fn classify_observations(
+    set: UiAdmittedObservationSet,
+    expected_session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+    expected_source_basis: u64,
+    predecessor_generation: crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
+    fact_limit: usize,
+    classify_source: &mut dyn FnMut(
+        crate::runtime::WorthUiWatchedCandidateSubmission,
+    ) -> Result<
+        UiAuthoredSourceClassification,
+        UiChangeClassificationDenial,
+    >,
+) -> Result<UiChangeClassificationOutcome, UiChangeClassificationDenial> {
+    require_basis(&set, expected_session, expected_source_basis)?;
+    let turn = set.turn();
+    let observation_count = set.summary().admitted_count();
+    let mut facts = Vec::new();
+    let mut source_succession = None;
+
+    for observation in set.into_observations() {
+        match observation.into_payload() {
+            UiAdmittedObservationPayload::Source(candidate) => match classify_source(candidate)? {
+                UiAuthoredSourceClassification::ObservedNoChange => {}
+                UiAuthoredSourceClassification::EvidenceOnly(succession) => {
+                    source_succession = Some(succession);
+                }
+                UiAuthoredSourceClassification::Changed {
+                    facts: source_facts,
+                    succession,
+                } => {
+                    append_bounded(&mut facts, source_facts, fact_limit)?;
+                    source_succession = Some(succession);
+                }
+            },
+            UiAdmittedObservationPayload::Host(observation) => {
+                push_bounded(&mut facts, owner::host::classify(observation)?, fact_limit)?;
+            }
+            UiAdmittedObservationPayload::PointerPresence(transition) => {
+                let expected_generation =
+                    crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+                        expected_session,
+                        &predecessor_generation,
+                    );
+                if transition.generation() != &expected_generation {
+                    return Err(UiChangeClassificationDenial::ForeignApplicationGeneration);
+                }
+                push_bounded(
+                    &mut facts,
+                    owner::pointer_presence::classify(transition),
+                    fact_limit,
+                )?;
+            }
+            UiAdmittedObservationPayload::Measurement(result) => {
+                push_bounded(&mut facts, owner::measurement::classify(result), fact_limit)?;
+            }
+            UiAdmittedObservationPayload::Query(observation) => {
+                push_bounded(&mut facts, owner::query::classify(observation), fact_limit)?;
+            }
+            UiAdmittedObservationPayload::IntentPosture(observation) => {
+                push_bounded(&mut facts, owner::intent::classify(observation), fact_limit)?;
+            }
+            UiAdmittedObservationPayload::CommittedScrollExtent(observation) => {
+                push_bounded(
+                    &mut facts,
+                    owner::runtime_state::classify_scroll(observation),
+                    fact_limit,
+                )?;
+            }
+            UiAdmittedObservationPayload::CommittedPortalAnchor(observation) => {
+                push_bounded(
+                    &mut facts,
+                    owner::runtime_state::classify_portal(observation),
+                    fact_limit,
+                )?;
+            }
+        }
+    }
+
+    let basis = super::UiChangeClassificationBasis::new(
+        expected_session,
+        expected_source_basis,
+        turn,
+        observation_count,
+        predecessor_generation,
+    );
+    Ok(resolve_outcome(basis, facts, source_succession))
 }
 
 fn require_basis(

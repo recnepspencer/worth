@@ -43,7 +43,7 @@ fn demand_preparation_stops_at_typed_atlas_plan_boundary_without_raster_work() {
     let preparation = prepare_mounted_semantic_text(
         UiMountedPresentationWorkView::Initial(&initial),
         dpi,
-        |_| Some(layout.as_ref()),
+        &|_| Some(layout.as_ref()),
     )
     .unwrap();
     let UiNativeTextPresentationPreparation::Prepared(prepared) = preparation else {
@@ -76,7 +76,7 @@ fn consumer_layout_substitution_is_rejected_before_layout_admission() {
     let preparation = prepare_mounted_semantic_text(
         UiMountedPresentationWorkView::Initial(&initial),
         dpi,
-        |_| Some(substituted.as_ref()),
+        &|_| Some(substituted.as_ref()),
     )
     .unwrap();
     let UiNativeTextPresentationPreparation::Denied(denial) = preparation else {
@@ -119,7 +119,7 @@ fn removal_only_delta_preserves_explicit_command_identity_without_raster_demand(
     let preparation = prepare_mounted_semantic_text(
         UiMountedPresentationWorkView::Delta(&delta),
         UiMountedEventTimeDpiAuthority::from_requirement(requirement).unwrap(),
-        |_| None,
+        &|_| None,
     )
     .expect("an explicit removal must reach the committed text-pin owner");
     let UiNativeTextPresentationPreparation::Prepared(prepared) = preparation else {
@@ -155,7 +155,7 @@ fn complete_empty_text_set_reaches_the_committed_pin_owner() {
     let preparation = prepare_mounted_semantic_text(
         UiMountedPresentationWorkView::Initial(&empty),
         UiMountedEventTimeDpiAuthority::from_requirement(requirement).unwrap(),
-        |_| None,
+        &|_| None,
     )
     .expect("an empty complete set must reach the committed text-pin owner");
     let UiNativeTextPresentationPreparation::Prepared(prepared) = preparation else {
@@ -171,12 +171,12 @@ fn complete_empty_text_set_reaches_the_committed_pin_owner() {
 fn mixed_bidi_native_runs_keep_logical_paint_ownership() {
     crate::mounting::prove_paint_only_mechanic_locality();
     let (layout, mechanic, command, damage) = mixed_bidi_paint_world([0.0, 0.0]);
+    let resolve = |_| Some(layout.as_ref());
     let join = super::MountedTextDemandJoin {
         dpi: super::UiMountedEventTimeDpiAuthority(std::num::NonZeroU32::new(1_000).unwrap()),
         lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
         selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(&damage),
-        resolve: |_| Some(layout.as_ref()),
-        _layout: std::marker::PhantomData,
+        resolve: &resolve,
     };
     let prepared = super::prepare_demands(&[(command, &mechanic)], &join).unwrap();
     let blue_repaint = worth_ui_text::derive_glyph_raster_demand(
@@ -237,12 +237,12 @@ fn mixed_bidi_native_runs_keep_logical_paint_ownership() {
 #[test]
 fn single_color_and_logical_order_mutants_disagree_with_native_runs() {
     let (layout, mechanic, command, damage) = mixed_bidi_paint_world([0.0, 0.0]);
+    let resolve = |_| Some(layout.as_ref());
     let join = super::MountedTextDemandJoin {
         dpi: super::UiMountedEventTimeDpiAuthority(std::num::NonZeroU32::new(1_000).unwrap()),
         lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
         selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(&damage),
-        resolve: |_| Some(layout.as_ref()),
-        _layout: std::marker::PhantomData,
+        resolve: &resolve,
     };
     let prepared = super::prepare_demands(&[(command, &mechanic)], &join).unwrap();
     let observed = prepared

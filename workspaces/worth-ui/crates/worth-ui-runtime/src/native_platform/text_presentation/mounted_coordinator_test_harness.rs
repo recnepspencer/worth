@@ -45,7 +45,7 @@ pub(super) fn prepare<'work>(
             requirement,
             dpi,
             Some(lineage(work, requirement)),
-            |identity| (identity == layout.identity()).then_some(layout),
+            &|identity| (identity == layout.identity()).then_some(layout),
         )
         .expect("mounted semantic text reaches preparation")
     {
@@ -89,8 +89,8 @@ pub(super) fn present_with<'work>(
             requirement,
             Some(host_lineage),
             prepared,
-            |identity| (identity == layout.identity()).then_some(layout),
-            |text_raster_work| {
+            &|identity| (identity == layout.identity()).then_some(layout),
+            &mut |text_raster_work| {
                 let view = consumption_view(work, requirement, attempt, Some(text_raster_work));
                 let bases = derive_text_presentation_request_bases(
                     &view,

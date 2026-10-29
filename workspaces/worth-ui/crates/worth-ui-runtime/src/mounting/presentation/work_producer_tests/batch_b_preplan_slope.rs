@@ -125,7 +125,7 @@ fn prepare_one_changed_text(
         _ => panic!("one changed text mechanic must issue delta work"),
     };
     let dpi = UiMountedEventTimeDpiAuthority::from_requirement(world.requirement).unwrap();
-    let prepared = prepare_mounted_semantic_text(work.view(), dpi, |identity| {
+    let prepared = prepare_mounted_semantic_text(work.view(), dpi, &|identity| {
         (identity == layout.identity()).then_some(layout.as_ref())
     })
     .unwrap();

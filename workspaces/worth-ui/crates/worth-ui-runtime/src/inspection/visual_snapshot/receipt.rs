@@ -65,39 +65,46 @@ pub struct UiVisualSnapshotDisposalReceipt {
     released_registered_resource: bool,
 }
 
+#[inline(never)]
+fn seal_evidence(
+    pixels_requested: bool,
+    pixels_required: bool,
+    input: &UiVisualSnapshotSealInput,
+) -> worth_ui_inspection::UiVisualSnapshotEvidence {
+    let artifact = match (
+        pixels_requested,
+        pixels_required,
+        input.pixel_artifact.is_some(),
+    ) {
+        (false, false, false) => worth_ui_inspection::UiVisualSnapshotArtifactPosture::GeometryOnly,
+        (true, false, false) => {
+            worth_ui_inspection::UiVisualSnapshotArtifactPosture::PixelsOptionalOmitted
+        }
+        (true, false, true) => {
+            worth_ui_inspection::UiVisualSnapshotArtifactPosture::PixelsOptionalCaptured
+        }
+        (true, true, true) => {
+            worth_ui_inspection::UiVisualSnapshotArtifactPosture::PixelsRequiredCaptured
+        }
+        _ => unreachable!("sealed artifact posture and captured bytes must agree"),
+    };
+    return worth_ui_inspection::UiVisualSnapshotEvidence::from_runtime_projection(
+        worth_ui_inspection::UiVisualSnapshotEvidenceInput {
+            affinity: input.affinity,
+            coordinates: input.coordinates,
+            visible_index: input.visible_index.identity(),
+            hit_test_index: input.hit_test_index.identity(),
+            artifact,
+            disclosure: input.disclosure,
+            query_budget: input.query_budget,
+            cost: input.cost,
+        },
+    );
+}
+
 impl<Posture: worth_ui_inspection::UiVisualArtifactPolicy> UiVisualSnapshotReceipt<Posture> {
     pub(crate) fn seal(input: UiVisualSnapshotSealInput) -> Self {
-        let artifact = match (
-            Posture::PIXELS_REQUESTED,
-            Posture::PIXELS_REQUIRED,
-            input.pixel_artifact.is_some(),
-        ) {
-            (false, false, false) => {
-                worth_ui_inspection::UiVisualSnapshotArtifactPosture::GeometryOnly
-            }
-            (true, false, false) => {
-                worth_ui_inspection::UiVisualSnapshotArtifactPosture::PixelsOptionalOmitted
-            }
-            (true, false, true) => {
-                worth_ui_inspection::UiVisualSnapshotArtifactPosture::PixelsOptionalCaptured
-            }
-            (true, true, true) => {
-                worth_ui_inspection::UiVisualSnapshotArtifactPosture::PixelsRequiredCaptured
-            }
-            _ => unreachable!("sealed artifact posture and captured bytes must agree"),
-        };
-        let evidence = worth_ui_inspection::UiVisualSnapshotEvidence::from_runtime_projection(
-            worth_ui_inspection::UiVisualSnapshotEvidenceInput {
-                affinity: input.affinity,
-                coordinates: input.coordinates,
-                visible_index: input.visible_index.identity(),
-                hit_test_index: input.hit_test_index.identity(),
-                artifact,
-                disclosure: input.disclosure,
-                query_budget: input.query_budget,
-                cost: input.cost,
-            },
-        );
+        let evidence = seal_evidence(Posture::PIXELS_REQUESTED, Posture::PIXELS_REQUIRED, &input);
         Self {
             session: input.session,
             identity: input.identity,

@@ -42,6 +42,36 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
     defer_initial_observation: bool,
     lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
 ) -> Result<UiNativeUnchangedPresentation, UiNativePresentationFailure> {
+    present_unchanged_appearance_with(
+        Port::present,
+        graphics,
+        resources,
+        physical_signal,
+        atlas,
+        atlas_gpu,
+        view,
+        unchanged,
+        retained,
+        defer_initial_observation,
+        lifecycle,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+#[inline(never)]
+fn present_unchanged_appearance_with(
+    present: super::port::UiNativePresentationPortFn,
+    graphics: &mut UiNativePresentationAccess,
+    resources: &mut UiNativeResourceRegistry,
+    physical_signal: &mut crate::native::physical_work_signal::UiNativePhysicalSignalOwner,
+    atlas: &crate::native::text_atlas::UiNativeTextAtlas,
+    atlas_gpu: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+    view: &UiMountedFrameConsumptionView<'_>,
+    unchanged: &UiMountedPresentationUnchanged,
+    retained: &mut UiNativeRetainedDrawList,
+    defer_initial_observation: bool,
+    lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
+) -> Result<UiNativeUnchangedPresentation, UiNativePresentationFailure> {
     let basis = super::raster::UiNativeRasterBasis::from_presentation_access(graphics);
     super::retained_raster::prepare_target(graphics, basis, retained)?;
     let mut undo = retained
@@ -95,7 +125,7 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
         resources,
         physical_signal,
         owners,
-        Port::present(
+        present(
             graphics,
             atlas_gpu,
             view.attempt(),

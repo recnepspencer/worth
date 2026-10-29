@@ -25,6 +25,7 @@ pub(crate) use mounted_coordinator::{
 pub(super) use preparation::mounted_semantic_text;
 #[cfg(test)]
 pub(crate) use preparation::prepare_complete_semantic_text;
+pub(in crate::native_platform) use preparation::MountedLayoutResolve;
 pub(crate) use preparation::{
     prepare_from_foreground_reuse, prepare_mounted_semantic_text, presentation_damage_digest,
     UiMountedEventTimeDpiAuthority, UiNativeTextPresentationPreparation,

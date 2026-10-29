@@ -120,18 +120,28 @@ pub(super) fn allocate<T>(
     names: BTreeSet<String>,
     constructor: impl Fn(u64) -> Option<T>,
 ) -> Result<BTreeMap<String, T>, ()> {
-    names
-        .into_iter()
-        .enumerate()
-        .map(|(index, name)| {
-            let value = index
-                .checked_add(1)
-                .and_then(|value| u64::try_from(value).ok())
-                .ok_or(())?;
-            let identity = constructor(value).ok_or(())?;
-            Ok((name, identity))
-        })
-        .collect()
+    let mut assigned = BTreeMap::new();
+    assign_name_ordinals(names, &mut |name, ordinal| {
+        let identity = constructor(ordinal).ok_or(())?;
+        assigned.insert(name, identity);
+        Ok(())
+    })?;
+    Ok(assigned)
+}
+
+#[inline(never)]
+fn assign_name_ordinals(
+    names: BTreeSet<String>,
+    assign: &mut dyn FnMut(String, u64) -> Result<(), ()>,
+) -> Result<(), ()> {
+    for (index, name) in names.into_iter().enumerate() {
+        let value = index
+            .checked_add(1)
+            .and_then(|value| u64::try_from(value).ok())
+            .ok_or(())?;
+        assign(name, value)?;
+    }
+    Ok(())
 }
 
 pub(super) fn region_key(surface: &str, region: &str) -> String {

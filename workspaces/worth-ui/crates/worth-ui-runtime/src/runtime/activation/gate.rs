@@ -60,11 +60,19 @@ impl WorthUiRuntime {
             crate::runtime::WorthUiRetainedAllocationPlanningEvidenceRegistry,
         >,
     ) -> Result<WorthUiQueryAwarePlanOutcome, WorthUiAllocationCatalogActivationDenial> {
+        let mut lane_parity_report = Some(lane_parity_report);
         let prepared = self
             .prepare_admitted_allocation_catalog_with_boundary_source_and_query_binding(
                 pending_activation,
                 UiAllocationCatalogReplacementInput::Complete(admitted_catalog),
-                |_, _, _, _| Ok((boundary, lane_parity_report)),
+                &mut |_, _, _, _| {
+                    Ok((
+                        boundary,
+                        lane_parity_report
+                            .take()
+                            .expect("boundary source runs once"),
+                    ))
+                },
                 candidate_query_binding,
                 successor_planning_authority,
                 None,
@@ -88,6 +96,7 @@ impl WorthUiRuntime {
             successor_planning_authority,
             application_publication,
         } = input;
+        let mut lane_parity_report = Some(lane_parity_report);
         self.prepare_admitted_allocation_catalog_with_boundary_source_and_query_binding(
             pending_activation,
             UiAllocationCatalogReplacementInput::Delta {
@@ -95,7 +104,14 @@ impl WorthUiRuntime {
                 active_graph,
                 graph_changed_nodes,
             },
-            |_, _, _, _| Ok((boundary, lane_parity_report)),
+            &mut |_, _, _, _| {
+                Ok((
+                    boundary,
+                    lane_parity_report
+                        .take()
+                        .expect("boundary source runs once"),
+                ))
+            },
             candidate_query_binding,
             successor_planning_authority,
             Some(application_publication),
@@ -126,11 +142,16 @@ impl WorthUiRuntime {
             .prepare_downstream_state();
         let successor_planning_authority =
             std::rc::Rc::clone(&self.retained_allocation_planning_evidence);
+        let mut boundary_source = Some(boundary_source);
         let prepared = self
             .prepare_admitted_allocation_catalog_with_boundary_source_and_query_binding(
                 pending_activation,
                 UiAllocationCatalogReplacementInput::Complete(admitted_catalog),
-                boundary_source,
+                &mut |runtime, receipt, plan, facts| {
+                    boundary_source.take().expect("boundary source runs once")(
+                        runtime, receipt, plan, facts,
+                    )
+                },
                 candidate_query_binding,
                 successor_planning_authority,
                 None,
@@ -140,19 +161,12 @@ impl WorthUiRuntime {
             .into_plan_swap_after_asserting_no_query_retirement())
     }
 
-    fn prepare_admitted_allocation_catalog_with_boundary_source_and_query_binding<F>(
+    #[inline(never)]
+    fn prepare_admitted_allocation_catalog_with_boundary_source_and_query_binding(
         &mut self,
         pending_activation: WorthUiPendingActivation,
         catalog_input: UiAllocationCatalogReplacementInput,
-        boundary_source: F,
-        candidate_query_binding: worth_ui_query_binding::WorthUiRuntimeQueryBinding,
-        successor_planning_authority: std::rc::Rc<
-            crate::runtime::WorthUiRetainedAllocationPlanningEvidenceRegistry,
-        >,
-        application_publication: Option<super::WorthUiPreparedApplicationPublication>,
-    ) -> Result<WorthUiPreparedQueryAwarePlanOutcome, WorthUiAllocationCatalogActivationDenial>
-    where
-        F: FnOnce(
+        boundary_source: &mut dyn FnMut(
             &mut WorthUiRuntime,
             &crate::runtime::UiAllocationReceipt,
             &WorthUiExecutionPlan,
@@ -161,6 +175,12 @@ impl WorthUiRuntime {
             (WorthUiFrameBoundary, Option<WorthUiLaneParityReport>),
             WorthUiAllocationCatalogActivationDenial,
         >,
+        candidate_query_binding: worth_ui_query_binding::WorthUiRuntimeQueryBinding,
+        successor_planning_authority: std::rc::Rc<
+            crate::runtime::WorthUiRetainedAllocationPlanningEvidenceRegistry,
+        >,
+        application_publication: Option<super::WorthUiPreparedApplicationPublication>,
+    ) -> Result<WorthUiPreparedQueryAwarePlanOutcome, WorthUiAllocationCatalogActivationDenial>
     {
         let (prepared, delta_lowering, catalog_successor_receipt) = match catalog_input {
             #[cfg(any(test, feature = "certification-support"))]

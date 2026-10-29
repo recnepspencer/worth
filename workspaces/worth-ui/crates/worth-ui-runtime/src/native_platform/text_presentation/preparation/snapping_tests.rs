@@ -14,12 +14,12 @@ struct Drawn {
 
 fn drawn_at(origin: [f32; 2], dpi_milli: u32) -> Drawn {
     let (layout, mechanic, command, damage) = mixed_bidi_paint_world(origin);
+    let resolve = |_| Some(layout.as_ref());
     let join = MountedTextDemandJoin {
         dpi: UiMountedEventTimeDpiAuthority(NonZeroU32::new(dpi_milli).unwrap()),
         lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
         selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(&damage),
-        resolve: |_| Some(layout.as_ref()),
-        _layout: std::marker::PhantomData,
+        resolve: &resolve,
     };
     let prepared = prepare_demands(&[(command, &mechanic)], &join).unwrap();
     let keys = prepared

@@ -14,9 +14,7 @@ pub(crate) struct UiNativeTextAtlasTransaction<'layout, 'cache> {
 impl<'layout, 'cache> UiNativeTextAtlasTransaction<'layout, 'cache> {
     pub(crate) fn prepare(
         prepared: &'layout UiNativeTextPresentationPrepared,
-        resolve: impl Fn(
-            worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-        ) -> Option<&'layout worth_ui_text::UiQualifiedTextLayout>,
+        resolve: &super::MountedLayoutResolve<'layout>,
         cache: &'cache mut worth_ui_text::UiGlyphRasterCache,
     ) -> Option<Self> {
         let demand_views = prepared
@@ -47,6 +45,21 @@ impl<'layout, 'cache> UiNativeTextAtlasTransaction<'layout, 'cache> {
         binding_pins: &[worth_ui_host_contract::UiGlyphRasterPinRequest],
         operation: impl FnOnce(&worth_ui_host_contract::UiMountedTextRasterWork<'_>) -> Output,
     ) -> (Output, super::rasterization::UiNativeTextRasterWorkReport) {
+        let mut operation = Some(operation);
+        let mut output = None;
+        let report = self.project_mounted_work(pins, binding_pins, &mut |work| {
+            output = Some(operation.take().expect("mounted text work is visited once")(work));
+        });
+        (output.expect("mounted text work is visited once"), report)
+    }
+
+    #[inline(never)]
+    fn project_mounted_work(
+        &mut self,
+        pins: UiGlyphRasterPinTransitionView<'_>,
+        binding_pins: &[worth_ui_host_contract::UiGlyphRasterPinRequest],
+        operation: &mut dyn FnMut(&worth_ui_host_contract::UiMountedTextRasterWork<'_>),
+    ) -> super::rasterization::UiNativeTextRasterWorkReport {
         struct Callback<'rasterizer, 'layout, 'cache> {
             rasterizer:
                 std::cell::RefCell<&'rasterizer mut UiNativeTextMissRasterizer<'layout, 'cache>>,
@@ -85,7 +98,7 @@ impl<'layout, 'cache> UiNativeTextAtlasTransaction<'layout, 'cache> {
             binding_pins,
             &callback,
         );
-        let output = operation(&work);
-        (output, self.rasterizer.report())
+        operation(&work);
+        self.rasterizer.report()
     }
 }

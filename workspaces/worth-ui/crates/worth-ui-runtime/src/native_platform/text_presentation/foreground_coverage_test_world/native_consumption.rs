@@ -20,7 +20,7 @@ impl CoverageWorld {
                 self.fragment.text_candidates(),
                 UiMountedEventTimeDpiAuthority::from_requirement(self.requirement).unwrap(),
                 UiGlyphRasterLane::Ordinary,
-                |id| (id == self.layout.identity()).then_some(self.layout.as_ref()),
+                &|id| (id == self.layout.identity()).then_some(self.layout.as_ref()),
             )
             .unwrap()
         else {
@@ -29,7 +29,7 @@ impl CoverageWorld {
         let mut cache = worth_ui_text::UiGlyphRasterCache::default();
         let mut transaction = UiNativeTextAtlasTransaction::prepare(
             &prepared,
-            |id| (id == self.layout.identity()).then_some(self.layout.as_ref()),
+            &|id| (id == self.layout.identity()).then_some(self.layout.as_ref()),
             &mut cache,
         )
         .unwrap();

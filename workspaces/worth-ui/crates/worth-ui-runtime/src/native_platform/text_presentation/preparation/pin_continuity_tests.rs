@@ -30,7 +30,7 @@ fn receipts_sharing_a_set_pass_together_and_a_later_differing_set_fails() {
     let selected = mounted_semantic_text(work);
     let (command, mechanic) = selected.mechanics[0];
     let UiNativeTextPresentationPreparation::Prepared(complete) =
-        prepare_mounted_semantic_text(work, dpi, |_| Some(layout.as_ref())).unwrap()
+        prepare_mounted_semantic_text(work, dpi, &|_| Some(layout.as_ref())).unwrap()
     else {
         panic!("qualified initial text prepares");
     };

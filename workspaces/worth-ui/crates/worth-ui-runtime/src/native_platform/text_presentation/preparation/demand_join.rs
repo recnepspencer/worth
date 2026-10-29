@@ -13,25 +13,25 @@ pub(super) struct PreparedDemand {
     pub(super) glyph_runs: Box<[UiGlyphRunView]>,
 }
 
+/// Layout lookup compiled once. Callers keep a typed closure and pass a reference.
+pub(in crate::native_platform) type MountedLayoutResolve<'work> = dyn Fn(
+        worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
+    ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>
+    + 'work;
+
 /// Joins mounted mechanics to durable layouts under the event-time DPI basis.
 /// Demand preparation performs no host/native effect.
-pub(super) struct MountedTextDemandJoin<'damage, 'work, Resolve> {
+pub(super) struct MountedTextDemandJoin<'damage, 'resolve, 'work> {
     pub(super) dpi: UiMountedEventTimeDpiAuthority,
     pub(super) lane: UiGlyphRasterLane,
     pub(super) selection: worth_ui_text::UiGlyphRasterDemandSelection<'damage>,
-    pub(super) resolve: Resolve,
-    pub(super) _layout: std::marker::PhantomData<&'work ()>,
+    pub(super) resolve: &'resolve MountedLayoutResolve<'work>,
 }
 
-pub(super) fn prepare_demands<'work, Resolve>(
+pub(super) fn prepare_demands<'work>(
     mechanics: &[MountedSemanticTextCommand<'work>],
-    join: &MountedTextDemandJoin<'_, 'work, Resolve>,
-) -> Result<PreparedDemand, UiNativeTextPresentationReadiness>
-where
-    Resolve: Fn(
-        worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-    ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
-{
+    join: &MountedTextDemandJoin<'_, '_, 'work>,
+) -> Result<PreparedDemand, UiNativeTextPresentationReadiness> {
     let layouts = mechanics
         .iter()
         .map(|(_, mechanic)| join.layout_for(mechanic))
@@ -112,12 +112,7 @@ pub(super) fn rebuild_glyph_runs<'work>(
     runs
 }
 
-impl<'work, Resolve> MountedTextDemandJoin<'_, 'work, Resolve>
-where
-    Resolve: Fn(
-        worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-    ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
-{
+impl<'work> MountedTextDemandJoin<'_, '_, 'work> {
     fn layout_for(
         &self,
         mechanic: &UiMountedSemanticTextMechanic,

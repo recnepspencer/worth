@@ -93,7 +93,8 @@ impl WorthUiActiveApplicationSession {
         Policy: UiVisualArtifactPolicy,
     {
         pending.into_host_requested(|pinned| {
-            let maximum_pixel_bytes = match host_request::capture_byte_limit::<Policy>(
+            let maximum_pixel_bytes = match host_request::capture_byte_limit(
+                Policy::PIXELS_REQUIRED,
                 self.host_session
                     .output_adapter()
                     .visual_capture_capability(),
@@ -111,7 +112,8 @@ impl WorthUiActiveApplicationSession {
                     ));
                 }
             };
-            Ok(host_request::host_capture_request::<Policy>(
+            Ok(host_request::host_capture_request(
+                Policy::PIXELS_REQUESTED,
                 pinned.capture_identity(),
                 pinned.presentation(),
                 self.host_session.identity().as_u64(),

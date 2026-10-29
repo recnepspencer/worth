@@ -69,22 +69,7 @@ impl UiLocalInputRecipientContract {
         field: crate::capability::UiIntentPayloadField<P, crate::capability::UiIntentText>,
     ) -> Result<Self, UiDraftRecipientContractDenial> {
         let descriptor = field.descriptor();
-        P::FIELDS
-            .validate()
-            .map_err(UiDraftRecipientContractDenial::InvalidPayloadSchema)?;
-        let declared = P::FIELDS
-            .fields()
-            .get(usize::from(descriptor.slot()))
-            .ok_or(UiDraftRecipientContractDenial::FieldOutsidePayloadSchema {
-                slot: descriptor.slot(),
-            })?;
-        if declared != &descriptor {
-            return Err(UiDraftRecipientContractDenial::FieldHandleMismatch {
-                slot: descriptor.slot(),
-            });
-        }
-        let budget = UiDraftByteBudget::new(descriptor.byte_budget())
-            .map_err(UiDraftRecipientContractDenial::ByteBudget)?;
+        let budget = draft_text_field(descriptor, P::FIELDS)?;
         Ok(Self {
             kind: UiLocalInputRecipientContractKind::Draft {
                 field: UiDraftFieldIdentity::from_payload_field(field),
@@ -112,4 +97,26 @@ impl UiLocalInputRecipientContract {
     pub(super) const fn kind(self) -> UiLocalInputRecipientContractKind {
         self.kind
     }
+}
+
+#[inline(never)]
+fn draft_text_field(
+    descriptor: crate::capability::UiIntentPayloadFieldDescriptor,
+    fields: crate::capability::UiIntentPayloadFieldSet,
+) -> Result<UiDraftByteBudget, UiDraftRecipientContractDenial> {
+    fields
+        .validate()
+        .map_err(UiDraftRecipientContractDenial::InvalidPayloadSchema)?;
+    let declared = fields.fields().get(usize::from(descriptor.slot())).ok_or(
+        UiDraftRecipientContractDenial::FieldOutsidePayloadSchema {
+            slot: descriptor.slot(),
+        },
+    )?;
+    if declared != &descriptor {
+        return Err(UiDraftRecipientContractDenial::FieldHandleMismatch {
+            slot: descriptor.slot(),
+        });
+    }
+    UiDraftByteBudget::new(descriptor.byte_budget())
+        .map_err(UiDraftRecipientContractDenial::ByteBudget)
 }

@@ -23,6 +23,7 @@ mod mounted_work;
 
 #[cfg(test)]
 use super::rasterization::UiNativeTextRasterWorkReport;
+pub(in crate::native_platform) use demand_join::MountedLayoutResolve;
 use demand_join::{prepare_demands, rebuild_glyph_runs, MountedTextDemandJoin, PreparedDemand};
 pub(crate) use mounted_work::mounted_semantic_text;
 use mounted_work::{logical_damage, MountedSemanticTextCommand, MountedSemanticTextWork};
@@ -101,9 +102,7 @@ pub(crate) struct UiNativeTextPresentationDenial {
 pub(crate) fn prepare_mounted_semantic_text<'work>(
     work: UiMountedPresentationWorkView<'work>,
     dpi: UiMountedEventTimeDpiAuthority,
-    resolve: impl Fn(
-        worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-    ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
+    resolve: &MountedLayoutResolve<'work>,
 ) -> Option<UiNativeTextPresentationPreparation> {
     let pin_work = mounted_semantic_text(work);
     // Every mounted successor, including unchanged paint, carries Query
@@ -121,7 +120,6 @@ pub(crate) fn prepare_mounted_semantic_text<'work>(
         // Damage narrows replay, not the evidence retained for future replay.
         selection: worth_ui_text::UiGlyphRasterDemandSelection::CompleteLayout,
         resolve,
-        _layout: std::marker::PhantomData,
     };
     Some(match prepare_demands(&pin_work.mechanics, &join) {
         Ok(demands) => inspect_demand_boundary(&pin_work, demands),
@@ -133,9 +131,7 @@ pub(crate) fn prepare_from_foreground_reuse<'work>(
     work: UiMountedPresentationWorkView<'work>,
     receipts: &[&UiMountedTextForegroundReuseReceipt],
     basis: UiMountedTextForegroundPresentationBasis,
-    resolve: impl Fn(
-        worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-    ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
+    resolve: &MountedLayoutResolve<'work>,
 ) -> Option<UiNativeTextPresentationPrepared> {
     let pin_work = mounted_semantic_text(work);
     if pin_work.mechanics.len() != receipts.len() || receipts.is_empty() {

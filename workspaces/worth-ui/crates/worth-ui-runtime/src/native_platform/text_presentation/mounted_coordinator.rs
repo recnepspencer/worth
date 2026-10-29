@@ -62,9 +62,7 @@ impl UiNativeMountedTextCoordinator {
         requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
         dpi: UiMountedEventTimeDpiAuthority,
         host_lineage: Option<worth_ui_host_contract::UiHostPresentationLineageIdentity>,
-        resolve: impl Fn(
-            worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-        ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
+        resolve: &super::MountedLayoutResolve<'work>,
     ) -> Option<UiNativeTextPresentationPreparation> {
         let basis = UiMountedTextForegroundPresentationBasis::from_work(
             work,
@@ -85,8 +83,7 @@ impl UiNativeMountedTextCoordinator {
                     .iter()
                     .all(|receipt| receipt.raster_keys_cached(&self.raster_cache))
         }) {
-            if let Some(prepared) = prepare_from_foreground_reuse(work, &retained, basis, &resolve)
-            {
+            if let Some(prepared) = prepare_from_foreground_reuse(work, &retained, basis, resolve) {
                 let candidate = self.pins.candidate(requirement.binding(), &prepared);
                 let pins_continue = candidate.has_no_pin_churn()
                     && UiMountedTextForegroundReuseReceipt::pins_are_continuous(
@@ -108,10 +105,8 @@ impl UiNativeMountedTextCoordinator {
         requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
         host_lineage: Option<worth_ui_host_contract::UiHostPresentationLineageIdentity>,
         prepared: &'layout UiNativeTextPresentationPrepared,
-        resolve: impl Fn(
-            worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-        ) -> Option<&'layout worth_ui_text::UiQualifiedTextLayout>,
-        present: impl FnOnce(
+        resolve: &super::MountedLayoutResolve<'layout>,
+        present: &mut dyn FnMut(
             &worth_ui_host_contract::UiMountedTextRasterWork<'_>,
         ) -> (
             UiHostSurfacePresentationOutcome,
@@ -147,7 +142,7 @@ impl UiNativeMountedTextCoordinator {
             .with_mounted_work(
                 transition,
                 UiMountedTextPinState::binding_pins(&candidate),
-                present,
+                |work| present(work),
             );
         drop(transaction);
         if let Some(basis) = request_bases.first() {

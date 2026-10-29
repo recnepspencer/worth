@@ -62,8 +62,23 @@ impl WorthUiRuntime {
         &mut self,
         collect_sources: impl FnOnce(&mut WorthUiFrameworkTurn<'_>),
     ) -> WorthUiFrameworkTurnCompletion<'_> {
+        let mut collect_sources = Some(collect_sources);
+        self.finish_framework_turn(&mut |runtime| {
+            collect_sources.take().expect("source collection runs once")(
+                &mut WorthUiFrameworkTurn { runtime },
+            );
+        })
+    }
+
+    /// Source collection is the only typed callback. Panic containment and the
+    /// close/pump that follows it are compiled once.
+    #[inline(never)]
+    fn finish_framework_turn(
+        &mut self,
+        collect_sources: &mut dyn FnMut(&mut WorthUiRuntime),
+    ) -> WorthUiFrameworkTurnCompletion<'_> {
         let collection = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            collect_sources(&mut WorthUiFrameworkTurn { runtime: self });
+            collect_sources(self);
         }));
         let turn = self.close_allocation_ingress_and_pump_once();
         let transition = self.plan_framework_transition(turn);

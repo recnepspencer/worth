@@ -2,7 +2,8 @@ use core::marker::PhantomData;
 use std::sync::Arc;
 
 use super::{
-    UiIntentPayload, UiIntentPayloadField, UiIntentPayloadFieldKind, UiIntentPayloadValueKind,
+    UiIntentPayload, UiIntentPayloadField, UiIntentPayloadFieldDescriptor,
+    UiIntentPayloadFieldKind, UiIntentPayloadFieldSet, UiIntentPayloadValueKind,
     UiIntentSelectionValue,
 };
 
@@ -45,22 +46,7 @@ impl<P: UiIntentPayload> UiIntentPayloadProjection<P> {
         field: UiIntentPayloadField<P, K>,
     ) -> Result<K::Value, UiIntentPayloadProjectionViolation> {
         let descriptor = field.descriptor();
-        let slot = descriptor.slot();
-        let expected = P::FIELDS
-            .fields()
-            .get(slot as usize)
-            .ok_or(UiIntentPayloadProjectionViolation::FieldOutsideSchema { slot })?;
-        if expected != &descriptor || expected.kind() != K::KIND {
-            return Err(UiIntentPayloadProjectionViolation::FieldHandleMismatch { slot });
-        }
-        let value = self
-            .values
-            .get_mut(slot as usize)
-            .and_then(Option::take)
-            .ok_or(UiIntentPayloadProjectionViolation::FieldAlreadyConsumed { slot })?;
-        if value.kind() != K::KIND {
-            return Err(UiIntentPayloadProjectionViolation::ValueKindMismatch);
-        }
+        let value = take_projected_slot(&mut self.values, descriptor, P::FIELDS, K::KIND)?;
         K::take(value)
     }
 
@@ -81,6 +67,31 @@ impl<P: UiIntentPayload> UiIntentPayloadProjection<P> {
             })
             .map_or(Ok(()), Err)
     }
+}
+
+#[inline(never)]
+fn take_projected_slot(
+    values: &mut [Option<UiIntentProjectedValue>],
+    descriptor: UiIntentPayloadFieldDescriptor,
+    fields: UiIntentPayloadFieldSet,
+    kind: UiIntentPayloadFieldKind,
+) -> Result<UiIntentProjectedValue, UiIntentPayloadProjectionViolation> {
+    let slot = descriptor.slot();
+    let expected = fields
+        .fields()
+        .get(slot as usize)
+        .ok_or(UiIntentPayloadProjectionViolation::FieldOutsideSchema { slot })?;
+    if expected != &descriptor || expected.kind() != kind {
+        return Err(UiIntentPayloadProjectionViolation::FieldHandleMismatch { slot });
+    }
+    let value = values
+        .get_mut(slot as usize)
+        .and_then(Option::take)
+        .ok_or(UiIntentPayloadProjectionViolation::FieldAlreadyConsumed { slot })?;
+    if value.kind() != kind {
+        return Err(UiIntentPayloadProjectionViolation::ValueKindMismatch);
+    }
+    Ok(value)
 }
 
 impl UiIntentProjectedValue {

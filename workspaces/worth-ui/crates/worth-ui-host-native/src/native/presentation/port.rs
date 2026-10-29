@@ -26,6 +26,18 @@ pub(crate) trait UiNativePresentationPort {
     ) -> Result<UiNativePresentationPortObservation, UiNativePresentationPortFailure>;
 }
 
+/// One compiled presentation call. Each port supplies this function; the frame
+/// assembly around it does not depend on which port was selected.
+pub(crate) type UiNativePresentationPortFn =
+    fn(
+        &mut UiNativePresentationAccess,
+        Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+        worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        UiNativePresentationPortPlan,
+        bool,
+        &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
+    ) -> Result<UiNativePresentationPortObservation, UiNativePresentationPortFailure>;
+
 pub(crate) enum UiNativePresentationPortFailure {
     Surface(UiNativeSurfaceAcquireFailure),
     ReadbackUnsettled(Box<dyn UiNativePendingExternalObligation>),

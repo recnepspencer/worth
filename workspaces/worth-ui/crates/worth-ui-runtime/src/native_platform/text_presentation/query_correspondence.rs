@@ -150,7 +150,7 @@ mod tests {
             prepare_mounted_semantic_text(
                 UiMountedPresentationWorkView::Initial(&mechanics),
                 dpi,
-                |identity| (identity == layout.identity()).then_some(layout.as_ref()),
+                &|identity| (identity == layout.identity()).then_some(layout.as_ref()),
             )
         else {
             panic!("exact mounted semantic text must prepare");

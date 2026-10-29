@@ -65,9 +65,7 @@ pub(crate) struct UiNativeTextMissRasterizer<'layout, 'cache> {
 impl<'layout, 'cache> UiNativeTextMissRasterizer<'layout, 'cache> {
     pub(crate) fn for_prepared(
         prepared: &'layout UiNativeTextPresentationPrepared,
-        resolve: impl Fn(
-            worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-        ) -> Option<&'layout worth_ui_text::UiQualifiedTextLayout>,
+        resolve: &super::MountedLayoutResolve<'layout>,
         cache: &'cache mut worth_ui_text::UiGlyphRasterCache,
     ) -> Option<Self> {
         if prepared.demand_batches().len() != prepared.pin_commands().len() {

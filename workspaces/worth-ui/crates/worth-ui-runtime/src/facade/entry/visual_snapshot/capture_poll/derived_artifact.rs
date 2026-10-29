@@ -30,7 +30,12 @@ where
     Policy: UiVisualArtifactPolicy,
 {
     let source = pending.source;
-    let pixels = derive_pixels::<Policy>(&source, pending.region)?;
+    let pixels = derive_pixels(
+        Policy::PIXELS_REQUESTED,
+        Policy::PIXELS_REQUIRED,
+        &source,
+        pending.region,
+    )?;
     let identity = crate::inspection::visual_snapshot::UiVisualSnapshotIdentity::issued_by_runtime(
         pending.capture_identity,
     );
@@ -82,7 +87,8 @@ where
             host_coordinate_transform: source.host_coordinate_transform,
             pixel_artifact: input.pixels,
             disclosure: source.evidence.disclosure(),
-            cost: derived_cost::<Policy>(
+            cost: derived_cost(
+                Policy::PIXELS_REQUESTED,
                 input.region,
                 retained_pixel_bytes,
                 input.retained_structural_bytes,
@@ -101,15 +107,18 @@ where
     )
 }
 
-fn derive_pixels<Policy: UiVisualArtifactPolicy>(
+#[inline(never)]
+fn derive_pixels(
+    pixels_requested: bool,
+    pixels_required: bool,
     source: &crate::inspection::visual_snapshot::UiRetainedVisualSnapshotSource,
     region: worth_ui_inspection::UiClientPhysicalRect,
 ) -> Result<Option<UiVisualPixelArtifact>, UiVisualCaptureFailure> {
-    if !Policy::PIXELS_REQUESTED {
+    if !pixels_requested {
         return Ok(None);
     }
     let Some(parent) = source.pixel_artifact.as_ref() else {
-        return if Policy::PIXELS_REQUIRED {
+        return if pixels_required {
             Err(UiVisualCaptureFailure::Omitted(
                 UiVisualSnapshotOmission::HistoricalPixelsUnavailable,
             ))
@@ -181,12 +190,14 @@ fn retained_structure(
     .expect("a retained parent already proved its structural accounting")
 }
 
-fn derived_cost<Policy: UiVisualArtifactPolicy>(
+#[inline(never)]
+fn derived_cost(
+    pixels_requested: bool,
     region: worth_ui_inspection::UiClientPhysicalRect,
     retained_pixel_bytes: u64,
     retained_structural_bytes: u64,
 ) -> UiVisualInspectionCostReceipt {
-    let requested = if Policy::PIXELS_REQUESTED {
+    let requested = if pixels_requested {
         u64::from(region.right() - region.left())
             .saturating_mul(u64::from(region.bottom() - region.top()))
             .saturating_mul(4)

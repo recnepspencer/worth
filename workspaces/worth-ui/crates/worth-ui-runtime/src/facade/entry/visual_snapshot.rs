@@ -115,7 +115,7 @@ impl WorthUiActiveApplicationSession {
                 &identity_trace_basis,
             )?;
         let reservation = crate::inspection::visual_snapshot::UiVisualResourceReservation::new(
-            reserved_host_pixel_bytes::<Policy>(grant_scope),
+            reserved_host_pixel_bytes(Policy::PIXELS_REQUESTED, grant_scope),
             structural_bytes,
         );
         let identity = self.reserve_visual_capture_identity()?;
@@ -147,7 +147,7 @@ impl WorthUiActiveApplicationSession {
         Target: UiVisualTarget,
         Policy: UiVisualArtifactPolicy,
     {
-        validate_derived_pixel_capacity::<Policy>(grant_scope, source.region)?;
+        validate_derived_pixel_capacity(Policy::PIXELS_REQUESTED, grant_scope, source.region)?;
         if source.snapshot.evidence.cost().retained_structural_bytes()
             > grant_scope.maximum_retained_structural_bytes_per_receipt()
         {
@@ -248,10 +248,12 @@ fn reserve_visual_comparison(
     }
 }
 
-fn reserved_host_pixel_bytes<Policy: UiVisualArtifactPolicy>(
+#[inline(never)]
+fn reserved_host_pixel_bytes(
+    pixels_requested: bool,
     grant_scope: crate::inspection::visual_snapshot::UiVisualGrantScope,
 ) -> u64 {
-    if !Policy::PIXELS_REQUESTED {
+    if !pixels_requested {
         return 0;
     }
     grant_scope
@@ -259,11 +261,13 @@ fn reserved_host_pixel_bytes<Policy: UiVisualArtifactPolicy>(
         .min(grant_scope.maximum_retained_pixel_bytes())
 }
 
-fn validate_derived_pixel_capacity<Policy: UiVisualArtifactPolicy>(
+#[inline(never)]
+fn validate_derived_pixel_capacity(
+    pixels_requested: bool,
     grant_scope: crate::inspection::visual_snapshot::UiVisualGrantScope,
     region: worth_ui_inspection::UiClientPhysicalRect,
 ) -> Result<(), UiVisualSnapshotDenial> {
-    if !Policy::PIXELS_REQUESTED {
+    if !pixels_requested {
         return Ok(());
     }
     let width = u64::from(region.right() - region.left());
@@ -272,7 +276,7 @@ fn validate_derived_pixel_capacity<Policy: UiVisualArtifactPolicy>(
         .checked_mul(height)
         .and_then(|pixels| pixels.checked_mul(4))
         .ok_or(UiVisualSnapshotDenial::CapacityExceeded)?;
-    if required > reserved_host_pixel_bytes::<Policy>(grant_scope) {
+    if required > reserved_host_pixel_bytes(pixels_requested, grant_scope) {
         return Err(UiVisualSnapshotDenial::RetainedPixelCapacityExceeded);
     }
     Ok(())

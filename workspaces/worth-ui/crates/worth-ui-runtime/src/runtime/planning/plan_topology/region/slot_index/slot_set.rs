@@ -152,10 +152,11 @@ fn remove_at(
         .then(|| Rc::new(WorthUiPlanRegionSlotSetNode::Branch(children)))
 }
 
+#[inline(never)]
 fn visit_slots(
     root: &Option<Rc<WorthUiPlanRegionSlotSetNode>>,
     prefix: u64,
-    visit: &mut impl FnMut(u64),
+    visit: &mut dyn FnMut(u64),
 ) {
     let Some(root) = root else {
         return;

@@ -52,6 +52,34 @@ pub(crate) fn present_cold_reconstruction<Port: UiNativePresentationPort>(
     defer_initial_observation: bool,
     lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
 ) -> Result<UiNativeColdReconstruction, UiNativeReconstructionFailure> {
+    present_cold_reconstruction_with(
+        Port::present,
+        graphics,
+        resources,
+        physical_signal,
+        atlas,
+        atlas_gpu,
+        view,
+        recovery,
+        defer_initial_observation,
+        lifecycle,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+#[inline(never)]
+fn present_cold_reconstruction_with(
+    present: super::port::UiNativePresentationPortFn,
+    graphics: &mut UiNativePresentationAccess,
+    resources: &mut UiNativeResourceRegistry,
+    physical_signal: &mut crate::native::physical_work_signal::UiNativePhysicalSignalOwner,
+    atlas: &crate::native::text_atlas::UiNativeTextAtlas,
+    atlas_gpu: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+    view: &UiMountedFrameConsumptionView<'_>,
+    recovery: Option<crate::native::UiNativeRecoveryRequirement>,
+    defer_initial_observation: bool,
+    lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
+) -> Result<UiNativeColdReconstruction, UiNativeReconstructionFailure> {
     let UiMountedPresentationWorkView::Reconstruction(work) = view.presentation_work() else {
         return Err(before_effects(malformed_denial(), recovery, None));
     };
@@ -106,7 +134,7 @@ pub(crate) fn present_cold_reconstruction<Port: UiNativePresentationPort>(
         resources,
         physical_signal,
         owners,
-        Port::present(
+        present(
             graphics,
             atlas_gpu,
             view.attempt(),

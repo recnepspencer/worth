@@ -18,7 +18,7 @@ fn complete_command_validation_rejects_missing_duplicate_and_reordered_glyphs() 
     let mut cache = worth_ui_text::UiGlyphRasterCache::default();
     let mut transaction = UiNativeTextAtlasTransaction::prepare(
         &prepared,
-        |id| (id == layout.identity()).then_some(layout.as_ref()),
+        &|id| (id == layout.identity()).then_some(layout.as_ref()),
         &mut cache,
     )
     .unwrap();
@@ -98,7 +98,7 @@ fn complete_empty_commands_authenticate_individually_without_raster_or_pins() {
     let mut cache = worth_ui_text::UiGlyphRasterCache::default();
     let mut transaction = UiNativeTextAtlasTransaction::prepare(
         &prepared,
-        |id| (id == layout.identity()).then_some(layout.as_ref()),
+        &|id| (id == layout.identity()).then_some(layout.as_ref()),
         &mut cache,
     )
     .unwrap();
@@ -141,7 +141,7 @@ fn prepare<'a>(
         candidates,
         UiMountedEventTimeDpiAuthority::from_requirement(requirement).unwrap(),
         UiGlyphRasterLane::Ordinary,
-        |id| (id == layout.identity()).then_some(layout),
+        &|id| (id == layout.identity()).then_some(layout),
     )
     .unwrap() else {
         panic!("qualified candidate must prepare");

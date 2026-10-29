@@ -83,34 +83,7 @@ impl<Kind: UiGlyphRasterFormat> UiGlyphRasterRecord<Kind> {
     pub(crate) fn from_text_mechanics(
         input: UiGlyphRasterRecordInput,
     ) -> Result<Self, UiGlyphRasterAdmissionDenial> {
-        if !Kind::source_matches(input.key.source()) {
-            return Err(UiGlyphRasterAdmissionDenial::SourceFormatMismatch);
-        }
-        if input.extent.width() > MAX_RASTER_EDGE || input.extent.height() > MAX_RASTER_EDGE {
-            return Err(UiGlyphRasterAdmissionDenial::ExtentExceeded);
-        }
-        let view_input = UiGlyphRasterRecordViewInput {
-            key: input.key,
-            attribution: input.attribution,
-            bearing: input.bearing,
-            extent: input.extent,
-            stride: input.stride,
-            pixels: &input.pixels,
-            digest: input.digest,
-        };
-        match Kind::CHANNELS {
-            1 => {
-                UiAlphaRasterRecordView::from_text_mechanics(view_input)?;
-            }
-            4 => {
-                UiColorRasterRecordView::from_text_mechanics(view_input)?;
-            }
-            _ => return Err(UiGlyphRasterAdmissionDenial::ByteLengthOverflow),
-        }
-        let digest: [u8; 32] = UiCountedSha256::digest(&input.pixels).into();
-        if digest != input.digest.bytes() {
-            return Err(UiGlyphRasterAdmissionDenial::ContentDigestMismatch);
-        }
+        let input = admit_record(input, Kind::CHANNELS, Kind::source_matches)?;
         Ok(Self {
             key: input.key,
             attribution: input.attribution,
@@ -176,6 +149,17 @@ impl UiGlyphRasterRecord<UiColorRasterKind> {
 }
 
 impl<Kind> UiGlyphRasterRecord<Kind> {
+    fn identity_fact(&self) -> super::batch_admission::RasterIdentityFact {
+        super::batch_admission::RasterIdentityFact {
+            key: self.key,
+            attribution: self.attribution,
+            bearing: self.bearing,
+            extent: self.extent,
+            stride: self.stride,
+            digest: self.digest,
+        }
+    }
+
     fn view_input(&self) -> UiGlyphRasterRecordViewInput<'_> {
         UiGlyphRasterRecordViewInput {
             key: self.key,
@@ -222,8 +206,10 @@ impl<Kind: UiGlyphRasterFormat> UiGlyphRasterBatch<Kind> {
         if staged_bytes.is_some_and(|bytes| bytes > MAX_STAGED_BYTES) {
             return Err(UiGlyphRasterAdmissionDenial::StagedByteCapacityExceeded);
         }
-        let miss = miss_identity(&records);
-        let batch = batch_identity(demand, miss, layout, scale, lane, &records);
+        let facts = identity_facts(&records);
+        let miss = super::batch_admission::miss_identity(&facts);
+        let batch =
+            super::batch_admission::batch_identity(demand, miss, layout, scale, lane, &facts);
         Ok(Self {
             demand,
             miss,
@@ -263,6 +249,18 @@ impl<Kind: UiGlyphRasterFormat> UiGlyphRasterBatch<Kind> {
 
 impl UiGlyphRasterBatch<UiAlphaRasterKind> {
     pub fn with_view<R>(&self, visit: impl FnOnce(UiAlphaRasterBatchView<'_, '_>) -> R) -> R {
+        let mut visit = Some(visit);
+        let mut output = None;
+        self.project_alpha_view(&mut |view| {
+            output = Some(visit.take().expect("alpha batch view is visited once")(
+                view,
+            ));
+        });
+        output.expect("alpha batch view is visited once")
+    }
+
+    #[inline(never)]
+    fn project_alpha_view(&self, visit: &mut dyn FnMut(UiAlphaRasterBatchView<'_, '_>)) {
         let views: Vec<_> = self.records.iter().map(Self::record_view).collect();
         visit(UiAlphaRasterBatchView::from_text_mechanics(
             self.demand,
@@ -271,7 +269,7 @@ impl UiGlyphRasterBatch<UiAlphaRasterKind> {
             self.layout,
             self.lane,
             &views,
-        ))
+        ));
     }
 
     fn record_view(record: &UiGlyphRasterRecord<UiAlphaRasterKind>) -> UiAlphaRasterRecordView<'_> {
@@ -281,6 +279,18 @@ impl UiGlyphRasterBatch<UiAlphaRasterKind> {
 
 impl UiGlyphRasterBatch<UiColorRasterKind> {
     pub fn with_view<R>(&self, visit: impl FnOnce(UiColorRasterBatchView<'_, '_>) -> R) -> R {
+        let mut visit = Some(visit);
+        let mut output = None;
+        self.project_color_view(&mut |view| {
+            output = Some(visit.take().expect("color batch view is visited once")(
+                view,
+            ));
+        });
+        output.expect("color batch view is visited once")
+    }
+
+    #[inline(never)]
+    fn project_color_view(&self, visit: &mut dyn FnMut(UiColorRasterBatchView<'_, '_>)) {
         let views: Vec<_> = self.records.iter().map(Self::record_view).collect();
         visit(UiColorRasterBatchView::from_text_mechanics(
             self.demand,
@@ -289,7 +299,7 @@ impl UiGlyphRasterBatch<UiColorRasterKind> {
             self.layout,
             self.lane,
             &views,
-        ))
+        ));
     }
 
     fn record_view(record: &UiGlyphRasterRecord<UiColorRasterKind>) -> UiColorRasterRecordView<'_> {
@@ -297,94 +307,48 @@ impl UiGlyphRasterBatch<UiColorRasterKind> {
     }
 }
 
-fn miss_identity<Kind>(records: &[UiGlyphRasterRecord<Kind>]) -> UiGlyphRasterDemandIdentity {
-    let mut digest = UiCountedSha256::new();
-    digest.update(b"worth-ui-glyph-raster-miss-v1\0");
-    digest.update(
-        u64::try_from(records.len())
-            .unwrap_or(u64::MAX)
-            .to_le_bytes(),
-    );
-    for record in records {
-        update_key(&mut digest, record.key);
-        update_attribution(&mut digest, record.attribution);
-    }
-    UiGlyphRasterDemandIdentity::from_text_mechanics(digest.finalize().into())
-}
-
-fn batch_identity<Kind>(
-    demand: UiGlyphRasterDemandIdentity,
-    miss: UiGlyphRasterDemandIdentity,
-    layout: UiQualifiedTextLayoutIdentity,
-    scale: UiGlyphRasterScale,
-    lane: UiGlyphRasterLane,
+fn identity_facts<Kind>(
     records: &[UiGlyphRasterRecord<Kind>],
-) -> UiGlyphRasterBatchIdentity {
-    let mut digest = UiCountedSha256::new();
-    digest.update(b"worth-ui-glyph-raster-batch-v1\0");
-    digest.update(demand.digest());
-    digest.update(miss.digest());
-    digest.update(layout.digest());
-    digest.update(scale.dpi_milli().to_le_bytes());
-    digest.update(scale.text_scale_generation().get().to_le_bytes());
-    digest.update([lane_byte(lane)]);
-    digest.update(
-        u64::try_from(records.len())
-            .unwrap_or(u64::MAX)
-            .to_le_bytes(),
-    );
-    for record in records {
-        update_key(&mut digest, record.key);
-        update_attribution(&mut digest, record.attribution);
-        digest.update(record.bearing.x_over_64().to_le_bytes());
-        digest.update(record.bearing.y_over_64().to_le_bytes());
-        digest.update(record.extent.width().to_le_bytes());
-        digest.update(record.extent.height().to_le_bytes());
-        digest.update(record.stride.to_le_bytes());
-        digest.update(record.digest.bytes());
-    }
-    UiGlyphRasterBatchIdentity::from_text_mechanics(digest.finalize().into())
+) -> Vec<super::batch_admission::RasterIdentityFact> {
+    records
+        .iter()
+        .map(UiGlyphRasterRecord::identity_fact)
+        .collect()
 }
 
-fn update_key(digest: &mut UiCountedSha256, key: UiGlyphRasterKey) {
-    digest.update(key.font_collection_generation().get().to_le_bytes());
-    digest.update(key.font_collection_lineage().digest());
-    digest.update(key.profile_generation().get().to_le_bytes());
-    digest.update(key.face().font_bytes_digest());
-    digest.update(key.face().face_index().to_le_bytes());
-    digest.update(key.face().selection_digest());
-    digest.update(key.glyph_id().to_le_bytes());
-    for variation in key.variations().records() {
-        digest.update(variation.axis());
-        digest.update(variation.value_milli().to_le_bytes());
+#[inline(never)]
+fn admit_record(
+    input: UiGlyphRasterRecordInput,
+    channels: usize,
+    source_matches: fn(worth_ui_host_contract::UiGlyphRasterSource) -> bool,
+) -> Result<UiGlyphRasterRecordInput, UiGlyphRasterAdmissionDenial> {
+    if !source_matches(input.key.source()) {
+        return Err(UiGlyphRasterAdmissionDenial::SourceFormatMismatch);
     }
-    digest.update([u8::try_from(key.variations().len()).unwrap_or(u8::MAX)]);
-    digest.update(key.palette().index().to_le_bytes());
-    digest.update(key.size().millipoints().to_le_bytes());
-    digest.update([source_byte(key.source())]);
-    digest.update(key.dpi_milli().to_le_bytes());
-    digest.update(key.fractional_origin().x_over_64().to_le_bytes());
-    digest.update(key.fractional_origin().y_over_64().to_le_bytes());
-}
-
-fn update_attribution(digest: &mut UiCountedSha256, attribution: UiGlyphRasterAttribution) {
-    digest.update(attribution.layout().digest());
-    digest.update(attribution.original_range().start().to_le_bytes());
-    digest.update(attribution.original_range().end().to_le_bytes());
-}
-
-fn source_byte(source: worth_ui_host_contract::UiGlyphRasterSource) -> u8 {
-    match source {
-        worth_ui_host_contract::UiGlyphRasterSource::ColorOutline => 0,
-        worth_ui_host_contract::UiGlyphRasterSource::ColorBitmap => 1,
-        worth_ui_host_contract::UiGlyphRasterSource::AlphaOutline => 2,
-        worth_ui_host_contract::UiGlyphRasterSource::LastResort => 3,
+    if input.extent.width() > MAX_RASTER_EDGE || input.extent.height() > MAX_RASTER_EDGE {
+        return Err(UiGlyphRasterAdmissionDenial::ExtentExceeded);
     }
-}
-
-fn lane_byte(lane: UiGlyphRasterLane) -> u8 {
-    match lane {
-        UiGlyphRasterLane::Ordinary => 0,
-        UiGlyphRasterLane::Reconstruction => 1,
+    let view_input = UiGlyphRasterRecordViewInput {
+        key: input.key,
+        attribution: input.attribution,
+        bearing: input.bearing,
+        extent: input.extent,
+        stride: input.stride,
+        pixels: &input.pixels,
+        digest: input.digest,
+    };
+    match channels {
+        1 => {
+            UiAlphaRasterRecordView::from_text_mechanics(view_input)?;
+        }
+        4 => {
+            UiColorRasterRecordView::from_text_mechanics(view_input)?;
+        }
+        _ => return Err(UiGlyphRasterAdmissionDenial::ByteLengthOverflow),
     }
+    let digest: [u8; 32] = UiCountedSha256::digest(&input.pixels).into();
+    if digest != input.digest.bytes() {
+        return Err(UiGlyphRasterAdmissionDenial::ContentDigestMismatch);
+    }
+    Ok(input)
 }

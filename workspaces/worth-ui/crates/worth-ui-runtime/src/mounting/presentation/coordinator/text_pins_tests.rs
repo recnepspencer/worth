@@ -30,7 +30,7 @@ fn prepared_initial(
         prepare_mounted_semantic_text(
             UiMountedPresentationWorkView::Initial(&mechanics),
             dpi,
-            |identity| (identity == layout.identity()).then_some(layout.as_ref()),
+            &|identity| (identity == layout.identity()).then_some(layout.as_ref()),
         )
     else {
         panic!("exact mounted text must prepare native raster demands");
@@ -312,7 +312,7 @@ fn partial_delta_replaces_only_its_command_and_preserves_unchanged_shared_pins()
         prepare_mounted_semantic_text(
             UiMountedPresentationWorkView::Delta(&insert),
             UiMountedEventTimeDpiAuthority::from_requirement(first_requirement).unwrap(),
-            |identity| (identity == layout.identity()).then_some(layout.as_ref()),
+            &|identity| (identity == layout.identity()).then_some(layout.as_ref()),
         )
     else {
         panic!("the second lawful text command must prepare its pin ownership");
@@ -358,7 +358,7 @@ fn partial_delta_replaces_only_its_command_and_preserves_unchanged_shared_pins()
         prepare_mounted_semantic_text(
             UiMountedPresentationWorkView::Delta(&delta),
             UiMountedEventTimeDpiAuthority::from_requirement(scaled_requirement).unwrap(),
-            |identity| (identity == layout.identity()).then_some(layout.as_ref()),
+            &|identity| (identity == layout.identity()).then_some(layout.as_ref()),
         )
     else {
         panic!("the changed text command must prepare a partial pin delta");

@@ -11,7 +11,7 @@ pub(super) fn at_point(
     if point.iter().any(|value| !value.is_finite()) {
         return Err(UiMountedSpatialQueryDenial::InvalidGeometry);
     }
-    query(root, budget, |bounds| bounds.contains(point))
+    query(root, budget, &|bounds| bounds.contains(point))
 }
 
 pub(super) fn intersecting(
@@ -26,13 +26,14 @@ pub(super) fn intersecting(
             work: UiMountedSpatialWork::default(),
         });
     };
-    query(root, budget, |candidate| candidate.intersects(bounds))
+    query(root, budget, &|candidate| candidate.intersects(bounds))
 }
 
+#[inline(never)]
 fn query(
     root: &Link,
     budget: UiMountedSpatialBudget,
-    intersects: impl Fn(Bounds) -> bool,
+    intersects: &dyn Fn(Bounds) -> bool,
 ) -> Result<UiMountedSpatialQuery, UiMountedSpatialQueryDenial> {
     let mut result = UiMountedSpatialQuery {
         instances: Vec::new(),

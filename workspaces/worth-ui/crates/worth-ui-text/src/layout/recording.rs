@@ -363,9 +363,10 @@ fn scale_font_units(value: i32, size: u32, units_per_em: u16) -> i64 {
     i64::from(value) * i64::from(size) / i64::from(units_per_em)
 }
 
+#[inline(never)]
 pub(super) fn aggregate_line_bounds(
     lines: &[UiQualifiedTextLineRecord],
-    bounds_of: impl Fn(UiQualifiedTextLineRecord) -> worth_ui_host_contract::UiTextRect,
+    bounds_of: fn(UiQualifiedTextLineRecord) -> worth_ui_host_contract::UiTextRect,
 ) -> worth_ui_host_contract::UiTextRect {
     let Some(first) = lines.first().copied() else {
         return worth_ui_host_contract::UiTextRect::from_text_mechanics(0, 0, 0, 0)

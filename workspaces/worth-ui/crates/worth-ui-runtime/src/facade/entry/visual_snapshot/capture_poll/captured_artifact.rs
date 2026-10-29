@@ -60,13 +60,17 @@ where
     )
     .map_err(map_spatial_denial)?;
     let (visible_index, hit_test_index, spatial_cost) = spatial.into_parts();
-    let pixels = validate_host_pixels::<Policy>(UiHostPixelValidation {
-        request,
-        relation,
-        transform,
-        pixels: host_pixels,
-        redaction: inspection_policy.disclosure().pixel_redaction(),
-    })?;
+    let pixels = validate_host_pixels(
+        Policy::PIXELS_REQUESTED,
+        Policy::PIXELS_REQUIRED,
+        UiHostPixelValidation {
+            request,
+            relation,
+            transform,
+            pixels: host_pixels,
+            redaction: inspection_policy.disclosure().pixel_redaction(),
+        },
+    )?;
     let indexed = observed.index(
         crate::inspection::visual_snapshot::UiValidatedHostVisualCapture::from_runtime_validation(
             crate::inspection::visual_snapshot::UiValidatedHostVisualCaptureInput {
@@ -197,7 +201,13 @@ where
             pixel_bytes,
             structural_bytes,
         ),
-        cost: capture_cost::<Policy>(parts, parts.transform, pixel_bytes, structural_bytes),
+        cost: capture_cost(
+            parts.spatial_cost.region_records_examined() as u64,
+            Policy::PIXELS_REQUESTED,
+            parts.transform,
+            pixel_bytes,
+            structural_bytes,
+        ),
     }
 }
 
@@ -235,22 +245,21 @@ pub(super) fn snapshot_affinity(
     )
 }
 
-fn capture_cost<Policy>(
-    parts: &crate::inspection::visual_snapshot::UiIndexedVisualCaptureParts<Policy>,
+#[inline(never)]
+fn capture_cost(
+    region_records_examined: u64,
+    pixels_requested: bool,
     transform: worth_ui_host_contract::UiHostCoordinateTransform,
     pixel_bytes: u64,
     retained_structural_bytes: u64,
-) -> worth_ui_inspection::UiVisualInspectionCostReceipt
-where
-    Policy: UiVisualArtifactPolicy,
-{
-    let requested_bytes = if Policy::PIXELS_REQUESTED {
+) -> worth_ui_inspection::UiVisualInspectionCostReceipt {
+    let requested_bytes = if pixels_requested {
         expected_rgba_bytes(transform).unwrap_or(0)
     } else {
         0
     };
     worth_ui_inspection::UiVisualInspectionCostReceipt::from_runtime_projection([
-        parts.spatial_cost.region_records_examined() as u64,
+        region_records_examined,
         0,
         0,
         0,
@@ -277,13 +286,16 @@ fn map_spatial_denial(
     }
 }
 
-fn validate_host_pixels<Policy: UiVisualArtifactPolicy>(
+#[inline(never)]
+fn validate_host_pixels(
+    pixels_requested: bool,
+    pixels_required: bool,
     input: UiHostPixelValidation,
 ) -> Result<Option<worth_ui_inspection::UiVisualPixelArtifact>, UiVisualCaptureFailure> {
     let Some(pixels) = input.pixels else {
-        return missing_pixels::<Policy>(input.relation);
+        return missing_pixels(pixels_required, input.relation);
     };
-    if !Policy::PIXELS_REQUESTED {
+    if !pixels_requested {
         return Err(UiVisualCaptureFailure::Denied(
             UiVisualSnapshotDenial::ProtocolIncompatible,
         ));
@@ -291,10 +303,12 @@ fn validate_host_pixels<Policy: UiVisualArtifactPolicy>(
     validate_pixel_shape(input.request, input.transform, pixels, input.redaction)
 }
 
-fn missing_pixels<Policy: UiVisualArtifactPolicy>(
+#[inline(never)]
+fn missing_pixels(
+    pixels_required: bool,
     relation: UiVisualSnapshotRelation,
 ) -> Result<Option<worth_ui_inspection::UiVisualPixelArtifact>, UiVisualCaptureFailure> {
-    if !Policy::PIXELS_REQUIRED {
+    if !pixels_required {
         return Ok(None);
     }
     match relation {

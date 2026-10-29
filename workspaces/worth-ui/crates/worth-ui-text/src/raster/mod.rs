@@ -11,6 +11,7 @@ mod alpha_record;
 mod alpha_transaction_admission;
 mod alpha_transaction_completion;
 mod batch;
+mod batch_admission;
 mod cache;
 mod capacity;
 mod color;

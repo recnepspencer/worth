@@ -28,16 +28,16 @@ fn narrow_damage_preserves_complete_selected_command_and_rejects_filtered_reuse(
     let selected = mounted_semantic_text(initial_work);
     let (command, mechanic) = selected.mechanics[0];
     let UiNativeTextPresentationPreparation::Prepared(complete) =
-        prepare_mounted_semantic_text(initial_work, dpi, |_| Some(layout.as_ref())).unwrap()
+        prepare_mounted_semantic_text(initial_work, dpi, &|_| Some(layout.as_ref())).unwrap()
     else {
         panic!("qualified initial text prepares");
     };
+    let resolve = |_| Some(layout.as_ref());
     let join = MountedTextDemandJoin {
         dpi,
         lane: UiGlyphRasterLane::Ordinary,
         selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(initial.damage()),
-        resolve: |_| Some(layout.as_ref()),
-        _layout: std::marker::PhantomData,
+        resolve: &resolve,
     };
     let filtered = prepare_demands(&selected.mechanics, &join).unwrap();
     let successor_frame = UiMountedFrameIdentity::mint_unbound().unwrap();
@@ -86,7 +86,7 @@ fn narrow_damage_preserves_complete_selected_command_and_rejects_filtered_reuse(
         successor_work,
         &[&receipt(&complete.demand_batches()[0])],
         basis(successor_work),
-        |_| Some(layout.as_ref()),
+        &|_| Some(layout.as_ref()),
     )
     .expect("complete receipt admits paint-only reuse");
     assert!(reused.foreground_reused());
@@ -95,7 +95,7 @@ fn narrow_damage_preserves_complete_selected_command_and_rejects_filtered_reuse(
             successor_work,
             &[&receipt(&filtered.demands[0])],
             basis(successor_work),
-            |_| Some(layout.as_ref())
+            &|_| Some(layout.as_ref())
         )
         .is_none(),
         "filtered demand must rederive complete retention"
@@ -134,7 +134,7 @@ fn narrow_damage_preserves_complete_selected_command_and_rejects_filtered_reuse(
             prepare_mounted_semantic_text(
                 UiMountedPresentationWorkView::Delta(&changed),
                 dpi,
-                |_| Some(layout.as_ref()),
+                &|_| Some(layout.as_ref()),
             )
             .unwrap()
         else {
@@ -233,12 +233,12 @@ fn filtered_owned_demand_cannot_be_promoted_by_a_borrowed_scope_flag() {
     let initial = initial_presentation_mechanics_for_certification(&projection, binding);
     let layout = inert_qualified_layout("ONLINE");
     let work = mounted_semantic_text(UiMountedPresentationWorkView::Initial(&initial));
+    let resolve = |_| Some(layout.as_ref());
     let join = MountedTextDemandJoin {
         dpi: UiMountedEventTimeDpiAuthority::from_requirement(binding).unwrap(),
         lane: UiGlyphRasterLane::Ordinary,
         selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(initial.damage()),
-        resolve: |_| Some(layout.as_ref()),
-        _layout: std::marker::PhantomData,
+        resolve: &resolve,
     };
     let demands = prepare_demands(&work.mechanics, &join).unwrap();
     let UiNativeTextPresentationPreparation::Prepared(prepared) =
@@ -248,7 +248,7 @@ fn filtered_owned_demand_cannot_be_promoted_by_a_borrowed_scope_flag() {
     };
     let mut cache = worth_ui_text::UiGlyphRasterCache::default();
     let mut transaction =
-        UiNativeTextAtlasTransaction::prepare(&prepared, |_| Some(layout.as_ref()), &mut cache)
+        UiNativeTextAtlasTransaction::prepare(&prepared, &|_| Some(layout.as_ref()), &mut cache)
             .unwrap();
     transaction.with_mounted_work(
         UiGlyphRasterPinTransitionView::from_text_mechanics(&[], &[]),

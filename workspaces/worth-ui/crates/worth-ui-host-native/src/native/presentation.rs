@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
-    UiHostPresentationCostInput, UiHostPresentationCostReport, UiHostSurfacePresentationDenial,
-    UiMountedFrameConsumptionView, UiMountedPresentationWorkView,
+    UiHostPresentationCostReport, UiHostSurfacePresentationDenial, UiMountedFrameConsumptionView,
+    UiMountedPresentationWorkView,
 };
 
 use super::{
@@ -142,6 +142,32 @@ pub(crate) fn present_initial<Port: UiNativePresentationPort>(
     defer_initial_observation: bool,
     lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
 ) -> Result<UiNativePresentedFrame, UiNativePresentationFailure> {
+    present_initial_with(
+        Port::present,
+        graphics,
+        resources,
+        physical_signal,
+        atlas,
+        atlas_gpu,
+        view,
+        defer_initial_observation,
+        lifecycle,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+#[inline(never)]
+fn present_initial_with(
+    present: port::UiNativePresentationPortFn,
+    graphics: &mut UiNativePresentationAccess,
+    resources: &mut UiNativeResourceRegistry,
+    physical_signal: &mut crate::native::physical_work_signal::UiNativePhysicalSignalOwner,
+    atlas: &crate::native::text_atlas::UiNativeTextAtlas,
+    atlas_gpu: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+    view: &UiMountedFrameConsumptionView<'_>,
+    defer_initial_observation: bool,
+    lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
+) -> Result<UiNativePresentedFrame, UiNativePresentationFailure> {
     let UiMountedPresentationWorkView::Initial(initial_work) = view.presentation_work() else {
         return Err(UiNativePresentationFailure::BeforeEffects(
             UiHostSurfacePresentationDenial::AdapterDeclined,
@@ -187,13 +213,13 @@ pub(crate) fn present_initial<Port: UiNativePresentationPort>(
             ))
             .map_err(UiNativePresentationFailure::BeforeEffects)?,
     );
-    let cost = initial_presentation_cost(graphics.extent(), &operations);
+    let cost = initial_validation::initial_presentation_cost(graphics.extent(), &operations);
     let owners = reserve_presentation_owners(
         resources,
         physical_signal,
         crate::native::physical_work_signal::UiNativePhysicalPresentationBasis::from_view(view),
     )?;
-    let result = Port::present(
+    let result = present(
         graphics,
         atlas_gpu,
         view.attempt(),
@@ -331,47 +357,6 @@ fn observation_for_attribution(
 
 fn milli(value: f32) -> i64 {
     (f64::from(value) * 1_000.0).round() as i64
-}
-
-fn initial_presentation_cost(
-    extent: [u32; 2],
-    operations: &[UiNativeRasterOperation],
-) -> UiHostPresentationCostReport {
-    let pixels = u64::from(extent[0]) * u64::from(extent[1]);
-    let rows = u64::try_from(operations.len()).expect("native profile bounds presentation rows");
-    let rendered_pixels = operations.iter().fold(0_u64, |total, operation| {
-        let [width, height] = match operation {
-            UiNativeRasterOperation::Clear(rect)
-            | UiNativeRasterOperation::FilledRect { rect, .. } => {
-                [rect.physical_width, rect.physical_height]
-            }
-            UiNativeRasterOperation::Surface(surface) => {
-                let rect = surface.rect();
-                [rect.physical_width, rect.physical_height]
-            }
-            UiNativeRasterOperation::Glyph(command) => [
-                command.target[2].ceil().max(0.0) as u32,
-                command.target[3].ceil().max(0.0) as u32,
-            ],
-        };
-        total + u64::from(width) * u64::from(height)
-    });
-    UiHostPresentationCostReport::from_adapter(UiHostPresentationCostInput {
-        presented_surfaces: 1,
-        translated_rows: rows,
-        native_resource_cache_misses: 1,
-        intersecting_commands: rows,
-        replayed_commands: rows,
-        cleared_pixels: pixels,
-        rendered_pixels,
-        presented_pixels: pixels,
-        gpu_writes: u64::from(!operations.is_empty()),
-        render_passes: 2,
-        surface_acquisitions: 1,
-        queue_submissions: 1,
-        presents: 1,
-        ..Default::default()
-    })
 }
 
 #[cfg(test)]

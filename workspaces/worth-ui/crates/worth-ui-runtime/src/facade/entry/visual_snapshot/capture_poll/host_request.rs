@@ -1,12 +1,12 @@
-use worth_ui_inspection::UiVisualArtifactPolicy;
-
 pub(super) enum UiHostCaptureAdmission {
     Supported(u64),
     Unsupported,
     AffinityIndeterminate,
 }
 
-pub(super) fn capture_byte_limit<Policy: UiVisualArtifactPolicy>(
+#[inline(never)]
+pub(super) fn capture_byte_limit(
+    pixels_required: bool,
     capability: worth_ui_host_contract::UiHostCaptureCapability,
     policy: worth_ui_inspection::UiVisualInspectionPolicy,
 ) -> UiHostCaptureAdmission {
@@ -15,7 +15,7 @@ pub(super) fn capture_byte_limit<Policy: UiVisualArtifactPolicy>(
             UiHostCaptureAdmission::Unsupported
         }
         worth_ui_host_contract::UiHostCaptureCapability::GeometryOnly => {
-            if Policy::PIXELS_REQUIRED {
+            if pixels_required {
                 UiHostCaptureAdmission::Unsupported
             } else {
                 UiHostCaptureAdmission::Supported(0)
@@ -32,7 +32,9 @@ pub(super) fn capture_byte_limit<Policy: UiVisualArtifactPolicy>(
     }
 }
 
-pub(super) fn host_capture_request<Policy: UiVisualArtifactPolicy>(
+#[inline(never)]
+pub(super) fn host_capture_request(
+    pixels_requested: bool,
     capture_identity: u64,
     basis: crate::inspection::visual_snapshot::UiVisualSurfaceCaptureBasis,
     host_session_identity: u64,
@@ -51,7 +53,7 @@ pub(super) fn host_capture_request<Policy: UiVisualArtifactPolicy>(
             basis.epoch,
         ),
         worth_ui_host_contract::UiHostCaptureArtifactBudget::admitted_by_runtime(
-            Policy::PIXELS_REQUESTED && maximum_pixel_bytes > 0,
+            pixels_requested && maximum_pixel_bytes > 0,
             maximum_pixel_bytes,
         ),
     )

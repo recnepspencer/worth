@@ -12,9 +12,7 @@ pub(crate) fn prepare_complete_semantic_text<'work>(
     candidates: &'work [UiMountedSemanticTextMechanic],
     dpi: UiMountedEventTimeDpiAuthority,
     lane: worth_ui_host_contract::UiGlyphRasterLane,
-    resolve: impl Fn(
-        worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
-    ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
+    resolve: &super::MountedLayoutResolve<'work>,
 ) -> Result<UiNativeTextPresentationPreparation, UiNativeTextPresentationReadiness> {
     let work = MountedSemanticTextWork {
         mechanics: candidates
@@ -34,7 +32,6 @@ pub(crate) fn prepare_complete_semantic_text<'work>(
         lane,
         selection: worth_ui_text::UiGlyphRasterDemandSelection::CompleteLayout,
         resolve,
-        _layout: std::marker::PhantomData,
     };
     let demands = prepare_demands(&work.mechanics, &join)?;
     Ok(inspect_demand_boundary(&work, demands))

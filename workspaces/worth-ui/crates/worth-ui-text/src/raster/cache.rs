@@ -88,11 +88,29 @@ impl UiGlyphRasterCache {
         &mut self,
         record: &UiGlyphRasterRecord<Kind>,
     ) {
-        let key = record.key();
+        self.insert_record(
+            record.key(),
+            record.bearing(),
+            record.extent(),
+            record.stride(),
+            record.pixels_arc(),
+            record.digest(),
+        );
+    }
+
+    #[inline(never)]
+    fn insert_record(
+        &mut self,
+        key: UiGlyphRasterKey,
+        bearing: UiGlyphRasterBearing,
+        extent: UiGlyphRasterExtent,
+        stride: u32,
+        pixels: Arc<[u8]>,
+        digest: UiGlyphRasterContentDigest,
+    ) {
         if self.entries.contains_key(&key) {
             return;
         }
-        let pixels = record.pixels_arc();
         let bytes = pixels.len();
         if bytes > QUALIFIED_CACHE_BYTE_LIMIT {
             return;
@@ -112,11 +130,11 @@ impl UiGlyphRasterCache {
         self.entries.insert(
             key,
             UiCachedGlyphRaster {
-                bearing: record.bearing(),
-                extent: record.extent(),
-                stride: record.stride(),
+                bearing,
+                extent,
+                stride,
                 pixels,
-                digest: record.digest(),
+                digest,
             },
         );
     }

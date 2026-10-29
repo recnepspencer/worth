@@ -46,6 +46,34 @@ pub(crate) fn present_sample<Port: UiNativePresentationPort>(
     defer_initial_observation: bool,
     lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
 ) -> Result<UiNativeSamplePresentation, UiNativePresentationFailure> {
+    present_sample_with(
+        Port::present,
+        graphics,
+        resources,
+        physical_signal,
+        atlas,
+        atlas_gpu,
+        view,
+        retained,
+        defer_initial_observation,
+        lifecycle,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+#[inline(never)]
+fn present_sample_with(
+    present: super::port::UiNativePresentationPortFn,
+    graphics: &mut UiNativePresentationAccess,
+    resources: &mut UiNativeResourceRegistry,
+    physical_signal: &mut crate::native::physical_work_signal::UiNativePhysicalSignalOwner,
+    atlas: &crate::native::text_atlas::UiNativeTextAtlas,
+    atlas_gpu: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+    view: &UiMountedFrameConsumptionView<'_>,
+    retained: &mut UiNativeRetainedDrawList,
+    defer_initial_observation: bool,
+    lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
+) -> Result<UiNativeSamplePresentation, UiNativePresentationFailure> {
     let UiMountedPresentationWorkView::Sample(sample) = view.presentation_work() else {
         return Err(before_effects(
             UiHostSurfacePresentationDenial::AdapterDeclined,
@@ -82,7 +110,7 @@ pub(crate) fn present_sample<Port: UiNativePresentationPort>(
             resources,
             physical_signal,
             owners,
-            Port::present(
+            present(
                 graphics,
                 atlas_gpu,
                 view.attempt(),

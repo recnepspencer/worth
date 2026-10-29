@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
-    UiHostSurfacePresentationDenial, UiMountedFrameConsumptionView, UiMountedPaintCommand,
-    UiMountedPresentationWorkView,
+    UiHostPresentationCostInput, UiHostPresentationCostReport, UiHostSurfacePresentationDenial,
+    UiMountedFrameConsumptionView, UiMountedPaintCommand, UiMountedPresentationWorkView,
 };
 
 use super::{UiNativePresentationAccess, UiNativePresentationFailure, UiNativeRasterOperation};
@@ -124,4 +124,45 @@ pub(super) fn initial_operations(
 
 fn before_effects_malformed() -> UiNativePresentationFailure {
     UiNativePresentationFailure::BeforeEffects(UiHostSurfacePresentationDenial::MalformedProjection)
+}
+
+pub(super) fn initial_presentation_cost(
+    extent: [u32; 2],
+    operations: &[UiNativeRasterOperation],
+) -> UiHostPresentationCostReport {
+    let pixels = u64::from(extent[0]) * u64::from(extent[1]);
+    let rows = u64::try_from(operations.len()).expect("native profile bounds presentation rows");
+    let rendered_pixels = operations.iter().fold(0_u64, |total, operation| {
+        let [width, height] = match operation {
+            UiNativeRasterOperation::Clear(rect)
+            | UiNativeRasterOperation::FilledRect { rect, .. } => {
+                [rect.physical_width, rect.physical_height]
+            }
+            UiNativeRasterOperation::Surface(surface) => {
+                let rect = surface.rect();
+                [rect.physical_width, rect.physical_height]
+            }
+            UiNativeRasterOperation::Glyph(command) => [
+                command.target[2].ceil().max(0.0) as u32,
+                command.target[3].ceil().max(0.0) as u32,
+            ],
+        };
+        total + u64::from(width) * u64::from(height)
+    });
+    UiHostPresentationCostReport::from_adapter(UiHostPresentationCostInput {
+        presented_surfaces: 1,
+        translated_rows: rows,
+        native_resource_cache_misses: 1,
+        intersecting_commands: rows,
+        replayed_commands: rows,
+        cleared_pixels: pixels,
+        rendered_pixels,
+        presented_pixels: pixels,
+        gpu_writes: u64::from(!operations.is_empty()),
+        render_passes: 2,
+        surface_acquisitions: 1,
+        queue_submissions: 1,
+        presents: 1,
+        ..Default::default()
+    })
 }
