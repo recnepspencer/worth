@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation::checkpoint_transition::funded_capture::*;
+use worth_query_host::facade::runtime::{ExecutionAllocationDenialClass, WorkCeilingDenial};
 
 #[test]
 fn execution_capture_charges_its_frame_to_the_caller_lease_end_to_end() {
@@ -49,8 +50,10 @@ fn execution_capture_through_a_foreign_lease_still_refuses_unrelated_nesting() {
         panic!("the unrelated lease is the exact typed cause: {refusal:?}");
     };
     assert_eq!(
-        refusal.kind(),
-        AllocationKind::Lease(LeaseDenial::UnrelatedNestedLease)
+        refusal.classify(),
+        ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Admission(
+            LeaseDenial::UnrelatedNestedLease
+        ))
     );
     assert_eq!(foreign.charged_memory_bytes(), 0);
     assert_eq!(caller.charged_memory_bytes(), 0);

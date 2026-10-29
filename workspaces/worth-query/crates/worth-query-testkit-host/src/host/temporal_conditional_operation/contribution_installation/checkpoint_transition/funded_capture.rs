@@ -3,9 +3,7 @@ pub use super::*;
 pub use application_installation::WorthQueryCheckpointCaptureDenial as CaptureDenial;
 pub use original_request::{request, transition_original};
 pub use worth_execution::ExecutionRequest;
-pub use worth_query_host::facade::runtime::{
-    CancellationToken, ExecutionAllocationDenialKind as AllocationKind, LeaseDenial,
-};
+pub use worth_query_host::facade::runtime::{CancellationToken, LeaseDenial};
 
 pub fn funded_target() -> original_request::Target {
     let (source, predecessor) = source();

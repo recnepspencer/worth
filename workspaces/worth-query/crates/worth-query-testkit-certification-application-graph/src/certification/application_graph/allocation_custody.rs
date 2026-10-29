@@ -4,6 +4,7 @@ pub use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 pub use worth_query_execution::facade::provider_session::WorthQueryDecisionReadSetDenialKind;
+use worth_query_host::facade::runtime::{ExecutionAllocationDenialClass, WorkCeilingDenial};
 pub use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationMutationOutcome as Outcome,
@@ -18,8 +19,8 @@ pub use worth_query_host::facade::{
         WorthQueryOperationProjectionDenialKind as ProjectionKind,
     },
     runtime::{
-        CancellationToken, ExecutionAllocationDenial, ExecutionAllocationDenialKind,
-        ExecutionAllocationPolicy as Policy, LeaseDenial, LeaseRequest,
+        CancellationToken, ExecutionAllocationDenial, ExecutionAllocationPolicy as Policy,
+        LeaseDenial, LeaseRequest,
     },
 };
 
@@ -48,13 +49,17 @@ pub fn lease_request(memory: u64, cancellation: CancellationToken) -> LeaseReque
 
 pub fn assert_memory_refusal(cause: &ExecutionAllocationDenial) {
     assert_eq!(
-        cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                requested: cause.requested_payload_bytes().unwrap(),
-                admitted: 0,
-                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+        cause.classify(),
+        ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(
+                worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                    requested: cause.requested_payload_bytes().unwrap(),
+                    admitted: 0,
+                    level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy {
+                        ancestor: 0
+                    }
+                }
+            )
         )),
     );
     // Preserve the owner's checked Layout quote. Private completed-fact counts

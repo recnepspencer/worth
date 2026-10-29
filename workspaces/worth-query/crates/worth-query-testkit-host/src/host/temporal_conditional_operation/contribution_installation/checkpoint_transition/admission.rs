@@ -2,9 +2,7 @@
 pub use super::*;
 pub use application_installation::WorthQueryCheckpointCaptureDenial as CaptureDenial;
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
-pub use worth_query_host::facade::runtime::{
-    ExecutionAllocationDenialKind as AllocationKind, LeaseDenial,
-};
+pub use worth_query_host::facade::runtime::LeaseDenial;
 
 pub fn author_record(
     writer: &mut application_installation::WorthQueryCheckpointMigrationWriter<

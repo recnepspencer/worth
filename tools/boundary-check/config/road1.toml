@@ -1769,3 +1769,109 @@ exclude_paths = [
 forbidden_identifiers = ["native_input_capture", "NativeImmutableInput", "encode_native_input", "from_native_owned"]
 forbidden_identifier_fragments = []
 guidance = "Only the exact Execution frozen-input capture owner may construct Declaration native-backed encoded input; neither consumer audience may expose a variable-borrow backend"
+
+# Shared court-fixture orchestration; exact sites remain shrink/growth checked.
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-courtroom/src/transport_process_courtroom/rail_completion.rs"
+item = "install_identity"
+kind = "async-runtime"
+count = 1
+category = "async-runtime"
+reason = "Testkit current-thread event loop drives real endpoint I/O for consumer courts; it is not a production computation pool."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-courtroom/src/transport_process_courtroom/rail_completion.rs"
+item = "install_identity"
+kind = "thread-builder"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"
+item = "BankEstateRailTransport::connected_to"
+kind = "async-runtime"
+count = 1
+category = "async-runtime"
+reason = "Testkit current-thread event loop drives real endpoint I/O for consumer courts; it is not a production computation pool."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/correction_race_court.rs"
+item = "run"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/correction_race_court.rs"
+item = "spawn"
+kind = "thread-builder"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/correction_race_court.rs"
+item = "spawn"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-source-only/src/certification/application_graph/source_only/stale_retry/race.rs"
+item = "stale_owner"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/active_attempts.rs"
+item = "assert_active_attempt_slopes"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/independent_writers.rs"
+item = "assert_independent_writer_slopes"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/independent_writers.rs"
+item = "assert_sibling_writer_progress_while_combined_is_parked"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-host/src/host/certification_support/process_deadline.rs"
+item = "capture"
+kind = "thread-spawn"
+count = 1
+category = "stream-reader"
+reason = "Testkit child-stream readers prevent pipe backpressure while the bounded process owner retains termination custody."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-host/src/host/support/process_deadline.rs"
+item = "capture"
+kind = "thread-spawn"
+count = 1
+category = "stream-reader"
+reason = "Testkit child-stream readers prevent pipe backpressure while the bounded process owner retains termination custody."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/definition_lineage.rs"
+item = "independent_products_advance_and_retain_exact_definitions"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."

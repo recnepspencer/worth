@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation::checkpoint_transition::admission::*;
+use worth_query_host::facade::runtime::{ExecutionAllocationDenialClass, WorkCeilingDenial};
 
 #[test]
 fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair() {
@@ -28,13 +29,17 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         panic!("exact native allocation cause must survive: {pending:?}");
     };
     assert_eq!(
-        denied.kind(),
-        AllocationKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                requested: denied.requested_payload_bytes().unwrap(),
-                admitted: 0,
-                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+        denied.classify(),
+        ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(
+                worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                    requested: denied.requested_payload_bytes().unwrap(),
+                    admitted: 0,
+                    level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy {
+                        ancestor: 0
+                    }
+                }
+            )
         ))
     );
     let native_quote = denied
@@ -68,13 +73,17 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         panic!("exact final-frame allocation cause must survive: {pending:?}");
     };
     assert_eq!(
-        denied.kind(),
-        AllocationKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                requested: denied.requested_payload_bytes().unwrap(),
-                admitted: 0,
-                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+        denied.classify(),
+        ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(
+                worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                    requested: denied.requested_payload_bytes().unwrap(),
+                    admitted: 0,
+                    level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy {
+                        ancestor: 0
+                    }
+                }
+            )
         ))
     );
     let frame_quote = denied

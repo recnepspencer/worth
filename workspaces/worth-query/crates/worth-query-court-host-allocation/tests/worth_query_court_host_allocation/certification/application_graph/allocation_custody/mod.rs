@@ -1,4 +1,7 @@
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::allocation_custody::*;
+use worth_query_host::facade::runtime::{
+    ExecutionAllocationDenialClass, MapKernelStop, WorkCeilingDenial,
+};
 
 #[test]
 fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_allocation() {
@@ -226,8 +229,13 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
     // A recorded retry must not perform fresh allocation or call the handler.
     stopped.cancel();
     assert_eq!(
-        Policy::Execution(&zero).check_live().unwrap_err().kind(),
-        ExecutionAllocationDenialKind::Cancelled
+        Policy::Execution(&zero)
+            .check_live()
+            .unwrap_err()
+            .classify(),
+        ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Stopped(
+            MapKernelStop::Cancelled
+        ))
     );
     let (replay, work) = request!(&committed_key)
         .execute_in_program_report(&host, Policy::Execution(&zero))
