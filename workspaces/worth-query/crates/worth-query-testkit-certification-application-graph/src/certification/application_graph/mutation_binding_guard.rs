@@ -6,6 +6,7 @@
 //! namespaces keep a replay from crossing between them.
 
 pub use worth_query_decl::facade::application_operation::ApplicationMutationIdentities;
+pub use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 pub use worth_query_host::facade::{
     application_installation::WorthQueryProgramOwner,
     primary_graph::{
@@ -97,14 +98,14 @@ macro_rules! worlds_certification_application_graph_mutation_binding_guard_rs_ca
         let (principal, admission, identities) = admit!($runtime, $branch, $binding, $key, $input);
         let HandlerResult::Completed(completed) = $runtime
             .with_application_advancement(
-                &super::document_retention_model::operator_identity::request_scope(),
+                &$crate::facade::certification::application_graph::document_retention_model::operator_identity::request_scope(),
                 |phase| {
                     $runtime.execute_mutation_handler::<$binding>(
                         &phase,
                         &identities,
                         principal.principal_identity(),
                         admission,
-                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,)
+                     $crate::facade::certification::application_graph::mutation_binding_guard::ExecutionAllocationPolicy::SystemAllocation,)
                 },
             )
             .expect("the fixture policy admits its handler advancement")

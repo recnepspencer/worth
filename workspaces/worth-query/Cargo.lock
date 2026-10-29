@@ -893,9 +893,9 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-query-host",
- "worth-query-testkit-certification",
  "worth-query-testkit-certification-canonical",
  "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
  "worth-relational",
 ]
 
