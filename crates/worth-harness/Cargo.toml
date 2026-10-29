@@ -1,14 +1,16 @@
 [package]
-name = "worth-harness"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Generic execution harness infrastructure for WORTH runtimes"
-readme = "README.md"
-repository = "https://github.com/recnepspencer/WORTH"
-keywords = ["harness", "testing", "certification", "parity", "workflows"]
-categories = ["development-tools::testing", "science"]
+"name" = "worth-harness"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Generic execution harness infrastructure for WORTH runtimes"
+"readme" = "README.md"
+"repository" = "https://github.com/recnepspencer/WORTH"
+"keywords" = ["harness", "testing", "certification", "parity", "workflows"]
+"categories" = ["development-tools::testing", "science"]
+"autotests" = false
+
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

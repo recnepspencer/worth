@@ -1,0 +1,335 @@
+#[allow(unused_imports)] use crate::operation_planning::ordinary_context::*;
+#[allow(unused_imports)]
+use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+
+use {worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily, worth_query::facade::runtime::WorthQueryRuntimeFamilySupport, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
+use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServerDirectDeliveryClass, worth_server::WorthServerDirectFreshnessMode, worth_server::WorthServerOperationPlanDenialCode, worth_server::WorthServerOperationPlannerInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryRequestedResume, worth_server::WorthServerRequestContextInput, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+
+#[allow(unused_imports)]
+use {worth_testkit_server::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime};
+#[allow(unused_imports)]
+use {worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture};
+#[allow(unused_imports)]
+use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+#[allow(unused_imports)]
+use {worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions};
+#[allow(unused_imports)]
+use {worth_testkit_server::shared_support_worth_native_runtime as worth_native_runtime};
+
+use {worth_testkit_server::shared_support_compat_http_phase_two_runtime::build_phase_two_server, worth_testkit_server::shared_support_compat_http_phase_two_runtime::compat_execution_input, worth_testkit_server::shared_support_compat_http_phase_two_runtime::worth_native_named_read};
+use {worth_testkit_server::shared_support_query_handoff_fixture::admit_delivery_posture, worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::test_server};
+use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use {worth_testkit_server::shared_support_worth_native_runtime::server_with_request_context_default};
+
+#[test]
+fn equivalent_operation_requests_lower_to_identical_plans() {
+    let server = test_server(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider, false);
+    let worth_native = server
+        .operation_planner()
+        .lower(worth_server::WorthServerOperationPlannerInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
+                    &server,
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::WorthNative,
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                    ),
+                ),
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ))
+        .expect("Worth-native plan should lower");
+    let compat_http = server
+        .operation_planner()
+        .lower(worth_server::WorthServerOperationPlannerInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
+                    &server,
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::CompatHttp,
+                        worth_server::WorthServerTransportClass::CompatHttp,
+                    ),
+                ),
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ))
+        .expect("compat-http plan should lower");
+
+    assert_eq!(
+        worth_native.receipt().plan_identity(),
+        compat_http.receipt().plan_identity()
+    );
+    assert_eq!(
+        worth_native.canonical_digest(),
+        compat_http.canonical_digest()
+    );
+    assert_eq!(
+        worth_native.counters().strategy_choice(),
+        compat_http.counters().strategy_choice()
+    );
+}
+
+#[test]
+fn plan_identity_excludes_diagnostics_richness_but_includes_support_and_strategy() {
+    let standard_server = test_server(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider, false);
+    let forensic_server = test_server(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider, false);
+    let standard = standard_server
+        .operation_planner()
+        .lower(worth_server::WorthServerOperationPlannerInput::new(
+            admit_read_posture(
+                &standard_server,
+                resolve_request_context(
+                    &standard_server,
+                    worth_server::WorthServerRequestContextInput::builder()
+                        .with_surface_family(worth_server::WorthServerSurfaceFamily::WorthNative)
+                        .with_transport_class(worth_server::WorthServerTransportClass::WorthNativeInProcess)
+                        .with_authenticated_principal_id("principal-7")
+                        .with_tenant_id("tenant-a")
+                        .with_workspace_id("workspace-42")
+                        .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .build()
+                        .expect("standard request context should validate"),
+                ),
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ))
+        .expect("standard plan should lower");
+    let forensic = forensic_server
+        .operation_planner()
+        .lower(worth_server::WorthServerOperationPlannerInput::new(
+            admit_read_posture(
+                &forensic_server,
+                resolve_request_context(
+                    &forensic_server,
+                    worth_server::WorthServerRequestContextInput::builder()
+                        .with_surface_family(worth_server::WorthServerSurfaceFamily::WorthNative)
+                        .with_transport_class(worth_server::WorthServerTransportClass::WorthNativeInProcess)
+                        .with_authenticated_principal_id("principal-7")
+                        .with_tenant_id("tenant-a")
+                        .with_workspace_id("workspace-42")
+                        .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+                        .build()
+                        .expect("forensic request context should validate"),
+                ),
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ))
+        .expect("forensic plan should lower");
+    let unsupported_server = test_server(
+        worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
+            worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
+                worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
+                    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Read,
+                    "read is intentionally denied in this hostile test profile",
+                ),
+            ),
+        ),
+        false,
+    );
+    let unsupported =
+        unsupported_server
+            .operation_planner()
+            .lower(worth_server::WorthServerOperationPlannerInput::new(
+                admit_read_posture(
+                    &unsupported_server,
+                    resolve_request_context(
+                        &unsupported_server,
+                        request_input(
+                            worth_server::WorthServerSurfaceFamily::WorthNative,
+                            worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                        ),
+                    ),
+                ),
+                worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+            ));
+
+    assert_eq!(
+        standard.receipt().plan_identity(),
+        forensic.receipt().plan_identity()
+    );
+    assert_ne!(
+        standard.receipt().evidence_identity(),
+        forensic.receipt().evidence_identity()
+    );
+    assert!(unsupported.is_err());
+}
+
+#[test]
+fn plan_counters_explain_strategy_selection() {
+    let server = test_server(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider, false);
+    let plan = server
+        .operation_planner()
+        .lower(worth_server::WorthServerOperationPlannerInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
+                    &server,
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::WorthNative,
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                    ),
+                ),
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ))
+        .expect("plan should lower");
+
+    assert_eq!(
+        plan.counters().strategy_choice().as_str(),
+        "shared-read-execution"
+    );
+    assert_eq!(plan.counters().footprint_breadth(), 2);
+    assert_eq!(plan.counters().support_rows_consulted(), 2);
+    assert_eq!(plan.receipt().expected_scheduler_lane(), "shared-read");
+}
+
+#[test]
+fn mutation_plan_counters_reflect_branch_scoped_authority() {
+    let server = test_server(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider, true);
+    let plan = server
+        .operation_planner()
+        .lower(worth_server::WorthServerOperationPlannerInput::new(
+            admit_delivery_posture(
+                &server,
+                resolve_request_context(
+                    &server,
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::WorthNative,
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                    ),
+                ),
+                "basis-users-profile",
+            ),
+            worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
+                "users.profile",
+                worth_server::WorthServerDirectFreshnessMode::LiveStrict,
+                worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
+                worth_server::WorthServerQueryRequestedResume::none(),
+            ),
+        ))
+        .expect("delivery plan should lower");
+
+    assert_eq!(
+        plan.counters().strategy_choice().as_str(),
+        "lease-coordination"
+    );
+    assert_eq!(plan.counters().footprint_breadth(), 4);
+    assert_eq!(
+        plan.receipt().expected_scheduler_lane(),
+        "serialize-deterministically"
+    );
+}
+
+#[test]
+fn unsupported_query_support_denies_at_planning() {
+    let server = test_server(
+        worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
+            worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
+                worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
+                    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Read,
+                    "read is intentionally denied in this hostile test profile",
+                ),
+            ),
+        ),
+        false,
+    );
+
+    let denial = server
+        .operation_planner()
+        .lower(worth_server::WorthServerOperationPlannerInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
+                    &server,
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::WorthNative,
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                    ),
+                ),
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ))
+        .expect_err("unsupported read should deny during planning");
+
+    assert_eq!(
+        denial.code(),
+        worth_server::WorthServerOperationPlanDenialCode::SupportDenied
+    );
+    assert!(denial
+        .detail()
+        .contains("query workspace does not admit `read` facade family"));
+}
+
+#[test]
+fn real_direct_and_compat_reads_expose_identical_lowered_plan_proofs() {
+    let server = build_phase_two_server();
+    let (session, declaration) = worth_native_named_read(&server, "users.profile");
+
+    let direct = direct_read_success(session.direct().read(&declaration));
+    let compat = compat_read_success(
+        server
+            .compat_http()
+            .read(compat_execution_input(&server, "users.profile")),
+    );
+
+    assert_ne!(
+        direct.plan_proof().receipt().plan_identity(),
+        compat.plan_proof().receipt().plan_identity()
+    );
+    assert_eq!(
+        direct.plan_proof().receipt().evidence_identity(),
+        compat.plan_proof().receipt().evidence_identity()
+    );
+    assert_eq!(
+        direct.plan_proof().receipt().expected_scheduler_lane(),
+        compat.plan_proof().receipt().expected_scheduler_lane()
+    );
+    assert_eq!(
+        direct.plan_proof().counters().strategy_choice(),
+        compat.plan_proof().counters().strategy_choice()
+    );
+    assert_eq!(
+        direct.plan_proof().counters().footprint_breadth(),
+        compat.plan_proof().counters().footprint_breadth()
+    );
+    assert_eq!(
+        direct.plan_proof().counters().support_rows_consulted(),
+        compat.plan_proof().counters().support_rows_consulted()
+    );
+}
+
+#[test]
+fn real_direct_reads_keep_plan_identity_stable_across_diagnostics_profiles() {
+    let standard_server = server_with_request_context_default(worth_server::request_context::DiagnosticRichnessProfile::Standard);
+    let forensic_server = server_with_request_context_default(worth_server::request_context::DiagnosticRichnessProfile::Forensic);
+    let (standard_session, standard_declaration) =
+        worth_native_named_read(&standard_server, "users.profile");
+    let (forensic_session, forensic_declaration) =
+        worth_native_named_read(&forensic_server, "users.profile");
+
+    let standard = direct_read_success(standard_session.direct().read(&standard_declaration));
+    let forensic = direct_read_success(forensic_session.direct().read(&forensic_declaration));
+
+    assert_eq!(
+        standard.plan_proof().receipt().plan_identity(),
+        forensic.plan_proof().receipt().plan_identity()
+    );
+    assert_ne!(
+        standard.plan_proof().receipt().evidence_identity(),
+        forensic.plan_proof().receipt().evidence_identity()
+    );
+    assert_eq!(
+        standard.plan_proof().counters().strategy_choice(),
+        forensic.plan_proof().counters().strategy_choice()
+    );
+    assert_eq!(
+        standard.plan_proof().counters().footprint_breadth(),
+        forensic.plan_proof().counters().footprint_breadth()
+    );
+    assert_eq!(
+        standard.plan_proof().counters().support_rows_consulted(),
+        forensic.plan_proof().counters().support_rows_consulted()
+    );
+}

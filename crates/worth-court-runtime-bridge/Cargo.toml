@@ -1,0 +1,22 @@
+[package]
+"name" = "worth-court-runtime-bridge"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"trybuild" = { "version" = "^1.0" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-runtime-bridge" = { "path" = "../worth-runtime-bridge" }
+"worth-signal" = { "path" = "../worth-signal" }
+
+[[test]]
+name = "worth_court_runtime_bridge"
+path = "tests/worth_court_runtime_bridge.rs"
+
+[lints]
+workspace = true

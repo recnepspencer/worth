@@ -1,0 +1,27 @@
+[package]
+"name" = "worth-court-relational-branch-reference-compile-time"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"rmp-serde" = { "version" = "^1.3" }
+"serde" = { "version" = "^1", "features" = ["derive", "rc"] }
+"sha2" = { "version" = "^0.10" }
+"stats_alloc" = { "version" = "^0.1" }
+"trybuild" = { "version" = "^1" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+"worth-relational" = { "path" = "../worth-relational" }
+"worth-testkit-relational" = { "path" = "../worth-testkit-relational" }
+
+[[test]]
+name = "worth_court_relational_branch_reference_compile_time"
+path = "tests/worth_court_relational_branch_reference_compile_time.rs"
+
+[lints]
+workspace = true

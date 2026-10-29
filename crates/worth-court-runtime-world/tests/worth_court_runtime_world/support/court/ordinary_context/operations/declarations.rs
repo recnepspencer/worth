@@ -1,0 +1,114 @@
+pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::routing::RoutingContext};
+pub(crate) use {std::sync::Arc, std::sync::OnceLock};
+impl CompositeSupplyChainCourt {
+    pub(crate) fn prepare_cargo(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        head: &ProductBranchObservation,
+        amount: &str,
+    ) -> PreparedCompositePublicationWithoutSignal {
+        let candidate =
+            self.records
+                .candidate(execution, head.basis().relational_basis(), "grain", amount);
+        self.world
+            .publication_port()
+            .prepare_without_signal(
+                head.clone(),
+                CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+                    .with_prepared_relational_candidate(candidate),
+                &RuntimeWorldCancellationSource::new().token(),
+                None,
+            )
+            .expect("World: prepare cargo")
+    }
+    pub(crate) fn publish_cargo(
+        &self,
+        head: &ProductBranchObservation,
+        amount: &str,
+    ) -> ConsumedCompositePublication {
+        let policy = match self.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+        let prepared = self.prepare_cargo(&execution, head, amount);
+        match self.world.publication_port().execute_without_signal(
+            execution,
+            prepared,
+            &RuntimeWorldCancellationSource::new().token(),
+        ) {
+            RuntimeWorldPublicationOutcome::Performed(done) => done.consume(),
+            other => panic!("World: healthy cargo publication {other:?}"),
+        }
+    }
+    pub(crate) fn context(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        head: &ProductBranchObservation,
+    ) -> RoutingContext {
+        RoutingContext {
+            records: std::sync::Arc::new(std::sync::OnceLock::from(
+                self.records
+                    .read(request_execution, head.basis().relational_basis()),
+            )),
+        }
+    }
+    pub(crate) fn partial_after_relational(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        head: &ProductBranchObservation,
+    ) -> ProductUnpublishedOwnerEffects {
+        let policy = match self.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+        let candidate = self.records.candidate(
+            request_execution,
+            head.basis().relational_basis(),
+            "grain",
+            "5",
+        );
+        let token = RuntimeWorldCancellationSource::new().token();
+        let port = self.world.publication_port();
+        let intent =
+            CompositePublicationIntent::with_signal(Some(RelationalTransactionIntent::ordinary()))
+                .with_prepared_relational_candidate(candidate);
+        let prepared = port
+            .prepare_with_signal(head.clone(), intent, &token, None)
+            .unwrap();
+        match port.execute_with_signal(
+            execution,
+            prepared,
+            &mut self.context(request_execution, head),
+            &token,
+            |_| {
+                Err(SignalError::InvalidInput {
+                    message: "court routing denial".into(),
+                    context: None,
+                })
+            },
+        ) {
+            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => effects,
+            other => {
+                panic!("World: settled Relational then denied Signal must remain partial {other:?}")
+            }
+        }
+    }
+}

@@ -42,40 +42,40 @@ pub(super) fn certified_surface_evidence() -> Vec<FoundationalTransitionCertifie
             FoundationalTransitionCertifiedSurface::BranchLocalSeparation,
             FoundationalTransitionSyntheticRuntimePressure::AuthoritySeparation,
             FoundationalTransitionCompileFailBoundary::BranchLocalSurfacesCannotSatisfyAuthorityApis,
-            "tests/worth_foundational/fast/certification/transitions/branch_local.rs",
-            "tests/ui/transitions/branch_local/branch_candidate_cannot_satisfy_authoritative_boundary_api.rs",
-            "tests/worth_foundational/fast/certification/transitions/branch_local.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/branch_local/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/branch_local/branch_candidate_cannot_satisfy_authoritative_boundary_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/branch_local/mod.rs"),
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::MergeVerdictLaw,
             FoundationalTransitionSyntheticRuntimePressure::MergeTopologyHonesty,
             FoundationalTransitionCompileFailBoundary::MergeAdmissionSurfacesRemainNonAuthoritative,
-            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
-            "tests/ui/transitions/merge_admission/merge_verdict_has_no_receipt_api.rs",
-            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/merge_verdicts/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/merge_admission/merge_verdict_has_no_receipt_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/merge_verdicts/mod.rs"),
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::CommittedAuthorityTransitions,
             FoundationalTransitionSyntheticRuntimePressure::NoOpVersusCommitClassification,
             FoundationalTransitionCompileFailBoundary::CommittedAuthorityRequiresProofBearingAdmission,
-            "tests/worth_foundational/fast/certification/transitions/committed_authority.rs",
-            "tests/ui/transitions/committed_authority/merge_verdict_has_no_committed_authority_api.rs",
-            "tests/worth_foundational/fast/certification/transitions/committed_authority.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/committed_authority/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/committed_authority/merge_verdict_has_no_committed_authority_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/committed_authority/mod.rs"),
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::CommitReceiptsAndBundles,
             FoundationalTransitionSyntheticRuntimePressure::ReceiptIssuanceBoundary,
             FoundationalTransitionCompileFailBoundary::ReceiptAndCloseoutPreserveAuthoritySeparation,
-            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
-            "tests/ui/transitions/receipt_boundaries/plain_boundary_receipt_surface_has_no_transition_receipt_api.rs",
-            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/receipts_and_bundles/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/receipt_boundaries/plain_boundary_receipt_surface_has_no_transition_receipt_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/receipts_and_bundles/mod.rs"),
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::CanonicalBasisAndLocatorIntegration,
             FoundationalTransitionSyntheticRuntimePressure::AmbientBasisChoiceHostility,
             FoundationalTransitionCompileFailBoundary::Phase5BasisAndCurrentBasisRequireStrengthenedArtifacts,
             "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
-            "tests/ui/transitions/phase5_boundaries/raw_committed_authority_cannot_satisfy_current_basis_transition_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/raw_committed_authority_cannot_satisfy_current_basis_transition_api.rs"),
             "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
@@ -83,7 +83,7 @@ pub(super) fn certified_surface_evidence() -> Vec<FoundationalTransitionCertifie
             FoundationalTransitionSyntheticRuntimePressure::ReducedRichnessPreservation,
             FoundationalTransitionCompileFailBoundary::Phase5BasisAndCurrentBasisRequireStrengthenedArtifacts,
             "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
-            "tests/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs"),
             "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
         ),
     ]
@@ -190,19 +190,19 @@ pub(super) fn synthetic_pressure_evidence() -> Vec<FoundationalTransitionSynthet
     vec![
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::AuthoritySeparation,
-            "tests/worth_foundational/fast/certification/transitions/branch_local.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/branch_local/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::MergeTopologyHonesty,
-            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/merge_verdicts/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::NoOpVersusCommitClassification,
-            "tests/worth_foundational/fast/certification/transitions/committed_authority.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/committed_authority/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ReceiptIssuanceBoundary,
-            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/receipts_and_bundles/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ReplayInterpretationBoundary,
@@ -218,15 +218,15 @@ pub(super) fn synthetic_pressure_evidence() -> Vec<FoundationalTransitionSynthet
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::HiddenStrategyInfluenceHostility,
-            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/merge_verdicts/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ThinReceiptRejection,
-            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/receipts_and_bundles/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::GenericTransitionResultBagRejection,
-            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/receipts_and_bundles/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::CheapConvenienceBypassRejection,
@@ -239,31 +239,31 @@ pub(super) fn compile_fail_evidence() -> Vec<FoundationalTransitionCompileFailEv
     vec![
         FoundationalTransitionCompileFailEvidence::new(
             FoundationalTransitionCompileFailBoundary::BranchLocalSurfacesCannotSatisfyAuthorityApis,
-            "tests/ui/transitions/branch_local/branch_candidate_cannot_satisfy_authoritative_boundary_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/branch_local/branch_candidate_cannot_satisfy_authoritative_boundary_api.rs"),
         ),
         FoundationalTransitionCompileFailEvidence::new(
             FoundationalTransitionCompileFailBoundary::MergeAdmissionSurfacesRemainNonAuthoritative,
-            "tests/ui/transitions/merge_admission/merge_verdict_has_no_receipt_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/merge_admission/merge_verdict_has_no_receipt_api.rs"),
         ),
         FoundationalTransitionCompileFailEvidence::new(
             FoundationalTransitionCompileFailBoundary::CommittedAuthorityRequiresProofBearingAdmission,
-            "tests/ui/transitions/committed_authority/caller_cannot_mint_committed_authority_admission.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/committed_authority/caller_cannot_mint_committed_authority_admission.rs"),
         ),
         FoundationalTransitionCompileFailEvidence::new(
             FoundationalTransitionCompileFailBoundary::ReceiptAndCloseoutPreserveAuthoritySeparation,
-            "tests/ui/transitions/receipt_boundaries/plain_boundary_receipt_surface_has_no_transition_receipt_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/receipt_boundaries/plain_boundary_receipt_surface_has_no_transition_receipt_api.rs"),
         ),
         FoundationalTransitionCompileFailEvidence::new(
             FoundationalTransitionCompileFailBoundary::Phase5BasisAndCurrentBasisRequireStrengthenedArtifacts,
-            "tests/ui/transitions/phase5_boundaries/raw_committed_authority_cannot_satisfy_current_basis_transition_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/raw_committed_authority_cannot_satisfy_current_basis_transition_api.rs"),
         ),
         FoundationalTransitionCompileFailEvidence::new(
             FoundationalTransitionCompileFailBoundary::TransitionReadinessRequiresCertifiedArtifact,
-            "tests/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs"),
         ),
         FoundationalTransitionCompileFailEvidence::new(
             FoundationalTransitionCompileFailBoundary::TransitionReadinessAuthorityCannotBeMinted,
-            "tests/ui/transitions/readiness_boundaries/transition_readiness_authority_cannot_be_minted.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/readiness_boundaries/transition_readiness_authority_cannot_be_minted.rs"),
         ),
     ]
 }
@@ -291,19 +291,19 @@ pub(super) fn phase_gates() -> Vec<FoundationalTransitionPhaseGateEvidence> {
     vec![
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::BranchLocalSeparation,
-            "tests/worth_foundational/fast/certification/transitions/branch_local.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/branch_local/mod.rs"),
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::MergeVerdictLaw,
-            "tests/worth_foundational/fast/certification/transitions/merge_verdicts.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/merge_verdicts/mod.rs"),
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::CommittedAuthorityTransitionLaw,
-            "tests/worth_foundational/fast/certification/transitions/committed_authority.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/committed_authority/mod.rs"),
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::CommitReceiptsAndBundles,
-            "tests/worth_foundational/fast/certification/transitions/receipts_and_bundles.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/receipts_and_bundles/mod.rs"),
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::CanonicalBasisLocatorAndProfileIntegration,
@@ -311,7 +311,7 @@ pub(super) fn phase_gates() -> Vec<FoundationalTransitionPhaseGateEvidence> {
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::ProductionReadiness,
-            "tests/worth_foundational/fast/certification/transitions/readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/readiness/mod.rs"),
         ),
     ]
 }

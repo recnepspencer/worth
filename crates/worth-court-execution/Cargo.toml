@@ -1,0 +1,23 @@
+[package]
+"name" = "worth-court-execution"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"serde" = { "version" = "^1", "features" = ["derive"] }
+"serde_json" = { "version" = "^1" }
+"trybuild" = { "version" = "^1.0" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+
+[[test]]
+name = "worth_court_execution"
+path = "tests/worth_court_execution.rs"
+
+[lints]
+workspace = true

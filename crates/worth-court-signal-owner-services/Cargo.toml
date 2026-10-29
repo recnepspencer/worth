@@ -1,0 +1,24 @@
+[package]
+"name" = "worth-court-signal-owner-services"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"serde" = { "version" = "^1", "features" = ["derive", "rc"] }
+"serde_json" = { "version" = "^1", "features" = ["arbitrary_precision"] }
+"trybuild" = { "version" = "^1" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+"worth-signal" = { "path" = "../worth-signal" }
+
+[[test]]
+name = "worth_court_signal_owner_services"
+path = "tests/worth_court_signal_owner_services.rs"
+
+[lints]
+workspace = true

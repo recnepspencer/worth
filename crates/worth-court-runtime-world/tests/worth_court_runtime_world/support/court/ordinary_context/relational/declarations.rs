@@ -1,0 +1,255 @@
+pub(crate) use {std::collections::BTreeMap, std::sync::Arc};
+pub(crate) use {worth_foundational::facade::*};
+pub(crate) use {worth_relational::facade::branch::AdmittedRelationalBranchBasis, worth_relational::facade::config::CascadeDeletePolicy, worth_relational::facade::config::CrossContextPolicy, worth_relational::facade::identity::EntityId, worth_relational::facade::identity::KindId, worth_relational::facade::identity::PartitionId, worth_relational::facade::mvcc::PreparedRelationalCommitCandidate, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::schema::*, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::*};
+
+pub(crate) struct CargoRecords {
+    pub(crate) runtime: Arc<RelationalRuntime>,
+    pub(crate) ids: BTreeMap<&'static str, EntityId>,
+}
+
+pub(crate) fn key() -> AspectKey {
+    AspectKey::new("value").unwrap()
+}
+pub(crate) fn field() -> FieldKey {
+    FieldKey::new("value").unwrap()
+}
+pub(crate) fn contract() -> AspectContract {
+    aspects()
+        .contract()
+        .for_key(key())
+        .identified_by(AspectIdentity(9172))
+        .at_revision(aspects().vocabulary().revision(1))
+        .scalar(ScalarAspectType::String)
+}
+pub(crate) fn patch(value: &str) -> AspectFieldPatch {
+    AspectFieldPatch::from(std::collections::BTreeMap::from([(
+        AspectFieldLocator::new(
+            LocatorAuthority::Planned,
+            key(),
+            CanonicalFieldPath::single(field()),
+        ),
+        AspectValue::String(value.to_owned().into()),
+    )]))
+}
+impl CargoRecords {
+    pub(crate) fn install(include_steel: bool) -> Self {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+        let mut registry = RelationalSchemaRegistry::new();
+        for (kind, name) in [(1, "port"), (2, "voyage"), (3, "manifest"), (4, "cargo")] {
+            registry = registry
+                .register_entity_kind(EntityKindRegistration {
+                    kind_id: KindId(kind),
+                    kind_name: name.into(),
+                    schema_id: SchemaId("supply-chain".into()),
+                    schema_version_id: SchemaVersionId(1),
+                    aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
+                        DeclaredAspectContractBinding {
+                            binding: AspectBinding::EntityField { field: field() },
+                            contract: contract(),
+                        },
+                    ]),
+                })
+                .expect("court declaration: entity schema");
+        }
+        registry = registry
+            .register_relation_kind(RelationKindRegistration {
+                kind_id: KindId(5),
+                kind_name: "carries".into(),
+                schema_id: SchemaId("supply-chain".into()),
+                schema_version_id: SchemaVersionId(1),
+                cross_context_policy: worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+                cascade_delete_policy: worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
+                aspect_contract_declarations: KindAspectContractDeclarations::new(vec![]),
+                relation_integrity: RelationIntegrityDeclarations::default(),
+            })
+            .expect("court declaration: relation schema");
+        let runtime = std::sync::Arc::new(
+            worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+                .schema_registry(registry)
+                .build()
+                .expect("valid native runtime configuration"),
+        );
+        let mut ids = std::collections::BTreeMap::new();
+        for (name, kind, value) in [
+            ("harbor", 1, "open"),
+            ("voyage", 2, "12"),
+            ("manifest", 3, "harbor"),
+            ("grain", 4, "4"),
+            ("steel", 4, "6"),
+        ] {
+            let basis = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .unwrap()
+                .1;
+            let mut tx = runtime
+                .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+                .unwrap();
+            tx.push_batch(
+                WorkerIntentBatch::new(name).push(MutationIntent::Create(CreateIntent::Entity(
+                    EntitySpec {
+                        partition_id: worth_relational::facade::identity::PartitionId::main(),
+                        kind_id: KindId(kind),
+                        client_key: worth_relational::facade::symbols::ClientKey::raw(name),
+                        fields: patch(value),
+                    },
+                ))),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("component owner: stage entity");
+            let result = tx
+                .commit(execution, &runtime)
+                .expect("component owner: install entity");
+            let id = result
+                .changed_records
+                .iter()
+                .find_map(|r| match r {
+                    RecordRef::Entity(id) => Some(*id),
+                    _ => None,
+                })
+                .unwrap();
+            ids.insert(name, id);
+        }
+        for (source, target) in [
+            ("voyage", "manifest"),
+            ("manifest", "grain"),
+            ("manifest", "steel"),
+            ("manifest", "harbor"),
+        ] {
+            if target == "steel" && !include_steel {
+                continue;
+            }
+            let basis = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .unwrap()
+                .1;
+            let mut tx = runtime
+                .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+                .unwrap();
+            tx.push_batch(
+                WorkerIntentBatch::new("link").push(MutationIntent::Create(
+                    CreateIntent::Relation(RelationSpec {
+                        partition_id: worth_relational::facade::identity::PartitionId::main(),
+                        kind_id: KindId(5),
+                        client_key: worth_relational::facade::symbols::ClientKey::raw(format!("{source}-{target}")),
+                        source: EntityReference::Existing(ids[source]),
+                        target: EntityReference::Existing(ids[target]),
+                        fields: AspectFieldPatch::default(),
+                    }),
+                )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("component owner: stage route link");
+            tx.commit(execution, &runtime)
+                .expect("component owner: install route link");
+        }
+        Self { runtime, ids }
+    }
+    pub(crate) fn read(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> crate::court::ordinary_context::observation::SupplyChainObservation {
+        let pinned = self
+            .runtime
+            .snapshots()
+            .snapshot_for_observation(&basis.observation())
+            .expect("observation: exact snapshot");
+        let values = {
+            let read = self
+                .runtime
+                .read_truth()
+                .read_snapshot(&pinned, execution)
+                .expect("fixture read request remains live")
+                .expect("observation: relational read");
+            let names: BTreeMap<_, _> = self
+                .ids
+                .iter()
+                .map(|(name, id)| (*id, (*name).to_owned()))
+                .collect();
+            let links = read
+                .relations()
+                .iter()
+                .map(|relation| {
+                    (
+                        names[&relation.source].clone(),
+                        names[&relation.target].clone(),
+                    )
+                })
+                .collect();
+            let records = self
+                .ids
+                .iter()
+                .map(|(name, id)| {
+                    let entity = read.get_entity(*id).expect("observation: installed entity");
+                    let value = entity
+                        .authoritative_aspect_state
+                        .as_ref()
+                        .unwrap()
+                        .get(&key())
+                        .unwrap()
+                        .view();
+                    let ContractValidatedAspectValueView::Scalar(AspectValue::String(
+                        InternedString::Raw(value),
+                    )) = value
+                    else {
+                        panic!("observation: scalar string")
+                    };
+                    ((*name).to_owned(), value.to_string())
+                })
+                .collect();
+            crate::court::ordinary_context::observation::SupplyChainObservation { records, links }
+        };
+        self.runtime
+            .snapshots()
+            .release_snapshot(&pinned)
+            .expect("observation: release exact read");
+        values
+    }
+    pub(crate) fn candidate(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+        name: &str,
+        value: &str,
+    ) -> PreparedRelationalCommitCandidate {
+        self.candidate_with_control(
+            execution,
+            basis,
+            name,
+            value,
+            worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted(),
+        )
+    }
+    pub(crate) fn candidate_with_control(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+        name: &str,
+        value: &str,
+        control: worth_relational::facade::mvcc::RelationalOperationControl,
+    ) -> PreparedRelationalCommitCandidate {
+        let mut tx = self
+            .runtime
+            .begin_branch_transaction_with_control(
+                basis,
+                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                control,
+            )
+            .expect("component owner: begin exact update");
+        tx.push_batch(
+            WorkerIntentBatch::new("update-cargo").push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                    entity_id: self.ids[name],
+                    fields: patch(value),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("component owner: stage update");
+        self.runtime
+            .preparation_port()
+            .prepare_branch_transaction(execution, tx)
+            .expect("component owner: prepare update")
+    }
+}

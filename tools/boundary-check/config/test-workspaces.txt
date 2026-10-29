@@ -1,3 +1,4 @@
 # Testing law 18: workspace path | court naming stem. External application fixtures are not members.
 workspaces/worth-query | worth-query
 workspaces/worth-query-bank-world | worth-query-bank
+. | worth

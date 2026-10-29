@@ -1,13 +1,15 @@
 [package]
-name = "worth-signal-wasm"
-edition.workspace = true
-rust-version.workspace = true
-version = "1.5.0"
-description = "WebAssembly facade for Worth Signal"
-repository = "https://github.com/recnepspencer/forge"
-license = "BUSL-1.1"
-readme = "README.md"
-publish = false
+"name" = "worth-signal-wasm"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = "1.5.0"
+"description" = "WebAssembly facade for Worth Signal"
+"repository" = "https://github.com/recnepspencer/forge"
+"license" = "BUSL-1.1"
+"readme" = "README.md"
+"publish" = false
+"autotests" = false
+
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -32,9 +34,6 @@ console_error_panic_hook = "0.1"
 sha2 = "0.10"
 base64 = "0.22"
 rmp-serde = "1.3"
-
-[dev-dependencies]
-trybuild.workspace = true
 
 [lints]
 workspace = true

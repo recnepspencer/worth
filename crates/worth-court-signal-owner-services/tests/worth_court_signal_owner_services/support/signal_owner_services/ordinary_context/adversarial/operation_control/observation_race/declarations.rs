@@ -1,0 +1,147 @@
+pub(crate) use {std::sync::mpsc};
+pub(crate) use {std::thread};
+
+pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::ManagedSignalBranchReference, worth_signal::facade::branch::ManagedSignalBranchReferenceAdmissionDenial, worth_signal::facade::branch::SignalBranchBasisObservationDenial, worth_signal::facade::branch::SignalBranchObservation, worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReceipt, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest, worth_signal::facade::branch::SignalOwnerOperationControlForTest};
+pub(crate) use {worth_signal::facade::history::RuntimeBranchId};
+
+pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::BasisPort, crate::signal_owner_services::ordinary_context::adversarial::world::LifecyclePort, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_retirement_is_effectful, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retire, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retirement_plan};
+
+pub(crate) fn run_order(observe_first: bool) {
+    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let branch_id = world.child_basis.branch_id();
+    let expected = world.child_basis.observation().clone();
+    let control: SignalOwnerOperationControlForTest = world
+        .runtime
+        .as_ref()
+        .expect("the observer and retirement share a live owner root")
+        .owner_operation_control_for_test()
+        .expect("operation control is issued after sealing");
+    let reference = world
+        .basis
+        .issue_managed_branch_reference(&world.child_basis)
+        .expect("the observer uses an owner-issued reference");
+    let plan = retirement_plan(&world.lifecycle, world.child_basis)
+        .expect("the retirement contender is independently admissible");
+    let observation_port = world.basis.clone();
+    let lifecycle = world.lifecycle.clone();
+    let observed_reference = reference.clone();
+    let (observe_tx, observe_rx) = std::sync::mpsc::sync_channel(1);
+    let (retire_tx, retire_rx) = std::sync::mpsc::sync_channel(1);
+
+    let (observation, retirement) = std::thread::scope(|scope| {
+        if observe_first {
+            // Retirement checks admitted retention before its first controllable boundary, so
+            // complete observation custody is acquired first to force this legal ordering.
+            scope.spawn(move || {
+                let _ = observe_tx.send(observation_port.observe_current(&observed_reference));
+            });
+            let observation = observe_rx
+                .recv_timeout(PROGRESS_BOUND)
+                .expect("the observer completes before retirement is admitted");
+            scope.spawn(move || {
+                let _ = retire_tx.send(
+                    lifecycle.retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token()),
+                );
+            });
+            let retirement = retire_rx
+                .recv_timeout(PROGRESS_BOUND)
+                .expect("the retirement resolves after observed custody is acquired");
+            (observation, retirement)
+        } else {
+            // The observer reaches this boundary before acquiring its managed basis; pausing it
+            // lets the retirement complete first and makes the terminal denial deterministic.
+            let pause = control
+                .arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
+            scope.spawn(move || {
+                let _ = observe_tx.send(observation_port.observe_current(&observed_reference));
+            });
+            assert!(pause.wait_until_reached(PROGRESS_BOUND));
+            scope.spawn(move || {
+                let _ = retire_tx.send(
+                    lifecycle.retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token()),
+                );
+            });
+            let retirement = retire_rx
+                .recv_timeout(PROGRESS_BOUND)
+                .expect("the unparked retirement resolves first");
+            pause.release();
+            let observation = observe_rx
+                .recv_timeout(PROGRESS_BOUND)
+                .expect("the parked observer resolves after release");
+            (observation, retirement)
+        }
+    });
+
+    if observe_first {
+        assert_observe_first(
+            &world.basis,
+            &world.lifecycle,
+            branch_id,
+            &expected,
+            &reference,
+            observation,
+            retirement,
+        );
+    } else {
+        assert_retire_first(observation, retirement);
+    }
+}
+
+pub(crate) fn assert_observe_first(
+    basis: &BasisPort,
+    lifecycle: &LifecyclePort,
+    branch_id: RuntimeBranchId,
+    expected: &SignalBranchObservation,
+    reference: &ManagedSignalBranchReference,
+    observation: Result<AdmittedSignalBranchBasis, SignalBranchBasisObservationDenial>,
+    retirement: TransitionOutcome<SignalBranchRetirementReceipt, SignalBranchRetirementDenial>,
+) {
+    let observed = match observation {
+        Ok(observed) => observed,
+        Err(denial) => panic!("observe-first observer must win: {denial:?}"),
+    };
+    assert_eq!(observed.branch_id(), branch_id);
+    assert_eq!(
+        observed.observation().canonical_encoding(),
+        expected.canonical_encoding(),
+        "an observer winner must expose one complete canonical posture"
+    );
+    // The winning observer holds the canonical basis the retirement plan was issued for: one
+    // lease with two holders.
+    assert!(matches!(
+        retirement,
+        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementDenial::SharedAdmittedBasis {
+            branch_id: denied_branch,
+            shared_holders: 2,
+        }) if denied_branch == branch_id
+    ));
+
+    drop(observed);
+    let retry_basis = basis
+        .observe_current(reference)
+        .expect("the child reference remains owner-issued after custody release");
+    let retry_plan = retirement_plan(lifecycle, retry_basis)
+        .expect("retirement is admissible after observed custody release");
+    retire(lifecycle, retry_plan).expect("the uncontended retirement retry succeeds");
+    match basis.observe_current(reference) {
+        Err(worth_signal::facade::branch::SignalBranchBasisObservationDenial::ManagedReferenceDenied {
+            denial: worth_signal::facade::branch::ManagedSignalBranchReferenceAdmissionDenial::BranchLifecycleEnded,
+        }) => {}
+        other => panic!("the retry must leave a terminal retired observation: {other:?}"),
+    }
+}
+
+pub(crate) fn assert_retire_first(
+    observation: Result<AdmittedSignalBranchBasis, SignalBranchBasisObservationDenial>,
+    retirement: TransitionOutcome<SignalBranchRetirementReceipt, SignalBranchRetirementDenial>,
+) {
+    assert!(matches!(retirement, worth_proof::TransitionOutcome::Success(_)));
+    match observation {
+        Err(worth_signal::facade::branch::SignalBranchBasisObservationDenial::ManagedReferenceDenied {
+            denial: worth_signal::facade::branch::ManagedSignalBranchReferenceAdmissionDenial::BranchLifecycleEnded,
+        }) => {}
+        other => panic!("retire-first observer must see terminal retirement: {other:?}"),
+    }
+}

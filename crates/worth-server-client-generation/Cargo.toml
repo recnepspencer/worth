@@ -1,10 +1,12 @@
 [package]
-name = "worth-server-client-generation"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Generated remote-client artifacts for Worth Server product protocols."
+"name" = "worth-server-client-generation"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Generated remote-client artifacts for Worth Server product protocols."
+"autotests" = false
+
 
 [dependencies]
 worth-server.workspace = true
