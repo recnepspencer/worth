@@ -445,7 +445,7 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-inst
 cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution
 
 # Installed-world regression, including primary and separate graph evidence
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-host-fast query::installed_operating_world::
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p 'worth-query-court-host*-fast' query::installed_operating_world::
 
 # Bank consumer and independent inventory/residue oracle
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-domain
