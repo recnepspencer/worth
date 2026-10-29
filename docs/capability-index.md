@@ -413,6 +413,13 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Produce from authentic sources and declare artifact lifecycle | `WorthQueryApplicationProducerProvider` supplies semantic identity, operation input and idempotency from the original source, and declares its typed domain denial value. `ApplicationDerivedArtifact` declares output/locality, retention, succession, required posture, producer, dependencies, reuse and stopped outcome. The installed mutation path enforces source/currentness and publication contracts. | [Producer source and publication](build-an-application.md#producer-source-and-publication) |
 | Reverse a business change | Declare a domain action with its required source, authorization and effects, then execute it through the ordinary owning request path. | [Owning actions](build-an-application.md#53-execute-through-the-program) |
 
+Node-page isolation and pure prefix/box edit mechanics have focused passing
+backing/value evidence. They do not add an application read posture: committed
+`DecisionReader` and proposed invariant index access, complete projected-row and
+indirect change routing, pre-invariant staging, atomic publication/cleanup and
+the Source/scope-inclusive 1k/2k growth court remain unfinished. Applications
+retain the committed construction and explicit cold-refusal contract above.
+
 For managed or partitioned handler computation, use the installed
 `decision_plan` entrance described in [Build §3.6](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
 It owns prepare/compute/complete and propagates the original typed failures.

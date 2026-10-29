@@ -10,3 +10,5 @@ mod mutation;
 mod prefix;
 mod query;
 mod schema;
+#[cfg(test)]
+mod value_edits;

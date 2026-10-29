@@ -5474,6 +5474,19 @@ per-entry dependency routing. Those remain Phase 2 obligations; complete
 conservative Source invalidation and the later membership/footprint limits above
 remain unchanged.
 
+The node backing and pure value mechanisms have focused passing evidence from
+two Query backing courts and eight consumer cases, plus the owning compiled
+inventory case. Immutable node pages and isolated edits share unchanged pages.
+The pure prefix owner supports insertion/removal; the
+pure box owner supports keyed insertion/removal and exact ancestor refitting.
+Their occurrence-key types are generic. This does not turn the current cold
+Source ordinals into stable incremental identities or grant candidate reads.
+Neither committed `DecisionReader` index access nor candidate invariant index
+access is available yet. Admitted projected-row changes, preparation before the
+first invariant, atomic graph/root publication and end-to-end 1k/2k growth
+qualification remain required. The existing compiled examples above continue to
+describe committed construction and structural Source custody only.
+
 ### Ordinary Query resource policies
 
 Output-demand, performed-output, discovered-output and workflow assessment settlement

@@ -372,6 +372,19 @@ and narrowed footprints are not supplied by this qualification.
 **Result:** the same installed index is maintained from changes and readable at
 both the committed preparation basis and the proposed invariant basis.
 
+Phase 2 remains partial. The qualified paired structural Source prerequisite now
+has focused passing node-backing and pure value evidence: two Query backing
+courts, eight consumer cases and one compiled inventory case. Immutable node-page
+edits and pure prefix/box insertion, retirement and refitting mechanics are
+implemented. The
+backing shares unchanged pages; value mechanisms accept generic occurrence keys.
+The application adapters still consume cold Source ordinals. Admitted projected
+row deltas and full-generation occurrence issuance, scalar/per-entry and indirect
+routing, preparation before Native's first invariant, both managed-index read
+postures and atomic graph/root publication/cleanup are not implemented by this
+backing work. The required 1,000/2,000 growth court is also pending; local algorithm
+checks cannot substitute for Source acquisition and scope maintenance evidence.
+
 **Requirements.** Supply source insertions, retirements, updates and generation
 changes, plus indirect dependency changes, through tracked source access. The
 provider prepares an isolated next root without changing any retained committed

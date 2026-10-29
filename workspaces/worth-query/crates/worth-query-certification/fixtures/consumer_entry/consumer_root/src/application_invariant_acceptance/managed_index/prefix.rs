@@ -85,7 +85,7 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         }
         self.0.canonical_rows.store(sources.len(), Ordering::SeqCst);
         build_prefix_tree(
-            sources.len(),
+            0..sources.len(),
             &mut storage::Build {
                 sources,
                 nodes,

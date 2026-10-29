@@ -24,6 +24,7 @@ fn name(
 }
 impl PrefixBuildStorage for Build<'_, '_, '_, '_> {
     type Id = WorthQueryManagedIndexNodeId;
+    type Source = usize;
     type Stop = Stop;
     fn checkpoint(&mut self) -> Result<(), Stop> {
         self.control.checkpoint(1).map_err(Into::into)
@@ -54,6 +55,9 @@ impl PrefixBuildStorage for Build<'_, '_, '_, '_> {
     fn replace(&mut self, id: Self::Id, node: Node) -> Result<(), Stop> {
         self.nodes.replace(id, node).map_err(Into::into)
     }
+    fn remove(&mut self, id: Self::Id) -> Result<(), Stop> {
+        self.nodes.remove(id).map_err(Into::into)
+    }
     fn invalid(&self) -> Stop {
         invalid()
     }
@@ -67,6 +71,7 @@ pub(super) struct Query<'call, 'source, 'candidate, 'control> {
 }
 impl PrefixQueryStorage for Query<'_, '_, '_, '_> {
     type Id = WorthQueryManagedIndexNodeId;
+    type Source = usize;
     type Stop = Stop;
     fn checkpoint(&mut self) -> Result<(), Stop> {
         self.control.checkpoint(1).map_err(Into::into)

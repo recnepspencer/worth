@@ -190,6 +190,23 @@ add managed-index reads to `DecisionReader`, or publish graph/index roots
 atomically. Those remain required Phase 2 work. Complete conservative Source
 dependencies remain in force; Phases 3–6 remain unfinished.
 
+The current backing uses immutable node pages in place of whole retained node
+arrays. An isolated edit shares untouched pages and allocates changed
+pages and directory paths under the current request. Prefix insertion/removal
+and keyed box edits/refits belong to their pure value owners. These mechanisms
+do not acquire projected rows, schedule validation, or publish a graph root.
+Two Query backing courts, eight consumer cases and the owning compiled inventory
+case pass for this bounded slice. In particular, neither
+the structural proof nor a cold Source ordinal supplies the stable full-generation
+occurrence identity or admitted scalar reads needed for maintained roots.
+
+Native still applies a proposal and runs its first invariant family before
+Query's existing managed-view publication preparation. The next integration must
+prepare admitted provider roots at that actual candidate boundary and attach
+them to the single-use publication owner. A later publication callback cannot
+provide that contract. Committed `DecisionReader` access, candidate invariant
+access and the Source/maintenance/scope-inclusive growth proof remain required.
+
 ### Canonical Query Validation
 
 - Validation is stable for canonical legality and identity freezing.

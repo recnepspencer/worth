@@ -3,13 +3,16 @@
 mod box2;
 pub use box2::{BoundsDenial, Box2, Box2Coordinates};
 mod box_tree;
-pub use box_tree::{build_box_tree, query_box_tree, BoxIndexDenial, BoxNode, BoxNodeLinks};
+pub use box_tree::{
+    build_box_tree, insert_box_source, query_box_tree, remove_box_source, replace_box_source,
+    BoxEditStorage, BoxIndexDenial, BoxNode, BoxNodeLinks,
+};
 mod prefix_order;
 mod prefix_tree;
 pub use prefix_order::{compare_prefix_keys, prefix_order, PrefixOrder};
 pub use prefix_tree::{
-    build_prefix_tree, query_prefix_tree, PrefixBuildStorage, PrefixIndexDenial, PrefixNode,
-    PrefixQueryStorage,
+    build_prefix_tree, insert_prefix_source, query_prefix_tree, remove_prefix_source,
+    PrefixBuildStorage, PrefixIndexDenial, PrefixNode, PrefixQueryStorage,
 };
 
 mod planar_operation;
