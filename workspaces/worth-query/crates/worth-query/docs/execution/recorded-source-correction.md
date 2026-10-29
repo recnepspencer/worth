@@ -394,7 +394,7 @@ fresh disclosure and ordinary admission on the current target.
 
 The inverse handler writes the domain subject covered by the binding. Native
 candidate validation preserves the original workflow instance and its custody.
-The [document retention example](../../../worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/application_graph/workflow_approval/correction/mod.rs)
+The [document retention example](../../../worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/workflow_approval/correction/mod.rs)
 shows an approved retention edit corrected after completion, during a live
 successor and after cancellation.
 

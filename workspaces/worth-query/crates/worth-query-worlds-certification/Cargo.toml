@@ -38,5 +38,7 @@ worth-signal = { path = "../../../../crates/worth-signal" }
 
 worth-query-worlds-host = { path = "../worth-query-worlds-host" }
 
+worth-query-worlds-document-retention = { path = "../worth-query-worlds-document-retention" }
+
 [lints]
 workspace = true

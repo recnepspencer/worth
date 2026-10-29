@@ -197,7 +197,7 @@ after a fresh installation. Scoped/governed lineage reads and tracked lineage
 decisions are unavailable through these inspection APIs.
 Generic Native branch reconciliation has separate existing execution limitations
 and retains its typed refusal.
-The [installed orbit court](../../../worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/application_graph/relation_laws/orbit/mod.rs)
+The [installed orbit court](../../../worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/relation_laws/orbit/mod.rs)
 exercises native refusals and atomic lawful mutations through the ordinary
 authenticated program.
 

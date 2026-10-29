@@ -4157,7 +4157,7 @@ legacy policy. Manual implementations return the direct requirement type.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/document_retention_model/retention_entry/occurrence_write.rs (abridged)
+// workspaces/worth-query/crates/worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/retention_entry/occurrence_write.rs (abridged)
 worth_query_decl::facade::worth_query_mutation_binding!(
     pub OccurrenceSetRetentionBinding for SetRetentionInput, schema DocumentRetentionSchema,
     // ... identity, input, operation, result, idempotency, decision, handler ...

@@ -837,6 +837,7 @@ certification_consumers = ["worth-ui-certification"]
 internal_packages = [
   "worth-query-worlds",
   "worth-query-worlds-certification",
+  "worth-query-worlds-document-retention",
   "worth-query-worlds-decl",
   "worth-query-worlds-host",
   "worth-query-worlds-installation",
@@ -881,8 +882,8 @@ exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src",
   "workspaces/worth-query/crates/worth-query-publication",
   "workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/workflow_approval/commit_boundary.rs",
-  "workspaces/worth-query/crates/worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/application_graph/workflow_approval/commit_boundary/advancement_identity/mod.rs",
-  "workspaces/worth-query/crates/worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/application_graph/workflow_approval/commit_boundary/mod.rs",
+  "workspaces/worth-query/crates/worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/workflow_approval/commit_boundary/advancement_identity/mod.rs",
+  "workspaces/worth-query/crates/worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/workflow_approval/commit_boundary/mod.rs",
 ]
 forbidden_identifiers = ["publication_boundary"]
 forbidden_identifier_fragments = []

@@ -12,18 +12,16 @@ pub use crate::facade::host::temporal_conditional_operation::courtroom_support;
 #[allow(dead_code, unused_imports)]
 #[path = "granular_invalidation/delivery_convergence.rs"]
 pub mod delivery_convergence;
+pub use document_world_resources as world_resources;
 #[allow(dead_code, unused_imports)]
-#[path = "application_graph/document_retention_model.rs"]
-pub mod document_retention_model;
+pub use worth_query_worlds_document_retention::facade::document_retention_model;
 #[allow(
     dead_code,
     unused_imports,
     reason = "Shared reference application ports are exercised by independent consumer courts"
 )]
 #[allow(dead_code, unused_imports)]
-#[path = "application_graph/document_retention_model/host/world_resources.rs"]
-pub mod document_world_resources;
-pub use document_world_resources as world_resources;
+pub use worth_query_worlds_document_retention::facade::document_world_resources;
 #[allow(dead_code, unused_imports)]
 #[path = "granular_invalidation/financial_runtime_world.rs"]
 pub mod financial_runtime_world;

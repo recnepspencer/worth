@@ -4,42 +4,42 @@
 //! Its canonical courtroom schema and protected predecessors remain unchanged.
 //! The added contribution declares the real inbound archival effect.
 
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/assessment_output.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/assessment_output.rs"]
 pub mod assessment_output;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/assessment_readiness.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/assessment_readiness.rs"]
 pub mod assessment_readiness;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/correctable_retention.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/correctable_retention.rs"]
 pub mod correctable_retention;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/host.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/host.rs"]
 pub mod host;
 #[path = "installation.rs"]
 pub mod installation;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/operator_identity.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/operator_identity.rs"]
 pub mod operator_identity;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/presented_request.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/presented_request.rs"]
 pub mod presented_request;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/program_adoption.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/program_adoption.rs"]
 pub mod program_adoption;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/programs.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/programs.rs"]
 pub mod programs;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/readback.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/readback.rs"]
 pub mod readback;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/record_history.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/record_history.rs"]
 pub mod record_history;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/retention_days.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/retention_days.rs"]
 pub mod retention_days;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/retention_entry.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/retention_entry.rs"]
 pub mod retention_entry;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/rules.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/rules.rs"]
 pub mod rules;
 #[path = "model/schema.rs"]
 pub mod schema;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/settled_verdict.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/settled_verdict.rs"]
 pub mod settled_verdict;
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/workflow.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/workflow.rs"]
 pub mod workflow;
 
-#[path = "../../../worth-query-worlds-certification/src/certification/application_graph/document_retention_model/actor_generation.rs"]
+#[path = "../../../worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/actor_generation.rs"]
 pub mod actor_generation;
 
 /// Retains the example's complete installed vocabulary in the existing owner.

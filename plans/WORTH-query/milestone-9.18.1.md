@@ -1470,7 +1470,7 @@ is now required milestone scope by the 2026-10-26 extension.
 **Accepted, 2026-10-27.** The installed Decl/Host route captures exact disclosed
 entity and physical-relation generations from complete one-shot reads, then pages
 canonical changes at a pinned product with fresh SubjectRead and independently
-governed history metadata. The [facade audit journeys](../../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/document_retention_model/record_history/court.rs)
+governed history metadata. The [facade audit journeys](../../workspaces/worth-query/crates/worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/record_history/court.rs)
 and [physical occurrence journey](../../workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/relation_laws/history/court.rs)
 qualify equal-value occurrences, fork/sibling exclusion, ordered/filtered physical
 IDs, deletion/replacement, current-security revoke/regrant, typed retired gaps,

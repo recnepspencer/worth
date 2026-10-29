@@ -116,7 +116,7 @@ they are not serialized restart capabilities.
 ## Executable audit panel
 
 The existing `application_graph` target contains the facade-only
-[physical relation and deleted generation journey](../../../worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/application_graph/relation_laws/history/court/mod.rs)
+[physical relation and deleted generation journey](../../../worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/relation_laws/history/court/mod.rs)
 and [authored sequence, independent revocation and retired gap journeys](../../../worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/mod.rs).
 Their helpers show complete public and governed admission, bounded continuation,
 independent committed payload/receipt oracles, cancellation and final pin release.

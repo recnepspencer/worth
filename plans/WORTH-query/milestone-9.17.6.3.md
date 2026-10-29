@@ -2162,7 +2162,7 @@ before machinery for another lands.
       a demand under the adopted program with its original commit and no
       producer contact, and input cutoff keys reuse on the installed
       producer edition, with no program:
-      `worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/application_graph/adoption/live_outputs/mod.rs`,
+      `worth-query-court-host-certification-application-graph-fast/tests/worth_query_court_host_certification_application_graph_fast/fast/certification/application_graph/adoption/live_outputs/mod.rs`,
       `a_clean_output_settled_before_adoption_answers_under_the_adopted_program`.
       A changed source is produced by the adopted program under its own
       commit, and the carried instance refuses the assessment settled before

@@ -26,7 +26,7 @@ pub use worth_query_host::facade::{declaration, primary_graph, runtime};
 
 pub use world_resources::world_resources;
 pub use world_resources::{ACTIVE_WORLD_OBSERVATIONS, WORKFLOW_DEFINITION_BYTES};
-pub use worth_query_worlds::facade::certification::document_world_resources as world_resources;
+pub use worth_query_worlds_document_retention::facade::document_world_resources as world_resources;
 
 pub use super::assessment_output::{
     OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,

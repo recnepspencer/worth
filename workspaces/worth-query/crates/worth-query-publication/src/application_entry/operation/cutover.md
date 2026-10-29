@@ -218,10 +218,10 @@ Census: 121 files.
 - `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/stable_refresh.rs`
 - `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/adoption/authorization.rs`
 - `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/allocation_custody.rs`
-- `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/document_retention_model/host/tests.rs`
-- `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/document_retention_model/presented_request.rs`
-- `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/document_retention_model/workflow/review_requirement.rs`
-- `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/document_retention_model/workflow/review_requirement/unlink.rs`
+- `workspaces/worth-query/crates/worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/host/tests.rs`
+- `workspaces/worth-query/crates/worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/presented_request.rs`
+- `workspaces/worth-query/crates/worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/workflow/review_requirement.rs`
+- `workspaces/worth-query/crates/worth-query-worlds-document-retention/src/certification/application_graph/document_retention_model/workflow/review_requirement/unlink.rs`
 - `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/expressions/conditions.rs`
 - `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/native_staging_allocation.rs`
 - `workspaces/worth-query/crates/worth-query-worlds-certification/src/certification/application_graph/producer_predicate_checkpoint/ordinary_source.rs`

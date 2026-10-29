@@ -1,5 +1,5 @@
 [package]
-name = "worth-query-court-host-certification-fast"
+name = "worth-query-court-host-certification-granular-invalidation-fast"
 autotests = false
 edition.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,7 @@ publish = false
 
 [package.metadata.worth.court]
 boundary = "host"
-family = "certification"
+family = "certification-granular-invalidation"
 class = "fast"
 
 [dev-dependencies]
@@ -43,5 +43,5 @@ worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 workspace = true
 
 [[test]]
-name = "worth_query_court_host_certification_fast"
-path = "tests/worth_query_court_host_certification_fast.rs"
+name = "worth_query_court_host_certification_granular_invalidation_fast"
+path = "tests/worth_query_court_host_certification_granular_invalidation_fast.rs"
