@@ -89,7 +89,7 @@ fn custody_indeterminate(
     } = state.authority;
     drop(media);
     session_authority.publication_indeterminate();
-    PhysicalRecoveryOutcome::PublicationIndeterminate(
+    PhysicalRecoveryOutcome::PublicationIndeterminate(Box::new(
         PhysicalRecoveryPublicationIndeterminate::new(
             store,
             session,
@@ -104,7 +104,7 @@ fn custody_indeterminate(
         .with_handoff_failure(
             worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch,
         ),
-    )
+    ))
 }
 
 fn completed_counters(
@@ -149,7 +149,7 @@ fn indeterminate(
     } = state.authority;
     drop(media);
     session_authority.publication_indeterminate();
-    PhysicalRecoveryOutcome::PublicationIndeterminate(
+    PhysicalRecoveryOutcome::PublicationIndeterminate(Box::new(
         PhysicalRecoveryPublicationIndeterminate::new(
             store,
             session,
@@ -161,5 +161,5 @@ fn indeterminate(
         )
         .with_integrity_observations(state.integrity.into_observations())
         .with_reopen_failure(failure),
-    )
+    ))
 }

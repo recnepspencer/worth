@@ -43,7 +43,7 @@ fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("Store must seal the addressed Batch base and all postcheckpoint V3 edges");
     let serving = certified_release_serving::admit_serving_with_seal(world.root(), seal);
     let request = PhysicalCheckpointRequest::fuzzy(
@@ -101,7 +101,7 @@ fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("folded checkpoint must still yield a Store seal");
     certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 }
@@ -133,7 +133,7 @@ fn selected_batch_base_with_three_completed_v3_recovers_again_before_checkpoint(
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("Store must seal the completed head-anchored history");
     certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 }

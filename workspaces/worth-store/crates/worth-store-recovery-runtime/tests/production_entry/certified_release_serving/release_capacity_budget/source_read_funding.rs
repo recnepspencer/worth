@@ -209,7 +209,7 @@ fn selector_and_root_reads_require_original_and_native_capacity_before_allocatio
             );
             let seal = handoff
                 .into_core()
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("independent Store rejoin seals real selected custody");
             let serving = super::super::admit_serving_with_seal(root, seal);
             assert_eq!(serving.store_identity(), store);

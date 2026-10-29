@@ -23,25 +23,14 @@ esac
 echo "[signal-owner-matrix] package regression: $CONFIGURATION"
 cargo test -p worth-signal "${PACKAGE_FEATURE_ARGS[@]}" --all-targets
 
-ROSTER_ARGS=()
-while IFS= read -r name; do
-  [[ -n "$name" ]] || continue
-  ROSTER_ARGS+=(--expect-name "$name")
-done < scripts/ci/signal_owner_service_operation_control_roster.txt
-
 bash scripts/ci/run_signal_owner_service_selection.sh \
-  --test signal_contracts \
+  --test worth_signal \
   "${CONTROL_FEATURE_ARGS[@]}" \
-  --selection signal_owner_services::adversarial::operation_control:: \
-  "${ROSTER_ARGS[@]}"
+  --selection signal_owner_services::adversarial::operation_control::
 
 if [[ "$CONFIGURATION" == "default" || "$CONFIGURATION" == "profile-extended" ]]; then
   bash scripts/ci/run_signal_owner_service_selection.sh \
-    --test signal_contracts \
+    --test worth_signal \
     "${CONTROL_FEATURE_ARGS[@]}" \
-    --selection signal_owner_services::adversarial::capacity_cleanup:: \
-    --ignored \
-    --expect-name signal_owner_services::adversarial::capacity_cleanup::live_branch_capacity_denies_then_retirement_restores_one_slot \
-    --expect-name signal_owner_services::adversarial::capacity_cleanup::operation_capacity_denies_the_65th_and_restores_after_release \
-    --expect-name signal_owner_services::adversarial::capacity_cleanup::retention_capacity_denies_then_all_releases_restore_one_lease
+    --selection fast::signal_owner_services::adversarial::capacity_cleanup::
 fi

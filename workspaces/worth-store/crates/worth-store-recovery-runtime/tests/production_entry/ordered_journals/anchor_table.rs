@@ -1,6 +1,6 @@
 //! A home's four anchors: the canonical commits, the branch transitions, the
-//! home descriptor and the checkpoint manifest share the root's anchor table,
-//! never an anchor, and the table refuses a fifth before any effect.
+//! home descriptor and the checkpoint manifest share the root's 32-slot table.
+//! Twenty-eight other records fill it; the next refuses before any effect.
 
 use worth_store::physical_runtime::{
     AnchoredRecordPublicationFailure, OrderedJournalPublicationFailure,
@@ -15,7 +15,7 @@ use crate::anchored_records::{
 
 #[test]
 fn both_journals_and_both_anchored_records_fill_the_anchor_table() {
-    let world = PhysicalResidencyStoreWorld::initialize_for_recovery("four-anchors")
+    let world = PhysicalResidencyStoreWorld::initialize_for_recovery("mixed-32-anchors")
         .expect("anchor table store");
     let serving = world.serving();
     let (home, checkpoint) = (name(HOME), name(CHECKPOINT));
@@ -25,12 +25,22 @@ fn both_journals_and_both_anchored_records_fill_the_anchor_table() {
     publish_anchored(serving, world.placement(), checkpoint, 0, value(2, 900))
         .expect("checkpoint anchor");
 
+    for index in 0..28 {
+        publish_anchored(
+            serving,
+            world.placement(),
+            name(&format!("anchor.{index:02}")),
+            0,
+            value(index as u8, 64),
+        )
+        .expect("the remaining anchor slots are free");
+    }
     let quiet = serving.physical_mutation_observation();
     assert!(matches!(
         publish_anchored(
             serving,
             world.placement(),
-            name("anchor.five"),
+            name("anchor.overflow"),
             0,
             value(5, 64)
         ),
@@ -50,7 +60,13 @@ fn both_journals_and_both_anchored_records_fill_the_anchor_table() {
     let retained = world.retained_root();
     drop(world);
 
-    let recovered = serve(retained.path(), "four anchors");
+    let recovered = serve(retained.path(), "mixed 32 anchors");
+    for index in 0..28 {
+        assert_eq!(
+            current(&recovered, name(&format!("anchor.{index:02}"))),
+            Some((1, value(index as u8, 64)))
+        );
+    }
     assert_holds(&recovered, Journal::Commits, 2);
     assert_holds(&recovered, Journal::Transitions, 2);
     assert_eq!(current(&recovered, home), Some((1, value(1, 200))));
@@ -59,7 +75,7 @@ fn both_journals_and_both_anchored_records_fill_the_anchor_table() {
         publish_anchored(
             &recovered,
             placement(),
-            name("anchor.five"),
+            name("anchor.overflow"),
             0,
             value(5, 64)
         ),
@@ -74,14 +90,11 @@ fn a_journal_first_entry_refuses_a_full_anchor_table() {
         .expect("anchor table store");
     let serving = world.serving();
     publish(serving, world.placement(), Journal::Commits, 1).expect("commits anchor");
-    for (index, text) in ["anchor.one", "anchor.two", "anchor.three"]
-        .into_iter()
-        .enumerate()
-    {
+    for index in 0..31 {
         publish_anchored(
             serving,
             world.placement(),
-            name(text),
+            name(&format!("anchor.{index:02}")),
             0,
             value(index as u8, 64),
         )

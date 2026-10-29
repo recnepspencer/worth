@@ -1,5 +1,7 @@
 # Milestone 9.16 Runtime Phase 6 Closure Ledger
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 **Owner:** Runtime Hardening Track, Phase 6
 **Canonical specification:** `milestone-9.16.md`
 **Status:** Complete
@@ -255,7 +257,7 @@ Foundational slot and semantic-family evidence:
 cargo test -p worth-foundational sha256
 cargo test -p worth-foundational \
   algorithm_slot_admission_denies_unsupported_version_domain_and_algorithm
-cargo test -p worth-foundational --test compile_time_boundaries \
+cargo test -p worth-foundational --test worth_foundational compile_fail::compile_time_boundaries:: \
   canonical_digest_derivation_requires_admitted_input_shape
 
 cargo test --manifest-path workspaces/worth-query/Cargo.toml \

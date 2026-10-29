@@ -172,7 +172,7 @@ impl PlannedPhysicalRecovery {
         let crate::entry::AdmittedPlatformAuthority { media, session, .. } = authority;
         drop(media);
         session.refuse();
-        PhysicalRecoveryOutcome::Refused(
+        PhysicalRecoveryOutcome::Refused(Box::new(
             crate::entry::PhysicalRecoveryRefusal::new(
                 crate::entry::PhysicalRecoveryRefusalKind::CancelledBeforeExecution,
                 recovery_effects,
@@ -181,7 +181,7 @@ impl PlannedPhysicalRecovery {
             .with_root_protocol_counters(root_protocol_counters)
             .with_integrity_trace(integrity_trace)
             .with_integrity_observations(integrity.into_observations()),
-        )
+        ))
     }
 
     /// Consumes the immutable Phase 4 basis and materializes one closed,

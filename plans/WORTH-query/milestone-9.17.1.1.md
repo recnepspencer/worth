@@ -1,5 +1,7 @@
 # Milestone 9.17.1.1: Owner-Port Concurrency And Lifecycle Closure
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > **Status:** Completed.
 >
 > **Historical posture:** Milestone 9.17.1 remains closed and historical. This
@@ -519,7 +521,7 @@ production-boundary
 
 ```text
 cargo test -p worth-relational --features test-operation-control \
-  --test relational_certification mvcc_cancellation_publication_boundaries::
+  --test worth_relational mvcc_cancellation_publication_boundaries::
 ```
 
 The feature supplies observation and pausing only; it cannot change authority,

@@ -1,5 +1,7 @@
 # Bridge Truth Identity Exposure Report
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > First Phase 2 compiler-discovery run for
 > `milestone-9.6-bridge-truth-identity-lowering.md`.
 
@@ -241,7 +243,7 @@ cargo check -p worth-query --lib
 cargo check -p worth-query --lib --tests
 cargo check -p worth-runtime-bridge --lib
 cargo test -p worth-query --test phase_boundaries_query_identity_authority_compile_fail
-cargo test -p worth-runtime-bridge --test phase_boundaries_bridge_truth_identity_compile_fail
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_bridge_truth_identity_compile_fail::
 ```
 
 Result:
@@ -447,8 +449,8 @@ Signal audit summary:
 
 Verification:
 
-- `cargo test -p worth-relational --test phase_boundaries_compile_fail phase_2a_upstream_identity_boundaries_reject_projection_reentry` passed.
-- `cargo test -p worth-signal --test phase_2a_signal_boundaries` passed.
+- `cargo test -p worth-relational --test worth_relational phase_2a_upstream_identity_boundaries_reject_projection_reentry` passed.
+- `cargo test -p worth-signal --test worth_signal compile_fail::phase_2a_signal_boundaries::` passed.
 - `cargo check -p worth-relational --lib` passed.
 - `cargo check -p worth-signal --lib` passed.
 - Captured logs:
@@ -540,10 +542,10 @@ Result:
 
 Verification:
 
-- `cargo test -p worth-runtime-bridge --test phase_boundaries_bridge_truth_identity_compile_fail` passed.
+- `cargo test -p worth-runtime-bridge --test worth_runtime_bridge compile_fail::phase_boundaries_bridge_truth_identity_compile_fail::` passed.
 - `cargo test -p worth-runtime-bridge --test phase_boundaries_bridge_truth_identity_digest` passed.
-- `cargo test -p worth-relational --test phase_boundaries_compile_fail phase_2a_upstream_identity_boundaries_reject_projection_reentry` passed.
-- `cargo test -p worth-signal --test phase_2a_signal_boundaries` passed.
+- `cargo test -p worth-relational --test worth_relational phase_2a_upstream_identity_boundaries_reject_projection_reentry` passed.
+- `cargo test -p worth-signal --test worth_signal compile_fail::phase_2a_signal_boundaries::` passed.
 - `cargo check -p worth-runtime-bridge --lib` passed.
 - `cargo check -p worth-relational --lib` passed.
 - `cargo check -p worth-signal --lib` passed.

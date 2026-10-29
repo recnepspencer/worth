@@ -156,7 +156,7 @@ fn recover_seal(
     assert_eq!(admission.store_identity(), store);
     assert_eq!(admission.byte_limit(), ORIGINAL_RECOVERY_BYTES);
     let seal = core
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("selected release grants a one-shot custody seal");
     assert_eq!(seal.recovery_allocation_admission(), admission);
     seal

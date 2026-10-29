@@ -1,5 +1,7 @@
 # Milestone 9.6 Attack Plan — Remaining Identity Debt
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > **Status:** Completed.
 >
 > **Branch:** `query-repair`
@@ -80,7 +82,7 @@ postponed — not abandoned, not 9.7 scope.
 cargo check --workspace
 cargo test -p worth-topo --test phase_boundaries_query_runtime_phase_eight_compile_fail
 cargo test -p worth-topo --test phase_boundaries_query_runtime_phase_nine_compile_fail
-cargo test -p worth-runtime-bridge --test subscription_replay_folklore_guard
+cargo test -p worth-runtime-bridge --test worth_runtime_bridge fast::subscription_replay_folklore_guard::
 cargo test -p worth-query phase_boundaries_bridge_truth_identity_compile_fail
 cargo test -p worth-spatial --lib
 ```

@@ -1,5 +1,7 @@
 # Milestone 5 Closeout: Branching, Merging, And Commit Vocabulary
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 Date: 2026-05-13
 
 ## Status
@@ -326,7 +328,7 @@ The final QA pass ran:
 
 ```powershell
 cargo fmt -p worth-foundational
-cargo test -p worth-foundational --test certification transitions::readiness -- --nocapture
+cargo test -p worth-foundational --test worth_foundational transitions::readiness -- --nocapture
 cargo test -p worth-foundational
 git diff --check
 ```

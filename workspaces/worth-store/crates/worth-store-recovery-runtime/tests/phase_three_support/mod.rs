@@ -29,7 +29,7 @@ pub(crate) fn expect_blocked(
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
         panic!("persisted-source failure must be a top-level blocked outcome")
     };
-    blocked
+    *blocked
 }
 
 pub(crate) fn admitted_recovery(

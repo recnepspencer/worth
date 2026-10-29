@@ -113,9 +113,7 @@ target ancestry and program interpretation together. Its retained evidence is
 specific to that occurrence and action. Publication still checks the actual
 target: even a later equal-value write makes an older prepared target stale.
 Compensation keeps its fresh ordinary reads, and reapplication keeps its
-separate declared source-action and active-reversal checks. The focused
-stale/equal-write control passed; overall qualification remains blocked by the
-retirement/currentness and Native consult findings described below.
+separate declared source-action and active-reversal checks.
 
 ## Select a source after closing its operation
 
@@ -754,9 +752,17 @@ source root. Matching values alone are insufficient. A live equal-value write,
 an unreversed reapplication, a changed independent decision dependency, or a
 reversal performed only on a sibling branch still blocks the older source.
 
-This restoration path supports complete entity/field dependency facts, exact
-aspect-presence facts, and bounded installed equality selections over
-authoritative stored fields. Native
+This restoration path supports complete entity/field dependency facts,
+whole-aspect revision facts, exact aspect-presence facts, and bounded installed
+equality selections over authoritative stored fields. For a whole aspect, Native
+resolves the complete installed scalar or struct field roster at both exact
+full-generation roots under compatible entity kind, binding and contract. Query
+selects Lifecycle, WholeAspect and every corresponding Field coordinate, including
+authored field no-ops. Original revision verification remains strict; target
+comparison requires complete aspect presence and content. Equal revisions or
+matching values alone never cancel a live authored occurrence. Unsupported
+shapes and Native request/storage failures retain typed `RestoredSupport`
+causes. Native
 resolves presence support from the original and target full-generation entity,
 kind and compatible installed aspect binding. Lifecycle and whole-aspect writes
 overlap presence; scalar `UpdateFields` also overlaps at its actual installed
@@ -778,9 +784,7 @@ admitted immutable basis custody. Closing either live branch does not require
 reopening it to read that selected history. Runtime affinity, exact selected
 commit/prefix, full-generation coverage, request and canonical-storage checks
 remain in force, and the last cursor releases its custody. Fresh live-branch
-admission still refuses a closed branch. Current focused qualification passed Native4, QueryExecution2 and eight public
-application cases, including these two receiving courts. These public results
-do not establish private correction success.
+admission still refuses a closed branch.
 
 Native resolves the actual single-field Authoritative or Planned index descriptor;
 Query preserves that descriptor rather than relabeling it as permission.
@@ -836,101 +840,26 @@ cover actual endpoint moves/no-ops, equal-endpoint physical relation identities,
 retirement, and exact occurrence recovery; its existing durable-medium fixture
 also checks the paired receiver's typed current-head storage refusal.
 
-The earlier focused coverage/freshness qualification passed Native's 19 cases
-and 10 of 11 Query cases. Audit lifecycle coverage survived accelerator disposal,
-canonical digest/encoding and durable recovery. Those authored-history passes
-carry. The same installed Preserve producer passed A/B/A with distinct receipts,
-exact current output and full-generation lineage, stale-settlement refusal and
-unchanged zero-contact reuse; that court passed again in the current run.
+Complete authored retirement records the actual prior full-generation publication
+members, deletions, unlinks and endpoints at the selected ancestry and before-image.
+Native issues exact retirement succession custody for reissue; ordinary deletion
+and a producer Retire action do not reopen Birth. A later required-output failure
+does not roll back an already committed source edit: retain its performed owner
+and continue through the returned recovery/custody path.
 
-The earlier retirement/reissue failure retained Native's "publication
-relation generation absent or retired" denial during required-output publication.
-The source edit had already committed; its later producer-attempt refusal did
-not roll it back. The exact relation/site in that earlier failure remains
-unobserved. Its original failed receipt is preserved.
-
-The preceding post057 run passed all nine Native publication courts, including
-complete ordinary authored retirement followed by exact warm/cold successor
-reissue, full-generation membership, partial/foreign/sibling/stale/cancelled
-refusals and closed Birth. The ordinary action does not pretend to run a
-producer, and canonical succession retains the original lineage provenance.
-
-That run executed all 17 Query cases: 16 passed and the unchanged retirement
-case failed later. Required-output reissue now actually publishes fresh
-full-generation entities; exact operation/receipt distinctions and value/graph
-readback pass. A following output demand attempts Preserve and returns
-`ProducerUnavailable` with `PriorOutputDenial::OutputUnavailable` for
-`derived-report`. The expected zero-contact current settlement, its retry and
-post-reissue stale-settlement checks were not reached. Matching readback alone
-does not prove output currentness. No stale prior-output error becomes absence.
-
-That run's stale/equal-write prepared-use court passed: a later equal authored
-write makes the exact preparation `ProductBasisStale`, preserves that head,
-and fresh inspection returns `SourceDiverged`. Compensation, reapplication,
-consecutive originals, independent dependencies, siblings and adjacency controls
-also passed. The 146 affected Native/QueryExecution doctests, guidance generation
-and context generation/check passed. Normal boundary enforcement refused two
-direct request consults in the new Native retirement receiver (`BC7014`);
-those failures remain preserved. The current receiving correction uses Native
-`consult_stage(Admission)` with the original request at both safe points.
-Current facts may schedule the actual producer of an already committed Ready
-for the exact source and correspondence; this grants no input-reuse or
-checkpoint authority. The ordinary Ready path still certifies currentness.
-Paired Create/Preserve reads select the latest actual publication in one
-installed family, exact partition and selected ancestry, then require the
-selected role's live full generation. A dead selected member still refuses.
-The strict reissue court now also requires a later source change to Preserve
-the new generations and a second retirement attempt to refuse without head
-movement. All ten approved current cases passed: one Native admission court,
-two QueryExecution locator courts and seven public application cases. The
-strict retirement/reissue court reached actual zero-contact current receipt,
-new full generations, unchanged retry, stale-settlement refusal and subsequent
-Preserve of the new identities. SAME-Preserve ABA, companion preservation,
-required-output reapplication and cancellation/custody also passed. The exact
-dynamic candidate/currentness substage and prior full generation in the
-preserved failed run were not observed; the selection mechanism above is
-established by source tracing, not a new runtime observation.
-
-The first Native acquisition failed on a test-local missing `mut` for schema
-installation. That one-line fixture correction changed no production or
-assertion; its fresh acquisition and exact case passed. The original compiler
-failure remains retained. Current normal guidance and context generation,
-complete generated-delta inspection, boundary check and context check pass.
-There was no generated or facade snapshot delta. Unchanged Native history and
-publication proofs and the 146 unaffected doctests carry their actual prior
-results; they were not rerun or counted as new proof. Those results qualified
-immutable fa357, followed by reviewed private adoption and the diagnostic run
-below. Reviewer070 cleared the receiving Source; its focused public qualification
-passed as recorded below. Phase19 remains open.
-
-The existing passive observer retains the first correction rejection stage,
-exact fact coordinate when known and typed denial before consumer categorization.
-Returned publication errors retain predecessor/candidate relation and basis
-context. The single focused private acquisition on immutable fa357 executed all
-ten original cases: two passed and eight failed. Six stop at the explicit
-`RetiredOutputEntity` overlap refusal; their later restoration assertions are
-unreached. Producer B Undo restores parameter7, then paired comparison rejects
-the genuinely read `first_Parameters.SourceOccurrence`; the recorded inverse
-captures Parameters alone. Session history refuses Native retention with
-`UnknownBranch`; which endpoint's retain call failed is not observed. The old
-149 inner causes and incomplete-history ordinal remain unknown. The two current
-private passes and all failure receipts are preserved; no new private result
-is claimed for the current receiving changes.
+Current output reads select the latest actual publication within one installed
+producer family, exact partition and selected ancestry, then verify the selected
+role's live full-generation identity and correspondence. Missing or dead selected
+members remain typed failures. A stale prior-output denial does not mean absence.
+Ordinary Ready settlement still certifies currentness; a current committed output
+can be reused without another producer contact only through that owner.
 
 Query's observed-source commitment includes actual Native versions and the
-complete source footprint. Completed dependencies, the current selected lineage
-head, settlement custody and exact correspondence govern output freshness.
-The additional public court passed SAME-Preserve A/B/A with
-different source values that produce identical outputs. It still requires
-distinct actual receipts, full-generation identity, superseded old settlements
-and unchanged zero-contact retry. Equal produced values do not prove current
-publication. The current qualification passed all14 exact cases once, with none ignored,
-from three verified own-source artifacts. Normal guidance and context generation,
-complete generated-delta inspection, boundary check and context check passed.
-Generation changed no guidance or context content; unchanged146doctests carry
-their prior results. No compiler or fixture correction was needed. Final
-Source/evidence review remains pending. These proofs authorize no consumer
-SourceOccurrence/read/inverse cutover; that requires a separately reviewed coherent consumer contract.
+complete source footprint. Completed dependencies, current lineage heads and
+successors, settlement custody and exact output correspondence own publication
+freshness. Returning to earlier parameters, even with equivalent derived values,
+does not revive an older receipt. An unchanged retry reuses the exact current
+settlement; stale receipts remain superseded.
 
 The caller needs current disclosure and current admission for the inverse.
 Another authorized actor can correct the source after the original actor's
@@ -997,23 +926,3 @@ receipt can still name the original branch.
 
 - [Ordinary application entry](../foundations/ordinary-application-front-door.md)
 - [External effects and recovery](application-aftermath-and-recovery.md)
-
-### Current whole-aspect receiving correction (focused qualification)
-
-The private current-contract producer consecutive Undo has now executed PASS
-through7 then3. Six restoration courts next reached unsupported
-`SourceAspectRevision` at overlap selection, on the genuine BODY Retirement aspect.
-The new Native field-set receiver supplies compatible installed scalar/struct
-coordinates and compares complete aspect presence/content at exact fullGEN roots.
-Query includes every corresponding Field writer alongside Lifecycle/WholeAspect;
-strict original revision verification and all canonical cancellation remain.
-
-Reviewer079 cleared the Source. The three Native cases and one QueryExecution
-case passed in two current own-source artifacts, each executed once/nonignored.
-Guidance/context generation and normal boundary/context checks passed without
-generated deltas. Rust is unchanged from the reviewed Source. Equal payload never
-cancels an independent authored write. Immutable adoption and actual private restoration qualification remain pending.
-BODY occurrence is retained. The separate session court passed live SourceDiverged
-and BUndo7, then hit a canonical rational fixture spelling mismatch before AUndo;
-its unchanged exact source equality is preserved by authoring canonical literals.
-No private broad gate, Phase19 or default acceptance follows from this partial proof.

@@ -1,5 +1,7 @@
 # Milestone 9.12: Query Public Authority Surface Cutover
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > **Status:** Completed.
 
 ## Goal
@@ -751,7 +753,7 @@ Closed on 2026-07-13 with the following repository evidence:
 - `cargo test -p worth-query --test public_authority_surface_compile_fail
   --quiet` passes all thirteen rejection fixtures and both golden facade
   fixtures.
-- `cargo test -p worth-server --test query_dependency_audit --quiet` passes the
+- `cargo test -p worth-server --test worth_server fast::query_dependency_audit:: --quiet` passes the
   downstream server dependency audit after facade contraction.
 - `cargo check --workspace --quiet` passes at the repository root, and
   `cargo check --workspace --quiet` passes in `workspaces/worth-ui`.

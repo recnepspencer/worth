@@ -37,7 +37,7 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("ordered two-batch Store custody seal");
     let serving = super::certified_release_serving::admit_serving_with_seal(world.root(), seal);
     let checkpoint = PhysicalCheckpointRequest::fuzzy(
@@ -106,7 +106,7 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("selected Batch/Accumulator custody after fresh reopen");
     super::certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 }
@@ -122,7 +122,7 @@ fn post_seal_intermediate_history_root_substitution_denies_serving() {
     };
     let seal = handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("ordered two-batch Store custody seal");
     // Change a valid, intermediate historical root header without touching
     // its route/free membership or the current selected root. A raw bit flip

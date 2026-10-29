@@ -10,10 +10,10 @@ use worth_foundational::facade::BoundaryProtocolUnsupportedVersionPosture;
 
 #[test]
 fn report_round_trip_wrong_family_future_version_and_digest_are_distinct() {
-    let outcome = PhysicalRecoveryOutcome::Refused(PhysicalRecoveryRefusal::new(
+    let outcome = PhysicalRecoveryOutcome::Refused(Box::new(PhysicalRecoveryRefusal::new(
         PhysicalRecoveryRefusalKind::CoordinationUnavailable,
         0,
-    ));
+    )));
     let encoded = RecoveryReportEnvelope::from_outcome(&outcome).encode();
     assert_eq!(
         RecoveryReportEnvelope::decode(&encoded).unwrap().outcome(),

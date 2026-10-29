@@ -17,6 +17,17 @@ pub struct RecoveryMediaHandleObservation {
 }
 
 impl AdmittedRecoveryFilesystemMedia {
+    /// Transfer the held OS lease into serving qualification. The owner is
+    /// never released, including while the fresh serving profile is checked.
+    pub fn qualify_serving(
+        self,
+        request: crate::FilesystemQualificationRequest,
+    ) -> crate::AdmittedFilesystemMedia {
+        let mut owner = self.parts.owner;
+        owner.enter_serving_boundary(&request);
+        crate::filesystem_media::FilesystemMediaOwner::qualify_held(request, owner)
+    }
+
     pub(crate) const fn from_parts(
         parts: crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts,
     ) -> Self {

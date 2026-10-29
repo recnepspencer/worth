@@ -174,7 +174,7 @@ fn a_checkpoint_that_appears_after_generation_zero_recovery_denies_serving() {
         let seal = world
             .recover("generation-zero recovery")
             .into_core()
-            .into_checkpoint_custody()
+            .certification_release_media_into_checkpoint_custody()
             .expect("generation-zero custody seal");
         fs::write(world.root.join("families/checkpoint.current"), bytes).unwrap();
         certified_release_serving::open_serving_with_seal_expect_denial(

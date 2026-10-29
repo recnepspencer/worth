@@ -1,6 +1,5 @@
 [package]
 name = "worth-proof"
-autotests = false
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.94"
@@ -15,7 +14,3 @@ trybuild.workspace = true
 
 [lints]
 workspace = true
-
-[[test]]
-name = "proof_contracts"
-path = "tests/proof_contracts.rs"

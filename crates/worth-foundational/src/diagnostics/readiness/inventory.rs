@@ -37,41 +37,41 @@ pub(super) fn certified_surface_evidence() -> Vec<FoundationalDiagnosticCertifie
             FoundationalDiagnosticCertifiedSurface::PrimitiveAndCategoryLaw,
             FoundationalDiagnosticSyntheticRuntimePressure::PrimitiveNonSubstitution,
             FoundationalDiagnosticCompileFailBoundary::PrimitiveAndCategoryPreserveNonSubstitution,
-            "tests/certification/diagnostics/primitives.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
             "tests/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs",
-            "tests/certification/diagnostics/primitives.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
         ),
         FoundationalDiagnosticCertifiedSurfaceEvidence::new(
             FoundationalDiagnosticCertifiedSurface::OutcomeSubjectAndRowTopology,
             FoundationalDiagnosticSyntheticRuntimePressure::GenericRowCollapseRejection,
             FoundationalDiagnosticCompileFailBoundary::RowTopologyPreservesFamilyAndLocatorLaw,
-            "tests/certification/diagnostics/rows.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
             "tests/ui/diagnostics/rows/aggregate_row_cannot_satisfy_decision_row_api.rs",
-            "tests/certification/diagnostics/rows.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
         ),
         FoundationalDiagnosticCertifiedSurfaceEvidence::new(
             FoundationalDiagnosticCertifiedSurface::MaterializationSupportAndNamedGapLaw,
             FoundationalDiagnosticSyntheticRuntimePressure::ThinOrEmptySupportOverclaimRejection,
             FoundationalDiagnosticCompileFailBoundary::MaterializationAndSupportPreserveExplicitSeams,
-            "tests/certification/diagnostics/materialization.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
             "tests/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs",
-            "tests/certification/diagnostics/materialization.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
         ),
         FoundationalDiagnosticCertifiedSurfaceEvidence::new(
             FoundationalDiagnosticCertifiedSurface::CanonicalBasisAndComparisonLaw,
             FoundationalDiagnosticSyntheticRuntimePressure::BlindConsumerCanonicalParity,
             FoundationalDiagnosticCompileFailBoundary::BasisAndComparisonPreserveBlindConsumerCanonicalLaw,
-            "tests/certification/diagnostics/basis.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
             "tests/ui/diagnostics/basis/raw_support_report_cannot_satisfy_diagnostic_comparison_bundle_api.rs",
-            "tests/certification/diagnostics/basis.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
         ),
         FoundationalDiagnosticCertifiedSurfaceEvidence::new(
             FoundationalDiagnosticCertifiedSurface::CertifiedBundleAndAttachmentCompatibility,
             FoundationalDiagnosticSyntheticRuntimePressure::HiddenSourceDigestOrCoverageWORTHry,
             FoundationalDiagnosticCompileFailBoundary::CertifiedBundleAndAttachmentReuseProofLane,
-            "tests/certification/diagnostics/certified.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
             "tests/ui/diagnostics/certified/raw_support_report_cannot_satisfy_certified_bundle_api.rs",
-            "tests/certification/diagnostics/certified.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
         ),
     ]
 }
@@ -181,31 +181,31 @@ pub(super) fn synthetic_pressure_evidence() -> Vec<FoundationalDiagnosticSynthet
     vec![
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::PrimitiveNonSubstitution,
-            "tests/certification/diagnostics/primitives.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::GenericRowCollapseRejection,
-            "tests/certification/diagnostics/rows.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::HiddenRediscoveryDebtRejection,
-            "tests/certification/diagnostics/materialization.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::ThinOrEmptySupportOverclaimRejection,
-            "tests/certification/diagnostics/materialization.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::BlindConsumerCanonicalParity,
-            "tests/certification/diagnostics/basis.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::HiddenSourceDigestOrCoverageWORTHry,
-            "tests/certification/diagnostics/certified.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::ExplanationProvenanceBoundaryPreservation,
-            "tests/certification/diagnostics/certified.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
         ),
     ]
 }
@@ -247,27 +247,27 @@ pub(super) fn phase_gates() -> Vec<FoundationalDiagnosticPhaseGateEvidence> {
     vec![
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::PrimitiveAndCategoryLaw,
-            "tests/certification/diagnostics/primitives.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::OutcomeSubjectAndRowTopology,
-            "tests/certification/diagnostics/rows.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::MaterializationSupportAndNamedGapLaw,
-            "tests/certification/diagnostics/materialization.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::CanonicalBasisAndComparisonLaw,
-            "tests/certification/diagnostics/basis.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::CertifiedBundleAndAttachmentCompatibility,
-            "tests/certification/diagnostics/certified.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::ProductionReadiness,
-            "tests/certification/diagnostics/readiness.rs",
+            "tests/worth_foundational/fast/certification/diagnostics/readiness.rs",
         ),
     ]
 }

@@ -64,11 +64,11 @@ pub(super) fn runtime_adoption_pressure_evidence(
     vec![
         FoundationalPerformanceRuntimeAdoptionPressureEvidence::new(
             FoundationalPerformanceRuntimeAdoptionPressure::CrossCrateMeaningParityMatrix,
-            "tests/certification/performance/runtime_parity.rs",
+            "tests/worth_foundational/fast/certification/performance/runtime_parity.rs",
         ),
         FoundationalPerformanceRuntimeAdoptionPressureEvidence::new(
             FoundationalPerformanceRuntimeAdoptionPressure::CertifiedBundleSourceCompatibilityMatrix,
-            "tests/certification/performance/runtime_parity.rs",
+            "tests/worth_foundational/fast/certification/performance/runtime_parity.rs",
         ),
     ]
 }
@@ -135,7 +135,7 @@ pub(super) fn public_surface_documentation_coverage(
 }
 
 pub(super) const fn public_surface_evidence_path() -> &'static str {
-    "tests/certification/performance/grouped_surface.rs"
+    "tests/worth_foundational/fast/certification/performance/grouped_surface.rs"
 }
 
 pub(super) const fn public_surface_compile_fail_path() -> &'static str {

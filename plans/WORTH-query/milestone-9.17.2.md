@@ -1,5 +1,7 @@
 # Milestone 9.17.2: Composite Runtime-World History And Coordinated Publication
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 > **Status:** Completed.
 >
 > **Product posture:** This milestone establishes the memory-resident Runtime
@@ -924,7 +926,7 @@ on every recovery release), `598bf7f88a` (closure review findings CLS-001..006).
 | `cargo test -p worth-runtime-world --lib` | 154 passed |
 | `cargo test -p worth-runtime-world --lib --features test-operation-control` | 161 passed |
 | `cargo clippy -p worth-runtime-world --lib --tests --features test-operation-control` (crate lints `deny(clippy::all)`) | 0 errors |
-| `cargo test -p worth-runtime-world --test runtime_world_certification` | 13 passed |
+| `cargo test -p worth-runtime-world --test worth_runtime_world` | 13 passed |
 | `cargo fmt --all -- --check`, `git diff --check` | clean |
 | `scripts/ci/check_workspace_rust_line_caps.sh` (dirty and whole workspace) | PASS, no allowlist edits |
 | `scripts/quality/scrutinize_rust_functions.py` (whole crate) | 47 candidates, all pre-existing, 0 net new |
@@ -1438,9 +1440,9 @@ The planned commands are:
 
 ```text
 cargo test -p worth-runtime-bridge runtime_world
-cargo test -p worth-runtime-world --test runtime_world_certification
-cargo test -p worth-runtime-world --features test-operation-control --test runtime_world_certification operation_control::
-cargo test -p worth-runtime-world --features test-operation-control --test runtime_world_certification -- --ignored
+cargo test -p worth-runtime-world --test worth_runtime_world
+cargo test -p worth-runtime-world --features test-operation-control --test worth_runtime_world operation_control::
+cargo test -p worth-runtime-world --features test-operation-control --test worth_runtime_world -- --ignored
 cargo test -p worth-runtime-world --doc
 cargo test -p worth-runtime-world --example runtime_world_publication
 cargo clippy -p worth-runtime-world --all-targets --all-features -- -D warnings

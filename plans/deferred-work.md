@@ -127,9 +127,9 @@ needs an accelerator.
 ## Worth Store
 
 The [Database Foundation Roadmap](database-foundation/roadmap.md) governs the
-working-database path. Milestone 3 closes the first production-host original-result
-retry journey, Milestone 4 sustained database operation, and Milestone 5 complete runtime
-recovery. Old C.13 and Runtime Integration milestone numbers are not active
+working-database path. Milestone 3 closes the durable application runtime, including the
+production-host original-result retry journey, and Milestone 4 sustained database
+operation. Old C.13 and Runtime Integration milestone numbers are not active
 prerequisites or return dates.
 
 | Deferred portfolio | Owner | Return trigger |
@@ -139,7 +139,7 @@ prerequisites or return dates.
 | C.13 broad hostile campaign and S.12 bulk/joined qualification | Physical certification owners | A later joined qualification program after the working database. |
 | S.10 backup, PITR, repair and disaster recovery | Store operations/recovery owners | A later operational recovery program. Ordinary crash/reopen remains required by Milestone 1 through Milestone 3. |
 | S.11 encryption/key lifecycle and advanced trust | Store security owners | Before exposing those protected deployment and custody promises. Existing scope and integrity guarantees remain. |
-| Advanced replication, sync, pushdown, subscriptions, capsules and extensions | Respective semantic/physical owners | A successor roadmap after Milestone 5. |
+| Advanced replication, sync, pushdown, subscriptions, capsules and extensions | Respective semantic/physical owners | A successor roadmap after Milestone 4. |
 
 Necessary mechanisms are implemented in their consuming database milestone without
 closing an entire deferred portfolio. Basic safe reclamation is required by

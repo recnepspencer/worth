@@ -84,7 +84,7 @@ fn checkpoint_read_and_source_root_funding_deny_before_effects_and_retry() {
             let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
                 panic!("healthy retry must recover identical real media: {outcome:?}");
             };
-            let seal = handoff.into_core().into_checkpoint_custody().expect("independent Store rejoin");
+            let seal = handoff.into_core().certification_release_media_into_checkpoint_custody().expect("independent Store rejoin");
             let serving = super::super::admit_serving_with_seal(root, seal);
             assert!(!serving.close().residency().requires_inspection());
         })

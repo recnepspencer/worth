@@ -106,7 +106,7 @@ fn recover_seal(root: &Path, original_recovery_bytes: u64) -> RecoveredPhysicalC
         core.recovery_allocation_admission().byte_limit(),
         original_recovery_bytes
     );
-    core.into_checkpoint_custody()
+    core.certification_release_media_into_checkpoint_custody()
         .expect("Store rejoined release grants a one-shot seal")
 }
 

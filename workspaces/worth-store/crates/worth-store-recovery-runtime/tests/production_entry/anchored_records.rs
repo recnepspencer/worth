@@ -106,11 +106,19 @@ pub(crate) fn assert_journal(serving: &ServingPhysicalRuntime, head: u64) {
 
 #[test]
 fn anchored_record_names_refuse_the_ordered_journals_and_malformed_names() {
+    let world =
+        PhysicalResidencyStoreWorld::initialize_for_recovery("reserved-anchor-refusal").unwrap();
     for journal in [RELATIONAL_CANONICAL_COMMITS, RELATIONAL_BRANCH_TRANSITIONS] {
-        assert_eq!(
-            AnchoredRecordName::new(journal),
-            Err(AnchoredRecordNameDenial::ReservedForOrderedJournal)
-        );
+        assert!(matches!(
+            publish(
+                world.serving(),
+                world.placement(),
+                name(journal),
+                0,
+                vec![1]
+            ),
+            Err(AnchoredRecordPublicationFailure::ReservedForOrderedJournal)
+        ));
     }
     assert_eq!(
         AnchoredRecordName::new("Relational Home"),
@@ -182,8 +190,8 @@ fn an_anchored_record_is_replaced_one_generation_at_a_time() {
 fn the_anchor_table_bounds_the_number_of_anchored_records() {
     let world = PhysicalResidencyStoreWorld::initialize_for_recovery("anchored-table")
         .expect("anchored record store");
-    let names = ["anchor.one", "anchor.two", "anchor.three", "anchor.four"];
-    for (index, text) in names.into_iter().enumerate() {
+    let names: Vec<_> = (0..32).map(|i| format!("anchor.{i:02}")).collect();
+    for (index, text) in names.iter().enumerate() {
         publish(
             world.serving(),
             world.placement(),
@@ -197,15 +205,19 @@ fn the_anchor_table_bounds_the_number_of_anchored_records() {
         publish(
             world.serving(),
             world.placement(),
-            name("anchor.five"),
+            name("anchor.overflow"),
             0,
             value(9, 64)
         ),
         Err(AnchoredRecordPublicationFailure::AnchorTableFull)
     ));
-    for (index, text) in names.into_iter().enumerate() {
+    capacity::rewrite(world.serving(), world.placement());
+    let retained = world.retained_root();
+    drop(world);
+    let serving = serve(retained.path(), "32 anchors through maintenance");
+    for (index, text) in names.iter().enumerate() {
         assert_eq!(
-            current(world.serving(), name(text)),
+            current(&serving, name(text)),
             Some((1, value(index as u8, 64)))
         );
     }
@@ -262,3 +274,6 @@ fn anchored_records_and_the_journal_survive_an_abandoned_runtime() {
     assert_eq!(current(&again, home), Some((1, value(7, 120))));
     let _ = again.close();
 }
+
+#[path = "anchored_records/capacity.rs"]
+mod capacity;

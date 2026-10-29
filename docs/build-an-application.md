@@ -18,7 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) | A source receipt, current principal, target branch and client key; the contribution declares the inverse and disclosure query. Restoration requires exact later source/reversal pairs and retained original field, aspect-presence and complete live adjacency support under compatible installed meaning. Relation-dependent fields remain separate dependencies. Audit lifecycle coverage and readable audit support have separate contracts; focused audit, same-producer ABA and stale-use proofs pass; the current focused receiving courts pass genuine retirement/reissue, current receipts and later Preserve of fresh generations; the single fa357 private diagnostic run has two passes and eight failures. Current receiving qualification passed all14 selected cases covering exact retired facts, already-admitted historical custody and equivalent-output ABA; normal guidance/context generation and checks plus boundary enforcement passed. CAD freshness cutover and Phase19 qualification remain open. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -414,7 +414,7 @@ The executable [nested-value model](../workspaces/worth-query/crates/worth-query
 and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)
 exercise nondefault values through the entry binding, installed catalog,
 authenticated read and current-format native recovery. The
-[compiler fixtures](../crates/worth-foundational/tests/value_shape/compiler.rs)
+[compiler fixtures](../crates/worth-foundational/tests/worth_foundational/compile_fail/value_shape/compiler.rs)
 cover supported and refused grammar.
 
 Read canonical fields with `reader.field(...)` or the installed query's row
@@ -605,14 +605,9 @@ of its declared Create/Preserve bindings in one installed output family, exact
 source partition and selected ancestry. The selected typed role must still be
 a live full-generation entity. A stale or missing member is a denial; it never
 falls back to an older binding. Ordinary `prior_output` keeps its exact-binding
-historical meaning. Focused public tests pass genuine retirement, reissue,
-current settlement, unchanged retry and subsequent Preserve of fresh generations.
-Those results qualified immutable fa357 and its reviewed private diagnostic adoption.
-Query owns source-native-version commitment, completed dependencies and current
-publication custody; a separate application command nonce is not a replacement
-for that contract. The equivalent-output SAME-Preserve ABA court passed current public qualification.
-No private SourceOccurrence/read/inverse cutover is authorized by these public
-results, and Phase19 qualification remains open.
+historical meaning. Query owns source-native-version commitment, completed
+dependencies and current publication custody; a separate application command
+nonce is not a replacement for that contract.
 
 ### 3.2 Attach actions to features
 

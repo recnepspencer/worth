@@ -1,5 +1,7 @@
 # Milestone 3 Closeout: External HTTP, Streaming, Binary, And Blob Surface
 
+> Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
+
 ## Status
 
 Milestone 3 is closed as of 2026-06-09 for the external compatibility HTTP,
@@ -161,7 +163,7 @@ The closeout state is grounded in the full Milestone 3 compatibility/binary
 test stack, including:
 
 - `cargo check -p worth-server --tests`
-- `cargo test -p worth-server --test compat_http_entry --test compat_http_phase_two --test compat_http_phase_three --test compat_http_phase_four --test compat_http_phase_five --test compat_http_phase_six --test compat_http_phase_seven --test compat_http_phase_seven_boundary --test compat_http_phase_eight --test compat_http_phase_eight_boundary --test compat_http_phase_nine --test compat_http_phase_nine_boundary --test compat_http_phase_ten --test compat_http_phase_ten_boundary --test compat_http_phase_eleven --test compat_http_phase_eleven_boundary --test compat_http_phase_twelve --test compat_http_phase_twelve_boundary --test compat_http_phase_thirteen --test compat_http_phase_thirteen_boundary -- --nocapture`
+- `cargo test -p worth-server --test worth_server fast::compat_http_ -- --nocapture`
 
 That verification passed with 78 tests green across:
 

@@ -58,7 +58,7 @@ pub(super) fn completed_history() -> PendingWalWorld {
     let world = released_world();
     let seal = pending_successor_above_history::recover(&world, "pending successor")
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("Store must seal the pending successor");
     certified_release_serving::admit_serving_with_seal(world.root(), seal).close();
     world
