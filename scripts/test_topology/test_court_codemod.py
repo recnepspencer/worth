@@ -17,6 +17,7 @@ from plan_effects import apply
 from rust_source import crate_uses, modules
 from rust_source import pairs, tokens
 from frontier_adapter import frontiers
+from filesystem_path import filesystem_path
 
 FIXTURE = Path(__file__).parent / 'fixtures/frontiers'
 
@@ -123,6 +124,18 @@ class CourtCodemodTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'move precondition'):
                 apply(self.plan, root)
             self.assertTrue(all((root / m['source']).exists() for m in self.plan['effects']['moves']))
+
+    def test_apply_supports_deep_destination_paths(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / ('nested_destination_' * 7)
+            shutil.copytree(FIXTURE, filesystem_path(root))
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
+            apply(self.plan, root)
+            self.assertEqual(apply(self.plan, root), {'moved': 0, 'written': 0})
+            self.assertTrue(all(filesystem_path(root / m['destination']).is_file() for m in self.plan['effects']['moves']))
+            self.assertTrue(root.resolve().is_relative_to(Path(folder).resolve()))
+            shutil.rmtree(filesystem_path(root))
 
     def test_source_scan_excludes_comments_strings_and_shadow_names(self):
         source = '// use unused::Thing;\nlet s = "unused::Thing"; use host as h; extern crate extra; h::run();'
