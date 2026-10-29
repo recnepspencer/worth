@@ -86,7 +86,8 @@ pub fn assert_active_attempt_slopes() {
             // its children before the outer pause guards can be dropped.
             registered.release();
             pause.release();
-            let work = observed.unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+            // Preserve the worker's typed early refusal before a coordinator
+            // arrival assertion can hide the operation that released its peers.
             for attempt in attempts {
                 attempt
                     .join()
@@ -94,7 +95,7 @@ pub fn assert_active_attempt_slopes() {
                     .require_committed()
                     .expect("each independent active attempt must commit");
             }
-            work
+            observed.unwrap_or_else(|panic| std::panic::resume_unwind(panic))
         });
         assert_ordinary_work(work);
         assert_eq!(*baseline.get_or_insert(work), work, "A={size}");
