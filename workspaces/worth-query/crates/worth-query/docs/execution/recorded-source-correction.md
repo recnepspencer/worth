@@ -108,6 +108,13 @@ derives and captures the inverse input, resolves its scope, admits the current
 caller and runs the installed handler to build a candidate. State changes when
 `publish()` succeeds. Dropping the candidate releases its preparation.
 
+Correction eligibility consumes the selected receipt's retained observed source
+facts. Ordinary field reads and observed field queries retain field-precise
+support. A native output witness separately protects output custody; declaring
+created outputs does not automatically add all their fields to correction source
+support. Output fields named by `source_output_fields()` supply inverse derivation
+material separately from those observed source dependencies.
+
 The internal preparation consumes the compatibility owner's checked source,
 target ancestry and program interpretation together. Its retained evidence is
 specific to that occurrence and action. Publication still checks the actual

@@ -26,6 +26,7 @@ pub mod fork_head_adoption;
 pub mod fork_head_cleanup;
 pub mod history_reapplication;
 pub mod host;
+pub mod observed_clone;
 pub mod other_edit;
 pub mod output_program;
 pub mod principal_status;

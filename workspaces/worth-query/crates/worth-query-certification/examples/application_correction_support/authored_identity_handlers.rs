@@ -7,6 +7,36 @@ use super::{
 use worth_query_host::facade::primary_graph::*;
 pub struct Handler;
 macro_rules! creation {
+    (@image $writer:ident, $target:ident, $image:ident) => {{
+        let parent = $writer
+            .projected_entity(&$target)
+            .map_err(HandlerExecutionDenial::new)?;
+        let entity = $writer
+            .create_entity_in_context(
+                &parent,
+                Number::reference(),
+                WorthQueryApplicationEntityKey::new(&$image.name)
+                    .map_err(HandlerExecutionDenial::new)?,
+            )
+            .map_err(HandlerExecutionDenial::new)?;
+        macro_rules! initialize {
+            ($Field:ty, $value:expr) => {
+                $writer
+                    .initialize_field(&entity, <$Field>::reference(), $value)
+                    .map_err(HandlerExecutionDenial::new)?
+            };
+        }
+        initialize!(Key, $image.name);
+        initialize!(Primary, $image.primary);
+        initialize!(Secondary, $image.secondary);
+        initialize!(ReadEnabled, $image.read_enabled);
+        initialize!(Ceiling, $image.ceiling);
+        initialize!(Calculated, $image.calculated);
+        $writer
+            .create_output::<Created>(&entity)
+            .map_err(HandlerExecutionDenial::new)?;
+        (parent, entity)
+    }};
     (@reference CreateBinding, $writer:ident, $parent:ident, $entity:ident, $input:ident) => {
         $writer.link(AuthoredReference::reference(), format!("authored-reference-{}", $input.name), &$parent, &$entity)
     };
@@ -42,33 +72,7 @@ macro_rules! creation {
             ) -> HandlerResult<Edited, MissingValue> {
                 let image: Restore = ($image)(input);
                 let result = (|| {
-                    let parent = writer
-                        .projected_entity(&target)
-                        .map_err(HandlerExecutionDenial::new)?;
-                    let entity = writer
-                        .create_entity_in_context(
-                            &parent,
-                            Number::reference(),
-                            WorthQueryApplicationEntityKey::new(&image.name)
-                                .map_err(HandlerExecutionDenial::new)?,
-                        )
-                        .map_err(HandlerExecutionDenial::new)?;
-                    macro_rules! initialize {
-                        ($Field:ty, $value:expr) => {
-                            writer
-                                .initialize_field(&entity, <$Field>::reference(), $value)
-                                .map_err(HandlerExecutionDenial::new)?
-                        };
-                    }
-                    initialize!(Key, image.name);
-                    initialize!(Primary, image.primary);
-                    initialize!(Secondary, image.secondary);
-                    initialize!(ReadEnabled, image.read_enabled);
-                    initialize!(Ceiling, image.ceiling);
-                    initialize!(Calculated, image.calculated);
-                    writer
-                        .create_output::<Created>(&entity)
-                        .map_err(HandlerExecutionDenial::new)?;
+                    let (parent, entity) = creation!(@image writer, target, image);
                     creation!(@reference $Binding, writer, parent, entity, input)
                         .map_err(HandlerExecutionDenial::new)
                 })();
@@ -80,6 +84,7 @@ macro_rules! creation {
         }
     };
 }
+mod observed_clone;
 creation!(CreateBinding, Create, |input: &Create| Restore {
     key: input.key.clone(),
     name: input.name.clone(),

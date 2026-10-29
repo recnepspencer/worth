@@ -10,8 +10,7 @@ use worth_query_host::facade::primary_graph::{
 use worth_query_host::facade::product::WorthQueryApplicationCommitReceipt;
 #[path = "consecutive_undo/adjacency.rs"]
 mod adjacency;
-#[path = "consecutive_undo/whole_aspect.rs"]
-mod whole_aspect;
+mod observed_fields;
 
 #[test]
 fn restored_preparation_refuses_an_equal_write_after_its_exact_target() {

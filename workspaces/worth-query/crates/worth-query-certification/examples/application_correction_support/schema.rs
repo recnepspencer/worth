@@ -14,7 +14,7 @@ worth_query_application! {
 worth_query_application_contribution! {
     pub contribution NumericContribution in NumericSchema {
         identity: "numeric-correction.application.v1",
-        corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit, super::source_output_correction::RecordIssued, super::composite_definition_model::CorrectDefinition, super::authored_identity_correction::UndoCreate, super::authored_identity_correction::UndoRetire, super::adjacency_link::ReverseLink],
+        corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit, super::source_output_correction::RecordIssued, super::composite_definition_model::CorrectDefinition, super::authored_identity_correction::UndoCreate, super::authored_identity_correction::UndoRetire, super::adjacency_link::ReverseLink, super::observed_clone::UndoClone],
         members: |schema| {
             let schema = super::composite_definition_model::declare(schema);
             let schema = super::authored_identity_model::declare(schema);
@@ -32,6 +32,8 @@ worth_query_application_contribution! {
                 .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
                 .principal_binding(ActorBinding::reference())
                 .application_query(query::definition())
+                .application_query(query::full::definition())
+                .application_query_binding::<query::full::Binding>()
                 .application_query(super::calculation_query::definition())
                 .application_query_binding::<super::calculation_query::Binding>()
                 .operation(other_edit::EditOther::reference().definition().no_external_effect().no_aftermath().finish())

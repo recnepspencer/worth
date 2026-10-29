@@ -217,6 +217,8 @@ delivery!(RetireBinding, "authored-identity.retire.completion.v1");
 delivery!(RestoreBinding, "authored-identity.restore.completion.v1");
 pub fn feature() -> ApplicationFeatureSpec {
     ApplicationFeatureSpec::root::<NumericSchema, Feature>()
+        .action::<super::observed_clone::Binding, Completion>()
+        .finish_action()
         .action::<CreateBinding, Completion>()
         .finish_action()
         .action::<RetireBinding, Completion>()
