@@ -15,6 +15,7 @@ fn law18_refuses_a_second_implicit_target_and_directory_target() {
 #[test]
 fn law18_workspace_membership_does_not_annex_other_workspaces_or_fixtures() {
     let f = Fixture::new();
+    std::fs::remove_file(f.0.join("governed/Cargo.toml")).unwrap();
     f.write(CONFIG, ". | sample\n");
     f.write(
         "Cargo.toml",

@@ -38,6 +38,7 @@ fn split(court: &str, area: &str, owner: &str) -> String {
 #[test]
 fn equal_product_frontiers_refuse_a_second_court_despite_incidental_dependencies() {
     let f = workspace(&["host", "host-other"]);
+    f.append("Cargo.toml", "exclude=['incidental']\n");
     f.append(
         "host-other/Cargo.toml",
         "[dev-dependencies.incidental]\npath='../incidental'\n",

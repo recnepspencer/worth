@@ -26,7 +26,7 @@ impl Fixture {
         self.write(relative, &format!("{old}\n{text}"));
     }
     pub(super) fn manifest(&self, fields: &str, targets: &str) {
-        self.write("governed/Cargo.toml", &format!("[package]\nname='{COURT}'\nversion='0.1.0'\n{fields}\n[[test]]\nname='{TARGET}'\npath='tests/{TARGET}.rs'\n{targets}\n"));
+        self.write("governed/Cargo.toml", &format!("[workspace]\n[package]\nname='{COURT}'\nversion='0.1.0'\n{fields}\n[[test]]\nname='{TARGET}'\npath='tests/{TARGET}.rs'\n{targets}\n"));
     }
     pub(super) fn entry(&self, source: &str) {
         self.write(&format!("governed/tests/{TARGET}.rs"), source);
@@ -45,6 +45,11 @@ impl Fixture {
         );
     }
     pub(super) fn workspace(&self) {
+        let manifest = std::fs::read_to_string(self.0.join("governed/Cargo.toml")).unwrap();
+        self.write(
+            "governed/Cargo.toml",
+            manifest.strip_prefix("[workspace]\n").unwrap(),
+        );
         self.write(CONFIG, ". | sample\n");
         self.write("Cargo.toml", "[workspace]\nmembers=['governed','app']\n");
     }
