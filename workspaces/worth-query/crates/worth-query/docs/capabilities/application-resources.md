@@ -7,7 +7,7 @@ completion transitions. A transport acknowledgement or a copied completion
 envelope cannot fulfill a resource.
 
 Milestone 9.18.1 Phase 8 is accepted on 2026-10-27. Its
-[ordinary application journeys](../../../worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/mod.rs)
+[ordinary application journeys](../../../worth-query-court-host-native-workflows/tests/worth_query_court_host_native_workflows/certification/application_graph/source_only/capability/resources/journeys/mod.rs)
 and [owned-effect journey](../../../worth-query-certification/examples/observable_workflow/resource_monitor/journey.rs)
 exercise the installed public API and its actual provider/cleanup owners.
 

@@ -26,10 +26,10 @@ On 2026-10-15 the clean historical worktree
 The current equivalent command is:
 
 ```text
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-package-archive-exhaustive --test worth_query_court_package_archive_exhaustive -- exhaustive::package_archive::archive_protocol::archive_stream::all_record_families_cross_one_archive_and_reenter_fresh_query_validation --exact --nocapture
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-package-archive --test worth_query_court_package_archive -- oracle::package_archive::archive_protocol::archive_stream::all_record_families_cross_one_archive_and_reenter_fresh_query_validation --exact --nocapture
 ```
 
-Result: one test passed, zero failed, 75 filtered out; unoptimized test profile.
+Historical result: one test passed, zero failed, 75 filtered out; unoptimized test profile.
 The sole temporary source hook, after the final fresh-validation assertion, was:
 
 ```rust,ignore

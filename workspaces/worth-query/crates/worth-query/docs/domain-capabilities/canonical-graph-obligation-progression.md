@@ -121,7 +121,7 @@ physical rewire and discard/rebuild. The [Native audience court](../../../worth-
 checks that a broad proof cannot lend its physical source access to a narrower
 reader on the same observation. The [logical composition journey](../../../worth-query-court-host-application-graph/tests/worth_query_court_host_application_graph/certification/application_graph/relation_laws/logical/court/mod.rs)
 uses the same source owners for laws, walks, orbits and components. The
-[grant-revocation journey](../../../worth-query-court-host-certification-fast/tests/worth_query_court_host_certification_fast/fast/certification/mod.rs)
+[grant-revocation journey](../../../worth-query-court-host-native-workflows/tests/worth_query_court_host_native_workflows/certification/application_graph/source_only/capability/resources/journeys/mod.rs)
 keeps a derived value available while actual grant revocation denies the action
 before provider access; a derived value cannot replace that grant.
 
@@ -313,10 +313,10 @@ planning identity with the installed query's canonical read graph. It also
 proves the read-only adoption view reports one `GraphRead` row owned by
 Relational and requiring a `GraphReadProduct` terminal.
 
-The executable example is
-`worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/host/canonical_graph_progression/mod.rs`. It deliberately lives
-in the host crate, whose normal dependency graph contains destination packages
-and no `worth-query` monolith dependency.
+The executable example is the
+[host graph-progression court](../../../worth-query-court-host/tests/worth_query_court_host/host/canonical_graph_progression/mod.rs).
+It uses the shared Host testkit to exercise the installed read and obligation
+surfaces.
 
 For application execution, use the ordinary typed host API. Do not reproduce
 the admission sequence shown above in application code; Query performs it as
