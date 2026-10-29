@@ -1828,22 +1828,6 @@ category = "certification-harness"
 reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
 
 [[threading_sites]]
-source = "workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/active_attempts.rs"
-item = "assert_active_attempt_slopes"
-kind = "thread-scope"
-count = 1
-category = "certification-harness"
-reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
-
-[[threading_sites]]
-source = "workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/independent_writers.rs"
-item = "assert_independent_writer_slopes"
-kind = "thread-scope"
-count = 1
-category = "certification-harness"
-reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
-
-[[threading_sites]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/independent_writers.rs"
 item = "assert_sibling_writer_progress_while_combined_is_parked"
 kind = "thread-scope"
@@ -1874,3 +1858,11 @@ kind = "thread-scope"
 count = 1
 category = "certification-harness"
 reason = "Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/parked_publications.rs"
+item = "with_parked_writers"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Fixture-owned actors retain exact Application and World populations while native cutovers advance one at a time; computation remains under installed runtime authority."
+

@@ -42,7 +42,7 @@ crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/tests/
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/tests/operation_control/pre_effect_unwind.rs
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/tests/operation_control/restore_unwind.rs
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/tests/operation_control/snapshot_unwind.rs
-crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/active_attempts.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/parked_publications.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/independent_writers.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/unwind_custody.rs
 crates/worth-signal/ crates/worth-runtime-world/src/branch/reference_test_fixture/owner_inputs.rs
@@ -151,6 +151,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-granular-invalidation/src/certification/granular_invalidation/long_gap.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/active_attempts.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/parked_publications.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/independent_writers.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/model.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/advancement_custody.rs

@@ -75,16 +75,6 @@ fn sibling_writer_commits_while_combined_publication_is_parked() {
 }
 
 #[test]
-fn live_population_does_not_expand_publication_work() {
-    cost::assert_live_publication_slopes();
-}
-
-#[test]
 fn graph_work_capacity_obeys_installed_exact_bound() {
     cost::assert_graph_work_capacity_bounds();
-}
-
-#[test]
-fn active_world_attempt_population_does_not_expand_query_work() {
-    cost::assert_active_attempt_slopes();
 }

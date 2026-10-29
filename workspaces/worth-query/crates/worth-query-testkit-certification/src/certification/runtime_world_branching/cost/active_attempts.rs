@@ -1,5 +1,3 @@
-pub use std::num::NonZeroUsize;
-
 pub use crate::facade::certification::query_probe::{assert_ordinary_work, read};
 pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 
@@ -24,53 +22,11 @@ pub fn assert_active_attempt_slopes() {
                     .expect("installed host call opens")
             })
             .collect::<Vec<_>>();
-        let control = world.application.world_operation_control_for_test();
-        let pause = control.pause_before_product_compare_for_test(NonZeroUsize::new(size).unwrap());
-        let registered = world
-            .application
-            .pause_after_application_attempt_registration_for_test(
-                NonZeroUsize::new(size).unwrap(),
-            );
-        let work = std::thread::scope(|scope| {
-            let attempts = branches
-                .iter()
-                .copied()
-                .enumerate()
-                .map(|(ordinal, branch)| {
-                    let world = &world;
-                    let registered = &registered;
-                    let pause = &pause;
-                    scope.spawn(move || {
-                        let outcome =
-                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                                world.change_input_on_branch_with_ordinal(
-                                    branch,
-                                    &format!("active-attempt-{ordinal}"),
-                                    ordinal as u8 + 1,
-                                )
-                            }));
-                        // Any early rejection or unwind wakes the coordinator and peers.
-                        // Success returns only after both coordinator-owned releases.
-                        registered.release();
-                        pause.release();
-                        outcome.unwrap_or_else(|panic| std::panic::resume_unwind(panic))
-                    })
-                })
-                .collect::<Vec<_>>();
-            let observed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                assert!(registered.wait_for_arrivals());
-                assert_eq!(
-                    world.application.active_application_attempts_for_test(),
-                    size
-                );
-                assert_eq!(
-                    world
-                        .application
-                        .world_active_publication_attempts_for_test(),
-                    0
-                );
-                registered.release();
-                assert!(pause.wait_for_arrivals());
+        let work = super::parked_publications::with_parked_writers(
+            &world,
+            &branches,
+            "active-attempt",
+            || {
                 let actual = world.application.active_application_attempts_for_test();
                 let publishing = world
                     .application
@@ -81,22 +37,8 @@ pub fn assert_active_attempt_slopes() {
                 assert_eq!(actual, size);
                 assert_eq!(publishing, size);
                 read(&world, root).work
-            }));
-            // Release before resuming a coordinator panic: thread::scope joins
-            // its children before the outer pause guards can be dropped.
-            registered.release();
-            pause.release();
-            // Preserve the worker's typed early refusal before a coordinator
-            // arrival assertion can hide the operation that released its peers.
-            for attempt in attempts {
-                attempt
-                    .join()
-                    .expect("active attempt must not panic")
-                    .require_committed()
-                    .expect("each independent active attempt must commit");
-            }
-            observed.unwrap_or_else(|panic| std::panic::resume_unwind(panic))
-        });
+            },
+        );
         assert_ordinary_work(work);
         assert_eq!(*baseline.get_or_insert(work), work, "A={size}");
         for branch in branches {

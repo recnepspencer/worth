@@ -35,3 +35,13 @@ fn public_query_work_is_fixed_across_independent_writers() {
 fn mutation_work_scales_only_with_touched_records() {
     cost::assert_touched_record_slopes();
 }
+
+#[test]
+fn live_population_does_not_expand_publication_work() {
+    cost::assert_live_publication_slopes();
+}
+
+#[test]
+fn active_world_attempt_population_does_not_expand_query_work() {
+    cost::assert_active_attempt_slopes();
+}

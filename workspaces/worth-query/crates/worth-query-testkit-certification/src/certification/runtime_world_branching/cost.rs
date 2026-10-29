@@ -4,6 +4,8 @@ pub mod active_attempts;
 pub mod independent_writers;
 #[path = "cost/live.rs"]
 pub mod live;
+#[path = "cost/parked_publications.rs"]
+mod parked_publications;
 #[path = "cost/timing.rs"]
 pub mod timing;
 #[path = "cost/touched_records.rs"]
