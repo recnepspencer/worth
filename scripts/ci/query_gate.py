@@ -1,31 +1,13 @@
 #!/usr/bin/env python3
 """Fast local gate for the Query line and the crates beneath it.
 
-    python scripts/ci/query_gate.py                  every suite
+    python scripts/ci/query_gate.py                  every non-UI suite
     python scripts/ci/query_gate.py relational,bank  the named suites
     python scripts/ci/query_gate.py --list           suite names
 
-Why it is fast. Running `cargo test -p <one package>` once per package makes
-cargo resolve features again for every selection, so the first-party chain is
-rebuilt for each command. This driver builds each workspace's tests once
-(`cargo test --no-run` over one selection), then runs the produced test
-binaries directly: every listed test by exact name, in chunks, several
-processes at a time. A red test in one binary does not hide the others, and
-rerunning a few suites after a fix costs minutes.
-
-Measured on an 8-core machine: the Bank workspace went from 717 s + 990 s as
-one command per package to 230 s (140 s build, 90 s run) with the same 48
-binaries and 477 tests; the Query packages other than Query Execution went
-from 306 s to 83 s of run time (38 binaries, 4,441 tests).
-
-sccache. When `sccache` is on PATH and no wrapper is configured, it is used.
-It shares third-party crates across workspaces and checkouts (a cold root
-test build went from 272 s to 187 s in a second checkout). Our own crates are
-compiled incrementally and are not cached. Two things defeat it: sccache
-refuses to run with CARGO_INCREMENTAL=1 in the environment (the driver drops
-that variable; the profile default keeps our crates incremental), and it
-hashes every CARGO_* variable into its key, so a CARGO_TARGET_DIR that
-differs per checkout prevents sharing between checkouts.
+Build each workspace's tests once with `cargo test --no-run`, then run every
+listed case by exact name. Cost-class paths govern isolation; independent
+chunks run concurrently, and compiler sessions run sequentially.
 
 Results go to target/query-gate (or --out): <suite>.json and one log per
 build, chunk and command. The exit code is 0 only when every suite is green.
@@ -46,89 +28,15 @@ from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment
 
-ROOT = Path(__file__).resolve().parents[2]
-QUERY = "workspaces/worth-query/Cargo.toml"
-FIXTURE = (
-    "workspaces/worth-query/crates/worth-query-certification/fixtures/"
-    "consumer_entry/Cargo.toml"
+from query_gate_courts import (
+    BANK, BEFORE, BOUNDARY, FIXTURE, FIXTURE_PACKAGES, GROUPS, LOWER, QUERY,
+    QUERY_PUBLIC, ROOT, ROOT_TESTS, TEST_SUITES, UI, packages,
 )
-BANK = "workspaces/worth-query-bank-world/Cargo.toml"
-UI = "workspaces/worth-ui/Cargo.toml"
-BOUNDARY = "tools/boundary-check/Cargo.toml"
-
-def packages(*names):
-    return [part for name in names for part in ("-p", name)]
 
 
-LOWER = ("worth-relational", "worth-execution", "worth-signal",
-         "worth-runtime-bridge", "worth-runtime-world")
-QUERY_PUBLIC = ("worth-query-execution", "worth-query-publication", "worth-query",
-                "worth-query-host")
-FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
-                    "worth-query-consumer-root")
+def in_class(name, cost_class):
+    return cost_class in name.split("::")[:-1]
 
-# One test build per group. Every suite of a group takes its binaries from
-# the same cargo selection, so the first-party chain is compiled once.
-ROOT_TESTS = [
-    *packages("worth-relational", "worth-signal", "worth-execution",
-              "worth-signal-wasm", "worth-server"),
-    "--lib", "--tests",
-]
-GROUPS = {
-    "root": ROOT_TESTS,
-    "query": ["--manifest-path", QUERY, "--workspace", "--lib", "--tests"],
-    "bank": ["--manifest-path", BANK, "--workspace", "--lib", "--bins", "--tests"],
-    # Rust 1.94 repeatedly ICEs in this external schema host's incremental
-    # evaluate_obligation cache. Keep the workaround in its build owner;
-    # ordinary Query and Bank builds retain their incremental settings.
-    "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES),
-                "--lib", "--bins", "--config", "build.incremental=false"],
-    "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
-}
-
-def lib_of(*names):
-    return lambda binary: binary["package"] in names and binary["lib"]
-
-
-def package_of(*names):
-    return lambda binary: binary["package"] in names
-
-def everything(_binary):
-    return True
-
-
-# suite -> (group, which binaries, tests per process, processes at once)
-TEST_SUITES = {
-    "relational": ("root", package_of("worth-relational"), 150, 4),
-    "signal": ("root", package_of("worth-signal", "worth-signal-wasm"), 150, 4),
-    "execution": ("root", package_of("worth-execution"), 150, 2),
-    "query-execution": ("query", lib_of("worth-query-execution"), 80, 4),
-    "query-rest": (
-        "query", lambda binary: not lib_of("worth-query-execution")(binary), 150, 1,
-    ),
-    # Topology cases get individual processes; other fixture owners use normal chunks.
-    "fixture": ("fixture", everything, 150, 16),
-    "ui": ("ui", everything, 100, 2),
-    "bank": ("bank", everything, 150, 1),
-}
-# Bank tests spawn the rail binary; a fresh target folder does not have it.
-BEFORE = {
-    "bank": [("bank-build-rail",
-              ["cargo", "build", "--manifest-path", BANK, "-p", "bank-external-rail"])],
-}
-
-# Tests that read a process-wide allocation counter. Their own comments ask
-# for a serial lane: beside any other test thread they count its allocations.
-PROCESS_WIDE_PROBES = (
-    "managed_run::tests::safe_point_observation::",
-    "managed_run::tests::step_cost_bound::",
-    "managed_run::tests::yield_cost_bound::",
-    "read_set::source_facts::merging::",
-    "tests::application_attempt::predecode_admission::",
-    # The terminal-refusal fixture must use zero days, a process-wide counter
-    # key also used by other document-retention scenarios.
-    "producer_predicate_checkpoint::ordinary_source::terminal_unavailable::",
-)
 
 # Tests that open a trybuild session. trybuild builds every crate's cases in
 # one shared project under target/tests/trybuild, and its cross-process lock
@@ -138,19 +46,11 @@ PROCESS_WIDE_PROBES = (
 # group runs them; check_trybuild_test_group.py owns which tests those are.
 TRYBUILD_SESSIONS = session_tests()[0]
 
-# Binaries whose every case gets its own process, as nextest gives it. Topology
-# cases touch process-global providers, counters or ledgers. Execution's unit
-# cases construct the process-unique ExecutionAuthority, several with their own
-# configuration ("runs in its own process"), so two in one process race to
-# AlreadyConstructed and poison the shared test lock.
+# The root Execution owner still needs one authority configuration per process.
+# Its migration is owned by Track A1. Governed fixture tests use serial paths.
 PROCESS_PER_CASE = {
-    ("fixture", "worth-query-topology-entry"),
     ("execution", "worth-execution"),
 }
-
-FIXTURE_CPU_EXCLUSIVE = (
-    "checkpoint_recovery::parallel_history::matrix::table::required_wave_full_declared_matrix"
-)
 
 def clippy(*selection):
     return ["cargo", "clippy", *selection, "--all-targets", "--", "-D", "warnings"]
@@ -194,8 +94,7 @@ COMMAND_SUITES = {
     "lint-lower": [("clippy-lower", clippy(*packages(*LOWER)))],
     "lint-query": [
         ("clippy-query",
-         clippy("--manifest-path", QUERY,
-                *packages(*QUERY_PUBLIC, "worth-query-certification"))),
+         clippy("--manifest-path", QUERY, "--workspace")),
     ],
     "lint-fixture": [
         ("clippy-fixture", clippy("--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES))),
@@ -248,7 +147,9 @@ COMMAND_ENV = {
 
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "query-execution", "query-rest",
-         "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
+         "query-process", "query-exhaustive", "fixture", "bank", "bank-process", "doc-lower", "doc", "wasm", "boundary", "extra"]
+ORDER += [name for name in TEST_SUITES if name.startswith(("query-", "bank-"))
+          and name not in ORDER and not name.endswith("-scale")]
 
 
 class Gate:
@@ -256,6 +157,7 @@ class Gate:
         self.out = out
         self.env = environment(ROOT)
         self.built = {}
+        self.prepared = set()
 
     def command(self, label, argv):
         log = self.out / f"{label}.log"
@@ -294,6 +196,8 @@ class Gate:
         return self.built[group]
 
     def chunk(self, suite, index, binary, names, extra=()):
+        if suite.endswith("-scale"):
+            extra = (*extra, "--ignored")
         log = self.out / f"{suite}-chunk-{index:03}.log"
         env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
         started = time.time()
@@ -316,9 +220,12 @@ class Gate:
     def tests(self, suite):
         group, want, size, workers = TEST_SUITES[suite]
         for label, argv in BEFORE.get(suite, []):
+            if label in self.prepared:
+                continue
             row = self.command(label, argv)
             if row["exit"] != 0:
                 return {"suite": suite, "build": "FAILED", "log": row["log"], "ok": False}
+            self.prepared.add(label)
         binaries, build_seconds, build_log = self.build(group)
         if binaries is None:
             return {"suite": suite, "build": "FAILED", "log": build_log, "ok": False}
@@ -329,29 +236,34 @@ class Gate:
                 whole.append(binary)
                 continue
             env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
-            listed = subprocess.run(
+            discovery = subprocess.run(
                 [binary["exe"], "--list", "--format", "terse"], cwd=binary["cwd"],
                 env=env, capture_output=True, text=True, encoding="utf-8",
                 errors="replace",
-            ).stdout
-            names = sorted(line[: -len(": test")] for line in listed.splitlines()
+            )
+            if discovery.returncode:
+                log = self.out / f"{suite}-{binary['package']}-{binary['target']}-list.log"
+                log.write_text(discovery.stdout + discovery.stderr, encoding="utf-8")
+                return {"suite": suite, "ok": False, "listing": "FAILED", "log": log.name}
+            names = sorted(line[: -len(": test")] for line in discovery.stdout.splitlines()
                            if line.endswith(": test"))
             listing.append((binary["package"], binary["target"], len(names)))
             total += len(names)
+            exclusive_names = [n for n in names
+                               if group == "fixture" and in_class(n, "exhaustive")]
+            exclusive += [(binary, [name], ()) for name in exclusive_names]
+            names = [n for n in names if n not in set(exclusive_names)]
             if (suite, binary["package"]) in PROCESS_PER_CASE:
-                shared += [(binary, [name], ()) for name in names
-                           if name != FIXTURE_CPU_EXCLUSIVE]
-                if FIXTURE_CPU_EXCLUSIVE in names:
-                    exclusive.append((binary, [FIXTURE_CPU_EXCLUSIVE], ()))
+                shared += [(binary, [name], ()) for name in names]
                 continue
-            probes = [n for n in names
-                      if any(mark in n for mark in PROCESS_WIDE_PROBES)
+            probes = [n for n in names if in_class(n, "compile_fail")
                       or n.rsplit("::", 1)[-1] in TRYBUILD_SESSIONS]
-            rest = [n for n in names if n not in set(probes)]
+            isolated = [n for n in names if in_class(n, "serial") and n not in probes]
+            rest = [n for n in names if n not in set(probes + isolated)]
             shared += [(binary, rest[at:at + size], ()) for at in range(0, len(rest), size)]
-            if probes:
-                alone.append((binary, probes, ("--test-threads=1",)))
-            # (the probes run after every shared chunk has ended)
+            shared += [(binary, [name], ()) for name in isolated]
+            alone += [(binary, [name], ()) for name in probes]
+            # Compiler sessions run only after every independent chunk has finished.
         jobs = list(enumerate(
             shared + alone + [(binary, [], ()) for binary in whole] + exclusive
         ))
@@ -379,7 +291,8 @@ class Gate:
         }
 
     def commands(self, suite):
-        rows = [self.command(label, argv) for label, argv in COMMAND_SUITES[suite]]
+        rows = [self.command(label, argv) for label, argv in COMMAND_SUITES[suite]
+                if label not in ("check-ui-workspace", "clippy-ui-binding")]
         return {
             "suite": suite, "ok": all(row["exit"] == 0 for row in rows),
             "failed": [row["name"] for row in rows if row["exit"] != 0],
@@ -400,10 +313,10 @@ def main():
     parser.add_argument("--list", action="store_true", help="print suite names")
     args = parser.parse_args()
     if args.list:
-        print("\n".join(ORDER))
+        print("\n".join(dict.fromkeys([*ORDER, *TEST_SUITES, *COMMAND_SUITES])))
         return 0
     suites = args.suites.split(",")
-    unknown = [name for name in suites if name not in ORDER]
+    unknown = [name for name in suites if name not in TEST_SUITES and name not in COMMAND_SUITES]
     if unknown:
         parser.error("unknown suite: " + ", ".join(unknown))
     args.out.mkdir(parents=True, exist_ok=True)

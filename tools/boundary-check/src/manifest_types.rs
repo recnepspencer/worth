@@ -37,11 +37,13 @@ pub(crate) struct Road1Package {
 
 #[derive(Deserialize)]
 pub(crate) struct CargoMetadata {
+    pub(crate) workspace_members: Vec<String>,
     pub(crate) packages: Vec<CargoMetadataPackage>,
 }
 
 #[derive(Deserialize)]
 pub(crate) struct CargoMetadataPackage {
+    pub(crate) id: String,
     pub(crate) name: String,
     pub(crate) manifest_path: String,
     pub(crate) dependencies: Vec<CargoMetadataDependency>,
@@ -50,6 +52,7 @@ pub(crate) struct CargoMetadataPackage {
 #[derive(Deserialize)]
 pub(crate) struct CargoMetadataDependency {
     pub(crate) name: String,
+    pub(crate) kind: Option<String>,
     pub(crate) req: String,
     #[serde(default)]
     pub(crate) features: Vec<String>,

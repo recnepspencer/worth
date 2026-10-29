@@ -67,6 +67,7 @@ pub(crate) fn run(
         crate::consumer_docs::validate(&root)
     }));
     diagnostics.extend(crate::one_build::validate(&root));
+    diagnostics.extend(crate::test_topology::validate(&root));
     diagnostics.extend(crate::sealed_sources::validate(&root));
     diagnostics.extend(scan_profile::measure("validate_hook_authority", || {
         validate_hook_authority(&root)

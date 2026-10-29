@@ -1184,7 +1184,7 @@ cleanup detail requires both Count and Explanation influence. The Host provider
 and progression surface is implemented with its actual provider and cleanup journeys.
 
 Qualification uses the actual World/Bridge custody courts, one closed compile-fail
-case, five [Resource journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs),
+case, five [Resource journeys](../../workspaces/worth-query/crates/worth-query-worlds/src/certification/application_graph/source_only/capability/resources/journeys.rs),
 the existing ordinary-query revocation control and the
 [combined workflow](../../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs).
 The integrated tree repeats those six selected application cases and the combined
@@ -1470,8 +1470,8 @@ is now required milestone scope by the 2026-10-26 extension.
 **Accepted, 2026-10-27.** The installed Decl/Host route captures exact disclosed
 entity and physical-relation generations from complete one-shot reads, then pages
 canonical changes at a pinned product with fresh SubjectRead and independently
-governed history metadata. The [facade audit journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/document_retention_model/record_history/court.rs)
-and [physical occurrence journey](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/history/court.rs)
+governed history metadata. The [facade audit journeys](../../workspaces/worth-query/crates/worth-query-worlds/src/certification/application_graph/document_retention_model/record_history/court.rs)
+and [physical occurrence journey](../../workspaces/worth-query/crates/worth-query-worlds/src/certification/application_graph/relation_laws/history/court.rs)
 qualify equal-value occurrences, fork/sibling exclusion, ordered/filtered physical
 IDs, deletion/replacement, current-security revoke/regrant, typed retired gaps,
 cancellation and final Native/World release. Native and World owner courts qualify

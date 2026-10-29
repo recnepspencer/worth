@@ -29,6 +29,7 @@ mod source_rules;
 mod source_syntax;
 mod source_workers;
 mod subworkspace_rules;
+mod test_topology;
 
 use crate::diagnostics::{render_human, render_json};
 use crate::snapshots::SnapshotMode;

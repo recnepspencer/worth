@@ -86,9 +86,31 @@ Use these laws with [QA Review Guide](qa_review_guide.md).
 
 ## Cost and integrity
 
-18. Test topology is performance architecture. In Rust, group scenario families
-    into a small number of intentional integration targets and avoid duplicated
-    compiler sessions and dependency graphs.
+18. Test topology is performance architecture. In governed workspaces, product
+    crates contain unit tests in `src`, never a `tests/` directory. Libraries
+    without unit tests set `[lib] test = false`. Integration tests belong to
+    `<workspace>-court-<boundary>-<class>` crates with no product code, one class
+    declared in `package.metadata.worth.court`, and a canonical binary
+    `tests/<court_snake_name>.rs`. Choose the narrowest entry boundary; journeys
+    belong to their outermost entry. Shared fixtures live in the workspace's
+    worlds crate, named for the worlds it builds; products consume it only as a
+    dev dependency. Classes are `fast` (in-process),
+    `process` (spawn or filesystem durability), `exhaustive` (sweeps/oracles),
+    `scale` (ignored scale/timing), and `compile_fail` (serial compiler sessions;
+    one `<workspace>-court-compile-fail`). Tests needing process isolation use
+    `serial::` inside their class; serial is not a court class. Select courts by
+    class and isolation by path, never literal name lists. Fast courts run in
+    ordinary lanes; process in integration, exhaustive at landing, scale only
+    when scheduled. At planning time, courts below 10 tests merge into the
+    nearest dependent boundary's court of the same class, using Cargo metadata;
+    keep the original boundary module. With no dependent court they stay. Split
+    courts or worlds above 120 seconds of clean own compilation along requirement
+    families or owner modules; `report_court_build_times.py` supplies the evidence.
+    Preserve moved names, bodies, ignore status and workspace name multisets;
+    measure before/after build time and executables once, stating cache conditions.
+    New requirement tests start with their requirement identifier. Boundary-check
+    governs the workspaces in `test-workspaces.txt`; distinct executable exceptions
+    require explicit targets and reasons in `test-binary-exceptions.txt`.
 
 19. Assign tests to focused, CI, or scheduled lanes. Expensive suites need a
     runtime or resource budget. Run cheap discovery, configuration, fixture,

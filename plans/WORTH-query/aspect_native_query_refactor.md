@@ -1,5 +1,8 @@
 # WORTH Query Aspect-Native Query Refactor
 
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 > Status: Active implementation spec
 >
 > Roadmap parent: [worth_query_roadmap.md](worth_query_roadmap.md)
@@ -3579,10 +3582,7 @@ claims.
   worth-query --test aspect_native_query_compile_fail`, focused `cargo test
   -p worth-query bridge_backed_verification_execution --lib`, focused `cargo
   test -p worth-query probe_existing --lib`, focused `cargo test -p
-  worth-query live --lib`, focused `cargo test -p worth-query --test
-  public_bridge_runtime_bootstrap`, focused `cargo test -p worth-query --test
-  graph_composition_public_bridge`, focused `cargo test -p worth-query --test
-  graph_composition_public_bridge_existing`, line-count checks, and focused
+  worth-query live --lib`, focused `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, focused `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge::`, focused `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge_existing::`, line-count checks, and focused
   scans proving stateful/public bridge runtime support no longer mentions
   `serde_json`, bare `Value`, `json!`, `aspect_value_from_json`, or external row
   projection decoders.
@@ -4622,7 +4622,7 @@ claims.
   aspect_native_query_compile_fail`, focused `cargo test -p worth-query
   probe_existing --lib`, focused `cargo test -p worth-query verify_existing
   --lib`, focused `cargo test -p worth-query stop_class --lib`, focused `cargo
-  test -p worth-query --test public_bridge_runtime_bootstrap`, line-count
+  test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, line-count
   checks, and focused scans proving the old terminal denied-aspect conversion
   helper is gone.
 
@@ -5003,8 +5003,7 @@ claims.
   `cargo check -p worth-query --tests`, green `cargo check -p worth-query`,
   `TRYBUILD=overwrite` and normal `cargo test -p worth-query --test
   aspect_native_query_compile_fail`, focused `cargo test -p worth-query
-  workspace_declaration --lib`, focused `cargo test -p worth-query --test
-  in_memory_test_backend_facade`, slice-specific line-cap checks, and a
+  workspace_declaration --lib`, focused `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::in_memory_test_backend_facade::`, slice-specific line-cap checks, and a
   targeted literal-builder scan proving only the intentional negative fixture
   still uses the removed string-shaped builder calls.
 - Six pre-existing oversized mutation test files grew slightly from explicit
@@ -5711,7 +5710,7 @@ claims.
   --tests`, `cargo fmt -p worth-query`, normal `cargo test -p worth-query
   --test aspect_native_query_compile_fail`, focused `cargo test -p worth-query
   verify_existing --lib`, focused `cargo test -p worth-query probe_existing
-  --lib`, `cargo test -p worth-query --test public_bridge_runtime_bootstrap`,
+  --lib`, `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`,
   and touched-file line counts.
 - This is a Law 41 mechanical-enforcement slice: an adapter may perform the
   verification act, but only the runtime can transition admitted native aspect
@@ -5840,7 +5839,7 @@ claims.
   `runtime::tests::intent_admission::execution::batch::batch_write_delegates_to_canonical_admission_and_execution_handoff`,
   focused graph descriptor validation test
   `runtime::mutation::graph_composition::touch_descriptor::tests::descriptor_validation::mismatched_program_command_collection_is_denied_with_matching_counts`,
-  `cargo test -p worth-query --test public_bridge_runtime_bootstrap`, scans
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, scans
   for the removed accessors, and touched-file line counts.
 - This is a Law 41 mechanical-enforcement slice: command and
   backend-admissible mutation collection state now flows as target identity
@@ -5901,7 +5900,7 @@ claims.
   `cargo test -p worth-query --test aspect_native_query_compile_fail`,
   focused `cargo test -p worth-query mutation::aspect_crud --lib`, focused
   `cargo test -p worth-query mutation::aspect_preview --lib`,
-  `cargo test -p worth-query --test public_submission_lane_replacements`,
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_submission_lane_replacements::`,
   final green `cargo check -p worth-query --tests`, removed-alias scans, and
   touched-file line counts. Focused `cargo test -p worth-query
   mutation::delete --lib` is currently red in
@@ -6007,7 +6006,7 @@ claims.
   green normal `cargo test -p worth-query --test
   aspect_native_query_compile_fail`, focused green
   `cargo test -p worth-query mutation::aspect_crud --lib`, green
-  `cargo test -p worth-query --test public_bridge_runtime_bootstrap`, removed
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, removed
   alias scans, and touched-file line counts.
 - This is a Law 41 enforcement slice: aspect/touch proof can still be rendered
   into digest/report text, but consumers now cross a named admitted-proof or
@@ -6212,7 +6211,7 @@ claims.
 - Verification covered green `cargo fmt -p worth-query`, green
   `cargo check -p worth-query --tests`, focused green
   `cargo test -p worth-query test_backend --lib`, green
-  `cargo test -p worth-query --test in_memory_test_backend_facade`, and green
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::in_memory_test_backend_facade::`, and green
   normal `cargo test -p worth-query --test aspect_native_query_compile_fail`.
 - This is a Law 41 proof-retention slice: test backend schema admission now
   consumes weaker authoring text and stores the stronger native aspect touch
@@ -6782,11 +6781,9 @@ claims.
   still exposes `terminal_aspect_path_projection()` for reporting assertions,
   but that projection no longer participates in the verification map key.
 - Verification covered green `cargo fmt -p worth-query`, green
-  `cargo check -p worth-query --tests`, focused green `cargo test -p
-  worth-query --test public_bridge_runtime_bootstrap`, focused green
-  `cargo test -p worth-query --test graph_composition_public_bridge`, focused
-  green `cargo test -p worth-query --test
-  graph_composition_public_bridge_existing`, and scans showing the old
+  `cargo check -p worth-query --tests`, focused green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, focused green
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge::`, focused
+  green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge_existing::`, and scans showing the old
   tuple-string existing-truth key plus raw-string seed calls removed.
 - This is a test-harness Law 41 cleanup: the public bridge certification
   harness now models existing-truth verification over admitted aspect touches
@@ -6821,12 +6818,9 @@ claims.
   by the admitted touch. Terminal dotted strings no longer participate in
   public bridge row mutation.
 - Verification covered green `cargo fmt -p worth-query`, green
-  `cargo check -p worth-query --tests`, focused green `cargo test -p
-  worth-query --test public_bridge_runtime_bootstrap`, focused green
-  `cargo test -p worth-query --test graph_composition_public_bridge`, focused
-  green `cargo test -p worth-query --test
-  graph_composition_public_bridge_existing`, focused green `cargo test -p
-  worth-query --test public_submission_lane_replacements`, and a scan showing
+  `cargo check -p worth-query --tests`, focused green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, focused green
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge::`, focused
+  green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge_existing::`, focused green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_submission_lane_replacements::`, and a scan showing
   `terminal_aspect_path_projection`, string-path setters/removers, and
   `admitted_touch_digest_part()` are gone from
   `tests/support/public_bridge_runtime/external_row.rs`.
@@ -6908,8 +6902,7 @@ claims.
 - Verification covered green `cargo fmt -p worth-query`, green
   `cargo check -p worth-query --tests`, focused green `cargo test -p
   worth-query batch --lib`, focused green `cargo test -p worth-query
-  inspection --lib`, focused green `cargo test -p worth-query --test
-  public_submission_lane_replacements`, and a scan showing digest-keyed
+  inspection --lib`, focused green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_submission_lane_replacements::`, and a scan showing digest-keyed
   touched-aspect insertions removed from the converted runtime files.
 - This is a Law 41 mechanical enforcement slice for batch/inspection
   aggregation: touch identity is now a native set membership fact, not a string
@@ -6926,8 +6919,7 @@ claims.
 - Verification covered green `cargo fmt -p worth-query`, green
   `cargo check -p worth-query --tests`, focused green `cargo test -p
   worth-query preview --lib`, focused green `cargo test -p worth-query effect
-  --lib`, focused green `cargo test -p worth-query --test
-  public_submission_lane_replacements`, and a scan showing the old
+  --lib`, focused green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_submission_lane_replacements::`, and a scan showing the old
   `BTreeMap<String, Vec<WORTHQueryAspectTouch>>` preview routing shape removed.
 - This is a scoped Law 41 routing cleanup: aspect-touch propagation across
   preview live and computed surfaces is now indexed by typed Query artifact
@@ -6982,8 +6974,7 @@ claims.
   fixtures, but the assertion key is now the same native field-path carrier
   used by retained rows.
 - Verification covered green `cargo fmt -p worth-query`, green
-  `cargo check -p worth-query --tests`, focused green `cargo test -p
-  worth-query --test in_memory_test_backend_facade`, and a crate scan showing
+  `cargo check -p worth-query --tests`, focused green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::in_memory_test_backend_facade::`, and a crate scan showing
   the old `Vec<(String, Option<AspectValue>)>` shape removed.
 - This closes a test-harness Law 41 leak where bridge/in-memory row equality
   was being proven against string field labels instead of native field-path
@@ -7082,9 +7073,8 @@ claims.
   of explicitly allocating `native_aspect_key().as_str().to_string()`.
 - Verification covered green `cargo fmt -p worth-query`, green
   `cargo check -p worth-query --tests`, focused green `cargo test -p
-  worth-query test_backend --lib`, focused green `cargo test -p worth-query
-  --test public_bridge_runtime_bootstrap`, focused green `cargo test -p
-  worth-query --test public_submission_lane_replacements`, and focused green
+  worth-query test_backend --lib`, focused green `cargo test -p worth-query-court-host-fast
+  query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, focused green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_submission_lane_replacements::`, and focused green
   `cargo test -p worth-query bridge_backed_verification_execution --lib`.
 - Source scans now show no
   `native_aspect_key().as_str().to_string()`,
@@ -7469,8 +7459,8 @@ claims.
   `native_external_field_path_for_touch(...)`, which is the test backend's
   explicit external-row compatibility boundary.
 - Verification covered green `cargo fmt -p worth-query`, green
-  `cargo test -p worth-query --test public_bridge_runtime_bootstrap`, green
-  `cargo test -p worth-query --test runtime_backed_read_bootstrap`, green
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, green
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::runtime_backed_read_bootstrap::`, green
   focused `cargo test -p worth-query live_grouped --lib`, green focused
   `cargo test -p worth-query runtime::tests::live --lib`, green
   `cargo check -p worth-query --tests`, and a targeted scan showing the old
@@ -8111,7 +8101,7 @@ claims.
 - Verification covered green `cargo fmt -p worth-query`, green
   `cargo check -p worth-query --tests`, green focused
   `cargo test -p worth-query batch --lib`, green
-  `cargo test -p worth-query --test graph_composition_public_bridge`, and
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge::`, and
   green `cargo test -p worth-query --test aspect_native_query_compile_fail`.
 - This is a Law 41 backend-boundary cleanup: affected live-view identity now
   crosses the backend/source-adapter boundary as artifact target proof, while
@@ -8136,11 +8126,11 @@ claims.
 - Verification covered green `cargo fmt -p worth-query`, green
   `cargo check -p worth-query --tests`, green
   `cargo test -p worth-query preview --lib`, green
-  `cargo test -p worth-query --test public_bridge_runtime_bootstrap`, green
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, green
   `cargo test -p worth-query intent_admission --lib`, green
-  `cargo test -p worth-query --test graph_composition_public_bridge`, green
-  `cargo test -p worth-query --test graph_composition_public_bridge_existing`,
-  green `cargo test -p worth-query --test public_submission_lane_replacements`,
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge::`, green
+  `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::graph_composition_public_bridge_existing::`,
+  green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_submission_lane_replacements::`,
   and green `cargo test -p worth-query --test
   aspect_native_query_compile_fail`.
 - A focused residue scan over `crates/worth-query/src` and
@@ -8444,8 +8434,7 @@ claims.
   consumer-kit backend.
 - Verification covered green `cargo fmt -p worth-query`, green `cargo check
   -p worth-query --tests`, green focused `cargo test -p worth-query
-  test_backend --lib`, green `cargo test -p worth-query --test
-  public_bridge_runtime_bootstrap`, and green `cargo test -p worth-query
+  test_backend --lib`, green `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`, and green `cargo test -p worth-query
   --test aspect_native_query_compile_fail`.
 - Focused scans found no remaining `live_views: BTreeMap<String, ...>` in the
   consumer-kit test backend, runtime source adapter support, or public bridge
@@ -8551,8 +8540,7 @@ claims.
 - Verification covered green `cargo fmt -p worth-query`, green `cargo check
   -p worth-query --tests`, green focused `cargo test -p worth-query
   runtime_api_stabilization --lib`, green focused `cargo test -p worth-query
-  intent_admission --lib`, and green focused `cargo test -p worth-query --test
-  public_bridge_runtime_bootstrap`.
+  intent_admission --lib`, and green focused `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::public_bridge_runtime_bootstrap::`.
 - Focused scans found no remaining
   `live_views: BTreeMap<String, WORTHQueryMutationTargetCollectionIdentity>`,
   no stateful bridge lookup by `target.terminal_view_name_projection()`, and no

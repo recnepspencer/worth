@@ -74,7 +74,7 @@ a redundant Cartesian test matrix.
 
 ### Static Bank notice first
 
-Extend `bank-courtroom/tests/transport_process_courtroom.rs` and its scenario
+Extend `worth-query-bank-court-user-node-process/tests/worth_query_bank_court_user_node_process/process/courtroom/transport_process_courtroom/mod.rs` and its scenario
 modules. Use `TransportProcessWorld`, the authenticated specialist user node,
 actual HTTP adapter/server and separate rail process. Commit a lawful estate
 death notice through `/v1/estate/notify-death` with `CommitThenLoseResponse`.

@@ -1,5 +1,8 @@
 # Bridge Truth Identity Exposure Report
 
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 > First Phase 2 compiler-discovery run for
 > `milestone-9.6-bridge-truth-identity-lowering.md`.
 
@@ -686,7 +689,7 @@ Verification:
 - `cargo check -p worth-query --lib` passed.
 - `cargo test -p worth-query subscription::tests::declaration::bridge_parity --lib` passed.
 - `cargo test -p worth-query subscription::tests::active::active_lifecycle --lib` passed.
-- `cargo test -p worth-query --test causal_inspection_public_dx` passed.
+- `cargo test -p worth-query-court-host-fast query::public_declarative_journeys::causal_inspection_public_dx::` passed.
 - `cargo test -p worth-query --test phase_boundaries_compile_fail` passed.
 - Captured logs:
   `plans/worth-query/goal_mode_subscription_support_typed_check.txt`,

@@ -1,5 +1,8 @@
 # Milestone 9.16 Runtime Phase 7 Closure Ledger
 
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 **Owner:** Runtime Hardening Track, Phase 7
 **Canonical specification:** `milestone-9.16.md`
 **Status:** Runtime Phase 7 is closed through Phase 7.7 Gate D. Milestone
@@ -221,7 +224,7 @@ Query product.
 - `cargo test -p worth-relational authorization:: -- --format terse`
   (`11 passed`)
 - `cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml
-  -p bank-domain --test estate_capability_installation -- --format terse`
+  -p worth-query-bank-court-domain-fast domain::domain_contracts::estate_capability_installation:: -- --format terse`
   (`11 passed`)
 - `cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml
   -p bank-server estate_capability_admission -- --format terse` (`6 passed`)
@@ -465,7 +468,7 @@ Corrective verification:
   tests::query::indexes::bounded_relation_join_lookup -- --nocapture`: all
   `4` exact-endpoint, generation/overflow, substituted-relation, and missing-
   candidate parity tests passed;
-- `cargo test -p worth-query-execution capability_delegation_performance --
+- `cargo test -p worth-query-execution capability_delegation_performance
   --nocapture`: all `4` exact slope, both unrelated-population axes, and
   exact-pair overflow tests passed;
 - the original Bank same-estate reproducer and the complete `10`-test Bank

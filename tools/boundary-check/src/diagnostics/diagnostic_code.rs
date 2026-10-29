@@ -30,6 +30,7 @@ pub(crate) enum DiagnosticCode {
     Bc7013CertificationConstructionSeal,
     Bc7012ControlSeal,
     Bc9001OneBuild,
+    Bc9002TestTopology,
     Bc7008RequestConstruction,
     Bc7009CanonicalOrder,
     Bc7010AllocationDenialPattern,
@@ -48,7 +49,7 @@ pub(crate) enum DiagnosticCode {
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 41] = [
+    pub(crate) const ALL: [Self; 42] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -76,6 +77,7 @@ impl DiagnosticCode {
         Self::Bc7013CertificationConstructionSeal,
         Self::Bc7012ControlSeal,
         Self::Bc9001OneBuild,
+        Self::Bc9002TestTopology,
         Self::Bc7008RequestConstruction,
         Self::Bc7009CanonicalOrder,
         Self::Bc7010AllocationDenialPattern,
@@ -121,6 +123,7 @@ impl DiagnosticCode {
             Self::Bc7013CertificationConstructionSeal => "BC7013_CERTIFICATION_CONSTRUCTION_SEAL",
             Self::Bc7012ControlSeal => "BC7012_CONTROL_SEAL",
             Self::Bc9001OneBuild => "BC9001_ONE_BUILD",
+            Self::Bc9002TestTopology => "BC9002_TEST_TOPOLOGY",
             Self::Bc7008RequestConstruction => "BC7008_REQUEST_CONSTRUCTION",
             Self::Bc7009CanonicalOrder => "BC7009_CANONICAL_ORDER",
             Self::Bc7010AllocationDenialPattern => "BC7010_ALLOCATION_DENIAL_PATTERN",
@@ -158,6 +161,7 @@ impl DiagnosticCode {
             Self::Bc7007ThreadingBoundary => "tools/boundary-check/config/road1.toml [[threading_sites]]; parallel work belongs in worth-execution, while every non-compute thread needs an exact category and reason",
             Self::Bc7013CertificationConstructionSeal => "tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths",
             Self::Bc7012ControlSeal => "tools/boundary-check/src/control_seal.rs; Law 1, reach: control references belong only to owners and closed test/certification callers",
+            Self::Bc9002TestTopology => "tools/boundary-check/config/test-workspaces.txt; tests use one cost-classed integration target; executable exceptions require test-binary-exceptions.txt",
             Self::Bc9001OneBuild => "tools/boundary-check/src/one_build.rs; remove the build predicate or feature declaration and use an owned inert control",
             Self::Bc7008RequestConstruction => "tools/boundary-check/config/road1.toml [[request_constructor_denials]]; borrow the caller request or construct backing only at the declared policy-taking host entry",
             Self::Bc7009CanonicalOrder => "tools/boundary-check/src/source_rules/analysis/canonical_order.rs; order Query Execution by declared identity; named TypeId containers are membership only",

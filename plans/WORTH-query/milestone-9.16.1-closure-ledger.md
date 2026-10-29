@@ -1,5 +1,8 @@
 # Milestone 9.16.1 Canonical Graph Progression Closure Ledger
 
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 **Owner:** Milestone 9.16.1
 **Canonical specification:** `milestone-9.16.1.md`
 **Status:** Closed — Phases 1-5 are implemented and every named authority,
@@ -71,8 +74,7 @@ requirement statuses above.
   passes 404 tests. The governed-live fixture uses its own exactly installed
   operation, while the hostile `TouchAccount` fixture retains no undeclared
   label authority.
-- `cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p
-  bank-domain --test estate_capability_installation --quiet` passes 11 real
+- `cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p worth-query-bank-court-domain-fast domain::domain_contracts::estate_capability_installation:: --quiet` passes 11 real
   consumer tests without granting execution authority from installation alone.
 - The warm-path source guard proves no query/operation obligation
   reconstruction helper and no direct SHA implementation in the installed

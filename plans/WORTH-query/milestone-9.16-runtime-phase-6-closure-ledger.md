@@ -1,5 +1,8 @@
 # Milestone 9.16 Runtime Phase 6 Closure Ledger
 
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 **Owner:** Runtime Hardening Track, Phase 6
 **Canonical specification:** `milestone-9.16.md`
 **Status:** Complete
@@ -91,7 +94,7 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml \
   -p worth-query-execution execution_runtime::tests
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_reads estate
+  -p worth-query-bank-court-server-fast server::ordinary_reads::estate
 ```
 
 ## Q6.45 exact evidence
@@ -110,17 +113,16 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml \
   -p worth-query-execution application_query::root_selection
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_reads
+  -p 'worth-query-bank-court-*' server::ordinary_reads::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_mutations \
-  public_consumer_executes_every_typed_mutation_family
+  -p 'worth-query-bank-court-*' server::ordinary_mutations::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-domain --test ability_inventory
+  -p worth-query-bank-court-domain-fast domain::domain_contracts::ability_inventory::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-domain --test schema_inventory
+  -p worth-query-bank-court-domain-fast domain::domain_contracts::
 ```
 
 Residue oracle:
@@ -153,17 +155,16 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml \
   -p worth-query-execution root_path_guard_reads_its_pinned_truth_version
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_reads
+  -p 'worth-query-bank-court-*' server::ordinary_reads::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_mutations \
-  public_consumer_executes_every_typed_mutation_family -- --exact
+  -p 'worth-query-bank-court-*' server::ordinary_mutations::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-domain --test ability_inventory
+  -p worth-query-bank-court-domain-fast domain::domain_contracts::ability_inventory::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-domain --test schema_inventory
+  -p worth-query-bank-court-domain-fast domain::domain_contracts::
 ```
 
 Residue oracle:
@@ -196,10 +197,13 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml \
   -p worth-query-execution
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --lib --test ordinary_reads
+  -p bank-server --lib
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-domain --test schema_inventory
+  -p 'worth-query-bank-court-*' server::ordinary_reads::
+
+cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
+  -p worth-query-bank-court-domain-fast domain::domain_contracts::
 ```
 
 Residue oracles:
@@ -240,7 +244,7 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml \
   domain_computation::primary_graph::tests::application_attempt
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_mutations
+  -p 'worth-query-bank-court-*' server::ordinary_mutations::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
   -p bank-domain proposals::idempotency_tests
@@ -292,9 +296,9 @@ Production ownership:
 - `worth-query-execution/primary_graph/application_attempt/`
 - `worth-query-execution/provider_session/`
 - `worth-query-execution/managed_run/run_identity.rs`
-- `bank-server/tests/ordinary_reads/canonical_work_scale.rs`
-- `bank-server/tests/ordinary_mutations/preconditions.rs`
-- `bank-server/tests/live_activity.rs`
+- `worth-query-bank-court-server-fast/tests/worth_query_bank_court_server_fast/fast/server/ordinary_reads/canonical_work_scale/mod.rs`
+- `worth-query-bank-court-server-fast/tests/worth_query_bank_court_server_fast/fast/server/ordinary_mutations/preconditions/mod.rs`
+- `worth-query-bank-court-server-fast/tests/worth_query_bank_court_server_fast/fast/server/live_activity/mod.rs`
 
 Exact digest, budget, and authority evidence:
 
@@ -330,15 +334,13 @@ Scale and speed evidence:
 
 ```text
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_reads canonical_work_scale::
+  -p 'worth-query-bank-court-*' server::ordinary_reads::canonical_work_scale::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test live_activity \
-  live_consumer_fanout_keeps_each_delivery_free_of_canonical_work
+  -p worth-query-bank-court-server-fast server::live_activity::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_reads \
-  high_operation_speed_probe_keeps_warm_digest_work_at_exact_zero \
+  -p 'worth-query-bank-court-*' server::ordinary_reads:: \
   -- --ignored --nocapture
 ```
 
@@ -387,10 +389,10 @@ cargo test --manifest-path crates/worth-runtime-bridge/Cargo.toml \
   --lib correspondence
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_reads
+  -p 'worth-query-bank-court-*' server::ordinary_reads::
 
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml \
-  -p bank-server --test ordinary_mutations
+  -p 'worth-query-bank-court-*' server::ordinary_mutations::
 ```
 
 Strict changed-crate lint:

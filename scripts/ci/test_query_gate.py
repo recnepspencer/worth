@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 import query_gate
+import query_gate_courts
 
 
 class FailureReporting(unittest.TestCase):
@@ -122,6 +123,103 @@ name = "default_harness"
                              ["empty-tests", "--list", "--format", "terse"])
             process.assert_called_once()
             self.assertEqual(result["chunks"], [])
+
+
+class CostClassScheduling(unittest.TestCase):
+    def test_failed_listing_cannot_silently_drop_a_binary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            binary = {"package": "example", "target": "example", "lib": False,
+                      "harness": True, "exe": "broken-tests", "cwd": temporary}
+            gate = query_gate.Gate(Path(temporary))
+            gate.built["query"] = ([binary], 0, "existing-build.log")
+            with patch.object(query_gate.subprocess, "run", return_value=SimpleNamespace(
+                    stdout="", stderr="loader refused", returncode=7)):
+                result = gate.tests("query-rest")
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["listing"], "FAILED")
+            self.assertIn("loader refused", (Path(temporary) / result["log"]).read_text())
+
+    def test_renamed_classed_cases_keep_isolation_and_complete_coverage(self):
+        names = ["fast::new_name", "serial::renamed_counter",
+                 "owner::serial::renamed_unit", "compile_fail::renamed_contract"]
+        with tempfile.TemporaryDirectory() as temporary:
+            binary = {"package": "example", "target": "example", "lib": False,
+                      "harness": True, "exe": "example-tests", "cwd": temporary}
+            gate = query_gate.Gate(Path(temporary))
+            gate.built["query"] = ([binary], 0, "existing-build.log")
+            chunks = []
+
+            def chunk(suite, index, selected, cases, extra=()):
+                chunks.append((cases, extra))
+                return {"failed": [], "exit": 0, "passed": len(cases),
+                        "seconds": 0, "log": f"chunk-{index}.log"}
+
+            listed = "\n".join(name + ": test" for name in names)
+            with patch.object(query_gate.subprocess, "run",
+                              return_value=SimpleNamespace(stdout=listed, returncode=0)), \
+                    patch.object(gate, "chunk", side_effect=chunk):
+                result = gate.tests("query-rest")
+            self.assertTrue(result["ok"])
+            self.assertCountEqual([n for cases, _ in chunks for n in cases], names)
+            self.assertTrue(all(len(cases) == 1 for cases, _ in chunks))
+            self.assertEqual(chunks[0][0], ["fast::new_name"])
+
+    def test_exhaustive_fixture_paths_remain_cpu_exclusive_after_rename(self):
+        names = ["serial::renamed_fixture", "owner::exhaustive::renamed_matrix"]
+        with tempfile.TemporaryDirectory() as temporary:
+            binary = {"package": "worth-query-topology-entry", "target": "topology",
+                      "lib": True, "harness": True, "exe": "fixture", "cwd": temporary}
+            gate = query_gate.Gate(Path(temporary))
+            gate.built["fixture"] = ([binary], 0, "existing-build.log")
+            executed = []
+
+            def chunk(suite, index, selected, cases, extra=()):
+                executed.extend(cases)
+                return {"failed": [], "exit": 0, "passed": len(cases),
+                        "seconds": 0, "log": f"chunk-{index}.log"}
+
+            listed = "\n".join(name + ": test" for name in names)
+            with patch.object(query_gate.subprocess, "run",
+                              return_value=SimpleNamespace(stdout=listed, returncode=0)), \
+                    patch.object(gate, "chunk", side_effect=chunk):
+                result = gate.tests("fixture")
+            self.assertTrue(result["ok"])
+            self.assertEqual(executed, names)
+
+
+class CourtSelection(unittest.TestCase):
+    def write_court(self, root, name, cost_class):
+        path = root / "workspaces/worth-query/crates" / name / "Cargo.toml"
+        path.parent.mkdir(parents=True)
+        path.write_text(
+            f"[package]\nname = '{name}'\n[package.metadata.worth.court]\nclass = '{cost_class}'\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def test_ordinary_selection_keeps_units_and_fast_courts_after_boundary_rename(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fast = "worth-query-court-renamed-boundary-fast"
+            process = "worth-query-court-renamed-boundary-process"
+            self.write_court(root, fast, "fast")
+            self.write_court(root, process, "process")
+            with patch.object(query_gate_courts, "ROOT", root):
+                self.assertEqual(query_gate_courts.court_packages(query_gate.QUERY, "fast"), [fast])
+                selection = query_gate_courts.ordinary_selection(query_gate.QUERY)
+            self.assertIn("--workspace", selection)
+            self.assertIn("--tests", selection)
+            self.assertNotIn("--lib", selection)
+            self.assertEqual(selection[selection.index("--exclude") + 1], process)
+            self.assertNotIn(fast, selection)
+
+    def test_invalid_court_class_cannot_fall_into_the_ordinary_build(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.write_court(root, "worth-query-court-host-fast", "serial")
+            with patch.object(query_gate_courts, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, "exactly one class"):
+                    query_gate_courts.ordinary_selection(query_gate.QUERY)
 
 
 if __name__ == "__main__":

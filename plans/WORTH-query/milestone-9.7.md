@@ -656,7 +656,7 @@ exists; it does **not** close the milestone.
 - all Phase 1–9 boundaries
 
 **Relevant Query source surfaces**
-- [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query/tests/support/public_bridge_runtime/mod.rs)
+- [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query-worlds/src/query/support/public_bridge_runtime/mod.rs)
 - [runtime/tests/support/bridge/runtime_support.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/runtime_support.rs)
 
 **Warnings**
@@ -1081,7 +1081,7 @@ close inside this phase.**
 
 **Relevant Query source surfaces**
 - `tests/support/public_bridge_runtime/hostile_certification.rs`
-- [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query/tests/support/public_bridge_runtime/mod.rs)
+- [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query-worlds/src/query/support/public_bridge_runtime/mod.rs)
 
 **Relevant APIs and product surfaces**
 - public-bridge hostile certification artifact

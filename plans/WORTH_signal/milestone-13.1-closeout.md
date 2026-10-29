@@ -1,5 +1,8 @@
 # Milestone 13.1 Closeout: Cross-Runtime Granular Invalidation
 
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 > Status: complete; primary verification and fresh frozen-source Sol review
 > accepted
 >
@@ -143,7 +146,7 @@ cargo test -q -p worth-runtime-bridge --lib
   965 passed
 
 cargo test --manifest-path workspaces/worth-query/Cargo.toml \
-  -p worth-query-certification --test granular_invalidation -- --test-threads=1
+  -p worth-query-court-host-fast certification::granular_invalidation:: -- --test-threads=1
   20 passed
 
 cargo test -q --manifest-path workspaces/worth-query/Cargo.toml --workspace

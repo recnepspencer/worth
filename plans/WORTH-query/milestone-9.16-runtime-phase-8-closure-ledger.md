@@ -1,5 +1,8 @@
 # Milestone 9.16 Runtime Phase 8 Closure Ledger
 
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 **Owner:** Runtime Hardening Track, Phase 8
 **Canonical specification:** `milestone-9.16-runtime-phase-8.md` (which is
 governed by `milestone-9.16.md`)
@@ -69,7 +72,7 @@ Final standing verification from that candidate:
 - `cargo test -p bank-server --all-features` in Bank: pass, including every
   `bank-server` unit, integration, compiler, and doctest court. The scheduled
   high-operation speed probe remains explicitly ignored.
-- `cargo test -p bank-server --test ordinary_mutations --all-features -- --nocapture`:
+- `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations:: --all-features -- --nocapture`:
   91/91 pass, including the complete Phase 8 recovery, undo, safe-retry,
   cross-gate, expiry, and retained-authority matrix.
 - `cargo test -p worth-query-certification --test managed_run_compile_fail`:
@@ -1356,7 +1359,7 @@ than a proved one.
 
 | Check | Command | Why it is here |
 |---|---|---|
-| Bank consumer suite | `cargo test -p bank-server --test ordinary_mutations` | End-to-end through production dispatch |
+| Bank consumer suite | `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | End-to-end through production dispatch |
 | Query consumer targets | `installed_operating_world`, `public_declarative_journeys`, `runtime_public_journeys` | Public boundary parity |
 | **Certification compile-fail** | `cargo test -p worth-query-certification --test compile_certification` | **Added after Q8.6.** Witnesses facade contents; a retirement that misses it leaves a red test nobody runs |
 | Execution unit suite, **repeated** | `cargo test -p worth-query-execution --lib`, **five runs, all reported** | **Added after Q8.8.** One green run is not evidence of determinism |
@@ -1499,7 +1502,7 @@ stands after turn 2. Every target named; every repeated run reported.
 
 | Target | Result |
 |---|---|
-| `cargo test -p bank-server --test ordinary_mutations` | **ok — 88 passed** (was 87 pre-gate; +1 is `lost_response_after_commit_safe_retry_emits_nothing_twice`). All 7 `phase8_safe_retry` scenarios green. |
+| `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **ok — 88 passed** (was 87 pre-gate; +1 is `lost_response_after_commit_safe_retry_emits_nothing_twice`). All 7 `phase8_safe_retry` scenarios green. |
 | `cargo test -p worth-query-certification --test compile_certification` | **ok — 14 passed** |
 | `cargo test -p worth-query-certification --test application_aftermath_compile_fail` | **ok** — all four safe-retry cases confirmed to *execute*, not skip: `safe_retry_requires_admitted_redispatch`, `admitted_external_redispatch_constructor_is_private`, `redispatch_requires_handle_and_authority` (all should-fail), plus the should-pass twin |
 | `cargo test -p worth-query-execution --lib` ×5 | **ok — 579 / 579 / 579 / 579 / 579** (77.5s, 70.1s, 56.1s, 69.1s, 56.1s) |
@@ -1726,7 +1729,7 @@ assembly — not enum dedup.
 
 | Check | Result |
 |---|---|
-| `cargo test -p bank-server --test ordinary_mutations` | **72** |
+| `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **72** |
 | `installed_operating_world` | **313** |
 | `public_declarative_journeys` | **37** |
 | `runtime_public_journeys` | **22** |
@@ -1803,7 +1806,7 @@ undo/redo intent and external-effect correlation/dispatch derivation.
 
 | Check | Result |
 |---|---|
-| `cargo test -p bank-server --test ordinary_mutations` | **79** |
+| `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **79** |
 | `installed_operating_world` | **313** |
 | `public_declarative_journeys` | **37** |
 | `runtime_public_journeys` | **22** |
@@ -1825,10 +1828,10 @@ undo/redo intent and external-effect correlation/dispatch derivation.
 
 | Check | Result |
 |---|---|
-| `cargo test -p bank-server --test ordinary_mutations` | **79** |
-| `cargo test -p worth-query --test installed_operating_world` | **313** |
-| `cargo test -p worth-query --test public_declarative_journeys` | **37** |
-| `cargo test -p worth-query --test runtime_public_journeys` | **22** |
+| `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **79** |
+| `cargo test -p worth-query-court-host-fast query::installed_operating_world::` | **313** |
+| `cargo test -p worth-query-court-host-fast query::public_declarative_journeys::` | **37** |
+| `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::` | **22** |
 | `cargo test -p worth-query-certification --test compile_certification` | **14** |
 | `cargo test -p worth-query-execution --lib` × 5 | **578, 578, 578, 578, 578** |
 | `RUSTFLAGS=-Dwarnings cargo check` (execution + bank-server) | clean |
@@ -1854,10 +1857,10 @@ undo/redo intent and external-effect correlation/dispatch derivation.
 
 | Check | Result |
 |---|---|
-| `cargo test -p bank-server --test ordinary_mutations` | **80** |
-| `cargo test -p worth-query --test installed_operating_world` | **313** |
-| `cargo test -p worth-query --test public_declarative_journeys` | **37** |
-| `cargo test -p worth-query --test runtime_public_journeys` | **22** |
+| `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **80** |
+| `cargo test -p worth-query-court-host-fast query::installed_operating_world::` | **313** |
+| `cargo test -p worth-query-court-host-fast query::public_declarative_journeys::` | **37** |
+| `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::` | **22** |
 | `cargo test -p worth-query-certification --test compile_certification` | **14** |
 | `cargo test -p worth-query-execution --lib` × 5 | **578, 578, 578, 578, 578** |
 | `RUSTFLAGS=-Dwarnings cargo check` (execution + bank-server) | clean |
@@ -1886,10 +1889,10 @@ and re-grounds §11 row 11.
 
 | Check | Result |
 |---|---|
-| `cargo test -p bank-server --test ordinary_mutations` | **81** (80 prior + row-11 session/queue boundary test) |
-| `cargo test -p worth-query --test installed_operating_world` | **313** |
-| `cargo test -p worth-query --test public_declarative_journeys` | **37** |
-| `cargo test -p worth-query --test runtime_public_journeys` | **22** |
+| `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **81** (80 prior + row-11 session/queue boundary test) |
+| `cargo test -p worth-query-court-host-fast query::installed_operating_world::` | **313** |
+| `cargo test -p worth-query-court-host-fast query::public_declarative_journeys::` | **37** |
+| `cargo test -p worth-query-court-host-fast query::runtime_public_journeys::` | **22** |
 | `cargo test -p worth-query-certification --test compile_certification` | **14** |
 | `cargo test -p worth-query-execution --lib` × 5 | **579, 579, 579, 579, 579** (578 prior + PB4 residue) |
 | `RUSTFLAGS=-Dwarnings cargo check` (execution + bank-server) | clean |
@@ -1952,7 +1955,7 @@ denial with honest receipt. Foundational-only undo denied (R8.41 negative).
 
 | Check | Result |
 |---|---|
-| `cargo test -p bank-server --test ordinary_mutations` | **51 passed** |
+| `cargo test -p 'worth-query-bank-court-*' server::ordinary_mutations::` | **51 passed** |
 | `installed_operating_world` | **313 passed** |
 | `public_declarative_journeys` | **37 passed** |
 | `runtime_public_journeys` | **22 passed** |

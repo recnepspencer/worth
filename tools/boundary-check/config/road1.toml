@@ -835,6 +835,7 @@ certification_package = "worth-query-certification"
 certification_authority_packages = ["worth-query-host", "worth-query-replay"]
 certification_consumers = ["worth-ui-certification"]
 internal_packages = [
+  "worth-query-worlds",
   "worth-query-declaration",
   "worth-query-installation",
   "worth-query-admission",
@@ -872,7 +873,9 @@ root = "workspaces/worth-query/crates"
 exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src",
   "workspaces/worth-query/crates/worth-query-publication",
-  "workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/commit_boundary.rs",
+  "workspaces/worth-query/crates/worth-query-worlds/src/certification/application_graph/workflow_approval/commit_boundary.rs",
+  "workspaces/worth-query/crates/worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/certification/application_graph/workflow_approval/commit_boundary/advancement_identity/mod.rs",
+  "workspaces/worth-query/crates/worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/certification/application_graph/workflow_approval/commit_boundary/mod.rs",
 ]
 forbidden_identifiers = ["publication_boundary"]
 forbidden_identifier_fragments = []
