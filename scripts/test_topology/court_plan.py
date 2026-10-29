@@ -1,5 +1,6 @@
 """Orchestrate inventory, frontier planning, source ownership and reviewable effects."""
 from binary_constraints import report as binary_constraints
+from executable_paths import ExecutablePaths
 from collections import Counter
 import json
 from pathlib import Path
@@ -16,6 +17,7 @@ from module_tree import Node, source_files, tree_text
 from plan_effects import Effects, relative
 from process_effects import helpers
 from registered_paths import relocate
+from source_catalogues import relocate as relocate_catalogues
 from rust_source import crate_uses
 from support_model import SupportModel
 from support_emit import layout_support, canonical_roots, binary_support_imports
@@ -93,6 +95,12 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
     disambiguate(courts)
     model = SupportModel(owners, units, courts, stem, workspace)
     support_roots = layout_support(model, kits)
+    model.executables = ExecutablePaths(stem, workspace, owners)
+    for record in model.canonical:
+        if record.get('active') and record['support_owner']:
+            model.executables.scan(record['helper'], record['support_owner'])
+    for unit in units:
+        model.executables.scan(model.record(unit)['test'], unit['court'])
     retired = assign_sources(model, units, assignments, support_roots)
     active_kits = {a['owner'] for a in assignments.values() if '-testkit' in a['owner']} | {name for name in support_roots if '-testkit' in name}
     kits = {name: row for name, row in kits.items() if name in active_kits}
@@ -107,15 +115,23 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
                 effects.write(assignment['destination'], text, source.read_bytes())
     for source in retired:
         effects.retire_scaffold(source)
+    rewrites.extend(relocate_catalogues(owners, assignments, effects))
     workspace_value = tomllib.loads(manifest.read_text(encoding='utf-8'))
     support_rows = canonical_roots(model, support_roots, assignments, effects, rewrites)
     rows_by_court = {c['name']: [d for u in c['units'] for d in u['dependencies']] + support_rows[c['name']] for c in courts}
     kit_rows = {name: support_rows[name] for name in kits}
+    if model.executables.used:
+        executable = model.executables
+        for reader in executable.readers:
+            (kit_rows if reader in kits else rows_by_court)[reader].append(local_dependency(executable.name, executable.directory))
+        executable.emit(effects)
+        kits[executable.name] = {'name': executable.name, 'readers': {u['court'] for u in units}, 'files': [], 'nodes': []}
+        kit_rows[executable.name] = []
     for name, kit in sorted(kits.items()):
         destination = workspace / 'crates' / name
         for reader in sorted(kit['readers']):
             rows_by_court[reader].append(local_dependency(name, destination))
-        if name not in support_roots:
+        if name not in support_roots and name != model.executables.name:
             effects.write(destination / 'src/lib.rs', '// Fixture assets are owned by this testkit.\n')
         effects.write(destination / 'Cargo.toml', crate_manifest(name, kit_rows[name], destination, workspace_value, True))
     for court in courts:
@@ -144,7 +160,7 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
     register(effects, repository, workspace, stem, splits)
     registry_rewrites, unresolved_registrations = relocate(effects, repository, assignments)
     rewrites.extend(registry_rewrites)
-    selector_changes = selectors(effects, repository, workspace, courts, roster)
+    selector_changes = selectors(effects, repository, workspace, courts, roster, model.executables.prerequisites())
     work = collect(courts, assignments, repository)
     for registration in unresolved_registrations:
         for source in registration['sources']:
@@ -167,10 +183,11 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
     executables_before = sum(t['test'] for o in owners for t in o['cargo']['targets'])
     return {'version': 1, 'workspace_manifest': relative(manifest, repository), 'stem': stem,
             'authority': ['docs/coding-guidelines/iteration_laws.md', 'test_convention_v3.md §§2–5'],
+            'compiled_source_map': sorted([{'destination': relative(u['case_path'], repository), 'source': relative(u['node'].source, repository), 'old_module': '::'.join(u['node'].names)} for u in units] + [{'destination': relative(r['declarations'], repository), 'source': relative(r['node'].source, repository), 'old_module': '::'.join(r['node'].names)} for r in model.canonical if 'declarations' in r], key=lambda r: r['destination']),
             'targets': targets, 'binary_constraints': binary_constraints(targets, courts), 'courts': court_rows, 'testkits': kit_report, 'splits': splits,
             'category_mapping': mapping or [{'from': k, 'to': v or 'ordinary'} for k, v in sorted(__import__('court_partition').INTERIM.items())],
             'path_rewrites': [json.loads(r) for r in rewrites], 'dev_dependencies_to_drop': drops,
-            'selector_changes': selector_changes, 'fixer_work_by_court': work, 'blockers': blockers,
+            'selector_changes': selector_changes, 'executable_prerequisites': model.executables.prerequisites(), 'fixer_work_by_court': work, 'blockers': blockers,
             'report_only': [{'package': o['cargo']['name'], 'targets': [
                 {'name': t['name'], 'kind': t['kind'], 'source': relative(Path(t['src_path']), repository)}
                 for t in o['cargo']['targets'] if any(k in ('bench', 'example', 'bin') for k in t['kind'])]}
@@ -215,7 +232,7 @@ def reports(courts, kits, assignments, program, workspace, root, court_deps, kit
         report.update({'frontier': court['frontier'], 'categories': sorted({u['category'] or 'ordinary' for u in court['units']}),
                        'packing_lines': court['packing_lines'], 'packing_areas': [list(p) for p in court['packing_areas']],
                        'required_features': court['required_features'], 'custom_harness': court['custom_harness'],
-                       'units': [{'source': relative(u['node'].source, root), 'old_module': '::'.join(u['node'].names),
+                       'units': [{'source': relative(u['node'].source, root), 'new_source': relative(u['case_path'], root), 'old_module': '::'.join(u['node'].names),
                                   'owner_area': u['owner_area'], 'category': u['category'] or 'ordinary',
                                   'evidence': u['evidence'], 'named_crates': sorted(u['used'])} for u in court['units']]})
         court_rows.append(report)

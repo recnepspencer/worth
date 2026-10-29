@@ -79,10 +79,12 @@ def canonical_roots(model, roots, assignments, effects, rewrites):
         is_kit = '-testkit' in name
         text, receipts = model.bindings.rewrite(record['helper'], record, name)
         rewrites.extend(receipts)
+        text, receipts = model.executables.rewrite(text, record['node'].source)
+        rewrites.extend(receipts)
         text, receipts = rebind(text, record['features'], True)
         rewrites.extend({**r, 'source': str(record['node'].source), 'scope': '::'.join(record['node'].names)} for r in receipts)
         node = Node(record['node'].source, record['node'].names, text)
-        text, receipts = rewritten_file(node, record['declarations'], record['owner'], assignments, {})
+        text, receipts = rewritten_file(node, record['declarations'], record['owner'], assignments)
         rewrites.extend(receipts)
         text, receipts = promote(text, 'pub' if is_kit else 'pub(crate)')
         rewrites.extend({**r, 'source': str(record['node'].source), 'scope': '::'.join(record['node'].names)} for r in receipts)

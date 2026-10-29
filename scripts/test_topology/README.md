@@ -32,9 +32,10 @@ a testkit. Test-only declarations, fields and module paths are made public as
 needed by that new ownership; every visibility and path edit is recorded.
 Feature predicates are bound to the original resolved package/target feature
 context without introducing court features. Macro expansion, identity assertions,
-behaviour names and classification choices remain explicit fixer work. Dynamic
-filesystem and executable contexts are still reported pending their mechanical
-path conversion.
+behaviour names and classification choices remain explicit fixer work. Literal filesystem operands, source-catalogue references and executable paths
+are rebound mechanically. Source-directory identity assertions remain review
+items. Executables have an explicit gate build prerequisite and a profile-aware
+path owner; their location does not depend on the test working directory.
 
 Oversized frontiers use first-fit decreasing of whole origin/module areas,
 sorted by descending source charge and then module path. Only an oversized area

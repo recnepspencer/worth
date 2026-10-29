@@ -75,8 +75,17 @@ class CourtCodemodTests(unittest.TestCase):
         model = next(w['content'] for w in writes if '/model/mod.rs' in w['path'])
         self.assertIn('crate::plain::ordinary_context::cross_category_value()', model)
         self.assertNotIn('crate::fast::', model)
+        self.assertTrue(any('#[cfg(not(any()))]' in w['content'] for w in writes))
         forbidden = {'testkit-visibility', 'testkit-crate-context', 'cross-category-support'}
         self.assertFalse(forbidden & set(self.plan['totals']['work_items_by_kind']))
+
+    def test_executable_paths_have_a_named_runtime_owner_and_build_prerequisite(self):
+        self.assertEqual(self.plan['executable_prerequisites'], [{'package': 'worth-host', 'binary': 'host-inspect'}])
+        helper = next(w['content'] for w in self.plan['effects']['writes'] if w['path'].endswith('worth-testkit-executables/src/lib.rs'))
+        self.assertIn("pub fn host_inspect() -> &'static str", helper)
+        self.assertIn('std::env::consts::EXE_SUFFIX', helper)
+        self.assertIn('profile.join', helper)
+        self.assertTrue(any(r['kind'] == 'executable-path' for r in self.plan['path_rewrites']))
 
     def test_asset_rewrites_cover_include_and_manifest_join(self):
         rewrites = [r for r in self.plan['path_rewrites'] if r['source'].endswith('fast/plain.rs')]
