@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::{Arc, Mutex, Weak};
 use std::thread::JoinHandle;
 
@@ -326,46 +325,60 @@ impl PhysicalMutationStartPort {
     }
 }
 
+fn mutation_worker_terminal(
+    owner: &Weak<PhysicalMutationRuntimeOwner>,
+    attempt: &Arc<crate::physical_runtime::durability::mutation::PhysicalMutationAttempt>,
+    prepared: PreparedPhysicalMutation,
+) -> PhysicalMutationTerminalFact {
+    let Some(owner) = owner.upgrade() else {
+        return PhysicalMutationTerminalFact::Indeterminate(
+            IndeterminatePhysicalMutation::possible_effect(
+                attempt.identity(),
+                attempt.idempotency_identity(),
+                attempt.fingerprint(),
+                PhysicalMutationIndeterminateStage::RuntimeUnavailable,
+                0,
+            ),
+        );
+    };
+    let Some(director) = owner.director.upgrade() else {
+        return PhysicalMutationTerminalFact::Indeterminate(
+            IndeterminatePhysicalMutation::possible_effect(
+                attempt.identity(),
+                attempt.idempotency_identity(),
+                attempt.fingerprint(),
+                PhysicalMutationIndeterminateStage::RuntimeUnavailable,
+                0,
+            ),
+        );
+    };
+    owner
+        .yieldpoint
+        .pause(super::PhysicalMutationCheckpoint::BeforeEffectCutover);
+    director.execute_managed_mutation(prepared, attempt)
+}
+
 fn run_worker(
     owner: Weak<PhysicalMutationRuntimeOwner>,
     attempt: Arc<crate::physical_runtime::durability::mutation::PhysicalMutationAttempt>,
     prepared: PreparedPhysicalMutation,
 ) {
-    let execution = catch_unwind(AssertUnwindSafe(|| {
-        let Some(owner) = owner.upgrade() else {
-            return PhysicalMutationTerminalFact::Indeterminate(
-                IndeterminatePhysicalMutation::possible_effect(
-                    attempt.identity(),
-                    attempt.idempotency_identity(),
-                    attempt.fingerprint(),
-                    PhysicalMutationIndeterminateStage::RuntimeUnavailable,
-                    0,
-                ),
-            );
-        };
-        let Some(director) = owner.director.upgrade() else {
-            return PhysicalMutationTerminalFact::Indeterminate(
-                IndeterminatePhysicalMutation::possible_effect(
-                    attempt.identity(),
-                    attempt.idempotency_identity(),
-                    attempt.fingerprint(),
-                    PhysicalMutationIndeterminateStage::RuntimeUnavailable,
-                    0,
-                ),
-            );
-        };
-        owner
-            .yieldpoint
-            .pause(super::PhysicalMutationCheckpoint::BeforeEffectCutover);
-        director.execute_managed_mutation(prepared, &attempt)
-    }));
+    let mut prepared = Some(prepared);
+    let mut terminal = None;
+    let caught = super::super::worker_panic::contain(&mut || {
+        let prepared = prepared.take().expect("mutation worker runs once");
+        terminal = Some(mutation_worker_terminal(&owner, &attempt, prepared));
+    });
     let Some(owner) = owner.upgrade() else {
         attempt.mark_stale();
         return;
     };
-    let (terminal, panicked) = match execution {
-        Ok(terminal) => (terminal, false),
-        Err(_) => (
+    let (terminal, panicked) = match caught {
+        Ok(()) => (
+            terminal.expect("contained mutation worker stores its terminal"),
+            false,
+        ),
+        Err(()) => (
             PhysicalMutationTerminalFact::Indeterminate(
                 IndeterminatePhysicalMutation::possible_effect(
                     attempt.identity(),

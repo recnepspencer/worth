@@ -33,7 +33,7 @@ impl StoreCandidateFramePublicationSession<'_> {
     > {
         let (resident, expectation, frame) = self
             .retain_submitted_frame(frame)
-            .map_err(super::RecoverableCandidateFrameWriteFailure::into_cause)?;
+            .map_err(super::write_progression::FrameRetentionFailure::into_write_failure)?;
         let coordinate = RecordFrameCoordinate::new(
             resident.coordinate().artifact(),
             resident.coordinate().offset(),
@@ -81,7 +81,7 @@ impl StoreCandidateFramePublicationSession<'_> {
                     settlement,
                 );
                 self.complete_frame(expectation, &completion, frame)
-                    .map_err(super::RecoverableCandidateFrameWriteFailure::into_cause)?;
+                    .map_err(super::write_progression::FrameRetentionFailure::into_write_failure)?;
                 Ok((completion, settlement))
             }
             PhysicalWritebackExecution::Retryable(retryable) => {

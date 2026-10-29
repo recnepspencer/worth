@@ -60,17 +60,48 @@ impl<'grant> PhysicalDirtyReplacementReservation<'grant> {
     where
         F: FnOnce(&[u8], &mut [u8]) -> Result<(), E>,
     {
+        let mut failure = None;
+        let mut fill = Some(fill);
+        match self.replace_filled_frame(allocator, &mut |clean, replacement| match fill
+            .take()
+            .expect("dirty replacement fill runs once")(
+            clean,
+            replacement,
+        ) {
+            Ok(()) => true,
+            Err(error) => {
+                failure = Some(error);
+                false
+            }
+        }) {
+            Ok(frame) => Ok(frame),
+            Err(DirtyReplaceStop::Residency(denial)) => {
+                Err(PhysicalDirtyReplacementError::Residency(denial))
+            }
+            Err(DirtyReplaceStop::Fill) => Err(PhysicalDirtyReplacementError::Fill(
+                failure.expect("dirty replacement fill failure is stored"),
+            )),
+        }
+    }
+
+    /// One compiled replacement path for every fill closure.
+    #[inline(never)]
+    fn replace_filled_frame(
+        &mut self,
+        allocator: &dyn DirtyReplacementAllocator,
+        fill: &mut dyn FnMut(&[u8], &mut [u8]) -> bool,
+    ) -> Result<DirtyPhysicalFrame, DirtyReplaceStop> {
         let length = usize::try_from(self.bytes)
             .expect("physical frame lengths are admitted from u32 coordinates");
         let mut replacement = allocator.allocate(length).map_err(|()| {
             self.release_after_allocator_failure();
-            PhysicalDirtyReplacementError::Residency(PhysicalResidencyDenial::AllocationFailed)
+            DirtyReplaceStop::Residency(PhysicalResidencyDenial::AllocationFailed)
         })?;
         let actual = u64::try_from(replacement.capacity()).expect("Vec capacity fits u64");
         if actual > self.bytes {
             let requested = self.bytes;
             self.release_after_allocator_failure();
-            return Err(PhysicalDirtyReplacementError::Residency(
+            return Err(DirtyReplaceStop::Residency(
                 PhysicalResidencyDenial::AllocatorExceededReservation { requested, actual },
             ));
         }
@@ -88,9 +119,9 @@ impl<'grant> PhysicalDirtyReplacementReservation<'grant> {
             .lease
             .as_ref()
             .expect("armed dirty replacement retains its clean lease");
-        if let Err(error) = fill(lease.bytes.as_slice(), replacement.as_mut_slice()) {
+        if !fill(lease.bytes.as_slice(), replacement.as_mut_slice()) {
             self.release_reservation();
-            return Err(PhysicalDirtyReplacementError::Fill(error));
+            return Err(DirtyReplaceStop::Fill);
         }
         let replacement = replacement.into_resident();
         let mut lease = self
@@ -106,7 +137,7 @@ impl<'grant> PhysicalDirtyReplacementReservation<'grant> {
             Ok(generation) => generation,
             Err(reason) => {
                 self.release_reservation();
-                return Err(PhysicalDirtyReplacementError::Residency(reason));
+                return Err(DirtyReplaceStop::Residency(reason));
             }
         };
         lease.bytes = replacement;
@@ -130,6 +161,11 @@ impl<'grant> PhysicalDirtyReplacementReservation<'grant> {
             self.armed = false;
         }
     }
+}
+
+enum DirtyReplaceStop {
+    Residency(PhysicalResidencyDenial),
+    Fill,
 }
 
 impl Drop for PhysicalDirtyReplacementReservation<'_> {

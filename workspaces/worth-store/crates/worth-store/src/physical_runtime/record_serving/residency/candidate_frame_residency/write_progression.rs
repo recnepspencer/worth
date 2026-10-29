@@ -1,25 +1,68 @@
 use super::*;
 
-fn contract<EffectFailure>(
-    violation: CandidateFrameContractViolation,
-    posture: CandidateFrameFailurePosture,
+pub(super) struct FrameRetentionFailure {
+    cause: FrameRetentionCause,
     frame: CandidateFrame,
-) -> RecoverableCandidateFrameWriteFailure<EffectFailure> {
-    RecoverableCandidateFrameWriteFailure::new(
-        CandidateFrameWriteFailure::Contract { violation, posture },
-        frame,
-    )
 }
 
-fn residency<EffectFailure>(
-    denial: RecordAppendDenial,
-    posture: CandidateFrameFailurePosture,
-    frame: CandidateFrame,
-) -> RecoverableCandidateFrameWriteFailure<EffectFailure> {
-    RecoverableCandidateFrameWriteFailure::new(
-        CandidateFrameWriteFailure::Residency { denial, posture },
-        frame,
-    )
+enum FrameRetentionCause {
+    Contract {
+        violation: CandidateFrameContractViolation,
+        posture: CandidateFrameFailurePosture,
+    },
+    Residency {
+        denial: RecordAppendDenial,
+        posture: CandidateFrameFailurePosture,
+    },
+}
+
+impl FrameRetentionFailure {
+    fn contract(
+        violation: CandidateFrameContractViolation,
+        posture: CandidateFrameFailurePosture,
+        frame: CandidateFrame,
+    ) -> Self {
+        Self {
+            cause: FrameRetentionCause::Contract { violation, posture },
+            frame,
+        }
+    }
+
+    fn residency(
+        denial: RecordAppendDenial,
+        posture: CandidateFrameFailurePosture,
+        frame: CandidateFrame,
+    ) -> Self {
+        Self {
+            cause: FrameRetentionCause::Residency { denial, posture },
+            frame,
+        }
+    }
+
+    pub(super) fn into_write_failure<EffectFailure>(
+        self,
+    ) -> CandidateFrameWriteFailure<EffectFailure> {
+        self.into_recoverable().into_cause()
+    }
+
+    fn into_recoverable<EffectFailure>(
+        self,
+    ) -> RecoverableCandidateFrameWriteFailure<EffectFailure> {
+        let cause = match self.cause {
+            FrameRetentionCause::Contract { violation, posture } => {
+                CandidateFrameWriteFailure::Contract { violation, posture }
+            }
+            FrameRetentionCause::Residency { denial, posture } => {
+                CandidateFrameWriteFailure::Residency { denial, posture }
+            }
+        };
+        RecoverableCandidateFrameWriteFailure::new(cause, self.frame)
+    }
+}
+
+enum SubmittedFrameWriteStop {
+    Retention(FrameRetentionFailure),
+    Effect(CandidateFrame),
 }
 
 pub(in crate::physical_runtime::record_serving) trait CandidateFrameEffectFailure {
@@ -53,24 +96,58 @@ impl StoreCandidateFramePublicationSession<'_> {
     where
         EffectFailure: CandidateFrameEffectFailure,
     {
-        let (resident, expectation, frame) = self.retain_submitted_frame(frame)?;
+        let mut effect_failure = None;
+        match self.write_submitted_frame(frame, &mut |bytes| match store_write(bytes) {
+            Ok(physical) => Ok(physical),
+            Err(failure) => {
+                let fate = failure.effect_fate();
+                effect_failure = Some(failure);
+                Err(fate)
+            }
+        }) {
+            Ok(completion) => Ok(completion),
+            Err(SubmittedFrameWriteStop::Retention(failure)) => Err(failure.into_recoverable()),
+            Err(SubmittedFrameWriteStop::Effect(frame)) => {
+                Err(RecoverableCandidateFrameWriteFailure::new(
+                    CandidateFrameWriteFailure::Effect(
+                        effect_failure.expect("candidate frame effect failure is stored"),
+                    ),
+                    frame,
+                ))
+            }
+        }
+    }
+
+    /// One compiled candidate-frame write for every effect failure type.
+    #[inline(never)]
+    fn write_submitted_frame(
+        &mut self,
+        frame: CandidateFrame,
+        store_write: &mut dyn FnMut(
+            &[u8],
+        ) -> Result<
+            CandidateFramePhysicalWrite,
+            crate::physical_runtime::PhysicalWorkEffectFate,
+        >,
+    ) -> Result<CandidateFrameWriteCompletion, SubmittedFrameWriteStop> {
+        let (resident, expectation, frame) = self
+            .retain_submitted_frame(frame)
+            .map_err(SubmittedFrameWriteStop::Retention)?;
         let physical = match store_write(resident.bytes()) {
             Ok(physical) => physical,
-            Err(failure) => {
-                if failure.effect_fate()
-                    == crate::physical_runtime::PhysicalWorkEffectFate::ProvenNoEffect
+            Err(fate) => {
+                if fate == crate::physical_runtime::PhysicalWorkEffectFate::ProvenNoEffect
                     && let Err(denial) = resident.discard()
                 {
-                    return Err(residency(
-                        denial,
-                        CandidateFrameFailurePosture::UnsettledBeforeEffect,
-                        frame,
+                    return Err(SubmittedFrameWriteStop::Retention(
+                        FrameRetentionFailure::residency(
+                            denial,
+                            CandidateFrameFailurePosture::UnsettledBeforeEffect,
+                            frame,
+                        ),
                     ));
                 }
-                return Err(RecoverableCandidateFrameWriteFailure::new(
-                    CandidateFrameWriteFailure::Effect(failure),
-                    frame,
-                ));
+                return Err(SubmittedFrameWriteStop::Effect(frame));
             }
         };
         let settlement = match physical.settle_residency(
@@ -80,28 +157,33 @@ impl StoreCandidateFramePublicationSession<'_> {
         ) {
             Ok(settlement) => settlement,
             Err(violation) => {
-                return Err(contract(
-                    violation,
-                    CandidateFrameFailurePosture::EffectPossible,
-                    frame,
+                return Err(SubmittedFrameWriteStop::Retention(
+                    FrameRetentionFailure::contract(
+                        violation,
+                        CandidateFrameFailurePosture::EffectPossible,
+                        frame,
+                    ),
                 ))
             }
         };
         let completion = match resident.publish_clean(settlement) {
             Ok(completion) => completion,
             Err(denial) => {
-                return Err(residency(
-                    denial,
-                    CandidateFrameFailurePosture::EffectPossible,
-                    frame,
+                return Err(SubmittedFrameWriteStop::Retention(
+                    FrameRetentionFailure::residency(
+                        denial,
+                        CandidateFrameFailurePosture::EffectPossible,
+                        frame,
+                    ),
                 ))
             }
         };
-        self.complete_frame(expectation, &completion, frame)?;
+        self.complete_frame(expectation, &completion, frame)
+            .map_err(SubmittedFrameWriteStop::Retention)?;
         Ok(completion)
     }
 
-    pub(super) fn retain_submitted_frame<EffectFailure>(
+    pub(super) fn retain_submitted_frame(
         &mut self,
         frame: CandidateFrame,
     ) -> Result<
@@ -110,16 +192,18 @@ impl StoreCandidateFramePublicationSession<'_> {
             RetainedFrameExpectation,
             CandidateFrame,
         ),
-        RecoverableCandidateFrameWriteFailure<EffectFailure>,
+        FrameRetentionFailure,
     > {
         let expected = match self.validate_submitted_frame(&frame) {
             Ok(expected) => expected,
-            Err((violation, posture)) => return Err(contract(violation, posture, frame)),
+            Err((violation, posture)) => {
+                return Err(FrameRetentionFailure::contract(violation, posture, frame))
+            }
         };
         let expectation = RetainedFrameExpectation::capture(expected, &frame);
         let next_bytes = self.resident_bytes.saturating_add(expectation.frame_bytes);
         if next_bytes > self.declaration.total_frame_bytes() {
-            return Err(contract(
+            return Err(FrameRetentionFailure::contract(
                 CandidateFrameContractViolation::FrameBytesExceedDeclaration,
                 CandidateFrameFailurePosture::ProvenNoEffect,
                 frame,
@@ -128,7 +212,7 @@ impl StoreCandidateFramePublicationSession<'_> {
         let resident = match self.residency.retain(&frame) {
             Ok(resident) => resident,
             Err(denial) => {
-                return Err(residency(
+                return Err(FrameRetentionFailure::residency(
                     denial,
                     CandidateFrameFailurePosture::ProvenNoEffect,
                     frame,
@@ -137,13 +221,13 @@ impl StoreCandidateFramePublicationSession<'_> {
         };
         if let Err(violation) = verify_retained_frame(resident.as_ref(), expectation) {
             if let Err(denial) = resident.discard() {
-                return Err(residency(
+                return Err(FrameRetentionFailure::residency(
                     denial,
                     CandidateFrameFailurePosture::UnsettledBeforeEffect,
                     frame,
                 ));
             }
-            return Err(contract(
+            return Err(FrameRetentionFailure::contract(
                 violation,
                 CandidateFrameFailurePosture::ProvenNoEffect,
                 frame,
@@ -152,14 +236,14 @@ impl StoreCandidateFramePublicationSession<'_> {
         Ok((resident, expectation, frame))
     }
 
-    pub(super) fn complete_frame<EffectFailure>(
+    pub(super) fn complete_frame(
         &mut self,
         expectation: RetainedFrameExpectation,
         completion: &CandidateFrameWriteCompletion,
         frame: CandidateFrame,
-    ) -> Result<(), RecoverableCandidateFrameWriteFailure<EffectFailure>> {
+    ) -> Result<(), FrameRetentionFailure> {
         if completion.frame_bytes() != expectation.frame_bytes {
-            return Err(contract(
+            return Err(FrameRetentionFailure::contract(
                 CandidateFrameContractViolation::FrameCompletionMismatch,
                 CandidateFrameFailurePosture::EffectPossible,
                 frame,

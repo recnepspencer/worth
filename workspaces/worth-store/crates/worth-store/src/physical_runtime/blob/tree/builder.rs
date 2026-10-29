@@ -61,13 +61,52 @@ impl BlobTreeBuilder {
         entry: BlobTreeEntryV1,
         write: &mut impl FnMut(BlobTreeNodeV1, u64) -> Result<PersistedRecordIdentity, Failure>,
     ) -> Result<(), BlobTreeBuildFailure<Failure>> {
-        self.push_at(0, entry, write)
+        let mut write_failure = None;
+        self.push_entry(0, entry, &mut |node, ordinal| {
+            accept_tree_write(write, &mut write_failure, node, ordinal)
+        })
+        .map_err(|stop| tree_build_failure(stop, write_failure))
     }
 
     pub(in crate::physical_runtime::blob) fn finish<Failure>(
         &mut self,
         write: &mut impl FnMut(BlobTreeNodeV1, u64) -> Result<PersistedRecordIdentity, Failure>,
     ) -> Result<BlobTreeRoot, BlobTreeBuildFailure<Failure>> {
+        let mut write_failure = None;
+        self.finish_levels(&mut |node, ordinal| {
+            accept_tree_write(write, &mut write_failure, node, ordinal)
+        })
+        .map_err(|stop| tree_build_failure(stop, write_failure))
+    }
+
+    /// One compiled frontier push for every node writer.
+    #[inline(never)]
+    fn push_entry(
+        &mut self,
+        level: usize,
+        entry: BlobTreeEntryV1,
+        write: &mut dyn FnMut(BlobTreeNodeV1, u64) -> Result<PersistedRecordIdentity, ()>,
+    ) -> Result<(), TreeBuildStop> {
+        if level >= MAX_LEVELS {
+            return Err(TreeBuildStop::TooDeep);
+        }
+        if level == self.levels.len() {
+            self.levels.push(Vec::new());
+            self.next_index.push(0);
+        }
+        self.levels[level].push(entry);
+        if self.levels[level].len() == FANOUT {
+            self.flush_level(level, write)?;
+        }
+        Ok(())
+    }
+
+    /// One compiled finish for every node writer.
+    #[inline(never)]
+    fn finish_levels(
+        &mut self,
+        write: &mut dyn FnMut(BlobTreeNodeV1, u64) -> Result<PersistedRecordIdentity, ()>,
+    ) -> Result<BlobTreeRoot, TreeBuildStop> {
         for level in 0..MAX_LEVELS {
             if level >= self.levels.len() || self.levels[level].is_empty() {
                 continue;
@@ -77,12 +116,9 @@ impl BlobTreeBuilder {
                 && self.levels.iter().skip(level + 1).all(Vec::is_empty)
             {
                 let entry = self.levels[level][0];
-                let last = self
-                    .last_node
-                    .as_ref()
-                    .ok_or(BlobTreeBuildFailure::TooDeep)?;
+                let last = self.last_node.as_ref().ok_or(TreeBuildStop::TooDeep)?;
                 if last.record != entry.record() || last.covered_bytes != entry.covered_bytes() {
-                    return Err(BlobTreeBuildFailure::TooDeep);
+                    return Err(TreeBuildStop::TooDeep);
                 }
                 return Ok(BlobTreeRoot {
                     record: last.record,
@@ -90,38 +126,18 @@ impl BlobTreeBuilder {
                     covered_bytes: last.covered_bytes,
                 });
             }
-            self.flush(level, write)?;
+            self.flush_level(level, write)?;
         }
-        Err(BlobTreeBuildFailure::TooDeep)
+        Err(TreeBuildStop::TooDeep)
     }
 
-    fn push_at<Failure>(
+    fn flush_level(
         &mut self,
         level: usize,
-        entry: BlobTreeEntryV1,
-        write: &mut impl FnMut(BlobTreeNodeV1, u64) -> Result<PersistedRecordIdentity, Failure>,
-    ) -> Result<(), BlobTreeBuildFailure<Failure>> {
-        if level >= MAX_LEVELS {
-            return Err(BlobTreeBuildFailure::TooDeep);
-        }
-        if level == self.levels.len() {
-            self.levels.push(Vec::new());
-            self.next_index.push(0);
-        }
-        self.levels[level].push(entry);
-        if self.levels[level].len() == FANOUT {
-            self.flush(level, write)?;
-        }
-        Ok(())
-    }
-
-    fn flush<Failure>(
-        &mut self,
-        level: usize,
-        write: &mut impl FnMut(BlobTreeNodeV1, u64) -> Result<PersistedRecordIdentity, Failure>,
-    ) -> Result<(), BlobTreeBuildFailure<Failure>> {
+        write: &mut dyn FnMut(BlobTreeNodeV1, u64) -> Result<PersistedRecordIdentity, ()>,
+    ) -> Result<(), TreeBuildStop> {
         if level + 1 >= MAX_LEVELS {
-            return Err(BlobTreeBuildFailure::TooDeep);
+            return Err(TreeBuildStop::TooDeep);
         }
         let index = self.next_index[level];
         let kind = if level == 0 {
@@ -136,24 +152,57 @@ impl BlobTreeBuilder {
             u8::try_from(level).expect("bounded tree level fits u8"),
             index,
         )
-        .map_err(BlobTreeBuildFailure::Format)?;
+        .map_err(TreeBuildStop::Format)?;
         let entries = std::mem::take(&mut self.levels[level]);
-        let node =
-            BlobTreeNodeV1::new(occurrence, entries).map_err(BlobTreeBuildFailure::Format)?;
+        let node = BlobTreeNodeV1::new(occurrence, entries).map_err(TreeBuildStop::Format)?;
         let digest = node.canonical_digest();
         let frame_digest = node.frame_digest();
         let covered = node.covered_bytes();
         let ordinal = (level as u64) << 56 | index;
-        let record = write(node, ordinal).map_err(BlobTreeBuildFailure::Write)?;
+        let record = write(node, ordinal).map_err(|()| TreeBuildStop::Write)?;
         self.last_node = Some(BlobTreeRoot {
             record,
             frame_digest,
             covered_bytes: covered,
         });
-        self.next_index[level] = index.checked_add(1).ok_or(BlobTreeBuildFailure::TooDeep)?;
+        self.next_index[level] = index.checked_add(1).ok_or(TreeBuildStop::TooDeep)?;
         let parent =
-            BlobTreeEntryV1::new(digest, record, covered).map_err(BlobTreeBuildFailure::Format)?;
-        self.push_at(level + 1, parent, write)
+            BlobTreeEntryV1::new(digest, record, covered).map_err(TreeBuildStop::Format)?;
+        self.push_entry(level + 1, parent, write)
+    }
+}
+
+enum TreeBuildStop {
+    Format(BlobRecordDenial),
+    Write,
+    TooDeep,
+}
+
+fn accept_tree_write<Failure>(
+    write: &mut impl FnMut(BlobTreeNodeV1, u64) -> Result<PersistedRecordIdentity, Failure>,
+    write_failure: &mut Option<Failure>,
+    node: BlobTreeNodeV1,
+    ordinal: u64,
+) -> Result<PersistedRecordIdentity, ()> {
+    match write(node, ordinal) {
+        Ok(record) => Ok(record),
+        Err(failure) => {
+            *write_failure = Some(failure);
+            Err(())
+        }
+    }
+}
+
+fn tree_build_failure<Failure>(
+    stop: TreeBuildStop,
+    write_failure: Option<Failure>,
+) -> BlobTreeBuildFailure<Failure> {
+    match stop {
+        TreeBuildStop::Format(denial) => BlobTreeBuildFailure::Format(denial),
+        TreeBuildStop::TooDeep => BlobTreeBuildFailure::TooDeep,
+        TreeBuildStop::Write => {
+            BlobTreeBuildFailure::Write(write_failure.expect("tree write stores its failure"))
+        }
     }
 }
 

@@ -6,6 +6,7 @@ mod evidence_projection;
 mod grouping;
 mod lifecycle;
 mod mutation;
+mod worker_panic;
 #[cfg(all(
     test,
     feature = "recovery-runtime-owner",

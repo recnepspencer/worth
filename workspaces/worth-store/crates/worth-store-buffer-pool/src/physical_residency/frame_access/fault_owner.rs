@@ -83,6 +83,38 @@ impl PhysicalFrameFaultOwner {
     where
         F: FnOnce(&mut [u8]) -> Result<(), E>,
     {
+        let mut failure = None;
+        let mut fill = Some(fill);
+        match self.load_filled_frame(allocator, operation, &mut |bytes| match fill
+            .take()
+            .expect("frame fill runs once")(
+            bytes
+        ) {
+            Ok(()) => true,
+            Err(error) => {
+                failure = Some(error);
+                false
+            }
+        }) {
+            Ok(lease) => Ok(lease),
+            Err(FrameLoadStop::Residency { terminal, denial }) => {
+                Err(PhysicalFrameFaultError::Residency { terminal, denial })
+            }
+            Err(FrameLoadStop::Source { terminal }) => Err(PhysicalFrameFaultError::Source {
+                terminal,
+                failure: failure.expect("frame source failure is stored"),
+            }),
+        }
+    }
+
+    /// One compiled admission, allocation, and publish path for every fill closure.
+    #[inline(never)]
+    fn load_filled_frame(
+        &mut self,
+        allocator: &dyn PhysicalFrameAllocator,
+        operation: Option<crate::PhysicalResidencyAllocationOperation>,
+        fill: &mut dyn FnMut(&mut [u8]) -> bool,
+    ) -> Result<PhysicalFrameLease, FrameLoadStop> {
         let length = self.key.coordinate().length() as usize;
         let mut bytes = match allocator.allocate(length) {
             Ok(bytes) => bytes,
@@ -93,7 +125,7 @@ impl PhysicalFrameFaultOwner {
                     PhysicalFrameLoadTerminalKind::AllocationFailed,
                 );
                 self.armed = false;
-                return Err(PhysicalFrameFaultError::Residency {
+                return Err(FrameLoadStop::Residency {
                     terminal,
                     denial: self
                         .owner
@@ -110,7 +142,7 @@ impl PhysicalFrameFaultOwner {
                 PhysicalFrameLoadTerminalKind::AllocationFailed,
             );
             self.armed = false;
-            return Err(PhysicalFrameFaultError::Residency {
+            return Err(FrameLoadStop::Residency {
                 terminal,
                 denial: self.owner.record_denial(
                     PhysicalResidencyDenial::AllocatorExceededReservation { requested, actual },
@@ -129,14 +161,14 @@ impl PhysicalFrameFaultOwner {
             .with_operation(operation),
         );
         self.owner.record_source_load();
-        if let Err(failure) = fill(bytes.as_mut_slice()) {
+        if !fill(bytes.as_mut_slice()) {
             let terminal = self.owner.fail_loading(
                 self.key,
                 self.identity,
                 PhysicalFrameLoadTerminalKind::SourceExecutionFailed,
             );
             self.armed = false;
-            return Err(PhysicalFrameFaultError::Source { terminal, failure });
+            return Err(FrameLoadStop::Source { terminal });
         }
         match self
             .owner
@@ -148,10 +180,20 @@ impl PhysicalFrameFaultOwner {
             }
             Err((denial, terminal)) => {
                 self.armed = false;
-                Err(PhysicalFrameFaultError::Residency { terminal, denial })
+                Err(FrameLoadStop::Residency { terminal, denial })
             }
         }
     }
+}
+
+enum FrameLoadStop {
+    Residency {
+        terminal: PhysicalFrameLoadTerminal,
+        denial: PhysicalResidencyDenial,
+    },
+    Source {
+        terminal: PhysicalFrameLoadTerminal,
+    },
 }
 
 impl Drop for PhysicalFrameFaultOwner {

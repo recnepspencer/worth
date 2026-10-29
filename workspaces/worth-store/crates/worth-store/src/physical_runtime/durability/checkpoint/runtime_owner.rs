@@ -1,4 +1,3 @@
-use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::{Arc, Mutex, Weak};
 use std::thread::JoinHandle;
 
@@ -349,12 +348,20 @@ fn run_worker(
         ));
         return;
     };
-    let execution = catch_unwind(AssertUnwindSafe(|| {
-        owner.capture.execute(admitted, &attempt)
-    }));
-    let (result, panicked) = match execution {
-        Ok(result) => (result, false),
-        Err(_) => (
+    let mut admitted = Some(admitted);
+    let mut result = None;
+    let caught = super::super::worker_panic::contain(&mut || {
+        result = Some(owner.capture.execute(
+            admitted.take().expect("checkpoint worker runs once"),
+            &attempt,
+        ));
+    });
+    let (result, panicked) = match caught {
+        Ok(()) => (
+            result.expect("contained checkpoint worker stores its result"),
+            false,
+        ),
+        Err(()) => (
             PhysicalCheckpointExecutionResult::indeterminate(
                 attempt.identity(),
                 attempt.idempotency_key(),

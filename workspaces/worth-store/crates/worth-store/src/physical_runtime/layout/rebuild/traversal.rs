@@ -36,14 +36,14 @@ pub(in crate::physical_runtime) fn traverse_publication(
     runtime: &ServingPhysicalRuntime,
     authority: &LayoutRebuildAuthority<'_>,
     selected: SelectedBlobPublication,
-    on_chunk: impl FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
+    mut on_chunk: impl FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
 ) -> Result<u64, LayoutRebuildFailure> {
     traverse_publication_inner(
         runtime,
         &authority.reader,
         Some(authority),
         selected,
-        on_chunk,
+        &mut on_chunk,
     )
 }
 
@@ -54,17 +54,19 @@ pub(in crate::physical_runtime) fn traverse_publication_direct(
     runtime: &ServingPhysicalRuntime,
     reader: &PhysicalRecordReader,
     selected: SelectedBlobPublication,
-    on_chunk: impl FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
+    mut on_chunk: impl FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
 ) -> Result<u64, LayoutRebuildFailure> {
-    traverse_publication_inner(runtime, reader, None, selected, on_chunk)
+    traverse_publication_inner(runtime, reader, None, selected, &mut on_chunk)
 }
 
+/// One compiled publication walk for every chunk callback.
+#[inline(never)]
 fn traverse_publication_inner(
     runtime: &ServingPhysicalRuntime,
     reader: &PhysicalRecordReader,
     authority: Option<&LayoutRebuildAuthority<'_>>,
     selected: SelectedBlobPublication,
-    mut on_chunk: impl FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
+    on_chunk: &mut dyn FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
 ) -> Result<u64, LayoutRebuildFailure> {
     let _allocation: MaintenancePhysicalAllocation<'_> = runtime
         .physical_allocations()
@@ -86,7 +88,7 @@ fn traverse_publication_inner(
         &mut ordinal,
         &mut node_indices,
         &mut digest,
-        &mut on_chunk,
+        on_chunk,
     )?;
     if digest.finalize().as_slice() != publication.logical_digest()
         || ordinal
@@ -112,7 +114,7 @@ fn visit_node(
     ordinal: &mut u64,
     node_indices: &mut [u64; MAXIMUM_TREE_DEPTH as usize],
     logical_digest: &mut Sha256,
-    on_chunk: &mut impl FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
+    on_chunk: &mut dyn FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
 ) -> Result<(), LayoutRebuildFailure> {
     if depth >= MAXIMUM_TREE_DEPTH {
         return Err(LayoutRebuildFailure::TraversalBoundExhausted);
@@ -191,7 +193,7 @@ fn visit_chunk(
     ordinal: u64,
     edge: worth_store_physical_format::BlobTreeEntryV1,
     logical_digest: &mut Sha256,
-    on_chunk: &mut impl FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
+    on_chunk: &mut dyn FnMut(ValidatedChunk<'_>) -> Result<(), LayoutRebuildFailure>,
 ) -> Result<(), LayoutRebuildFailure> {
     let publication = selected.publication;
     let expected_start = ordinal

@@ -140,26 +140,52 @@ impl<M> FilesystemObservation<M> {
     /// Spends the `length` bytes a whole read returned from the bytes this
     /// observation was admitted.
     fn spend_read_bytes(&mut self, length: u64) -> Result<(), RecoveryDiscoveryFailure> {
-        self.counters.bytes_read = self.counters.bytes_read.checked_add(length).ok_or(
-            RecoveryDiscoveryFailure::overflow(RecoveryDiscoveryCount::BytesRead),
-        )?;
-        let spent = self.spent_with(length)?;
-        self.remaining_bytes = self.maximum_bytes - spent;
-        Ok(())
+        commit_read_bytes(
+            &mut self.counters,
+            &mut self.remaining_bytes,
+            self.maximum_bytes,
+            length,
+        )
     }
 
     /// What this observation will have spent after `length` more bytes,
     /// within the bytes it was admitted.
     fn spent_with(&self, length: u64) -> Result<u64, RecoveryDiscoveryFailure> {
-        let spent = (self.maximum_bytes - self.remaining_bytes)
+        observation_bytes_after(self.maximum_bytes, self.remaining_bytes, length)
+    }
+}
+
+fn observation_bytes_after(
+    maximum_bytes: u64,
+    remaining_bytes: u64,
+    length: u64,
+) -> Result<u64, RecoveryDiscoveryFailure> {
+    let spent = (maximum_bytes - remaining_bytes)
+        .checked_add(length)
+        .ok_or(RecoveryDiscoveryFailure::overflow(
+            RecoveryDiscoveryCount::ObservationBytes,
+        ))?;
+    FilesystemObservationAllowance::observation_bytes(maximum_bytes)
+        .admit(spent)
+        .map_err(RecoveryDiscoveryFailure::Limit)
+}
+
+fn commit_read_bytes(
+    counters: &mut RecoveryDiscoveryCounters,
+    remaining_bytes: &mut u64,
+    maximum_bytes: u64,
+    length: u64,
+) -> Result<(), RecoveryDiscoveryFailure> {
+    counters.bytes_read =
+        counters
+            .bytes_read
             .checked_add(length)
             .ok_or(RecoveryDiscoveryFailure::overflow(
-                RecoveryDiscoveryCount::ObservationBytes,
+                RecoveryDiscoveryCount::BytesRead,
             ))?;
-        FilesystemObservationAllowance::observation_bytes(self.maximum_bytes)
-            .admit(spent)
-            .map_err(RecoveryDiscoveryFailure::Limit)
-    }
+    let spent = observation_bytes_after(maximum_bytes, *remaining_bytes, length)?;
+    *remaining_bytes = maximum_bytes - spent;
+    Ok(())
 }
 
 impl RecoveryDiscoveryFailure {

@@ -76,11 +76,59 @@ impl PhysicalBoundedFrameFaultOwner {
         L: FnOnce(u32) -> Result<u32, E>,
         F: FnOnce(&mut [u8]) -> Result<Option<crate::PhysicalResidencyAllocationOperation>, E>,
     {
+        let mut discover_failure = None;
+        let mut fill_failure = None;
+        let mut discover_length = Some(discover_length);
+        let mut fill = Some(fill);
+        match self.load_bounded_frame(
+            allocator,
+            &mut |limit| match discover_length
+                .take()
+                .expect("bounded length discovery runs once")(limit)
+            {
+                Ok(length) => Ok(length),
+                Err(error) => {
+                    discover_failure = Some(error);
+                    Err(())
+                }
+            },
+            &mut |target| match fill.take().expect("bounded frame fill runs once")(target) {
+                Ok(operation) => Ok(operation),
+                Err(error) => {
+                    fill_failure = Some(error);
+                    Err(())
+                }
+            },
+        ) {
+            Ok(lease) => Ok(lease),
+            Err(BoundedLoadStop::Residency { terminal, denial }) => {
+                Err(PhysicalFrameFaultError::Residency { terminal, denial })
+            }
+            Err(BoundedLoadStop::Source { terminal }) => Err(PhysicalFrameFaultError::Source {
+                terminal,
+                failure: discover_failure
+                    .or(fill_failure)
+                    .expect("bounded source failure is stored"),
+            }),
+        }
+    }
+
+    /// One compiled length, allocation, and publish path for every bounded fill.
+    #[inline(never)]
+    fn load_bounded_frame(
+        &mut self,
+        allocator: &dyn PhysicalFrameAllocator,
+        discover_length: &mut dyn FnMut(u32) -> Result<u32, ()>,
+        fill: &mut dyn FnMut(
+            &mut [u8],
+        )
+            -> Result<Option<crate::PhysicalResidencyAllocationOperation>, ()>,
+    ) -> Result<PhysicalFrameLease, BoundedLoadStop> {
         self.owner.record_source_load();
         let length = match discover_length(self.key.limit()) {
             Ok(length) if length > 0 && length <= self.key.limit() => length,
             Ok(_) => return Err(self.reject_invalid_length()),
-            Err(failure) => return Err(self.reject_source(failure)),
+            Err(()) => return Err(self.reject_source()),
         };
         let mut bytes = match allocator.allocate(length as usize) {
             Ok(bytes) => bytes,
@@ -95,8 +143,7 @@ impl PhysicalBoundedFrameFaultOwner {
                 PhysicalResidencyDenial::AllocatorExceededReservation { requested, actual },
             ));
         }
-        let operation =
-            fill(bytes.as_mut_slice()).map_err(|failure| self.reject_source(failure))?;
+        let operation = fill(bytes.as_mut_slice()).map_err(|()| self.reject_source())?;
         self.owner.actualize_allocation(
             crate::physical_residency::PhysicalResidencyAllocationActualization::new(
                 crate::PhysicalResidencyDimension::ResidentBytes,
@@ -120,19 +167,19 @@ impl PhysicalBoundedFrameFaultOwner {
             }
             Err((denial, terminal)) => {
                 self.armed = false;
-                Err(PhysicalFrameFaultError::Residency { terminal, denial })
+                Err(BoundedLoadStop::Residency { terminal, denial })
             }
         }
     }
 
-    fn reject_invalid_length<E>(&mut self) -> PhysicalFrameFaultError<E> {
+    fn reject_invalid_length(&mut self) -> BoundedLoadStop {
         let terminal = self.owner.fail_bounded_loading(
             self.key,
             self.identity,
             PhysicalFrameLoadTerminalKind::SourcePreparationFailed,
         );
         self.armed = false;
-        PhysicalFrameFaultError::Residency {
+        BoundedLoadStop::Residency {
             terminal,
             denial: self
                 .owner
@@ -140,31 +187,38 @@ impl PhysicalBoundedFrameFaultOwner {
         }
     }
 
-    fn reject_allocation<E>(
-        &mut self,
-        denial: PhysicalResidencyDenial,
-    ) -> PhysicalFrameFaultError<E> {
+    fn reject_allocation(&mut self, denial: PhysicalResidencyDenial) -> BoundedLoadStop {
         let terminal = self.owner.fail_bounded_loading(
             self.key,
             self.identity,
             PhysicalFrameLoadTerminalKind::AllocationFailed,
         );
         self.armed = false;
-        PhysicalFrameFaultError::Residency {
+        BoundedLoadStop::Residency {
             terminal,
             denial: self.owner.record_denial(denial),
         }
     }
 
-    fn reject_source<E>(&mut self, failure: E) -> PhysicalFrameFaultError<E> {
+    fn reject_source(&mut self) -> BoundedLoadStop {
         let terminal = self.owner.fail_bounded_loading(
             self.key,
             self.identity,
             PhysicalFrameLoadTerminalKind::SourceExecutionFailed,
         );
         self.armed = false;
-        PhysicalFrameFaultError::Source { terminal, failure }
+        BoundedLoadStop::Source { terminal }
     }
+}
+
+enum BoundedLoadStop {
+    Residency {
+        terminal: super::PhysicalFrameLoadTerminal,
+        denial: PhysicalResidencyDenial,
+    },
+    Source {
+        terminal: super::PhysicalFrameLoadTerminal,
+    },
 }
 
 impl Drop for PhysicalBoundedFrameFaultOwner {

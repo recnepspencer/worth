@@ -53,23 +53,69 @@ impl super::PhysicalRecoveryStagingOwner {
     where
         Effect: NonCurrentStagingOwnerEffect,
     {
-        let copied = super::execution::copy_lowered(&plan, &mut continuation)?;
-        super::execution::admit_continuation(
-            &mut continuation,
-            super::NonCurrentStagingBoundary::OwnerEffect,
-        )?;
-        let effect = owner_effect(NonCurrentStagingMutationScope::new(
-            plan.binding().staging_root(),
-            plan.binding().fingerprint(),
-        ))
-        .map_err(NonCurrentStagingOwnerExecutionDenial::Owner)?;
-        super::execution::admit_continuation(
-            &mut continuation,
-            super::NonCurrentStagingBoundary::OwnerEffectApplied,
-        )?;
-        let fingerprint = effect.effect_fingerprint();
-        let receipt =
-            super::execution::finalize_lowered(plan, copied, fingerprint, &mut continuation)?;
-        Ok((receipt, effect))
+        let mut effect_slot = None;
+        let mut owner_denial = None;
+        let mut owner_effect = Some(owner_effect);
+        match drive_owner_effect(plan, &mut continuation, &mut |scope| match owner_effect
+            .take()
+            .expect("staging owner effect runs once")(
+            scope
+        ) {
+            Ok(effect) => {
+                let fingerprint = effect.effect_fingerprint();
+                effect_slot = Some(effect);
+                Ok(fingerprint)
+            }
+            Err(denial) => {
+                owner_denial = Some(denial);
+                Err(())
+            }
+        }) {
+            Ok(receipt) => Ok((
+                receipt,
+                effect_slot.expect("staging owner effect stores its value"),
+            )),
+            Err(OwnerEffectDriveFailure::Backend(denial)) => {
+                Err(NonCurrentStagingOwnerExecutionDenial::Backend(denial))
+            }
+            Err(OwnerEffectDriveFailure::Owner) => {
+                Err(NonCurrentStagingOwnerExecutionDenial::Owner(
+                    owner_denial.expect("staging owner denial is stored"),
+                ))
+            }
+        }
     }
+}
+
+enum OwnerEffectDriveFailure {
+    Backend(super::NonCurrentStagingExecutionDenial),
+    Owner,
+}
+
+/// One compiled staging copy for every owner effect.
+#[inline(never)]
+fn drive_owner_effect(
+    plan: super::LoweredNonCurrentStagingPlan,
+    continuation: &mut dyn FnMut(super::NonCurrentStagingBoundary) -> bool,
+    owner_effect: &mut dyn FnMut(NonCurrentStagingMutationScope<'_>) -> Result<[u8; 32], ()>,
+) -> Result<super::NonCurrentStagingExecutionReceipt, OwnerEffectDriveFailure> {
+    let copied = super::execution::copy_lowered(&plan, continuation)
+        .map_err(OwnerEffectDriveFailure::Backend)?;
+    super::execution::admit_continuation(
+        continuation,
+        super::NonCurrentStagingBoundary::OwnerEffect,
+    )
+    .map_err(OwnerEffectDriveFailure::Backend)?;
+    let fingerprint = owner_effect(NonCurrentStagingMutationScope::new(
+        plan.binding().staging_root(),
+        plan.binding().fingerprint(),
+    ))
+    .map_err(|()| OwnerEffectDriveFailure::Owner)?;
+    super::execution::admit_continuation(
+        continuation,
+        super::NonCurrentStagingBoundary::OwnerEffectApplied,
+    )
+    .map_err(OwnerEffectDriveFailure::Backend)?;
+    super::execution::finalize_lowered(plan, copied, fingerprint, continuation)
+        .map_err(OwnerEffectDriveFailure::Backend)
 }

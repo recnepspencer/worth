@@ -97,6 +97,28 @@ pub(super) fn scan_segment_reader(
     chunk: &mut [u8],
     mut observe: impl FnMut(WalFrameObservation),
 ) -> Result<WalPrefixScan, WalArtifactStoreDenial> {
+    scan_segment_frames(
+        file,
+        initial_offset,
+        initial_lsn_end,
+        segment_id,
+        generation,
+        chunk,
+        &mut observe,
+    )
+}
+
+/// One compiled WAL frame scan for every observer closure.
+#[inline(never)]
+fn scan_segment_frames(
+    file: &mut std::fs::File,
+    initial_offset: u64,
+    initial_lsn_end: Option<u64>,
+    segment_id: u64,
+    generation: u64,
+    chunk: &mut [u8],
+    observe: &mut dyn FnMut(WalFrameObservation),
+) -> Result<WalPrefixScan, WalArtifactStoreDenial> {
     if chunk.is_empty() {
         return Err(WalArtifactStoreDenial::InvalidFrame);
     }

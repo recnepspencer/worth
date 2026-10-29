@@ -289,35 +289,32 @@ fn namespace_mutation_call<T>(
     role: super::MediaOperationRole,
     call: impl FnOnce() -> std::io::Result<T>,
 ) -> Result<T, NamespaceMutationFailure> {
-    let attempt = boundary.begin(role, 0);
-    if let Some(error) = attempt.fail_before_error() {
-        attempt.denied();
-        return Err(NamespaceMutationFailure {
-            error,
-            effect_fate: MediaOwnerAdmissionEffectFate::DeniedBeforeEffect,
-        });
+    let mut value = None;
+    let mut call = Some(call);
+    match super::admitted_namespace::boundary_io(boundary, role, &mut || {
+        call.take().expect("namespace mutation runs once")().map(|item| value = Some(item))
+    }) {
+        Ok(()) => Ok(value.expect("completed namespace mutation stores its value")),
+        Err(super::admitted_namespace::BoundaryIoStop::Denied(error)) => {
+            Err(denied_mutation(error))
+        }
+        Err(super::admitted_namespace::BoundaryIoStop::Indeterminate) => {
+            Err(interrupted_mutation())
+        }
     }
-    match call() {
-        Ok(_) if attempt.effect_observation_is_indeterminate() => {
-            attempt.indeterminate(0);
-            Err(NamespaceMutationFailure {
-                error: std::io::Error::other(
-                    "certification interrupted admission-effect observation",
-                ),
-                effect_fate: MediaOwnerAdmissionEffectFate::EffectPossible,
-            })
-        }
-        Ok(value) => {
-            attempt.completed(0);
-            Ok(value)
-        }
-        Err(error) => {
-            attempt.denied();
-            Err(NamespaceMutationFailure {
-                error,
-                effect_fate: MediaOwnerAdmissionEffectFate::DeniedBeforeEffect,
-            })
-        }
+}
+
+fn denied_mutation(error: std::io::Error) -> NamespaceMutationFailure {
+    NamespaceMutationFailure {
+        error,
+        effect_fate: MediaOwnerAdmissionEffectFate::DeniedBeforeEffect,
+    }
+}
+
+fn interrupted_mutation() -> NamespaceMutationFailure {
+    NamespaceMutationFailure {
+        error: std::io::Error::other("certification interrupted admission-effect observation"),
+        effect_fate: MediaOwnerAdmissionEffectFate::EffectPossible,
     }
 }
 

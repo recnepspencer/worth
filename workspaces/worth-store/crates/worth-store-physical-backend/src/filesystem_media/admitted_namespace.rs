@@ -187,30 +187,53 @@ impl AdmittedStoreNamespace {
     }
 }
 
+pub(super) enum BoundaryIoStop {
+    Indeterminate,
+    Denied(std::io::Error),
+}
+
 pub(super) fn boundary_io_call<T>(
     boundary: &super::fault_interposition::MediaFaultInterposer,
     role: super::MediaOperationRole,
     call: impl FnOnce() -> std::io::Result<T>,
 ) -> std::io::Result<T> {
+    let mut value = None;
+    let mut call = Some(call);
+    match boundary_io(boundary, role, &mut || {
+        call.take().expect("boundary I/O runs once")().map(|item| value = Some(item))
+    }) {
+        Ok(()) => Ok(value.expect("completed boundary I/O stores its value")),
+        Err(BoundaryIoStop::Denied(error)) => Err(error),
+        Err(BoundaryIoStop::Indeterminate) => Err(std::io::Error::other(
+            "certification interrupted admission-effect observation",
+        )),
+    }
+}
+
+/// One compiled fault-interposition boundary for every I/O closure.
+#[inline(never)]
+pub(super) fn boundary_io(
+    boundary: &super::fault_interposition::MediaFaultInterposer,
+    role: super::MediaOperationRole,
+    call: &mut dyn FnMut() -> std::io::Result<()>,
+) -> Result<(), BoundaryIoStop> {
     let attempt = boundary.begin(role, 0);
     if let Some(error) = attempt.fail_before_error() {
         attempt.denied();
-        return Err(error);
+        return Err(BoundaryIoStop::Denied(error));
     }
     match call() {
-        Ok(_) if attempt.effect_observation_is_indeterminate() => {
+        Ok(()) if attempt.effect_observation_is_indeterminate() => {
             attempt.indeterminate(0);
-            Err(std::io::Error::other(
-                "certification interrupted admission-effect observation",
-            ))
+            Err(BoundaryIoStop::Indeterminate)
         }
-        Ok(value) => {
+        Ok(()) => {
             attempt.completed(0);
-            Ok(value)
+            Ok(())
         }
         Err(error) => {
             attempt.denied();
-            Err(error)
+            Err(BoundaryIoStop::Denied(error))
         }
     }
 }

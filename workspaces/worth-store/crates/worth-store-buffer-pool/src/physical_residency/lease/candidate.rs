@@ -93,6 +93,19 @@ impl PhysicalCandidateFrameReservation {
     where
         F: FnOnce(&mut [u8]),
     {
+        let mut fill = Some(fill);
+        self.materialize_filled_candidate(allocator, &mut |bytes| {
+            fill.take().expect("candidate fill runs once")(bytes);
+        })
+    }
+
+    /// One compiled candidate materialization for every fill closure.
+    #[inline(never)]
+    fn materialize_filled_candidate(
+        &mut self,
+        allocator: &dyn CandidateFrameAllocator,
+        fill: &mut dyn FnMut(&mut [u8]),
+    ) -> Result<DirtyPhysicalFrame, PhysicalResidencyDenial> {
         let key = self.candidate.frame_key();
         let length = usize::try_from(key.coordinate().length())
             .expect("physical frame lengths are admitted from u32 coordinates");

@@ -13,9 +13,9 @@ use super::super::ceiling::CeilingBytes;
 use super::super::grant::{GrantShare, ReadGrant};
 use super::super::refusal::{AllocatedReadFailure, ArtifactDamage, ReadRefusal};
 use super::{
-    DiscoveryMediaBacking, FilesystemObservation, ObservedRecoveryArtifact,
+    commit_read_bytes, DiscoveryMediaBacking, FilesystemObservation, ObservedRecoveryArtifact,
     RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryCount,
-    RecoveryDiscoveryFailure,
+    RecoveryDiscoveryCounters, RecoveryDiscoveryFailure,
 };
 
 /// Where a charged read stopped.
@@ -141,36 +141,36 @@ impl<M: DiscoveryMediaBacking> FilesystemObservation<M> {
             .admitted()
             .min(grant.left().unwrap_or(u64::MAX))
             .min(self.remaining_bytes);
-        let store = self.parts.store_identity();
-        match read(self.attempt(), limit) {
-            Ok(bytes) => {
-                self.spend_read_bytes(bytes.len() as u64)
-                    .map_err(ReadStop::stop)?;
-                if fixed {
-                    self.counters.fixed_slots_read += 1;
-                } else {
-                    self.counters.addressed_artifacts_read += 1;
+        let mut caller_failure = None;
+        let mut read = Some(read);
+        match drive_whole_read(
+            &mut self.parts,
+            &mut self.remaining_entries,
+            &mut self.remaining_bytes,
+            self.maximum_bytes,
+            &mut self.counters,
+            context,
+            limit,
+            fixed,
+            &mut |attempt, admitted| match read.take().expect("charged whole read runs once")(
+                attempt, admitted,
+            ) {
+                Ok(bytes) => Ok(bytes),
+                Err(TreeReadFailure::Media(failure)) => Err(DriveReadFailure::Media(failure)),
+                Err(TreeReadFailure::Caller(failure)) => {
+                    caller_failure = Some(failure);
+                    Err(DriveReadFailure::Caller)
                 }
-                Ok(ObservedRecoveryArtifact::new(
-                    store,
-                    context,
-                    0,
-                    Some(bytes),
-                ))
-            }
-            Err(TreeReadFailure::Media(failure))
-                if failure.kind() == ArtifactTreeFailureKind::Absent =>
-            {
-                // A fixed slot is read whether or not it holds an artifact.
-                if fixed {
-                    self.counters.fixed_slots_read += 1;
-                }
-                Ok(ObservedRecoveryArtifact::new(store, context, 0, None))
-            }
-            Err(TreeReadFailure::Media(failure)) => {
+            },
+        ) {
+            Ok(artifact) => Ok(artifact),
+            Err(DriveWholeStop::Caller) => Err(ReadStop::Failed(
+                caller_failure.expect("charged whole read stores its caller failure"),
+            )),
+            Err(DriveWholeStop::Observation(failure)) => Err(ReadStop::stop(failure)),
+            Err(DriveWholeStop::Media { context, failure }) => {
                 Err(self.whole_refusal(context, failure, ceiling, grant))
             }
-            Err(TreeReadFailure::Caller(failure)) => Err(ReadStop::Failed(failure)),
         }
     }
 
@@ -198,35 +198,40 @@ impl<M: DiscoveryMediaBacking> FilesystemObservation<M> {
         }
         self.spent_with(bytes).map_err(ReadStop::stop)?;
         self.admit_read().map_err(ReadStop::stop)?;
-        let store = self.parts.store_identity();
-        match read(self.attempt(), capacity) {
-            Ok(observed) => {
-                self.spend_read_bytes(bytes).map_err(ReadStop::stop)?;
-                self.counters.addressed_artifacts_read += 1;
-                Ok(ObservedRecoveryArtifact::new(
-                    store,
-                    context,
-                    offset,
-                    Some(observed),
-                ))
+        let mut caller_failure = None;
+        let mut read = Some(read);
+        match drive_range_read(
+            &mut self.parts,
+            &mut self.remaining_entries,
+            &mut self.remaining_bytes,
+            self.maximum_bytes,
+            &mut self.counters,
+            context,
+            offset,
+            bytes,
+            capacity,
+            &mut |attempt, capacity| match read.take().expect("charged range read runs once")(
+                attempt, capacity,
+            ) {
+                Ok(observed) => Ok(observed),
+                Err(TreeReadFailure::Media(failure)) => Err(DriveReadFailure::Media(failure)),
+                Err(TreeReadFailure::Caller(failure)) => {
+                    caller_failure = Some(failure);
+                    Err(DriveReadFailure::Caller)
+                }
+            },
+        ) {
+            Ok(artifact) => Ok(artifact),
+            Err(DriveRangeStop::Caller) => Err(ReadStop::Failed(
+                caller_failure.expect("charged range read stores its caller failure"),
+            )),
+            Err(DriveRangeStop::Observation(failure)) => Err(ReadStop::stop(failure)),
+            Err(DriveRangeStop::Media { context, failure }) => {
+                Err(ReadStop::damage(ArtifactDamage::Media {
+                    artifact: context,
+                    failure,
+                }))
             }
-            Err(TreeReadFailure::Media(failure))
-                if failure.kind() == ArtifactTreeFailureKind::Absent =>
-            {
-                Ok(ObservedRecoveryArtifact::new(store, context, offset, None))
-            }
-            Err(TreeReadFailure::Media(failure)) => Err(ReadStop::damage(ArtifactDamage::Media {
-                artifact: context,
-                failure,
-            })),
-            Err(TreeReadFailure::Caller(failure)) => Err(ReadStop::Failed(failure)),
-        }
-    }
-
-    fn attempt(&mut self) -> ReadAttempt<'_> {
-        ReadAttempt {
-            tree: self.parts.artifact_tree(),
-            remaining_entries: &mut self.remaining_entries,
         }
     }
 
@@ -269,5 +274,121 @@ impl<M: DiscoveryMediaBacking> FilesystemObservation<M> {
                 failure,
             }),
         }
+    }
+}
+
+enum DriveReadFailure {
+    Media(ArtifactTreeFailure),
+    Caller,
+}
+
+enum DriveWholeStop {
+    Observation(RecoveryDiscoveryFailure),
+    Media {
+        context: RecoveryDiscoveryArtifact,
+        failure: ArtifactTreeFailure,
+    },
+    Caller,
+}
+
+enum DriveRangeStop {
+    Observation(RecoveryDiscoveryFailure),
+    Media {
+        context: RecoveryDiscoveryArtifact,
+        failure: ArtifactTreeFailure,
+    },
+    Caller,
+}
+
+/// One compiled whole-artifact read for every backing, limit, and caller closure.
+#[inline(never)]
+fn drive_whole_read(
+    parts: &mut dyn DiscoveryMediaBacking,
+    remaining_entries: &mut u64,
+    remaining_bytes: &mut u64,
+    maximum_bytes: u64,
+    counters: &mut RecoveryDiscoveryCounters,
+    context: RecoveryDiscoveryArtifact,
+    limit: u64,
+    fixed: bool,
+    read: &mut dyn FnMut(ReadAttempt<'_>, u64) -> Result<Vec<u8>, DriveReadFailure>,
+) -> Result<ObservedRecoveryArtifact, DriveWholeStop> {
+    let store = parts.store_identity();
+    match read(
+        ReadAttempt {
+            tree: parts.artifact_tree(),
+            remaining_entries,
+        },
+        limit,
+    ) {
+        Ok(bytes) => {
+            commit_read_bytes(counters, remaining_bytes, maximum_bytes, bytes.len() as u64)
+                .map_err(DriveWholeStop::Observation)?;
+            if fixed {
+                counters.fixed_slots_read += 1;
+            } else {
+                counters.addressed_artifacts_read += 1;
+            }
+            Ok(ObservedRecoveryArtifact::new(
+                store,
+                context,
+                0,
+                Some(bytes),
+            ))
+        }
+        Err(DriveReadFailure::Media(failure))
+            if failure.kind() == ArtifactTreeFailureKind::Absent =>
+        {
+            // A fixed slot is read whether or not it holds an artifact.
+            if fixed {
+                counters.fixed_slots_read += 1;
+            }
+            Ok(ObservedRecoveryArtifact::new(store, context, 0, None))
+        }
+        Err(DriveReadFailure::Media(failure)) => Err(DriveWholeStop::Media { context, failure }),
+        Err(DriveReadFailure::Caller) => Err(DriveWholeStop::Caller),
+    }
+}
+
+/// One compiled exact-range read for every backing, limit, and caller closure.
+#[inline(never)]
+fn drive_range_read(
+    parts: &mut dyn DiscoveryMediaBacking,
+    remaining_entries: &mut u64,
+    remaining_bytes: &mut u64,
+    maximum_bytes: u64,
+    counters: &mut RecoveryDiscoveryCounters,
+    context: RecoveryDiscoveryArtifact,
+    offset: u64,
+    bytes: u64,
+    capacity: usize,
+    read: &mut dyn FnMut(ReadAttempt<'_>, usize) -> Result<Vec<u8>, DriveReadFailure>,
+) -> Result<ObservedRecoveryArtifact, DriveRangeStop> {
+    let store = parts.store_identity();
+    match read(
+        ReadAttempt {
+            tree: parts.artifact_tree(),
+            remaining_entries,
+        },
+        capacity,
+    ) {
+        Ok(observed) => {
+            commit_read_bytes(counters, remaining_bytes, maximum_bytes, bytes)
+                .map_err(DriveRangeStop::Observation)?;
+            counters.addressed_artifacts_read += 1;
+            Ok(ObservedRecoveryArtifact::new(
+                store,
+                context,
+                offset,
+                Some(observed),
+            ))
+        }
+        Err(DriveReadFailure::Media(failure))
+            if failure.kind() == ArtifactTreeFailureKind::Absent =>
+        {
+            Ok(ObservedRecoveryArtifact::new(store, context, offset, None))
+        }
+        Err(DriveReadFailure::Media(failure)) => Err(DriveRangeStop::Media { context, failure }),
+        Err(DriveReadFailure::Caller) => Err(DriveRangeStop::Caller),
     }
 }

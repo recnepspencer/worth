@@ -78,6 +78,24 @@ pub(super) fn walk_classified(
         &[u8],
     ) -> Result<(), BlobReclaimFailure>,
 ) -> Result<PhysicalRecordReader, BlobReclaimFailure> {
+    walk_classified_records(reader, limits, scratch, work, &mut visit)
+}
+
+/// One compiled selected-route scan for every visitor.
+#[inline(never)]
+fn walk_classified_records(
+    reader: PhysicalRecordReader,
+    limits: BlobReclaimLimits,
+    scratch: &mut [u8],
+    work: &mut ReclaimInspectionWork,
+    visit: &mut dyn FnMut(
+        PersistedRecordIdentity,
+        SelectedRecordContentClass,
+        PhysicalTierClass,
+        u64,
+        &[u8],
+    ) -> Result<(), BlobReclaimFailure>,
+) -> Result<PhysicalRecordReader, BlobReclaimFailure> {
     let mut scan = reader
         .scan_rebuild(
             RecordScanRequest::from_start()

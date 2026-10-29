@@ -176,6 +176,20 @@ impl BoundedFrameLoader {
         access: PhysicalFrameAccess,
         prepare: impl FnOnce() -> Result<PreparedExactFrameRead<'source>, FrameLoadFailure>,
     ) -> Result<LoadedPhysicalFrame, FrameLoadFailure> {
+        let mut prepare = Some(prepare);
+        self.load_prepared_exact_frame(coordinate, access, &mut || {
+            prepare.take().expect("exact frame preparation runs once")()
+        })
+    }
+
+    /// One compiled exact-frame admission for every source preparation.
+    #[inline(never)]
+    fn load_prepared_exact_frame<'source>(
+        &self,
+        coordinate: RecordFrameCoordinate,
+        access: PhysicalFrameAccess,
+        prepare: &mut dyn FnMut() -> Result<PreparedExactFrameRead<'source>, FrameLoadFailure>,
+    ) -> Result<LoadedPhysicalFrame, FrameLoadFailure> {
         let (lease, origin, work, projection_failure) = match access {
             PhysicalFrameAccess::Hit(lease) => (
                 lease,

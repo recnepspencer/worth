@@ -86,34 +86,37 @@ impl PhysicalRecoveryStagingOwner {
     ) -> Result<NonCurrentStagingExecutionReceipt, NonCurrentStagingExecutionDenial> {
         let plan = Self::lower_for_execution(request)
             .map_err(|_| NonCurrentStagingExecutionDenial::StagingIdentityConflict)?;
-        execute_lowered(plan, |_| true)
+        Self::execute_lowered(plan)
     }
 
     pub fn execute_lowered(
         plan: LoweredNonCurrentStagingPlan,
     ) -> Result<NonCurrentStagingExecutionReceipt, NonCurrentStagingExecutionDenial> {
-        execute_lowered(plan, |_| true)
+        execute_lowered_plan(plan, &mut |_| true)
     }
 
     pub fn execute_lowered_guarded(
         plan: LoweredNonCurrentStagingPlan,
-        continuation: impl FnMut(NonCurrentStagingBoundary) -> bool,
+        mut continuation: impl FnMut(NonCurrentStagingBoundary) -> bool,
     ) -> Result<NonCurrentStagingExecutionReceipt, NonCurrentStagingExecutionDenial> {
-        execute_lowered(plan, continuation)
+        execute_lowered_plan(plan, &mut continuation)
     }
 }
 
-fn execute_lowered(
+/// One compiled lowered-plan copy and finalization for every continuation.
+#[inline(never)]
+fn execute_lowered_plan(
     plan: LoweredNonCurrentStagingPlan,
-    mut continuation: impl FnMut(NonCurrentStagingBoundary) -> bool,
+    continuation: &mut dyn FnMut(NonCurrentStagingBoundary) -> bool,
 ) -> Result<NonCurrentStagingExecutionReceipt, NonCurrentStagingExecutionDenial> {
-    let copied = copy_lowered(&plan, &mut continuation)?;
-    finalize_lowered(plan, copied, [0; 32], &mut continuation)
+    let copied = copy_lowered(&plan, continuation)?;
+    finalize_lowered(plan, copied, [0; 32], continuation)
 }
 
+#[inline(never)]
 pub(super) fn copy_lowered(
     plan: &LoweredNonCurrentStagingPlan,
-    continuation: &mut impl FnMut(NonCurrentStagingBoundary) -> bool,
+    continuation: &mut dyn FnMut(NonCurrentStagingBoundary) -> bool,
 ) -> Result<(u64, Sha256), NonCurrentStagingExecutionDenial> {
     admit_continuation(continuation, NonCurrentStagingBoundary::Allocation)?;
     std::fs::create_dir_all(plan.binding().staging_root())?;
@@ -153,11 +156,12 @@ pub(super) fn copy_lowered(
     Ok((bytes_copied, content))
 }
 
+#[inline(never)]
 pub(super) fn finalize_lowered(
     plan: LoweredNonCurrentStagingPlan,
     copied: (u64, Sha256),
     effect_fingerprint: [u8; 32],
-    continuation: &mut impl FnMut(NonCurrentStagingBoundary) -> bool,
+    continuation: &mut dyn FnMut(NonCurrentStagingBoundary) -> bool,
 ) -> Result<NonCurrentStagingExecutionReceipt, NonCurrentStagingExecutionDenial> {
     admit_continuation(continuation, NonCurrentStagingBoundary::Finalization)?;
     close_staging_media(
@@ -187,7 +191,7 @@ fn staged_content_fingerprint(mut copied: Sha256, effect_fingerprint: [u8; 32]) 
 }
 
 pub(super) fn admit_continuation(
-    continuation: &mut impl FnMut(NonCurrentStagingBoundary) -> bool,
+    continuation: &mut dyn FnMut(NonCurrentStagingBoundary) -> bool,
     boundary: NonCurrentStagingBoundary,
 ) -> Result<(), NonCurrentStagingExecutionDenial> {
     if continuation(boundary) {

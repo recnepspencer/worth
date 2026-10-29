@@ -135,6 +135,26 @@ pub(crate) fn scan_durable_suffix(
     initial_last_frame_checksum: Option<[u8; 32]>,
     mut observe: impl FnMut(DurableControlRecordBytes) -> Result<(), ControlMediaFault>,
 ) -> Result<DurablePrefixSummary, ControlMediaFault> {
+    scan_durable_records(
+        reader,
+        initial_offset,
+        initial_generation,
+        initial_prefix_digest,
+        initial_last_frame_checksum,
+        &mut observe,
+    )
+}
+
+/// One compiled control-prefix scan for every reader and observer.
+#[inline(never)]
+fn scan_durable_records(
+    reader: &mut dyn Read,
+    initial_offset: u64,
+    initial_generation: Option<ControlStoreGeneration>,
+    initial_prefix_digest: [u8; 32],
+    initial_last_frame_checksum: Option<[u8; 32]>,
+    observe: &mut dyn FnMut(DurableControlRecordBytes) -> Result<(), ControlMediaFault>,
+) -> Result<DurablePrefixSummary, ControlMediaFault> {
     let mut offset = initial_offset;
     let mut previous = initial_generation;
     let mut prefix_digest = initial_prefix_digest;
@@ -214,7 +234,7 @@ pub(crate) fn extend_prefix_digest(previous: [u8; 32], frame_checksum: [u8; 32])
 }
 
 fn read_header(
-    reader: &mut impl Read,
+    reader: &mut dyn Read,
     offset: u64,
 ) -> Result<Option<[u8; HEADER_LEN]>, ControlMediaFault> {
     let mut header = [0; HEADER_LEN];
@@ -232,7 +252,7 @@ fn read_header(
 }
 
 fn read_frame_part(
-    reader: &mut impl Read,
+    reader: &mut dyn Read,
     bytes: &mut [u8],
     offset: u64,
 ) -> Result<(), ControlMediaFault> {
