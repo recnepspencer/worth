@@ -97,7 +97,7 @@ def dependencies(rows, destination):
     for (target, alias), row in sorted(grouped.items(), key=lambda item: str(item[0])):
         spec = {}
         if row.get('path'):
-            spec['path'] = Path(os.path.relpath(row['path'], destination)).as_posix()
+            spec['path'] = Path(os.path.relpath(Path(row['path']).resolve(), destination.resolve())).as_posix()
         elif (row.get('source') or '').startswith('git+'):
             source = row['source'][4:].split('#', 1)
             spec['git'] = source[0].split('?', 1)[0]

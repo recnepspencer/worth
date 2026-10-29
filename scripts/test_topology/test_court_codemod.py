@@ -89,7 +89,7 @@ class CourtCodemodTests(unittest.TestCase):
             subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
             before = self.named_tests(root, ['crates/worth-base/tests/base.rs',
                                            'crates/worth-host/tests/suite.rs', 'crates/worth-host/tests/wide.rs'])
-            before_bodies = self.test_bodies(root, ['crates/worth-base/tests/base.rs',
+            before_bodies = self.named_bodies(root, ['crates/worth-base/tests/base.rs',
                                                    'crates/worth-host/tests/suite.rs', 'crates/worth-host/tests/wide.rs'])
             first = apply(self.plan, root)
             self.assertGreater(first['moved'], 0)
@@ -103,7 +103,7 @@ class CourtCodemodTests(unittest.TestCase):
                 for rewrite in self.plan['path_rewrites']:
                     body = body.replace(rewrite['before'], rewrite['after'])
                 expected[body] += count
-            self.assertEqual(expected, self.test_bodies(root, after_targets))
+            self.assertEqual(expected, self.named_bodies(root, after_targets))
             self.assertFalse((root / 'crates/worth-host/tests').exists())
             for court in self.plan['courts']:
                 manifest = tomllib.loads((root / 'crates' / court['name'] / 'Cargo.toml').read_text())
@@ -143,7 +143,7 @@ class CourtCodemodTests(unittest.TestCase):
         return result
 
     @staticmethod
-    def test_bodies(root, targets):
+    def named_bodies(root, targets):
         result = Counter()
         for target in targets:
             for node in read_tree(root / target).walk():
