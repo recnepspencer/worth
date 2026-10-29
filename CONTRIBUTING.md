@@ -91,6 +91,10 @@ few conventions decide how much each build repeats.
 - **Windows linking**: the target `linker` setting chooses Rust's bundled
   `rust-lld`. Keep compiler safety/platform flags in `build.rustflags`; a
   target rustflags table replaces that array rather than extending it.
+  For Windows doctest qualification, append `-C link-arg=/STACK:67108864`
+  to process-local `RUSTDOCFLAGS`, preserving existing flags. This gives
+  rustdoc's merged main thread the same 64 MiB reserve as the repository's
+  test-thread policy; `RUST_MIN_STACK` only configures spawned threads.
 - **Build scripts** declare `cargo::rerun-if-changed`; without it Cargo
   reruns them after any edit in the package and rebuilds every dependent.
 

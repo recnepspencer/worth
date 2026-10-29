@@ -5749,7 +5749,7 @@ milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-**Progress, 2026-10-27:** Phases 1–4 are accepted: actual-read observations,
+**Progress, 2026-10-29:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
 query closure steps, stored orbits, persistent aggregate identity/lineage and
 qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6 are
@@ -5764,8 +5764,8 @@ includes incoming main `52b0fd370ee428f1`: all 356 Entry tests pass (one existin
 ignored), all 3,480 workspace CI tests pass (78 skipped), 62 cost tests and 213
 doc tests pass, and the all-target, oracle, determinism and policy gates pass.
 The CI and cost lanes exclude only Entry, qualified separately in full. SDK
-`5b01312ed0048ad4591e6b4a50e08685ea6d77ba` is unchanged. Actual Rust 1.98.0
-qualification leaves Phase 18’s Rust 1.99.x requirement open.
+`5b01312ed0048ad4591e6b4a50e08685ea6d77ba` was the SDK for that accepted
+qualification on Rust 1.98.0; current Phase 19 adoption is recorded below.
 The 2026-10-26 runtime audit adds required Phases 7–11: exact async
 source commit identity, application managed async resources, receipt-rooted causal
 inspection, bounded record/aspect history, and one batch for both cleanup findings.
@@ -5786,6 +5786,17 @@ use the ordinary Decl/Host start, fresh inspection, progression and close path,
 with finite provider/ingress/result custody and genuine owned-effect recovery.
 Its combined workflow qualifies populated forks, burned prepared adoptions and
 sibling publications against the actual Native source. Phase 9 remains unfinished.
+
+Phase 19's public implementation is
+accepted on 2026-10-29 at `7c77f32d0b45411a07648e31635863b38f48b5bd`.
+Ordinary consecutive reversal preserves canonical cancellation, complete compatible
+support, live/reapplied divergence and current admission. Proprietary consumes
+immutable SDK `c03e2298e9bcdac984099e69642c1e4d59e67753`; its current ABI and
+unfiltered 510-test Entry gate pass. Remaining private qualification and private
+`main` integration are a separate handoff. The
+[governing Phase 19 contract](milestone-9.18.1.md#phase-19-consecutive-undo-after-verified-source-restoration)
+records proof boundaries and retained-history limits. These prerequisites do not
+independently certify the compiler, field-write or toolchain phases.
 These additions do not reopen the original phases. The 2026-10-27 Proprietary
 report against SDK `ba86433627` adds compiler and unobserved-write refusals,
 cell-version/live-at-k qualification, fresh ordinary proposal acceptance and
@@ -5793,8 +5804,9 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-Seventeen implementation phases remain required in 9.18.1, preserving the other
-numbers; the report's pin is provenance, not a pin update.
+The retained scope has seventeen implementation phases; 9, 13, 14, 16, 17 and 18
+remain unfinished, alongside the private Phase 19 handoff. The report's original
+pin remains provenance.
 
 ### Goal
 

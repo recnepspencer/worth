@@ -5,8 +5,8 @@
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
-> Phases 13–14 and 16–18 remain required here, including Rust 1.99.x qualification.
-> Addendum 1 adds required P1 Phase 19: correction-aware consecutive source undo.
+> Phase 19's public implementation is accepted on 2026-10-29; proprietary handoff remains pending.
+> Phases 13–14 and 16–18 remain unfinished. Addendum 1 owns Phase 19's required behavior.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -1909,7 +1909,7 @@ toolchain/contributor documentation, including the typed unqualified outcome.
 
 ## Phase 19: Consecutive Undo After Verified Source Restoration
 
-**Status: unfinished; required. Priority: P1.**
+**Status: public implementation accepted 2026-10-29; proprietary handoff pending. Priority: P1.**
 **Owner:** Query correction derivation, consuming existing canonical occurrence,
 footprint and correction-lineage owners. **Depends on:** 9.18's recorded source
 capture, ordinary correction binding, exact target ancestry and fresh admission.
@@ -2039,170 +2039,41 @@ This phase closes only after public qualification and the candidate-SDK private
 probe pass, reviewed corrections to the superseded expectation, and required
 repository checks. A plan change or a value-equality shortcut cannot close it.
 
-### Aspect-Presence Restoration Repair
+### Qualified Public Contract And Proprietary Handoff
 
-**Qualification held.** The original private integration at `01817084` after
-incoming `851478c0` exposed `RestoredSupport(UnsupportedFact)` before the
-producer's first B reversal, and the session live-overlap control recorded actual
-`AspectPresence` rather than the required `SourceDiverged`. SDK `4a833893` repaired
-that receiving boundary and passed its focused Native/Query courts and affected
-owner doctests before synchronization. Those results are historical evidence.
+Phase 19's public implementation is qualified at
+`7c77f32d0b45411a07648e31635863b38f48b5bd`, incorporating public `master`
+`c10d772bc47fd5cc2b499ae4de75be7b074a47c7`. Ordinary correction requests can
+reverse each original source after the exact later source occurrences have their
+own performed reversals on the selected ancestry. Canonical occurrence
+cancellation, strict original verification, complete compatible support, current
+authority and stale-target checks remain mandatory. Equal values alone do not
+establish restoration.
 
-Private `b00984ec`, including incoming `c1ad55cc`, compiled all targets but failed
-the unfiltered Entry gate: the bare consecutive Undo passed, the strict producer
-failed with `UnsupportedFact`, and the session's live-overlap control recorded
-`SourceAdjacencyRevision`. Its expected `SourceDiverged` and later 7-to-3 values
-remain unchanged. This is an open support gap, not renewed private acceptance.
+The [consumer contract](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
+and [compiled correction journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
+cover the ordinary source and correction route. The two
+[Clone observed-field courts](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/observed_fields.rs)
+establish field support. Complete-aspect proof belongs to the Native courts and
+the genuine CAD integration; those field courts do not establish whole-aspect
+coverage. Public qualification includes the affected Native and Query runtime
+courts, retained strict refusal/cancellation controls, affected-owner doctests,
+and normal guidance, generated-context and boundary checks. The later fixture
+and documentation commits require no newer consumer behavior.
 
-The current SDK must incorporate exact public master
-`7d94f26770d718d2ea63691258f9f715bf9a501d`, including the Native Store cutover.
-Canonical bodies and exact region reads now follow their execution-taking demand
-owners; authored history remains a discardable accelerator. Synchronization and
-its semantic joins require independent Source review and causally affected
-qualification before another immutable SDK adoption. No earlier green result
-qualifies the synchronized source; final acceptance drafts remain held.
+Proprietary consumes immutable SDK
+`c03e2298e9bcdac984099e69642c1e4d59e67753`; all seven root and one probe manifest
+pins, and 17 root and three probe lock packages, select that revision. The private
+handoff candidate incorporates incoming `main`
+`f54ae2564c20eafe4a978e20d359216c1b4cbb78`. Its locked all-target ABI and full
+unfiltered Entry gate pass: 510 tests, five existing skips, all 22 required library
+courts and all three bare/producer/session consecutive-undo journeys. Remaining
+private qualification and private `main` integration belong to the proprietary
+handoff; public acceptance does not certify that unfinished handoff.
 
-The adversarial boundary is a scalar `EntityMutationIntent::UpdateFields` that
-initializes an absent aspect. Its canonical authored scope is only the exact
-Field, while Native lowering uses `SetWhole`. Selecting only Lifecycle and
-WholeAspect would miss this live blocker even if both endpoint presence booleans
-match. Struct `PatchFields` preserves its aspect container, including an empty
-container, and cannot supply that scalar counterexample.
-
-Native owns full-generation slot/kind identity, immutable root schema and field
-lowering. Its borrowed `VisibilityProjectionView` receiver must resolve original
-and target entity/kind/aspect against compatible actual installed contract,
-shape and binding, exposing only the scalar EntityField coordinate when needed.
-Query owns canonical interval selection and genuine performed cancellation;
-presence and original-support validation retain their existing owners. Neither
-an aspect name guessed to be a field nor a matching boolean supplies lineage.
-Foreign owners, wildcard generations, wrong kinds, absent contracts and changed
-bindings refuse before effects. No canonical grammar, ledger, control or private
-undo path changes.
-
-The destination extends the existing Native projection facade with
-`crates/worth-relational/src/visibility/materialization/read_records/projection/aspect_presence_support.rs`.
-It owns paired binding resolution; `view.rs` keeps its schema-plan access private
-to that owner. Query `restored_support/eligibility.rs` selects with both exact
-snapshots held under Native access and releases both on refusal;
-`overlap.rs` selects Lifecycle/WholeAspect and the actual scalar Field. Existing
-canonical cursor, cancellation, strict original/target boolean verification and
-postcommit fact rebasing remain the only authorities. Coordinate copies are
-funded by the original request before construction using existing controls.
-Ordinary writes incur no additional work.
-
-Implement in authority order: add the borrowed Native receiver and typed denial;
-integrate paired-root selection and scalar overlap; add Native regression evidence
-inside the existing authored-write-history family; update consumer guidance.
-Native evidence must observe actual absent-to-present mutation and canonical
-Field-only discovery, refuse incompatible installed bindings with a positive
-target-binding check, and preserve struct container behavior. These are boundary
-tests, not selector-shape mirrors. Existing public consecutive/equal/live/reapply,
-independent-dependency and sibling controls still apply.
-
-Source review must agree the evidence grouping before any Cargo lane is used.
-Build Native's existing lib target once for `authored_write_history`, including
-scalar presence, binding compatibility, cursor custody and genuine durable
-recovery. Build Query's existing `application_graph` target once for
-`correction::consecutive_undo::` and exact
-`correction::correction_history_rebuild_preserves_causality_and_source_expiry`.
-Include affected unobserved-write and compiler qualification courts when their
-integration is exercised; do not broaden to the entire correction suite.
-Run affected-owner doctests and the real generator, boundary and context tools
-from AGENTS.md in the serialized lane. Before that grant, run only scoped
-rustfmt, `git diff --check` and
-`scripts/ci/check_workspace_rust_line_caps.sh dirty`.
-
-After public validation and independent final review, commit a new immutable SDK
-and uniformly repin the private root/probe manifests and lockfiles. Root groups
-the producer consecutive Undo and session live-overlap/consecutive Undo cases
-with mandatory latest-private gates through one unfiltered Entry acquisition,
-including the bare positive. Preserve expected 7 then 3 values and the
-strict `SourceDiverged` control. A separate focused bare acquisition is not an
-automatic rerun. Keep all original failed evidence. Build grants, final acceptance,
-default integration and commits are outside this source-only turn.
-
-### Complete Live Adjacency Restoration Repair
-
-**Public focused proof passed; final Source review and private qualification pending.** The original `b00984ec` Entry
-failure on `SourceAdjacencyRevision` remains evidence of the pre-synchronization
-gap. Public `250c5f0` contains exact master `7d94f267` and the common Native
-Store/witness integration repairs; private `b02f27e0` has compiled the resulting
-consumer compatibility correction. That ABI result does not qualify adjacency,
-runtime behavior or Phase19, and does not replace the old Entry failures.
-
-The actual private replace handler reads complete incoming ModelFeature
-membership and separately reads the model ResolutionField. Its rebased adjacency
-fact's merged endpoint coverage cannot establish relation identity, multiplicity
-or order. Native now owns paired exact-root live membership support beside
-`field_support.rs`: same runtime, full-generation anchor and both endpoints,
-compatible installed relation/endpoint meaning, complete relation identities and
-cardinality. Original-request region admission precedes access; actual selected
-bucket storage is fallible and temporary. Audit visibility, unavailable source,
-storage, allocation and request stops remain typed. Structural revision equality
-is not a target restoration requirement.
-
-Canonical authored history gains anchor/kind/direction postings in its existing
-residency-owned discardable accelerator. Resolved allocations, authored endpoint
-intents and lifecycle evidence select genuine full-generation membership touches.
-Both directions of all old/new endpoint pairs contribute even when one role is
-unchanged or the endpoint operation is a no-op. Relation aspect edits retain their
-separate field meaning. Cascade retirement is included; audit lifecycle without
-complete membership coordinates marks the interval incomplete rather than empty.
-Cold reconstruction uses the same canonical derivation. No new store, registry,
-journal, request authority or dense-coordinate generation inference is introduced.
-
-Query retains strict original fact verification, selected ancestry and sealed
-performed reversal cancellation. Only after those checks does it compare paired
-live adjacency support. Anchor lifecycle is also selected; separate resolution
-field facts continue to diverge independently. The existing AspectPresence scalar
-lowering and typed Native witness execution denial are retained.
-
-Evidence is grouped into the existing Native authored-write-history family and
-Query application_graph consecutive-undo group. Native covers entrant/removal,
-unchanged-role endpoint moves, endpoint no-ops, disjoint relation field edits,
-cascade/audit retirement, exact IDs before/after discard and durable recovery,
-paired full-GEN/meaning/request refusal and the existing cold-medium storage
-fixture. Query uses a genuine incoming-list handler and a real correctable model
-configuration/link: a later exact reverse restores empty membership and permits
-7-to-3 original reversal; live membership cycles/authored no-ops and changed model
-resolution remain SourceDiverged. Existing sibling/reapplication/custody evidence
-is reused. Query's current authoring facade has link/unlink, so true endpoint-update
-no-op evidence stays at the Native owner instead of adding a fixture-only API.
-
-Persistent all-three review030 Source-cleared the candidate, including the two
-common Native test API joins. Current focused qualification on public `250c5f0`
-plus this uncommitted repair has passed Native19 and Query8 exact runtime cases,
-with no ignored selected cases, and Native24 plus QueryExecution122 doctests.
-Both actual own-source runtime artifacts were emitted Fresh=false; Query's
-wrapper-issued UUID matches its emitted dependency record. Native occurrence
-rebuild/cold storage, adjacency reverse success, live/no-op blockers, independent
-model resolution, old consecutive/reapplication/sibling/custody and required-output
-composition evidence all remain strict.
-
-Compiler and fixture setup failures were preserved and corrected at their test
-owners: config-owned policy imports, coherent Native schema basis and distinct
-physical relation identities, explicit path-mounted child tests, typed String
-idempotency keys and a unique fixture operation identifier. No production or
-reversal assertion changed after Source clearance. The17 completed Native passes
-were retained and only the two failed setup cases retried; all eight Query cases
-passed after installation setup correction. This is not a claim that the older23
-private failures are fixed; only the session's adjacency cause was independently
-identified, and current private runtime evidence is still required.
-
-Normal guidance and snapshot generation, boundary and context checks passed.
-The first cached guidance executable was rejected because its embedded caller
-lists differed from this tree. An ordinary rebuild from unchanged actual local
-inputs emitted Fresh=false and incorporated both real control/certification lists;
-no gate override was used. Snapshot outputs matched existing Git blobs; generated
-copies were retained and checkout line endings preserved. Final evidence/status
-prose and all corrective test joins remain subject to independent final review.
-
-No immutable SDK commit, private repin or default/Phase19 acceptance is published.
-A later reviewed immutable adoption must preserve85 stable private cause variants,
-append the typed adjacency receiving category and retain all strict original
-journeys. One mandatory unfiltered Entry gate must execute bare, producer and
-session cases unchanged. Preserve held acceptance drafts and all failed evidence.
+Phases 9, 13, 14, 16, 17 and 18 remain unfinished. Transferred Phases 12 and 15
+remain required in 9.19. Included compiler and typed field-write prerequisites
+do not independently certify their phases.
 
 ## Documentation And Successor Handoff For The Added Phases
 
