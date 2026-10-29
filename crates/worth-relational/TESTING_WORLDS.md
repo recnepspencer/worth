@@ -361,19 +361,19 @@ bash scripts/ci/run_relational_named_test_selection.sh \
 
 bash scripts/ci/run_relational_named_test_selection.sh \
   --test worth_relational --exact \
-  --selection fast::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked
+  --selection exhaustive::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
   --test worth_relational --exact \
-  --selection fast::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked
+  --selection exhaustive::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
   --test worth_relational --exact \
-  --selection fast::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked
+  --selection exhaustive::relational_certification::mvcc_owner_phase_locality::paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
   --test worth_relational --exact \
-  --selection fast::relational_certification::schema_transition_cancellation::cancelled_schema_transition_leaves_no_target_or_branch_residue
+  --selection exhaustive::relational_certification::schema_transition_cancellation::cancelled_schema_transition_leaves_no_target_or_branch_residue
 
 bash scripts/ci/check_relational_allocation_probes.sh
 ```

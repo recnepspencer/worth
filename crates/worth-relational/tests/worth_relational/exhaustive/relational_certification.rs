@@ -72,3 +72,78 @@ pub(crate) mod schema_transition_target;
 
 #[path = "relational_certification/trace_replay.rs"]
 pub(crate) mod trace_replay;
+
+#[path = "relational_certification/baseline_layers.rs"]
+pub(crate) mod baseline_layers;
+
+#[path = "relational_certification/basis/observation.rs"]
+pub(crate) mod basis_observation;
+
+#[path = "relational_certification/basis/read_cutover.rs"]
+pub(crate) mod basis_read_cutover;
+
+#[path = "relational_certification/basis/readmission.rs"]
+pub(crate) mod basis_readmission;
+
+#[path = "relational_certification/basis/retention.rs"]
+pub(crate) mod basis_retention;
+
+#[path = "relational_certification/comparison_contracts.rs"]
+pub(crate) mod comparison_contracts;
+
+#[path = "relational_certification/mvcc/archive_retention.rs"]
+pub(crate) mod mvcc_archive_retention;
+
+#[path = "relational_certification/mvcc/cancellation.rs"]
+pub(crate) mod mvcc_cancellation;
+
+#[path = "relational_certification/mvcc/cancellation_publication_boundaries.rs"]
+pub(crate) mod mvcc_cancellation_publication_boundaries;
+
+#[path = "relational_certification/mvcc/owner_phase_locality.rs"]
+pub(crate) mod mvcc_owner_phase_locality;
+
+#[path = "relational_certification/mvcc/retention.rs"]
+pub(crate) mod mvcc_retention;
+
+#[path = "relational_certification/reference/compatibility.rs"]
+pub(crate) mod reference_compatibility;
+
+#[path = "relational_certification/reference/cost.rs"]
+pub(crate) mod reference_cost;
+
+#[path = "relational_certification/reference/fork.rs"]
+pub(crate) mod reference_fork;
+
+#[path = "relational_certification/reference/owner_binding.rs"]
+pub(crate) mod reference_owner_binding;
+
+#[path = "relational_certification/reference/retention.rs"]
+pub(crate) mod reference_retention;
+
+#[path = "relational_certification/root/copy_on_write/branch.rs"]
+pub(crate) mod root_branch_copy_on_write;
+
+#[path = "relational_certification/root/selection/traversal.rs"]
+pub(crate) mod root_branch_traversal_isolation;
+
+#[path = "relational_certification/root/accounting/derived_cache.rs"]
+pub(crate) mod root_derived_cache_accounting;
+
+#[path = "relational_certification/root/sharing/fork.rs"]
+pub(crate) mod root_fork_sharing;
+
+#[path = "relational_certification/root/inspection/boundaries.rs"]
+pub(crate) mod root_inspection_boundaries;
+
+#[path = "relational_certification/root/copy_on_write/named_delta.rs"]
+pub(crate) mod root_named_delta_cow;
+
+#[path = "relational_certification/root/copy_on_write/region_reuse.rs"]
+pub(crate) mod root_region_reuse;
+
+#[path = "relational_certification/root/sharing/metric_truth_lanes.rs"]
+pub(crate) mod root_sharing_metric_truth_lanes;
+
+#[path = "relational_certification/schema_transition_cancellation.rs"]
+pub(crate) mod schema_transition_cancellation;

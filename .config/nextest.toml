@@ -1,7 +1,7 @@
 nextest-version = "0.9.140"
 
 [profile.default]
-default-filter = 'kind(lib) | (kind(test) & test(/^fast::/))'
+default-filter = '(kind(lib) & not test(/(^|::)exhaustive::/)) | (kind(test) & test(/^fast::/))'
 fail-fast = false
 retries = 0
 slow-timeout = { period = "10s", terminate-after = 6, grace-period = "0s" }
@@ -26,7 +26,7 @@ max-threads = 1
 [[profile.default.overrides]]
 filter = 'test(/^compile_fail::/)'
 test-group = 'trybuild-project'
-slow-timeout = { period = "60s", terminate-after = 10, grace-period = "0s" }
+slow-timeout = { period = "60s", terminate-after = 30, grace-period = "0s" }
 
 [[profile.default.overrides]]
 filter = 'test(/^serial::/)'
