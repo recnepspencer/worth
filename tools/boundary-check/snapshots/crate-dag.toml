@@ -19,7 +19,7 @@ dependencies = [
     "worth-query-replay",
     "worth-query-testkit-certification",
     "worth-query-testkit-certification-correction",
-    "worth-query-testkit-certification-source-only",
+    "worth-query-testkit-certification-operation",
     "worth-query-testkit-document-retention",
     "worth-relational",
     "worth-runtime-bridge",
