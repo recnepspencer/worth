@@ -1,10 +1,17 @@
-use {worth_proof::TransitionOutcome};
+use worth_proof::TransitionOutcome;
 use {worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerTransferByteClass};
 
-use {worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_binary_counter, worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_budget_receipt, worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_budget_scope, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::build_phase_twelve_server, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::drip_fed_upload, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::upload_input};
+use {
+    worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_binary_counter,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_budget_receipt,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_budget_scope,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::build_phase_twelve_server,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::drip_fed_upload,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::upload_input,
+};
 
 #[test]
-fn compat_http_phase_twelve_drip_feed_cutoffs_emit_typed_budget_denials_without_truth_drift() {
+fn compat_http_drip_feed_cutoffs_emit_typed_budget_denials_without_truth_drift() {
     let server = build_phase_twelve_server();
     let denial = match server
         .compat_http()

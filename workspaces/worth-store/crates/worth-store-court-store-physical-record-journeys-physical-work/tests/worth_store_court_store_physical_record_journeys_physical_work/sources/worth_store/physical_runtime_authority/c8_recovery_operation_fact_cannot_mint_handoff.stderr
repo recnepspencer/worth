@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `PhysicalDurabilityRecoveryHandoff: From<PhysicalRecoveryOperationFact>` is not satisfied
- --> tests/physical_runtime_authority/c8_recovery_operation_fact_cannot_mint_handoff.rs:6:10
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_operation_fact_cannot_mint_handoff.rs:6:10
   |
 6 |     fact.into()
   |          ^^^^ the trait `From<PhysicalRecoveryOperationFact>` is not implemented for `PhysicalDurabilityRecoveryHandoff`

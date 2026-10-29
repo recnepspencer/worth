@@ -74,17 +74,17 @@ pub(super) fn certified_surface_evidence() -> Vec<FoundationalTransitionCertifie
             FoundationalTransitionCertifiedSurface::CanonicalBasisAndLocatorIntegration,
             FoundationalTransitionSyntheticRuntimePressure::AmbientBasisChoiceHostility,
             FoundationalTransitionCompileFailBoundary::Phase5BasisAndCurrentBasisRequireStrengthenedArtifacts,
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
             concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/raw_committed_authority_cannot_satisfy_current_basis_transition_api.rs"),
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
         ),
         FoundationalTransitionCertifiedSurfaceEvidence::new(
             FoundationalTransitionCertifiedSurface::ProfileRichnessAndCurrentBasisBehavior,
             FoundationalTransitionSyntheticRuntimePressure::ReducedRichnessPreservation,
             FoundationalTransitionCompileFailBoundary::Phase5BasisAndCurrentBasisRequireStrengthenedArtifacts,
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
             concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs"),
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
         ),
     ]
 }
@@ -206,15 +206,15 @@ pub(super) fn synthetic_pressure_evidence() -> Vec<FoundationalTransitionSynthet
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ReplayInterpretationBoundary,
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::ReducedRichnessPreservation,
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::AmbientBasisChoiceHostility,
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::HiddenStrategyInfluenceHostility,
@@ -230,7 +230,7 @@ pub(super) fn synthetic_pressure_evidence() -> Vec<FoundationalTransitionSynthet
         ),
         FoundationalTransitionSyntheticPressureEvidence::new(
             FoundationalTransitionSyntheticRuntimePressure::CheapConvenienceBypassRejection,
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
         ),
     ]
 }
@@ -307,7 +307,7 @@ pub(super) fn phase_gates() -> Vec<FoundationalTransitionPhaseGateEvidence> {
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::CanonicalBasisLocatorAndProfileIntegration,
-            "tests/worth_foundational/fast/certification/transitions/phase5_basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/transitions/phase5_basis/mod.rs"),
         ),
         FoundationalTransitionPhaseGateEvidence::new(
             FoundationalTransitionMilestone5PhaseGate::ProductionReadiness,

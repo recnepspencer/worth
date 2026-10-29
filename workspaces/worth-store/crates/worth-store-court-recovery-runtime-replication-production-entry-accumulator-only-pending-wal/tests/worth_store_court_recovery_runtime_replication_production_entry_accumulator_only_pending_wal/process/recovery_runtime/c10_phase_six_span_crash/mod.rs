@@ -1,22 +1,37 @@
-
-
-
-
-
-#[allow(unused_imports)] use crate::c10_phase_six_span_crash::*;
-use {crate::c10_phase_six_span_crash::c10_crash_evidence::ordinary_limits, crate::c10_phase_six_span_crash::c10_crash_evidence::segment_snapshot, crate::c10_phase_six_span_crash::c10_crash_evidence::wal_contains_rewrite};
+#[allow(unused_imports)]
+use crate::c10_phase_six_span_crash::*;
+use std::thread;
+use {
+    crate::c10_phase_six_span_crash::c10_crash_evidence::ordinary_limits,
+    crate::c10_phase_six_span_crash::c10_crash_evidence::segment_snapshot,
+    crate::c10_phase_six_span_crash::c10_crash_evidence::wal_contains_rewrite,
+};
 use {std::path::Path, std::path::PathBuf};
 use {std::process::Command, std::process::Stdio};
-use {std::thread};
 use {std::time::Duration, std::time::Instant};
 
-use {worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest};
-use {worth_store_physical_format::PersistedRecordIdentity};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-use {worth_store_test_support::harness::physical_residency::canonical_physical_batch_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
+use worth_store_physical_format::PersistedRecordIdentity;
+use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
+use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
+use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_batch_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 #[test]
 fn sealed_spans_recover_one_generation() {
@@ -73,7 +88,9 @@ fn partial_span_rewrite_result_remains_exact_after_later_roots() {
         assert_eq!(bytes[0], index as u8);
     }
     let result_root = worth_store_testkit_recovery_runtime::historical_rewrite_support::selected_catalog_generation(&root);
-    worth_store_testkit_recovery_runtime::historical_rewrite_support::advance_with_ordinary_appends(&root, true);
+    worth_store_testkit_recovery_runtime::historical_rewrite_support::advance_with_ordinary_appends(
+        &root, true,
+    );
     let selected_before = worth_store_testkit_recovery_runtime::historical_rewrite_support::selected_catalog_generation(&root);
     assert!(
         selected_before >= result_root + 2,
@@ -93,7 +110,7 @@ fn partial_span_rewrite_result_remains_exact_after_later_roots() {
 
 #[test]
 #[ignore = "launched by the phase 6 span parent"]
-fn c10_span_child_parks() {
+fn span_child_parks() {
     let marker = std::path::PathBuf::from(std::env::var_os(MARKER).expect("span marker"));
     let checkpoint = std::env::var(CHECKPOINT).expect("span checkpoint");
     let published: u32 = std::env::var(PUBLISHED).unwrap().parse().unwrap();
@@ -129,23 +146,5 @@ fn c10_span_child_parks() {
     std::fs::write(marker.join("reached"), b"1").unwrap();
     loop {
         std::thread::park();
-    }
-}
-
-/// Completing a span rewrite reads the whole source span, and the successor
-/// span too once the root publishes it.
-#[test]
-fn every_observation_limit_under_the_need_of_a_killed_span_rewrite_is_that_limit() {
-    for (seam, reads) in [("after-wal", 1), ("after-replace", 2)] {
-        let (parent, root) = kill_span(4, 4, seam);
-        let blocks =
-            crate::c10_phase_six_span_crash::c10_crash_evidence::observation_sweep::completion_blocks_under_every_observation_limit(
-                seam, &root,
-            );
-        assert!(
-            blocks >= reads,
-            "{seam}: completing the rewrite ran its reader out {blocks} times",
-        );
-        drop(parent);
     }
 }

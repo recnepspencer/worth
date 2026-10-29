@@ -1,9 +1,5 @@
-#[allow(unused_imports)] use crate::extent_validation::scope_adversaries::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PhysicalPageSizeClass};
-use {worth_store_physical_integrity::validate_extent_chunk, worth_store_physical_integrity::validate_extent_manifest, worth_store_physical_integrity::ExtentChunkIntegrityValidation, worth_store_physical_integrity::ExtentManifestIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::extent_validation::assert_damage, crate::support::extent_validation::assert_rejected_counters, crate::support::extent_validation::chunk_payload_capacity, crate::support::extent_validation::extent_cell, crate::support::extent_validation::field_range, crate::support::extent_validation::format, crate::support::extent_validation::record, crate::support::extent_validation::reseal_durable_frame, crate::support::extent_validation::validated_manifest, crate::support::extent_validation::ExtentFixture};
+#[allow(unused_imports)]
+use crate::extent_validation::scope_adversaries::*;
 
 #[test]
 fn valid_alternate_chunk_identities_cannot_replace_the_certified_scope() {
@@ -181,12 +177,16 @@ fn extent_family_scopes_are_rejected_before_cross_family_decoding() {
     let manifest = validated_manifest(&manifest_bytes, fixture.manifest_scope());
     let chunk_bytes = fixture.tail_chunk_bytes();
 
-    let (worth_store_physical_integrity::ExtentChunkIntegrityValidation::Rejected(chunk_rejection), chunk_counters) =
-        validate_extent_chunk(
-            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&manifest_bytes),
-            fixture.manifest_scope(),
-            &manifest,
-        )
+    let (
+        worth_store_physical_integrity::ExtentChunkIntegrityValidation::Rejected(chunk_rejection),
+        chunk_counters,
+    ) = validate_extent_chunk(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+            &manifest_bytes,
+        ),
+        fixture.manifest_scope(),
+        &manifest,
+    )
     else {
         panic!("manifest scope admitted by chunk validator")
     };
@@ -205,11 +205,15 @@ fn extent_family_scopes_are_rejected_before_cross_family_decoding() {
         worth_store_physical_integrity::PhysicalDamageCause::FamilyMismatch,
     );
 
-    let (worth_store_physical_integrity::ExtentManifestIntegrityValidation::Rejected(manifest_rejection), manifest_counters) =
-        validate_extent_manifest(
-            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&chunk_bytes),
-            fixture.tail_chunk_scope(),
-        )
+    let (
+        worth_store_physical_integrity::ExtentManifestIntegrityValidation::Rejected(
+            manifest_rejection,
+        ),
+        manifest_counters,
+    ) = validate_extent_manifest(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&chunk_bytes),
+        fixture.tail_chunk_scope(),
+    )
     else {
         panic!("chunk scope admitted by manifest validator")
     };

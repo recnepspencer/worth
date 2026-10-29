@@ -3,13 +3,32 @@ use {worth_foundational::facade::DiagnosticRichnessProfile};
 use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
 use {worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerStreamSelection, worth_server::WorthServerStreamingResponse};
 
-use {crate::compat_http_phase_eleven::ordinary_context::compat_http_phase_eleven_assertions::assert_binary_counter, crate::compat_http_phase_eleven::ordinary_context::compat_http_phase_eleven_assertions::assert_external_counter, crate::compat_http_phase_eleven::ordinary_context::compat_http_phase_eleven_assertions::finish_stream};
-use {worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::build_phase_four_server, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::build_phase_four_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::compat_stream_input, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::oversized_streaming_provider, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::streaming_response_success};
-use {worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::canonical_upload, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_download_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_download_success, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_read_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_success, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_upload_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_upload_success};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider;
+use {
+    crate::compat_http_phase_eleven::ordinary_context::compat_http_phase_eleven_assertions::assert_binary_counter,
+    crate::compat_http_phase_eleven::ordinary_context::compat_http_phase_eleven_assertions::assert_external_counter,
+    crate::compat_http_phase_eleven::ordinary_context::compat_http_phase_eleven_assertions::finish_stream,
+};
+use {
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::build_phase_four_server,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::build_phase_four_server_with_workspace_provider,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::compat_stream_input,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::oversized_streaming_provider,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::streaming_response_success,
+};
+use {
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::canonical_upload,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_download_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_upload_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_download_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_read_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_upload_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider,
+};
 
 #[test]
-fn compat_http_phase_eleven_read_certification_preserves_exact_zeroed_external_rows() {
+fn compat_http_read_certification_preserves_exact_zeroed_external_rows() {
     let server = phase_eleven_server();
     let read = compat_read_success(server.compat_http().read(compat_read_execution_input(
         &server,
@@ -49,7 +68,7 @@ fn compat_http_phase_eleven_read_certification_preserves_exact_zeroed_external_r
 }
 
 #[test]
-fn compat_http_phase_eleven_upload_and_download_certifications_keep_binary_counters_honest() {
+fn compat_http_upload_and_download_certifications_keep_binary_counters_honest() {
     let server = phase_eleven_server();
     let upload = compat_upload_success(server.compat_http().upload(compat_upload_execution_input(
         &server,
@@ -129,7 +148,7 @@ fn compat_http_phase_eleven_upload_and_download_certifications_keep_binary_count
 }
 
 #[test]
-fn compat_http_phase_eleven_incremental_stream_completion_keeps_buffering_and_fallback_zeroed() {
+fn compat_http_incremental_stream_completion_keeps_buffering_and_fallback_zeroed() {
     let stream_server = build_phase_four_server();
     let streaming = streaming_response_success(stream_server.compat_http().stream(
         compat_stream_input(&stream_server, "users.profile"),
@@ -164,7 +183,7 @@ fn compat_http_phase_eleven_incremental_stream_completion_keeps_buffering_and_fa
 }
 
 #[test]
-fn compat_http_phase_eleven_buffered_export_counts_full_buffering_without_claiming_fallback() {
+fn compat_http_buffered_export_counts_full_buffering_without_claiming_fallback() {
     let stream_server = build_phase_four_server();
     let buffered = streaming_response_success(stream_server.compat_http().stream(
         compat_stream_input(&stream_server, "users.profile"),
@@ -193,13 +212,16 @@ fn compat_http_phase_eleven_buffered_export_counts_full_buffering_without_claimi
 }
 
 #[test]
-fn compat_http_phase_eleven_background_export_proves_no_sync_lane_byte_motion() {
+fn compat_http_background_export_proves_no_sync_lane_byte_motion() {
     let background_server =
         build_phase_four_server_with_workspace_provider(oversized_streaming_provider(64, 64));
-    let background = streaming_response_success(background_server.compat_http().stream(
-        compat_stream_input(&background_server, "users.profile"),
-        worth_server::WorthServerStreamSelection::incremental().with_background_export_threshold_bytes(32),
-    ));
+    let background = streaming_response_success(
+        background_server.compat_http().stream(
+            compat_stream_input(&background_server, "users.profile"),
+            worth_server::WorthServerStreamSelection::incremental()
+                .with_background_export_threshold_bytes(32),
+        ),
+    );
     let background_export = match background {
         worth_server::WorthServerStreamingResponse::BackgroundExport(export) => export,
         other => panic!("expected background export, got {other:?}"),

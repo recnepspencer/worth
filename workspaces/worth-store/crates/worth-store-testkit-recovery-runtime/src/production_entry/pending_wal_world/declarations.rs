@@ -1,19 +1,37 @@
 //! A genuine process-killed V3 released drop, retained for C8/Store rejoin
 //! tests that must share one pending descriptor and its physical controls.
 
-pub use {std::cell::Cell, std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
+pub use {
+    std::cell::Cell, std::fs, std::path::Path, std::path::PathBuf, std::process::Command,
+    std::process::Stdio, std::thread, std::time::Duration, std::time::Instant,
+};
 
-pub use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordReadDenial};
-pub use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
+pub use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestFailure,
+    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordReadDenial,
+};
 
-pub use {std::num::NonZeroU64, crate::production_entry::blob_scope_admission::admitted_blob_scope, crate::production_entry::certified_release_serving};
-
-
-
-
-
-
-
+pub use {
+    crate::production_entry::blob_scope_admission::admitted_blob_scope,
+    crate::production_entry::certified_release_serving, std::num::NonZeroU64,
+};
 
 pub fn selected_session_declared_extent(
     root: &Path,
@@ -26,11 +44,15 @@ pub const MARKER_ENV: &str = "WORTH_C11_PENDING_V3_CHILD_MARKER";
 pub const ROOT_ENV: &str = "WORTH_C11_PENDING_V3_CHILD_ROOT";
 pub const WAL_SEGMENT_BYTES_ENV: &str = "WORTH_C11_PENDING_V3_WAL_SEGMENT_BYTES";
 pub const FIRST_WORLD_ENV: &str = "WORTH_C11_PENDING_V3_FIRST_WORLD";
-pub const CHILD_TEST: &str = "pending_wal_world::pending_wal_child";
+pub const CHILD_TEST: &str =
+    "process::recovery_runtime::production_entry::pending_wal_world::pending_wal_child";
 pub const CHUNK: usize = 64 << 10;
 
-pub use {crate::pending_wal_world::descriptor_park::park_at_descriptor_wal};
-pub use {};
+pub use super::first::{
+    self, first, first_with_failed_ingest_control, first_with_resume_frontier,
+    first_with_wal_segment_bytes, published_above_checkpoint, Tail, Workload,
+};
+pub use crate::pending_wal_world::descriptor_park::park_at_descriptor_wal;
 
 pub struct PendingWalWorld {
     pub root: PathBuf,
@@ -46,9 +68,7 @@ impl PendingWalWorld {
     }
 
     /// A recovery request with the limits this world's WAL and batches need.
-    pub fn recovery_request(
-        &self,
-    ) -> worth_store_recovery_runtime::PhysicalRecoveryOpenRequest {
+    pub fn recovery_request(&self) -> worth_store_recovery_runtime::PhysicalRecoveryOpenRequest {
         self.first.recovery_request(&self.root)
     }
 
@@ -59,7 +79,9 @@ impl PendingWalWorld {
         serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     ) {
         let scope = admitted_blob_scope("c11.recovery.pending-v3.scope");
-        let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+        let limits = worth_store::physical_runtime::BlobReadLimits::new(
+            std::num::NonZeroU64::new(128).unwrap(),
+        );
         let blobs = serving.blobs().unwrap();
         let expected = self.first.object_bytes();
         assert_eq!(self.objects.len(), expected.len());
@@ -67,9 +89,13 @@ impl PendingWalWorld {
             let resolved = blobs.resolve_publication(*object, 1, &scope, limits);
             if index == 0 && self.first.releases_first_object() {
                 match resolved {
-                    Err(worth_store::physical_runtime::BlobReadOpenFailure::PublicationNotFound) => {}
-                    Err(worth_store::physical_runtime::BlobReadOpenFailure::Read(worth_store::physical_runtime::BlobReadFailure::RecordRead(error)))
-                        if error.denial() == worth_store::physical_runtime::RecordReadDenial::RecordNotFound => {}
+                    Err(
+                        worth_store::physical_runtime::BlobReadOpenFailure::PublicationNotFound,
+                    ) => {}
+                    Err(worth_store::physical_runtime::BlobReadOpenFailure::Read(
+                        worth_store::physical_runtime::BlobReadFailure::RecordRead(error),
+                    )) if error.denial()
+                        == worth_store::physical_runtime::RecordReadDenial::RecordNotFound => {}
                     other => panic!("released first object remained visible: {other:?}"),
                 }
                 continue;
@@ -122,7 +148,8 @@ impl PendingWalWorld {
             ._marker
             .path()
             .join(format!("descriptor-{ordinal}-ready"));
-        let checkpoint_before = std::fs::read(self.root.join("families/checkpoint.current")).unwrap();
+        let checkpoint_before =
+            std::fs::read(self.root.join("families/checkpoint.current")).unwrap();
         let mut child = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", CHILD_TEST, "--nocapture", "--test-threads=1"])
             .env(ROLE_ENV, role)
@@ -150,7 +177,8 @@ impl PendingWalWorld {
         child.wait().unwrap();
         assert_eq!(std::fs::read(&marker).unwrap(), b"second-descriptor-wal");
         assert_eq!(
-            std::fs::read(self.root.join("families/checkpoint.current")).unwrap() != checkpoint_before,
+            std::fs::read(self.root.join("families/checkpoint.current")).unwrap()
+                != checkpoint_before,
             checkpoint_changes,
             "only certified retirement may advance the checkpoint before the next descriptor"
         );

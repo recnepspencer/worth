@@ -1,9 +1,5 @@
-#[allow(unused_imports)] use crate::checkpoint_validation::ordered_stream::*;
-use {worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::checksum_oracles::sha256};
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-use {crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::field_range, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_footer, crate::checkpoint_validation::support::validate_header};
+#[allow(unused_imports)]
+use crate::checkpoint_validation::ordered_stream::*;
 
 #[test]
 fn two_record_aggregates_are_literal_order_sensitive_in_both_sections() {
@@ -92,7 +88,12 @@ fn second_binding_and_final_footer_boundaries_are_independently_checked() {
     let rejection = reject_footer(
         &footer_bytes,
         footer_scope(),
-        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(&header, &dirty, &compaction, &bindings),
+        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(
+            &header,
+            &dirty,
+            &compaction,
+            &bindings,
+        ),
     );
     assert_sequence_damage(rejection, bindings[1].scope());
 
@@ -100,12 +101,19 @@ fn second_binding_and_final_footer_boundaries_are_independently_checked() {
         validate_binding(&BINDING, binding_scope(BINDING_A_OFFSET)),
         validate_binding(&binding_b, binding_scope(BINDING_B_OFFSET)),
     ];
-    let shifted_footer =
-        worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(identity(), range(FOOTER_OFFSET + 1, 156));
+    let shifted_footer = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(
+        identity(),
+        range(FOOTER_OFFSET + 1, 156),
+    );
     let rejection = reject_footer(
         &footer_bytes,
         shifted_footer,
-        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(&header, &dirty, &compaction, &bindings),
+        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(
+            &header,
+            &dirty,
+            &compaction,
+            &bindings,
+        ),
     );
     assert_sequence_damage(rejection, shifted_footer);
 }

@@ -1,5 +1,6 @@
-#[allow(unused_imports)] use crate::relational_certification::reference_context::root_persistent_path_accounting::*;
-pub(crate) use {std::collections::BTreeSet};
+#[allow(unused_imports)]
+use crate::relational_certification::reference_context::root_persistent_path_accounting::*;
+pub(crate) use std::collections::BTreeSet;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
@@ -9,7 +10,7 @@ pub(crate) use {worth_relational::facade::inspection::RelationalAuthoritativeAll
 pub(crate) use {worth_relational::facade::transactions::WorkerIntentBatch};
 
 #[test]
-fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
+fn persistent_radix_paths_retain_untouched_owner_allocations() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -34,7 +35,10 @@ fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
         .branch_identity(&branch_id)
         .expect("fork identity is owner issued");
     let baseline_nodes = persistent_node_locators(&world.runtime, &identity);
-    let mutation_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
+    let mutation_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![identity.clone()],
+    );
     let batch = lower_supply_chain_production_delta(
         execution,
         &world.runtime,
@@ -80,12 +84,17 @@ fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
     );
 
     let before_noop = after_mutation;
-    let noop_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
+    let noop_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![identity.clone()],
+    );
     commit_branch_batch(
         execution,
         &world.runtime,
         branch_id,
-        worth_relational::facade::transactions::WorkerIntentBatch::new("phase5-persistent-path-noop"),
+        worth_relational::facade::transactions::WorkerIntentBatch::new(
+            "phase5-persistent-path-noop",
+        ),
     );
     let after_noop = persistent_node_locators(&world.runtime, &identity);
     let noop_cost = world

@@ -1,8 +1,5 @@
-#[allow(unused_imports)] use crate::checkpoint_validation::verified_stream_assembly::*;
-use {worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::UntrustedPhysicalArtifact, worth_store_physical_integrity::VerifiedCheckpointStream, worth_store_physical_integrity::VerifiedCheckpointStreamAssemblyDenial};
-
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-use {crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_footer, crate::checkpoint_validation::support::validate_header, crate::checkpoint_validation::support::BINDING_OFFSET, crate::checkpoint_validation::support::COMPACTION_OFFSET, crate::checkpoint_validation::support::DIRTY_OFFSET, crate::checkpoint_validation::support::FOOTER_OFFSET};
+#[allow(unused_imports)]
+use crate::checkpoint_validation::verified_stream_assembly::*;
 
 #[test]
 fn assembly_rejects_footer_basis_substituted_from_another_allocation() {
@@ -52,18 +49,21 @@ fn assembly_rejects_footer_basis_substituted_from_another_allocation() {
         substituted_basis,
     );
 
-    let denial = worth_store_physical_integrity::VerifiedCheckpointStream::assemble_from_validated_records(
-        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&stale),
-        &header,
-        &[&dirty],
-        &compaction,
-        &[&binding],
-        &footer,
-    )
-    .unwrap_err();
+    let denial =
+        worth_store_physical_integrity::VerifiedCheckpointStream::assemble_from_validated_records(
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&stale),
+            &header,
+            &[&dirty],
+            &compaction,
+            &[&binding],
+            &footer,
+        )
+        .unwrap_err();
     assert!(matches!(
         denial,
-        worth_store_physical_integrity::VerifiedCheckpointStreamAssemblyDenial::FooterBasisMismatch(_)
+        worth_store_physical_integrity::VerifiedCheckpointStreamAssemblyDenial::FooterBasisMismatch(
+            _
+        )
     ));
     let denial = worth_store_physical_integrity::VerifiedCheckpointStream::validate_records_with_certificates(
         worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&stale),
@@ -77,6 +77,8 @@ fn assembly_rejects_footer_basis_substituted_from_another_allocation() {
     .unwrap_err();
     assert!(matches!(
         denial,
-        worth_store_physical_integrity::VerifiedCheckpointStreamAssemblyDenial::FooterBasisMismatch(_)
+        worth_store_physical_integrity::VerifiedCheckpointStreamAssemblyDenial::FooterBasisMismatch(
+            _
+        )
     ));
 }

@@ -1,3 +1,5 @@
+#[path = "child_process/mod.rs"]
+pub(crate) mod child_process;
 #[path = "maintenance_interference/mod.rs"]
 pub(crate) mod maintenance_interference;
 #[path = "physical_work/mod.rs"]

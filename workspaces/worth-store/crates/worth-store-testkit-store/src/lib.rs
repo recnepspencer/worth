@@ -1,3 +1,5 @@
+#[macro_use]
+mod record_store_admission_macros;
 #[allow(dead_code, unused_imports)]
 #[path = "allocation_probe/mod.rs"]
 pub mod allocation_probe;

@@ -1,6 +1,6 @@
-pub(crate) use {std::path::PathBuf};
+pub(crate) use std::path::PathBuf;
 
-pub(crate) use {crate::support::temporary_root::TemporaryRoot};
+pub(crate) use crate::support::temporary_root::TemporaryRoot;
 
 pub(crate) const NAMESPACE_IDENTITY_HEX: &str = concat!(
     "5753544e5349440001000100480000000100000001001000010203040506070809",

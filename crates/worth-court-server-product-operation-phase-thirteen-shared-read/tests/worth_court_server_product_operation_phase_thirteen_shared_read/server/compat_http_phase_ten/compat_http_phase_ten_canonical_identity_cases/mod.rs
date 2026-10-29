@@ -1,13 +1,25 @@
-use {worth_foundational::facade::DiagnosticRichnessProfile};
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerBinaryDownloadRequest};
+use worth_foundational::facade::DiagnosticRichnessProfile;
+use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
+use worth_server::WorthServerBinaryDownloadRequest;
 
-use {crate::shared_support_compat_http_phase_ten_assertions::assert_same_canonical_file_identity};
-use {worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::canonical_upload, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_download_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_download_success, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_inspection_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_inspection_success, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_read_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_success, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_upload_execution_input, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_upload_success, worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::reordered_canonical_upload};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use crate::shared_support_compat_http_phase_ten_assertions::assert_same_canonical_file_identity;
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::canonical_upload,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::fixtures::reordered_canonical_upload,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_download_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_inspection_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_read_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::outcomes::compat_upload_success,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_download_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_inspection_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_read_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::requests::compat_upload_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider,
+};
 
 #[test]
-fn compat_http_phase_ten_keeps_one_canonical_external_file_identity_across_lanes() {
+fn compat_http_keeps_one_canonical_external_file_identity_across_lanes() {
     let server =
         build_phase_ten_server_with_workspace_provider(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
             worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
@@ -80,7 +92,7 @@ fn compat_http_phase_ten_keeps_one_canonical_external_file_identity_across_lanes
 }
 
 #[test]
-fn compat_http_phase_ten_collapses_legal_metadata_encoding_variation_to_one_normalization_shape() {
+fn compat_http_collapses_legal_metadata_encoding_variation_to_one_normalization_shape() {
     let server =
         build_phase_ten_server_with_workspace_provider(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
             worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
@@ -121,7 +133,7 @@ fn compat_http_phase_ten_collapses_legal_metadata_encoding_variation_to_one_norm
 }
 
 #[test]
-fn compat_http_phase_ten_collapses_case_variation_into_one_metadata_identity() {
+fn compat_http_collapses_case_variation_into_one_metadata_identity() {
     let server =
         build_phase_ten_server_with_workspace_provider(worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider::new(
             worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),

@@ -10,12 +10,18 @@ pub(crate) mod c11_arena_append_crash;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/support/compaction_visibility_owner_execution/mod.rs"]
 pub(crate) mod compaction_visibility_owner_execution;
+#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/compile_fail/mod.rs"]
+pub(crate) mod compile_fail;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/support/compile_fail_support/mod.rs"]
 pub(crate) mod compile_fail_support;
+#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/formal_models/mod.rs"]
+pub(crate) mod formal_models;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/support/harness_authority_compile_fail/mod.rs"]
 pub(crate) mod harness_authority_compile_fail;
+#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/oracle/mod.rs"]
+pub(crate) mod oracle;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/support/pending_wal_fold/mod.rs"]
 pub(crate) mod pending_wal_fold;
@@ -61,14 +67,11 @@ pub(crate) mod phase_three_noncanonical_selectors;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/support/phase_three_root_anchor/mod.rs"]
 pub(crate) mod phase_three_root_anchor;
+#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/process/mod.rs"]
+pub(crate) mod process;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/support/production_entry/mod.rs"]
 pub(crate) mod production_entry;
-#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/compile_fail/mod.rs"]
-pub(crate) mod compile_fail;
-#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/formal_models/mod.rs"]
-pub(crate) mod formal_models;
-#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/oracle/mod.rs"]
-pub(crate) mod oracle;
-#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/process/mod.rs"]
-pub(crate) mod process;
+
+#[path = "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/recovery_runtime/mod.rs"]
+pub(crate) mod recovery_runtime;

@@ -1,8 +1,11 @@
 pub use {std::alloc::System, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 
-pub use {tracking_allocator::AllocationGroupId, tracking_allocator::AllocationGroupToken, tracking_allocator::AllocationRegistry, tracking_allocator::AllocationTracker, tracking_allocator::Allocator};
+pub use {
+    tracking_allocator::AllocationGroupId, tracking_allocator::AllocationGroupToken,
+    tracking_allocator::AllocationRegistry, tracking_allocator::AllocationTracker,
+    tracking_allocator::Allocator,
+};
 
-#[global_allocator]
 pub static ALLOCATOR: Allocator<System> = tracking_allocator::Allocator::system();
 
 pub static LIVE: AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
@@ -63,8 +66,12 @@ pub fn peak_live_bytes_during<T>(operation: impl FnOnce() -> T) -> (T, usize) {
 /// child's one scoped group. Other threads' allocations are never counted;
 /// scoped bytes freed anywhere are. Call inside `peak_live_bytes_during`.
 pub fn attribute_allocations<T>(operation: impl FnOnce() -> T) -> T {
-    let mut token = tracking_allocator::AllocationGroupToken::register().expect("one scoped allocation group");
-    let previous = SCOPED_GROUP.swap(token.id().as_usize().get(), std::sync::atomic::Ordering::AcqRel);
+    let mut token =
+        tracking_allocator::AllocationGroupToken::register().expect("one scoped allocation group");
+    let previous = SCOPED_GROUP.swap(
+        token.id().as_usize().get(),
+        std::sync::atomic::Ordering::AcqRel,
+    );
     assert_eq!(
         previous, 0,
         "one scoped allocation group per C11 child process"

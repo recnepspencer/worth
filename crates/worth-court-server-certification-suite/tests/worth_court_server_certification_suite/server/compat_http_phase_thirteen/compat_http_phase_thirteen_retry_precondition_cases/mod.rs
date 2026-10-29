@@ -1,9 +1,18 @@
-use {std::sync::atomic::Ordering};
+use std::sync::atomic::Ordering;
 
-use {crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains, crate::shared_support_compat_http_phase_thirteen_runtime::canonical_download_success, crate::shared_support_compat_http_phase_thirteen_runtime::compat_read_with_diagnostics, crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation, crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation_conflict, crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_counting_server, crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server, crate::shared_support_compat_http_phase_thirteen_runtime::resumed_download_success};
+use {
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
+    crate::shared_support_compat_http_phase_thirteen_runtime::canonical_download_success,
+    crate::shared_support_compat_http_phase_thirteen_runtime::compat_read_with_diagnostics,
+    crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation,
+    crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation_conflict,
+    crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_counting_server,
+    crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
+    crate::shared_support_compat_http_phase_thirteen_runtime::resumed_download_success,
+};
 
 #[test]
-fn compat_http_phase_thirteen_retry_and_precondition_matrix_keeps_authority_and_resume_honest() {
+fn compat_http_retry_and_precondition_matrix_keeps_authority_and_resume_honest() {
     let (server, attempted_writes) = phase_thirteen_counting_server();
     let first = idempotent_mutation(&server, "phase-thirteen-idem", "idem-phase-13");
     let retry = idempotent_mutation(&server, "phase-thirteen-idem", "idem-phase-13");

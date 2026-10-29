@@ -1,30 +1,48 @@
 //! Three distinct pending V3 drops become one ordered selected custody ledger.
 
-#[allow(unused_imports)] use crate::production_entry::three_batch_fold::*;
-use {std::fs};
+#[allow(unused_imports)]
+use crate::production_entry::three_batch_fold::*;
+use std::fs;
 
-use {std::path::Path, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::release_reopen};
-use {worth_store_physical_format::release_checkpoint_batch_records_digest_v1};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+use worth_store_physical_format::release_checkpoint_batch_records_digest_v1;
+use {
+    std::path::Path, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
 fn three_distinct_pending_v3_batches_fold_and_fresh_reopen() {
-    let world = super::pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_distinct_release_before_checkpoint();
     world.kill_distinct_release_before_checkpoint();
 
     let serving = recover_serving(world.root());
     let checkpoint = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x9d; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(checkpoint).into_raw()
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(checkpoint).into_raw()
     else {
         panic!("three pending V3 batches must admit one successor checkpoint");
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "three-batch checkpoint must complete: {outcome:?}"
     );
     serving.close();
@@ -70,7 +88,10 @@ fn three_distinct_pending_v3_batches_fold_and_fresh_reopen() {
         batches[2].cumulative_digest()
     );
     let heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            accumulator,
+        );
     assert_eq!(heads.len(), 3);
 
     let fresh = recover_serving(world.root());

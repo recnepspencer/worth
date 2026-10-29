@@ -1,25 +1,57 @@
-
-
-
-
-
-
-
-
-
-
-
-#[allow(unused_imports)] use crate::phase_four_planning::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::phase_four_planning::*;
+use std::num::NonZeroU64;
 use {std::path::Path, std::path::PathBuf};
 
-use {worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, worth_store_testkit_recovery_runtime::phase_three_support::initialize_store, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::StoreRecoveryBindingSampleDenial};
-use {worth_store_physical_format::encode_data_frame_page_lsn, worth_store_physical_format::CheckpointBindingCompactionHeader, worth_store_physical_format::CheckpointRootBasis, worth_store_physical_format::CheckpointStreamEncoder, worth_store_physical_format::CheckpointWalSourceRange, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::PhysicalCheckpointIdentity, worth_store_physical_format::PhysicalCheckpointSource, worth_store_physical_format::PhysicalPageLsn, worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_physics::PhysicalRedoDecisionKind, worth_store_recovery_physics::PhysicalRedoPlanningDenial, worth_store_recovery_physics::PhysicalRedoTargetIdentity, worth_store_recovery_physics::RecoveryOperationFate, worth_store_recovery_physics::RecoveryPlanCostDenial};
-use {worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial};
-use {worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::StoreRecoveryBindingSampleDenial,
+};
+use {
+    worth_store_physical_format::encode_data_frame_page_lsn,
+    worth_store_physical_format::CheckpointBindingCompactionHeader,
+    worth_store_physical_format::CheckpointRootBasis,
+    worth_store_physical_format::CheckpointStreamEncoder,
+    worth_store_physical_format::CheckpointWalSourceRange,
+    worth_store_physical_format::DurableFrameKind,
+    worth_store_physical_format::PhysicalCheckpointIdentity,
+    worth_store_physical_format::PhysicalCheckpointSource,
+    worth_store_physical_format::PhysicalPageLsn, worth_store_physical_format::RecordArtifactFile,
+};
+use {
+    worth_store_recovery_physics::PhysicalRedoDecisionKind,
+    worth_store_recovery_physics::PhysicalRedoPlanningDenial,
+    worth_store_recovery_physics::PhysicalRedoTargetIdentity,
+    worth_store_recovery_physics::RecoveryOperationFate,
+    worth_store_recovery_physics::RecoveryPlanCostDenial,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
+    worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
+};
+use {
+    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 #[test]
 fn selected_checkpoint_becomes_one_effect_free_immutable_plan() {
@@ -47,14 +79,16 @@ fn selected_checkpoint_becomes_one_effect_free_immutable_plan() {
     assert!(planned.redo_plan().decisions().is_empty());
     assert_eq!(planned.redo_plan().counters().targets(), 0);
 
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Refused(cancelled) = planned.cancel_before_execution() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Refused(cancelled) =
+        planned.cancel_before_execution()
+    else {
         panic!("an explicit pre-execution cancellation is a refusal")
     };
     assert_eq!(cancelled.recovery_effects(), 0);
 }
 
 #[test]
-fn an_unsecured_checkpoint_cannot_cross_the_phase_four_boundary() {
+fn an_unsecured_checkpoint_cannot_cross_the_planning_boundary() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let store = initialize_store(&root);
@@ -99,12 +133,18 @@ fn ordinary_store_mutation_reopens_as_a_nonempty_effect_free_plan() {
     assert_eq!(planned.freshness_sample().wal_members().len(), 2);
     let fates = planned.operation_fates().operations();
     assert_eq!(fates.len(), 3);
-    assert_eq!(fates[0].fate(), worth_store_recovery_physics::RecoveryOperationFate::AcknowledgedDurable);
+    assert_eq!(
+        fates[0].fate(),
+        worth_store_recovery_physics::RecoveryOperationFate::AcknowledgedDurable
+    );
     assert_eq!(
         fates[1].fate(),
         worth_store_recovery_physics::RecoveryOperationFate::DurableUnacknowledged
     );
-    assert_eq!(fates[2].fate(), worth_store_recovery_physics::RecoveryOperationFate::Indeterminate);
+    assert_eq!(
+        fates[2].fate(),
+        worth_store_recovery_physics::RecoveryOperationFate::Indeterminate
+    );
     let decisions = planned.redo_plan().resolved_decisions().collect::<Vec<_>>();
     assert_eq!(decisions.len(), 2);
     assert_eq!(
@@ -112,7 +152,10 @@ fn ordinary_store_mutation_reopens_as_a_nonempty_effect_free_plan() {
         worth_store_recovery_physics::PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn
     );
     assert_eq!(decisions[0].record().lsn().get(), 2);
-    assert_eq!(decisions[1].kind(), worth_store_recovery_physics::PhysicalRedoDecisionKind::Apply);
+    assert_eq!(
+        decisions[1].kind(),
+        worth_store_recovery_physics::PhysicalRedoDecisionKind::Apply
+    );
     assert_eq!(decisions[1].record().lsn().get(), 3);
     assert_eq!(
         decisions[1].target().identity(),
@@ -223,7 +266,9 @@ fn ordinary_store_mutation_reopens_as_a_nonempty_effect_free_plan() {
         0
     );
 
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Refused(cancelled) = planned.cancel_before_execution() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Refused(cancelled) =
+        planned.cancel_before_execution()
+    else {
         panic!("an ordinary plan remains effect-free before execution")
     };
     assert_eq!(cancelled.recovery_effects(), 0);

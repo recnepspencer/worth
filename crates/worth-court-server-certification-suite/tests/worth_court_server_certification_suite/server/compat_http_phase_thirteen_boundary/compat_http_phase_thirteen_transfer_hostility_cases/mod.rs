@@ -5,23 +5,32 @@ use {std::io::Write};
 use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
 use {worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerStreamCancellationKind, worth_server::WorthServerUploadChunk, worth_server::WorthServerUploadContentEncoding, worth_server::WorthServerUploadExpectation, worth_server::WorthServerUploadManifest, worth_server::WorthServerUploadPart};
 
-use {worth_testkit_server::shared_support_compat_http_phase_eight_runtime as compat_http_phase_eight_runtime, worth_testkit_server::shared_support_compat_http_phase_six_runtime as compat_http_phase_six_runtime, crate::shared_support_compat_http_phase_thirteen_assertions::assert_binary_counter, crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains, crate::shared_support_compat_http_phase_thirteen_assertions::assert_external_counter, crate::shared_support_compat_http_phase_thirteen_runtime::cancellation_receipt, crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime as compat_http_phase_twelve_runtime, worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+use {
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_binary_counter,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_external_counter,
+    crate::shared_support_compat_http_phase_thirteen_runtime::cancellation_receipt,
+    crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime as compat_http_phase_eight_runtime,
+    worth_testkit_server::shared_support_compat_http_phase_six_runtime as compat_http_phase_six_runtime,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime as compat_http_phase_twelve_runtime,
+    worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime,
+};
 
 #[test]
-fn compat_http_phase_thirteen_transfer_hostility_matrix_preserves_exact_counters_and_zero_truth_drift(
-) {
+fn compat_http_transfer_hostility_matrix_preserves_exact_counters_and_zero_truth_drift() {
     let slowloris_server = phase_thirteen_server();
     let cleanup_server = phase_thirteen_server();
-    let slowloris =
-        match slowloris_server
-            .compat_http()
-            .upload(worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::upload_input(
-                &slowloris_server,
-                worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::drip_fed_upload(),
-            )) {
-            worth_proof::TransitionOutcome::Denied(value) => value,
-            other => panic!("expected slowloris denial, got {other:?}"),
-        };
+    let slowloris = match slowloris_server.compat_http().upload(
+        worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::upload_input(
+            &slowloris_server,
+            worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::drip_fed_upload(
+            ),
+        ),
+    ) {
+        worth_proof::TransitionOutcome::Denied(value) => value,
+        other => panic!("expected slowloris denial, got {other:?}"),
+    };
     let slowloris_receipt = slowloris
         .abuse_budget_receipt()
         .expect("slowloris denial should retain abuse budget receipt");
@@ -57,7 +66,10 @@ fn compat_http_phase_thirteen_transfer_hostility_matrix_preserves_exact_counters
     );
 
     let prepared_upload = match cleanup_server.compat_http().prepare_upload(
-        worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::upload_input(&cleanup_server, staged_cleanup_upload()),
+        worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::upload_input(
+            &cleanup_server,
+            staged_cleanup_upload(),
+        ),
     ) {
         worth_proof::TransitionOutcome::Success(value) => value,
         other => panic!("expected upload preparation success, got {other:?}"),
@@ -145,11 +157,12 @@ fn compat_http_phase_thirteen_transfer_hostility_matrix_preserves_exact_counters
             ),
         ),
     );
-    let resume = worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_resume_success(
-        resume_server
-            .compat_http()
-            .plan_binary_resume(first.session()),
-    );
+    let resume =
+        worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_resume_success(
+            resume_server
+                .compat_http()
+                .plan_binary_resume(first.session()),
+        );
     let integrity_mismatch = worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_denied(
         resume_server.compat_http().download(
             worth_server::WorthServerBinaryDownloadExecutionInput::new(

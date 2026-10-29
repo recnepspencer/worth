@@ -2,15 +2,34 @@
 //! final extent copy, each killed once its WAL was durable and before its
 //! root published. Completing either reads the moved bytes again.
 
-pub use {crate::production_entry::published_above_checkpoint::limit_sweep::worlds::Killed, std::path::Path, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, crate::production_entry::published_above_checkpoint::limit_sweep::reached};
-pub use {std::fs, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
-pub use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::ServingPhysicalRuntime};
-
-
+pub use {
+    crate::production_entry::published_above_checkpoint::limit_sweep::reached,
+    crate::production_entry::published_above_checkpoint::limit_sweep::worlds::Killed,
+    std::path::Path, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+pub use {
+    std::fs, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread,
+    std::time::Duration, std::time::Instant,
+};
+pub use {
+    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint,
+    worth_store::physical_runtime::PhysicalExtentCopyPhase,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub const ROLE_ENV: &str = "WORTH_C11_SWEEP_MOVED_MEDIA_ROLE";
 pub const MARKER_ENV: &str = "WORTH_C11_SWEEP_MOVED_MEDIA_MARKER";
-pub const CHILD_TEST: &str = "published_above_checkpoint::limit_sweep::moved_media::moved_media_child";
+pub const CHILD_TEST: &str = "process::recovery_runtime::production_entry::published_above_checkpoint::limit_sweep::moved_media::moved_media_child";
 
 /// A Store root the child left as the kill found it, under a directory the
 /// world owns.
@@ -64,7 +83,9 @@ pub fn kill(role: &str) -> KilledMove {
     }
     child.kill().unwrap();
     child.wait().unwrap();
-    let root = std::path::PathBuf::from(std::fs::read_to_string(directory.path().join("root-path.txt")).unwrap());
+    let root = std::path::PathBuf::from(
+        std::fs::read_to_string(directory.path().join("root-path.txt")).unwrap(),
+    );
     KilledMove {
         root,
         _directory: directory,
@@ -82,12 +103,15 @@ pub fn park_rewrite(marker: &Path) {
     checkpoint(world.serving(), [0x92; 32]);
     let submission = world.serving().record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x93; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x93; 32]),
+        )
         .unwrap();
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-        submission
-            .rewrite_selected_inline_segment(world.placement(), durable(key))
-            .into_raw()
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+    ) = submission
+        .rewrite_selected_inline_segment(world.placement(), durable(key))
+        .into_raw()
     else {
         panic!("rewrite preparation must succeed")
     };
@@ -101,15 +125,27 @@ pub fn park_copy(marker: &Path) {
         root.to_string_lossy().as_bytes(),
     )
     .unwrap();
-    let serving = crate::published_above_checkpoint::limit_sweep::moved_media::arena::initialize(&root);
-    let (_, placement, _) = crate::published_above_checkpoint::limit_sweep::moved_media::arena::configuration();
-    crate::published_above_checkpoint::limit_sweep::moved_media::arena::append(&serving, placement, [0x94; 32], b"seed");
-    let extent = vec![0x5d; crate::published_above_checkpoint::limit_sweep::moved_media::arena::EXTENT_BYTES];
-    let record = crate::published_above_checkpoint::limit_sweep::moved_media::arena::append(&serving, placement, [0x95; 32], &extent).persisted_records()[0];
+    let serving =
+        crate::published_above_checkpoint::limit_sweep::moved_media::arena::initialize(&root);
+    let (_, placement, _) =
+        crate::published_above_checkpoint::limit_sweep::moved_media::arena::configuration();
+    crate::published_above_checkpoint::limit_sweep::moved_media::arena::append(
+        &serving, placement, [0x94; 32], b"seed",
+    );
+    let extent = vec![
+            0x5d;
+            crate::published_above_checkpoint::limit_sweep::moved_media::arena::EXTENT_BYTES
+        ];
+    let record = crate::published_above_checkpoint::limit_sweep::moved_media::arena::append(
+        &serving, placement, [0x95; 32], &extent,
+    )
+    .persisted_records()[0];
     checkpoint(&serving, [0x96; 32]);
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x97; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x97; 32]),
+        )
         .unwrap();
     let Ok(mut progress) = submission
         .certification_begin_selected_extent_copy(placement, durable(key), record)
@@ -118,12 +154,17 @@ pub fn park_copy(marker: &Path) {
         panic!("selected extent copy did not admit")
     };
     for _ in 0..128 {
-        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption {
+        if progress.phase
+            == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+        {
             break;
         }
         progress = submission.advance_extent_copy().unwrap();
     }
-    assert_eq!(progress.phase, worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption);
+    assert_eq!(
+        progress.phase,
+        worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+    );
     let prepared = submission.prepare_completed_extent_copy().unwrap();
     park_at_wal(&serving, marker, || prepared.start());
 }
@@ -133,7 +174,8 @@ pub fn durable(
 ) -> PhysicalMutationRequest {
     worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
         key,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
 }
 
@@ -159,9 +201,12 @@ pub fn park_at_wal<T>(serving: &ServingPhysicalRuntime, marker: &Path, start: im
 pub fn checkpoint(serving: &ServingPhysicalRuntime, key: [u8; 32]) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(key),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("source checkpoint must admit")
     };
     assert!(matches!(

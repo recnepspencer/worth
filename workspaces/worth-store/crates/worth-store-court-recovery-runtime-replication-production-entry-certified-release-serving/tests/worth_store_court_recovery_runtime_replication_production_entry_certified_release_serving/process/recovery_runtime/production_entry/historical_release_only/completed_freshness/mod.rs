@@ -1,11 +1,23 @@
 //! A completed-history seal must freshly inspect both selected head and
 //! ordinary-ingest control media before it can become Serving.
 
-#[allow(unused_imports)] use crate::production_entry::historical_release_only::completed_freshness::*;
-use {std::path::Path, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_physical_format::RecordArtifactFile, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, std::fs, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, crate::production_entry::historical_release_only::selected_generation};
-use {std::path::PathBuf};
-use {worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody};
-use {worth_store_physical_format::DurablePhysicalRootManifest};
+#[allow(unused_imports)]
+use crate::production_entry::historical_release_only::completed_freshness::*;
+use std::path::PathBuf;
+use worth_store_physical_format::DurablePhysicalRootManifest;
+use {
+    crate::production_entry::historical_release_only::selected_generation, std::fs,
+    std::path::Path, worth_store_physical_format::RecordArtifactFile,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+};
+use {
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody,
+};
 
 #[test]
 fn completed_history_seal_denies_changed_head_and_ordinary_control_then_freshly_retries() {
@@ -13,7 +25,7 @@ fn completed_history_seal_denies_changed_head_and_ordinary_control_then_freshly_
         .name("completed-history-media-freshness".into())
         .stack_size(16 << 20)
         .spawn(|| {
-            let world = pending_wal_world::first();
+            let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
             world.kill_distinct_release_before_checkpoint();
             let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
                 worth_store_recovery_runtime::WorthStoreRecovery::recover(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root()))

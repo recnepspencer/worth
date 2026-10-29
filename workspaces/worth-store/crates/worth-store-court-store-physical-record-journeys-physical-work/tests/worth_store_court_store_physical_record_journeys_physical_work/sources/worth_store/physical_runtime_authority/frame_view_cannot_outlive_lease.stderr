@@ -1,5 +1,5 @@
 error[E0515]: cannot return reference to function parameter `lease`
- --> tests/physical_runtime_authority/frame_view_cannot_outlive_lease.rs:4:5
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/frame_view_cannot_outlive_lease.rs:4:5
   |
 4 |     &lease
   |     ^^^^^^ returns a reference to data owned by the current function

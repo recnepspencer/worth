@@ -1,13 +1,5 @@
-#[allow(unused_imports)] use crate::resource_bounds::*;
-use {std::path::Path};
-
-use {worth_foundational::PhysicalArtifactFamily};
-use {worth_store_offline_integrity_observer::observe_store, worth_store_offline_integrity_observer::OfflineArtifactDuplicateEvidence, worth_store_offline_integrity_observer::OfflineArtifactFamily, worth_store_offline_integrity_observer::OfflineIndeterminatePhysicalReason, worth_store_offline_integrity_observer::OfflineIntegrityObservationDenial, worth_store_offline_integrity_observer::OfflineIntegrityObservationLimits, worth_store_offline_integrity_observer::OfflineIntegrityObservationRequest, worth_store_offline_integrity_observer::OfflineIntegrityOutcome, worth_store_offline_integrity_observer::OfflineIntegrityProtocolContext, worth_store_offline_integrity_observer::OfflineIntegrityReportCompleteness, worth_store_offline_integrity_observer::OfflineIntegrityReportDestination, worth_store_offline_integrity_observer::OfflineIntegrityReportWireDenial};
-
-use {crate::support::fixtures::clean_store, crate::support::fixtures::StoreFixture};
-
-
-
+#[allow(unused_imports)]
+use crate::resource_bounds::*;
 
 #[test]
 fn entry_bound_preserves_indeterminate_addressed_root_and_exact_work() {
@@ -20,7 +12,9 @@ fn entry_bound_preserves_indeterminate_addressed_root_and_exact_work() {
     let root = report
         .artifacts()
         .iter()
-        .find(|artifact| artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest)
+        .find(|artifact| {
+            artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest
+        })
         .unwrap();
     assert_eq!(
         root.outcome(),
@@ -150,7 +144,8 @@ fn byte_and_depth_bounds_stop_before_open_or_decode() {
     );
     assert!(byte_report.artifacts().iter().any(|artifact| {
         artifact.family() == worth_foundational::PhysicalArtifactFamily::NamespaceIdentity
-            && artifact.outcome() == &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Intact
+            && artifact.outcome()
+                == &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Intact
     }));
     assert!(byte_report
         .artifacts()
@@ -181,7 +176,9 @@ fn byte_and_depth_bounds_stop_before_open_or_decode() {
     let root = depth_report
         .artifacts()
         .iter()
-        .find(|artifact| artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest)
+        .find(|artifact| {
+            artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest
+        })
         .unwrap();
     assert_eq!(
         root.outcome(),
@@ -218,7 +215,9 @@ fn open_file_bound_is_typed_before_deepest_root_acquisition() {
     let root = report
         .artifacts()
         .iter()
-        .find(|artifact| artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest)
+        .find(|artifact| {
+            artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest
+        })
         .unwrap();
     assert_eq!(
         root.outcome(),

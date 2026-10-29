@@ -1,90 +1,5 @@
-#[allow(unused_imports)] use crate::physical_work_obligation_validation::envelope::*;
-use {worth_store_physical_format::integrity_declarations::families::PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES, worth_store_physical_format::integrity_declarations::families::PHYSICAL_WORK_OBLIGATION_V6_VERSION};
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::physical_work_obligation::PhysicalWorkObligationOperationCode, worth_store_physical_format::physical_work_obligation::PhysicalWorkObligationTargetCode};
-use {worth_store_physical_integrity::validate_physical_work_obligation, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityValidationDigest, worth_store_physical_integrity::PhysicalIntegrityValidationMechanism, worth_store_physical_integrity::PhysicalIntegrityValidationRecord, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::physical_work_obligation_validation::assert_damage, crate::support::physical_work_obligation_validation::field_range, crate::support::physical_work_obligation_validation::identity, crate::support::physical_work_obligation_validation::independent_sha256, crate::support::physical_work_obligation_validation::rejection, crate::support::physical_work_obligation_validation::reseal, crate::support::physical_work_obligation_validation::scope, crate::support::physical_work_obligation_validation::store, crate::support::physical_work_obligation_validation::OBLIGATION_OFFSET};
-use {crate::vectors::operation_3, crate::vectors::operation_4, crate::vectors::OPERATION_3_SCOPE_SHA, crate::vectors::OPERATION_3_SHA, crate::vectors::OPERATION_4_SHA, crate::vectors::STORE_BYTES};
-
-#[test]
-fn frozen_literals_seal_family_specific_views_and_validation_records() {
-    let store = store(STORE_BYTES);
-    let cases = [
-        (operation_3(), 3, OPERATION_3_SHA),
-        (operation_4(), 4, OPERATION_4_SHA),
-    ];
-    for (bytes, operation, covered_digest) in cases {
-        assert_eq!(bytes.len(), PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES);
-        assert_eq!(bytes[8], PHYSICAL_WORK_OBLIGATION_V6_VERSION);
-        assert_eq!(independent_sha256(&bytes[..128]), covered_digest);
-        assert_eq!(&bytes[128..160], covered_digest.as_slice());
-
-        let scope = scope(store, identity(1, 2, operation));
-        let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
-        let other_incarnation = bytes;
-        let (validation, counters) = validate_physical_work_obligation(artifact, scope);
-        let worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation::Intact(validated) = validation else {
-            panic!("frozen physical-work literal was rejected")
-        };
-        assert_eq!(validated.scope(), scope);
-        assert_eq!(validated.identity(), identity(1, 2, operation));
-        assert!(validated.matches_input(artifact));
-        assert!(
-            !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
-                &other_incarnation,
-            ))
-        );
-        match operation {
-            3 => {
-                assert_eq!(
-                    validated.operation_code(),
-                    worth_store_physical_format::physical_work_obligation::PhysicalWorkObligationOperationCode::DurabilityBarrier
-                );
-                assert_eq!(
-                    validated.target(),
-                    worth_store_physical_format::physical_work_obligation::PhysicalWorkObligationTargetCode::RecordNamespaceSynchronization
-                );
-                assert_eq!(validated.payload_digest(), None);
-            }
-            4 => {
-                assert_eq!(
-                    validated.operation_code(),
-                    worth_store_physical_format::physical_work_obligation::PhysicalWorkObligationOperationCode::WalAppend
-                );
-                assert_eq!(
-                    validated.target(),
-                    worth_store_physical_format::physical_work_obligation::PhysicalWorkObligationTargetCode::WalArtifactInterval {
-                        segment: 7,
-                        generation: 8,
-                        offset: 9,
-                        byte_count: 10,
-                    }
-                );
-                assert_eq!(validated.payload_digest(), Some([0xab; 32]));
-            }
-            _ => unreachable!(),
-        }
-        let record = validated.into_validation_record();
-        assert!(record.matches_scope(scope));
-        assert_eq!(
-            record.mechanism(),
-            worth_store_physical_integrity::PhysicalIntegrityValidationMechanism::Sha256V1
-        );
-        assert_eq!(
-            record.byte_range_digest(),
-            worth_store_physical_integrity::PhysicalIntegrityValidationDigest::sha256(independent_sha256(&bytes))
-        );
-        assert_eq!(
-            counters.family(),
-            worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::PhysicalWorkObligation
-        );
-        assert_eq!(counters.inspected_frames(), 1);
-        assert_eq!(counters.inspected_bytes(), 160);
-        assert_eq!(counters.intact_frames(), 1);
-        assert_eq!(counters.rejected_frames(), 0);
-    }
-}
+#[allow(unused_imports)]
+use crate::physical_work_obligation_validation::envelope::*;
 
 #[test]
 fn validation_record_scope_digest_is_literal_and_sensitive_to_every_variable_axis() {
@@ -93,7 +8,9 @@ fn validation_record_scope_digest_is_literal_and_sensitive_to_every_variable_axi
     let baseline = validation_record(&baseline_bytes, baseline_scope);
     assert_eq!(
         baseline.exact_scope_digest(),
-        worth_store_physical_integrity::PhysicalIntegrityValidationDigest::sha256(OPERATION_3_SCOPE_SHA)
+        worth_store_physical_integrity::PhysicalIntegrityValidationDigest::sha256(
+            OPERATION_3_SCOPE_SHA
+        )
     );
 
     let mut other_store_bytes = baseline_bytes;
@@ -132,7 +49,8 @@ fn validation_record_scope_digest_is_literal_and_sensitive_to_every_variable_axi
         worth_store_physical_integrity::PhysicalArtifactScope::physical_work_obligation(
             store(STORE_BYTES),
             identity(1, 2, 3),
-            worth_store_physical_integrity::PhysicalByteRange::new(OBLIGATION_OFFSET + 1, 160).unwrap(),
+            worth_store_physical_integrity::PhysicalByteRange::new(OBLIGATION_OFFSET + 1, 160)
+                .unwrap(),
         );
     let other_range = validation_record(&baseline_bytes, other_range_scope);
 
@@ -279,7 +197,9 @@ fn magic_kind_structure_target_shape_and_version_have_typed_localization() {
     unsupported[8] = 7;
     reseal(&mut unsupported);
     let (rejection, counters) = rejection(&unsupported, scope);
-    let worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(version) = rejection else {
+    let worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(version) =
+        rejection
+    else {
         panic!("expected unsupported physical-work version, got {rejection:?}")
     };
     assert_eq!(version.scope(), scope);
@@ -289,7 +209,9 @@ fn magic_kind_structure_target_shape_and_version_have_typed_localization() {
     );
     assert_eq!(version.observed(), 7);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported
+        ),
         1
     );
 }

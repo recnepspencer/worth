@@ -1,5 +1,5 @@
 error: cannot construct `CompletedPhysicalCheckpoint` with struct literal syntax due to private fields
-  --> tests/physical_runtime_authority/checkpoint_capture_authority_is_sealed.rs:18:5
+  --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/checkpoint_capture_authority_is_sealed.rs:18:5
    |
 18 |     CompletedPhysicalCheckpoint {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,23 +1,23 @@
 error[E0603]: module `lifecycle` is private
- --> tests/physical_runtime_authority/internal_runtime_topology_is_sealed.rs:2:5
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/internal_runtime_topology_is_sealed.rs:2:5
   |
 2 |     lifecycle::LifecycleCoordinator, root_admission::RootAdmission,
   |     ^^^^^^^^^ private module
   |
 note: the module `lifecycle` is defined here
- --> src/physical_runtime/mod.rs
+ --> $WORKSPACE/crates/worth-store/src/physical_runtime/mod.rs
   |
   | mod lifecycle;
   | ^^^^^^^^^^^^^
 
 error[E0603]: module `root_admission` is private
- --> tests/physical_runtime_authority/internal_runtime_topology_is_sealed.rs:2:38
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/internal_runtime_topology_is_sealed.rs:2:38
   |
 2 |     lifecycle::LifecycleCoordinator, root_admission::RootAdmission,
   |                                      ^^^^^^^^^^^^^^ private module
   |
 note: the module `root_admission` is defined here
- --> src/physical_runtime/mod.rs
+ --> $WORKSPACE/crates/worth-store/src/physical_runtime/mod.rs
   |
   | mod root_admission;
   | ^^^^^^^^^^^^^^^^^^

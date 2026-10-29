@@ -1,3 +1,4 @@
+use crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::commit_unrelated_branch_while_paused::commit_unrelated_branch_while_paused;
 #[allow(unused_imports)]
 pub(crate) use {crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::BranchCoordination, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::OwnerPhaseCourtBranches, crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::OwnerPhasePause, worth_relational::facade::mvcc::RelationalInterruptionBoundary, worth_relational::facade::mvcc::RelationalPublicationOutcome, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::assert_court_commit_matches_oracle, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::begin_court_transaction, crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::branch_reference_state, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::coordination_counters, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::head_for_supply_chain_branch, crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::join_paused_worker, crate::relational_certification::ordinary_context::mvcc_owner_phase_locality_court::lower_court_delta};
 
@@ -29,7 +30,9 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
     let storm_transaction = begin_court_transaction(
         &world.runtime,
         &court.storm,
-        pause.control(worth_relational::facade::mvcc::RelationalInterruptionBoundary::CandidatePreparation),
+        pause.control(
+            worth_relational::facade::mvcc::RelationalInterruptionBoundary::CandidatePreparation,
+        ),
         storm_batch,
     );
     let preparation = world.runtime.preparation_port();
@@ -102,7 +105,9 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
     let storm_transaction = begin_court_transaction(
         &world.runtime,
         &court.storm,
-        pause.control(worth_relational::facade::mvcc::RelationalInterruptionBoundary::BeforeCriticalSection),
+        pause.control(
+            worth_relational::facade::mvcc::RelationalInterruptionBoundary::BeforeCriticalSection,
+        ),
         storm_batch,
     );
     let storm_candidate = world
@@ -139,7 +144,9 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
 
     let performed =
         match join_paused_worker(storm_worker, &pause, "publication critical-section entry") {
-            worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
+            worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
+                performed
+            }
             outcome => panic!("the released storm publication must perform: {outcome:?}"),
         };
     let storm_committed = world
@@ -216,7 +223,9 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
         .publication_port()
         .compare_and_publish(request_execution, storm_candidate)
     {
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
+            performed
+        }
         outcome => panic!("the uncontended storm candidate must perform: {outcome:?}"),
     };
     let storm_commit_id = performed.canonical_commit().commit.commit_id;

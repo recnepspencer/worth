@@ -1,5 +1,5 @@
-use {crate::support::extent_validation::ExtentFixture};
-use {worth_store_physical_integrity::*};
+use crate::support::extent_validation::ExtentFixture;
+use worth_store_physical_integrity::*;
 
 #[test]
 fn chunk_observation_requires_manifest_and_does_not_retain_its_byte_buffer() {

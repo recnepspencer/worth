@@ -1,7 +1,7 @@
 #![allow(dead_code)]
-#[path = "../../../../tests/support/fixtures.rs"]
+#[path = "fixtures.rs"]
 mod fixtures;
-#[path = "../../../../tests/support/temporary_root.rs"]
+#[path = "temporary_root.rs"]
 mod temporary_root;
 
 use super::*;

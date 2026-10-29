@@ -1,5 +1,22 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::performance::claims::*;
-use {worth_foundational::foundational_responsibilities, worth_foundational::performance_api::common_path as performance_common, worth_foundational::FoundationalAuthoritativePerformanceClaim, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceClaimConstructionDenial, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformancePrimitiveLegalityDenial, worth_foundational::FoundationalPerformanceWorkClass, worth_foundational::FoundationalPolicyAdmissionPerformanceClaim, worth_foundational::FoundationalReplayMaterializationPerformanceClaim, worth_foundational::FoundationalSupportDerivedPerformanceClaim};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::performance::claims::*;
+use {
+    worth_foundational::foundational_responsibilities,
+    worth_foundational::performance_api::common_path as performance_common,
+    worth_foundational::FoundationalAuthoritativePerformanceClaim,
+    worth_foundational::FoundationalPerformanceBoundary,
+    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
+    worth_foundational::FoundationalPerformanceClaimConstructionDenial,
+    worth_foundational::FoundationalPerformanceEvidenceStrength,
+    worth_foundational::FoundationalPerformanceExecutionTemperature,
+    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
+    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
+    worth_foundational::FoundationalPerformancePrimitiveLegalityDenial,
+    worth_foundational::FoundationalPerformanceWorkClass,
+    worth_foundational::FoundationalPolicyAdmissionPerformanceClaim,
+    worth_foundational::FoundationalReplayMaterializationPerformanceClaim,
+    worth_foundational::FoundationalSupportDerivedPerformanceClaim,
+};
 
 #[test]
 fn common_path_claim_authoring_surfaces_live_under_the_performance_responsibility_home() {
@@ -103,13 +120,21 @@ fn support_replay_and_policy_claims_remain_family_distinct_lowered_types() {
         .claim()
         .policy_admission()
         .boundary(worth_foundational::FoundationalPerformanceBoundary::AuthoritativeExecution)
-        .evidence_strength(worth_foundational::FoundationalPerformanceEvidenceStrength::RuntimePolicyAdmission)
-        .breadth_locality(worth_foundational::FoundationalPerformanceBreadthLocalityPosture::DeltaBound)
+        .evidence_strength(
+            worth_foundational::FoundationalPerformanceEvidenceStrength::RuntimePolicyAdmission,
+        )
+        .breadth_locality(
+            worth_foundational::FoundationalPerformanceBreadthLocalityPosture::DeltaBound,
+        )
         .access_pattern(
             worth_foundational::FoundationalPerformanceAccessPatternPosture::PointLookup,
         )
-        .execution_temperature(worth_foundational::FoundationalPerformanceExecutionTemperature::WarmPath)
-        .freshness_retention(worth_foundational::FoundationalPerformanceFreshnessRetentionPosture::ExactBasisCurrent)
+        .execution_temperature(
+            worth_foundational::FoundationalPerformanceExecutionTemperature::WarmPath,
+        )
+        .freshness_retention(
+            worth_foundational::FoundationalPerformanceFreshnessRetentionPosture::ExactBasisCurrent,
+        )
         .fallback_debt(worth_foundational::FoundationalPerformanceFallbackDebtPosture::Deferred)
         .include_work(worth_foundational::FoundationalPerformanceWorkClass::ValidationPlanning)
         .exclude_work(worth_foundational::FoundationalPerformanceWorkClass::SupportReportAssembly)
@@ -119,7 +144,7 @@ fn support_replay_and_policy_claims_remain_family_distinct_lowered_types() {
 }
 
 #[test]
-fn claim_builders_fail_closed_for_missing_or_incompatible_phase2_shapes() {
+fn claim_builders_fail_closed_for_missing_or_incompatible_shapes() {
     let missing_disclosure = worth_foundational::performance_api::common_path::performance()
         .claim()
         .policy_admission()

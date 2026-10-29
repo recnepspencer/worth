@@ -1,5 +1,5 @@
 error: lifetime may not live long enough
- --> tests/physical_runtime_authority/record_chunk_view_cannot_escape_session.rs:4:5
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_cannot_escape_session.rs:4:5
   |
 3 | fn escape(session: &mut RecordReadSession) -> PhysicalRecordChunkView<'static> {
   |                    - let's call the lifetime of this reference `'1`

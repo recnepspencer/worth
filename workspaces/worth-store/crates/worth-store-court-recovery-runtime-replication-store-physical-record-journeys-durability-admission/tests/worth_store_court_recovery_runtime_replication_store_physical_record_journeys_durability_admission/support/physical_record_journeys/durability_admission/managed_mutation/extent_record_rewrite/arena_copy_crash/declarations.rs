@@ -2,12 +2,12 @@ pub(crate) use {worth_store::physical_runtime::PhysicalMutationIdempotencyMateri
 pub(crate) use {std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
 pub(crate) use {worth_store::physical_runtime::PhysicalExtentCopyPhase};
 
-pub(crate) const CHILD: &str = "durability_admission::managed_mutation::extent_record_rewrite::arena_copy_crash::copy_bytes_before_final_child";
+pub(crate) const CHILD: &str = "process::store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_copy_crash::copy_bytes_before_final_child";
 pub(crate) const DIRECTORY: &str = "C11_COPY_CRASH_DIRECTORY";
 pub(crate) const SEAM: &str = "C11_COPY_CRASH_SEAM";
 
 pub(crate) fn verify_killed_copy(seam: &str) {
-    use {worth_store_testkit_store::durability_admission::independent_wal_oracle::copy_intent::produced_copy_intents};
+    use worth_store_testkit_store::durability_admission::independent_wal_oracle::copy_intent::produced_copy_intents;
     let directory = tempfile::tempdir().unwrap();
     let root = directory.path().join("store");
     kill_after_copy_bytes(directory.path(), seam);

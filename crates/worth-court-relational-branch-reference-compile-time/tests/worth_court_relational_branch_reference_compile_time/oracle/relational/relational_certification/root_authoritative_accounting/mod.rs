@@ -1,4 +1,5 @@
-#[allow(unused_imports)] use crate::relational_certification::reference_context::root_authoritative_accounting::*;
+#[allow(unused_imports)]
+use crate::relational_certification::reference_context::root_authoritative_accounting::*;
 pub(crate) use {std::collections::BTreeMap, std::collections::BTreeSet};
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
@@ -8,7 +9,7 @@ pub(crate) use {worth_relational::facade::history::BranchId};
 pub(crate) use {worth_relational::facade::inspection::RelationalAuthoritativeAllocationKind, worth_relational::facade::inspection::RelationalExcludedAllocationLane};
 
 #[test]
-fn phase5_full_authoritative_accounting_deduplicates_one_shared_envelope_and_root() {
+fn full_authoritative_accounting_deduplicates_one_shared_envelope_and_root() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -180,7 +181,8 @@ fn phase5_full_authoritative_accounting_deduplicates_one_shared_envelope_and_roo
     let excluded = independent_excluded_totals(ledger.excluded_allocations());
     assert_eq!(
         observation.unique_diagnostic_bytes(),
-        excluded[&worth_relational::facade::inspection::RelationalExcludedAllocationLane::Diagnostics]
+        excluded
+            [&worth_relational::facade::inspection::RelationalExcludedAllocationLane::Diagnostics]
     );
     assert_eq!(
         observation.unique_retention_metadata_bytes(),

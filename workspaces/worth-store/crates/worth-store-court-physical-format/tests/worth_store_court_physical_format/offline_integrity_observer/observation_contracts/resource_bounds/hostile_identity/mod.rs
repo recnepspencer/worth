@@ -1,4 +1,12 @@
-use {worth_store_offline_integrity_observer::OfflineArtifactDuplicateEvidence, worth_store_offline_integrity_observer::OfflineArtifactFamily, worth_store_offline_integrity_observer::OfflineIntegrityOutcome, worth_foundational::PhysicalArtifactFamily, crate::resource_bounds::bounded_request, crate::support::fixtures::clean_store, crate::resource_bounds::limits, worth_store_offline_integrity_observer::observe_store, crate::resource_bounds::store_snapshot};
+use {
+    crate::resource_bounds::bounded_request, crate::resource_bounds::limits,
+    crate::resource_bounds::store_snapshot, crate::support::fixtures::clean_store,
+    worth_foundational::PhysicalArtifactFamily,
+    worth_store_offline_integrity_observer::observe_store,
+    worth_store_offline_integrity_observer::OfflineArtifactDuplicateEvidence,
+    worth_store_offline_integrity_observer::OfflineArtifactFamily,
+    worth_store_offline_integrity_observer::OfflineIntegrityOutcome,
+};
 
 #[test]
 fn hard_link_alias_is_reported_twice_but_read_once() {
@@ -56,7 +64,9 @@ fn hard_link_across_protocol_scopes_is_still_read_once() {
     let root = report
         .artifacts()
         .iter()
-        .find(|artifact| artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest)
+        .find(|artifact| {
+            artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest
+        })
         .unwrap();
     assert_eq!(root.outcome(), &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unknown(
         worth_store_offline_integrity_observer::OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected));
@@ -75,7 +85,10 @@ fn unknown_entry_is_visible_and_observation_does_not_mutate_store() {
         .iter()
         .find(|artifact| artifact.relative_path() == "families/records/mystery.record")
         .unwrap();
-    assert_eq!(unknown.family(), worth_store_offline_integrity_observer::OfflineArtifactFamily::Unrecognized);
+    assert_eq!(
+        unknown.family(),
+        worth_store_offline_integrity_observer::OfflineArtifactFamily::Unrecognized
+    );
     assert_eq!(
         unknown.outcome(),
         &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unknown(

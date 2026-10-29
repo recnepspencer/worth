@@ -1,8 +1,36 @@
-pub(crate) use {std::process::Command, std::time::Duration, worth_store_testkit_recovery_runtime::support::EXTENT_BYTES, std::time::Instant, std::path::Path, std::path::PathBuf, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationRequest, std::process::Stdio, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::support::append, crate::c11_arena_copy_crash::checkpoint_source, worth_store_testkit_recovery_runtime::support::configuration, worth_store_testkit_recovery_runtime::support::generation, worth_store_testkit_recovery_runtime::support::initialize, crate::c11_arena_copy_crash::observation::observe_copy_media, worth_store_testkit_recovery_runtime::support::open, crate::c11_arena_copy_crash::recover, worth_store_testkit_recovery_runtime::support::scan, crate::c11_arena_copy_crash::selected_extent, std::thread};
-pub(crate) use {worth_store::physical_runtime::PhysicalExtentCopyResolutionProgress, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordAppendDenial};
+pub(crate) use {
+    crate::c11_arena_copy_crash::checkpoint_source,
+    crate::c11_arena_copy_crash::observation::observe_copy_media,
+    crate::c11_arena_copy_crash::recover, crate::c11_arena_copy_crash::selected_extent,
+    std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread,
+    std::time::Duration, std::time::Instant, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalExtentCopyPhase,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store_testkit_recovery_runtime::support::append,
+    worth_store_testkit_recovery_runtime::support::configuration,
+    worth_store_testkit_recovery_runtime::support::generation,
+    worth_store_testkit_recovery_runtime::support::initialize,
+    worth_store_testkit_recovery_runtime::support::open,
+    worth_store_testkit_recovery_runtime::support::scan,
+    worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
+};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalExtentCopyResolutionProgress,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordAppendDenial,
+};
 
-
-pub(crate) const CHILD: &str = "pre_final::ready_copy_before_final_child";
+pub(crate) const CHILD: &str =
+    "process::recovery_runtime::c11_arena_copy_crash::pre_final::ready_copy_before_final_child";
 pub(crate) const MARKER: &str = "C11_READY_COPY_CRASH_MARKER";
 pub(crate) const SEAM: &str = "C11_COPY_CRASH_SEAM";
 
@@ -47,23 +75,30 @@ pub(crate) fn verify_killed_copy(seam: &str) {
     let (_, placement, _) = configuration();
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([214; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([214; 32]),
+        )
         .unwrap();
     let ordinary = vec![52; EXTENT_BYTES];
     let attempt = submission.prepare_durable_append(
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([ordinary.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([ordinary.as_slice()])
+            .unwrap(),
         placement,
         worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
             key,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         ),
     );
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-        attempt.into_raw()
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+    ) = attempt.into_raw()
     else {
         panic!("ordinary append must prepare outside the WAL-held copy destination")
     };
-    let worth_store::physical_runtime::PhysicalMutationOutcome::Completed(completed) = prepared.execute() else {
+    let worth_store::physical_runtime::PhysicalMutationOutcome::Completed(completed) =
+        prepared.execute()
+    else {
         panic!("ordinary append preparation did not complete")
     };
     let ordinary_record = completed.persisted_records()[0];
@@ -78,13 +113,17 @@ pub(crate) fn verify_killed_copy(seam: &str) {
     ));
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([215; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(checkpoint) = serving.checkpoints().start(request).into_raw()
+    let worth_proof::TransitionOutcome::Success(checkpoint) =
+        serving.checkpoints().start(request).into_raw()
     else {
         panic!("copy cancellation checkpoint did not admit")
     };
-    let worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(checkpoint) = checkpoint.wait() else {
+    let worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(checkpoint) =
+        checkpoint.wait()
+    else {
         panic!("copy cancellation checkpoint did not complete")
     };
     assert_eq!(

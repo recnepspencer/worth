@@ -1,7 +1,14 @@
 //! Literal coverage twins: present-but-unusable containers are never absence proof.
-use {crate::phase_4_literal_vectors::pending_operation, crate::phase_4_literal_vectors::wal_range, crate::support::fixtures::clean_store, crate::store_offline_integrity_observer_support::request};
-use {worth_foundational::PhysicalArtifactFamily as Family, worth_foundational::PhysicalByteRange};
-use {worth_store_offline_integrity_observer::observe_store, worth_store_offline_integrity_observer::OfflineIndeterminatePhysicalReason as Indeterminate, worth_store_offline_integrity_observer::OfflineIntegrityOutcome as Outcome, worth_store_offline_integrity_observer::OfflinePhysicalDamageCause as Cause, worth_store_offline_integrity_observer::OfflineUnknownPhysicalReason as Unknown};
+use crate::{
+    phase_4_literal_vectors::pending_operation, phase_4_literal_vectors::wal_range,
+    store_offline_integrity_observer_support::request, support::fixtures::clean_store,
+};
+use worth_foundational::{PhysicalArtifactFamily as Family, PhysicalByteRange};
+use worth_store_offline_integrity_observer::{
+    observe_store, OfflineIndeterminatePhysicalReason as Indeterminate,
+    OfflineIntegrityOutcome as Outcome, OfflinePhysicalDamageCause as Cause,
+    OfflineUnknownPhysicalReason as Unknown,
+};
 
 #[test]
 fn namespace_truncation_and_absence_preserve_declared_seventy_two_byte_scope() {
@@ -18,11 +25,18 @@ fn namespace_truncation_and_absence_preserve_declared_seventy_two_byte_scope() {
         let row = report
             .artifacts()
             .iter()
-            .find(|row| row.family() == worth_foundational::PhysicalArtifactFamily::NamespaceIdentity)
+            .find(|row| {
+                row.family() == worth_foundational::PhysicalArtifactFamily::NamespaceIdentity
+            })
             .unwrap();
-        assert_eq!(row.range(), Some(worth_foundational::PhysicalByteRange::new(0, 72).unwrap()));
-        assert!(matches!(row.outcome(), worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(d)
-            if d.cause() == if absent { worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::MissingArtifact } else { worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::Truncation }));
+        assert_eq!(
+            row.range(),
+            Some(worth_foundational::PhysicalByteRange::new(0, 72).unwrap())
+        );
+        assert!(
+            matches!(row.outcome(), worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(d)
+            if d.cause() == if absent { worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::MissingArtifact } else { worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::Truncation })
+        );
     }
 }
 
@@ -95,7 +109,10 @@ fn present_rejected_middle_wal_retains_unknown_coverage_and_its_own_failure() {
             .unwrap();
         match mutate {
             0 => {
-                assert!(matches!(middle.outcome(), worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unsupported(_)));
+                assert!(matches!(
+                    middle.outcome(),
+                    worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unsupported(_)
+                ));
                 assert_eq!(
                     gap.outcome(),
                     &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unknown(worth_store_offline_integrity_observer::OfflineUnknownPhysicalReason::WalCoverageUnavailable)
@@ -106,7 +123,8 @@ fn present_rejected_middle_wal_retains_unknown_coverage_and_its_own_failure() {
             ),
             2 => assert!(matches!(
                 middle.outcome(),
-                worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Indeterminate(_) | worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unknown(_)
+                worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Indeterminate(_)
+                    | worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unknown(_)
             )),
             3 => {
                 assert_eq!(
@@ -141,7 +159,9 @@ fn adjacent_present_wal_containers_have_scope_disagreement_not_a_missing_file() 
         .iter()
         .find(|row| row.identity().as_str() == "wal-required-lsn:4:5")
         .unwrap();
-    assert!(matches!(gap.outcome(), worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(d) if d.cause() == worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::ScopeMismatch));
+    assert!(
+        matches!(gap.outcome(), worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(d) if d.cause() == worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::ScopeMismatch)
+    );
 }
 
 #[test]
@@ -160,9 +180,16 @@ fn truncated_pending_obligation_preserves_the_declared_expected_scope() {
     let row = report
         .artifacts()
         .iter()
-        .find(|row| row.family() == worth_foundational::PhysicalArtifactFamily::PhysicalWorkObligation)
+        .find(|row| {
+            row.family() == worth_foundational::PhysicalArtifactFamily::PhysicalWorkObligation
+        })
         .unwrap();
-    assert_eq!(row.range(), Some(worth_foundational::PhysicalByteRange::new(0, 160).unwrap()));
-    assert!(matches!(row.outcome(), worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(d)
-        if d.cause() == worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::Truncation && d.damaged_range() == Some(worth_foundational::PhysicalByteRange::new(159, 1).unwrap())));
+    assert_eq!(
+        row.range(),
+        Some(worth_foundational::PhysicalByteRange::new(0, 160).unwrap())
+    );
+    assert!(
+        matches!(row.outcome(), worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(d)
+        if d.cause() == worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::Truncation && d.damaged_range() == Some(worth_foundational::PhysicalByteRange::new(159, 1).unwrap()))
+    );
 }

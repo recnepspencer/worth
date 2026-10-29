@@ -1,19 +1,32 @@
 //! Final live planning state must fit before any staging or publication effect.
 
-#[allow(unused_imports)] use crate::pending_wal_fold::memory_budget::*;
+#[allow(unused_imports)]
+use crate::pending_wal_fold::memory_budget::*;
 use {std::fs, std::io::ErrorKind, std::path::Path};
 
-use {worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_physics::RecoveryPlanCostDenial};
-use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::WorthStoreRecovery};
+use worth_store_physical_format::RecordArtifactFile;
+use worth_store_recovery_physics::RecoveryPlanCostDenial;
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
 fn two_object_pending_final_live_cost_denies_at_peak_minus_one_before_effects() {
-    let world = super::super::pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_distinct_release_before_checkpoint();
     let root = world.root();
-    let current = selector(root, worth_store_physical_format::RecordArtifactFile::CurrentRootSelector);
-    let previous = selector(root, worth_store_physical_format::RecordArtifactFile::PreviousRootSelector);
+    let current = selector(
+        root,
+        worth_store_physical_format::RecordArtifactFile::CurrentRootSelector,
+    );
+    let previous = selector(
+        root,
+        worth_store_physical_format::RecordArtifactFile::PreviousRootSelector,
+    );
     let checkpoint = std::fs::read(root.join("families/checkpoint.current"))
         .expect("genuine selected checkpoint before planning");
 
@@ -28,7 +41,9 @@ fn two_object_pending_final_live_cost_denies_at_peak_minus_one_before_effects() 
         .expect("sufficient 16 MiB plan");
     let peak = planned.plan_cost().peak_recovery_bytes();
     assert!(peak > 1 && peak <= 16 << 20, "measured peak={peak}");
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Refused(cancelled) = planned.cancel_before_execution() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Refused(cancelled) =
+        planned.cancel_before_execution()
+    else {
         panic!("baseline planning must cancel without execution")
     };
     assert_eq!(cancelled.recovery_effects(), 0);
@@ -48,9 +63,11 @@ fn two_object_pending_final_live_cost_denies_at_peak_minus_one_before_effects() 
     let evidence = blocked.evidence();
     assert_eq!(
         evidence.planning_denial,
-        Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::Cost(
-            worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
-        )),
+        Some(
+            worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::Cost(
+                worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
+            )
+        ),
         "must be the final plan-cost gate, not an earlier source admission"
     );
     let limit = blocked

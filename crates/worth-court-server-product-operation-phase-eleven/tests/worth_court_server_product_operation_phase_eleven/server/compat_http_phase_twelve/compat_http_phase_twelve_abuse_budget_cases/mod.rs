@@ -4,13 +4,28 @@ use {worth_foundational::facade::DiagnosticRichnessProfile};
 use {worth_proof::TransitionOutcome};
 use {worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerTransferByteClass};
 
-use {worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_binary_counter, worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_budget_receipt, worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_budget_scope, worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_external_counter, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::build_phase_twelve_budget_limited_server, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::build_phase_twelve_server, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::download_input, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::head_read_request, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::prepared_request, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::read_request, worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::upload_input};
+use {
+    worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_binary_counter,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_budget_receipt,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_budget_scope,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_assertions::assert_external_counter,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::build_phase_twelve_budget_limited_server,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::build_phase_twelve_server,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::download_input,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::head_read_request,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::prepared_request,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::read_request,
+    worth_testkit_server::shared_support_compat_http_phase_twelve_runtime::upload_input,
+};
 
 #[test]
-fn compat_http_phase_twelve_budget_posture_stays_exact_for_structured_binary_and_metadata_lanes() {
+fn compat_http_budget_posture_stays_exact_for_structured_binary_and_metadata_lanes() {
     let server = build_phase_twelve_server();
 
-    let read = prepared_request(&server, read_request(worth_foundational::facade::DiagnosticRichnessProfile::Standard));
+    let read = prepared_request(
+        &server,
+        read_request(worth_foundational::facade::DiagnosticRichnessProfile::Standard),
+    );
     let read_budget = read.abuse_budget_receipt();
     assert_budget_receipt(
         &read_budget,
@@ -105,11 +120,11 @@ fn compat_http_phase_twelve_budget_posture_stays_exact_for_structured_binary_and
 }
 
 #[test]
-fn compat_http_phase_twelve_budget_denials_retain_typed_scope_and_zero_truth_drift() {
+fn compat_http_budget_denials_retain_typed_scope_and_zero_truth_drift() {
     let server = build_phase_twelve_budget_limited_server();
-    let outcome = server
-        .compat_http()
-        .prepare_request(read_request(worth_foundational::facade::DiagnosticRichnessProfile::Forensic));
+    let outcome = server.compat_http().prepare_request(read_request(
+        worth_foundational::facade::DiagnosticRichnessProfile::Forensic,
+    ));
     let denial = match outcome {
         worth_proof::TransitionOutcome::Denied(value) => value,
         other => panic!("expected compatibility denial, got {other:?}"),

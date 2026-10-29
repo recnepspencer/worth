@@ -1,7 +1,7 @@
-pub(crate) use {worth_store_offline_integrity_observer::OfflineIntegrityObservationCounters};
+pub(crate) use worth_store_offline_integrity_observer::OfflineIntegrityObservationCounters;
 
-pub(crate) use {crate::root_protocol_corruption_matrix::Operator};
-pub(crate) use {crate::store_offline_integrity_observer_support::Target};
+pub(crate) use crate::root_protocol_corruption_matrix::Operator;
+pub(crate) use crate::store_offline_integrity_observer_support::Target;
 
 pub(crate) struct ExpectedCounters {
     pub(crate) entries: u64,
@@ -21,7 +21,8 @@ pub(crate) struct ExpectedCounters {
 pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedCounters {
     let selector = target != crate::store_offline_integrity_observer_support::Target::Root;
     let mut expected = match operator {
-        crate::root_protocol_corruption_matrix::Operator::B | crate::root_protocol_corruption_matrix::Operator::K => ExpectedCounters {
+        crate::root_protocol_corruption_matrix::Operator::B
+        | crate::root_protocol_corruption_matrix::Operator::K => ExpectedCounters {
             entries: 5,
             bytes: 670,
             files: 16,
@@ -49,7 +50,8 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
             missing: 0,
             depth: 4,
         },
-        crate::root_protocol_corruption_matrix::Operator::S | crate::root_protocol_corruption_matrix::Operator::P => ExpectedCounters {
+        crate::root_protocol_corruption_matrix::Operator::S
+        | crate::root_protocol_corruption_matrix::Operator::P => ExpectedCounters {
             entries: 5,
             bytes: 670,
             files: 16,
@@ -60,7 +62,13 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
             selectors: 2,
             roots: 1,
             duplicates: 0,
-            missing: u64::from(selector && matches!(operator, crate::root_protocol_corruption_matrix::Operator::P)),
+            missing: u64::from(
+                selector
+                    && matches!(
+                        operator,
+                        crate::root_protocol_corruption_matrix::Operator::P
+                    ),
+            ),
             depth: 4,
         },
         crate::root_protocol_corruption_matrix::Operator::T => ExpectedCounters {
@@ -133,7 +141,8 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
             missing: 0,
             depth: 4,
         },
-        crate::root_protocol_corruption_matrix::Operator::USchema | crate::root_protocol_corruption_matrix::Operator::UFormat => ExpectedCounters {
+        crate::root_protocol_corruption_matrix::Operator::USchema
+        | crate::root_protocol_corruption_matrix::Operator::UFormat => ExpectedCounters {
             entries: 5,
             bytes: 670,
             files: 16,
@@ -151,7 +160,11 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
     // The literal root world deliberately has no bootstrap or free-space files.
     // Full traversal also visits the root's namespace/families entries.
     expected.entries += 3;
-    expected.missing += if selector || matches!(operator, crate::root_protocol_corruption_matrix::Operator::D) {
+    expected.missing += if selector
+        || matches!(
+            operator,
+            crate::root_protocol_corruption_matrix::Operator::D
+        ) {
         3
     } else {
         1

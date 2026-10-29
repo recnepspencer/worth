@@ -1,19 +1,9 @@
-//! A genuine process-killed V3 released drop, retained for C8/Store rejoin
-//! tests that must share one pending descriptor and its physical controls.
+//! Real killed pending-WAL worlds and their shared child dispatcher.
 
-#[allow(unused_imports)] use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::*;
-use {std::cell::Cell, std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
-
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordReadDenial};
-use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
-
-use {std::num::NonZeroU64, worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving};
-
-use {worth_store_testkit_recovery_runtime::pending_wal_world::descriptor_park::park_at_descriptor_wal};
-pub(super) use {};
+use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first;
 
 #[test]
-fn pending_wal_world_reaches_verified_c8_and_sealed_serving() {
+fn pending_wal_world_reaches_verified_recovery_and_sealed_serving() {
     let world = first();
     let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
         worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root()),
@@ -103,42 +93,7 @@ fn distinct_v3_descriptor_before_checkpoint_is_durable() {
 
 #[test]
 fn pending_wal_child() {
-    let Some(role) = std::env::var_os(ROLE_ENV) else {
-        return;
-    };
-    let marker = std::path::PathBuf::from(std::env::var_os(MARKER_ENV).expect("child marker"));
-    if let Some(first) = role.to_str().and_then(first::World::of_role) {
-        return first::child(&marker, first);
-    }
-    match role.to_str() {
-        Some("second") => crate::production_entry::pending_wal_world::second::child(
-            std::path::Path::new(&std::env::var_os(ROOT_ENV).expect("second source root")),
-            &marker,
-        ),
-        Some("distinct") => crate::production_entry::pending_wal_world::second::distinct_child(
-            std::path::Path::new(&std::env::var_os(ROOT_ENV).expect("distinct source root")),
-            &marker,
-        ),
-        Some("successor-first") => crate::production_entry::pending_wal_world::successor::child(
-            std::path::Path::new(&std::env::var_os(ROOT_ENV).expect("successor source root")),
-            &marker,
-            crate::production_entry::pending_wal_world::successor::FIRST_OBJECT,
-            1,
-        ),
-        Some("successor-first-full") => crate::production_entry::pending_wal_world::successor::child(
-            std::path::Path::new(&std::env::var_os(ROOT_ENV).expect("successor source root")),
-            &marker,
-            crate::production_entry::pending_wal_world::successor::FIRST_OBJECT,
-            crate::production_entry::pending_wal_world::successor::FULL_BATCH,
-        ),
-        Some("successor-distinct") => crate::production_entry::pending_wal_world::successor::child(
-            std::path::Path::new(&std::env::var_os(ROOT_ENV).expect("successor source root")),
-            &marker,
-            crate::production_entry::pending_wal_world::successor::DISTINCT_OBJECT,
-            1,
-        ),
-        other => panic!("unknown pending V3 child role: {other:?}"),
-    }
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::dispatch_child();
 }
 #[cfg(all())]
 #[path = "three_batch/mod.rs"]

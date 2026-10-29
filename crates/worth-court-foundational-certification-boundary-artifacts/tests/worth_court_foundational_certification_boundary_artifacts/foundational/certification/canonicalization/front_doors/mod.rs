@@ -1,11 +1,26 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::front_doors::*;
-use {worth_foundational::admit_authoritative_record_aspect_state, worth_foundational::canonicalization, worth_foundational::validate_aspect_value, worth_foundational::AspectLocator, worth_foundational::AspectValue, worth_foundational::AspectValueLocator, worth_foundational::BoundarySourceLocator, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalMilestone2PhaseGate, worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalProducerShape, worth_foundational::CanonicalizationRuleVersion, worth_foundational::LocatorAuthority, worth_foundational::ScalarAspectType};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::canonicalization::front_doors::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::admit_authoritative_record_aspect_state,
+    worth_foundational::canonicalization, worth_foundational::validate_aspect_value,
+    worth_foundational::AspectLocator, worth_foundational::AspectValue,
+    worth_foundational::AspectValueLocator, worth_foundational::BoundarySourceLocator,
+    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisLocus,
+    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalEquivalenceBasis,
+    worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalMilestone2PhaseGate,
+    worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalProducerShape,
+    worth_foundational::CanonicalizationRuleVersion, worth_foundational::LocatorAuthority,
+    worth_foundational::ScalarAspectType,
+};
 
-use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::scalar_contract};
+use {
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::scalar_contract,
+};
 
 #[test]
-fn canonicalization_front_door_exposes_all_five_milestone2_lanes() {
+fn canonicalization_front_door_exposes_all_five_lanes() {
     let front = canonicalization();
     let left_for_comparison = match front
         .basis()
@@ -99,10 +114,12 @@ fn canonicalization_basis_front_door_prepares_state_and_locator_surfaces() {
     let locator_ready = match canonicalization()
         .basis()
         .at(version())
-        .from_source_locator(worth_foundational::BoundarySourceLocator::aspect(worth_foundational::AspectLocator::new(
-            worth_foundational::LocatorAuthority::SupportOnly,
-            key("task.count"),
-        ))) {
+        .from_source_locator(worth_foundational::BoundarySourceLocator::aspect(
+            worth_foundational::AspectLocator::new(
+                worth_foundational::LocatorAuthority::SupportOnly,
+                key("task.count"),
+            ),
+        )) {
         worth_proof::TransitionOutcome::Success(ready) => ready,
         _ => panic!("locator basis should be ready"),
     };
@@ -124,18 +141,22 @@ fn canonicalization_basis_front_door_prepares_state_and_locator_surfaces() {
         worth_foundational::CanonicalBasisDomain::Locator
     );
     assert!(locator_ready.payload().entries().iter().any(|entry| {
-        entry.locus() == &worth_foundational::CanonicalBasisLocus::Named("source.aspect.aspect_key".into())
-            && entry.value() == &worth_foundational::CanonicalBasisValue::ExactText("task.count".into())
+        entry.locus()
+            == &worth_foundational::CanonicalBasisLocus::Named("source.aspect.aspect_key".into())
+            && entry.value()
+                == &worth_foundational::CanonicalBasisValue::ExactText("task.count".into())
     }));
 }
 
 #[test]
 fn canonicalization_basis_front_door_prepares_value_locator_surfaces() {
     let locator_ready = match canonicalization().basis().at(version()).from_value_locator(
-        worth_foundational::AspectValueLocator::whole_aspect(worth_foundational::AspectLocator::new(
-            worth_foundational::LocatorAuthority::Authoritative,
-            key("task.count"),
-        )),
+        worth_foundational::AspectValueLocator::whole_aspect(
+            worth_foundational::AspectLocator::new(
+                worth_foundational::LocatorAuthority::Authoritative,
+                key("task.count"),
+            ),
+        ),
     ) {
         worth_proof::TransitionOutcome::Success(ready) => ready,
         _ => panic!("value locator basis should be ready"),
@@ -147,11 +168,16 @@ fn canonicalization_basis_front_door_prepares_value_locator_surfaces() {
     );
     assert!(locator_ready.payload().entries().iter().any(|entry| {
         entry.locus() == &worth_foundational::CanonicalBasisLocus::Named("value.kind".into())
-            && entry.value() == &worth_foundational::CanonicalBasisValue::ExactText("whole_aspect".into())
+            && entry.value()
+                == &worth_foundational::CanonicalBasisValue::ExactText("whole_aspect".into())
     }));
     assert!(locator_ready.payload().entries().iter().any(|entry| {
-        entry.locus() == &worth_foundational::CanonicalBasisLocus::Named("value.whole_aspect.aspect_key".into())
-            && entry.value() == &worth_foundational::CanonicalBasisValue::ExactText("task.count".into())
+        entry.locus()
+            == &worth_foundational::CanonicalBasisLocus::Named(
+                "value.whole_aspect.aspect_key".into(),
+            )
+            && entry.value()
+                == &worth_foundational::CanonicalBasisValue::ExactText("task.count".into())
     }));
 }
 
@@ -327,9 +353,15 @@ fn canonicalization_front_door_exposes_readiness_checklist_and_phase_gate_inspec
     let report = canonicalization().readiness().report();
     let gate = canonicalization()
         .readiness()
-        .phase_gate(&report, worth_foundational::CanonicalMilestone2PhaseGate::DigestSlots)
+        .phase_gate(
+            &report,
+            worth_foundational::CanonicalMilestone2PhaseGate::DigestSlots,
+        )
         .expect("digest-slots phase gate should be visible");
 
     assert!(canonicalization().readiness().passes(&report));
-    assert_eq!(gate.gate(), worth_foundational::CanonicalMilestone2PhaseGate::DigestSlots);
+    assert_eq!(
+        gate.gate(),
+        worth_foundational::CanonicalMilestone2PhaseGate::DigestSlots
+    );
 }

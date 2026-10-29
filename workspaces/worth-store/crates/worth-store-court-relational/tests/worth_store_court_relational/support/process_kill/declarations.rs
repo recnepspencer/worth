@@ -8,21 +8,21 @@
 //! installed it: the child observes its own live history while parked, and
 //! the commit is not there (durable before live, D2).
 
-pub(crate) use {std::fs};
-pub(crate) use {std::num::NonZeroU64};
-pub(crate) use {std::path::PathBuf};
-pub(crate) use {std::time::Instant};
+pub(crate) use std::fs;
+pub(crate) use std::num::NonZeroU64;
+pub(crate) use std::path::PathBuf;
+pub(crate) use std::time::Instant;
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
 
-pub(crate) use {crate::durable_run::apply, crate::durable_run::open, crate::durable_run::steps_before};
+pub(crate) use {
+    crate::durable_run::apply, crate::durable_run::open, crate::durable_run::steps_before,
+};
 pub(crate) use {crate::killed_child, crate::killed_child::ChildEnd};
 pub(crate) use {crate::workload, crate::workload::Script, crate::workload::Step};
 
-
-
-pub(crate) use {crate::process_kill::recovery_court::assert_killed_home_recovers};
+pub(crate) use crate::process_kill::recovery_court::assert_killed_home_recovers;
 
 pub(crate) const SEED: u64 = 0x5eed_0402;
 pub(crate) const COMMITS: usize = 9;
@@ -30,7 +30,8 @@ pub(crate) const CHECKPOINT_EVERY: usize = 3;
 pub(crate) const ROLE_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_ROLE";
 pub(crate) const LOCATION_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_LOCATION";
 pub(crate) const MARKERS_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_MARKERS";
-pub(crate) const CHILD_TEST: &str = "process_kill::child::relational_home_child";
+pub(crate) const CHILD_TEST: &str =
+    "process::relational::relational_home::process_kill::child::relational_home_child";
 pub(crate) const WAL_SEGMENT_BYTES_ENV: &str = "WORTH_RELATIONAL_HOME_WAL_SEGMENT_BYTES";
 
 pub(crate) fn script() -> Script {
@@ -107,7 +108,10 @@ impl Stop {
             Self::BeforeFirstCheckpoint => (steps_before(script, 2).len(), None),
             Self::AboveCheckpoint => (steps_before(script, 5).len(), None),
             Self::Commit(_) => {
-                let target = position(|step| matches!(step, crate::workload::Step::Transition { .. }), 0);
+                let target = position(
+                    |step| matches!(step, crate::workload::Step::Transition { .. }),
+                    0,
+                );
                 (target, Some(target))
             }
             Self::Checkpoint(_)
@@ -123,8 +127,12 @@ impl Stop {
             | Self::RequestDeletion(_)
             | Self::Delete(_) => {
                 let select: fn(&Step) -> bool = match self {
-                    Self::Archive(_) => |step| matches!(step, crate::workload::Step::Archive { .. }),
-                    Self::RequestDeletion(_) => |step| matches!(step, crate::workload::Step::RequestDeletion { .. }),
+                    Self::Archive(_) => {
+                        |step| matches!(step, crate::workload::Step::Archive { .. })
+                    }
+                    Self::RequestDeletion(_) => {
+                        |step| matches!(step, crate::workload::Step::RequestDeletion { .. })
+                    }
                     Self::Delete(_) => |step| matches!(step, crate::workload::Step::Delete { .. }),
                     _ => |step| matches!(step, crate::workload::Step::Fork { .. }),
                 };
@@ -175,8 +183,12 @@ pub(crate) fn launch_with_wal_segment_bytes(stop: Stop, bytes: Option<NonZeroU64
     if let Some(bytes) = &bytes {
         environment.push((WAL_SEGMENT_BYTES_ENV, bytes));
     }
-    let end =
-        crate::killed_child::run_and_kill(CHILD_TEST, &environment, &ready, &markers.join("finished"));
+    let end = crate::killed_child::run_and_kill(
+        CHILD_TEST,
+        &environment,
+        &ready,
+        &markers.join("finished"),
+    );
     assert_eq!(end, crate::killed_child::ChildEnd::KilledAtPark, "{stop:?}");
     let live = std::fs::read_to_string(&ready).unwrap().parse().unwrap();
     let acknowledged = decode(&std::fs::read(markers.join("acknowledged")).unwrap());
@@ -235,7 +247,7 @@ pub(crate) fn await_mutation_seam(
     }
 }
 
-pub(crate) use {worth_store::physical_runtime::production::PhysicalCheckpointStep};
+pub(crate) use worth_store::physical_runtime::production::PhysicalCheckpointStep;
 // Home publications settle their data before this fuzzy capture, so no dirty
 // frame is appended. Tier certificates belong to Store's certified-tier route,
 // which the home does not use. These are its seven reachable checkpoint cuts.

@@ -9,7 +9,7 @@ fn genuine_pending_effect_backing_moves_through_serving_and_checkpoint() {
         .name("pending-effect-pool-handoff".into())
         .stack_size(16 << 20)
         .spawn(|| {
-            let world = pending_wal_world::first();
+            let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
             world.kill_distinct_release_before_checkpoint();
             let root = world.root();
             let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(root));

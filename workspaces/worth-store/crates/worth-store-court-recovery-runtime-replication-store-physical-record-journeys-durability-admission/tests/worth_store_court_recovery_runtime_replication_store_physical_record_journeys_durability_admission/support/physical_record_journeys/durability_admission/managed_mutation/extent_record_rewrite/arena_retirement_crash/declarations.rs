@@ -3,14 +3,18 @@ pub(crate) use {std::path::Path, std::path::PathBuf, std::process::Command, std:
 pub(crate) use {worth_store::physical_runtime::ArenaEvacuationThreshold, worth_store::physical_runtime::ExtentArenaCapacity, worth_store::physical_runtime::PhysicalArenaEvacuationPreparationOutcome, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordPlacementPolicy};
 pub(crate) use {worth_store_physical_format::RecordArtifactFile};
 
-pub(crate) const CHILD: &str = "durability_admission::managed_mutation::extent_record_rewrite::arena_retirement_crash::arena_retirement_child";
+pub(crate) const CHILD: &str = "process::store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_retirement_crash::arena_retirement_child";
 pub(crate) const MARKER: &str = "C11_ARENA_RETIRE_MARKER";
 pub(crate) const SEAM: &str = "C11_ARENA_RETIRE_SEAM";
 pub(crate) const SMALL_WAL: &str = "C11_ARENA_RETIRE_SMALL_WAL";
 
 pub(crate) fn small_wal_policy() -> worth_store::physical_runtime::PhysicalWalPolicy {
     use {std::num::NonZeroU32, std::num::NonZeroU64};
-    use {worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
+    use {
+        worth_store::physical_runtime::PhysicalWalPolicy,
+        worth_store::physical_runtime::WalSegmentByteLimit,
+        worth_store::physical_runtime::WalSegmentInventoryLimit,
+    };
     PhysicalWalPolicy::segmented(
         WalSegmentByteLimit::new(NonZeroU64::new(128 << 10).unwrap()),
         WalSegmentInventoryLimit::new(NonZeroU32::new(1024).unwrap()),

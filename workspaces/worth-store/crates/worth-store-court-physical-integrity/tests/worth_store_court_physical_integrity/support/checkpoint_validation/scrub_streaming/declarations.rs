@@ -1,6 +1,23 @@
-pub(crate) use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-pub(crate) use {std::num::NonZeroU64, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_format::PhysicalCheckpointIdentity, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::UntrustedPhysicalArtifact, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::field_range, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::store};
-pub(crate) use {worth_store_physical_integrity::*};
+pub(crate) use crate::literal_vectors::checkpoint_validation::{
+    BINDING, BINDING_COMPACTION, DIRTY_BASIS, FOOTER, HEADER,
+};
+pub(crate) use worth_store_physical_integrity::*;
+pub(crate) use {
+    crate::checkpoint_validation::support::binding_scope,
+    crate::checkpoint_validation::support::compaction_scope,
+    crate::checkpoint_validation::support::dirty_scope,
+    crate::checkpoint_validation::support::field_range,
+    crate::checkpoint_validation::support::footer_scope,
+    crate::checkpoint_validation::support::header_scope_staged,
+    crate::checkpoint_validation::support::identity,
+    crate::checkpoint_validation::support::reseal_record,
+    crate::checkpoint_validation::support::store, std::num::NonZeroU64,
+    worth_store_physical_format::PhysicalCheckpointIdentity,
+    worth_store_physical_integrity::PhysicalArtifactScope,
+    worth_store_physical_integrity::PhysicalDamageCause,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+    worth_store_physical_integrity::UntrustedPhysicalArtifact,
+};
 
 pub(crate) fn inspect(
     validator: &mut PhysicalIntegrityScrubValidator,

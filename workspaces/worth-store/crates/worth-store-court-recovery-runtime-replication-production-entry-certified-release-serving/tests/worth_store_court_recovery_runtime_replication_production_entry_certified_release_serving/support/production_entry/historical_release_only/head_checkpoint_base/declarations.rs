@@ -1,10 +1,24 @@
 //! Completed B history must rejoin independently from A's selected head checkpoint.
 
-pub(crate) use {std::path::Path, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_proof::TransitionOutcome, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, crate::production_entry::historical_release_only::completed_tip, std::fs, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::release_reopen, crate::production_entry::historical_release_only::selected_generation};
-pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
+pub(crate) use {
+    crate::production_entry::historical_release_only::completed_tip,
+    crate::production_entry::historical_release_only::selected_generation, std::fs,
+    std::path::Path, worth_proof::TransitionOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
 
 pub(crate) fn run() {
-    let world = pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     let root = world.root();
 
     // A is a real pending V3. C8 performs its root transition; Store seals
@@ -23,7 +37,11 @@ pub(crate) fn run() {
     let (a_batches, a_accumulator) =
         worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates_from_bytes(&checkpoint_bytes);
     assert_eq!(a_batches.len(), 1, "A must be checkpoint-attested");
-    let a_heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(root, a_accumulator);
+    let a_heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            root,
+            a_accumulator,
+        );
     let [a_head] = a_heads.as_slice() else {
         panic!("the checkpoint must carry exactly A's head")
     };
@@ -46,7 +64,8 @@ pub(crate) fn run() {
         .unwrap();
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::admit_serving_with_seal(root, seal).close();
     let selected = selected_generation(root);
-    let expected_heads = crate::production_entry::historical_release_only::completed_tip::selected_root_heads(root);
+    let expected_heads =
+        crate::production_entry::historical_release_only::completed_tip::selected_root_heads(root);
     assert_eq!(expected_heads.len(), 2);
     assert_eq!(
         expected_heads
@@ -87,7 +106,10 @@ pub(crate) fn run() {
         &std::fs::read(root.join("families/checkpoint.current")).unwrap(),
     );
     assert_eq!(
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(root, accumulator),
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            root,
+            accumulator
+        ),
         expected_heads,
         "successor checkpoint must preserve both exact per-object heads"
     );
@@ -123,12 +145,18 @@ pub(crate) fn recover(
     }
 }
 
-pub(crate) fn checkpoint(serving: &worth_store::physical_runtime::ServingPhysicalRuntime, key: [u8; 32]) {
+pub(crate) fn checkpoint(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    key: [u8; 32],
+) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(key),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("head-bearing checkpoint must admit")
     };
     assert!(matches!(

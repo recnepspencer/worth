@@ -1,18 +1,49 @@
 //! A store killed before its first checkpoint recovers from the
 //! generation-zero basis: the whole WAL from the canonical origin.
 
-pub(crate) use {std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
+pub(crate) use {
+    std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio,
+    std::thread, std::time::Duration, std::time::Instant,
+};
 
-pub(crate) use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::PhysicalCheckpointStartDenial, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff, worth_store_recovery_runtime::WorthStoreRecovery};
+pub(crate) use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::PhysicalCheckpointStartDenial,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store_blob_chunks::BlobChunkSize, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, std::num::NonZeroU64, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving};
-
-
+pub(crate) use {
+    std::num::NonZeroU64, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestFailure,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_blob_chunks::BlobChunkSize,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+    worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+};
 
 pub(crate) const ROLE_ENV: &str = "WORTH_GEN0_CHILD_ROLE";
 pub(crate) const MARKER_ENV: &str = "WORTH_GEN0_CHILD_MARKER";
-pub(crate) const CHILD_TEST: &str = "before_first_checkpoint::before_first_checkpoint_child";
+pub(crate) const CHILD_TEST: &str = "process::recovery_runtime::production_entry::before_first_checkpoint::before_first_checkpoint_child";
 pub(crate) const RECORD: &[u8] = b"written before the first checkpoint";
 pub(crate) const CHUNK: usize = 64 << 10;
 pub(crate) const SCOPE: &str = "c11.recovery.generation-zero.scope";
@@ -118,17 +149,22 @@ impl KilledWorld {
     /// Requires what the child wrote to read back byte-exact.
     pub(crate) fn assert_reads_back(&self, serving: &ServingPhysicalRuntime) {
         match self.write {
-            crate::production_entry::before_first_checkpoint::FirstWrite::Nothing => assert!(self.written.is_empty()),
+            crate::production_entry::before_first_checkpoint::FirstWrite::Nothing => {
+                assert!(self.written.is_empty())
+            }
             crate::production_entry::before_first_checkpoint::FirstWrite::Record => {
-                let locator =
-                    worth_store::physical_runtime::ExternalPhysicalRecordLocator::decode(self.written.clone().try_into().unwrap())
-                        .unwrap();
+                let locator = worth_store::physical_runtime::ExternalPhysicalRecordLocator::decode(
+                    self.written.clone().try_into().unwrap(),
+                )
+                .unwrap();
                 let mut record = serving
                     .records()
                     .expect("read protection admission")
                     .open_external(
                         locator,
-                        worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(1 << 16).unwrap()),
+                        worth_store::physical_runtime::RecordReadLimits::new(
+                            worth_store::physical_runtime::RecordByteLimit::new(1 << 16).unwrap(),
+                        ),
                     )
                     .unwrap();
                 let mut observed = vec![0_u8; RECORD.len() + 1];
@@ -144,7 +180,9 @@ impl KilledWorld {
             }
             crate::production_entry::before_first_checkpoint::FirstWrite::TwoChunkBlob => {
                 let scope = admitted_blob_scope(SCOPE);
-                let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+                let limits = worth_store::physical_runtime::BlobReadLimits::new(
+                    std::num::NonZeroU64::new(128).unwrap(),
+                );
                 let blobs = serving.blobs().unwrap();
                 let object = self.written.clone().try_into().unwrap();
                 let resolved = blobs
@@ -180,7 +218,8 @@ pub(crate) fn assert_recovers_reads_back_and_reopens(write: FirstWrite, key: u8)
     world.assert_reads_back(&serving);
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let wrote = write != crate::production_entry::before_first_checkpoint::FirstWrite::Nothing;
     match serving.checkpoints().start(request).into_raw() {
@@ -188,7 +227,9 @@ pub(crate) fn assert_recovers_reads_back_and_reopens(write: FirstWrite, key: u8)
             handle.wait(),
             worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
         )),
-        worth_proof::TransitionOutcome::Denied(worth_store::physical_runtime::PhysicalCheckpointStartDenial::NoDurableWalSource) if !wrote => {}
+        worth_proof::TransitionOutcome::Denied(
+            worth_store::physical_runtime::PhysicalCheckpointStartDenial::NoDurableWalSource,
+        ) if !wrote => {}
         _ => panic!("the first checkpoint over the recovered store must admit"),
     }
     serving.close();
@@ -224,8 +265,12 @@ pub(crate) fn child(marker: &Path, write: FirstWrite) -> ! {
         .expect("generation-zero store");
     let written = match write {
         crate::production_entry::before_first_checkpoint::FirstWrite::Nothing => Vec::new(),
-        crate::production_entry::before_first_checkpoint::FirstWrite::Record => write_record(&world),
-        crate::production_entry::before_first_checkpoint::FirstWrite::TwoChunkBlob => publish_blob(&world),
+        crate::production_entry::before_first_checkpoint::FirstWrite::Record => {
+            write_record(&world)
+        }
+        crate::production_entry::before_first_checkpoint::FirstWrite::TwoChunkBlob => {
+            publish_blob(&world)
+        }
     };
     std::fs::write(marker.with_extension("written"), written).unwrap();
     let pending = marker.with_extension("pending");
@@ -239,23 +284,29 @@ pub(crate) fn child(marker: &Path, write: FirstWrite) -> ! {
 pub(crate) fn write_record(world: &PhysicalResidencyStoreWorld) -> Vec<u8> {
     let submission = world.serving().record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0xd0; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0xd0; 32]),
+        )
         .unwrap();
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-        submission
-            .prepare_durable_append(
-                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([RECORD]).unwrap(),
-                world.placement(),
-                worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
-                    key,
-                    worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-                ),
-            )
-            .into_raw()
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+    ) = submission
+        .prepare_durable_append(
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([RECORD]).unwrap(),
+            world.placement(),
+            worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
+                key,
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
+            ),
+        )
+        .into_raw()
     else {
         panic!("the first record must prepare")
     };
-    let worth_store::physical_runtime::PhysicalMutationOutcome::Completed(completed) = prepared.execute() else {
+    let worth_store::physical_runtime::PhysicalMutationOutcome::Completed(completed) =
+        prepared.execute()
+    else {
         panic!("the first record must complete")
     };
     let record = completed.persisted_records()[0];
@@ -268,7 +319,8 @@ pub(crate) fn write_record(world: &PhysicalResidencyStoreWorld) -> Vec<u8> {
 pub(crate) fn publish_blob(world: &PhysicalResidencyStoreWorld) -> Vec<u8> {
     let scope = admitted_blob_scope(SCOPE);
     let blobs = world.serving().blobs().unwrap();
-    let read = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(read).unwrap();
     let bytes = blob_bytes();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -277,7 +329,8 @@ pub(crate) fn publish_blob(world: &PhysicalResidencyStoreWorld) -> Vec<u8> {
         bytes.len() as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -287,7 +340,8 @@ pub(crate) fn publish_blob(world: &PhysicalResidencyStoreWorld) -> Vec<u8> {
         ingest.push(chunk).unwrap();
     }
     match ingest.finish() {
-        Ok(_) | Err(worth_store::physical_runtime::BlobIngestFailure::PublishedIndexPending { .. }) => {}
+        Ok(_)
+        | Err(worth_store::physical_runtime::BlobIngestFailure::PublishedIndexPending { .. }) => {}
         Err(failure) => panic!("publication before the kill: {failure:?}"),
     }
     object.bytes().to_vec()

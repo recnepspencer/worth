@@ -1,12 +1,5 @@
-#[allow(unused_imports)] use crate::checkpoint_validation::record_matrix::*;
-use {std::num::NonZeroU64};
-
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::PhysicalCheckpointIdentity};
-use {worth_store_physical_integrity::validate_checkpoint_binding, worth_store_physical_integrity::validate_checkpoint_binding_compaction, worth_store_physical_integrity::validate_checkpoint_dirty_basis, worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::validate_checkpoint_stream_header, worth_store_physical_integrity::CheckpointBindingCompactionIntegrityValidation, worth_store_physical_integrity::CheckpointBindingIntegrityValidation, worth_store_physical_integrity::CheckpointDirtyBasisIntegrityValidation, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::CheckpointStreamHeaderIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityObservationCounters, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-use {crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::field_range, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::header_scope_known, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::other_store, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_header};
+#[allow(unused_imports)]
+use crate::checkpoint_validation::record_matrix::*;
 
 #[test]
 fn four_pre_footer_kinds_enforce_b_k_l_t_u_and_kind_with_exact_localization() {
@@ -70,7 +63,11 @@ fn four_pre_footer_kinds_enforce_b_k_l_t_u_and_kind_with_exact_localization() {
             truncated,
             scope,
             worth_store_physical_integrity::PhysicalDamageCause::Truncated,
-            worth_store_physical_integrity::PhysicalByteRange::new(scope.byte_range().end_exclusive() - 1, 1).unwrap(),
+            worth_store_physical_integrity::PhysicalByteRange::new(
+                scope.byte_range().end_exclusive() - 1,
+                1,
+            )
+            .unwrap(),
             None,
             worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
         );
@@ -80,7 +77,9 @@ fn four_pre_footer_kinds_enforce_b_k_l_t_u_and_kind_with_exact_localization() {
         unsupported[8] = 4;
         reseal_record(&mut unsupported);
         let (rejection, counters) = rejection(kind, &unsupported, scope);
-        let worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(version) = rejection else {
+        let worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(version) =
+            rejection
+        else {
             panic!("unsupported checkpoint schema collapsed into damage");
         };
         assert_eq!(version.scope(), scope);
@@ -98,10 +97,16 @@ fn header_stages_only_sequence_and_known_identity_rejects_substitution() {
     let staged = validate_header(&HEADER, header_scope_staged());
     assert_eq!(staged.checkpoint_identity(), identity());
 
-    let other_sequence =
-        worth_store_physical_format::PhysicalCheckpointIdentity::new(store_for_identity(), std::num::NonZeroU64::new(8).unwrap());
+    let other_sequence = worth_store_physical_format::PhysicalCheckpointIdentity::new(
+        store_for_identity(),
+        std::num::NonZeroU64::new(8).unwrap(),
+    );
     let scope = header_scope_known(other_sequence);
-    let (sequence_rejection, _) = rejection(crate::checkpoint_validation::record_matrix::Kind::Header, &HEADER, scope);
+    let (sequence_rejection, _) = rejection(
+        crate::checkpoint_validation::record_matrix::Kind::Header,
+        &HEADER,
+        scope,
+    );
     assert_damage(
         sequence_rejection,
         scope,
@@ -111,10 +116,16 @@ fn header_stages_only_sequence_and_known_identity_rejects_substitution() {
         worth_store_physical_integrity::PhysicalBlastRadius::CompleteArtifact,
     );
 
-    let other_identity =
-        worth_store_physical_format::PhysicalCheckpointIdentity::new(other_store(), std::num::NonZeroU64::new(7).unwrap());
+    let other_identity = worth_store_physical_format::PhysicalCheckpointIdentity::new(
+        other_store(),
+        std::num::NonZeroU64::new(7).unwrap(),
+    );
     let scope = header_scope_known(other_identity);
-    let (rejection, _) = rejection(crate::checkpoint_validation::record_matrix::Kind::Header, &HEADER, scope);
+    let (rejection, _) = rejection(
+        crate::checkpoint_validation::record_matrix::Kind::Header,
+        &HEADER,
+        scope,
+    );
     assert_damage(
         rejection,
         scope,
@@ -173,7 +184,11 @@ fn footer_enforces_b_k_l_s_t_u_after_typed_prefix_validation() {
     assert_footer_damage(
         &FOOTER[..155],
         worth_store_physical_integrity::PhysicalDamageCause::Truncated,
-        worth_store_physical_integrity::PhysicalByteRange::new(scope.byte_range().end_exclusive() - 1, 1).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            scope.byte_range().end_exclusive() - 1,
+            1,
+        )
+        .unwrap(),
         None,
         worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
     );
@@ -183,7 +198,9 @@ fn footer_enforces_b_k_l_s_t_u_after_typed_prefix_validation() {
     unsupported[8] = 4;
     reseal_record(&mut unsupported);
     let (rejection, counters) = footer_rejection(&unsupported);
-    let worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(version) = rejection else {
+    let worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(version) =
+        rejection
+    else {
         panic!("unsupported footer schema collapsed into damage");
     };
     assert_eq!(

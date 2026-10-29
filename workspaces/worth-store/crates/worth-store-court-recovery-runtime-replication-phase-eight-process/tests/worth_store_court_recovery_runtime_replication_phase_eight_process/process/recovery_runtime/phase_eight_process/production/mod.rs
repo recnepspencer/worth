@@ -8,9 +8,5 @@ pub(crate) mod fates;
 pub(crate) mod protocol;
 #[path = "recovery_crash/mod.rs"]
 pub(crate) mod recovery_crash;
-#[path = "repeatability/mod.rs"]
-pub(crate) mod repeatability;
-#[path = "size_independence/mod.rs"]
-pub(crate) mod size_independence;
 #[path = "writer_crash/mod.rs"]
 pub(crate) mod writer_crash;

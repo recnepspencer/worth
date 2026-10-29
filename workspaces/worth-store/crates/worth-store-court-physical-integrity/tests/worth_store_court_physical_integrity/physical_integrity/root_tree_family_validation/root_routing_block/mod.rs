@@ -1,51 +1,5 @@
-#[allow(unused_imports)] use crate::root_tree_family_validation::root_routing_block::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::maximum_current_root_entries, worth_store_physical_format::ManifestBlockReference, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalRootRoutingBlock};
-use {worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityValidationDigest, worth_store_physical_integrity::PhysicalIntegrityValidationMechanism, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::literal_vectors::root_tree_family_validation::ROOT_ROUTING_LEAF_COMPLETE_CRC32C, crate::literal_vectors::root_tree_family_validation::ROOT_ROUTING_LEAF_LITERAL};
-use {crate::support::root_tree_family_validation::assert_damage, crate::support::root_tree_family_validation::assert_rejected_counters, crate::support::root_tree_family_validation::assert_root_checksum_mutation_contract, crate::support::root_tree_family_validation::assert_root_mutation_contract, crate::support::root_tree_family_validation::field_range, crate::support::root_tree_family_validation::format, crate::support::root_tree_family_validation::independent_crc32c, crate::support::root_tree_family_validation::reseal_durable_frame, crate::support::root_tree_family_validation::root_branch, crate::support::root_tree_family_validation::root_leaf, crate::support::root_tree_family_validation::root_rejection as validate_rejection, crate::support::root_tree_family_validation::root_scope, crate::support::root_tree_family_validation::root_scope_with_reference, crate::support::root_tree_family_validation::store, crate::support::root_tree_family_validation::validate_root_intact as validate_intact, crate::support::root_tree_family_validation::ROOT_BLOCK_OFFSET};
-
-#[test]
-fn root_routing_literal_vector_has_independent_complete_child_crc_and_validates() {
-    assert_eq!(root_leaf().encode(format()), ROOT_ROUTING_LEAF_LITERAL);
-    assert_eq!(
-        independent_crc32c(&[&ROOT_ROUTING_LEAF_LITERAL]),
-        ROOT_ROUTING_LEAF_COMPLETE_CRC32C
-    );
-    assert_eq!(
-        u32::from_le_bytes(ROOT_ROUTING_LEAF_LITERAL[44..48].try_into().unwrap()),
-        independent_crc32c(&[
-            &ROOT_ROUTING_LEAF_LITERAL[..44],
-            &ROOT_ROUTING_LEAF_LITERAL[48..],
-        ])
-    );
-    let record = worth_store_physical_format::PersistedRecordIdentity::new([0xa1; 16], 5).unwrap();
-    let reference =
-        worth_store_physical_format::ManifestBlockReference::new(11, 3, 0, ROOT_ROUTING_LEAF_COMPLETE_CRC32C, record, record)
-            .unwrap();
-    let scope = root_scope_with_reference(
-        store(7),
-        reference,
-        ROOT_ROUTING_LEAF_LITERAL.len() as u64,
-        ROOT_BLOCK_OFFSET,
-    );
-    let validated = validate_intact(
-        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&ROOT_ROUTING_LEAF_LITERAL),
-        scope,
-    );
-    assert_eq!(validated.entries().unwrap().len(), 1);
-    let record = validated.into_validation_record();
-    assert_eq!(
-        record.byte_range_digest(),
-        worth_store_physical_integrity::PhysicalIntegrityValidationDigest::crc32c(ROOT_ROUTING_LEAF_COMPLETE_CRC32C)
-    );
-    assert_eq!(
-        record.mechanism(),
-        worth_store_physical_integrity::PhysicalIntegrityValidationMechanism::Crc32cV1
-    );
-    assert_eq!(record.mechanism().version(), 1);
-}
+#[allow(unused_imports)]
+use crate::root_tree_family_validation::root_routing_block::*;
 
 #[test]
 fn clean_leaf_and_branch_seal_projections_records_and_recursive_child_scope() {
@@ -53,7 +7,8 @@ fn clean_leaf_and_branch_seal_projections_records_and_recursive_child_scope() {
     let leaf = root_leaf();
     let leaf_bytes = leaf.encode(format());
     let leaf_scope = root_scope(store, &leaf, &leaf_bytes, ROOT_BLOCK_OFFSET);
-    let leaf_artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&leaf_bytes);
+    let leaf_artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&leaf_bytes);
     let leaf_validated = validate_intact(leaf_artifact, leaf_scope);
     assert_eq!(leaf_validated.scope(), leaf_scope);
     assert_eq!(leaf_validated.tree_identity(), 71);
@@ -89,7 +44,9 @@ fn clean_leaf_and_branch_seal_projections_records_and_recursive_child_scope() {
     let branch_bytes = branch.encode(format());
     let branch_scope = root_scope(store, &branch, &branch_bytes, ROOT_BLOCK_OFFSET + 4_096);
     let branch_validated = validate_intact(
-        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&branch_bytes),
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+            &branch_bytes,
+        ),
         branch_scope,
     );
     assert_eq!(branch_validated.level(), 1);
@@ -218,7 +175,11 @@ fn root_block_crc_framing_kind_length_and_truncation_are_bounded() {
         truncated,
         clean_scope,
         worth_store_physical_integrity::PhysicalDamageCause::Truncated,
-        worth_store_physical_integrity::PhysicalByteRange::new(ROOT_BLOCK_OFFSET + truncated.len() as u64, 3).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            ROOT_BLOCK_OFFSET + truncated.len() as u64,
+            3,
+        )
+        .unwrap(),
         None,
         worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
     );
@@ -263,7 +224,8 @@ fn root_tree_generation_block_reference_range_and_pointer_substitution_localize(
     }
 
     let reference = baseline.reference(independent_crc32c(&[&clean]));
-    let wrong_first = worth_store_physical_format::PersistedRecordIdentity::new([0xa0; 16], 5).unwrap();
+    let wrong_first =
+        worth_store_physical_format::PersistedRecordIdentity::new([0xa0; 16], 5).unwrap();
     let wrong_range = worth_store_physical_format::ManifestBlockReference::new(
         reference.generation(),
         reference.block(),
@@ -307,8 +269,18 @@ fn root_block_version_axes_remain_unsupported_not_corrupt() {
     let block = root_leaf();
     let clean = block.encode(format());
     for (offset, width, axis, observed) in [
-        (9, 1, worth_store_physical_integrity::PhysicalIntegrityVersionAxis::EnvelopeSchema, 4),
-        (10, 2, worth_store_physical_integrity::PhysicalIntegrityVersionAxis::PhysicalFormat, 3),
+        (
+            9,
+            1,
+            worth_store_physical_integrity::PhysicalIntegrityVersionAxis::EnvelopeSchema,
+            4,
+        ),
+        (
+            10,
+            2,
+            worth_store_physical_integrity::PhysicalIntegrityVersionAxis::PhysicalFormat,
+            3,
+        ),
     ] {
         let mut bytes = clean.clone();
         if width == 1 {

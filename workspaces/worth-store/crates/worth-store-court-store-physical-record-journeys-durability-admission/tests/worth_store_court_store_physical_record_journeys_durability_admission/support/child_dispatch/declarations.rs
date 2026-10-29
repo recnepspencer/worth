@@ -1,7 +1,8 @@
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::path::Path};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::path::Path;
 
-pub(crate) const CHILD_TEST: &str = "child_dispatch::journey_child_role";
+pub(crate) const CHILD_TEST: &str =
+    "process::store::physical_media_journeys::child_dispatch::journey_child_role";
 pub(crate) const REPORT_PREFIX: &str = "C4_REPORT ";
 
 pub(crate) struct ChildReport {

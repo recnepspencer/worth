@@ -3,11 +3,25 @@
 //! new checkpoint, so recovery must admit the pending batch from the same
 //! checkpoint and ordered history, and then rejoin it as completed history.
 
-#[allow(unused_imports)] use worth_store_testkit_recovery_runtime::production_entry::pending_successor_above_history::*;
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::release_reopen};
-use {worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld};
-use {std::fs};
-use {worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff, worth_store_recovery_runtime::WorthStoreRecovery};
+use std::fs;
+#[allow(unused_imports)]
+use worth_store_testkit_recovery_runtime::production_entry::pending_successor_above_history::*;
+use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld;
+use {
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 /// The checkpoint heads the first object. Its second batch and a first
 /// release of another object complete above the checkpoint; the first
@@ -40,7 +54,7 @@ fn pending_terminal_successor_of_a_checkpoint_head_recovers() {
 /// checkpoint, and the killed second batch names that ordered release.
 #[test]
 fn pending_successor_of_a_first_release_without_a_checkpoint_head_recovers() {
-    let world = pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_successor_of_first_object();
     assert_pending_then_completed(&world, "pending successor of an ordered first release");
 }
@@ -52,7 +66,7 @@ fn pending_successor_of_a_first_release_without_a_checkpoint_head_recovers() {
 /// recovered from it is terminal.
 #[test]
 fn pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_terminal_head() {
-    let world = pending_wal_world::first_with_resume_frontier();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first_with_resume_frontier();
     assert_needs_exactly(&world, FRONTIER_NEED, "frontier object");
     assert_eq!(
         recover_and_checkpoint(&world, "frontier object", [0xd4; 32]),

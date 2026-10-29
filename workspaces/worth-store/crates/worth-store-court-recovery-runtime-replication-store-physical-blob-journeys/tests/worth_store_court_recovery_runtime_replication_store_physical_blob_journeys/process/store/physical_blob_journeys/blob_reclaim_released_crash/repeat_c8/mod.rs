@@ -1,24 +1,43 @@
 //! The first recovery publishes a V3 drop without folding its WAL into a
 //! checkpoint. A second, independent C8 process must preserve that result.
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_reclaim_released_crash::repeat_c8::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_reclaim_released_crash::repeat_c8::*;
 use {std::fs, std::path::Path, std::process::Command, std::process::Output, std::time::Duration};
 
 use {sha2::Digest, sha2::Sha256};
-use {worth_store_physical_format::BlobReclaimDescriptorV3, worth_store_physical_format::BlobRecordKind};
+use {
+    worth_store_physical_format::BlobReclaimDescriptorV3,
+    worth_store_physical_format::BlobRecordKind,
+};
 
-use {crate::physical_blob_journeys::blob_crash::kill_at, crate::blob_crash::recovery::recover_closed_store, crate::blob_reclaim_released_crash::retirement_witness, crate::physical_blob_journeys::blob_reclaim_released_crash::ROLE};
+use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::blob_reclaim_released_crash::retirement_witness,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_reclaim_released_crash::ROLE,
+};
 
 #[test]
-fn second_fresh_c8_preserves_the_first_published_v3_drop() {
+fn second_fresh_recovery_preserves_the_first_published_v3_drop() {
     let world = kill_at(ROLE, std::time::Duration::from_secs(240));
     let checkpoint = std::fs::read(world.root.join("families/checkpoint.current")).unwrap();
-    let (source, format) = crate::blob_reclaim_released_crash::retirement_witness::selected_root(&world.root);
-    let (publication, _) = crate::blob_reclaim_released_crash::retirement_witness::selected_publication_extent(&world.root, &source);
+    let (source, format) =
+        crate::blob_reclaim_released_crash::retirement_witness::selected_root(&world.root);
+    let (publication, _) =
+        crate::blob_reclaim_released_crash::retirement_witness::selected_publication_extent(
+            &world.root,
+            &source,
+        );
     recover_closed_store(&world.root);
-    let (first, first_format) = crate::blob_reclaim_released_crash::retirement_witness::selected_root(&world.root);
+    let (first, first_format) =
+        crate::blob_reclaim_released_crash::retirement_witness::selected_root(&world.root);
     assert_eq!(first_format, format);
-    let first_placements = crate::blob_reclaim_released_crash::retirement_witness::selected_placements(&world.root, &first);
+    let first_placements =
+        crate::blob_reclaim_released_crash::retirement_witness::selected_placements(
+            &world.root,
+            &first,
+        );
     assert_eq!(first.generation(), source.generation() + 1);
     assert!(first_placements
         .iter()
@@ -55,14 +74,18 @@ fn second_fresh_c8_preserves_the_first_published_v3_drop() {
         stderr.contains("fate=HistoricalReleaseConsumed"),
         "old WAL group must be terminally consumed: {stderr}"
     );
-    let (second, second_format) = crate::blob_reclaim_released_crash::retirement_witness::selected_root(&world.root);
+    let (second, second_format) =
+        crate::blob_reclaim_released_crash::retirement_witness::selected_root(&world.root);
     assert_eq!(second_format, format);
     assert_eq!(
         second, first,
         "repeat C8 must not resurrect a dropped WAL target"
     );
     assert_eq!(
-        crate::blob_reclaim_released_crash::retirement_witness::selected_placements(&world.root, &second),
+        crate::blob_reclaim_released_crash::retirement_witness::selected_placements(
+            &world.root,
+            &second
+        ),
         first_placements
     );
     assert_eq!(
@@ -72,7 +95,7 @@ fn second_fresh_c8_preserves_the_first_published_v3_drop() {
 }
 
 #[test]
-fn selected_v3_witness_changed_after_first_c8_denies_repeat() {
+fn selected_v3_witness_changed_after_first_recovery_denies_repeat() {
     let world = kill_at(ROLE, std::time::Duration::from_secs(240));
     recover_closed_store(&world.root);
     mutate_selected_descriptor_custody(&world.root);

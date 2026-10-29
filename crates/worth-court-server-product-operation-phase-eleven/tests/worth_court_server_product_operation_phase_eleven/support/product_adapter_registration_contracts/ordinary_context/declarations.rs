@@ -1,39 +1,118 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+pub(crate) use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-pub(crate) use {std::sync::Arc};
+pub(crate) use std::sync::Arc;
 
+pub(crate) use serde_json::json;
+pub(crate) use tower::ServiceExt;
 pub(crate) use {axum::body::to_bytes, axum::body::Body};
 pub(crate) use {axum::http::Method, axum::http::Request, axum::http::StatusCode};
-pub(crate) use {serde_json::json};
-pub(crate) use {tower::ServiceExt};
-pub(crate) use {worth_query_host::facade::domain, worth_query_host::facade::primary_graph, worth_query_host::facade::runtime};
-pub(crate) use {worth_query_host::facade::worth_query_application_schema, worth_query_host::facade::worth_query_aspect, worth_query_host::facade::worth_query_entity, worth_query_host::facade::worth_query_field, worth_query_host::facade::worth_query_principal_binding, worth_query_host::facade::worth_query_relation};
-pub(crate) use {worth_server::CompatHttpSurface, worth_server::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerBuildError, worth_server::WorthServerProductAdapterCertificationCode, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationSupportSnapshot};
+pub(crate) use {
+    worth_query_host::facade::domain, worth_query_host::facade::primary_graph,
+    worth_query_host::facade::runtime,
+};
+pub(crate) use {
+    worth_query_host::facade::worth_query_application_schema,
+    worth_query_host::facade::worth_query_aspect, worth_query_host::facade::worth_query_entity,
+    worth_query_host::facade::worth_query_field,
+    worth_query_host::facade::worth_query_principal_binding,
+    worth_query_host::facade::worth_query_relation,
+};
+pub(crate) use {
+    worth_server::CompatHttpSurface, worth_server::WorthNativeSurface, worth_server::WorthServer,
+    worth_server::WorthServerBuildError, worth_server::WorthServerProductAdapterCertificationCode,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerProductOperationBasisKind,
+    worth_server::WorthServerProductOperationDeclaration,
+    worth_server::WorthServerProductOperationErrorMaps,
+    worth_server::WorthServerProductOperationSupportSnapshot,
+};
 
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture};
+pub(crate) use worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture;
 
-pub(crate) use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::base_config, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::build_server, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::result_contract, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::EditorAdapter};
+pub(crate) use {
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::base_config,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::build_server,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::result_contract,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::EditorAdapter,
+};
+
+worth_query_application_schema! {
+    pub schema SessionBasisSchema {
+        owner: worth_server_session_basis_test,
+        version: (1, 0),
+        members: |schema| {
+            schema
+                .entity(SessionExternalMapping::reference())
+                .entity(SessionPrincipal::reference())
+                .entity(SessionBasisRecord::reference())
+                .aspect(SessionExternalMapping::reference(), SessionExternalIdentity::reference())
+                .aspect(SessionPrincipal::reference(), SessionPrincipalFacts::reference())
+                .aspect(SessionBasisRecord::reference(), SessionBasisFacts::reference())
+                .field(SessionExternalMapping::reference(), SessionExternalIdentityField::reference())
+                .field(SessionExternalMapping::reference(), SessionMappingStatusField::reference())
+                .field(SessionPrincipal::reference(), SessionPrincipalIdentityField::reference())
+                .field(SessionBasisRecord::reference(), SessionBasisValue::reference())
+                .relation(
+                    SessionMappingTarget::reference(),
+                    SessionExternalMapping::reference(),
+                    SessionPrincipal::reference(),
+                )
+                .principal_binding(SessionIdentityBinding::reference())
+        }
+    }
+}
+
+worth_query_entity!(pub SessionExternalMapping for SessionBasisSchema);
+worth_query_entity!(pub SessionPrincipal for SessionBasisSchema);
+worth_query_entity!(pub SessionBasisRecord for SessionBasisSchema);
+worth_query_aspect!(pub SessionExternalIdentity for SessionBasisSchema, SessionExternalMapping; identity = AspectIdentity(0x91611101), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub SessionPrincipalFacts for SessionBasisSchema, SessionPrincipal; identity = AspectIdentity(0x91611102), revision = AspectContractRevision(1),);
+worth_query_field!(pub SessionExternalIdentityField for SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity => worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
+worth_query_field!(pub SessionMappingStatusField for SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus => worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
+worth_query_field!(pub SessionPrincipalIdentityField for SessionBasisSchema, SessionPrincipal, SessionPrincipalFacts: u64 => worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
+worth_query_relation!(pub SessionMappingTarget in SessionBasisSchema, SessionExternalMapping => SessionPrincipal; integrity = same_context_unbounded_retain_dangling);
+worth_query_principal_binding!(
+    pub SessionIdentityBinding in SessionBasisSchema,
+    mapping SessionExternalMapping {
+        identity: SessionExternalIdentityField,
+        status: SessionMappingStatusField,
+        target: SessionMappingTarget => SessionPrincipal,
+        principal_identity: SessionPrincipalIdentityField
+    }
+);
+worth_query_aspect!(pub SessionBasisFacts for SessionBasisSchema, SessionBasisRecord; identity = AspectIdentity(0x91611103), revision = AspectContractRevision(1),);
+worth_query_field!(pub SessionBasisValue for SessionBasisSchema, SessionBasisRecord, SessionBasisFacts: String => worth_query_host::facade::declaration::application_schema::StringApplicationValueBinding, read_only, equality);
 
 pub(crate) fn primary_graph_application(
-) -> worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<SessionBasisSchema> {
+) -> worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+    SessionBasisSchema,
+> {
     let declaration = SessionBasisSchema::declaration().expect("test schema must declare");
     let package = worth_query_host::facade::domain::WorthQueryPortableDomainPackage::new(
-        worth_query_host::facade::domain::WorthQueryPortableDomainIdentity::new("worth_server_session_basis_test", 1, 0),
+        worth_query_host::facade::domain::WorthQueryPortableDomainIdentity::new(
+            "worth_server_session_basis_test",
+            1,
+            0,
+        ),
     )
     .application_schema(declaration.clone())
     .validate()
     .expect("test package must validate");
-    let admitted = worth_query_host::facade::domain::WorthQueryInstallationAdmissionProfile::new("server", "session-basis")
-        .admit(package)
-        .expect("test package must admit");
-    let installation = worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller::new()
-        .install(
-            worth_query_host::facade::domain::WorthQueryInstallationGeneration::initial(),
-            [admitted],
-        )
-        .expect("test package must install");
+    let admitted = worth_query_host::facade::domain::WorthQueryInstallationAdmissionProfile::new(
+        "server",
+        "session-basis",
+    )
+    .admit(package)
+    .expect("test package must admit");
+    let installation =
+        worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller::new()
+            .install(
+                worth_query_host::facade::domain::WorthQueryInstallationGeneration::initial(),
+                [admitted],
+            )
+            .expect("test package must install");
     let (runtime, authority) = installation.into_parts();
     let schema = runtime
         .installed_packages()

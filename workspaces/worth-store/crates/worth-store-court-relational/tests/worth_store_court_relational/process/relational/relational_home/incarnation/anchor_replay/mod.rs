@@ -1,10 +1,18 @@
 //! A killed high-index anchor advance must replay from WAL, not its old root.
-#[allow(unused_imports)] use crate::incarnation::anchor_replay::*;
-use {crate::killed_child};
-use {worth_execution::ExecutionRequest, std::path::Path, crate::incarnation::assert_contended, crate::durable_run::open, crate::workload};
+#[allow(unused_imports)]
+use crate::incarnation::anchor_replay::*;
+use crate::killed_child;
+use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
+use {
+    crate::durable_run::open, crate::incarnation::assert_contended, crate::workload,
+    std::path::Path, worth_execution::ExecutionRequest,
+};
 use {std::path::PathBuf, std::thread, std::time::Instant};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam};
-use {worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::PhysicalMutationDeadline};
+use {
+    worth_store::physical_runtime::AnchoredRecordName,
+    worth_store::physical_runtime::AnchoredRecordPublication,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
 
 #[test]
 fn wal_replays_the_thirty_second_anchor_advance_after_process_death() {
@@ -13,7 +21,7 @@ fn wal_replays_the_thirty_second_anchor_advance_after_process_death() {
     let markers = tempfile::tempdir().unwrap();
     assert_eq!(
         crate::killed_child::run_and_kill_observing(
-            "incarnation::anchor_replay::high_anchor_child",
+            "process::relational::relational_home::incarnation::anchor_replay::high_anchor_child",
             &[
                 ("WORTH_HIGH_ANCHOR_LOCATION", &location),
                 ("WORTH_HIGH_ANCHOR_MARKERS", markers.path())
@@ -29,7 +37,10 @@ fn wal_replays_the_thirty_second_anchor_advance_after_process_death() {
     let home = open(&location, &execution).unwrap();
     let records = home.certification_serving().anchored_records().unwrap();
     let record = records
-        .read(worth_store::physical_runtime::AnchoredRecordName::new("zz.high").unwrap(), 1024)
+        .read(
+            worth_store::physical_runtime::AnchoredRecordName::new("zz.high").unwrap(),
+            1024,
+        )
         .unwrap()
         .unwrap();
     assert_eq!(record.version().generation(), 2);
@@ -38,7 +49,10 @@ fn wal_replays_the_thirty_second_anchor_advance_after_process_death() {
         assert_eq!(
             records
                 .read(
-                    worth_store::physical_runtime::AnchoredRecordName::new(&format!("anchor.{i:02}")).unwrap(),
+                    worth_store::physical_runtime::AnchoredRecordName::new(&format!(
+                        "anchor.{i:02}"
+                    ))
+                    .unwrap(),
                     1024
                 )
                 .unwrap()

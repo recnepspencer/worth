@@ -1,16 +1,16 @@
-#[allow(unused_imports)] use crate::free_space_validation::membership_localization::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::FreeSpaceBlockReference, worth_store_physical_format::FreeSpaceKey, worth_store_physical_format::FreeSpaceMembershipBlockScopeIdentity, worth_store_physical_format::PhysicalFreeSpaceMembershipBlock, worth_store_physical_format::PhysicalTreeIdentity};
-use {worth_store_physical_integrity::validate_free_space_membership_block, worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::free_space_validation::assert_damage, crate::support::free_space_validation::assert_intact_counters, crate::support::free_space_validation::assert_rejected_counters, crate::support::free_space_validation::format, crate::support::free_space_validation::independent_crc32c, crate::support::free_space_validation::membership_reference, crate::support::free_space_validation::membership_scope, crate::support::free_space_validation::range, crate::support::free_space_validation::reseal, crate::support::free_space_validation::store, crate::support::free_space_validation::MEMBERSHIP_COMPLETE_CRC32C, crate::support::free_space_validation::MEMBERSHIP_LITERAL, crate::support::free_space_validation::MEMBERSHIP_OFFSET};
+#[allow(unused_imports)]
+use crate::free_space_validation::membership_localization::*;
 
 #[test]
 fn intact_branch_seals_children_and_input_incarnation() {
     let (bytes, scope, expected) = branch_fixture();
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let (validation, counters) = validate_free_space_membership_block(artifact, scope);
-    let worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(validated) = validation else {
+    let worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(
+        validated,
+    ) = validation
+    else {
         panic!("clean branch rejected");
     };
     assert_eq!(validated.scope(), scope);
@@ -19,11 +19,11 @@ fn intact_branch_seals_children_and_input_incarnation() {
     assert!(validated.entries().is_none());
     assert!(validated.matches_input(artifact));
     let identical_copy = bytes.clone();
-    assert!(
-        !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+    assert!(!validated.matches_input(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
             &identical_copy
-        ))
-    );
+        )
+    ));
     assert!(validated.into_validation_record().matches_scope(scope));
     assert_intact_counters(
         counters,
@@ -235,15 +235,16 @@ fn membership_level_substitution_is_distinct_from_a_true_kind_mutation() {
         branch_reference.last(),
     )
     .unwrap();
-    let branch_as_leaf_scope = worth_store_physical_integrity::PhysicalArtifactScope::free_space_membership_block(
-        store(7),
-        format(),
-        worth_store_physical_format::FreeSpaceMembershipBlockScopeIdentity::new(
-            worth_store_physical_format::PhysicalTreeIdentity::new(8).unwrap(),
-            branch_as_leaf,
-        ),
-        branch_scope.byte_range(),
-    );
+    let branch_as_leaf_scope =
+        worth_store_physical_integrity::PhysicalArtifactScope::free_space_membership_block(
+            store(7),
+            format(),
+            worth_store_physical_format::FreeSpaceMembershipBlockScopeIdentity::new(
+                worth_store_physical_format::PhysicalTreeIdentity::new(8).unwrap(),
+                branch_as_leaf,
+            ),
+            branch_scope.byte_range(),
+        );
     assert_membership_localization(
         &branch,
         branch_as_leaf_scope,

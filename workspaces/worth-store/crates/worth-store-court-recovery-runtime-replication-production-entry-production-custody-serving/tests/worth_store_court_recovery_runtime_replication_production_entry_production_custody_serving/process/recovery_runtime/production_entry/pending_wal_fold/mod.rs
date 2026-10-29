@@ -1,18 +1,29 @@
 //! Genuine two-object post-NoRelease history folds into a selected tag-7
 //! Batch/Accumulator checkpoint, then survives a fresh C.8/Store reopen.
 
-use {std::fs};
+use std::fs;
 
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::release_reopen};
-use {worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-
-
-
+use {
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
+use {
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::RecordArtifactFile,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
 fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
-    let world = super::pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_distinct_release_before_checkpoint();
     let outcome =
         worth_store_recovery_runtime::WorthStoreRecovery::recover(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root()));
@@ -24,7 +35,9 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
                 blocked.evidence().planning_denial,
                 blocked.recovery_effects(),
             ),
-            worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(indeterminate) => panic!(
+            worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+                indeterminate,
+            ) => panic!(
                 "two-object Store handoff: handoff={:?}, reopen={:?}, effects={}",
                 indeterminate.handoff_failure(),
                 indeterminate.reopen_failure(),
@@ -40,9 +53,11 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
     let serving = worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::admit_serving_with_seal(world.root(), seal);
     let checkpoint = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x9c; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(checkpoint).into_raw()
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(checkpoint).into_raw()
     else {
         panic!("ordered released checkpoint must admit");
     };
@@ -78,7 +93,10 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
         batches[1].cumulative_digest()
     );
     let heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            accumulator,
+        );
     assert_eq!(heads.len(), 2);
     assert_ne!(heads[0].key(), heads[1].key());
 
@@ -93,7 +111,9 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
                 blocked.evidence().planning_denial,
                 blocked.recovery_effects(),
             ),
-            worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(indeterminate) => panic!(
+            worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+                indeterminate,
+            ) => panic!(
                 "fresh folded Store handoff: handoff={:?}, reopen={:?}, effects={}",
                 indeterminate.handoff_failure(),
                 indeterminate.reopen_failure(),
@@ -111,7 +131,7 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
 
 #[test]
 fn post_seal_intermediate_history_root_substitution_denies_serving() {
-    let world = super::pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_distinct_release_before_checkpoint();
     let outcome =
         worth_store_recovery_runtime::WorthStoreRecovery::recover(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root()));
@@ -126,13 +146,18 @@ fn post_seal_intermediate_history_root_substitution_denies_serving() {
     // its route/free membership or the current selected root. A raw bit flip
     // would fail framing before the recovered-custody fingerprint is tested.
     let records = world.root().join("families/records");
-    let selected_path = records.join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name());
+    let selected_path = records
+        .join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name());
     let selected_before = std::fs::read(&selected_path).unwrap();
-    let path = records
-        .join("roots")
-        .join(worth_store_physical_format::RecordArtifactFile::RootManifest { generation: 12 }.file_name());
-    let (before, format) =
-        worth_store_physical_format::DurablePhysicalRootManifest::decode(&std::fs::read(&path).unwrap(), u16::MAX).unwrap();
+    let path = records.join("roots").join(
+        worth_store_physical_format::RecordArtifactFile::RootManifest { generation: 12 }
+            .file_name(),
+    );
+    let (before, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
+        &std::fs::read(&path).unwrap(),
+        u16::MAX,
+    )
+    .unwrap();
     let changed = worth_store_physical_format::DurablePhysicalRootManifest::builder(
         before.generation(),
         before.tree_identity(),
@@ -156,7 +181,11 @@ fn post_seal_intermediate_history_root_substitution_denies_serving() {
     assert_ne!(changed, before);
     std::fs::write(&path, changed.encode(format)).unwrap();
     let (decoded, decoded_format) =
-        worth_store_physical_format::DurablePhysicalRootManifest::decode(&std::fs::read(&path).unwrap(), u16::MAX).unwrap();
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(
+            &std::fs::read(&path).unwrap(),
+            u16::MAX,
+        )
+        .unwrap();
     assert_eq!((decoded, decoded_format), (changed, format));
     assert_eq!(std::fs::read(&selected_path).unwrap(), selected_before);
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::open_serving_with_seal_expect_mismatch(world.root(), seal);

@@ -1,6 +1,27 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::boundary_evidence::attachments::*;
-use {worth_foundational::attachment, worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path, worth_foundational::boundary_evidence_api::lower_lane, worth_foundational::boundary_evidence_api::stronger_lane, worth_foundational::foundational_boundary_evidence_attachment_target_kind_definitions, worth_foundational::foundational_boundary_evidence_continuity_attachment_scope_definitions, worth_foundational::foundational_boundary_evidence_materialization_profile_definitions, worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture, worth_foundational::FoundationalBoundaryEvidenceLineageSubject, worth_foundational::FoundationalBoundaryEvidenceMaterializationProfile, worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary, worth_foundational::FoundationalBoundaryEvidenceSourceBasis, worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis, worth_foundational::FoundationalCommitParentageLocator, worth_foundational::FoundationalDiagnosticLocator, worth_foundational::FoundationalTransitionLocator};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::boundary_evidence::attachments::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::attachment, worth_foundational::boundary_evidence,
+    worth_foundational::boundary_evidence_api::common_path,
+    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::boundary_evidence_api::stronger_lane,
+    worth_foundational::foundational_boundary_evidence_attachment_target_kind_definitions,
+    worth_foundational::foundational_boundary_evidence_continuity_attachment_scope_definitions,
+    worth_foundational::foundational_boundary_evidence_materialization_profile_definitions,
+    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
+    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
+    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalDigestAlgorithmId,
+    worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture,
+    worth_foundational::FoundationalBoundaryEvidenceLineageSubject,
+    worth_foundational::FoundationalBoundaryEvidenceMaterializationProfile,
+    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
+    worth_foundational::FoundationalBoundaryEvidenceSourceBasis,
+    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
+    worth_foundational::FoundationalCommitParentageLocator,
+    worth_foundational::FoundationalDiagnosticLocator,
+    worth_foundational::FoundationalTransitionLocator,
+};
 
 #[test]
 fn attachment_definitions_are_blind_consumer_interpretable() {
@@ -28,8 +49,12 @@ fn object_and_locator_continuity_attachments_stay_distinct() {
         .attachment()
         .for_transition(transition_locator(11))
         .with_locator_continuity(
-            worth_foundational::FoundationalBoundaryEvidenceLineageSubject::new(worth_foundational::BoundaryHandle::new(11)),
-            worth_foundational::FoundationalDiagnosticLocator::BoundaryArtifact(artifact_locator(11)),
+            worth_foundational::FoundationalBoundaryEvidenceLineageSubject::new(
+                worth_foundational::BoundaryHandle::new(11),
+            ),
+            worth_foundational::FoundationalDiagnosticLocator::BoundaryArtifact(artifact_locator(
+                11,
+            )),
             worth_foundational::FoundationalDiagnosticLocator::Transition(transition_locator(12)),
         )
         .with_provenance_attachment(provenance());
@@ -82,9 +107,11 @@ fn materialization_profiles_elide_optional_surfaces_without_changing_target_or_c
         .with_provenance_attachment(provenance())
         .with_receipt_attachment(receipt().completed_receipt().clone())
         .with_published_support(support())
-        .with_support_report_locator(worth_foundational::FoundationalDiagnosticLocator::BoundaryArtifact(
-            artifact_locator(20),
-        ));
+        .with_support_report_locator(
+            worth_foundational::FoundationalDiagnosticLocator::BoundaryArtifact(artifact_locator(
+                20,
+            )),
+        );
 
     let materialized = bundle.materialize_under(
         worth_foundational::FoundationalBoundaryEvidenceMaterializationProfile::ElideSupportAndDiagnostics,
@@ -209,7 +236,7 @@ fn stronger_lane_support_readmission_requires_support_attachment_and_boundary_br
 }
 
 #[test]
-fn common_lower_and_stronger_lanes_expose_the_same_phase6_surface() {
+fn common_lower_and_stronger_lanes_expose_the_same_surface() {
     assert_eq!(
         boundary_evidence().attachment_target_kind_definitions(),
         worth_foundational::boundary_evidence_api::lower_lane::attachments::foundational_boundary_evidence_attachment_target_kind_definitions(

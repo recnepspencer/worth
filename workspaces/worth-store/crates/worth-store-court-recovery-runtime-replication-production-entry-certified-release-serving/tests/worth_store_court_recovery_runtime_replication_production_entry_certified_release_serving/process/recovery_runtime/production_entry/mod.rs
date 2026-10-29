@@ -7,3 +7,6 @@ pub(crate) mod certified_release_serving;
 pub(crate) mod historical_release_only;
 #[path = "release_reopen/mod.rs"]
 pub(crate) mod release_reopen;
+
+#[path = "pending_wal_world/mod.rs"]
+pub(crate) mod pending_wal_world;

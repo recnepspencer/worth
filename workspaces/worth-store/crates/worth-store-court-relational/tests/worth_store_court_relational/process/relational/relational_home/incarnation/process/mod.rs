@@ -1,8 +1,16 @@
 //! Independent competing processes and kill/reopen incarnation continuity.
-#[allow(unused_imports)] use crate::incarnation::process::*;
-use {crate::killed_child};
-use {std::process::Command, worth_execution::ExecutionRequest, worth_store_relational::RelationalStorePhysicalRefusalKind as Kind, std::path::Path, worth_store_relational::RelationalStoreHomeOpenRefusal as Refusal, crate::incarnation::assert_contended, std::fs, crate::durable_run::open, crate::workload};
-use {std::path::PathBuf, std::process::Child, std::process::Stdio, std::thread, std::time::Instant};
+#[allow(unused_imports)]
+use crate::incarnation::process::*;
+use crate::killed_child;
+use {
+    crate::durable_run::open, crate::incarnation::assert_contended, crate::workload, std::fs,
+    std::path::Path, std::process::Command, worth_execution::ExecutionRequest,
+    worth_store_relational::RelationalStoreHomeOpenRefusal as Refusal,
+    worth_store_relational::RelationalStorePhysicalRefusalKind as Kind,
+};
+use {
+    std::path::PathBuf, std::process::Child, std::process::Stdio, std::thread, std::time::Instant,
+};
 
 #[test]
 fn two_processes_open_empty_initialized_and_recovery_homes_with_one_writer() {
@@ -117,7 +125,7 @@ fn competing_open_child() {
 
 #[test]
 fn incarnation_advance_killed_at_every_store_seam_advances_exactly_once_if_durable() {
-    use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam};
+    use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
     let request = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
     for seam in crate::process_kill::SEAMS {
@@ -129,7 +137,7 @@ fn incarnation_advance_killed_at_every_store_seam_advances_exactly_once_if_durab
         let markers = tempfile::tempdir().unwrap();
         let label = std::path::PathBuf::from(format!("{seam:?}"));
         let result = crate::killed_child::run_and_kill_observing(
-            "incarnation::process::incarnation_advance_child",
+            "process::relational::relational_home::incarnation::process::incarnation_advance_child",
             &[
                 ("WORTH_INCARNATION_KILL_LOCATION", &location),
                 ("WORTH_INCARNATION_KILL_MARKERS", markers.path()),
@@ -152,12 +160,19 @@ fn incarnation_advance_killed_at_every_store_seam_advances_exactly_once_if_durab
 
 #[test]
 fn incarnation_advance_child() {
-    use {worth_store::physical_runtime::FilesystemAccessPosture, worth_store::physical_runtime::FilesystemMediaAdmission};
-    use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest};
+    use {
+        worth_store::physical_runtime::FilesystemAccessPosture,
+        worth_store::physical_runtime::FilesystemMediaAdmission,
+    };
+    use {
+        worth_store_relational::RelationalStoreHome,
+        worth_store_relational::RelationalStoreHomeRequest,
+    };
     let Some(location) = std::env::var_os("WORTH_INCARNATION_KILL_LOCATION") else {
         return;
     };
-    let markers = std::path::PathBuf::from(std::env::var_os("WORTH_INCARNATION_KILL_MARKERS").unwrap());
+    let markers =
+        std::path::PathBuf::from(std::env::var_os("WORTH_INCARNATION_KILL_MARKERS").unwrap());
     let wanted = std::env::var("WORTH_INCARNATION_KILL_SEAM").unwrap();
     let seam = crate::process_kill::SEAMS
         .into_iter()
@@ -185,7 +200,9 @@ fn incarnation_advance_child() {
             .unwrap()
             .close();
         });
-        let gate = receive.recv_timeout(crate::killed_child::PARK_DEADLINE).unwrap();
+        let gate = receive
+            .recv_timeout(crate::killed_child::PARK_DEADLINE)
+            .unwrap();
         let deadline = std::time::Instant::now() + crate::killed_child::PARK_DEADLINE;
         while !gate.await_arrival() {
             if worker.is_finished() || std::time::Instant::now() >= deadline {

@@ -1,14 +1,36 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_reachability::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_reachability::*;
 use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-use {worth_proof::AdmittedBlobReleaseProof};
+use worth_proof::AdmittedBlobReleaseProof;
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReachabilityLimits, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobRecordReachability, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::DerivedFamilyRootDirectoryV1};
+use worth_store_blob_chunks::BlobChunkSize;
+use worth_store_contracts::DurableArtifactFamilyId;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReachabilityLimits,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::BlobRecordReachability,
+    worth_store::physical_runtime::PhysicalIndexPointKey,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
+use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::DerivedFamilyRootDirectoryV1,
+};
 
-use {crate::physical_blob_journeys::blob_abort::deadline, crate::physical_blob_journeys::blob_abort::limits as terminal_limits, crate::physical_blob_journeys::blob_abort::unfinished, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    crate::physical_blob_journeys::blob_abort::deadline,
+    crate::physical_blob_journeys::blob_abort::limits as terminal_limits,
+    crate::physical_blob_journeys::blob_abort::unfinished,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn selected_session_frontier_is_live_but_aborted_chunk_defers_to_recovery_hold() {
@@ -21,8 +43,11 @@ fn selected_session_frontier_is_live_but_aborted_chunk_defers_to_recovery_hold()
     let chunk = selected
         .iter()
         .find_map(|(record, bytes)| {
-            matches!(decode_blob_record(bytes), Ok(worth_store_physical_format::BlobRecordV1::Chunk(_)))
-                .then_some(persisted(*record))
+            matches!(
+                decode_blob_record(bytes),
+                Ok(worth_store_physical_format::BlobRecordV1::Chunk(_))
+            )
+            .then_some(persisted(*record))
         })
         .expect("real ingest selected a chunk");
     let before = serving
@@ -55,7 +80,10 @@ fn selected_session_frontier_is_live_but_aborted_chunk_defers_to_recovery_hold()
         .unwrap()
         .classify_selected_reachability(inspection_limits())
         .unwrap();
-    assert_eq!(class_of(&after, chunk), worth_store::physical_runtime::BlobRecordReachability::HeldOnly);
+    assert_eq!(
+        class_of(&after, chunk),
+        worth_store::physical_runtime::BlobRecordReachability::HeldOnly
+    );
     assert!(after.retained_roots_scanned() > 0);
     assert!(selected_blob_records(&serving)
         .iter()
@@ -73,7 +101,8 @@ fn published_tree_is_reachable_without_classification_granting_release() {
     let serving = serving_from_initialization(directory.path());
     let scope = admitted_blob_scope("c11.blob.reachability.published.scope");
     let blobs = serving.blobs().unwrap();
-    let read_limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read_limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(read_limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -81,7 +110,8 @@ fn published_tree_is_reachable_without_classification_granting_release() {
         64 << 10,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -116,13 +146,14 @@ fn published_tree_is_reachable_without_classification_granting_release() {
 }
 
 #[test]
-fn held_c10_root_keeps_displaced_catalog_node_held_only() {
+fn held_root_keeps_displaced_catalog_node_held_only() {
     const CHUNK: usize = 64 << 10;
     let directory = tempfile::tempdir().unwrap();
     let serving = serving_from_initialization(directory.path());
     let scope = admitted_blob_scope("c11.blob.reachability.held.scope");
     let blobs = serving.blobs().unwrap();
-    let read_limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read_limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let publish = |seed| {
         let object = blobs.issue_object_id(read_limits).unwrap();
         let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -184,7 +215,8 @@ fn released_indexed_publication_defers_current_residue_to_recovery_hold() {
     let serving = serving_from_initialization(directory.path());
     let scope = admitted_blob_scope("c11.blob.reachability.release.scope");
     let blobs = serving.blobs().unwrap();
-    let read_limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read_limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(read_limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -201,8 +233,11 @@ fn released_indexed_publication_defers_current_residue_to_recovery_hold() {
     ingest.push(&vec![0x31; CHUNK]).unwrap();
     ingest.push(&vec![0x72; CHUNK]).unwrap();
     let published = ingest.finish().unwrap();
-    let key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence()).unwrap();
+    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        object,
+        published.generation().sequence(),
+    )
+    .unwrap();
     assert!(serving
         .layouts()
         .unwrap()
@@ -228,8 +263,11 @@ fn released_indexed_publication_defers_current_residue_to_recovery_hold() {
     let chunk = before
         .iter()
         .find_map(|(record, bytes)| {
-            matches!(decode_blob_record(bytes), Ok(worth_store_physical_format::BlobRecordV1::Chunk(_)))
-                .then_some(persisted(*record))
+            matches!(
+                decode_blob_record(bytes),
+                Ok(worth_store_physical_format::BlobRecordV1::Chunk(_))
+            )
+            .then_some(persisted(*record))
         })
         .expect("Store selected a chunk");
     let proof = worth_proof::AdmittedBlobReleaseProof::certification_admit(
@@ -281,7 +319,10 @@ fn released_indexed_publication_defers_current_residue_to_recovery_hold() {
         class_of(&observed, derived),
         worth_store::physical_runtime::BlobRecordReachability::HeldOnly
     );
-    assert_eq!(class_of(&observed, chunk), worth_store::physical_runtime::BlobRecordReachability::HeldOnly);
+    assert_eq!(
+        class_of(&observed, chunk),
+        worth_store::physical_runtime::BlobRecordReachability::HeldOnly
+    );
     assert!(observed.retained_roots_scanned() > 0);
     // Both exact routes are still current-selected and are also present in
     // the recovery predecessor; the deferred classes are checked at the

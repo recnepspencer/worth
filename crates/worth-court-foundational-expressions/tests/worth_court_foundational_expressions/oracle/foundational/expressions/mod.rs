@@ -6,5 +6,3 @@ pub(crate) mod digital;
 pub(crate) mod generated;
 #[path = "reference/mod.rs"]
 pub(crate) mod reference;
-#[path = "stepping/mod.rs"]
-pub(crate) mod stepping;

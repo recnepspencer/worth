@@ -1,5 +1,5 @@
 error[E0505]: cannot move out of `runtime` because it is borrowed
-  --> tests/physical_runtime_authority/runtime_cannot_close_with_blob_ingest.rs:15:5
+  --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/runtime_cannot_close_with_blob_ingest.rs:15:5
    |
  6 |     runtime: ServingPhysicalRuntime,
    |     ------- binding `runtime` declared here

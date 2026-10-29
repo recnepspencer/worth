@@ -1,7 +1,6 @@
-
-
-#[allow(unused_imports)] use crate::relational_certification::reference_context::invariant_structural_selection::*;
-pub(crate) use {std::collections::BTreeSet};
+#[allow(unused_imports)]
+use crate::relational_certification::reference_context::invariant_structural_selection::*;
+pub(crate) use std::collections::BTreeSet;
 pub(crate) use {std::sync::Arc, std::sync::Mutex};
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::invariant_oracle_expectations::expected_supply_chain_branch};
@@ -19,10 +18,12 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
 
     let expectation = std::sync::Arc::new(std::sync::Mutex::new(None));
     let evidence = std::sync::Arc::new(std::sync::Mutex::new(crate::relational_certification::reference_context::invariant_structural_selection::ProbeEvidence::default()));
-    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(StructuralSelectionProbe {
-        expectation: std::sync::Arc::clone(&expectation),
-        evidence: std::sync::Arc::clone(&evidence),
-    })
+    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(
+        StructuralSelectionProbe {
+            expectation: std::sync::Arc::clone(&expectation),
+            evidence: std::sync::Arc::clone(&evidence),
+        },
+    )
     .expect("structural selection probe registers");
     let program = worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram::compile(
         worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition::operating(worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court())
@@ -187,75 +188,6 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
         "both bounded structural walks must charge at least the selected relation"
     );
 }
-
-macro_rules! assert_selected_views {
-    ($touched:expr, $relations:expr, $traversal:expr, $expected:expr) => {{
-        let touched = $touched;
-        let relations = $relations;
-        let traversal = $traversal;
-        let expected = $expected;
-        let mut expected_entities = vec![expected.source, expected.target];
-        expected_entities.sort_unstable();
-        assert_eq!(touched.visible_entity_ids(), expected_entities.as_slice());
-        assert_eq!(touched.visible_relation_ids(), &[expected.relation]);
-        let mut expected_partitions = vec![
-            expected.source.partition_id,
-            expected.target.partition_id,
-            expected.relation.partition_id,
-        ];
-        expected_partitions.sort_unstable();
-        expected_partitions.dedup();
-        assert_eq!(touched.touched_partitions(), expected_partitions.as_slice());
-        assert!(
-            !touched
-                .visible_entity_ids()
-                .contains(&expected.moved_source),
-            "selected touched scope must exclude main-only moved source"
-        );
-        assert!(
-            !touched
-                .visible_entity_ids()
-                .contains(&expected.moved_target),
-            "selected touched scope must exclude main-only moved target"
-        );
-        let record = relations
-            .relation(expected.relation)
-            .expect("selected relation remains visible");
-        assert_eq!(record.source, expected.source);
-        assert_eq!(record.target, expected.target);
-        assert!(relations
-            .outgoing_relations_for_entity(expected.source)
-            .expect("selected adjacency stays within budget")
-            .contains(&expected.relation));
-        assert!(relations
-            .incoming_relations_for_entity(expected.target)
-            .expect("selected adjacency stays within budget")
-            .contains(&expected.relation));
-        assert!(relations
-            .all_relations_for_entity(expected.source)
-            .expect("selected adjacency stays within budget")
-            .contains(&expected.relation));
-        assert!(!relations
-            .outgoing_relations_for_entity(expected.moved_source)
-            .expect("selected adjacency stays within budget")
-            .contains(&expected.relation));
-        assert!(!relations
-            .incoming_relations_for_entity(expected.moved_target)
-            .expect("selected adjacency stays within budget")
-            .contains(&expected.relation));
-        let outgoing = traversal
-            .walk_outgoing_from(&[expected.source], 1)
-            .expect("selected outgoing traversal remains bounded");
-        assert!(outgoing.traversed_relations().contains(&expected.relation));
-        assert!(outgoing.visited_entities().contains(&expected.target));
-        let incoming = traversal
-            .walk_incoming_from(&[expected.target], 1)
-            .expect("selected incoming traversal remains bounded");
-        assert!(incoming.traversed_relations().contains(&expected.relation));
-        assert!(incoming.visited_entities().contains(&expected.source));
-    }};
-}
-
 
 pub(crate) use {crate::relational_certification::reference_context::invariant_structural_selection::selection_fixture::commit_branch_batch_result};
 pub(crate) use {crate::relational_certification::reference_context::invariant_structural_selection::selection_fixture::observe_branch_snapshot};

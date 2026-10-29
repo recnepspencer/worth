@@ -1,23 +1,38 @@
-
-
-#[allow(unused_imports)] use crate::phase_five_generation_axes::*;
+#[allow(unused_imports)]
+use crate::phase_five_generation_axes::*;
 use {std::path::Path, std::path::PathBuf};
 use {std::process::Command, std::process::Output};
 
-use {worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-use {worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_physics::PhysicalRedoDecisionKind, worth_store_recovery_physics::PhysicalRedoTargetIdentity};
-use {worth_store_recovery_runtime::PhysicalRecoveryLimits};
-use {worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_batch_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use worth_proof::TransitionOutcome;
+use worth_store_physical_format::RecordArtifactFile;
+use worth_store_recovery_runtime::PhysicalRecoveryLimits;
+use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+use {
+    worth_store_recovery_physics::PhysicalRedoDecisionKind,
+    worth_store_recovery_physics::PhysicalRedoTargetIdentity,
+};
+use {
+    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
+    worth_store_test_support::harness::physical_residency::canonical_physical_batch_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+use {
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+};
 
 #[test]
 fn new_page_in_reused_segment_crosses_process_death_and_stages_exactly() {
     let parent = tempfile::tempdir().expect("generation-axis parent");
     let marker = parent.path().join("persisted-root");
     assert_child_succeeded("writer", &run_child(WRITER_TEST, &marker, parent.path()));
-    let root = std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
+    let root =
+        std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
     assert_child_succeeded("stager", &run_child(STAGER_TEST, &root, parent.path()));
     assert_child_succeeded(
         "convergence",
@@ -32,16 +47,17 @@ fn repeated_post_checkpoint_page_reuse_crosses_process_death_without_redo() {
     assert_child_succeeded(
         "repeated page reuse writer",
         &run_child(
-            "phase_five_repeated_page_reuse_writer",
+            "process::recovery_runtime::phase_five_generation_axes::repeated_page_reuse_writer",
             &marker,
             parent.path(),
         ),
     );
-    let root = std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
+    let root =
+        std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
     assert_child_succeeded(
         "repeated page reuse planner",
         &run_child(
-            "phase_five_repeated_page_reuse_planner",
+            "process::recovery_runtime::phase_five_generation_axes::repeated_page_reuse_planner",
             &root,
             parent.path(),
         ),
@@ -50,7 +66,7 @@ fn repeated_post_checkpoint_page_reuse_crosses_process_death_without_redo() {
 
 #[test]
 #[ignore = "launched by the repeated page reuse parent"]
-fn phase_five_repeated_page_reuse_writer() {
+fn repeated_page_reuse_writer() {
     let marker = required_child_path();
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery_with_segment_pages(
         "c8-phase5-repeated-page-reuse",
@@ -67,7 +83,8 @@ fn phase_five_repeated_page_reuse_writer() {
     canonical_physical_batch_acknowledgment(&world, [0x81; 32], base.iter().map(Vec::as_slice));
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x82; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -87,7 +104,7 @@ fn phase_five_repeated_page_reuse_writer() {
 
 #[test]
 #[ignore = "launched by the repeated page reuse parent"]
-fn phase_five_repeated_page_reuse_planner() {
+fn repeated_page_reuse_planner() {
     let planned = plan(&required_child_path());
     let decisions = planned.redo_plan().resolved_decisions().collect::<Vec<_>>();
     assert_eq!(decisions.len(), 2);
@@ -114,7 +131,7 @@ fn phase_five_repeated_page_reuse_planner() {
 
 #[test]
 #[ignore = "launched by the generation-axis parent"]
-fn phase_five_generation_axes_writer() {
+fn generation_axes_writer() {
     let marker = required_child_path();
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery_with_segment_pages(
         "c8-phase5-generation-axes",
@@ -131,7 +148,8 @@ fn phase_five_generation_axes_writer() {
     canonical_physical_batch_acknowledgment(&world, [0x71; 32], base.iter().map(Vec::as_slice));
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x72; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -150,13 +168,15 @@ fn phase_five_generation_axes_writer() {
 
 #[test]
 #[ignore = "launched by the generation-axis parent"]
-fn phase_five_generation_axes_stager() {
+fn generation_axes_stager() {
     let root = required_child_path();
     let planned = plan(&root);
     let decision = planned
         .redo_plan()
         .resolved_decisions()
-        .find(|decision| decision.kind() == worth_store_recovery_physics::PhysicalRedoDecisionKind::Apply)
+        .find(|decision| {
+            decision.kind() == worth_store_recovery_physics::PhysicalRedoDecisionKind::Apply
+        })
         .expect("the WAL-only append requires one physical apply");
     let worth_store_recovery_physics::PhysicalRedoTargetIdentity::InlinePage {
         segment,
@@ -195,7 +215,7 @@ fn phase_five_generation_axes_stager() {
 
 #[test]
 #[ignore = "launched by the generation-axis parent"]
-fn phase_five_generation_axes_convergence() {
+fn generation_axes_convergence() {
     let root = required_child_path();
     let converged = plan(&root).stage().expect("identical staging converges");
     assert_eq!(converged.staging_counters().artifacts_created, 0);

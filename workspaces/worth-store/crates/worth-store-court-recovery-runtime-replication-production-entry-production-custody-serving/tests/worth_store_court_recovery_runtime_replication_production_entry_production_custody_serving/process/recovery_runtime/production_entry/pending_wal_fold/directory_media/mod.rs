@@ -2,19 +2,47 @@
 //! media by Store. A structurally valid substitute frame keeps every C.8/C.9
 //! proof intact, so only Store's independent media rejoin can deny it.
 
-#[allow(unused_imports)] use crate::pending_wal_fold::directory_media::*;
+#[allow(unused_imports)]
+use crate::pending_wal_fold::directory_media::*;
 use {std::fs, std::io::Read, std::io::Seek, std::io::SeekFrom, std::io::Write, std::path::Path};
 
-use {worth_store::physical_runtime::PhysicalRecoverySelectedRejoinMismatch, worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial};
-use {worth_store_physical_format::decode_extent_chunk, worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DerivedFamilyRootDirectoryV1, worth_store_physical_format::DerivedFamilyRootEntry, worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES, worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES, worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+use {
+    worth_store::physical_runtime::PhysicalRecoverySelectedRejoinMismatch,
+    worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial,
+};
+use {
+    worth_store_physical_format::decode_extent_chunk,
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::encode_extent_chunk,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DerivedFamilyRootDirectoryV1,
+    worth_store_physical_format::DerivedFamilyRootEntry,
+    worth_store_physical_format::DurableExtentManifest,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::ExtentArenaFrameLayout,
+    worth_store_physical_format::ExtentChunkCoordinate,
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
+    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
+    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
 fn substituted_replacement_directory_frame_denies_store_rejoin() {
-    let world = super::super::pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_distinct_release_before_checkpoint();
-    let request = || worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root());
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = worth_store_recovery_runtime::WorthStoreRecovery::recover(request()) else {
+    let request = || {
+        worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root())
+    };
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        worth_store_recovery_runtime::WorthStoreRecovery::recover(request())
+    else {
         panic!("genuine two-batch release must recover before media substitution");
     };
     drop(handoff);
@@ -46,7 +74,10 @@ fn substituted_replacement_directory_frame_denies_store_rejoin() {
     substitute_directory(world.root(), route);
 
     let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(request());
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(indeterminate) = outcome else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+        indeterminate,
+    ) = outcome
+    else {
         panic!("substituted replacement directory media must deny Store rejoin: {outcome:?}")
     };
     assert_eq!(

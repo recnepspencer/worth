@@ -1,9 +1,5 @@
-#[allow(unused_imports)] use crate::root_validation::selectors::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::PhysicalPageSizeClass};
-use {worth_store_physical_integrity::validate_current_root_selector, worth_store_physical_integrity::validate_previous_root_selector, worth_store_physical_integrity::CurrentRootSelectorIntegrityValidation, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::PreviousRootSelectorIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::root_validation::assert_damage, crate::support::root_validation::assert_rejected_counters, crate::support::root_validation::field_range, crate::support::root_validation::format, crate::support::root_validation::manifest_scope, crate::support::root_validation::reseal_durable_frame, crate::support::root_validation::selector_bytes, crate::support::root_validation::selector_scope, crate::support::root_validation::store, crate::support::root_validation::validate_selector_rejection, crate::support::root_validation::SelectorKind, crate::support::root_validation::SELECTOR_OFFSET};
+#[allow(unused_imports)]
+use crate::root_validation::selectors::*;
 
 #[test]
 fn clean_selector_controls_seal_typed_projections_and_exact_incarnation() {
@@ -14,7 +10,8 @@ fn clean_selector_controls_seal_typed_projections_and_exact_incarnation() {
         let bytes = selector_bytes(kind, store, format);
         let other_incarnation = bytes;
         let scope = selector_scope(kind, store, format);
-        let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+        let artifact =
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
         match kind {
             crate::support::root_validation::SelectorKind::Current => match validate_current_root_selector(artifact, scope) {
                 (worth_store_physical_integrity::CurrentRootSelectorIntegrityValidation::Intact(validated), counters) => {
@@ -133,7 +130,8 @@ fn selector_b_k_l_s_p_t_u_matrix_is_exact_for_both_roles() {
             truncated,
             scope,
             worth_store_physical_integrity::PhysicalDamageCause::Truncated,
-            worth_store_physical_integrity::PhysicalByteRange::new(SELECTOR_OFFSET + 104, 3).unwrap(),
+            worth_store_physical_integrity::PhysicalByteRange::new(SELECTOR_OFFSET + 104, 3)
+                .unwrap(),
             None,
             worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
         );
@@ -256,7 +254,9 @@ fn selector_scope_identity_generation_and_structure_denials_remain_distinct() {
             worth_store_physical_integrity::PhysicalBlastRadius::CompleteArtifact,
         );
 
-        let other_format = crate::support::root_validation::format(worth_store_physical_format::PhysicalPageSizeClass::KiB32);
+        let other_format = crate::support::root_validation::format(
+            worth_store_physical_format::PhysicalPageSizeClass::KiB32,
+        );
         let format_substitution = selector_bytes(kind, store, other_format);
         assert_selector_damage(
             kind,

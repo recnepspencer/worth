@@ -7,17 +7,35 @@
 //! Manifest entries, manifest bytes, observation bytes and staging bytes
 //! are each swept from one up to the need.
 
-pub use {std::path::Path, crate::production_entry::certified_release_serving, crate::production_entry::pending_successor_above_history, crate::production_entry::pending_wal_world, worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal::production_entry::published_above_checkpoint, crate::production_entry::tier_release_pending_wal};
-pub use {crate::production_entry::published_above_checkpoint::manifest_entry_limit::released_world, crate::production_entry::published_above_checkpoint::manifest_entry_limit::IDLE_NEED, crate::production_entry::published_above_checkpoint::manifest_entry_limit::ORDERED_NEED, crate::production_entry::published_above_checkpoint::manifest_entry_limit::RELEASED_NEED};
-pub use {crate::production_entry::published_above_checkpoint::limit_sweep::entries::entry_need, crate::production_entry::published_above_checkpoint::limit_sweep::entries::History, crate::production_entry::published_above_checkpoint::limit_sweep::entries::Need, crate::production_entry::published_above_checkpoint::limit_sweep::entries::Staging};
-pub use {crate::production_entry::pending_wal_world::PendingWalWorld};
-pub use {crate::production_entry::published_above_checkpoint::limit_sweep::worlds::Killed};
-pub use {worth_store_recovery_runtime::PhysicalRecoveryBlock, worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-
-
-
-
-
+pub use crate::production_entry::pending_wal_world::{PendingWalWorld, Tail, Workload};
+pub use crate::production_entry::published_above_checkpoint::limit_sweep::worlds::Killed;
+pub use {
+    crate::production_entry::certified_release_serving,
+    crate::production_entry::pending_successor_above_history,
+    crate::production_entry::pending_wal_world,
+    crate::production_entry::published_above_checkpoint,
+    crate::production_entry::tier_release_pending_wal, std::path::Path,
+};
+pub use {
+    crate::production_entry::published_above_checkpoint::limit_sweep::entries::entry_need,
+    crate::production_entry::published_above_checkpoint::limit_sweep::entries::History,
+    crate::production_entry::published_above_checkpoint::limit_sweep::entries::Need,
+    crate::production_entry::published_above_checkpoint::limit_sweep::entries::Staging,
+};
+pub use {
+    crate::production_entry::published_above_checkpoint::manifest_entry_limit::released_world,
+    crate::production_entry::published_above_checkpoint::manifest_entry_limit::IDLE_NEED,
+    crate::production_entry::published_above_checkpoint::manifest_entry_limit::ORDERED_NEED,
+    crate::production_entry::published_above_checkpoint::manifest_entry_limit::RELEASED_NEED,
+};
+pub use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlock,
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 /// What the first reopen needs where a checkpoint heads the released
 /// object: the release gate then replays the head path its roster holds.
@@ -65,20 +83,31 @@ pub enum Swept {
 
 impl Swept {
     pub fn request(self, root: &Path, admitted: u64) -> PhysicalRecoveryOpenRequest {
-        crate::production_entry::certified_release_serving::recovery_request::request_narrowing(root, |declared| match self {
-            Self::ManifestEntries => declared.manifest_entries = admitted,
-            Self::ManifestBytes => declared.manifest_bytes = admitted,
-            Self::ObservationBytes => declared.observation_bytes = admitted,
-            Self::StagingBytes => declared.staging_bytes = admitted,
-        })
+        crate::production_entry::certified_release_serving::recovery_request::request_narrowing(
+            root,
+            |declared| match self {
+                Self::ManifestEntries => declared.manifest_entries = admitted,
+                Self::ManifestBytes => declared.manifest_bytes = admitted,
+                Self::ObservationBytes => declared.observation_bytes = admitted,
+                Self::StagingBytes => declared.staging_bytes = admitted,
+            },
+        )
     }
 
     pub fn dimension(self) -> PhysicalRecoveryLimitDimension {
         match self {
-            Self::ManifestEntries => worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ManifestEntries,
-            Self::ManifestBytes => worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ManifestBytes,
-            Self::ObservationBytes => worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ObservationBytes,
-            Self::StagingBytes => worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::StagingBytes,
+            Self::ManifestEntries => {
+                worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ManifestEntries
+            }
+            Self::ManifestBytes => {
+                worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ManifestBytes
+            }
+            Self::ObservationBytes => {
+                worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ObservationBytes
+            }
+            Self::StagingBytes => {
+                worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::StagingBytes
+            }
         }
     }
 }
@@ -97,10 +126,9 @@ pub fn names_damage(blocked: &PhysicalRecoveryBlock) -> bool {
         return evidence.planning_denial.is_some();
     }
     !evidence.source_denials.is_empty()
-        || evidence
-            .planning_denial
-            .as_ref()
-            .is_some_and(|denial| !crate::published_above_checkpoint::limit_sweep::named::only_a_limit(denial))
+        || evidence.planning_denial.as_ref().is_some_and(|denial| {
+            !crate::published_above_checkpoint::limit_sweep::named::only_a_limit(denial)
+        })
 }
 
 /// How this block falls short of naming the swept limit, if it does.
@@ -125,7 +153,8 @@ pub fn shortfall(blocked: &PhysicalRecoveryBlock, swept: Swept, admitted: u64) -
 
 /// Whether page admission blocked, at a limit or not.
 pub fn paged(blocked: &PhysicalRecoveryBlock) -> bool {
-    blocked.cause().phase() == worth_store_recovery_runtime::PhysicalRecoveryBlockKind::PageAdmission
+    blocked.cause().phase()
+        == worth_store_recovery_runtime::PhysicalRecoveryBlockKind::PageAdmission
 }
 
 /// What a probe that did not recover was told.
@@ -181,7 +210,9 @@ pub fn reached(
 /// the history blocked, a record elsewhere.
 pub fn byte_need(root: &Path, swept: Swept, failures: &mut Vec<String>) -> Option<u64> {
     let mut admitted = 1;
-    while admitted <= crate::production_entry::certified_release_serving::recovery_request::ADMITTED_BYTES {
+    while admitted
+        <= crate::production_entry::certified_release_serving::recovery_request::ADMITTED_BYTES
+    {
         let Some(Blocked { paged, count, .. }) = reached(root, swept, admitted, failures) else {
             return Some(admitted);
         };
@@ -206,9 +237,21 @@ pub fn assert_limits_are_reported_as_limits<W: Killed>(
 ) {
     let mut failures = Vec::new();
     let entries = entry_need(&killed, need, &mut failures);
-    let manifest = byte_need(killed().root(), crate::production_entry::published_above_checkpoint::limit_sweep::Swept::ManifestBytes, &mut failures);
-    let bytes = byte_need(killed().root(), crate::production_entry::published_above_checkpoint::limit_sweep::Swept::ObservationBytes, &mut failures);
-    let staging = byte_need(killed().root(), crate::production_entry::published_above_checkpoint::limit_sweep::Swept::StagingBytes, &mut failures);
+    let manifest = byte_need(
+        killed().root(),
+        crate::production_entry::published_above_checkpoint::limit_sweep::Swept::ManifestBytes,
+        &mut failures,
+    );
+    let bytes = byte_need(
+        killed().root(),
+        crate::production_entry::published_above_checkpoint::limit_sweep::Swept::ObservationBytes,
+        &mut failures,
+    );
+    let staging = byte_need(
+        killed().root(),
+        crate::production_entry::published_above_checkpoint::limit_sweep::Swept::StagingBytes,
+        &mut failures,
+    );
     assert!(
         failures.is_empty(),
         "{stage}: {} blocks under {entries:?} entries, {manifest:?} manifest bytes, \

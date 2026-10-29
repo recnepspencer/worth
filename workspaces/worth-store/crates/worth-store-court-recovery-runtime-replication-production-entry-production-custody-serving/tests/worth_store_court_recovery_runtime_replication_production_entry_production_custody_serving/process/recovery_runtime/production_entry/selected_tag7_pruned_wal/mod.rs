@@ -1,18 +1,37 @@
 //! A native cutover may retain tag-7 custody after its old C.9 WAL is gone.
 
-#[allow(unused_imports)] use worth_store_testkit_recovery_runtime::selected_tag7_pruned_wal::*;
+#[allow(unused_imports)]
+use worth_store_testkit_recovery_runtime::selected_tag7_pruned_wal::*;
 use {std::fs, std::num::NonZeroU64, std::path::Path};
 
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordAppendBatch};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
 fn native_cutover_prunes_old_released_wal_but_selected_tag7_reopens() {
     // The native policy is large enough for every real V3 frame, but bounded
     // so a later checkpoint can retire its fully covered old segment.
     let world =
-        super::pending_wal_world::first_with_wal_segment_bytes(std::num::NonZeroU64::new(1 << 20).unwrap());
+        worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first_with_wal_segment_bytes(std::num::NonZeroU64::new(1 << 20).unwrap());
     let outcome =
         worth_store_recovery_runtime::WorthStoreRecovery::recover(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root()));
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
@@ -38,10 +57,11 @@ fn native_cutover_prunes_old_released_wal_but_selected_tag7_reopens() {
         first_accumulator.base().tip(),
         first_batches[0].tip_provenance().unwrap()
     );
-    let first_heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
-        world.root(),
-        first_accumulator,
-    );
+    let first_heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            first_accumulator,
+        );
 
     // Only a sealed prefix can be reclaimed. Complete enough ordinary
     // publications to rotate the 1 MiB WAL segment containing the old V3;
@@ -50,9 +70,12 @@ fn native_cutover_prunes_old_released_wal_but_selected_tag7_reopens() {
 
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x9d; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("idle accumulator-only checkpoint must admit after native cutover");
     };
     assert!(matches!(
@@ -78,7 +101,10 @@ fn native_cutover_prunes_old_released_wal_but_selected_tag7_reopens() {
         first_accumulator.head_roster_digest()
     );
     let heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), idle_accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            idle_accumulator,
+        );
     assert_eq!(heads, first_heads);
     let witness = idle_accumulator.base().tip().fate();
     assert!(

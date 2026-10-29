@@ -1,8 +1,19 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::families::EXTENT_CHUNK_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::EXTENT_MANIFEST_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary};
-pub(crate) use {worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PhysicalPageSizeClass};
-pub(crate) use {worth_store_physical_integrity::validate_extent_chunk, worth_store_physical_integrity::validate_extent_manifest, worth_store_physical_integrity::ExtentChunkIntegrityValidation, worth_store_physical_integrity::ExtentManifestIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::{
+    families::EXTENT_CHUNK_INTEGRITY_DECLARATION, families::EXTENT_MANIFEST_INTEGRITY_DECLARATION,
+    PhysicalIntegrityCoverageBoundary,
+};
+pub(crate) use worth_store_physical_format::{
+    encode_extent_chunk, DurableExtentManifest, DurableExtentRecordPlacement,
+    ExtentChunkCoordinate, PhysicalPageSizeClass,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_extent_chunk, validate_extent_manifest, ExtentChunkIntegrityValidation,
+    ExtentManifestIntegrityValidation, UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::support::extent_validation::chunk_scope, crate::support::extent_validation::extent_cell, crate::support::extent_validation::format, crate::support::extent_validation::independent_crc32c, crate::support::extent_validation::manifest_scope, crate::support::extent_validation::record, crate::support::extent_validation::store};
+pub(crate) use crate::support::extent_validation::{
+    chunk_scope, extent_cell, format, independent_crc32c, manifest_scope, record, store,
+};
 
 pub(crate) const MANIFEST_CRC32C: u32 = 0x7b34181d;
 pub(crate) const CHUNK_CRC32C: u32 = 0xf2b3f843;

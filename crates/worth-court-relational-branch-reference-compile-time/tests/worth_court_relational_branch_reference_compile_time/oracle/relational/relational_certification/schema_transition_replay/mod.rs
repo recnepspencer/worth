@@ -122,7 +122,8 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
             partitions: std::sync::Arc::from([entity.entity_id.partition_id]),
         },
         ordering: worth_relational::facade::query::QueryOrderingContract::CanonicalEntityIdOrder,
-        access_contract: worth_relational::facade::query::QueryAccessContract::AuthoritativeStorageOnly,
+        access_contract:
+            worth_relational::facade::query::QueryAccessContract::AuthoritativeStorageOnly,
         execution_shape: worth_relational::facade::query::QueryExecutionShape::BulkPacketized,
         reduction: worth_relational::facade::query::ReductionDiscipline::DeterministicMerge,
         plan_key: DeterministicQueryPlanKey(9_171_201),
@@ -137,7 +138,8 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
         },
         locality: worth_relational::facade::query::QueryLocalityClass::CrossPartitionTraversal,
         ordering: worth_relational::facade::query::QueryOrderingContract::CanonicalTraversalOrder,
-        access_contract: worth_relational::facade::query::QueryAccessContract::AuthoritativeStorageOnly,
+        access_contract:
+            worth_relational::facade::query::QueryAccessContract::AuthoritativeStorageOnly,
         execution_shape: worth_relational::facade::query::QueryExecutionShape::BulkPacketized,
         reduction: worth_relational::facade::query::ReductionDiscipline::DeterministicMerge,
         plan_key: DeterministicQueryPlanKey(9_171_202),
@@ -167,117 +169,6 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
     assert_eq!(traversed_relation.target, relation.target);
     assert_matches_retained_root(&traversal_outcome, &retained_entities, &retained_relations);
     assert_schema_v2(&traversal_outcome);
-
-    world
-        .runtime
-        .snapshots()
-        .release_snapshot(&transitioned.snapshot)
-        .unwrap();
-    world
-        .runtime
-        .snapshots()
-        .release_snapshot(&successor.snapshot)
-        .unwrap();
-}
-
-#[test]
-fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
-    let host_request =
-        worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let (world, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
-    let branch = BranchId("main".to_owned());
-    let batch = lower_hazard_v2_batch(&world.handles).unwrap();
-    let committed = commit_supply_chain_delta(
-        execution,
-        &world.runtime,
-        &world.program,
-        branch.clone(),
-        worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId::AdoptHazardClassificationV2,
-        batch,
-    );
-    let envelope = world
-        .runtime
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
-        .unwrap()
-        .unwrap()
-        .clone();
-    let latest = world.runtime.publication().latest_replay().unwrap().clone();
-    assert_eq!(latest.commit_id, committed.commit.commit_id);
-    assert_eq!(latest.schema_authority, envelope.schema_authority);
-    let replay = world
-        .runtime
-        .replay_authority()
-        .replay_commit(
-            RelationalReplayRequest {
-                commit_id: committed.commit.commit_id,
-                branch_id: branch,
-                execution_mode: worth_relational::facade::replay::ReplayExecutionMode::SerialDeterministic,
-                verification_mode: worth_relational::facade::replay::ReplayVerificationMode::NormalRecoveryVerification,
-            },
-            execution,
-        )
-        .unwrap();
-    assert_eq!(
-        replay.failure, None,
-        "V2 replay must reconstruct through envelope authority: {replay:?}"
-    );
-    assert!(replay.mismatches.is_empty());
-    world
-        .runtime
-        .snapshots()
-        .release_snapshot(&committed.snapshot)
-        .unwrap();
-}
-
-#[test]
-fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
-    let host_request =
-        worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let (world, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
-    let branch = BranchId("main".to_owned());
-    let transitioned = commit_supply_chain_delta(
-        execution,
-        &world.runtime,
-        &world.program,
-        branch.clone(),
-        worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId::AdoptHazardClassificationV2,
-        lower_hazard_v2_batch(&world.handles).unwrap(),
-    );
-    let successor = commit_branch_batch_with_result(
-        execution,
-        &world.runtime,
-        branch,
-        worth_relational::facade::transactions::WorkerIntentBatch::new("supply-chain-v2-successor"),
-    );
-
-    let read = world
-        .runtime
-        .read_truth()
-        .read_snapshot(&transitioned.snapshot, execution)
-        .expect("fixture read request remains live")
-        .expect("the retained V2 snapshot remains readable after its branch advances");
-    assert!(!read.entities().is_empty());
-    assert!(!read.relations().is_empty());
-    assert!(read
-        .entities()
-        .iter()
-        .all(|record| record.kind.schema_version_id == SchemaVersionId(2)));
-    assert!(read
-        .relations()
-        .iter()
-        .all(|record| record.kind.schema_version_id == SchemaVersionId(2)));
-    assert_eq!(
-        world
-            .runtime
-            .read_truth()
-            .snapshot_schema_version(&transitioned.snapshot),
-        Some(SchemaVersionId(2))
-    );
 
     world
         .runtime

@@ -1,21 +1,36 @@
-pub(crate) use {core::num::NonZeroU64};
+pub(crate) use core::num::NonZeroU64;
 
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-pub(crate) use {worth_store_physical_format::PhysicalWorkObligationIdentity};
-pub(crate) use {worth_store_physical_integrity::validate_physical_work_obligation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalDamageLocalization, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityObservationCounters, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::store_namespace::{
+    ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+};
+pub(crate) use worth_store_physical_format::PhysicalWorkObligationIdentity;
+pub(crate) use worth_store_physical_integrity::{
+    validate_physical_work_obligation, PhysicalArtifactScope, PhysicalBlastRadius,
+    PhysicalByteRange, PhysicalDamageCause, PhysicalDamageLocalization, PhysicalFormatField,
+    PhysicalIntegrityObservationCounters, PhysicalIntegrityRejection,
+    PhysicalIntegrityRejectionClass, PhysicalWorkObligationIntegrityValidation,
+    UntrustedPhysicalArtifact,
+};
 
 pub(crate) const OBLIGATION_OFFSET: u64 = 8_192;
 
 pub(crate) fn store(bytes: [u8; 16]) -> StableStoreIdentity {
     worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(
         worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT,
-        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(bytes).unwrap(),
+        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(
+            bytes,
+        )
+        .unwrap(),
     )
     .published_identity()
 }
 
-pub(crate) fn identity(runtime: u64, generation: u64, operation: u64) -> PhysicalWorkObligationIdentity {
+pub(crate) fn identity(
+    runtime: u64,
+    generation: u64,
+    operation: u64,
+) -> PhysicalWorkObligationIdentity {
     worth_store_physical_format::PhysicalWorkObligationIdentity::new(
         core::num::NonZeroU64::new(runtime).unwrap(),
         core::num::NonZeroU64::new(generation).unwrap(),
@@ -45,10 +60,16 @@ pub(crate) fn rejection(
         worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
         scope,
     ) {
-        (worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation::Rejected(rejection), counters) => {
-            (rejection, counters)
-        }
-        (worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation::Intact(_), _) => {
+        (
+            worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation::Rejected(
+                rejection,
+            ),
+            counters,
+        ) => (rejection, counters),
+        (
+            worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation::Intact(_),
+            _,
+        ) => {
             panic!("damaged physical-work obligation unexpectedly validated")
         }
     }
@@ -65,13 +86,15 @@ pub(crate) fn assert_damage(
     let (rejection, counters) = rejection(bytes, scope);
     assert_eq!(
         rejection,
-        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(worth_store_physical_integrity::PhysicalDamageLocalization::new(
-            scope,
-            cause,
-            range,
-            field,
-            blast_radius,
-        ))
+        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(
+            worth_store_physical_integrity::PhysicalDamageLocalization::new(
+                scope,
+                cause,
+                range,
+                field,
+                blast_radius,
+            )
+        )
     );
     assert_eq!(
         counters.family(),
@@ -82,13 +105,23 @@ pub(crate) fn assert_damage(
     assert_eq!(counters.intact_frames(), 0);
     assert_eq!(counters.rejected_frames(), 1);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)
+        ),
         1
     );
 }
 
-pub(crate) fn field_range(scope: PhysicalArtifactScope, offset: u64, length: u64) -> PhysicalByteRange {
-    worth_store_physical_integrity::PhysicalByteRange::new(scope.byte_range().offset() + offset, length).unwrap()
+pub(crate) fn field_range(
+    scope: PhysicalArtifactScope,
+    offset: u64,
+    length: u64,
+) -> PhysicalByteRange {
+    worth_store_physical_integrity::PhysicalByteRange::new(
+        scope.byte_range().offset() + offset,
+        length,
+    )
+    .unwrap()
 }
 
 pub(crate) fn reseal(bytes: &mut [u8; 160]) {

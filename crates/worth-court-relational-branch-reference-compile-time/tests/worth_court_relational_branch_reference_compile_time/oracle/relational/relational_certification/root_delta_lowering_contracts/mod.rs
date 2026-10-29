@@ -2,7 +2,7 @@
 pub(crate) use {std::collections::BTreeSet, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema::BookingStatus, worth_relational::facade::history::BranchId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, crate::relational_certification::ordinary_context::root_delta_lowering_contracts::NumberPrestateCase, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::SupplyChainProductionDeltaLoweringError, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch, crate::relational_certification::ordinary_context::root_delta_lowering_contracts::fork, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, crate::relational_certification::ordinary_context::root_delta_lowering_contracts::observe_branch, crate::relational_certification::ordinary_context::root_delta_lowering_contracts::prove_number_prestate, crate::relational_certification::ordinary_context::root_delta_lowering_contracts::update_number, crate::relational_certification::ordinary_context::root_delta_lowering_contracts::update_text};
 
 #[test]
-fn phase5_lowering_reads_actual_branch_pre_state_instead_of_expected_oracle() {
+fn lowering_reads_actual_branch_pre_state_instead_of_expected_oracle() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -53,7 +53,7 @@ fn phase5_lowering_reads_actual_branch_pre_state_instead_of_expected_oracle() {
 }
 
 #[test]
-fn phase5_lowering_rejects_wrong_branch_and_duplicate_delta_preconditions() {
+fn lowering_rejects_wrong_branch_and_duplicate_delta_preconditions() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

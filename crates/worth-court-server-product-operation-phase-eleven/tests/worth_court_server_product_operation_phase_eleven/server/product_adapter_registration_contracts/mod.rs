@@ -1,68 +1,44 @@
-#[allow(unused_imports)] use crate::product_adapter_registration_contracts::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use crate::product_adapter_registration_contracts::ordinary_context::*;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {std::sync::Arc};
+use std::sync::Arc;
 
+use serde_json::json;
+use tower::ServiceExt;
 use {axum::body::to_bytes, axum::body::Body};
 use {axum::http::Method, axum::http::Request, axum::http::StatusCode};
-use {serde_json::json};
-use {tower::ServiceExt};
-use {worth_query_host::facade::domain, worth_query_host::facade::primary_graph, worth_query_host::facade::runtime};
-use {worth_query_host::facade::worth_query_application_schema, worth_query_host::facade::worth_query_aspect, worth_query_host::facade::worth_query_entity, worth_query_host::facade::worth_query_field, worth_query_host::facade::worth_query_principal_binding, worth_query_host::facade::worth_query_relation};
-use {worth_server::CompatHttpSurface, worth_server::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerBuildError, worth_server::WorthServerProductAdapterCertificationCode, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationSupportSnapshot};
+use {
+    worth_query_host::facade::domain, worth_query_host::facade::primary_graph,
+    worth_query_host::facade::runtime,
+};
+use {
+    worth_query_host::facade::worth_query_application_schema,
+    worth_query_host::facade::worth_query_aspect, worth_query_host::facade::worth_query_entity,
+    worth_query_host::facade::worth_query_field,
+    worth_query_host::facade::worth_query_principal_binding,
+    worth_query_host::facade::worth_query_relation,
+};
+use {
+    worth_server::CompatHttpSurface, worth_server::WorthNativeSurface, worth_server::WorthServer,
+    worth_server::WorthServerBuildError, worth_server::WorthServerProductAdapterCertificationCode,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerProductOperationBasisKind,
+    worth_server::WorthServerProductOperationDeclaration,
+    worth_server::WorthServerProductOperationErrorMaps,
+    worth_server::WorthServerProductOperationSupportSnapshot,
+};
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture};
+use worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture;
 
-use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::base_config, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::build_server, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::result_contract, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::EditorAdapter};
-
-worth_query_application_schema! {
-    pub schema SessionBasisSchema {
-        owner: worth_server_session_basis_test,
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(SessionExternalMapping::reference())
-                .entity(SessionPrincipal::reference())
-                .entity(SessionBasisRecord::reference())
-                .aspect(SessionExternalMapping::reference(), SessionExternalIdentity::reference())
-                .aspect(SessionPrincipal::reference(), SessionPrincipalFacts::reference())
-                .aspect(SessionBasisRecord::reference(), SessionBasisFacts::reference())
-                .field(SessionExternalMapping::reference(), SessionExternalIdentityField::reference())
-                .field(SessionExternalMapping::reference(), SessionMappingStatusField::reference())
-                .field(SessionPrincipal::reference(), SessionPrincipalIdentityField::reference())
-                .field(SessionBasisRecord::reference(), SessionBasisValue::reference())
-                .relation(
-                    SessionMappingTarget::reference(),
-                    SessionExternalMapping::reference(),
-                    SessionPrincipal::reference(),
-                )
-                .principal_binding(SessionIdentityBinding::reference())
-        }
-    }
-}
-
-worth_query_entity!(pub SessionExternalMapping for SessionBasisSchema);
-worth_query_entity!(pub SessionPrincipal for SessionBasisSchema);
-worth_query_entity!(pub SessionBasisRecord for SessionBasisSchema);
-worth_query_aspect!(pub SessionExternalIdentity for SessionBasisSchema, SessionExternalMapping; identity = AspectIdentity(0x91611101), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub SessionPrincipalFacts for SessionBasisSchema, SessionPrincipal; identity = AspectIdentity(0x91611102), revision = AspectContractRevision(1),);
-worth_query_field!(pub SessionExternalIdentityField for SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity => worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub SessionMappingStatusField for SessionBasisSchema, SessionExternalMapping, SessionExternalIdentity: worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus => worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub SessionPrincipalIdentityField for SessionBasisSchema, SessionPrincipal, SessionPrincipalFacts: u64 => worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub SessionMappingTarget in SessionBasisSchema, SessionExternalMapping => SessionPrincipal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(
-    pub SessionIdentityBinding in SessionBasisSchema,
-    mapping SessionExternalMapping {
-        identity: SessionExternalIdentityField,
-        status: SessionMappingStatusField,
-        target: SessionMappingTarget => SessionPrincipal,
-        principal_identity: SessionPrincipalIdentityField
-    }
-);
-worth_query_aspect!(pub SessionBasisFacts for SessionBasisSchema, SessionBasisRecord; identity = AspectIdentity(0x91611103), revision = AspectContractRevision(1),);
-worth_query_field!(pub SessionBasisValue for SessionBasisSchema, SessionBasisRecord, SessionBasisFacts: String => worth_query_host::facade::declaration::application_schema::StringApplicationValueBinding, read_only, equality);
+use {
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::base_config,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::build_server,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::result_contract,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::EditorAdapter,
+};
 
 #[test]
 fn product_adapter_registration_rejects_incomplete_authority_or_basis_contract() {
@@ -85,14 +61,17 @@ fn product_adapter_registration_rejects_incomplete_authority_or_basis_contract()
 
 #[test]
 fn product_adapter_registration_rejects_missing_error_map_explicitly() {
-    let result =
-        build_broken_registration_server(worth_server::WorthServerProductOperationDeclaration::product_read(
+    let result = build_broken_registration_server(
+        worth_server::WorthServerProductOperationDeclaration::product_read(
             "product_editor.render",
             "product-editor.render.v1",
             result_contract("product-editor.render.result.v1"),
             worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("render-supported"),
-        ));
+            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                "render-supported",
+            ),
+        ),
+    );
     assert_registration_code(
         result,
         worth_server::WorthServerProductAdapterCertificationCode::MissingErrorMap,
@@ -107,7 +86,9 @@ fn product_adapter_registration_rejects_blank_schema_identity_explicitly() {
             " ",
             result_contract("product-editor.render.result.v1"),
             worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("render-supported"),
+            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                "render-supported",
+            ),
         )
         .with_error_map(worth_server::WorthServerProductOperationErrorMaps::passthrough()),
     );

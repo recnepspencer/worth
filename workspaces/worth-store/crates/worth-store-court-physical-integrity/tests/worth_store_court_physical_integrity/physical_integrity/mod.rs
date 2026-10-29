@@ -8,8 +8,6 @@ pub(crate) mod checkpoint_validation;
 pub(crate) mod extent_validation;
 #[path = "free_space_validation/mod.rs"]
 pub(crate) mod free_space_validation;
-#[path = "integrity_ui/mod.rs"]
-pub(crate) mod integrity_ui;
 #[path = "page_validation/mod.rs"]
 pub(crate) mod page_validation;
 #[path = "physical_artifact_scope_contract/mod.rs"]

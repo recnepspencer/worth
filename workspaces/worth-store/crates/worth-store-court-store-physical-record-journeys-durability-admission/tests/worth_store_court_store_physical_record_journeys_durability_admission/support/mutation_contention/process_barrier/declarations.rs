@@ -1,10 +1,11 @@
+pub(crate) use std::path::Path;
+pub(crate) use std::time::Duration;
 pub(crate) use {std::io::BufRead, std::io::Write};
-pub(crate) use {std::path::Path};
 pub(crate) use {std::process::Child, std::process::ChildStdin, std::process::Stdio};
 pub(crate) use {std::sync::mpsc, std::sync::mpsc::Receiver};
-pub(crate) use {std::time::Duration};
 
-pub(crate) const CHILD_TEST: &str = "child_dispatch::journey_child_role";
+pub(crate) const CHILD_TEST: &str =
+    "process::store::physical_media_journeys::child_dispatch::journey_child_role";
 pub(crate) const EVENT_PREFIX: &str = "C4_EVENT ";
 
 pub(crate) struct Contender {

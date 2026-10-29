@@ -1,5 +1,5 @@
 error[E0599]: no method named `clone` found for struct `PhysicalDurabilityRecoveryHandoff` in the current scope
- --> tests/physical_runtime_authority/c8_recovery_handoff_is_linear.rs:4:21
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_handoff_is_linear.rs:4:21
   |
 4 |     let _ = handoff.clone();
   |                     ^^^^^ method not found in `PhysicalDurabilityRecoveryHandoff`

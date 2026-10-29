@@ -1,22 +1,35 @@
-
-
-#[allow(unused_imports)] use crate::phase_five_staging::*;
+#[allow(unused_imports)]
+use crate::phase_five_staging::*;
 use {std::path::Path, std::path::PathBuf};
 use {std::process::Command, std::process::Output};
 
-use {worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-use {worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_runtime::PhysicalRecoveryLimits};
-use {worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use worth_proof::TransitionOutcome;
+use worth_store_physical_format::RecordArtifactFile;
+use worth_store_recovery_runtime::PhysicalRecoveryLimits;
+use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+use {
+    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+use {
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+};
 
 #[test]
 fn ordinary_store_state_crosses_process_death_into_closed_convergent_staging() {
     let parent = tempfile::tempdir().expect("process-boundary parent");
     let marker = parent.path().join("persisted-root");
     assert_child_succeeded("writer", &run_child(WRITER_TEST, &marker, parent.path()));
-    let root = std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
+    let root =
+        std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
     assert_child_succeeded("stager", &run_child(STAGER_TEST, &root, parent.path()));
     assert_child_succeeded(
         "convergence",
@@ -71,14 +84,15 @@ fn conflicting_noncurrent_artifact_blocks_without_counterfeit_performed_evidence
 
 #[test]
 #[ignore = "launched by the process-boundary parent"]
-fn phase_five_writer_process() {
+fn staging_writer_process() {
     let marker = required_child_path();
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery("c8-phase5-process").unwrap();
     let retained_root = world.retained_root();
     canonical_physical_mutation_acknowledgment(&world, [0x51; 32], b"ordinary-c8-stage");
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x52; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -98,7 +112,7 @@ fn phase_five_writer_process() {
 
 #[test]
 #[ignore = "launched by the process-boundary parent"]
-fn phase_five_stager_process() {
+fn stager_process() {
     let root = required_child_path();
     let current_selector =
         std::fs::read(root.join("families/records/root-current.selector")).unwrap();
@@ -166,7 +180,7 @@ fn phase_five_stager_process() {
 
 #[test]
 #[ignore = "launched by the process-boundary parent"]
-fn phase_five_convergence_process() {
+fn staging_convergence_process() {
     let root = required_child_path();
     let planned = plan(&root);
     let expected_bytes: u64 = planned

@@ -1,23 +1,26 @@
-#[allow(unused_imports)] use crate::root_protocol_adversarial::*;
-use {std::fs};
-
-use {worth_foundational::PhysicalIntegrityPosture};
-use {worth_store_offline_integrity_observer::observe_store, worth_store_offline_integrity_observer::OfflineArtifactObservation, worth_store_offline_integrity_observer::OfflineIntegrityOutcome, worth_store_offline_integrity_observer::OfflinePhysicalDamageCause, worth_store_offline_integrity_observer::OfflinePhysicalFormatField, worth_store_offline_integrity_observer::OfflineUnknownPhysicalReason};
-
-use {crate::store_offline_integrity_observer_support::artifact_path, crate::support::fixtures::clean_store, crate::support::fixtures::current_selector_bytes, crate::store_offline_integrity_observer_support::request, crate::store_offline_integrity_observer_support::Target};
+#[allow(unused_imports)]
+use crate::root_protocol_adversarial::*;
+use crate::support::checksum::refresh_crc32c;
 
 #[test]
 fn checksum_invalid_root_cannot_forge_duplicate_identity() {
     let fixture = clean_store("forged-root-duplicate");
-    let mut forged = std::fs::read(artifact_path(&fixture, crate::store_offline_integrity_observer_support::Target::Root)).unwrap();
+    let mut forged = std::fs::read(artifact_path(
+        &fixture,
+        crate::store_offline_integrity_observer_support::Target::Root,
+    ))
+    .unwrap();
     forged[44] ^= 1;
     std::fs::write(fixture.roots.join("root-0000000000000002.manifest"), forged).unwrap();
     let report = observe_store(&request(&fixture)).unwrap();
     assert_eq!(report.counters().duplicate_identities(), 0);
     assert_eq!(
-        target_observation(&report, crate::store_offline_integrity_observer_support::Target::Root)
-            .outcome()
-            .posture(),
+        target_observation(
+            &report,
+            crate::store_offline_integrity_observer_support::Target::Root
+        )
+        .outcome()
+        .posture(),
         worth_foundational::PhysicalIntegrityPosture::Intact
     );
     assert!(report.artifacts().iter().all(|artifact| {
@@ -34,7 +37,9 @@ fn checksum_invalid_root_cannot_forge_duplicate_identity() {
             artifact.relative_path() == "families/records/roots/root-0000000000000002.manifest"
         })
         .expect("forged candidate remains visible");
-    let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) = forged.outcome() else {
+    let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) =
+        forged.outcome()
+    else {
         panic!("forged candidate must retain checksum damage");
     };
     assert_eq!(
@@ -62,7 +67,9 @@ fn damaged_noncanonical_selector_candidate_remains_visible() {
         .iter()
         .find(|artifact| artifact.relative_path() == relative)
         .expect("recognized candidate remains visible");
-    let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) = observation.outcome() else {
+    let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) =
+        observation.outcome()
+    else {
         panic!("candidate must retain checksum damage");
     };
     assert_eq!(
@@ -87,7 +94,11 @@ fn foreign_store_candidate_cannot_poison_canonical_duplicate_identity() {
     let report = observe_store(&request(&fixture)).unwrap();
     assert_eq!(report.counters().duplicate_identities(), 0);
     assert_eq!(
-        target_observation(&report, crate::store_offline_integrity_observer_support::Target::Current).outcome(),
+        target_observation(
+            &report,
+            crate::store_offline_integrity_observer_support::Target::Current
+        )
+        .outcome(),
         &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Intact
     );
     let foreign = report
@@ -99,7 +110,9 @@ fn foreign_store_candidate_cannot_poison_canonical_duplicate_identity() {
                 .ends_with("0000000000000002.candidate")
         })
         .unwrap();
-    let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) = foreign.outcome() else {
+    let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) =
+        foreign.outcome()
+    else {
         panic!("foreign candidate must be scoped out");
     };
     assert_eq!(
@@ -115,7 +128,11 @@ fn foreign_store_candidate_cannot_poison_canonical_duplicate_identity() {
 #[test]
 fn checksum_valid_unaddressed_root_is_unknown_and_not_a_duplicate() {
     let fixture = clean_store("unaddressed-root");
-    let mut bytes = std::fs::read(artifact_path(&fixture, crate::store_offline_integrity_observer_support::Target::Root)).unwrap();
+    let mut bytes = std::fs::read(artifact_path(
+        &fixture,
+        crate::store_offline_integrity_observer_support::Target::Root,
+    ))
+    .unwrap();
     bytes[28..36].copy_from_slice(&2_u64.to_le_bytes());
     bytes[48..56].copy_from_slice(&2_u64.to_le_bytes());
     refresh_crc32c(&mut bytes);
@@ -129,12 +146,18 @@ fn checksum_valid_unaddressed_root_is_unknown_and_not_a_duplicate() {
         .unwrap();
     assert_eq!(
         candidate.outcome(),
-        &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unknown(worth_store_offline_integrity_observer::OfflineUnknownPhysicalReason::RootNotAddressed)
+        &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Unknown(
+            worth_store_offline_integrity_observer::OfflineUnknownPhysicalReason::RootNotAddressed
+        )
     );
     assert!(candidate.duplicates().is_empty());
     assert_eq!(report.counters().duplicate_identities(), 0);
     assert_eq!(
-        target_observation(&report, crate::store_offline_integrity_observer_support::Target::Root).outcome(),
+        target_observation(
+            &report,
+            crate::store_offline_integrity_observer_support::Target::Root
+        )
+        .outcome(),
         &worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Intact
     );
 }
@@ -142,14 +165,21 @@ fn checksum_valid_unaddressed_root_is_unknown_and_not_a_duplicate() {
 #[test]
 fn selector_issued_format_must_match_the_addressed_root() {
     let fixture = clean_store("root-format-scope");
-    let path = artifact_path(&fixture, crate::store_offline_integrity_observer_support::Target::Root);
+    let path = artifact_path(
+        &fixture,
+        crate::store_offline_integrity_observer_support::Target::Root,
+    );
     let mut bytes = std::fs::read(&path).unwrap();
     bytes[12..16].copy_from_slice(&32_768_u32.to_le_bytes());
     refresh_crc32c(&mut bytes);
     std::fs::write(path, bytes).unwrap();
     let report = observe_store(&request(&fixture)).unwrap();
     let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) =
-        target_observation(&report, crate::store_offline_integrity_observer_support::Target::Root).outcome()
+        target_observation(
+            &report,
+            crate::store_offline_integrity_observer_support::Target::Root,
+        )
+        .outcome()
     else {
         panic!("format-substituted addressed root must be damaged");
     };
@@ -183,7 +213,9 @@ fn candidate_format_must_match_its_canonical_role_before_duplicate_classificatio
         .iter()
         .find(|artifact| artifact.relative_path() == relative)
         .unwrap();
-    let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) = candidate.outcome() else {
+    let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) =
+        candidate.outcome()
+    else {
         panic!("foreign-format candidate must be scoped out");
     };
     assert_eq!(
@@ -201,18 +233,28 @@ fn candidate_format_must_match_its_canonical_role_before_duplicate_classificatio
 #[test]
 fn empty_manifest_cannot_smuggle_a_segment_root() {
     let fixture = clean_store("empty-segment-root");
-    let path = artifact_path(&fixture, crate::store_offline_integrity_observer_support::Target::Root);
+    let path = artifact_path(
+        &fixture,
+        crate::store_offline_integrity_observer_support::Target::Root,
+    );
     let mut bytes = std::fs::read(&path).unwrap();
     bytes[208] = 1;
     refresh_crc32c(&mut bytes);
     std::fs::write(path, bytes).unwrap();
     let report = observe_store(&request(&fixture)).unwrap();
     let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) =
-        target_observation(&report, crate::store_offline_integrity_observer_support::Target::Root).outcome()
+        target_observation(
+            &report,
+            crate::store_offline_integrity_observer_support::Target::Root,
+        )
+        .outcome()
     else {
         panic!("empty segment root must be damaged");
     };
-    assert_eq!(localization.cause(), worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::Pointer);
+    assert_eq!(
+        localization.cause(),
+        worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::Pointer
+    );
     assert_eq!(
         localization
             .damaged_range()
@@ -224,7 +266,10 @@ fn empty_manifest_cannot_smuggle_a_segment_root() {
 #[test]
 fn checksum_valid_selector_link_must_match_the_other_slot() {
     let fixture = clean_store("selector-link-scope");
-    let path = artifact_path(&fixture, crate::store_offline_integrity_observer_support::Target::Current);
+    let path = artifact_path(
+        &fixture,
+        crate::store_offline_integrity_observer_support::Target::Current,
+    );
     let mut bytes = std::fs::read(&path).unwrap();
     bytes[73..81].copy_from_slice(&12_u64.to_le_bytes());
     bytes[81..89].copy_from_slice(&2_u64.to_le_bytes());
@@ -232,11 +277,18 @@ fn checksum_valid_selector_link_must_match_the_other_slot() {
     std::fs::write(path, bytes).unwrap();
     let report = observe_store(&request(&fixture)).unwrap();
     let worth_store_offline_integrity_observer::OfflineIntegrityOutcome::Damaged(localization) =
-        target_observation(&report, crate::store_offline_integrity_observer_support::Target::Current).outcome()
+        target_observation(
+            &report,
+            crate::store_offline_integrity_observer_support::Target::Current,
+        )
+        .outcome()
     else {
         panic!("mismatched selector link must be damaged");
     };
-    assert_eq!(localization.cause(), worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::Pointer);
+    assert_eq!(
+        localization.cause(),
+        worth_store_offline_integrity_observer::OfflinePhysicalDamageCause::Pointer
+    );
     assert_eq!(
         localization.field(),
         Some(worth_store_offline_integrity_observer::OfflinePhysicalFormatField::LinkedSelector)

@@ -1,8 +1,11 @@
-use {worth_store_physical_format::CHECKPOINT_BINDING_RECORD_PREFIX_BYTES};
-use {worth_store_physical_integrity::project_checkpoint_binding_frame_length, worth_store_physical_integrity::validate_checkpoint_footer_envelope, worth_store_physical_integrity::CheckpointFooterEnvelopeIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+use worth_store_physical_format::CHECKPOINT_BINDING_RECORD_PREFIX_BYTES;
+use worth_store_physical_integrity::{
+    project_checkpoint_binding_frame_length, validate_checkpoint_footer_envelope,
+    CheckpointFooterEnvelopeIntegrityValidation, UntrustedPhysicalArtifact,
+};
 
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::FOOTER};
-use {crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::identity};
+use crate::checkpoint_validation::support::{binding_scope, footer_scope, identity};
+use crate::literal_vectors::checkpoint_validation::{BINDING, FOOTER};
 
 #[test]
 fn footer_envelope_routes_only_after_exact_record_admission() {
@@ -12,7 +15,10 @@ fn footer_envelope_routes_only_after_exact_record_admission() {
         scope,
     )
     .0;
-    let worth_store_physical_integrity::CheckpointFooterEnvelopeIntegrityValidation::Intact(validated) = validation else {
+    let worth_store_physical_integrity::CheckpointFooterEnvelopeIntegrityValidation::Intact(
+        validated,
+    ) = validation
+    else {
         panic!("canonical footer envelope was rejected");
     };
     let projection = validated.routing_projection();

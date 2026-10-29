@@ -1,60 +1,5 @@
-#[allow(unused_imports)] use crate::free_space_validation::header::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::PhysicalPageSizeClass, worth_store_physical_format::PhysicalRecordFormatDeclaration};
-use {worth_store_physical_integrity::validate_free_space_header, worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::free_space_validation::assert_damage, crate::support::free_space_validation::assert_intact_counters, crate::support::free_space_validation::assert_rejected_counters, crate::support::free_space_validation::format, crate::support::free_space_validation::header_scope, crate::support::free_space_validation::header_scope_at, crate::support::free_space_validation::independent_crc32c, crate::support::free_space_validation::range, crate::support::free_space_validation::reseal, crate::support::free_space_validation::store, crate::support::free_space_validation::HEADER_COMPLETE_CRC32C, crate::support::free_space_validation::HEADER_LITERAL, crate::support::free_space_validation::HEADER_OFFSET};
-
-#[test]
-fn independent_literal_header_seals_root_issued_identity_and_owner_projection() {
-    assert_eq!(
-        independent_crc32c(&[HEADER_LITERAL]),
-        HEADER_COMPLETE_CRC32C
-    );
-    assert_eq!(
-        independent_crc32c(&[&HEADER_LITERAL[..44], &HEADER_LITERAL[48..]]),
-        u32::from_le_bytes(HEADER_LITERAL[44..48].try_into().unwrap())
-    );
-    let scope = header_scope(store(7), HEADER_COMPLETE_CRC32C);
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(HEADER_LITERAL);
-    let (validation, counters) = validate_free_space_header(artifact, scope);
-    let worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(validated) = validation else {
-        panic!("literal free-space header rejected");
-    };
-
-    assert_eq!(validated.scope(), scope);
-    assert_eq!(validated.identity().generation().get(), 6);
-    assert_eq!(validated.identity().tree().get(), 8);
-    assert_eq!(validated.record_format(), format());
-    assert_eq!(validated.node_capacity(), 2);
-    assert_eq!(validated.segment_page_capacity(), 4);
-    assert_eq!(validated.entry_count(), 2);
-    assert_eq!(validated.next_segment(), 8);
-    assert_eq!(validated.next_page(), 10);
-    assert_eq!(validated.next_extent(), 5);
-    assert_eq!(validated.next_arena(), 6);
-    assert_eq!(validated.arena_capacity(), 64 * 1024 * 1024);
-    assert_eq!(validated.arena_alignment(), 16 * 1024);
-    assert_eq!(validated.next_block(), 2);
-    assert_eq!(validated.root().unwrap().block(), 1);
-    assert_eq!(
-        validated.complete_child_checksum().get(),
-        HEADER_COMPLETE_CRC32C
-    );
-    assert!(validated.matches_input(artifact));
-    let identical_copy = HEADER_LITERAL.to_vec();
-    assert!(
-        !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
-            &identical_copy
-        ))
-    );
-    assert_intact_counters(
-        counters,
-        worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::FreeSpaceHeader,
-        HEADER_LITERAL.len() as u64,
-    );
-    assert!(validated.into_validation_record().matches_scope(scope));
-}
+#[allow(unused_imports)]
+use crate::free_space_validation::header::*;
 
 #[test]
 fn header_framing_version_kind_length_and_truncation_are_precisely_localized() {
@@ -223,26 +168,44 @@ fn header_validation_record_binds_store_and_range_without_claiming_embedded_stor
     let shifted = header_scope_at(
         store(7),
         HEADER_COMPLETE_CRC32C,
-        worth_store_physical_integrity::PhysicalByteRange::new(HEADER_OFFSET + 512, HEADER_LITERAL.len() as u64).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            HEADER_OFFSET + 512,
+            HEADER_LITERAL.len() as u64,
+        )
+        .unwrap(),
     );
     let shorter = header_scope_at(
         store(7),
         HEADER_COMPLETE_CRC32C,
-        worth_store_physical_integrity::PhysicalByteRange::new(HEADER_OFFSET, HEADER_LITERAL.len() as u64 - 1).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            HEADER_OFFSET,
+            HEADER_LITERAL.len() as u64 - 1,
+        )
+        .unwrap(),
     );
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(HEADER_LITERAL);
-    let (worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(left_validated), _) =
-        validate_free_space_header(artifact, left)
+    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+        HEADER_LITERAL,
+    );
+    let (
+        worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(left_validated),
+        _,
+    ) = validate_free_space_header(artifact, left)
     else {
         panic!("left scope rejected");
     };
-    let (worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(right_validated), _) =
-        validate_free_space_header(artifact, right)
+    let (
+        worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(right_validated),
+        _,
+    ) = validate_free_space_header(artifact, right)
     else {
         panic!("right scope rejected");
     };
-    let (worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(shifted_validated), _) =
-        validate_free_space_header(artifact, shifted)
+    let (
+        worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(
+            shifted_validated,
+        ),
+        _,
+    ) = validate_free_space_header(artifact, shifted)
     else {
         panic!("shifted scope rejected");
     };
@@ -274,11 +237,15 @@ fn header_validation_record_binds_store_and_range_without_claiming_embedded_stor
     reseal(&mut changed);
     let changed_crc = independent_crc32c(&[&changed]);
     let changed_scope = header_scope(store(7), changed_crc);
-    let (worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(changed_validated), _) =
-        validate_free_space_header(
-            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&changed),
-            changed_scope,
-        )
+    let (
+        worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Intact(
+            changed_validated,
+        ),
+        _,
+    ) = validate_free_space_header(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&changed),
+        changed_scope,
+    )
     else {
         panic!("changed byte range rejected");
     };

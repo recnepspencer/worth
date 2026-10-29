@@ -1,10 +1,14 @@
-pub use {std::alloc::System};
-pub use {std::sync::atomic::AtomicBool, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
-pub use {std::sync::Arc};
+pub use std::alloc::System;
+pub use std::sync::Arc;
+pub use {
+    std::sync::atomic::AtomicBool, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+};
 
-pub use {stats_alloc::Region, stats_alloc::Stats, stats_alloc::StatsAlloc, stats_alloc::INSTRUMENTED_SYSTEM};
+pub use {
+    stats_alloc::Region, stats_alloc::Stats, stats_alloc::StatsAlloc,
+    stats_alloc::INSTRUMENTED_SYSTEM,
+};
 
-#[global_allocator]
 pub static ALLOCATOR: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;
 
 pub fn allocations_during<T>(operation: impl FnOnce() -> T) -> (T, Stats) {
@@ -21,18 +25,28 @@ pub fn peak_live_bytes_during<T>(operation: impl FnOnce() -> T) -> (T, usize) {
     let sampler_peak = std::sync::Arc::clone(&peak);
     let sampler = std::thread::spawn(move || {
         while sampler_running.load(std::sync::atomic::Ordering::Acquire) {
-            sampler_peak.fetch_max(live_bytes(ALLOCATOR.stats()), std::sync::atomic::Ordering::AcqRel);
+            sampler_peak.fetch_max(
+                live_bytes(ALLOCATOR.stats()),
+                std::sync::atomic::Ordering::AcqRel,
+            );
             std::thread::yield_now();
         }
-        sampler_peak.fetch_max(live_bytes(ALLOCATOR.stats()), std::sync::atomic::Ordering::AcqRel);
+        sampler_peak.fetch_max(
+            live_bytes(ALLOCATOR.stats()),
+            std::sync::atomic::Ordering::AcqRel,
+        );
     });
     let result = operation();
-    peak.fetch_max(live_bytes(ALLOCATOR.stats()), std::sync::atomic::Ordering::AcqRel);
+    peak.fetch_max(
+        live_bytes(ALLOCATOR.stats()),
+        std::sync::atomic::Ordering::AcqRel,
+    );
     running.store(false, std::sync::atomic::Ordering::Release);
     sampler.join().unwrap();
     (
         result,
-        peak.load(std::sync::atomic::Ordering::Acquire).saturating_sub(baseline),
+        peak.load(std::sync::atomic::Ordering::Acquire)
+            .saturating_sub(baseline),
     )
 }
 

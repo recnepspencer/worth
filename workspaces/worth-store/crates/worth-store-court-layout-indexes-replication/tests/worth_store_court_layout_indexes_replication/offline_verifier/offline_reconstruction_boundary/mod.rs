@@ -1,9 +1,9 @@
-use {sha2::Digest};
-use {std::path::Path};
+use sha2::Digest;
+use std::path::Path;
 
 #[test]
 fn physical_format_has_no_offline_walk_or_reconstruction_exports() {
-    let format = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store-offline-verifier")).join("../worth-store-physical-format/src");
+    let format = Path::new(env!("CARGO_MANIFEST_DIR")).join("../worth-store-physical-format/src");
     for name in ["mod.rs", "bounded_decode.rs", "structural_observation.rs"] {
         assert!(
             !format.join("offline_walk").join(name).exists(),
@@ -29,7 +29,11 @@ fn physical_format_has_no_offline_walk_or_reconstruction_exports() {
 
 #[test]
 fn structural_observation_is_owned_by_verifier_without_validation_authority() {
-    use {worth_store_offline_verifier::classify_offline_artifact_family, worth_store_offline_verifier::observe_bounded_physical_bytes, worth_store_offline_verifier::OfflinePhysicalArtifactFamily};
+    use {
+        worth_store_offline_verifier::classify_offline_artifact_family,
+        worth_store_offline_verifier::observe_bounded_physical_bytes,
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily,
+    };
     let family = classify_offline_artifact_family("arbitrary.page");
     assert_eq!(family, OfflinePhysicalArtifactFamily::Page);
     let bytes = b"not a physical page";

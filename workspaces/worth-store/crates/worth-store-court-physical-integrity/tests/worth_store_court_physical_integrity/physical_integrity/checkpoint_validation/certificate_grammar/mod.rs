@@ -1,13 +1,5 @@
-#[allow(unused_imports)] use crate::checkpoint_validation::certificate_grammar::*;
-use {worth_store_physical_format::encode_checkpoint_certificate, worth_store_physical_format::CheckpointCertificateKind, worth_store_physical_format::CheckpointSelectiveRecordAggregate, worth_store_physical_format::OriginalDropReservationRequestV1, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::ReleaseCheckpointAccumulatorV1, worth_store_physical_format::ReleaseCheckpointAccumulatorV2, worth_store_physical_format::ReleaseCheckpointBatchV1, worth_store_physical_format::ReleaseCheckpointNoReleaseV1, worth_store_physical_format::ReleasedDropWalFateWitnessV1};
-use {worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-use {crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_header, crate::checkpoint_validation::support::FOOTER_OFFSET};
-
-
-
-
+#[allow(unused_imports)]
+use crate::checkpoint_validation::certificate_grammar::*;
 
 #[test]
 fn encoded_no_release_footer_is_admitted() {
@@ -74,8 +66,12 @@ fn well_framed_no_release_cannot_mix_with_batch_or_accumulator() {
         [3; 32],
         record(5),
         [4; 32],
-        worth_store_physical_format::OriginalDropReservationRequestV1::new([5; 32], [6; 32], 10, 20).unwrap(),
-        worth_store_physical_format::ReleasedDropWalFateWitnessV1::new(100, 110, [7; 32], [8; 32]).unwrap(),
+        worth_store_physical_format::OriginalDropReservationRequestV1::new(
+            [5; 32], [6; 32], 10, 20,
+        )
+        .unwrap(),
+        worth_store_physical_format::ReleasedDropWalFateWitnessV1::new(100, 110, [7; 32], [8; 32])
+            .unwrap(),
         12,
         [9; 32],
         None,

@@ -1,8 +1,6 @@
-#[allow(unused_imports)] use crate::record_truncation::*;
-use {crate::phase_4_literal_vectors::bootstrap_catalog, crate::phase_4_literal_vectors::routing_block};
-use {crate::support::fixtures::clean_store, crate::support::fixtures::StoreFixture};
-use {serde_json::json, serde_json::Value};
-use {std::fs, std::path::Path, std::process::Command};
+#[allow(unused_imports)]
+use crate::record_truncation::*;
+use crate::support::checksum::refresh_crc32c;
 
 #[test]
 fn binary_bootstrap_alias_is_not_reinterpreted_as_another_family() {

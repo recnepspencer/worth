@@ -1,23 +1,23 @@
 error[E0277]: the trait bound `RootPublicationPlanningMembers: Clone` is not satisfied
- --> tests/physical_runtime_authority/root_publication_plans_are_linear.rs:6:21
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/root_publication_plans_are_linear.rs:6:21
   |
 6 |     require_clone::<RootPublicationPlanningMembers>();
   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `RootPublicationPlanningMembers`
   |
 note: required by a bound in `require_clone`
- --> tests/physical_runtime_authority/root_publication_plans_are_linear.rs:3:21
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/root_publication_plans_are_linear.rs:3:21
   |
 3 | fn require_clone<T: Clone>() {}
   |                     ^^^^^ required by this bound in `require_clone`
 
 error[E0277]: the trait bound `RootPublicationCandidatePlan: Clone` is not satisfied
- --> tests/physical_runtime_authority/root_publication_plans_are_linear.rs:7:21
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/root_publication_plans_are_linear.rs:7:21
   |
 7 |     require_clone::<RootPublicationCandidatePlan>();
   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `RootPublicationCandidatePlan`
   |
 note: required by a bound in `require_clone`
- --> tests/physical_runtime_authority/root_publication_plans_are_linear.rs:3:21
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/root_publication_plans_are_linear.rs:3:21
   |
 3 | fn require_clone<T: Clone>() {}
   |                     ^^^^^ required by this bound in `require_clone`

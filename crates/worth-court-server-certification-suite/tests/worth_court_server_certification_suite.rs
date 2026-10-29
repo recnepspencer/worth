@@ -7,6 +7,10 @@ pub(crate) mod compat_http_phase_eleven;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_server_certification_suite/support/compat_http_phase_thirteen_boundary/mod.rs"]
 pub(crate) mod compat_http_phase_thirteen_boundary;
+#[path = "worth_court_server_certification_suite/compile_fail/mod.rs"]
+pub(crate) mod compile_fail;
+#[path = "worth_court_server_certification_suite/server/mod.rs"]
+pub(crate) mod server;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_server_certification_suite/support/shared_support_compat_http_phase_thirteen_assertions/mod.rs"]
 pub(crate) mod shared_support_compat_http_phase_thirteen_assertions;
@@ -19,9 +23,3 @@ pub(crate) mod shared_support_compat_http_phase_thirteen_runtime;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_server_certification_suite/support/worth_native_facade_entry/mod.rs"]
 pub(crate) mod worth_native_facade_entry;
-#[path = "worth_court_server_certification_suite/compile_fail/mod.rs"]
-pub(crate) mod compile_fail;
-#[path = "worth_court_server_certification_suite/oracle/mod.rs"]
-pub(crate) mod oracle;
-#[path = "worth_court_server_certification_suite/server/mod.rs"]
-pub(crate) mod server;

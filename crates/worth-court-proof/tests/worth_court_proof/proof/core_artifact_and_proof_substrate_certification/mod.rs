@@ -1,14 +1,19 @@
 #[allow(unused_imports)]
-use {crate::shared_support as support};
+use crate::shared_support as support;
 
-use {std::any::type_name};
+use std::any::type_name;
 
-use {crate::shared_support::core_artifact};
-use {crate::shared_support::type_shapes::type_shape::TypeShapeCheck};
-use {worth_proof::Artifact, worth_proof::ArtifactParts, worth_proof::ArtifactView, worth_proof::AssumptionBasis, worth_proof::CanonicalOrder, worth_proof::CanonicalVec, worth_proof::DisjointPair, worth_proof::NoAssumptionBasis, worth_proof::NoProofs, worth_proof::Proof, worth_proof::StructuralProofAuthority, worth_proof::UniqueVec};
+use crate::shared_support::core_artifact;
+use crate::shared_support::type_shapes::type_shape::TypeShapeCheck;
+use {
+    worth_proof::Artifact, worth_proof::ArtifactParts, worth_proof::ArtifactView,
+    worth_proof::AssumptionBasis, worth_proof::CanonicalOrder, worth_proof::CanonicalVec,
+    worth_proof::DisjointPair, worth_proof::NoAssumptionBasis, worth_proof::NoProofs,
+    worth_proof::Proof, worth_proof::StructuralProofAuthority, worth_proof::UniqueVec,
+};
 
 #[test]
-fn milestone_1_evidence_bundle_is_machine_checkable() {
+fn evidence_bundle_is_machine_checkable() {
     let type_shape_report = crate::shared_support::core_artifact::derive_type_shape_report();
     let compile_fail_bundle = crate::shared_support::core_artifact::compile_fail_bundle();
     let proof_shape_digest = crate::shared_support::core_artifact::proof_shape_digest();
@@ -84,7 +89,14 @@ fn milestone_1_evidence_bundle_is_machine_checkable() {
     assert_eq!(
         proof_shape_digest.entries(),
         [
-            type_name::<Artifact<crate::shared_support::core_artifact::representatives::RawPhase, u64, NoProofs, NoAssumptionBasis>>(),
+            type_name::<
+                Artifact<
+                    crate::shared_support::core_artifact::representatives::RawPhase,
+                    u64,
+                    NoProofs,
+                    NoAssumptionBasis,
+                >,
+            >(),
             type_name::<
                 Artifact<
                     crate::shared_support::core_artifact::representatives::RawPhase,

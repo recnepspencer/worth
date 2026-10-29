@@ -2,7 +2,7 @@
 pub(crate) use {std::collections::BTreeSet, worth_relational::facade::history::BranchId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_relational::facade::inspection::RelationalBranchSharingCostCounters, worth_relational::facade::inspection::RelationalMvccCostScope, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, crate::relational_certification::ordinary_context::root_branch_isolation::advance_main_aurora_status, crate::relational_certification::ordinary_context::root_branch_isolation::assert_child_explicit_query_uses_snapshot_root, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, crate::relational_certification::ordinary_context::root_branch_isolation::branch_identity, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison::compare, worth_testkit_relational::relational_certification::ordinary_context::invariant_oracle_expectations::expected_supply_chain_branch, crate::relational_certification::ordinary_context::root_branch_isolation::fork_from_main, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, crate::relational_certification::ordinary_context::root_branch_isolation::observe_branch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::observation::observe_snapshot as observe_supply_chain_snapshot, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::snapshot_for_supply_chain_identity};
 
 #[test]
-fn phase5_named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
+fn named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
     let host_request =
         worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -36,7 +36,12 @@ fn phase5_named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
             .iter()
             .filter(|(candidate, _, _)| *candidate != branch)
             .map(|(candidate, _, _)| branch_identity(&world.runtime, candidate))
-            .map(|identity| worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![identity]))
+            .map(|identity| {
+                worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+                    &world.runtime,
+                    vec![identity],
+                )
+            })
             .collect::<Vec<_>>();
         let batch = lower_supply_chain_production_delta(
             execution,
@@ -65,7 +70,8 @@ fn phase5_named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
             let cost = world.runtime.observe_mvcc_cost(scope).unwrap();
             assert_eq!(
                 cost.sharing_cost_delta(),
-                worth_relational::facade::inspection::RelationalBranchSharingCostCounters::default(),
+                worth_relational::facade::inspection::RelationalBranchSharingCostCounters::default(
+                ),
                 "a selected-branch write must perform zero storage work on each sibling"
             );
         }

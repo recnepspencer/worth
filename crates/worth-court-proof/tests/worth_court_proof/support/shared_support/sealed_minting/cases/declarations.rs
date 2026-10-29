@@ -1,7 +1,10 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {crate::shared_support::compile_fail::bundle::CompileFailBundle, crate::shared_support::compile_fail::bundle::CompileFailCase};
+pub(crate) use {
+    crate::shared_support::compile_fail::bundle::CompileFailBundle,
+    crate::shared_support::compile_fail::bundle::CompileFailCase,
+};
 
 pub(crate) const SUITE: &str = "sealed_minting_and_witness_authority";
 
@@ -125,17 +128,31 @@ pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
         SUITE,
         CASES
             .iter()
-            .map(|case| crate::shared_support::compile_fail::bundle::CompileFailCase::new(case.family(), case.path()))
+            .map(|case| {
+                crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+                    case.family(),
+                    case.path(),
+                )
+            })
             .collect(),
     )
 }
 
 pub(crate) fn assert_fixture_completeness() {
-    let root = std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-proof"));
-    let discovered = fixture_paths(&root.join(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting")), &root);
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let discovered = fixture_paths(
+        &root.join("tests/worth_court_proof/sources/worth_proof/ui/sealed_minting"),
+        &root,
+    );
     let catalog = CASES
         .iter()
-        .map(|case| case.path().replace('\\', "/"))
+        .map(|case| {
+            Path::new(case.path())
+                .strip_prefix(&root)
+                .expect("fixture belongs to worth-court-proof")
+                .to_string_lossy()
+                .replace('\\', "/")
+        })
         .collect::<BTreeSet<_>>();
     assert_eq!(discovered, catalog, "sealed-minting fixture catalog drift");
 }
@@ -151,7 +168,7 @@ pub(crate) fn fixture_paths(ui_root: &Path, crate_root: &Path) -> BTreeSet<Strin
             } else if path.extension().and_then(|value| value.to_str()) == Some("rs") {
                 discovered.insert(
                     path.strip_prefix(crate_root)
-                        .expect("fixture belongs to worth-proof")
+                        .expect("fixture belongs to worth-court-proof")
                         .to_string_lossy()
                         .replace('\\', "/"),
                 );

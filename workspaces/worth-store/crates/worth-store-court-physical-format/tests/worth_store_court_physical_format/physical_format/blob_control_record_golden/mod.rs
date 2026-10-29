@@ -6,11 +6,8 @@
 //! parses them with its independent reader. Change both copies together: a
 //! field-order change in this encoder then fails here, not silently there.
 
-
-
-#[allow(unused_imports)] use crate::blob_control_record_golden::*;
-use {crate::store_physical_format_support::independent_sha256};
-use {worth_store_physical_format::BlobChunkReuseClaimV1, worth_store_physical_format::BlobChunkReuseClaimV2, worth_store_physical_format::BlobDedupeQuarantineV1, worth_store_physical_format::BlobGenerationPublicationV1, worth_store_physical_format::PersistedRecordIdentity};
+#[allow(unused_imports)]
+use crate::blob_control_record_golden::*;
 
 #[test]
 fn reuse_claim_v1_encoder_matches_the_shared_golden() {
@@ -53,9 +50,12 @@ fn reuse_claim_v2_encoder_matches_the_shared_golden() {
     )
     .expect("valid publication");
     let digest = independent_sha256(&publication.encode());
-    let encoded =
-        worth_store_physical_format::BlobChunkReuseClaimV2::new(claim(0, record(7, 6), record(7, 9)), publication, digest)
-            .expect("valid versioned reuse claim")
-            .encode();
+    let encoded = worth_store_physical_format::BlobChunkReuseClaimV2::new(
+        claim(0, record(7, 6), record(7, 9)),
+        publication,
+        digest,
+    )
+    .expect("valid versioned reuse claim")
+    .encode();
     assert_eq!(hex(&encoded), REUSE_CLAIM_V2_FRAME_HEX);
 }

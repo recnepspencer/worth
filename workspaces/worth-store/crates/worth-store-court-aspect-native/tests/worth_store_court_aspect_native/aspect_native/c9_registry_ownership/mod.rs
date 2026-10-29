@@ -1,9 +1,15 @@
-use {std::collections::HashSet};
+use std::collections::HashSet;
 
-use {worth_store_aspect_native::canonical_basis_source_owner_for_family, worth_store_aspect_native::certify_canonical_basis_field_role, worth_store_aspect_native::certify_canonical_basis_source, worth_store_aspect_native::StoreCanonicalBasisFamily as Family, worth_store_aspect_native::StoreCanonicalBasisFieldRole as Field, worth_store_aspect_native::StoreCanonicalBasisLane as Lane, worth_store_aspect_native::StoreCanonicalBasisSourceDenial as Denial, worth_store_aspect_native::StoreCanonicalBasisSourceKind as Source, worth_store_aspect_native::STORE_CANONICAL_BASIS_SOURCE_OWNERS};
+use worth_store_aspect_native::{
+    canonical_basis_source_owner_for_family, certify_canonical_basis_field_role,
+    certify_canonical_basis_source, StoreCanonicalBasisFamily as Family,
+    StoreCanonicalBasisFieldRole as Field, StoreCanonicalBasisLane as Lane,
+    StoreCanonicalBasisSourceDenial as Denial, StoreCanonicalBasisSourceKind as Source,
+    STORE_CANONICAL_BASIS_SOURCE_OWNERS,
+};
 
 #[test]
-fn c9_sources_follow_declaration_observation_and_runtime_owners() {
+fn sources_follow_declaration_observation_and_runtime_owners() {
     let cases = [
         (
             worth_store_aspect_native::StoreCanonicalBasisFamily::PhysicalArtifactIdentity,
@@ -55,19 +61,32 @@ fn c9_sources_follow_declaration_observation_and_runtime_owners() {
                 );
             }
         }
-        assert!(certify_canonical_basis_source(family, worth_store_aspect_native::StoreCanonicalBasisSourceKind::StoreReadinessHandoff).is_err());
-        assert!(certify_canonical_basis_source(family, worth_store_aspect_native::StoreCanonicalBasisSourceKind::FoundationalReceipt).is_err());
+        assert!(certify_canonical_basis_source(
+            family,
+            worth_store_aspect_native::StoreCanonicalBasisSourceKind::StoreReadinessHandoff
+        )
+        .is_err());
+        assert!(certify_canonical_basis_source(
+            family,
+            worth_store_aspect_native::StoreCanonicalBasisSourceKind::FoundationalReceipt
+        )
+        .is_err());
     }
 }
 
 #[test]
 fn registry_has_one_owner_per_live_family_and_rejects_projection_inputs() {
-    let families: HashSet<_> = worth_store_aspect_native::StoreCanonicalBasisFamily::ALL.into_iter().collect();
+    let families: HashSet<_> = worth_store_aspect_native::StoreCanonicalBasisFamily::ALL
+        .into_iter()
+        .collect();
     let owners: HashSet<_> = STORE_CANONICAL_BASIS_SOURCE_OWNERS
         .iter()
         .map(|owner| owner.family())
         .collect();
-    assert_eq!(families.len(), worth_store_aspect_native::StoreCanonicalBasisFamily::ALL.len());
+    assert_eq!(
+        families.len(),
+        worth_store_aspect_native::StoreCanonicalBasisFamily::ALL.len()
+    );
     assert_eq!(owners.len(), STORE_CANONICAL_BASIS_SOURCE_OWNERS.len());
     assert_eq!(owners, families);
     for family in worth_store_aspect_native::StoreCanonicalBasisFamily::ALL {

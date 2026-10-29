@@ -1,13 +1,31 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::FreeSpaceBlockReference, worth_store_physical_format::FreeSpaceKey, worth_store_physical_format::FreeSpaceMembershipBlockScopeIdentity, worth_store_physical_format::PhysicalFreeSpaceMembershipBlock, worth_store_physical_format::PhysicalTreeIdentity};
-pub(crate) use {worth_store_physical_integrity::validate_free_space_membership_block, worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::{
+    FreeSpaceBlockReference, FreeSpaceKey, FreeSpaceMembershipBlockScopeIdentity,
+    PhysicalFreeSpaceMembershipBlock, PhysicalTreeIdentity,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_free_space_membership_block, FreeSpaceMembershipBlockIntegrityValidation,
+    PhysicalArtifactScope, PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause,
+    PhysicalFormatField, PhysicalIntegrityRejectionClass, UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::support::free_space_validation::assert_damage, crate::support::free_space_validation::assert_intact_counters, crate::support::free_space_validation::assert_rejected_counters, crate::support::free_space_validation::format, crate::support::free_space_validation::independent_crc32c, crate::support::free_space_validation::membership_reference, crate::support::free_space_validation::membership_scope, crate::support::free_space_validation::range, crate::support::free_space_validation::reseal, crate::support::free_space_validation::store, crate::support::free_space_validation::MEMBERSHIP_COMPLETE_CRC32C, crate::support::free_space_validation::MEMBERSHIP_LITERAL, crate::support::free_space_validation::MEMBERSHIP_OFFSET};
+pub(crate) use crate::support::free_space_validation::{
+    assert_damage, assert_intact_counters, assert_rejected_counters, format, independent_crc32c,
+    membership_reference, membership_scope, range, reseal, store, MEMBERSHIP_COMPLETE_CRC32C,
+    MEMBERSHIP_LITERAL, MEMBERSHIP_OFFSET,
+};
 
 pub(crate) fn branch_fixture() -> (Vec<u8>, PhysicalArtifactScope, [FreeSpaceBlockReference; 2]) {
     let children = [child_reference(5, 1, 1, 2), child_reference(5, 2, 3, 4)];
-    let branch =
-        worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::branch(8, 6, 3, 1, children.to_vec(), 2).unwrap();
+    let branch = worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::branch(
+        8,
+        6,
+        3,
+        1,
+        children.to_vec(),
+        2,
+    )
+    .unwrap();
     let bytes = branch.encode(format());
     let checksum = independent_crc32c(&[&bytes]);
     let scope = worth_store_physical_integrity::PhysicalArtifactScope::free_space_membership_block(
@@ -17,14 +35,26 @@ pub(crate) fn branch_fixture() -> (Vec<u8>, PhysicalArtifactScope, [FreeSpaceBlo
             worth_store_physical_format::PhysicalTreeIdentity::new(8).unwrap(),
             branch.reference(checksum),
         ),
-        worth_store_physical_integrity::PhysicalByteRange::new(MEMBERSHIP_OFFSET, bytes.len() as u64).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            MEMBERSHIP_OFFSET,
+            bytes.len() as u64,
+        )
+        .unwrap(),
     );
     (bytes, scope, children)
 }
 
 pub(crate) fn one_child_branch_fixture() -> (Vec<u8>, PhysicalArtifactScope) {
     let child = child_reference(5, 1, 1, 2);
-    let branch = worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::branch(8, 6, 3, 1, vec![child], 2).unwrap();
+    let branch = worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::branch(
+        8,
+        6,
+        3,
+        1,
+        vec![child],
+        2,
+    )
+    .unwrap();
     let bytes = branch.encode(format());
     let checksum = independent_crc32c(&[&bytes]);
     let scope = worth_store_physical_integrity::PhysicalArtifactScope::free_space_membership_block(
@@ -34,12 +64,21 @@ pub(crate) fn one_child_branch_fixture() -> (Vec<u8>, PhysicalArtifactScope) {
             worth_store_physical_format::PhysicalTreeIdentity::new(8).unwrap(),
             branch.reference(checksum),
         ),
-        worth_store_physical_integrity::PhysicalByteRange::new(MEMBERSHIP_OFFSET, bytes.len() as u64).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            MEMBERSHIP_OFFSET,
+            bytes.len() as u64,
+        )
+        .unwrap(),
     );
     (bytes, scope)
 }
 
-pub(crate) fn child_reference(generation: u64, block: u64, first: u64, last: u64) -> FreeSpaceBlockReference {
+pub(crate) fn child_reference(
+    generation: u64,
+    block: u64,
+    first: u64,
+    last: u64,
+) -> FreeSpaceBlockReference {
     worth_store_physical_format::FreeSpaceBlockReference::new(
         generation,
         block,
@@ -60,11 +99,15 @@ pub(crate) fn assert_membership_localization(
     field: PhysicalFormatField,
     blast_radius: PhysicalBlastRadius,
 ) {
-    let (worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Rejected(rejection), counters) =
-        validate_free_space_membership_block(
-            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
-            scope,
-        )
+    let (
+        worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Rejected(
+            rejection,
+        ),
+        counters,
+    ) = validate_free_space_membership_block(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
+        scope,
+    )
     else {
         panic!("damaged membership block validated");
     };

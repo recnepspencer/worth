@@ -1,4 +1,11 @@
-use {worth_store_physical_format::integrity_declarations::families::checkpoint::*, worth_store_physical_format::integrity_declarations::families::free_space::*, worth_store_physical_format::integrity_declarations::families::root::*, worth_store_physical_format::integrity_declarations::families::EXTENT_CHUNK_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::EXTENT_MANIFEST_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::NAMESPACE_IDENTITY_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::PAGE_FRAME_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::WAL_FRAME_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::PhysicalIntegrityAlgorithm, worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily, worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary};
+use worth_store_physical_format::integrity_declarations::{
+    families::checkpoint::*, families::free_space::*, families::root::*,
+    families::EXTENT_CHUNK_INTEGRITY_DECLARATION, families::EXTENT_MANIFEST_INTEGRITY_DECLARATION,
+    families::NAMESPACE_IDENTITY_INTEGRITY_DECLARATION, families::PAGE_FRAME_INTEGRITY_DECLARATION,
+    families::PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION,
+    families::SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION, families::WAL_FRAME_INTEGRITY_DECLARATION,
+    PhysicalIntegrityAlgorithm, PhysicalIntegrityArtifactFamily, PhysicalIntegrityCoverageBoundary,
+};
 
 #[test]
 fn every_frozen_current_family_has_an_exact_named_declaration() {
@@ -139,7 +146,10 @@ fn common_frame_declarations_name_split_crc32c_coverage() {
     );
     assert_eq!(declaration.version().envelope_schema(), Some(2));
     let checksum = declaration.checksums()[0];
-    assert_eq!(checksum.algorithm(), worth_store_physical_format::integrity_declarations::PhysicalIntegrityAlgorithm::Crc32c);
+    assert_eq!(
+        checksum.algorithm(),
+        worth_store_physical_format::integrity_declarations::PhysicalIntegrityAlgorithm::Crc32c
+    );
     assert_eq!(checksum.covered_ranges().len(), 2);
     assert_eq!(
         checksum.covered_ranges()[0].end(),

@@ -10,6 +10,7 @@ pub mod close_phase_crash;
 #[allow(dead_code, unused_imports)]
 #[path = "durability_admission/mod.rs"]
 pub mod durability_admission;
+pub mod extent_child;
 #[allow(dead_code, unused_imports)]
 #[path = "maintenance_interference/mod.rs"]
 pub mod maintenance_interference;

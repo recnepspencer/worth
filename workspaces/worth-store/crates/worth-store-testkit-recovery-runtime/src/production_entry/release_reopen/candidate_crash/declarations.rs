@@ -1,9 +1,18 @@
 //! Candidate tag-7 bytes are not selected custody until namespace publication.
 
-pub use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, crate::production_entry::certified_release_serving, crate::production_entry::release_reopen::released_world, crate::production_entry::run_entry, crate::production_entry::release_reopen::selected_release_certificates, crate::production_entry::release_reopen::selected_release_certificates_from_bytes};
+pub use worth_store::physical_runtime::production::PhysicalCheckpointStep;
+pub use {
+    crate::production_entry::certified_release_serving,
+    crate::production_entry::release_reopen::released_world,
+    crate::production_entry::release_reopen::selected_release_certificates,
+    crate::production_entry::release_reopen::selected_release_certificates_from_bytes,
+    crate::production_entry::run_entry, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
 pub use {std::process::Command, std::process::Stdio};
 pub use {std::time::Duration, std::time::Instant};
-pub use {worth_store::physical_runtime::production::PhysicalCheckpointStep};
 
 pub const CHILD_MARKER: &str = "WORTH_C8_RELEASE_CERTIFICATE_CRASH_MARKER";
 #[cfg(all())]
@@ -23,7 +32,7 @@ pub fn run_inner(require_successor_checkpoint: bool) {
     let reached_marker = marker.path().join("candidate-certificate.reached");
     let mut child = std::process::Command::new(std::env::current_exe().expect("test executable"))
         .arg("--exact")
-        .arg("release_reopen::candidate_crash::candidate_certificate_child")
+        .arg("process::recovery_runtime::production_entry::release_reopen::candidate_crash::candidate_certificate_child")
         .arg("--nocapture")
         .env(CHILD_MARKER, marker.path())
         .stdout(std::process::Stdio::null())
@@ -74,7 +83,7 @@ pub fn run_inner(require_successor_checkpoint: bool) {
         let mut command = std::process::Command::new(std::env::current_exe().expect("test executable"));
         command
             .arg("--exact")
-            .arg("release_reopen::candidate_crash::candidate_certificate_serving_child")
+            .arg("process::recovery_runtime::production_entry::release_reopen::candidate_crash::candidate_certificate_serving_child")
             .arg("--nocapture")
             .env(RECOVERY_CHILD_ROOT, &root);
         if require_successor_checkpoint {

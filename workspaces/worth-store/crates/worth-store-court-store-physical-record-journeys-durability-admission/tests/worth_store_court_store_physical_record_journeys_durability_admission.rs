@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate worth_store_testkit_store;
+
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_store_physical_record_journeys_durability_admission/support/child_dispatch/mod.rs"]
 pub(crate) mod child_dispatch;

@@ -1,6 +1,12 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::families::PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::PhysicalIntegrityAlgorithm, worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily, worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary};
+pub(crate) use worth_store_physical_format::integrity_declarations::{
+    families::PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION, PhysicalIntegrityAlgorithm,
+    PhysicalIntegrityArtifactFamily, PhysicalIntegrityCoverageBoundary,
+};
 
-pub(crate) use {crate::phase_4_literal_vectors::oracle::assert_declaration, crate::phase_4_literal_vectors::oracle::assert_literal_vector, crate::phase_4_literal_vectors::oracle::decode_hex, crate::phase_4_literal_vectors::oracle::DeclarationChecksumExpectation, crate::phase_4_literal_vectors::oracle::LiteralChecksum, crate::phase_4_literal_vectors::oracle::LiteralChecksumExpectation, crate::phase_4_literal_vectors::oracle::LiteralVector};
+pub(crate) use crate::phase_4_literal_vectors::oracle::{
+    assert_declaration, assert_literal_vector, decode_hex, DeclarationChecksumExpectation,
+    LiteralChecksum, LiteralChecksumExpectation, LiteralVector,
+};
 
 pub(crate) const OPERATION_3_HEX: &str = concat!(
     "575045464645435406060000000000000102030405060708090a0b0c0d0e0f10",
@@ -24,8 +30,12 @@ pub(crate) const DECLARATION_RANGES: &[(
     PhysicalIntegrityCoverageBoundary,
     PhysicalIntegrityCoverageBoundary,
 )] = &[(
-    worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(0),
-    worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(128),
+    worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(
+        0,
+    ),
+    worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary::Fixed(
+        128,
+    ),
 )];
 
 pub(crate) fn verify() {

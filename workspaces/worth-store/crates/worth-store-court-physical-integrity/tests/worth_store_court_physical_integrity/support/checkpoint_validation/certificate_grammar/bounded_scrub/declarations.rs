@@ -1,6 +1,24 @@
 //! Certified footer windows must retain the full-stream grammar without retaining prior bytes.
-pub(crate) use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::HEADER, crate::checkpoint_validation::support::FOOTER_OFFSET, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::UntrustedPhysicalArtifact, crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity};
-pub(crate) use {worth_store_physical_integrity::*};
+pub(crate) use worth_store_physical_integrity::*;
+pub(crate) use {
+    crate::checkpoint_validation::support::assert_damage,
+    crate::checkpoint_validation::support::binding_scope,
+    crate::checkpoint_validation::support::compaction_scope,
+    crate::checkpoint_validation::support::dirty_scope,
+    crate::checkpoint_validation::support::header_scope_staged,
+    crate::checkpoint_validation::support::identity,
+    crate::checkpoint_validation::support::FOOTER_OFFSET,
+    crate::literal_vectors::checkpoint_validation::BINDING,
+    crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION,
+    crate::literal_vectors::checkpoint_validation::DIRTY_BASIS,
+    crate::literal_vectors::checkpoint_validation::HEADER,
+    worth_store_physical_integrity::PhysicalArtifactScope,
+    worth_store_physical_integrity::PhysicalBlastRadius,
+    worth_store_physical_integrity::PhysicalByteRange,
+    worth_store_physical_integrity::PhysicalDamageCause,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+    worth_store_physical_integrity::UntrustedPhysicalArtifact,
+};
 
 pub(crate) fn prefix() -> PhysicalIntegrityScrubValidator {
     let mut validator = PhysicalIntegrityScrubValidator::new();
@@ -68,7 +86,9 @@ pub(crate) fn assert_admitted(frames: &[Vec<u8>], footer: &[u8]) {
     assert!(
         matches!(
             validator.inspect(footer_window).0.outcome(),
-            PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_))
+            PhysicalIntegrityObservationOutcome::Rejected(
+                worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+            )
         ),
         "a certified footer cannot replay consumed prefix context"
     );
@@ -79,9 +99,9 @@ pub(crate) fn assert_admitted(frames: &[Vec<u8>], footer: &[u8]) {
         assert!(
             matches!(
                 result.outcome(),
-                PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(
-                    _
-                ))
+                PhysicalIntegrityObservationOutcome::Rejected(
+                    worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+                )
             ),
             "missing or truncated certificate context cannot validate a footer"
         );
@@ -98,7 +118,9 @@ pub(crate) fn assert_admitted(frames: &[Vec<u8>], footer: &[u8]) {
                 .inspect(footer_window)
                 .0
                 .outcome(),
-            PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_))
+            PhysicalIntegrityObservationOutcome::Rejected(
+                worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+            )
         ),
         "certificates cannot replace the admitted header and binding windows"
     );

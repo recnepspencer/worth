@@ -1,17 +1,47 @@
 //! An ordinary append after an earlier release must not copy an unselected
 //! physical tail slot into its new WAL projection.
 
-#[allow(unused_imports)] use crate::production_entry::retired_tail_append::*;
+#[allow(unused_imports)]
+use crate::production_entry::retired_tail_append::*;
 use {std::fs, std::path::Path};
 
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordAppendBatch};
-use {worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::inspect_inline_page_records, worth_store_physical_format::BlobRecordKind, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::PhysicalSegmentMembershipBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordSegmentPageManifestEntry, worth_store_physical_format::SelectedRecordContentClass};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+use {
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+};
+use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+};
+use {
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::inspect_inline_page_records,
+    worth_store_physical_format::BlobRecordKind,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::PhysicalSegmentMembershipBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordSegmentPageManifestEntry,
+    worth_store_physical_format::SelectedRecordContentClass,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
-fn retired_physical_tail_slot_forces_fresh_page_with_c9_admissible_wal() {
-    let world = pending_wal_world::first();
+fn retired_physical_tail_slot_forces_fresh_page_with_integrity_admissible_wal() {
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_distinct_release_before_checkpoint();
     let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root()));
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
@@ -28,7 +58,9 @@ fn retired_physical_tail_slot_forces_fresh_page_with_c9_admissible_wal() {
             .routes
             .iter()
             .filter(|route| route.content_class()
-                == worth_store_physical_format::SelectedRecordContentClass::Blob(worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3))
+                == worth_store_physical_format::SelectedRecordContentClass::Blob(
+                    worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3
+                ))
             .count(),
         2,
         "two genuine V3 release descriptors must precede the ordinary append",
@@ -67,26 +99,36 @@ fn retired_physical_tail_slot_forces_fresh_page_with_c9_admissible_wal() {
 
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap())
-        .admit(worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-            worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
-        ))
+        .admit(
+            worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+                worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+                    .admit()
+                    .unwrap(),
+            ),
+        )
         .unwrap();
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0xb2; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0xb2; 32]),
+        )
         .unwrap();
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-        submission
-            .prepare_durable_append(
-                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"append-after-retired-tail".as_slice()])
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+    ) = submission
+        .prepare_durable_append(
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                b"append-after-retired-tail".as_slice(),
+            ])
+            .unwrap(),
+            placement,
+            worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
+                key,
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
                     .unwrap(),
-                placement,
-                worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
-                    key,
-                    worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-                ),
-            )
-            .into_raw()
+            ),
+        )
+        .into_raw()
     else {
         panic!("ordinary append after retired tail must prepare");
     };
@@ -123,7 +165,9 @@ fn retired_physical_tail_slot_forces_fresh_page_with_c9_admissible_wal() {
         1,
         "ordinary batch appends exactly one record"
     );
-    let worth_store_physical_format::CurrentPhysicalRecordPlacement::Inline(appended) = new_routes[0] else {
+    let worth_store_physical_format::CurrentPhysicalRecordPlacement::Inline(appended) =
+        new_routes[0]
+    else {
         panic!("short appended record must be inline");
     };
     assert_ne!(

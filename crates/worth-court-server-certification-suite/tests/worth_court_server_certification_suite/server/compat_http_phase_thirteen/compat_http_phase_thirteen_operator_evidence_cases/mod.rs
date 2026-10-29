@@ -1,7 +1,19 @@
-use {crate::shared_support_compat_http_phase_thirteen_assertions::assert_binary_counter, crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_not_equal, crate::shared_support_compat_http_phase_thirteen_assertions::assert_external_counter, crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle, crate::shared_support_compat_http_phase_thirteen_bundle::AUDIT_EVIDENCE_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::FAILURE_DIGEST, crate::shared_support_compat_http_phase_thirteen_bundle::RESPONSE_DIGEST, crate::shared_support_compat_http_phase_thirteen_runtime::canonical_download_success, crate::shared_support_compat_http_phase_thirteen_runtime::canonical_upload_success, crate::shared_support_compat_http_phase_thirteen_runtime::malformed_upload_denial, crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server};
+use {
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_binary_counter,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_not_equal,
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_external_counter,
+    crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle,
+    crate::shared_support_compat_http_phase_thirteen_bundle::AUDIT_EVIDENCE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::FAILURE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_bundle::RESPONSE_DIGEST,
+    crate::shared_support_compat_http_phase_thirteen_runtime::canonical_download_success,
+    crate::shared_support_compat_http_phase_thirteen_runtime::canonical_upload_success,
+    crate::shared_support_compat_http_phase_thirteen_runtime::malformed_upload_denial,
+    crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
+};
 
 #[test]
-fn compat_http_phase_thirteen_operator_evidence_reconstructs_external_outcomes_without_logs() {
+fn compat_http_operator_evidence_reconstructs_external_outcomes_without_logs() {
     let server = phase_thirteen_server();
     let upload = canonical_upload_success(&server, "files.asset", "phase-thirteen-evidence");
     let download = canonical_download_success(&server, "files.asset");

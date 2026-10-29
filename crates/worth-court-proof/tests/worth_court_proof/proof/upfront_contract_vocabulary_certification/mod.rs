@@ -1,10 +1,9 @@
-#[allow(unused_imports)] use crate::upfront_contract_vocabulary_certification::ordinary_context::*;
-use {std::cell::Cell};
-use {std::convert::Infallible};
+#[allow(unused_imports)]
+use crate::upfront_contract_vocabulary_certification::ordinary_context::*;
+use std::cell::Cell;
+use std::convert::Infallible;
 
-use {worth_proof::contracts::*};
-
-
+use worth_proof::contracts::*;
 
 worth_proof::binding_axes! {
     pub struct RecoveryAxes {
@@ -56,7 +55,10 @@ fn brand_linear_freshness_and_causality_compose_on_the_public_lane() {
         EvaluatedFreshness::AuthorityRevalidationRequired(_)
     ));
 
-    let undo = Performed::<Undo, owner::ContractAuthority>::record(&crate::upfront_contract_vocabulary_certification::ordinary_context::owner::witness(), ());
+    let undo = Performed::<Undo, owner::ContractAuthority>::record(
+        &crate::upfront_contract_vocabulary_certification::ordinary_context::owner::witness(),
+        (),
+    );
     assert_eq!(redo(prove_inversion::<Undo, Commit, _, _>(&undo)), "redone");
     assert_eq!(publish(prove_derivation(&undo)), "published");
 }
@@ -75,5 +77,3 @@ fn every_terminal_names_itself_and_a_resource_reaches_exactly_one() {
     // `terminate` on either resource does not typecheck; see
     // `tests/ui/contracts/compile_fail/linear_resource_cannot_terminate_twice.rs`.
 }
-#[path = "owner/mod.rs"]
-pub(crate) mod owner;

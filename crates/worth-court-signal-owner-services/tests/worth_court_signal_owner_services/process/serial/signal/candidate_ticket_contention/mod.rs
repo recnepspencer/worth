@@ -6,20 +6,41 @@
 // The competitor fills the whole process memory, so this test owns its
 // process and its authority: no other test can starve beside it.
 
-#[allow(unused_imports)] use crate::candidate_ticket_contention::isolated_context::*;
-use {std::num::NonZeroUsize};
+#[allow(unused_imports)]
+use crate::candidate_ticket_contention::isolated_context::*;
+use std::num::NonZeroUsize;
+use std::thread::JoinHandle;
 use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 use {std::sync::mpsc, std::sync::Mutex, std::sync::OnceLock};
-use {std::thread::JoinHandle};
 
-use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapPartition, worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel, worth_execution::PreparedExecutionMap};
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapPartition,
+    worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
+    worth_execution::PreparedExecutionMap,
+};
+use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
-use {worth_signal::facade::adapters::NodeContract};
-use {worth_signal::facade::Aspect, worth_signal::facade::AspectVersion, worth_signal::facade::BoundedSignalInputs, worth_signal::facade::ChangedRegion, worth_signal::facade::DeclaredSignalInput, worth_signal::facade::DependencyEdge, worth_signal::facade::NodeEvaluationResult, worth_signal::facade::NodeId, worth_signal::facade::PartitionSubscription, worth_signal::facade::RunMode, worth_signal::facade::ScopePath, worth_signal::facade::SignalError, worth_signal::facade::SignalExecutionFailure, worth_signal::facade::SignalExecutionStopReason, worth_signal::facade::SignalGraph, worth_signal::facade::SignalLeaseDenial, worth_signal::facade::SignalPublicationDisposition};
+use worth_signal::facade::adapters::NodeContract;
+use {
+    worth_signal::facade::Aspect, worth_signal::facade::AspectVersion,
+    worth_signal::facade::BoundedSignalInputs, worth_signal::facade::ChangedRegion,
+    worth_signal::facade::DeclaredSignalInput, worth_signal::facade::DependencyEdge,
+    worth_signal::facade::NodeEvaluationResult, worth_signal::facade::NodeId,
+    worth_signal::facade::PartitionSubscription, worth_signal::facade::RunMode,
+    worth_signal::facade::ScopePath, worth_signal::facade::SignalError,
+    worth_signal::facade::SignalExecutionFailure, worth_signal::facade::SignalExecutionStopReason,
+    worth_signal::facade::SignalGraph, worth_signal::facade::SignalLeaseDenial,
+    worth_signal::facade::SignalPublicationDisposition,
+};
 
 #[test]
-fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
+fn checked_epoch_contention_obeys_admission_and_result_contract() {
     if crate::test_process::reexecute_isolated_test() {
         return;
     }
@@ -39,10 +60,13 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
                 if calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0 {
                     *blocker.lock().unwrap() = Some(saturate_host());
                 }
-                Ok(
-                    worth_signal::facade::NodeEvaluationResult::from_version(worth_signal::facade::AspectVersion::zero().with(VALUE, 7))
-                        .with_changed_aspect_region(VALUE, worth_signal::facade::ChangedRegion::new("desk")),
+                Ok(worth_signal::facade::NodeEvaluationResult::from_version(
+                    worth_signal::facade::AspectVersion::zero().with(VALUE, 7),
                 )
+                .with_changed_aspect_region(
+                    VALUE,
+                    worth_signal::facade::ChangedRegion::new("desk"),
+                ))
             },
             worth_execution::ExecutionRequest::leased(&lease),
         )
@@ -56,8 +80,9 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
     let worth_signal::facade::SignalError::ExecutionStopped(stop) = error else {
         panic!("host contention is a typed execution stop: {error:?}");
     };
-    let worth_signal::facade::SignalExecutionStopReason::Admission(worth_signal::facade::SignalLeaseDenial::MemoryExhausted(memory)) =
-        stop.reason()
+    let worth_signal::facade::SignalExecutionStopReason::Admission(
+        worth_signal::facade::SignalLeaseDenial::MemoryExhausted(memory),
+    ) = stop.reason()
     else {
         panic!(
             "host contention refuses memory admission: {:?}",
@@ -74,7 +99,10 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
     );
     // Admission refused before dispatch; the callback-local assertion below
     // still protects the original court's WorkerLocal publication boundary.
-    assert_eq!(stop.disposition(), worth_signal::facade::SignalPublicationDisposition::NoWork);
+    assert_eq!(
+        stop.disposition(),
+        worth_signal::facade::SignalPublicationDisposition::NoWork
+    );
     assert_eq!(stop.publication_progress().completed_tasks(), 0);
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
     assert_eq!(
@@ -113,10 +141,10 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
             &|context| {
                 assert_eq!(context.result_capacity_bytes(), Some(0));
                 effects.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                Ok(
-                    worth_signal::facade::NodeEvaluationResult::from_version(worth_signal::facade::AspectVersion::zero().with(VALUE, 7))
-                        .with_label("exceeds the declared zero heap bound"),
+                Ok(worth_signal::facade::NodeEvaluationResult::from_version(
+                    worth_signal::facade::AspectVersion::zero().with(VALUE, 7),
                 )
+                .with_label("exceeds the declared zero heap bound"))
             },
             worth_execution::ExecutionRequest::leased(&lease),
         )

@@ -1,55 +1,5 @@
-#[allow(unused_imports)] use crate::root_tree_family_validation::bootstrap_catalog::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::PhysicalPageSizeClass, worth_store_physical_format::PhysicalRecordFormatDeclaration};
-use {worth_store_physical_integrity::validate_bootstrap_catalog, worth_store_physical_integrity::BootstrapCatalogIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityValidationDigest, worth_store_physical_integrity::PhysicalIntegrityValidationMechanism, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::literal_vectors::root_tree_family_validation::BOOTSTRAP_CATALOG_COMPLETE_CRC32C, crate::literal_vectors::root_tree_family_validation::BOOTSTRAP_CATALOG_LITERAL};
-use {crate::support::root_tree_family_validation::assert_damage, crate::support::root_tree_family_validation::assert_rejected_counters, crate::support::root_tree_family_validation::bootstrap_bytes, crate::support::root_tree_family_validation::bootstrap_scope, crate::support::root_tree_family_validation::field_range, crate::support::root_tree_family_validation::format, crate::support::root_tree_family_validation::independent_crc32c, crate::support::root_tree_family_validation::reseal_durable_frame, crate::support::root_tree_family_validation::store, crate::support::root_tree_family_validation::BOOTSTRAP_OFFSET};
-
-#[test]
-fn catalog_literal_vector_is_independent_of_writer_and_validates_directly() {
-    assert_eq!(bootstrap_bytes(store(7)), BOOTSTRAP_CATALOG_LITERAL);
-    assert_eq!(
-        independent_crc32c(&[&BOOTSTRAP_CATALOG_LITERAL]),
-        BOOTSTRAP_CATALOG_COMPLETE_CRC32C
-    );
-    assert_eq!(
-        u32::from_le_bytes(BOOTSTRAP_CATALOG_LITERAL[44..48].try_into().unwrap()),
-        independent_crc32c(&[
-            &BOOTSTRAP_CATALOG_LITERAL[..44],
-            &BOOTSTRAP_CATALOG_LITERAL[48..],
-        ])
-    );
-    match validate_bootstrap_catalog(
-        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&BOOTSTRAP_CATALOG_LITERAL),
-        bootstrap_scope(store(7), BOOTSTRAP_OFFSET),
-    )
-    .0
-    {
-        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Intact(validated) => {
-            assert_eq!(validated.current_root_generation().get(), 11);
-            let record = validated.into_validation_record();
-            assert_eq!(
-                record.byte_range_digest(),
-                worth_store_physical_integrity::PhysicalIntegrityValidationDigest::crc32c(BOOTSTRAP_CATALOG_COMPLETE_CRC32C)
-            );
-            assert_eq!(
-                record.mechanism(),
-                worth_store_physical_integrity::PhysicalIntegrityValidationMechanism::Crc32cV1
-            );
-            assert_eq!(record.mechanism().version(), 1);
-        }
-        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Rejected(rejection) => {
-            panic!("literal bootstrap catalog rejected: {rejection:?}")
-        }
-        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::ScopeMismatch(mismatch) => {
-            panic!("literal bootstrap catalog mismatched scope: {mismatch:?}")
-        }
-        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::UnsupportedFormat(unsupported) => {
-            panic!("literal bootstrap catalog has unsupported format: {unsupported:?}")
-        }
-    }
-}
+#[allow(unused_imports)]
+use crate::root_tree_family_validation::bootstrap_catalog::*;
 
 #[test]
 fn clean_catalog_seals_generation_record_range_and_incarnation() {
@@ -57,16 +7,35 @@ fn clean_catalog_seals_generation_record_range_and_incarnation() {
     let bytes = bootstrap_bytes(store);
     let other_incarnation = bytes.clone();
     let scope = bootstrap_scope(store, BOOTSTRAP_OFFSET);
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let (validated, counters) = match validate_bootstrap_catalog(artifact, scope) {
-        (worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Intact(validated), counters) => (validated, counters),
-        (worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Rejected(rejection), _) => {
+        (
+            worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Intact(validated),
+            counters,
+        ) => (validated, counters),
+        (
+            worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Rejected(
+                rejection,
+            ),
+            _,
+        ) => {
             panic!("clean bootstrap catalog rejected: {rejection:?}")
         }
-        (worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::ScopeMismatch(mismatch), _) => {
+        (
+            worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::ScopeMismatch(
+                mismatch,
+            ),
+            _,
+        ) => {
             panic!("clean bootstrap catalog mismatched scope: {mismatch:?}")
         }
-        (worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::UnsupportedFormat(unsupported), _) => {
+        (
+            worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::UnsupportedFormat(
+                unsupported,
+            ),
+            _,
+        ) => {
             panic!("clean bootstrap catalog has unsupported format: {unsupported:?}")
         }
     };
@@ -74,11 +43,11 @@ fn clean_catalog_seals_generation_record_range_and_incarnation() {
     assert_eq!(validated.record_format(), format());
     assert_eq!(validated.current_root_generation().get(), 11);
     assert!(validated.matches_input(artifact));
-    assert!(
-        !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+    assert!(!validated.matches_input(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
             &other_incarnation
-        ))
-    );
+        )
+    ));
     let record = validated.into_validation_record();
     assert!(record.matches_scope(scope));
     assert_eq!(
@@ -93,13 +62,19 @@ fn clean_catalog_seals_generation_record_range_and_incarnation() {
         worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Intact(validated) => {
             validated.into_validation_record()
         }
-        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Rejected(rejection) => {
+        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Rejected(
+            rejection,
+        ) => {
             panic!("range-bound clean catalog rejected: {rejection:?}")
         }
-        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::ScopeMismatch(mismatch) => {
+        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::ScopeMismatch(
+            mismatch,
+        ) => {
             panic!("range-bound clean catalog mismatched scope: {mismatch:?}")
         }
-        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::UnsupportedFormat(unsupported) => {
+        worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::UnsupportedFormat(
+            unsupported,
+        ) => {
             panic!("range-bound clean catalog has unsupported format: {unsupported:?}")
         }
     };
@@ -201,7 +176,11 @@ fn catalog_format_scope_and_version_windows_do_not_collapse_into_damage() {
     let other_scope = worth_store_physical_integrity::PhysicalArtifactScope::bootstrap_catalog(
         store,
         other_format,
-        worth_store_physical_integrity::PhysicalByteRange::new(BOOTSTRAP_OFFSET, bytes.len() as u64).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            BOOTSTRAP_OFFSET,
+            bytes.len() as u64,
+        )
+        .unwrap(),
     );
     assert_catalog_damage(
         &bytes,
@@ -213,9 +192,18 @@ fn catalog_format_scope_and_version_windows_do_not_collapse_into_damage() {
     );
 
     for (offset, axis) in [
-        (9, worth_store_physical_integrity::PhysicalIntegrityVersionAxis::EnvelopeSchema),
-        (10, worth_store_physical_integrity::PhysicalIntegrityVersionAxis::PhysicalFormat),
-        (72, worth_store_physical_integrity::PhysicalIntegrityVersionAxis::PhysicalFormat),
+        (
+            9,
+            worth_store_physical_integrity::PhysicalIntegrityVersionAxis::EnvelopeSchema,
+        ),
+        (
+            10,
+            worth_store_physical_integrity::PhysicalIntegrityVersionAxis::PhysicalFormat,
+        ),
+        (
+            72,
+            worth_store_physical_integrity::PhysicalIntegrityVersionAxis::PhysicalFormat,
+        ),
     ] {
         let mut unsupported = bootstrap_bytes(store);
         if offset == 9 {

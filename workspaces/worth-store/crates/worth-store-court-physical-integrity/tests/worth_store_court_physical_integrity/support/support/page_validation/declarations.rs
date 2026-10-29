@@ -1,7 +1,18 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-pub(crate) use {worth_store_physical_format::encode_inline_page, worth_store_physical_format::InlineRecordAppend, worth_store_physical_format::PageGenerationCell, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalPageSizeClass, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::PhysicalRecordSlot, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::SlotGenerationCell};
-pub(crate) use {worth_store_physical_integrity::validate_inline_page, worth_store_physical_integrity::InlinePageIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalDamageLocalization, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityObservationCounters, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::store_namespace::{
+    ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+};
+pub(crate) use worth_store_physical_format::{
+    encode_inline_page, InlineRecordAppend, PageGenerationCell, PersistedRecordIdentity,
+    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId, PhysicalPageSizeClass,
+    PhysicalRecordFormatDeclaration, PhysicalRecordSlot, PhysicalSegmentId, SlotGenerationCell,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_inline_page, InlinePageIntegrityValidation, PhysicalArtifactScope,
+    PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause, PhysicalDamageLocalization,
+    PhysicalFormatField, PhysicalIntegrityObservationCounters, PhysicalIntegrityRejection,
+    PhysicalIntegrityRejectionClass, UntrustedPhysicalArtifact,
+};
 
 pub(crate) const PAGE_OFFSET: u64 = 1_048_576;
 pub(crate) const PAGE_SIZES: [PhysicalPageSizeClass; 3] = [
@@ -13,7 +24,10 @@ pub(crate) const PAGE_SIZES: [PhysicalPageSizeClass; 3] = [
 pub(crate) fn store(byte: u8) -> StableStoreIdentity {
     worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(
         worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT,
-        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes([byte; 16]).unwrap(),
+        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(
+            [byte; 16],
+        )
+        .unwrap(),
     )
     .published_identity()
 }
@@ -31,7 +45,9 @@ pub(crate) fn page(segment: u64, page: u64, generation: u64) -> PageGenerationCe
             worth_store_physical_format::PhysicalSegmentId::from_raw(segment).unwrap(),
             worth_store_physical_format::PhysicalPageId::from_raw(page).unwrap(),
         )
-        .with_page_generation(worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap())
+        .with_page_generation(
+            worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap(),
+        )
 }
 
 pub(crate) fn slot(page: PageGenerationCell, slot: u16, generation: u64) -> SlotGenerationCell {
@@ -41,20 +57,33 @@ pub(crate) fn slot(page: PageGenerationCell, slot: u16, generation: u64) -> Slot
             page.page_id(),
             worth_store_physical_format::PhysicalRecordSlot::from_raw(slot).unwrap(),
         )
-        .with_slot_generation(worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap())
+        .with_slot_generation(
+            worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap(),
+        )
 }
 
 pub(crate) fn record(byte: u8, ordinal: u64) -> PersistedRecordIdentity {
     worth_store_physical_format::PersistedRecordIdentity::new([byte; 16], ordinal).unwrap()
 }
 
-pub(crate) fn clean_page(page_size: PhysicalPageSizeClass, identity: PageGenerationCell) -> Vec<u8> {
+pub(crate) fn clean_page(
+    page_size: PhysicalPageSizeClass,
+    identity: PageGenerationCell,
+) -> Vec<u8> {
     encode_inline_page(
         format(page_size),
         identity,
         &[
-            worth_store_physical_format::InlineRecordAppend::new(record(0xa1, 1), slot(identity, 1, 21), b"alpha"),
-            worth_store_physical_format::InlineRecordAppend::new(record(0xb2, 2), slot(identity, 2, 22), b"beta!!"),
+            worth_store_physical_format::InlineRecordAppend::new(
+                record(0xa1, 1),
+                slot(identity, 1, 21),
+                b"alpha",
+            ),
+            worth_store_physical_format::InlineRecordAppend::new(
+                record(0xb2, 2),
+                slot(identity, 2, 22),
+                b"beta!!",
+            ),
         ],
     )
     .unwrap()
@@ -69,7 +98,11 @@ pub(crate) fn page_scope(
         store,
         format(page_size),
         identity,
-        worth_store_physical_integrity::PhysicalByteRange::new(PAGE_OFFSET, u64::from(page_size.bytes())).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            PAGE_OFFSET,
+            u64::from(page_size.bytes()),
+        )
+        .unwrap(),
     )
 }
 
@@ -80,9 +113,13 @@ pub(crate) fn validate_rejection(
     PhysicalIntegrityRejection,
     PhysicalIntegrityObservationCounters,
 ) {
-    let (validation, counters) =
-        validate_inline_page(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes), scope);
-    let worth_store_physical_integrity::InlinePageIntegrityValidation::Rejected(rejection) = validation else {
+    let (validation, counters) = validate_inline_page(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
+        scope,
+    );
+    let worth_store_physical_integrity::InlinePageIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("damaged inline page unexpectedly validated");
     };
     (rejection, counters)
@@ -99,13 +136,15 @@ pub(crate) fn assert_damage(
     let (rejection, counters) = validate_rejection(bytes, scope);
     assert_eq!(
         rejection,
-        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(worth_store_physical_integrity::PhysicalDamageLocalization::new(
-            scope,
-            cause,
-            range,
-            field,
-            blast_radius,
-        ))
+        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(
+            worth_store_physical_integrity::PhysicalDamageLocalization::new(
+                scope,
+                cause,
+                range,
+                field,
+                blast_radius,
+            )
+        )
     );
     assert_eq!(
         counters.family(),
@@ -116,13 +155,23 @@ pub(crate) fn assert_damage(
     assert_eq!(counters.intact_frames(), 0);
     assert_eq!(counters.rejected_frames(), 1);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)
+        ),
         1
     );
 }
 
-pub(crate) fn field_range(scope: PhysicalArtifactScope, offset: u64, length: u64) -> PhysicalByteRange {
-    worth_store_physical_integrity::PhysicalByteRange::new(scope.byte_range().offset() + offset, length).unwrap()
+pub(crate) fn field_range(
+    scope: PhysicalArtifactScope,
+    offset: u64,
+    length: u64,
+) -> PhysicalByteRange {
+    worth_store_physical_integrity::PhysicalByteRange::new(
+        scope.byte_range().offset() + offset,
+        length,
+    )
+    .unwrap()
 }
 
 pub(crate) fn reseal(bytes: &mut [u8]) -> u32 {

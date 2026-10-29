@@ -1,17 +1,44 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_reclaim_released::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_reclaim_released::*;
 use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-use {worth_proof::AdmittedBlobReleaseProof};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDeferral, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalPageSizeClass, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PublishedBlobGeneration, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_blob_chunks::BlobChunkSize};
+use worth_proof::AdmittedBlobReleaseProof;
+use worth_proof::TransitionOutcome;
+use worth_store_blob_chunks::BlobChunkSize;
+use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimDeferral,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimFailure,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalPageSizeClass,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::PublishedBlobGeneration,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
 
-use {crate::physical_blob_journeys::blob_ingest_process::observed_without_damage, crate::physical_blob_journeys::blob_ingest_process::selected_root};
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
-
-
-
+use {
+    crate::physical_blob_journeys::blob_ingest_process::observed_without_damage,
+    crate::physical_blob_journeys::blob_ingest_process::selected_root,
+};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 #[test]
 fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_effect() {
@@ -19,7 +46,8 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
     let serving = serving_from_initialization(directory.path());
     let scope = admitted_blob_scope("c11.blob.release.post_order.scope");
     let blobs = serving.blobs().unwrap();
-    let read_limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read_limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(read_limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -27,7 +55,8 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
         (2 * CHUNK) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -67,12 +96,16 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
         worth_store::physical_runtime::BlobReclaimRequest::released(
             proof(serving.store_identity().bytes(), marker.encoded_digest()),
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
             release_limits(),
         )
     };
 
-    let before_denials = worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(&serving);
+    let before_denials =
+        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(
+            &serving,
+        );
     let held = serving.records().unwrap();
     assert!(matches!(
         serving.blobs().unwrap().reclaim(request()),
@@ -82,44 +115,46 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
     ));
     drop(held);
     assert!(matches!(
-        serving
-            .blobs()
-            .unwrap()
-            .reclaim(worth_store::physical_runtime::BlobReclaimRequest::abandoned(
+        serving.blobs().unwrap().reclaim(
+            worth_store::physical_runtime::BlobReclaimRequest::abandoned(
                 abandoned_token,
                 &scope,
                 placement(),
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
                 release_limits(),
-            )),
+            )
+        ),
         Err(worth_store::physical_runtime::BlobReclaimFailure::AlreadyPublished)
     ));
     assert!(matches!(
-        serving
-            .blobs()
-            .unwrap()
-            .reclaim(worth_store::physical_runtime::BlobReclaimRequest::released(
+        serving.blobs().unwrap().reclaim(
+            worth_store::physical_runtime::BlobReclaimRequest::released(
                 proof(serving.store_identity().bytes(), [0x91; 32]),
                 placement(),
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
                 release_limits(),
-            )),
+            )
+        ),
         Err(worth_store::physical_runtime::BlobReclaimFailure::DeclarationMismatch)
     ));
     assert!(matches!(
-        serving
-            .blobs()
-            .unwrap()
-            .reclaim(worth_store::physical_runtime::BlobReclaimRequest::released(
+        serving.blobs().unwrap().reclaim(
+            worth_store::physical_runtime::BlobReclaimRequest::released(
                 proof([0x92; 16], marker.encoded_digest()),
                 placement(),
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
                 release_limits(),
-            )),
+            )
+        ),
         Err(worth_store::physical_runtime::BlobReclaimFailure::ForeignStore)
     ));
     assert_eq!(
-        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(&serving),
+        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(
+            &serving
+        ),
         before_denials,
         "all negative admissions must leave the selected root unchanged"
     );
@@ -131,16 +166,21 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(first.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        first.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(first.dropped_records(), &[marker.record()]);
     assert!(first.remaining_payload_records() > 0);
     assert!(
-        !worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(&serving)
-            .iter()
-            .any(|(record, _)| {
-                record.allocation_epoch() == marker.record().allocation_epoch()
-                    && record.ordinal() == marker.record().ordinal()
-            }),
+        !worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(
+            &serving
+        )
+        .iter()
+        .any(|(record, _)| {
+            record.allocation_epoch() == marker.record().allocation_epoch()
+                && record.ordinal() == marker.record().ordinal()
+        }),
         "completed first batch must remove publication from the selected C5 root"
     );
     let mut remaining = first.remaining_payload_records();
@@ -152,7 +192,10 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
             .unwrap()
             .wait()
             .unwrap();
-        assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+        assert_eq!(
+            receipt.disposition(),
+            worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+        );
         assert_eq!(receipt.dropped_records().len(), 1);
         assert!(receipt.remaining_payload_records() < remaining);
         remaining = receipt.remaining_payload_records();
@@ -176,7 +219,10 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
         worth_store::physical_runtime::BlobReclaimDisposition::ProvenNoEffect
     );
     assert!(repeated.dropped_records().is_empty());
-    let released_descriptors = worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(&serving)
+    let released_descriptors =
+        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(
+            &serving,
+        )
         .iter()
         .filter(|(_, bytes)| {
             matches!(
@@ -236,7 +282,7 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
 }
 
 #[test]
-fn shared_source_release_requires_c8_before_reopen() {
+fn shared_source_release_requires_recovery_before_reopen() {
     crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::source_first();
 }
 
@@ -246,7 +292,8 @@ fn cancelled_pre_effect_release_restores_checkpoint_and_reclaim_admission() {
     let serving = serving_from_initialization(directory.path());
     let scope = admitted_blob_scope("c11.blob.release.cancel.scope");
     let blobs = serving.blobs().unwrap();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -254,7 +301,8 @@ fn cancelled_pre_effect_release_restores_checkpoint_and_reclaim_admission() {
         (2 * CHUNK) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -281,7 +329,8 @@ fn cancelled_pre_effect_release_restores_checkpoint_and_reclaim_admission() {
         worth_store::physical_runtime::BlobReclaimRequest::released(
             proof,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
             worth_store::physical_runtime::BlobReclaimLimits::new(
                 std::num::NonZeroU64::new(256).unwrap(),
                 std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -294,9 +343,11 @@ fn cancelled_pre_effect_release_restores_checkpoint_and_reclaim_admission() {
     drop(handle);
     let checkpoint = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x73; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(checkpoint).into_raw()
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(checkpoint).into_raw()
     else {
         panic!("pre-effect cancellation must restore checkpoint admission")
     };

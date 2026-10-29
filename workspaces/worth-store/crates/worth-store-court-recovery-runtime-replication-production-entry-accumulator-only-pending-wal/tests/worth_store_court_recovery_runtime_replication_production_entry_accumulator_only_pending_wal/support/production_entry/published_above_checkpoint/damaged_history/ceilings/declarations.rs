@@ -5,9 +5,24 @@
 //! left, a head block past its page. The checkpoint stream has no ceiling of
 //! its own, so the bytes recovery may observe are what a longer one passes.
 
-pub(crate) use {crate::production_entry::published_above_checkpoint::damaged_history::PAST_ONE_PAGE, std::path::Path, std::path::PathBuf, worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, std::fs, worth_store_testkit_recovery_runtime::production_entry::pending_successor_above_history, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, crate::production_entry::published_above_checkpoint, crate::production_entry::published_above_checkpoint::damaged_history::recover_with_longer, crate::production_entry::published_above_checkpoint::damaged_history::recover_with_oversized, crate::production_entry::published_above_checkpoint::damaged_history::root_manifest, crate::production_entry::published_above_checkpoint::damaged_history::routing_blocks};
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimitDimension};
+pub(crate) use worth_store_recovery_runtime::PhysicalRecoveryLimitDimension;
+pub(crate) use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld;
+use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::{Tail, Workload};
+pub(crate) use {
+    crate::production_entry::published_above_checkpoint,
+    crate::production_entry::published_above_checkpoint::damaged_history::recover_with_longer,
+    crate::production_entry::published_above_checkpoint::damaged_history::recover_with_oversized,
+    crate::production_entry::published_above_checkpoint::damaged_history::root_manifest,
+    crate::production_entry::published_above_checkpoint::damaged_history::routing_blocks,
+    crate::production_entry::published_above_checkpoint::damaged_history::PAST_ONE_PAGE, std::fs,
+    std::path::Path, std::path::PathBuf, worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_successor_above_history,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+};
 
 /// Blocked without effect and without naming a limit; `false` where the
 /// recovery never read the artifact and recovered.
@@ -32,8 +47,9 @@ pub(crate) fn blocks_as_damage(outcome: PhysicalRecoveryOutcome, artifact: &Path
     }
 }
 
-pub(crate) fn idle_world() -> worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld {
-    pending_wal_world::published_above_checkpoint(Workload::ThreeSmallObjects, Tail::Idle)
+pub(crate) fn idle_world(
+) -> worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld {
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::published_above_checkpoint(Workload::ThreeSmallObjects, Tail::Idle)
 }
 
 /// Every file under `directory` whose name ends in `.manifest`.
@@ -61,7 +77,10 @@ pub(crate) fn observing(root: &Path) -> PhysicalRecoveryOpenRequest {
     })
 }
 
-pub(crate) fn under_manifest_bytes(root: &Path, manifest_bytes: u64) -> PhysicalRecoveryOpenRequest {
+pub(crate) fn under_manifest_bytes(
+    root: &Path,
+    manifest_bytes: u64,
+) -> PhysicalRecoveryOpenRequest {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request_narrowing(root, |declared| {
         declared.manifest_bytes = manifest_bytes
     })
@@ -76,7 +95,10 @@ pub(crate) fn manifest_byte_limit(outcome: &PhysicalRecoveryOutcome) -> Option<(
     blocked
         .cause()
         .limit()
-        .filter(|limit| limit.dimension() == worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ManifestBytes)
+        .filter(|limit| {
+            limit.dimension()
+                == worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ManifestBytes
+        })
         .map(|limit| (limit.observed(), limit.admitted()))
 }
 
@@ -96,7 +118,10 @@ pub(crate) fn head_blocks(root: &Path) -> Vec<PathBuf> {
 /// every byte admitted, and longer than every observation byte recovery
 /// admits, it is damage and names no limit. Each block is damaged in the
 /// world as the kill left it; one this recovery never reads recovers.
-pub(crate) fn assert_an_oversized_head_block_is_damage(killed: impl Fn() -> PendingWalWorld, stage: &str) {
+pub(crate) fn assert_an_oversized_head_block_is_damage(
+    killed: impl Fn() -> PendingWalWorld,
+    stage: &str,
+) {
     let count = head_blocks(killed().root()).len();
     assert!(count > 0, "{stage}: the world holds a head block");
     let mut read = 0;
@@ -117,9 +142,13 @@ pub(crate) fn assert_an_oversized_head_block_is_damage(killed: impl Fn() -> Pend
         );
         read += 1;
         // The block is back as the kill left it, and the same limits recover.
-        let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(observing(world.root()));
+        let outcome =
+            worth_store_recovery_runtime::WorthStoreRecovery::recover(observing(world.root()));
         assert!(
-            matches!(outcome, worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(_)),
+            matches!(
+                outcome,
+                worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(_)
+            ),
             "{stage}: the undamaged store recovers: {outcome:?}",
         );
     }
