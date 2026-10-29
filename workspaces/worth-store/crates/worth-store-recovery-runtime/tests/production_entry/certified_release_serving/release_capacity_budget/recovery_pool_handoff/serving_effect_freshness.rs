@@ -42,7 +42,7 @@ fn genuine_pending_effect_backing_moves_through_serving_and_checkpoint() {
 
             let before_seal = allocations.snapshot();
             let seal = core
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("real pending C8 claim has an independent Store seal");
             let after_seal = allocations.snapshot();
             assert_eq!(after_seal.pool(), before_seal.pool());
@@ -91,7 +91,7 @@ fn genuine_pending_effect_backing_moves_through_serving_and_checkpoint() {
 
             let fresh = recover_core(root);
             let seal = fresh
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("checkpointed release custody reopens");
             let TransitionOutcome::Success(serving) =
                 open_with_policy(root, seal, format, policy).into_raw()

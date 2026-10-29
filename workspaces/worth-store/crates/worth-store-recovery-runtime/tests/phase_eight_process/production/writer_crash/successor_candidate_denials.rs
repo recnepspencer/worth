@@ -104,7 +104,7 @@ fn candidate_world(schedule: u64, perturbation: u64) -> ProcessWorld {
 
 fn blocked_plan(root: &std::path::Path) -> worth_store_recovery_runtime::PhysicalRecoveryBlock {
     match plan_with_limits(root, successor_limits(64 * 1024 * 1024)) {
-        Err(PhysicalRecoveryOutcome::Blocked(blocked)) => blocked,
+        Err(PhysicalRecoveryOutcome::Blocked(blocked)) => *blocked,
         Ok(_) => panic!("hostile successor candidate unexpectedly planned"),
         Err(other) => panic!("hostile successor candidate had wrong outcome: {other:?}"),
     }

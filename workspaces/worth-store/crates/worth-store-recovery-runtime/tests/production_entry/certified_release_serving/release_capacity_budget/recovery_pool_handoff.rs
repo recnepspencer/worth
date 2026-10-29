@@ -131,7 +131,7 @@ fn genuine_release_recovery_moves_one_pool_through_core_seal_and_serving() {
                     > 0
             );
             let seal = core
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("actual rejoined release seal");
             assert_eq!(seal.checkpoint().unwrap().facts(), checkpoint_facts);
             assert_eq!(
@@ -227,7 +227,7 @@ fn genuine_release_recovery_moves_one_pool_through_core_seal_and_serving() {
             let core = recover_core(root);
             let abandoned_seal = core.certification_residency_allocations();
             let seal = core
-                .into_checkpoint_custody()
+                .certification_release_media_into_checkpoint_custody()
                 .expect("fresh recovered seal");
             drop(seal);
             backing_census::assert_disposed("seal abandonment", |dimension| {
@@ -255,7 +255,7 @@ fn changed_serving_policy_denies_without_reopening_pool_or_changing_media() {
             let before = snapshot_family(root);
             let core = recover_core(root);
             let allocations = core.certification_residency_allocations();
-            let seal = core.into_checkpoint_custody().expect("genuine current seal");
+            let seal = core.certification_release_media_into_checkpoint_custody().expect("genuine current seal");
             let format = AdmittedPhysicalRecordFormat::admit(PhysicalRecordFormatDeclaration::builder().admit().unwrap());
             let policy = policy_with_different_recovery_scope(format);
             let outcome = open_with_policy(root, seal, format, policy).into_raw();

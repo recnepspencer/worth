@@ -1,6 +1,6 @@
 use worth_proof::TransitionOutcome;
 mod open_serving;
-use open_serving::{initialize_serving, open_serving};
+use open_serving::{initialize_serving, open_serving, ServingAdmission};
 mod clean_custody;
 #[path = "transition/recovered_custody.rs"]
 mod recovered_custody;
@@ -22,6 +22,7 @@ pub(in crate::physical_runtime) fn initialize(
     request: PhysicalRecordInitialization,
 ) -> RecordStoreInitializationOutcome {
     let PhysicalRecordInitialization {
+        journal_registry,
         read_protection,
         format,
         placement,
@@ -131,14 +132,15 @@ pub(in crate::physical_runtime) fn initialize(
     ) {
         Ok(state) => {
             drop(bootstrap_allocation);
-            initialize_serving(
+            initialize_serving(ServingAdmission {
+                journal_registry,
                 runtime,
                 state,
                 residency,
                 work_profile,
                 durability,
                 read_protection,
-            )
+            })
         }
         Err(BootstrapTransitionFailure::Denied(reason)) => initialization_failed(
             runtime,
@@ -161,6 +163,7 @@ pub(in crate::physical_runtime) fn open(
 ) -> RecordStoreOpenOutcome {
     let PhysicalRecordOpen {
         recovered_checkpoint_custody,
+        journal_registry,
         read_protection,
         format,
         access,
@@ -278,12 +281,15 @@ pub(in crate::physical_runtime) fn open(
             };
             drop(bootstrap_allocation);
             open_serving(
-                runtime,
-                state,
-                residency,
-                work_profile,
-                durability,
-                read_protection,
+                ServingAdmission {
+                    journal_registry,
+                    runtime,
+                    state,
+                    residency,
+                    work_profile,
+                    durability,
+                    read_protection,
+                },
                 crate::physical_runtime::instance::OpenedCheckpointCustody {
                     checkpoint,
                     candidate,

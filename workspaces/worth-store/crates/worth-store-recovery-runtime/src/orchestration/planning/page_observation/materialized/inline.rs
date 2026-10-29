@@ -48,6 +48,25 @@ pub(crate) fn selected_inline_target<'a>(
                     && target.artifact_length() == format.page_size().bytes()
             })
         })
+        .or_else(|| {
+            let selected = entries.get(&(placement.segment().get(), placement.page().get()))?;
+            let offset =
+                u64::from(selected.entry.frame_index()) * u64::from(format.page_size().bytes());
+            // A selected rewrite has no ordinary redo image of its own. Choose
+            // its admitted predecessor, not the oldest image of this page.
+            // Observation retains the same target checks; physics still proves
+            // every historical image's supersession.
+            targets.iter().copied().find(|target| {
+                require_matching_target(
+                    placement,
+                    target,
+                    selected.entry.data_generation(),
+                    offset,
+                    format.page_size().bytes(),
+                )
+                .is_ok()
+            })
+        })
         .unwrap_or(targets[0])
 }
 

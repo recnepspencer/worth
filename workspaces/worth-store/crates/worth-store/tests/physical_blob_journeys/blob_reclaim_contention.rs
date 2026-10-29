@@ -184,30 +184,23 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
         serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
     let result = thread::scope(|workers| {
         workers.spawn(|| {
-            assert!(manifest_gate.await_arrival(), "manifest did not publish");
+            require_pause_arrival(&manifest_gate, "manifest did not publish");
             let reservation_gate = serving
                 .pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
             manifest_gate.release();
-            assert!(
-                reservation_gate.await_arrival(),
-                "reservation did not publish"
-            );
+            require_pause_arrival(&reservation_gate, "reservation did not publish");
             let drop_gate =
                 serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeEffectCutover);
             reservation_gate.release();
-            assert!(
-                drop_gate.await_arrival(),
-                "drop did not reach pre-seal seam"
+            require_pause_arrival(&drop_gate, "drop did not reach pre-seal seam");
+            let advance = serving.certification_advance_physical_signal_clock(
+                worth_signal::facade::ClockAdvanceRequest::new(
+                    worth_signal::facade::ClockDomain::MonotonicExecution,
+                    worth_signal::facade::ClockTick::new(5_000),
+                ),
             );
-            serving
-                .certification_advance_physical_signal_clock(
-                    worth_signal::facade::ClockAdvanceRequest::new(
-                        worth_signal::facade::ClockDomain::MonotonicExecution,
-                        worth_signal::facade::ClockTick::new(5_000),
-                    ),
-                )
-                .unwrap();
             drop_gate.release();
+            advance.unwrap();
         });
         first.wait()
     });
@@ -320,4 +313,22 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
         BlobReclaimDisposition::ProvenNoEffect
     );
     serving.close();
+}
+
+/// Arrival is a scheduling guard, not a five-second product latency claim.
+/// Match the neighboring orphan court's bounded arrival envelope, and release
+/// before failing so a late worker cannot strand the scope in `first.wait()`.
+#[cfg(feature = "certification-test-authority")]
+fn require_pause_arrival(
+    gate: &worth_store::physical_runtime::production::PhysicalMutationPauseGate,
+    message: &str,
+) {
+    let deadline = Instant::now() + Duration::from_secs(120);
+    while Instant::now() < deadline {
+        if gate.await_arrival() {
+            return;
+        }
+    }
+    gate.release();
+    panic!("{message}");
 }

@@ -23,7 +23,10 @@ fn native_cutover_prunes_old_released_wal_but_selected_tag7_reopens() {
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("first killed V3 must recover before native cutover: {outcome:?}")
     };
-    let seal = handoff.into_core().into_checkpoint_custody().unwrap();
+    let seal = handoff
+        .into_core()
+        .certification_release_media_into_checkpoint_custody()
+        .unwrap();
     let serving = super::certified_release_serving::admit_serving_with_seal_and_wal_segment_bytes(
         world.root(),
         seal,
@@ -97,7 +100,10 @@ fn native_cutover_prunes_old_released_wal_but_selected_tag7_reopens() {
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("selected tag-7 without old WAL must reopen: {outcome:?}")
     };
-    let seal = handoff.into_core().into_checkpoint_custody().unwrap();
+    let seal = handoff
+        .into_core()
+        .certification_release_media_into_checkpoint_custody()
+        .unwrap();
     super::certified_release_serving::admit_serving_with_seal_and_wal_segment_bytes(
         world.root(),
         seal,

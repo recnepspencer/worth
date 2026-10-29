@@ -190,7 +190,7 @@ fn recover_custody(request: PhysicalRecoveryOpenRequest) -> RecoveredPhysicalChe
     };
     handoff
         .into_core()
-        .into_checkpoint_custody()
+        .certification_release_media_into_checkpoint_custody()
         .expect("C8-issued Store custody")
 }
 

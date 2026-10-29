@@ -11,6 +11,7 @@ const WAIT_DEADLINE: Duration = Duration::from_secs(60);
 /// input decoded from the Store.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalRecoveryYieldpointStage {
+    ServingHandoff,
     StagingMaterialization,
     StagingSynchronization,
     CandidateMaterialization,
@@ -30,6 +31,7 @@ pub enum PhysicalRecoveryYieldpointStage {
 impl PhysicalRecoveryYieldpointStage {
     pub fn from_label(label: &str) -> Option<Self> {
         Some(match label {
+            "serving-handoff" => Self::ServingHandoff,
             "staging-materialization" => Self::StagingMaterialization,
             "staging-synchronization" => Self::StagingSynchronization,
             "candidate-materialization" => Self::CandidateMaterialization,
@@ -48,6 +50,7 @@ impl PhysicalRecoveryYieldpointStage {
 
     pub const fn label(self) -> &'static str {
         match self {
+            Self::ServingHandoff => "serving-handoff",
             Self::StagingMaterialization => "staging-materialization",
             Self::StagingSynchronization => "staging-synchronization",
             Self::CandidateMaterialization => "candidate-materialization",
