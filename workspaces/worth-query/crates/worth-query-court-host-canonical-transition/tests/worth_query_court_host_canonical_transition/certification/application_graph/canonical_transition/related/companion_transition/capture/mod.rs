@@ -10,11 +10,9 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     let bytes = checkpoint.bytes().to_vec();
     successor::output::reset_decodes();
     let mut callbacks = 0;
-    let pending =
-        worth_query_testkit_certification::facade::certification::checkpoint_capture::stopped(
-            |phase| {
-                callbacks = 0;
-                installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+    let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
+        callbacks = 0;
+        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
             phase,
             new::host::program::<new::program::TargetProgram>(),
             installation::WorthQueryApplicationProgramRoster::new(),
@@ -38,8 +36,7 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
                 Ok(())
             },
         )
-            },
-        );
+    });
     let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
         pending.capture_denial()
     else {
@@ -62,16 +59,13 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     assert_eq!(callbacks, 1);
     assert_eq!(successor::output::decodes(), 0);
     // An unfunded original request returns the same acknowledged capsule again.
-    let zero =
-        worth_query_testkit_certification::facade::certification::checkpoint_capture::lease(0);
+    let zero = worth_query_testkit_host::facade::host::checkpoint_capture::lease(0);
     let pending = pending
         .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&zero))
         .unwrap_err();
     assert!(pending.capture_denial().is_some());
     let funded =
-        worth_query_testkit_certification::facade::certification::checkpoint_capture::lease(
-            64 * 1024 * 1024,
-        );
+        worth_query_testkit_host::facade::host::checkpoint_capture::lease(64 * 1024 * 1024);
     let repaired = pending
         .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&funded))
         .unwrap();

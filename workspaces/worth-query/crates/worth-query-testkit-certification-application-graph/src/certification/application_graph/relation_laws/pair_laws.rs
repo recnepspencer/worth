@@ -1,9 +1,8 @@
 //! Proposed physical edge counts prove paired symmetry and both uniqueness scopes.
-pub use super::{installation::*, outcome::*, read, schema::*};
+pub use super::{installation::*, outcome::*, read};
 pub use std::collections::BTreeMap;
-pub use worth_query_host::facade::{
-    application_invariants::{EntityReference, SymmetryMode, UniquenessScope},
-    primary_graph::*,
+pub use worth_query_host::facade::application_invariants::{
+    EntityReference, SymmetryMode, UniquenessScope,
 };
 
 pub fn symmetry(

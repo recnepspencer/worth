@@ -1,8 +1,8 @@
 //! A facade-only audit of actual disclosed entity and physical relation generations.
 pub use super::schema::*;
 pub use worth_query_decl::facade::{
-    application_query::*, application_schema::*, worth_query_application_query,
-    worth_query_portable_type, worth_query_structured_value_binding,
+    application_query::*, worth_query_application_query, worth_query_portable_type,
+    worth_query_structured_value_binding,
 };
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,

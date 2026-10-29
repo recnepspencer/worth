@@ -1,6 +1,6 @@
 //! Actual World protections and Native external leases balance at final owner drop.
 pub use super::super::installation::World;
-pub use super::{access::*, *};
+pub use super::access::*;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::request_scope;
 pub use worth_query_host::facade::certification::WorthQueryCertificationCostRuntimeExt;
 

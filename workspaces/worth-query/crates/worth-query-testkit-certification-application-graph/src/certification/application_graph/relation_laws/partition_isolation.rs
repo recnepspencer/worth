@@ -1,5 +1,5 @@
 //! Real SDK-created partitions, judged only by the native endpoint law.
-pub use super::{installation::*, outcome::*, read, schema::*};
+pub use super::{installation::*, outcome::*, read};
 pub use worth_query_host::facade::{
     application_invariants::EntityReference,
     primary_graph::{WorthQueryApplicationCommitDenial, WorthQueryRelationLawDenial},

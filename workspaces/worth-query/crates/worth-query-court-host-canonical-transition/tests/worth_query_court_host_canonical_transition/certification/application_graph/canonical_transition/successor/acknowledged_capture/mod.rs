@@ -18,11 +18,9 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
     .unwrap();
     let mut callbacks = 0;
     output::reset_decodes();
-    let pending =
-        worth_query_testkit_certification::facade::certification::checkpoint_capture::stopped(
-            |phase| {
-                callbacks = 0;
-                installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+    let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
+        callbacks = 0;
+        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
             phase,
             host::program(),
             installation::WorthQueryApplicationProgramRoster::new(),
@@ -41,8 +39,7 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
                 Ok(())
             },
         )
-            },
-        );
+    });
     let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
         pending.capture_denial()
     else {

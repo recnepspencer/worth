@@ -97,4 +97,4 @@ pub use worth_query_testkit_host::facade::host::certification_support::process_d
 #[path = "application_graph/workflow_owning.rs"]
 pub mod workflow_owning;
 
-pub use worth_query_testkit_certification::facade::certification::checkpoint_capture;
+pub use worth_query_testkit_host::facade::host::checkpoint_capture;

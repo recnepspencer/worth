@@ -1,9 +1,7 @@
 //! One finite member domain serves rules, decisions, components and managed counts.
 pub use super::{derived, program::GraphFeature, schema::*};
 pub use worth_query_host::facade::{
-    application_contribution::*,
-    declaration::{application_program::*, application_schema::*},
-    primary_graph::*,
+    application_contribution::*, declaration::application_program::*, primary_graph::*,
 };
 #[path = "logical/committed.rs"]
 pub mod committed;

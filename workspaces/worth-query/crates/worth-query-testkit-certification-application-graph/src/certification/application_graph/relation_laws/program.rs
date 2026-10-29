@@ -1,10 +1,8 @@
 //! Schema and native action meaning derive from one relation declaration.
-pub use super::{creation::*, feeding::*, handler::Handler, operation::*, schema::*};
+pub use super::{creation::*, feeding::*, handler::Handler, operation::*};
 pub use std::marker::PhantomData;
 pub use worth_query_host::facade::{
-    application_contribution::*,
-    declaration::{application_program::*, application_schema::*},
-    domain::AbsenceLaw,
+    application_contribution::*, declaration::application_program::*, domain::AbsenceLaw,
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 pub struct GraphContribution<L: LawPolicy>(pub PhantomData<fn() -> L>);

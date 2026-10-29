@@ -1,5 +1,5 @@
 //! Minimum counts distinct actual targets across the full proposed mutation.
-pub use super::{feeding::FeedsChange, installation::*, outcome::*, read, schema::*};
+pub use super::{feeding::FeedsChange, installation::*, outcome::*, read};
 pub use worth_query_host::facade::{
     application_invariants::{EntityId, EntityReference},
     primary_graph::{WorthQueryApplicationCommitDenial, WorthQueryRelationLawDenial},

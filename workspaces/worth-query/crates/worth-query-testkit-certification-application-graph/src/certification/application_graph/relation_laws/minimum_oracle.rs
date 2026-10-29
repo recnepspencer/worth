@@ -1,5 +1,5 @@
 //! Independent physical multigraph model with distinct transitive reachability.
-pub use super::{installation::*, outcome::*, read, schema::*};
+pub use super::{installation::*, outcome::*, read};
 pub use std::collections::{BTreeMap, BTreeSet};
 pub use worth_query_host::facade::{
     application_invariants::EntityReference, primary_graph::WorthQueryRelationLawDenial,

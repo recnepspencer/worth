@@ -10,11 +10,9 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
     let bytes = checkpoint.bytes().to_vec();
     let mut callbacks = 0;
     successor::output::reset_decodes();
-    let pending =
-        worth_query_testkit_certification::facade::certification::checkpoint_capture::stopped(
-            |phase| {
-                callbacks = 0;
-                installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+    let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
+        callbacks = 0;
+        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
             phase,
             successor::host::program(),
             installation::WorthQueryApplicationProgramRoster::new()
@@ -39,8 +37,7 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
                 Ok(())
             },
         )
-            },
-        );
+    });
     let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
         pending.capture_denial()
     else {

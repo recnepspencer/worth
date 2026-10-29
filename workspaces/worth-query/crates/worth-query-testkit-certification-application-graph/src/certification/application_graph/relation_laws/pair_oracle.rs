@@ -1,5 +1,5 @@
 //! An independent physical multigraph oracle; it never reads production law policy.
-pub use super::{installation::*, outcome::*, read, schema::*};
+pub use super::{installation::*, outcome::*, read};
 pub use std::collections::BTreeMap;
 pub use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 

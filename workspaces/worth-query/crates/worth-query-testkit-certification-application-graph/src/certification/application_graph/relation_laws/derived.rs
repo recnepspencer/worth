@@ -1,9 +1,7 @@
 //! One authored derived recipe is shared by ordinary rules and a managed collection.
 pub use super::{program::GraphFeature, schema::*};
 pub use worth_query_host::facade::{
-    application_contribution::*,
-    declaration::{application_program::*, application_schema::*},
-    primary_graph::*,
+    application_contribution::*, declaration::application_program::*, primary_graph::*,
 };
 #[path = "derived/collection.rs"]
 pub mod collection;
