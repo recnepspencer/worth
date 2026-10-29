@@ -6,7 +6,7 @@ import tomllib
 
 from cargo_inventory import aliases, dependency_rows, dev_drops, inventory, metadata
 from court_partition import CEILING, area_units, classification, group_courts
-from court_roots import area_names, origin_name, render, target_area
+from court_roots import area_names, origin_name, render, target_area, disambiguate
 from fixer_work import collect
 import fixture_manifests
 from frontier_adapter import frontiers, surface
@@ -14,13 +14,16 @@ from manifest_edit import crate_manifest, product_manifest, workspace_manifest
 from module_tree import Node, source_files, tree_text
 from plan_effects import Effects, relative
 from process_effects import helpers
+from registered_paths import relocate
 from rust_source import crate_uses
-from rust_paths import ModulePaths
+from support_model import SupportModel
+from support_emit import layout_support, canonical_roots, binary_support_imports
+from case_emit import assign_sources, case_text
+from court_plan_dependencies import local_dependency
 from selector_edit import selectors
 from source_rewrite import rewritten_file
 from store_partitions import partitions, scheduled_areas
 from support_ownership import allocate, relevant_support, footprint
-from testkit_graph import prepare
 
 
 def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None):
@@ -39,6 +42,7 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
     nodes = {n['id']: n for n in data['resolve']['nodes']}
     for owner in owners:
         package = owner['cargo']
+        owner['effective_features'] = nodes[package['id']]['features']
         for index, target in enumerate(owner['targets']):
             identity = package['name'] + '::' + target['cargo']['name']
             full_key, refined_key = identity + ':available', identity + ':refined'
@@ -56,7 +60,9 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
             population, _support = area_units(target['tree'], module_ceiling, [r['module'] for r in scheduled_for_target])
             process_helpers = helpers(target['tree'])
             for unit in population:
-                unit.update({'owner': owner, 'target_index': index, 'target': identity})
+                unit.update({'owner': owner, 'target_index': index, 'target': identity,
+                             'required_features': tuple(target['cargo'].get('required-features', [])),
+                             'custom_harness': target['cargo']['name'] if any(t.get('harness') is False and t.get('name') == target['cargo']['name'] for t in owner['manifest'].get('test', [])) else ''})
                 unit['support'] = relevant_support(unit)
                 unit_text = tree_text(unit['node']) + '\n' + '\n'.join(a.own_text() for a in unit['ancestors'])
                 unit_text += '\n' + '\n'.join(tree_text(s) for s in unit['support'])
@@ -83,50 +89,40 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
         unit['frontier'] = computed[unit['key']]
     courts, splits = group_courts(units, stem, surface, ceiling)
     assignments, kits = allocate(units, owners, stem, workspace, repository)
-    oversized = {c['name'] for c in courts if sum(
-        len(p.read_bytes().splitlines()) for p, a in assignments.items()
-        if a['owner'] == c['name'] and p.suffix == '.rs') > ceiling}
-    if oversized:
-        for unit in units:
-            if unit['court'] in oversized:
-                unit['footprint'].update(n.source for support in unit['support'] for n in support.walk())
-        courts, splits = group_courts(units, stem, surface, ceiling)
-        assignments, kits = allocate(units, owners, stem, workspace, repository)
-    kit_aliases = prepare(kits, assignments, owners, ceiling)
-    module_paths = ModulePaths(units, assignments, kit_aliases)
+    disambiguate(courts)
+    model = SupportModel(owners, units, courts, stem, workspace)
+    support_roots = layout_support(model, kits)
+    retired = assign_sources(model, units, assignments, support_roots)
+    active_kits = {a['owner'] for a in assignments.values() if '-testkit' in a['owner']} | {name for name in support_roots if '-testkit' in name}
+    kits = {name: row for name, row in kits.items() if name in active_kits}
     effects = Effects(repository)
-    rewrites = materialize_sources(assignments, owners, kits, kit_aliases, effects, module_paths)
+    rewrites = []
+    for source, assignment in sorted(assignments.items()):
+        effects.move(source, assignment['destination'])
+        if source.name == 'Cargo.toml':
+            text, receipts = fixture_manifests.rewrite(source, assignment['destination'], assignments)
+            rewrites.extend(receipts)
+            if receipts:
+                effects.write(assignment['destination'], text, source.read_bytes())
+    for source in retired:
+        effects.retire_scaffold(source)
     workspace_value = tomllib.loads(manifest.read_text(encoding='utf-8'))
-    rows_by_court = {c['name']: [d for u in c['units'] for d in u['dependencies']] for c in courts}
-    kit_rows = kit_dependencies(kits, assignments, owners, repository)
+    support_rows = canonical_roots(model, support_roots, assignments, effects, rewrites)
+    rows_by_court = {c['name']: [d for u in c['units'] for d in u['dependencies']] + support_rows[c['name']] for c in courts}
+    kit_rows = {name: support_rows[name] for name in kits}
     for name, kit in sorted(kits.items()):
         destination = workspace / 'crates' / name
         for reader in sorted(kit['readers']):
             rows_by_court[reader].append(local_dependency(name, destination))
-        roots = ''.join('#[path = ' + json.dumps(str(assignments[n.source]['destination'].relative_to(destination / 'src')).replace('\\', '/')) + ']\npub mod ' + alias + ';\n'
-                        for n, alias in kit['roots'])
-        effects.write(destination / 'src/lib.rs', roots)
+        if name not in support_roots:
+            effects.write(destination / 'src/lib.rs', '// Fixture assets are owned by this testkit.\n')
         effects.write(destination / 'Cargo.toml', crate_manifest(name, kit_rows[name], destination, workspace_value, True))
     for court in courts:
         destination = workspace / 'crates' / court['name']
         def unit_text(unit, target):
-            node = unit['node']
-            if unit['own_only']:
-                node = Node(node.source, node.names, node.own_text())
-            text, records = rewritten_file(node, target, unit['owner'], assignments, kit_aliases)
-            if unit['own_only']:
-                for record in records:
-                    record['scope'] = '::'.join(node.names)
-                    record.pop('offset', None)
-            rewrites.extend(records)
-            text, records = module_paths.rewrite(text, unit['owner'], unit['node'].source)
-            rewrites.extend(records)
-            return text
-        def context_text(text, unit, source):
-            text, records = module_paths.rewrite(text, unit['owner'], source)
-            rewrites.extend(records)
-            return text
-        render(court, workspace, assignments, kit_aliases, effects, unit_text, context_text)
+            return case_text(model, unit, target, assignments, rewrites)
+        render(court, workspace, effects, model, unit_text,
+               binary_support_imports(court['name'], support_roots.get(court['name'], [])))
         effects.write(destination / 'Cargo.toml', crate_manifest(court['name'], rows_by_court[court['name']], destination, workspace_value))
     drops, disabled_libraries = [], []
     for owner in owners:
@@ -145,8 +141,18 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
                for name in sorted([c['name'] for c in courts] + list(kits))]
     effects.write(manifest, workspace_manifest(manifest.read_text(encoding='utf-8'), members))
     register(effects, repository, workspace, stem, splits)
+    registry_rewrites, unresolved_registrations = relocate(effects, repository, assignments)
+    rewrites.extend(registry_rewrites)
     selector_changes = selectors(effects, repository, workspace, courts, roster)
     work = collect(courts, assignments, repository)
+    for registration in unresolved_registrations:
+        for source in registration['sources']:
+            assignment = assignments[repository / source]
+            for court in assignment['readers']:
+                work[court].append({'kind': 'registration-ruling', 'source': source,
+                                    'reason': registration['registry'] + ' registers directory prefix ' + registration['prefix']
+                                    + '; its files now have separate owners. Choose exact callers without widening authority.',
+                                    'symbols': []})
     program = effects.program()
     court_rows, kit_report = reports(courts, kits, assignments, program, workspace, repository, rows_by_court, kit_rows)
     blockers = []
@@ -154,8 +160,6 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
         if row['rust_lines'] > ceiling:
             blockers.append({'kind': 'source-ceiling', 'owner': row['name'], 'lines': row['rust_lines'],
                              'reason': 'An indivisible module/support ownership exceeds the ceiling.'})
-    if blockers and module_ceiling > 400:
-        return build(manifest, repository, data, ceiling, max(400, module_ceiling // 2))
     rewrites = sorted({json.dumps({**r, 'source': relative(Path(r['source']), repository)}, sort_keys=True)
                        for r in rewrites})
     counts = Counter(row['kind'] for rows in work.values() for row in rows)
@@ -177,56 +181,6 @@ def build(manifest, repository, data=None, ceiling=CEILING, module_ceiling=None)
                        'lines_moved': sum(len(p.read_bytes().splitlines()) for p in assignments if p.suffix == '.rs'),
                        'files_moved': len(assignments), 'work_items': sum(counts.values()),
                        'work_items_by_kind': dict(sorted(counts.items()))}, 'effects': program}
-
-
-def local_dependency(name, path):
-    return {'alias': name, 'package': name, 'path': str(path), 'features': [],
-            'default_features': True, 'target': None, 'requirement': None}
-
-
-def materialize_sources(assignments, owners, kits, aliases, effects, module_paths):
-    all_nodes = {}
-    for owner in owners:
-        for target in owner['targets']:
-            for node in target['tree'].walk():
-                if not node.offset:
-                    all_nodes.setdefault(node.source, (node, owner))
-    rewrites = []
-    for source, assignment in sorted(assignments.items()):
-        effects.move(source, assignment['destination'])
-        if source.name == 'Cargo.toml':
-            text, records = fixture_manifests.rewrite(source, assignment['destination'], assignments)
-            rewrites.extend(records)
-            if records:
-                effects.write(assignment['destination'], text, source.read_bytes())
-        if source not in all_nodes:
-            continue
-        node, owner = all_nodes[source]
-        kit = assignment['owner'] if assignment['owner'] in kits else None
-        text, records = rewritten_file(node, assignment['destination'], owner, assignments, aliases, kit)
-        rewrites.extend(records)
-        text, path_records = module_paths.rewrite(text, owner, source, kit)
-        rewrites.extend(path_records)
-        if records or path_records:
-            effects.write(assignment['destination'], text, source.read_bytes())
-    return rewrites
-
-
-def kit_dependencies(kits, assignments, owners, repository):
-    result = {}
-    by_name = {o['cargo']['name']: o for o in owners}
-    for name, kit in sorted(kits.items()):
-        rows = []
-        for node in kit['nodes']:
-            owner = by_name[assignments[node.source]['package']]
-            used = crate_uses(node.text, aliases(owner['cargo']))
-            rows.extend(dependency_rows(owner['cargo'], used, own=True))
-            for child in node.children:
-                assignment = assignments.get(child.source)
-                if assignment and assignment['owner'] in kits and assignment['owner'] != name:
-                    rows.append(local_dependency(assignment['owner'], next(p for p in assignment['destination'].parents if p.parent.name == 'crates')))
-        result[name] = rows
-    return result
 
 
 def register(effects, root, workspace, stem, splits):
@@ -257,6 +211,8 @@ def reports(courts, kits, assignments, program, workspace, root, court_deps, kit
     for court in courts:
         report = row(court['name'], court_deps[court['name']])
         report.update({'frontier': court['frontier'], 'categories': sorted({u['category'] or 'ordinary' for u in court['units']}),
+                       'packing_lines': court['packing_lines'], 'packing_areas': [list(p) for p in court['packing_areas']],
+                       'required_features': court['required_features'], 'custom_harness': court['custom_harness'],
                        'units': [{'source': relative(u['node'].source, root), 'old_module': '::'.join(u['node'].names),
                                   'owner_area': u['owner_area'], 'category': u['category'] or 'ordinary',
                                   'evidence': u['evidence'], 'named_crates': sorted(u['used'])} for u in court['units']]})

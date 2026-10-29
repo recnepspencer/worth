@@ -6,3 +6,7 @@ fn ordinary_value_uses_shared_support() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/message.txt");
     assert!(path.exists());
 }
+
+pub(crate) fn cross_category_value() -> u32 {
+    3
+}
