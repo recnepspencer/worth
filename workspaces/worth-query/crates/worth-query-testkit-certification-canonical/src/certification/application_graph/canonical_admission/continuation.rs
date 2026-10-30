@@ -28,14 +28,51 @@ pub fn first_page(
     host: &host::Host,
     scope: &WorthQueryRequestScope,
 ) -> Result<Page, WorthQueryApplicationRequestQueryDenial> {
-    let principal = authenticate_operator(host.installed_schema(), scope);
-    host.runtime()
-        .request(&principal, scope)
-        .on_branch(host.current_world())
-        .query(query::ReadPage {
-            identity: "root".to_owned(),
-        })
-        .page(NonZeroUsize::MIN)
+    let runtime = host.program.runtime();
+    let external = authenticate_operator(host.program.installed_schema(), scope);
+    super::request_funding::with_request(host, scope, |phase| {
+        let binding = runtime
+            .installed_schema()
+            .installed_query_binding::<query::PageBinding>()
+            .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
+        let selected = runtime
+            .on_branch(host.program.current_world())
+            .select(&phase)
+            .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
+        let principal = selected
+            .resolve_authenticated_principal(
+                &phase,
+                binding.principal_binding(),
+                &external,
+                scope,
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+            .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
+        let root = selected
+            .resolve_entity(
+                &phase,
+                DocumentIdentityField::reference(),
+                "root".to_owned(),
+                scope,
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+            .map_err(WorthQueryApplicationRequestQueryDenial::ScopeResolution)?;
+        let query = binding.into_query();
+        let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
+        let controls = WorthQueryProductQueryControls::new(NonZeroUsize::MIN, scope);
+        let plan = selected
+            .admit_application_query_continuation(
+                &phase,
+                &query,
+                &access,
+                worth_query_host::facade::declaration::application_query::ApplicationQueryParameterSet::new(),
+                controls,
+            )
+            .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
+        runtime
+            .execute_application_query_continuation_page(&phase, plan)
+            .map_err(WorthQueryApplicationRequestQueryDenial::ContinuationExecution)
+    })
 }
 
 pub fn assert_funded_pages(host: &host::Host) {
@@ -58,11 +95,12 @@ pub fn assert_funded_pages(host: &host::Host) {
     // A continuation requires a fresh authenticated request, preserving its
     // exact installed ordered native basis rather than rerunning the first page.
     let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let principal = authenticate_operator(host.program.installed_schema(), &scope);
     let page = host
+        .program
         .runtime()
         .request(&principal, &scope)
-        .on_branch(host.current_world())
+        .on_branch(host.program.current_world())
         .query(query::ReadPage {
             identity: "root".to_owned(),
         })

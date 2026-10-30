@@ -6,11 +6,12 @@ fn live_nested_decode_requires_original_funding_before_receipt_and_cause_handoff
     let mut live = open(&funded);
     publish(&funded, 78_001);
     let scope = request_scope();
-    let principal = authenticate_operator(funded.installed_schema(), &scope);
+    let principal = authenticate_operator(funded.program.installed_schema(), &scope);
     let request = funded
+        .program
         .runtime()
         .request(&principal, &scope)
-        .on_branch(funded.current_world());
+        .on_branch(funded.program.current_world());
     reset();
     let WorthQueryApplicationLiveOutcome::Delivered(update) = live.next(&request).unwrap() else {
         panic!("funded actual retained cause must deliver its nondefault nested value");
@@ -109,11 +110,12 @@ fn live_late_original_cancellation_cannot_ack_and_a_fresh_live_request_succeeds(
     publish(&host, 78_101);
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(request_scope().deadline(), cancellation.token());
-    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let principal = authenticate_operator(host.program.installed_schema(), &scope);
     let request = host
+        .program
         .runtime()
         .request(&principal, &scope)
-        .on_branch(host.current_world());
+        .on_branch(host.program.current_world());
     let guard = CancelAfterProjection::arm(cancellation);
     let outcome = live.next(&request).unwrap();
     assert_eq!(
@@ -147,11 +149,12 @@ fn live_late_original_cancellation_cannot_ack_and_a_fresh_live_request_succeeds(
     let mut fresh = open(&host);
     publish(&host, 78_102);
     let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let principal = authenticate_operator(host.program.installed_schema(), &scope);
     let request = host
+        .program
         .runtime()
         .request(&principal, &scope)
-        .on_branch(host.current_world());
+        .on_branch(host.program.current_world());
     reset();
     let WorthQueryApplicationLiveOutcome::Delivered(update) = fresh.next(&request).unwrap() else {
         panic!("a fresh funded original request must deliver through the same live owner");

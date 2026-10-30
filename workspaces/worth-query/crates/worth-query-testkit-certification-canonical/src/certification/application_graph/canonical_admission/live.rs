@@ -23,10 +23,11 @@ pub type Subscription<'host> =
 
 pub fn open(host: &host::Host) -> Subscription<'_> {
     let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    host.runtime()
+    let principal = authenticate_operator(host.program.installed_schema(), &scope);
+    host.program
+        .runtime()
         .request(&principal, &scope)
-        .on_branch(host.current_world())
+        .on_branch(host.program.current_world())
         .query(query::ReadLive {
             identity: "root".to_owned(),
         })
@@ -36,11 +37,12 @@ pub fn open(host: &host::Host) -> Subscription<'_> {
 
 pub fn publish(host: &host::Host, idempotency: u64) {
     let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let principal = authenticate_operator(host.program.installed_schema(), &scope);
     let outcome = host
+        .program
         .runtime()
         .request(&principal, &scope)
-        .on_branch(host.current_world())
+        .on_branch(host.program.current_world())
         .advanced()
         .mutate(publish::Publish {
             changed: cause::Changed {
@@ -50,7 +52,7 @@ pub fn publish(host: &host::Host, idempotency: u64) {
         .without_source()
         .idempotency(&idempotency)
         .execute_in_program(
-            host,
+            &host.program,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the ordinary installed effect-only mutation executes");

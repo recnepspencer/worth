@@ -83,3 +83,6 @@ pub fn assert_committed(
         outcome => panic!("funded canonical reads must commit: {outcome:?}"),
     }
 }
+
+#[path = "canonical_admission/request_funding.rs"]
+pub mod request_funding;

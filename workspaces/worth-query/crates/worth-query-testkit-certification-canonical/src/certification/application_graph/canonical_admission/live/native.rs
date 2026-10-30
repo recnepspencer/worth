@@ -31,8 +31,8 @@ pub type Outcome = WorthQueryApplicationLiveOutcome<LiveQuery, Row>;
 
 pub fn open(host: &host::Host) -> Lease<'_> {
     let scope = request_scope();
-    let external = authenticate_operator(host.installed_schema(), &scope);
-    let runtime = host.runtime();
+    let external = authenticate_operator(host.program.installed_schema(), &scope);
+    let runtime = host.program.runtime();
     runtime
         .with_application_advancement(&scope, |phase| {
             let selected = runtime
@@ -40,6 +40,7 @@ pub fn open(host: &host::Host) -> Lease<'_> {
                 .select(&phase)
                 .unwrap();
             let binding = host
+                .program
                 .installed_schema()
                 .installed_query_binding::<LiveBinding>()
                 .unwrap();
@@ -74,8 +75,8 @@ pub fn open(host: &host::Host) -> Lease<'_> {
 
 pub fn next(host: &host::Host, live: &mut Lease<'_>, work: u64) -> (Outcome, ExecutionReport) {
     let scope = request_scope();
-    let external = authenticate_operator(host.installed_schema(), &scope);
-    let runtime = host.runtime();
+    let external = authenticate_operator(host.program.installed_schema(), &scope);
+    let runtime = host.program.runtime();
     runtime
         .with_application_advancement(&scope, |phase| {
             let selected = runtime
@@ -83,6 +84,7 @@ pub fn next(host: &host::Host, live: &mut Lease<'_>, work: u64) -> (Outcome, Exe
                 .select(&phase)
                 .unwrap();
             let binding = host
+                .program
                 .installed_schema()
                 .installed_query_binding::<LiveBinding>()
                 .unwrap();
