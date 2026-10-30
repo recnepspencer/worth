@@ -10,6 +10,7 @@ from compiler_audiences import group, sources as fixture_sources
 from fixture_graph import configured_inputs, snapshot_audiences, snapshot_inputs
 from workspace import WORKSPACES
 from diagnostic_flags import FLAGS as DIAGNOSTIC_FLAGS
+from compiler_stages import partition, stage
 
 
 class CompilerScope(Enum):
@@ -55,7 +56,7 @@ def environments(repository, workspace):
         rows['production']['reject_test_features'] = True
     for name, row in rows.items():
         row['packages'] = group(records[name])
-    return rows, orphaned
+    return partition(repository, workspace, rows), orphaned
 
 
 def declared_audiences(packages):
@@ -68,6 +69,7 @@ def recipe_identity(repository, manifest, environment):
     manifests = {path: text.replace(Path(repository).as_posix(), '<workspace>')
                  for path, text in render_manifests(environment, manifest).items()}
     recipe = json.dumps({'manifests': manifests, 'profile': environment['profile'],
+                         'proof_stage': stage(environment).value,
                          'diagnostic_flags': DIAGNOSTIC_FLAGS}, sort_keys=True)
     return hashlib.sha256(recipe.encode()).hexdigest()
 
@@ -134,6 +136,7 @@ def prepare(repository, workspace, output, cargo_runner, scope=CompilerScope.ALL
             outcomes[key] = {'environment': row.get('environment_class', name),
                              'environment_identity': identity, 'shared_target_root': str(target.resolve()),
                              'audience_identity': result['audience_identity'],
+                             'proof_stage': observed['proof_stage'],
                              'fate': result['fate'], 'messages': result['messages']}
     path = output / 'compiler-outcomes.json'
     path.write_text(json.dumps({'schema': 1, 'fixtures': outcomes}, indent=2) + '\n', encoding='utf-8')

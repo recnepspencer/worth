@@ -1,4 +1,4 @@
-"""One Cargo check session per declared compiler-fixture environment."""
+"""One compiler session per declared fixture audience graph and proof stage."""
 from enum import Enum
 import hashlib
 import json
@@ -17,6 +17,7 @@ from diagnostic_flags import FLAGS as DIAGNOSTIC_FLAGS
 from compiler_audiences import source_identity, sources as fixture_sources
 from compiler_features import violations as production_feature_violations
 from fixture_graph import dependency_manifest
+from compiler_stages import stage
 
 
 class FixtureFate(Enum):
@@ -130,6 +131,7 @@ def attribute(events, sources):
 def prepare_environment(workspace_manifest, environment, output, cargo_runner):
     if environment['profile'] in ('test', 'bench'):
         raise BatchCompilationFailure('compiler fixtures require normal binaries, not a test or bench profile')
+    proof_stage = stage(environment)
     workspace_manifest = Path(workspace_manifest).resolve()
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -153,12 +155,12 @@ def prepare_environment(workspace_manifest, environment, output, cargo_runner):
         if forbidden:
             raise BatchCompilationFailure(f'production compiler graph enables test authority: {forbidden}')
     target = target_directory(workspace_manifest, cargo_runner)
-    command = ['cargo', 'check', '--workspace', '--bins', '--keep-going', '--offline', '--locked',
+    command = ['cargo', proof_stage.cargo_command, '--workspace', '--bins', '--keep-going', '--offline', '--locked',
                '--manifest-path', str(output / 'Cargo.toml'),
                '--target-dir', str(target), '--config', 'build.incremental=false',
                '--profile', environment['profile']]
     with compiler_arguments(cargo_runner, DIAGNOSTIC_FLAGS) as flags:
-        observed = cargo_runner(command + flags, workspace_manifest.parent, output / 'check.log')
+        observed = cargo_runner(command + flags, workspace_manifest.parent, output / (proof_stage.value + '.log'))
     if observed.returncode not in (0, 101):
         raise BatchCompilationFailure(f'compiler session failed to execute: {observed.returncode}')
     outcomes = attribute(list(json_objects(observed.stdout)), fixture_sources(environment))
@@ -166,6 +168,7 @@ def prepare_environment(workspace_manifest, environment, output, cargo_runner):
         for source in package['sources']:
             outcomes[str(Path(source).resolve())]['audience_identity'] = package['identity']
     value = {'schema': 1, 'environment': environment['identity'], 'profile': environment['profile'],
+             'proof_stage': proof_stage.value,
              'manifests': manifests,
              'compiler_exit': observed.returncode, 'fixtures': outcomes}
     (output / 'outcomes.json').write_text(json.dumps(value, indent=2) + '\n', encoding='utf-8')

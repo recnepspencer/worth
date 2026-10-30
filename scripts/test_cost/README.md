@@ -178,3 +178,15 @@ masked by the renderer. Every target type, missing trait, error code, source
 span, bound and denial claim remains checked. The old example order described
 separate pre-batch dependency graphs and is retired by this required batching
 cutover; it was not the target type's serialization authority claim.
+
+Compiler proof stages are declared in `compiler_stages.json` before batching.
+Unlisted fixtures use metadata checking; an explicitly listed codegen fixture
+uses a normal `cargo build --workspace --bins --keep-going` batch with its
+original direct dependency audience and production feature audit. Stages enter
+the environment recipe identity and receipts. No stage is inferred from an
+artifact hash, a compiler failure, or the old snapshot's text. The Root
+`nullable_optional.rs` claim requires code generation: its generic inline const
+is evaluated during instantiation. A successful check cannot satisfy its
+denial; the existing reader still requires the exact attributed E0080 snapshot.
+The coordinator's proof-stage ruling authorizes this stage split. No product,
+fixture, expected diagnostic, court identity or test membership is changed.

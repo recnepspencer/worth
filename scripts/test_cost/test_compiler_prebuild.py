@@ -76,6 +76,16 @@ class CompilerPrebuildInputTests(unittest.TestCase):
                 rows, _ = environments(root, workspace)
                 self.assertTrue(rows['production']['reject_test_features'])
 
+    def test_nullable_optional_is_codegen_only_in_the_same_normal_production_audience(self):
+        rows, _ = environments(repository_root(Path(__file__).parent), 'root')
+        generated = rows['production-codegen']
+        self.assertEqual([source.name for source in sources(generated)], ['nullable_optional.rs'])
+        self.assertEqual(generated['proof_stage'], 'codegen')
+        self.assertEqual(generated['environment_class'], 'production')
+        self.assertEqual(generated['profile'], 'dev')
+        self.assertTrue(generated['reject_test_features'])
+        self.assertNotIn('nullable_optional.rs', [source.name for source in sources(rows['production'])])
+
 
 if __name__ == '__main__':
     unittest.main()

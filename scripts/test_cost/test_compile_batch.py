@@ -31,6 +31,15 @@ class BatchedCompilerTests(unittest.TestCase):
             runner = SimpleNamespace(environment={'CARGO_TARGET_DIR': str(root / 'active-target')})
             self.assertEqual(target_directory(root / 'fixture/Cargo.toml', runner), root / 'active-target')
 
+    def test_undeclared_compiler_stage_is_refused_before_writing_or_running(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'output'
+            with self.assertRaises(ValueError):
+                prepare_environment(root / 'Cargo.toml', {'profile': 'dev', 'proof_stage': 'execute'},
+                                    output, lambda *_: self.fail('compiler called for unknown stage'))
+            self.assertFalse(output.exists())
+
     def test_generated_package_may_be_new_but_registry_versions_stay_workspace_locked(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'Cargo.lock'
@@ -79,7 +88,7 @@ class BatchedCompilerTests(unittest.TestCase):
             self.assertTrue(all('native' not in package['dependencies'] for package in packages))
             self.assertEqual(sum('cfg(windows)' in package.get('target', {}) for package in packages), 1)
 
-    def test_two_audiences_share_one_check_and_every_outcome_retains_its_surface_identity(self):
+    def test_two_audiences_share_one_session_per_stage_with_exact_surface_identity(self):
         import subprocess
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -110,18 +119,23 @@ class BatchedCompilerTests(unittest.TestCase):
                               dict(reason='compiler-artifact', target=target(root / 'allowed.rs'))]
                     return subprocess.CompletedProcess(command, 101, '\n'.join(map(json.dumps, events)), '')
 
-            runner = Runner()
-            result = prepare_environment(manifest, env, root / 'batch', runner)
-            checks = [command for command in runner.commands if command[1] == 'check']
-            self.assertEqual(len(checks), 1)
-            for flag in ('--workspace', '--bins', '--keep-going', '--locked'):
-                self.assertIn(flag, checks[0])
-            self.assertEqual((root / 'batch/Cargo.lock').read_text(), lock.read_text())
-            outcomes = result['fixtures']
-            self.assertEqual(outcomes[str(root / 'forbidden.rs')]['fate'], 'denied')
-            self.assertEqual(outcomes[str(root / 'allowed.rs')]['fate'], 'compiled')
-            self.assertEqual({row['audience_identity'] for row in outcomes.values()},
-                             {package['identity'] for package in env['packages']})
+            for proof_stage, command_name in (('check', 'check'), ('codegen', 'build')):
+                with self.subTest(proof_stage=proof_stage):
+                    runner = Runner()
+                    runner.commands = []
+                    env['proof_stage'] = proof_stage
+                    result = prepare_environment(manifest, env, root / proof_stage, runner)
+                    checks = [command for command in runner.commands if command[1] == command_name]
+                    self.assertEqual(len(checks), 1)
+                    self.assertEqual(result['proof_stage'], proof_stage)
+                    for flag in ('--workspace', '--bins', '--keep-going', '--locked'):
+                        self.assertIn(flag, checks[0])
+                    self.assertEqual((root / proof_stage / 'Cargo.lock').read_text(), lock.read_text())
+                    outcomes = result['fixtures']
+                    self.assertEqual(outcomes[str(root / 'forbidden.rs')]['fate'], 'denied')
+                    self.assertEqual(outcomes[str(root / 'allowed.rs')]['fate'], 'compiled')
+                    self.assertEqual({row['audience_identity'] for row in outcomes.values()},
+                                     {package['identity'] for package in env['packages']})
 
     def test_duplicate_source_in_multiple_packages_is_refused_before_manifest_creation(self):
         packages = group([{'dependencies': {}, 'sources': ['one.rs']},
