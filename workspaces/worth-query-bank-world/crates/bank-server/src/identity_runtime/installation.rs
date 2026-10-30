@@ -212,6 +212,7 @@ fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling 
     .expect("approved-payment workflow resources are nonzero")
 }
 
+#[cfg(test)]
 pub(crate) fn bank_application_limits() -> WorthQueryInMemoryApplicationLimits {
     application_limits(super::product_world_resources::bank_product_world_resources())
 }
