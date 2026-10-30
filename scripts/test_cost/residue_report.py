@@ -13,27 +13,27 @@ ITEMS = {
     'store': [
         ('home-media', 'Relational home media sweeps', ('media_sweep::',), 'remaining',
          'Profile per-worker prefix restoration and filesystem I/O; retain every seed, cut and continuation.'),
-        ('home-process', 'Relational home process kills', ('relational_home$process_kill::', 'relational_home::process_kill::'), 'pool implemented; runtime pending',
+        ('home-process', 'Relational home process kills', ('relational_home$process_kill::', 'relational_home::process_kill::'), 'pool implemented',
          'Independent stops may run concurrently; preserve actual process kills, both checkpoint cases and the late-arrival race.'),
         ('qualification', 'Backend qualification setup', ('backend_qualification',), 'remaining',
          'Share only evidence with equal backend, scenario, simulation and executed-evidence identity; preserve negative twins.'),
-        ('checkpoint', 'Physical checkpoint oracle', ('physical_checkpoint_oracle::',), 'pool implemented; runtime pending',
+        ('checkpoint', 'Physical checkpoint oracle', ('physical_checkpoint_oracle::',), 'pool implemented',
          'Preserve every role/ordinal/directive, killed-recovery witness, suffix and second recovery; review prefix setup next.'),
-        ('anchored', 'Member-carrying anchored replacement', ('anchored_record_members::oracle::',), 'pool implemented; runtime pending',
+        ('anchored', 'Member-carrying anchored replacement', ('anchored_record_members::oracle::',), 'pool implemented',
          'Keep per-case answers and both final witnesses; preserve whole old/new values and all fault tuples.'),
         ('limits', 'Published-object adaptive limit sweeps', ('limit_sweep::',), 'remaining',
          'Each adaptive search depends on earlier denials; preserve exact visited evidence and ordered recovery. Review dimensions separately.'),
-        ('branch', 'Branch-transition oracle', ('branch_transitions_oracle::',), 'pool implemented; runtime pending',
+        ('branch', 'Branch-transition oracle', ('branch_transitions_oracle::',), 'pool implemented',
          'Retain unresolved-refusal and retry witnesses, every admitted schedule and complete suffix continuation.'),
-        ('journal', 'Canonical-journal oracle', ('canonical_journal_oracle::',), 'pool implemented; runtime pending',
+        ('journal', 'Canonical-journal oracle', ('canonical_journal_oracle::',), 'pool implemented',
          'Keep reference runtime ownership and worker-local admission; prefix reuse must preserve filesystem root binding.'),
-        ('recovery', 'Recovery interruption families', ('recovery_interruption::',), 'pool implemented; runtime pending',
+        ('recovery', 'Recovery interruption families', ('recovery_interruption::',), 'pool implemented',
          'Pool independent stages only; each stage retains actual killed recovery followed by its ordered second/third recoveries.'),
         ('pressure', 'Pressure harness setup', ('pressure_harness',), 'remaining',
          'Retain execution provenance and mismatch/copy negative cases before sharing replay construction.'),
     ],
     'root': [
-        ('proof', 'Proof prerequisite graphs', ('band_guard_cargo_contract::',), 'prebuild implemented; runtime pending',
+        ('proof', 'Proof prerequisite graphs', ('band_guard_cargo_contract::',), 'prebuild implemented',
          'Real package checks, dependency tree and independently compiled guarded/unguarded release IR remain required.'),
         ('setup', 'Repeated world construction and polling', (), 'remaining',
          'Measure fingerprints first; share immutable construction only, preserving each mutable fate and authority owner.'),
@@ -54,7 +54,7 @@ ITEMS = {
          'Child termination and output bounds remain real and diagnosable; similar representation does not prove shared lifecycle.'),
     ],
     'bank': [
-        ('metadata', 'Estate production-dependency metadata', ('production_bank_packages_use_only_query_audience_crates',), 'prebuild implemented; runtime pending',
+        ('metadata', 'Estate production-dependency metadata', ('production_bank_packages_use_only_query_audience_crates',), 'prebuild implemented',
          'Read raw current-workspace Cargo metadata and retain every audience predicate; reject missing, invalid or foreign observations.'),
         ('rail', 'Fresh-process/external-rail startup', ('external_effect_dispatch::', 'inbound_completion::'), 'remaining',
          'Keep independently built executables, real completion, no redispatch and correct indeterminate outcomes.'),
@@ -82,6 +82,19 @@ def family_matches(patterns, event):
                for pattern in patterns)
 
 
+def execution_status(implementation, events):
+    terminal = [event for event in events if event.get('event') in ('ok', 'failed')
+                and isinstance(event.get('name'), str) and event['name']]
+    passed = sum(event['event'] == 'ok' for event in terminal)
+    failed = len(terminal) - passed
+    status = 'failed' if failed else 'passed' if passed else 'unmeasured'
+    observation = (f'captured {status} ({passed} passed, {failed} failed)' if terminal
+                   else 'captured execution unmeasured')
+    return {'implementation': implementation, 'status': implementation + '; ' + observation,
+            'execution_evidence': {'status': status, 'passed': passed, 'failed': failed,
+                                   'terminal_observations': len(terminal)}}
+
+
 def observations(items, lanes):
     rows = []
     seen = set()
@@ -91,10 +104,11 @@ def observations(items, lanes):
             raise ValueError('same evidence log supplied twice: ' + path)
         seen.add(path)
         for identity, title, patterns, status, claim in items:
-            cost = measured([event for event in lane['tests'] if family_matches(patterns, event)])
+            matched = [event for event in lane['tests'] if family_matches(patterns, event)]
+            cost = measured(matched)
             if cost['frequency'] is not None:
-                rows.append(dict(item=identity, title=title, status=status, claim=claim,
-                                 log=lane['log'], **cost))
+                rows.append(dict(item=identity, title=title, claim=claim,
+                                 log=lane['log'], **execution_status(status, matched), **cost))
         unmatched = {}
         for event in lane['tests']:
             if not isinstance(event.get('name'), str) or any(family_matches(item[2], event) for item in items):
@@ -107,9 +121,9 @@ def observations(items, lanes):
             if cost['frequency'] is not None:
                 rows.append(dict(item='unclassified', binary=binary, test=test,
                     title=f'{binary}${test}' if binary is not None else test,
-                    classification='unclassified exact test', status='requires source review',
+                    classification='unclassified exact test',
                     claim='Preserve every observed invocation and its assertions; inspect the owning test before choosing an optimization.',
-                    log=lane['log'], **cost))
+                    log=lane['log'], **execution_status('requires source review', events), **cost))
     return sorted(rows, key=lambda row: (-row['work_seconds'], row['item'], row['log'],
                                          row.get('binary') or '', row.get('test') or ''))
 
@@ -181,9 +195,12 @@ def generate(workspace, before, current, baseline_lanes=(), runtime_lanes=(), pr
         row['rank'] = index
         row['ranking_basis'] = source
     known = {row['item'] for row in ranked}
-    unranked = [dict(item=identity, title=title, status=status, claim=claim,
+    evidence_lanes = runtime_lanes if runtime_lanes else baseline_lanes
+    unranked = [dict(item=identity, title=title, claim=claim,
+                     **execution_status(status, [event for lane in evidence_lanes for event in lane['tests']
+                                                 if family_matches(patterns, event)]),
                      reason='No measured per-test work/frequency supplied for this item.')
-                for identity, title, _, status, claim in items if identity not in known]
+                for identity, title, patterns, status, claim in items if identity not in known]
     unranked.append({'item': 'generic-ir', 'title': 'Compile-heavy court/testkit generic helpers',
                      'status': 'remaining', 'claim': 'Preserve typed authorities and authentic fixture construction; erase only work independent of type parameters.',
                      'reason': 'LLVM lines are code-size attribution, not measured compile seconds or runtime work.'})
@@ -214,12 +231,14 @@ def markdown(result):
              f'landing {coverage["landing"] if coverage["landing"] is not None else "unknown"}, '
              f'scheduled-only {coverage["scheduled_only"] if coverage["scheduled_only"] is not None else "unknown"}. '
              f'Runtime: {coverage["runtime_executed"]}. Ignored tests remain scheduled-only.', '',
-             '## Implemented mechanics; runtime certification pending', '',
+             '## Implemented mechanics and captured execution evidence', '',
              '- Compiler/trybuild calls moved to outer prebuilds; tests consume typed prebuilt observations. '
              'The boundary rule and build-census ratchet enforce the captured process boundary.',
              '- Root/Query/Bank gates use the shared prebuilt runner; ordinary root-rest coverage and harness-free main handoff are implemented.',
              '- Positive root/Store fixture programs moved to ordinary executable courts. Store compile-fail batching, '
-             'production-authority proof, formal fold and independent sweep pools are implemented. Their actual runtime results remain required.',
+             'production-authority proof, formal fold and independent sweep pools are implemented. '
+             'Each row distinguishes implementation from the actual supplied terminal observations; absent observations stay unmeasured. '
+             'Captured passes do not certify uncaptured claims or the final workspace landing.',
              '- Slot recommendations require actual complete CPU accounting. A configured reservation, lexical loop or long duration is not a measurement.', '',
              '## Ranked observed judgment work', '',
              '| Rank | Family | Executions | Work seconds | Failed | Implementation / remaining judgment | Evidence |',
@@ -249,8 +268,8 @@ def markdown(result):
               'descriptions of then-current signatures are historical; the implementation statuses above supersede its mechanical queue. '
               'It defines the claims and unsafe shortcuts the next fixer must preserve.', '', result['notes'], '',
               '## Stopping point', '',
-              'No after-fix speedup is inferred from baseline work. Runtime certification is pending unless actual execution evidence '
-              'is supplied above. Next work is the highest measured remaining family, then fingerprint/LLVM attribution for unknown costs. '
+              'No after-fix speedup is inferred from baseline work. Execution statuses describe only the supplied captures; '
+              'final certification is separate. Next work is the highest measured remaining family, then fingerprint/LLVM attribution for unknown costs. '
               'No sweep sampling, continuation deduplication or ignored execution is authorized.']
     return '\n'.join(lines) + '\n'
 

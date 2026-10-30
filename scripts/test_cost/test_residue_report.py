@@ -16,6 +16,31 @@ def lane(name, tests=(), setup=()):
 
 
 class ResidueEvidenceTests(unittest.TestCase):
+    def test_implementation_and_captured_pass_failure_or_absence_are_independent(self):
+        result = generate('store', {}, {}, runtime_lanes=[lane('actual.log', [
+            event('court$branch_transitions_oracle::complete', 7),
+            event('court$physical_checkpoint_oracle::denied', 9, 'failed')])])
+        rows = {row['item']: row for row in result['ranked'] + result['unranked']}
+        self.assertEqual(rows['branch']['implementation'], 'pool implemented')
+        self.assertEqual(rows['branch']['execution_evidence'],
+                         {'status': 'passed', 'passed': 1, 'failed': 0, 'terminal_observations': 1})
+        self.assertIn('captured passed', rows['branch']['status'])
+        self.assertEqual(rows['checkpoint']['execution_evidence']['status'], 'failed')
+        self.assertIn('captured failed', rows['checkpoint']['status'])
+        self.assertEqual(rows['anchored']['execution_evidence']['status'], 'unmeasured')
+        self.assertEqual(rows['anchored']['implementation'], 'pool implemented')
+        self.assertNotIn('runtime pending', markdown(result))
+        self.assertNotIn('Their actual runtime results remain required', markdown(result))
+
+    def test_observed_pass_without_cost_stays_unranked_without_losing_execution_evidence(self):
+        result = generate('root', {}, {}, runtime_lanes=[lane('actual.log', [
+            {'name': 'court$band_guard_cargo_contract::sentinel', 'event': 'ok'}])])
+        self.assertEqual(result['ranked'], [])
+        proof = next(row for row in result['unranked'] if row['item'] == 'proof')
+        self.assertEqual(proof['implementation'], 'prebuild implemented')
+        self.assertEqual(proof['execution_evidence']['status'], 'passed')
+        self.assertNotIn('work_seconds', proof)
+
     def test_home_process_cost_uses_both_recorded_identity_formats_without_inventing_or_mixing_work(self):
         baseline = lane('historical.log', [event('worth_store_relational_home$process_kill::seams', 7)])
         current = lane('initial.log', [
