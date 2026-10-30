@@ -1,4 +1,7 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityAlgorithm, worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily, worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary, worth_store_physical_format::integrity_declarations::PhysicalIntegrityFormatDeclaration};
+pub(crate) use worth_store_physical_format::integrity_declarations::{
+    PhysicalIntegrityAlgorithm, PhysicalIntegrityArtifactFamily, PhysicalIntegrityCoverageBoundary,
+    PhysicalIntegrityFormatDeclaration,
+};
 
 #[derive(Clone, Copy)]
 pub(crate) enum LiteralChecksum {
@@ -127,7 +130,9 @@ pub(crate) fn matches_stored_checksum(
         crate::phase_4_literal_vectors::oracle::LiteralChecksum::Crc32c(expected) => {
             expected.to_le_bytes() == stored && crc32c(&parts) == expected
         }
-        crate::phase_4_literal_vectors::oracle::LiteralChecksum::Sha256(expected) => expected == stored && sha256(&parts) == expected,
+        crate::phase_4_literal_vectors::oracle::LiteralChecksum::Sha256(expected) => {
+            expected == stored && sha256(&parts) == expected
+        }
     }
 }
 

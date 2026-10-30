@@ -1,7 +1,23 @@
-use {worth_store_physical_format::DurableFrameKind, worth_store_physical_format::PhysicalPageLsn, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_physics::PhysicalRedoPlanningDenial, worth_store_recovery_physics::RecoveryPlanCostDenial, worth_store::physical_runtime::StoreRecoveryBindingSampleDenial, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_physical_format::encode_data_frame_page_lsn, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, worth_store_testkit_recovery_runtime::phase_three_support::limits, crate::phase_four_planning::only_artifact, crate::phase_four_planning::ordinary_recovery_declaration, crate::phase_four_planning::prepare_ordinary_recovery_root, crate::phase_four_planning::selected_ordinary_recovery};
+use {
+    crate::phase_four_planning::only_artifact,
+    crate::phase_four_planning::ordinary_recovery_declaration,
+    crate::phase_four_planning::prepare_ordinary_recovery_root,
+    crate::phase_four_planning::selected_ordinary_recovery,
+    worth_store::physical_runtime::StoreRecoveryBindingSampleDenial,
+    worth_store_physical_format::encode_data_frame_page_lsn,
+    worth_store_physical_format::DurableFrameKind, worth_store_physical_format::PhysicalPageLsn,
+    worth_store_recovery_physics::PhysicalRedoPlanningDenial,
+    worth_store_recovery_physics::RecoveryPlanCostDenial,
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
+    worth_store_testkit_recovery_runtime::phase_three_support::limits,
+};
 
 #[test]
-fn page_failures_retain_distinct_exact_phase_four_read_counters() {
+fn page_failures_retain_distinct_exact_planning_read_counters() {
     let invalid_root = prepare_ordinary_recovery_root("c8-phase4-invalid-membership");
     let invalid_selected = selected_ordinary_recovery(invalid_root.path());
     let generation = invalid_selected.root_generation();
@@ -75,7 +91,7 @@ fn page_failures_retain_distinct_exact_phase_four_read_counters() {
 }
 
 #[test]
-fn redo_denial_retains_completed_phase_four_read_counters() {
+fn redo_denial_retains_completed_planning_read_counters() {
     let retained_root = prepare_ordinary_recovery_root("c8-phase4-redo-denial-counters");
     let selected = selected_ordinary_recovery(retained_root.path());
     let source_generation = selected.root_generation() - 1;
@@ -99,9 +115,11 @@ fn redo_denial_retains_completed_phase_four_read_counters() {
     };
     assert_eq!(
         blocked.evidence().planning_denial,
-        Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::Redo(
-            worth_store_recovery_physics::PhysicalRedoPlanningDenial::PageDigestMismatch,
-        ))
+        Some(
+            worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::Redo(
+                worth_store_recovery_physics::PhysicalRedoPlanningDenial::PageDigestMismatch,
+            )
+        )
     );
     let counters = blocked.evidence().planning_counters.unwrap();
     assert_eq!(counters.page_extent_reads(), 7);
@@ -128,9 +146,11 @@ fn staging_denial_retains_every_completed_planning_stage_counter() {
     };
     assert_eq!(
         blocked.evidence().planning_denial,
-        Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::Cost(
-            worth_store_recovery_physics::RecoveryPlanCostDenial::StagingBytes,
-        ))
+        Some(
+            worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::Cost(
+                worth_store_recovery_physics::RecoveryPlanCostDenial::StagingBytes,
+            )
+        )
     );
     let limit = blocked.cause().limit().unwrap();
     assert_eq!(
@@ -206,12 +226,17 @@ fn redo_byte_limit_reports_the_exact_non_unit_crossing_without_media_reads() {
     };
     assert_eq!(
         blocked.evidence().planning_denial,
-        Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::BindingFreshness(
-            worth_store::physical_runtime::StoreRecoveryBindingSampleDenial::RedoByteLimit,
-        ))
+        Some(
+            worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::BindingFreshness(
+                worth_store::physical_runtime::StoreRecoveryBindingSampleDenial::RedoByteLimit,
+            )
+        )
     );
     let limit = blocked.cause().limit().unwrap();
-    assert_eq!(limit.dimension(), worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::RedoBytes);
+    assert_eq!(
+        limit.dimension(),
+        worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::RedoBytes
+    );
     assert_eq!(limit.admitted(), 1);
     assert!(limit.observed() > limit.admitted() + 1);
     let counters = blocked.evidence().planning_counters.unwrap();
@@ -237,17 +262,23 @@ fn redo_admission_denial_retains_sampled_freshness_and_reconciled_fates() {
     };
     assert_eq!(
         blocked.evidence().planning_denial,
-        Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::Redo(
-            worth_store_recovery_physics::PhysicalRedoPlanningDenial::TargetLimit {
-                observed: 2,
-                admitted: 1,
-            },
-        ))
+        Some(
+            worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::Redo(
+                worth_store_recovery_physics::PhysicalRedoPlanningDenial::TargetLimit {
+                    observed: 2,
+                    admitted: 1,
+                },
+            )
+        )
     );
     let limit = blocked.cause().limit().expect("the exhausted limit");
     assert_eq!(
         (limit.dimension(), limit.observed(), limit.admitted()),
-        (worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::RedoTargets, 2, 1)
+        (
+            worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::RedoTargets,
+            2,
+            1
+        )
     );
     let counters = blocked.evidence().planning_counters.unwrap();
     assert_eq!(counters.page_extent_reads(), 0);

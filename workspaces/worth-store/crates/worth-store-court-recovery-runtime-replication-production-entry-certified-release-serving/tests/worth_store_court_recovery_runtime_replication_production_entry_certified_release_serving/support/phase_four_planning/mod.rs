@@ -18,3 +18,6 @@ pub(crate) mod phase_three_support;
 #[allow(dead_code, unused_imports)]
 #[path = "root_protocol_terminal_evidence/mod.rs"]
 pub(crate) mod root_protocol_terminal_evidence;
+
+#[path = "publication_faults.rs"]
+pub(crate) mod publication_faults;

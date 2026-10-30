@@ -1,6 +1,11 @@
-pub(crate) use {crate::support::fixtures::clean_store, crate::store_offline_integrity_observer_support::request};
-pub(crate) use {serde_json::json, serde_json::Value};
-pub(crate) use {worth_store_offline_integrity_observer::compare_integrity_observations, worth_store_offline_integrity_observer::encode_offline_integrity_report, worth_store_offline_integrity_observer::observe_store, worth_store_offline_integrity_observer::PhysicalIntegrityComparisonDenial as Denial, worth_store_offline_integrity_observer::PhysicalIntegrityComparisonLimits as Limits};
+pub(crate) use crate::{
+    store_offline_integrity_observer_support::request, support::fixtures::clean_store,
+};
+pub(crate) use serde_json::{json, Value};
+pub(crate) use worth_store_offline_integrity_observer::{
+    compare_integrity_observations, encode_offline_integrity_report, observe_store,
+    PhysicalIntegrityComparisonDenial as Denial, PhysicalIntegrityComparisonLimits as Limits,
+};
 
 pub(crate) fn reports() -> (Value, Value) {
     let fixture = clean_store("comparison-input");

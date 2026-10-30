@@ -2,10 +2,18 @@
 
 pub(crate) use {std::path::Path, std::process::Command};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, crate::production_entry::release_reopen::shared_reuse_custody::assert_absent, crate::production_entry::release_reopen::shared_reuse_custody::read_exact, crate::production_entry::release_reopen::shared_reuse_custody::recover_serving, crate::production_entry::release_reopen::shared_reuse_custody::shared_format, crate::production_entry::release_reopen::shared_reuse_custody::world, crate::production_entry::release_reopen::shared_reuse_custody::SCOPE_NAME};
+pub(crate) use {
+    crate::production_entry::release_reopen::shared_reuse_custody::assert_absent,
+    crate::production_entry::release_reopen::shared_reuse_custody::read_exact,
+    crate::production_entry::release_reopen::shared_reuse_custody::recover_serving,
+    crate::production_entry::release_reopen::shared_reuse_custody::shared_format,
+    crate::production_entry::release_reopen::shared_reuse_custody::world,
+    crate::production_entry::release_reopen::shared_reuse_custody::SCOPE_NAME,
+    worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope,
+};
 
 pub(crate) const CHILD_TEST: &str =
-    "release_reopen::shared_reuse_custody::fresh_child_checks_source_first_reuse";
+    "process::recovery_runtime::production_entry::release_reopen::shared_reuse_custody::fresh_child_checks_source_first_reuse";
 pub(crate) const ROOT_ENV: &str = "WORTH_C11_SHARED_C8_ROOT";
 pub(crate) const RELEASED_ENV: &str = "WORTH_C11_SHARED_C8_RELEASED";
 pub(crate) const SURVIVOR_ENV: &str = "WORTH_C11_SHARED_C8_SURVIVOR";

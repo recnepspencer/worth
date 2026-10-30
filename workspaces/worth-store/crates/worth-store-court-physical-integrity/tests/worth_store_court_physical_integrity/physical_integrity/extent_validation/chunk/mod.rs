@@ -1,9 +1,5 @@
-#[allow(unused_imports)] use crate::extent_validation::chunk::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PhysicalPageSizeClass};
-use {worth_store_physical_integrity::validate_extent_chunk, worth_store_physical_integrity::ExtentChunkIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::extent_validation::assert_damage, crate::support::extent_validation::assert_rejected_counters, crate::support::extent_validation::chunk_payload_capacity, crate::support::extent_validation::chunk_scope, crate::support::extent_validation::extent_cell, crate::support::extent_validation::field_range, crate::support::extent_validation::format, crate::support::extent_validation::record, crate::support::extent_validation::reseal_durable_frame, crate::support::extent_validation::store, crate::support::extent_validation::validated_manifest, crate::support::extent_validation::ExtentFixture, crate::support::extent_validation::CHUNK_OFFSET};
+#[allow(unused_imports)]
+use crate::extent_validation::chunk::*;
 
 #[test]
 fn clean_chunk_seals_manifest_membership_metadata_incarnation_and_validation_record() {
@@ -13,9 +9,12 @@ fn clean_chunk_seals_manifest_membership_metadata_incarnation_and_validation_rec
     let bytes = fixture.tail_chunk_bytes();
     let other_incarnation = bytes.clone();
     let scope = fixture.tail_chunk_scope();
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let (validation, counters) = validate_extent_chunk(artifact, scope, &manifest);
-    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(validated) = validation else {
+    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(validated) =
+        validation
+    else {
         panic!("clean extent chunk rejected")
     };
 
@@ -30,11 +29,11 @@ fn clean_chunk_seals_manifest_membership_metadata_incarnation_and_validation_rec
     );
     assert_eq!(validated.ordinal(), 2);
     assert!(validated.matches_input(artifact));
-    assert!(
-        !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+    assert!(!validated.matches_input(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
             &other_incarnation
-        ))
-    );
+        )
+    ));
     assert!(validated.into_validation_record().matches_scope(scope));
     assert_eq!(
         counters.family(),
@@ -96,7 +95,11 @@ fn chunk_framing_version_kind_checksum_and_truncation_are_localized() {
         scope,
         &manifest,
         worth_store_physical_integrity::PhysicalDamageCause::Truncated,
-        worth_store_physical_integrity::PhysicalByteRange::new(CHUNK_OFFSET + complete.len() as u64 - 2, 2).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            CHUNK_OFFSET + complete.len() as u64 - 2,
+            2,
+        )
+        .unwrap(),
         None,
         worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
     );

@@ -1,11 +1,11 @@
 error[E0599]: no method named `with_owner_decoder` found for reference `&PhysicalFrameLease` in the current scope
- --> tests/physical_runtime_authority/raw_lease_cannot_enter_resident_decoder.rs:4:11
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_lease_cannot_enter_resident_decoder.rs:4:11
   |
 4 |     lease.with_owner_decoder(|bytes| bytes.len());
   |           ^^^^^^^^^^^^^^^^^^ method not found in `&PhysicalFrameLease`
 
 error[E0282]: type annotations needed
- --> tests/physical_runtime_authority/raw_lease_cannot_enter_resident_decoder.rs:4:31
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_lease_cannot_enter_resident_decoder.rs:4:31
   |
 4 |     lease.with_owner_decoder(|bytes| bytes.len());
   |                               ^^^^^  ----- type must be known at this point

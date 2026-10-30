@@ -2,8 +2,6 @@
 pub(crate) mod consumption_projection;
 #[path = "control/mod.rs"]
 pub(crate) mod control;
-#[path = "literal_vectors/mod.rs"]
-pub(crate) mod literal_vectors;
 #[path = "matrix/mod.rs"]
 pub(crate) mod matrix;
 #[path = "slot_directory/mod.rs"]

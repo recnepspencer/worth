@@ -1,9 +1,67 @@
+macro_rules! assert_exact_scope_ceiling {
+    ($serving:expr, $allocations:expr, $store:expr, $generation:expr, $admit:ident, $scope:expr) => {{
+        let exact = $allocations
+            .$admit(bytes(PAGE_BYTES * 2))
+            .expect("the exact successor scope ceiling must be admitted");
+        assert_eq!(exact.store_identity(), $store);
+        assert_eq!(exact.runtime_identity(), $serving.runtime_identity());
+        assert_eq!(exact.store_generation(), $generation);
+        assert_eq!(exact.bytes(), PAGE_BYTES * 2);
+        assert_eq!(
+            $serving
+                .residency_observation()
+                .counters()
+                .active_operation_bytes_for($scope),
+            PAGE_BYTES * 2,
+        );
+        let pressure = $allocations
+            .$admit(bytes(1))
+            .expect_err("one byte past the live scope ceiling must be denied")
+            .pressure()
+            .expect("scope exhaustion must lower to Store pressure evidence");
+        assert_pressure(
+            pressure,
+            ExpectedScopePressure {
+                store: $store,
+                dimension:
+                    worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(
+                        $scope,
+                    ),
+                scope: $scope,
+                requested: 1,
+                admitted: PAGE_BYTES * 2,
+                limit: PAGE_BYTES * 2,
+            },
+        );
+        drop(exact);
+        assert_eq!(
+            $serving
+                .residency_observation()
+                .counters()
+                .active_operation_bytes_for($scope),
+            0,
+        );
+    }};
+}
+
 pub(crate) use {std::num::NonZeroU32, std::num::NonZeroU64};
 
-pub(crate) use {worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordPressureEvidence, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::store_namespace::StableStoreIdentity};
+pub(crate) use worth_store_physical_format::store_namespace::StableStoreIdentity;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordPressureEvidence,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(crate) const PAGE_BYTES: u64 = 16_384;
 pub(crate) const SUCCESSOR_SCOPES: [Scope; 5] = [
@@ -17,8 +75,10 @@ pub(crate) const SUCCESSOR_SCOPES: [Scope; 5] = [
 pub(crate) fn successor_scope_runtime(root: &std::path::Path) -> ServingPhysicalRuntime {
     let (format, placement, access) = configuration();
     success(initialize_record_store!(media(root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
-            .with_residency_policy(successor_policy(format))
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
+        .with_residency_policy(successor_policy(format))
     },))
 }
 
@@ -78,14 +138,18 @@ pub(crate) fn assert_scope_isolation(serving: &ServingPhysicalRuntime) {
         serving
             .residency_observation()
             .counters()
-            .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery),
+            .active_operation_bytes_for(
+                worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery
+            ),
         PAGE_BYTES,
     );
     assert_eq!(
         serving
             .residency_observation()
             .counters()
-            .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Scrub),
+            .active_operation_bytes_for(
+                worth_store::physical_runtime::PhysicalOperationAllocationScope::Scrub
+            ),
         PAGE_BYTES,
     );
     drop((recovery, scrub));
@@ -155,15 +219,30 @@ pub(crate) fn successor_policy(
         .dirty_frames(frames(4))
         .dirty_replacement_bytes(bytes(PAGE_BYTES))
         .operation_bytes(operation)
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundRead, bytes(PAGE_BYTES))
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundWrite, bytes(PAGE_BYTES));
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundRead,
+            bytes(PAGE_BYTES),
+        )
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundWrite,
+            bytes(PAGE_BYTES),
+        );
     for scope in SUCCESSOR_SCOPES {
         builder = builder.scope_bytes(scope, bytes(PAGE_BYTES * 2));
     }
     builder
-        .speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::Prefetch, frames(8))
-        .speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead, frames(8))
-        .speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind, frames(4))
+        .speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::Prefetch,
+            frames(8),
+        )
+        .speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead,
+            frames(8),
+        )
+        .speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind,
+            frames(4),
+        )
         .admit(format)
         .into_result()
         .unwrap()
@@ -178,7 +257,10 @@ pub(crate) struct ExpectedScopePressure {
     pub(crate) limit: u64,
 }
 
-pub(crate) fn assert_pressure(pressure: PhysicalRecordPressureEvidence, expected: ExpectedScopePressure) {
+pub(crate) fn assert_pressure(
+    pressure: PhysicalRecordPressureEvidence,
+    expected: ExpectedScopePressure,
+) {
     assert_eq!(pressure.basis().store_identity(), expected.store);
     assert_eq!(pressure.dimension(), expected.dimension);
     assert_eq!(pressure.scope(), expected.scope);

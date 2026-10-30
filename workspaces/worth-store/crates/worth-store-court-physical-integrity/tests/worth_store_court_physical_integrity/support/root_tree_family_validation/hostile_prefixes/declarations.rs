@@ -1,8 +1,19 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::PhysicalPageSizeClass, worth_store_physical_format::PhysicalRecordFormatDeclaration};
-pub(crate) use {worth_store_physical_integrity::validate_bootstrap_catalog, worth_store_physical_integrity::BootstrapCatalogIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::{
+    PhysicalPageSizeClass, PhysicalRecordFormatDeclaration,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_bootstrap_catalog, BootstrapCatalogIntegrityValidation, PhysicalArtifactScope,
+    PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause, PhysicalFormatField,
+    UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::support::root_tree_family_validation::assert_damage, crate::support::root_tree_family_validation::assert_rejected_counters, crate::support::root_tree_family_validation::assert_root_mutation_contract, crate::support::root_tree_family_validation::assert_segment_mutation_contract, crate::support::root_tree_family_validation::bootstrap_bytes, crate::support::root_tree_family_validation::bootstrap_scope, crate::support::root_tree_family_validation::field_range, crate::support::root_tree_family_validation::format, crate::support::root_tree_family_validation::reseal_durable_frame, crate::support::root_tree_family_validation::root_leaf, crate::support::root_tree_family_validation::root_rejection, crate::support::root_tree_family_validation::root_scope, crate::support::root_tree_family_validation::segment_leaf, crate::support::root_tree_family_validation::segment_rejection, crate::support::root_tree_family_validation::segment_scope, crate::support::root_tree_family_validation::store, crate::support::root_tree_family_validation::BOOTSTRAP_OFFSET, crate::support::root_tree_family_validation::ROOT_BLOCK_OFFSET, crate::support::root_tree_family_validation::SEGMENT_BLOCK_OFFSET};
+pub(crate) use crate::support::root_tree_family_validation::{
+    assert_damage, assert_rejected_counters, assert_root_mutation_contract,
+    assert_segment_mutation_contract, bootstrap_bytes, bootstrap_scope, field_range, format,
+    reseal_durable_frame, root_leaf, root_rejection, root_scope, segment_leaf, segment_rejection,
+    segment_scope, store, BOOTSTRAP_OFFSET, ROOT_BLOCK_OFFSET, SEGMENT_BLOCK_OFFSET,
+};
 
 pub(crate) fn assert_root_damage(
     bytes: &[u8],
@@ -52,15 +63,24 @@ pub(crate) fn assert_catalog_damage(
         worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
         scope,
     ) {
-        (worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Rejected(rejection), counters) => {
-            (rejection, counters)
-        }
-        (worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::ScopeMismatch(mismatch), counters) => {
-            (mismatch.rejection(), counters)
-        }
-        (worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::UnsupportedFormat(unsupported), counters) => {
-            (unsupported.rejection(), counters)
-        }
+        (
+            worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Rejected(
+                rejection,
+            ),
+            counters,
+        ) => (rejection, counters),
+        (
+            worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::ScopeMismatch(
+                mismatch,
+            ),
+            counters,
+        ) => (mismatch.rejection(), counters),
+        (
+            worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::UnsupportedFormat(
+                unsupported,
+            ),
+            counters,
+        ) => (unsupported.rejection(), counters),
         (worth_store_physical_integrity::BootstrapCatalogIntegrityValidation::Intact(_), _) => {
             panic!("damaged bootstrap catalog validated")
         }

@@ -13,6 +13,8 @@ pub(crate) mod checkpoint_validation;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/checksum_oracles/mod.rs"]
 pub(crate) mod checksum_oracles;
+#[path = "worth_store_court_physical_integrity/compile_fail/mod.rs"]
+pub(crate) mod compile_fail;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/extent_validation/mod.rs"]
 pub(crate) mod extent_validation;
@@ -22,12 +24,16 @@ pub(crate) mod free_space_validation;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/literal_vectors/mod.rs"]
 pub(crate) mod literal_vectors;
+#[path = "worth_store_court_physical_integrity/oracle/mod.rs"]
+pub(crate) mod oracle;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/page_validation/mod.rs"]
 pub(crate) mod page_validation;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/physical_artifact_scope_contract/mod.rs"]
 pub(crate) mod physical_artifact_scope_contract;
+#[path = "worth_store_court_physical_integrity/physical_integrity/mod.rs"]
+pub(crate) mod physical_integrity;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/physical_work_obligation_validation/mod.rs"]
 pub(crate) mod physical_work_obligation_validation;
@@ -49,5 +55,3 @@ pub(crate) mod vectors;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/wal_frame_validation/mod.rs"]
 pub(crate) mod wal_frame_validation;
-#[path = "worth_store_court_physical_integrity/physical_integrity/mod.rs"]
-pub(crate) mod physical_integrity;

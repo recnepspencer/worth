@@ -1,9 +1,19 @@
-pub(crate) use {std::path::Component, std::path::Path, std::path::PathBuf};
-pub(crate) use {std::process::Command};
+pub(crate) use std::path::{Component, Path, PathBuf};
+pub(crate) use std::process::Command;
 
-pub(crate) use {worth_store_offline_integrity_observer::emit_offline_integrity_report, worth_store_offline_integrity_observer::encode_offline_integrity_report, worth_store_offline_integrity_observer::observe_store, worth_store_offline_integrity_observer::OfflineIntegrityObservationDenial, worth_store_offline_integrity_observer::OfflineIntegrityObservationLimits, worth_store_offline_integrity_observer::OfflineIntegrityObservationRequest, worth_store_offline_integrity_observer::OfflineIntegrityProtocolContext, worth_store_offline_integrity_observer::OfflineIntegrityReportBoundaryDenial, worth_store_offline_integrity_observer::OfflineIntegrityReportDestination};
+pub(crate) use worth_store_offline_integrity_observer::{
+    emit_offline_integrity_report, encode_offline_integrity_report, observe_store,
+    OfflineIntegrityObservationDenial, OfflineIntegrityObservationLimits,
+    OfflineIntegrityObservationRequest, OfflineIntegrityProtocolContext,
+    OfflineIntegrityReportBoundaryDenial, OfflineIntegrityReportDestination,
+};
 
-pub(crate) use {crate::store_offline_integrity_observer_support::artifact_path, crate::support::fixtures::clean_store, crate::support::json::parse_json, crate::store_offline_integrity_observer_support::request, crate::support::fixtures::StoreFixture, crate::store_offline_integrity_observer_support::Target};
+pub(crate) use crate::{
+    store_offline_integrity_observer_support::artifact_path,
+    store_offline_integrity_observer_support::request,
+    store_offline_integrity_observer_support::Target, support::fixtures::clean_store,
+    support::fixtures::StoreFixture, support::json::parse_json,
+};
 
 pub(crate) fn assert_wire_posture(wire: &str, expected: &str) {
     let parsed = parse_json(wire);
@@ -40,7 +50,10 @@ pub(crate) fn request_with_destination(
     worth_store_offline_integrity_observer::OfflineIntegrityObservationRequest::new(
         fixture.store.clone(),
         template.limits(),
-        worth_store_offline_integrity_observer::OfflineIntegrityReportDestination::file(destination).unwrap(),
+        worth_store_offline_integrity_observer::OfflineIntegrityReportDestination::file(
+            destination,
+        )
+        .unwrap(),
         worth_store_offline_integrity_observer::OfflineIntegrityProtocolContext::new(
             "fixture-observer",
             "process-1",
@@ -60,7 +73,8 @@ pub(crate) fn bounded_request(
     worth_store_offline_integrity_observer::OfflineIntegrityObservationRequest::new(
         fixture.store.clone(),
         limits,
-        worth_store_offline_integrity_observer::OfflineIntegrityReportDestination::standard_output(),
+        worth_store_offline_integrity_observer::OfflineIntegrityReportDestination::standard_output(
+        ),
         template.protocol_context().clone(),
     )
     .unwrap()

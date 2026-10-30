@@ -5,8 +5,8 @@ pub(crate) use {std::path::Path};
 pub(crate) use {std::process::Command};
 pub(crate) use {worth_store::physical_runtime::CheckpointMemoryLimit, worth_store::physical_runtime::ExtentArenaCapacity, worth_store::physical_runtime::GroupCommitDelay, worth_store::physical_runtime::GroupCommitLimit, worth_store::physical_runtime::IdempotencyRetentionGenerations, worth_store::physical_runtime::LiveIdempotencyBindingLimit, worth_store::physical_runtime::PendingUnresolvedMutationLimit, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointPolicy, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalDurabilityDeclaration, worth_store::physical_runtime::PhysicalIdempotencyPolicy, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::RetainedWalTailLimit, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
 
-pub(crate) const WRITER: &str = "durability_admission::managed_mutation::extent_record_rewrite::arena_file_scale::scale_writer_child";
-pub(crate) const REOPENER: &str = "durability_admission::managed_mutation::extent_record_rewrite::arena_file_scale::scale_reopener_child";
+pub(crate) const WRITER: &str = "process::store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_file_scale::scale_writer_child";
+pub(crate) const REOPENER: &str = "process::store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_file_scale::scale_reopener_child";
 pub(crate) const DIRECTORY: &str = "C11_ARENA_SCALE_DIRECTORY";
 pub(crate) const COUNT: &str = "C11_ARENA_SCALE_COUNT";
 pub(crate) const CAPACITY: &str = "C11_ARENA_SCALE_CAPACITY";
@@ -118,7 +118,11 @@ pub(crate) fn assert_offline_population(root: &Path, directory: &Path, count: u6
     );
 }
 
-pub(crate) fn observe_offline_population(root: &Path, directory: &Path, count: u64) -> serde_json::Value {
+pub(crate) fn observe_offline_population(
+    root: &Path,
+    directory: &Path,
+    count: u64,
+) -> serde_json::Value {
     let logical_bytes = count * (LARGE as u64 + SMALL as u64);
     // Current and previous roots each read the selected frames; WAL and
     // manifest admission need additional room beyond those two payload walks.
@@ -192,7 +196,9 @@ pub(crate) fn checkpoint_and_bound_wal(serving: &ServingPhysicalRuntime, batch: 
             worth_signal::facade::TemporalDuration::temporal_duration(30_000).unwrap(),
         ),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("capacity-lane checkpoint {batch} was not admitted");
     };
     assert!(matches!(
@@ -214,22 +220,44 @@ pub(crate) fn large_population_durability(
 ) -> worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy {
     let admitted = worth_store::physical_runtime::PhysicalDurabilityDeclaration::builder()
         .group_commit(
-            worth_store::physical_runtime::GroupCommitLimit::new(std::num::NonZeroU32::new(32).unwrap()),
-            worth_store::physical_runtime::GroupCommitDelay::new(std::num::NonZeroU64::new(1).unwrap()),
+            worth_store::physical_runtime::GroupCommitLimit::new(
+                std::num::NonZeroU32::new(32).unwrap(),
+            ),
+            worth_store::physical_runtime::GroupCommitDelay::new(
+                std::num::NonZeroU64::new(1).unwrap(),
+            ),
         )
         .wal(worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-            worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(16 << 20).unwrap()),
-            worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(128).unwrap()),
+            worth_store::physical_runtime::WalSegmentByteLimit::new(
+                std::num::NonZeroU64::new(16 << 20).unwrap(),
+            ),
+            worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+                std::num::NonZeroU32::new(128).unwrap(),
+            ),
         ))
-        .idempotency(worth_store::physical_runtime::PhysicalIdempotencyPolicy::new(
-            worth_store::physical_runtime::IdempotencyRetentionGenerations::new(std::num::NonZeroU64::new(4).unwrap()),
-            worth_store::physical_runtime::PendingUnresolvedMutationLimit::new(std::num::NonZeroU32::new(1024).unwrap()),
-            worth_store::physical_runtime::LiveIdempotencyBindingLimit::new(std::num::NonZeroU32::new(65_536).unwrap()),
-        ))
-        .checkpoint(worth_store::physical_runtime::PhysicalCheckpointPolicy::fuzzy(
-            worth_store::physical_runtime::CheckpointMemoryLimit::new(std::num::NonZeroU64::new(64 << 20).unwrap()),
-            worth_store::physical_runtime::RetainedWalTailLimit::new(std::num::NonZeroU64::new(512_u64 << 20).unwrap()),
-        ))
+        .idempotency(
+            worth_store::physical_runtime::PhysicalIdempotencyPolicy::new(
+                worth_store::physical_runtime::IdempotencyRetentionGenerations::new(
+                    std::num::NonZeroU64::new(4).unwrap(),
+                ),
+                worth_store::physical_runtime::PendingUnresolvedMutationLimit::new(
+                    std::num::NonZeroU32::new(1024).unwrap(),
+                ),
+                worth_store::physical_runtime::LiveIdempotencyBindingLimit::new(
+                    std::num::NonZeroU32::new(65_536).unwrap(),
+                ),
+            ),
+        )
+        .checkpoint(
+            worth_store::physical_runtime::PhysicalCheckpointPolicy::fuzzy(
+                worth_store::physical_runtime::CheckpointMemoryLimit::new(
+                    std::num::NonZeroU64::new(64 << 20).unwrap(),
+                ),
+                worth_store::physical_runtime::RetainedWalTailLimit::new(
+                    std::num::NonZeroU64::new(512_u64 << 20).unwrap(),
+                ),
+            ),
+        )
         .admit(media.physical_durability_admission_basis().unwrap())
         .into_raw();
     let worth_proof::TransitionOutcome::Success(policy) = admitted else {

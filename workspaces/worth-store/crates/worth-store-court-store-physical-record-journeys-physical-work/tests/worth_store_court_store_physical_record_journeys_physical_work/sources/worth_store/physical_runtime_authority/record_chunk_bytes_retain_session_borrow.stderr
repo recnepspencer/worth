@@ -1,5 +1,5 @@
 error[E0499]: cannot borrow `session` as mutable more than once at a time
- --> tests/physical_runtime_authority/record_chunk_bytes_retain_session_borrow.rs:8:13
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_bytes_retain_session_borrow.rs:8:13
   |
 5 |         let chunk = session.next_chunk().unwrap().unwrap();
   |                     ------- first mutable borrow occurs here
@@ -10,7 +10,7 @@ error[E0499]: cannot borrow `session` as mutable more than once at a time
   |             ----- first borrow later used here
 
 error: lifetime may not live long enough
-  --> tests/physical_runtime_authority/record_chunk_bytes_retain_session_borrow.rs:13:5
+  --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_bytes_retain_session_borrow.rs:13:5
    |
 12 | fn escape_bytes(session: &mut RecordReadSession) -> &'static [u8] {
    |                          - let's call the lifetime of this reference `'1`

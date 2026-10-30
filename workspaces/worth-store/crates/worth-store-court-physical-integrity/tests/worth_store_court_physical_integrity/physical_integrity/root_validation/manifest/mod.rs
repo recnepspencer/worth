@@ -1,9 +1,5 @@
-#[allow(unused_imports)] use crate::root_validation::manifest::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::maximum_current_root_entries, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalPageSizeClass};
-use {worth_store_physical_integrity::validate_root_manifest, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::RootManifestIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::root_validation::assert_damage, crate::support::root_validation::assert_rejected_counters, crate::support::root_validation::field_range, crate::support::root_validation::format, crate::support::root_validation::manifest_bytes, crate::support::root_validation::manifest_bytes_with_capacity, crate::support::root_validation::manifest_scope, crate::support::root_validation::populated_manifest_bytes, crate::support::root_validation::reseal_durable_frame, crate::support::root_validation::selector_scope, crate::support::root_validation::store, crate::support::root_validation::SelectorKind, crate::support::root_validation::MANIFEST_BYTES, crate::support::root_validation::MANIFEST_OFFSET};
+#[allow(unused_imports)]
+use crate::root_validation::manifest::*;
 
 #[test]
 fn clean_manifest_control_seals_all_owner_handoff_projections() {
@@ -12,9 +8,12 @@ fn clean_manifest_control_seals_all_owner_handoff_projections() {
     let bytes = populated_manifest_bytes(11, format);
     let other_incarnation = bytes.clone();
     let scope = manifest_scope(store, format, 11);
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let (validation, counters) = validate_root_manifest(artifact, scope);
-    let worth_store_physical_integrity::RootManifestIntegrityValidation::Intact(validated) = validation else {
+    let worth_store_physical_integrity::RootManifestIntegrityValidation::Intact(validated) =
+        validation
+    else {
         panic!("clean root manifest rejected");
     };
 
@@ -46,11 +45,11 @@ fn clean_manifest_control_seals_all_owner_handoff_projections() {
     assert_eq!(tail_segment.segment_id().get(), 1);
     assert_eq!(tail_segment.generation().get(), 11);
     assert!(validated.matches_input(artifact));
-    assert!(
-        !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+    assert!(!validated.matches_input(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
             &other_incarnation,
-        ))
-    );
+        )
+    ));
     assert!(validated.into_validation_record().matches_scope(scope));
     assert_intact_counters(counters, bytes.len() as u64);
 }
@@ -123,7 +122,11 @@ fn manifest_b_k_l_s_p_t_u_matrix_has_exact_localization_and_counters() {
         truncated,
         scope,
         worth_store_physical_integrity::PhysicalDamageCause::Truncated,
-        worth_store_physical_integrity::PhysicalByteRange::new(MANIFEST_OFFSET + MANIFEST_BYTES - 5, 5).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            MANIFEST_OFFSET + MANIFEST_BYTES - 5,
+            5,
+        )
+        .unwrap(),
         None,
         worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
     );
@@ -204,7 +207,9 @@ fn manifest_family_identity_format_and_malformed_denials_remain_distinct() {
         worth_store_physical_integrity::PhysicalBlastRadius::CompleteArtifact,
     );
 
-    let other_format = crate::support::root_validation::format(worth_store_physical_format::PhysicalPageSizeClass::KiB32);
+    let other_format = crate::support::root_validation::format(
+        worth_store_physical_format::PhysicalPageSizeClass::KiB32,
+    );
     let larger_capacity = maximum_current_root_entries(format) + 1;
     let format_substitution = manifest_bytes_with_capacity(11, other_format, larger_capacity);
     assert_manifest_damage(
@@ -239,7 +244,8 @@ fn manifest_validator_rejects_selector_scope_before_interpretation() {
 fn manifest_validation_record_binds_store_scope_without_inventing_embedded_store_proof() {
     let format = format(worth_store_physical_format::PhysicalPageSizeClass::KiB16);
     let bytes = manifest_bytes(11, format);
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let left_scope = manifest_scope(store(7), format, 11);
     let right_scope = manifest_scope(store(8), format, 11);
 

@@ -6,18 +6,30 @@
 //! A limit comes from a budget the caller set. No artifact's own ceiling is
 //! one, and neither is a length read off media.
 
-#[allow(unused_imports)] use crate::production_entry::published_above_checkpoint::damaged_history::*;
-use {std::path::Path, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, crate::production_entry::published_above_checkpoint};
-use {};
-use {std::fs};
-use {std::path::PathBuf};
-use {worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPageAdmissionDenial, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::WorthStoreRecovery};
+#[allow(unused_imports)]
+use crate::production_entry::published_above_checkpoint::damaged_history::*;
+use std::fs;
+use std::path::PathBuf;
+use worth_store_physical_format::RecordArtifactFile;
+use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::{Tail, Workload};
+use {
+    crate::production_entry::published_above_checkpoint, std::path::Path,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPageAdmissionDenial,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
 fn an_oversized_root_or_routing_block_of_the_walked_history_is_damage_not_a_limit() {
     let world =
-        pending_wal_world::published_above_checkpoint(Workload::ThreeSmallObjects, Tail::Idle);
+        worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::published_above_checkpoint(Workload::ThreeSmallObjects, Tail::Idle);
     let roots = world.root().join("families/records/roots");
     let selected = (1..=4096)
         .rev()
@@ -35,7 +47,8 @@ fn an_oversized_root_or_routing_block_of_the_walked_history_is_damage_not_a_limi
     damaged.extend(blocks);
     for artifact in &damaged {
         let outcome = recover_with_oversized(world.root(), artifact);
-        let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
+        let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = outcome
+        else {
             panic!("{artifact:?} oversized must block: {outcome:?}")
         };
         assert_eq!(blocked.recovery_effects(), 0);
@@ -59,7 +72,10 @@ fn an_oversized_root_or_routing_block_of_the_walked_history_is_damage_not_a_limi
         );
     }
     // Every artifact is back as the kill left it.
-    let serving = crate::production_entry::published_above_checkpoint::serve(&world, "after the damaged attempts");
+    let serving = crate::production_entry::published_above_checkpoint::serve(
+        &world,
+        "after the damaged attempts",
+    );
     world.assert_objects_read_back(&serving);
     serving.close();
 }
@@ -70,7 +86,7 @@ fn an_oversized_root_or_routing_block_of_the_walked_history_is_damage_not_a_limi
 #[test]
 fn an_oversized_routing_block_of_the_selected_roots_is_damage_not_a_limit() {
     let world =
-        pending_wal_world::published_above_checkpoint(Workload::ThreeSmallObjects, Tail::Idle);
+        worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::published_above_checkpoint(Workload::ThreeSmallObjects, Tail::Idle);
     let roots = world.root().join("families/records/roots");
     let selected = (1..=4096)
         .rev()
@@ -81,7 +97,8 @@ fn an_oversized_routing_block_of_the_selected_roots_is_damage_not_a_limit() {
     assert!(damaged.len() >= 2);
     for artifact in &damaged {
         let outcome = recover_with_oversized(world.root(), artifact);
-        let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
+        let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = outcome
+        else {
             panic!("{artifact:?} oversized must block: {outcome:?}")
         };
         assert_eq!(blocked.recovery_effects(), 0);
@@ -98,7 +115,10 @@ fn an_oversized_routing_block_of_the_selected_roots_is_damage_not_a_limit() {
             "{artifact:?} oversized names no limit"
         );
     }
-    let serving = crate::production_entry::published_above_checkpoint::serve(&world, "after the damaged attempts");
+    let serving = crate::production_entry::published_above_checkpoint::serve(
+        &world,
+        "after the damaged attempts",
+    );
     world.assert_objects_read_back(&serving);
     serving.close();
 }

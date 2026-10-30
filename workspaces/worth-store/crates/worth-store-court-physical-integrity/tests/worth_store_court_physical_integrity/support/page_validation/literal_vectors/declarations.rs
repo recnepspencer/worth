@@ -1,7 +1,9 @@
-pub(crate) use {worth_store_physical_format::PhysicalPageSizeClass};
-pub(crate) use {worth_store_physical_integrity::validate_inline_page, worth_store_physical_integrity::InlinePageIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::PhysicalPageSizeClass;
+pub(crate) use worth_store_physical_integrity::{
+    validate_inline_page, InlinePageIntegrityValidation, UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::support::page_validation::independent_crc32c, crate::support::page_validation::page, crate::support::page_validation::page_scope, crate::support::page_validation::store};
+pub(crate) use crate::support::page_validation::{independent_crc32c, page, page_scope, store};
 
 pub(crate) fn literal_page(
     page_size: PhysicalPageSizeClass,

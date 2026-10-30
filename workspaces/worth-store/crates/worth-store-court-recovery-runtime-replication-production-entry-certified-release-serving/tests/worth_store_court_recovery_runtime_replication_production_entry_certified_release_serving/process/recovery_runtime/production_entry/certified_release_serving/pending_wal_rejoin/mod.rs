@@ -5,7 +5,7 @@ use {std::sync::Arc, std::sync::atomic::AtomicBool, std::sync::Mutex, std::sync:
 
 #[test]
 fn pending_v3_sealed_serving_can_checkpoint_the_recovered_release() {
-    let world = super::super::pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     let root = world.root().to_path_buf();
     let worker = std::thread::Builder::new()
         .name("pending-v3-sealed-serving-checkpoint".to_owned())
@@ -53,8 +53,8 @@ fn pending_v3_sealed_serving_can_checkpoint_the_recovered_release() {
 }
 
 #[test]
-fn pending_v3_reservation_drift_after_c8_claim_denies_store_seal_and_plain_checkpoint() {
-    let world = super::super::pending_wal_world::first();
+fn pending_v3_reservation_drift_after_recovery_claim_denies_store_seal_and_plain_checkpoint() {
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     let root = world.root().to_path_buf();
     let worker = std::thread::Builder::new()
         .name("pending-v3-selected-media-drift".to_owned())

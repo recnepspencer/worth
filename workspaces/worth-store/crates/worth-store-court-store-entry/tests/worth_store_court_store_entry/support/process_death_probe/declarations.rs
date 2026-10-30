@@ -1,6 +1,13 @@
-pub(crate) use {std::io::BufRead, std::io::BufReader, std::io::Write, std::path::PathBuf, std::process::Child, std::process::ChildStdout, std::process::Command, std::process::ExitStatus, std::process::Stdio, std::sync::mpsc, std::time::Duration};
+pub(crate) use {
+    std::io::BufRead, std::io::BufReader, std::io::Write, std::path::PathBuf, std::process::Child,
+    std::process::ChildStdout, std::process::Command, std::process::ExitStatus,
+    std::process::Stdio, std::sync::mpsc, std::time::Duration,
+};
 
-pub(crate) use {worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+};
 
 pub(crate) const CHILD_MODE: &str = "WORTH_STORE_C3_PROCESS_DEATH_CHILD";
 pub(crate) const CHILD_ROOT: &str = "WORTH_STORE_C3_PROCESS_DEATH_ROOT";
@@ -11,9 +18,13 @@ pub(crate) fn run_child_mode() -> bool {
         return false;
     }
 
-    let root = std::path::PathBuf::from(std::env::var_os(CHILD_ROOT).expect("child root must be supplied"));
-    let admission = worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).expect("child root must validate");
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(admission).expect("child runtime must admit");
+    let root = std::path::PathBuf::from(
+        std::env::var_os(CHILD_ROOT).expect("child root must be supplied"),
+    );
+    let admission = worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root)
+        .expect("child root must validate");
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(admission)
+        .expect("child runtime must admit");
     println!(
         "C3_CHILD_ADMITTED explicit_closes={}",
         worth_store::physical_runtime::PhysicalStore::diagnostics().explicit_closes()
@@ -34,7 +45,7 @@ pub(crate) fn prove_process_death_emits_no_physical_residue(root: PathBuf) {
         std::process::Command::new(executable)
             .args([
                 "--exact",
-                "runtime_authority_pressure_journey_keeps_observation_read_only_and_phase_scoped",
+                "process::serial::store::runtime_authority_pressure_journey::runtime_authority_pressure_journey_keeps_observation_read_only_and_phase_scoped",
                 "--nocapture",
             ])
             .env(CHILD_MODE, "1")

@@ -1,9 +1,5 @@
-#[allow(unused_imports)] use crate::extent_validation::manifest::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::PhysicalPageSizeClass};
-use {worth_store_physical_integrity::validate_extent_manifest, worth_store_physical_integrity::ExtentManifestIntegrityValidation, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::extent_validation::assert_damage, crate::support::extent_validation::assert_rejected_counters, crate::support::extent_validation::chunk_payload_capacity, crate::support::extent_validation::extent_cell, crate::support::extent_validation::field_range, crate::support::extent_validation::format, crate::support::extent_validation::manifest_scope, crate::support::extent_validation::record, crate::support::extent_validation::reseal_durable_frame, crate::support::extent_validation::store, crate::support::extent_validation::ExtentFixture, crate::support::extent_validation::MANIFEST_OFFSET};
+#[allow(unused_imports)]
+use crate::extent_validation::manifest::*;
 
 #[test]
 fn clean_manifest_seals_geometry_placement_incarnation_and_validation_record() {
@@ -11,9 +7,12 @@ fn clean_manifest_seals_geometry_placement_incarnation_and_validation_record() {
     let bytes = fixture.manifest_bytes();
     let other_incarnation = bytes.clone();
     let scope = fixture.manifest_scope();
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let (validation, counters) = validate_extent_manifest(artifact, scope);
-    let worth_store_physical_integrity::ExtentManifestIntegrityValidation::Intact(validated) = validation else {
+    let worth_store_physical_integrity::ExtentManifestIntegrityValidation::Intact(validated) =
+        validation
+    else {
         panic!("clean extent manifest rejected")
     };
 
@@ -29,11 +28,11 @@ fn clean_manifest_seals_geometry_placement_incarnation_and_validation_record() {
     );
     assert_eq!(validated.chunk_count(), 2);
     assert!(validated.matches_input(artifact));
-    assert!(
-        !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+    assert!(!validated.matches_input(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
             &other_incarnation
-        ))
-    );
+        )
+    ));
     assert!(validated.into_validation_record().matches_scope(scope));
     assert_eq!(
         counters.family(),

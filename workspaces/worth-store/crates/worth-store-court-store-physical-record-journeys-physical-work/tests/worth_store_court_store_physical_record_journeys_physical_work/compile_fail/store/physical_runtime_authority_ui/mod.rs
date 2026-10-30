@@ -1,6 +1,5 @@
-
-
-#[allow(unused_imports)] use crate::physical_runtime_authority_ui::*;
+#[allow(unused_imports)]
+use crate::physical_runtime_authority_ui::*;
 #[test]
 fn external_consumers_cannot_forge_or_duplicate_runtime_authority() {
     crate::bounded_physical_record_access_examples::run_configuration_examples();
@@ -50,7 +49,7 @@ fn external_consumers_cannot_forge_or_duplicate_runtime_authority() {
 }
 
 #[test]
-fn c9_resident_admission_contracts_are_compile_sealed() {
+fn resident_admission_contracts_are_compile_sealed() {
     let cases = trybuild::TestCases::new();
     cases.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_lease_can_only_observe_descriptive_record.rs"));
     cases.compile_fail(
@@ -62,7 +61,7 @@ fn c9_resident_admission_contracts_are_compile_sealed() {
 }
 
 #[test]
-fn phase_ten_c8_recovery_handoff_is_compile_sealed() {
+fn recovery_handoff_is_compile_sealed() {
     let cases = trybuild::TestCases::new();
     cases.compile_fail(
         concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_handoff_constructor_is_sealed.rs"),
@@ -77,7 +76,7 @@ fn phase_ten_c8_recovery_handoff_is_compile_sealed() {
 }
 
 #[test]
-fn phase_four_progression_requires_exact_predecessor_authority() {
+fn progression_requires_exact_predecessor_authority() {
     let cases = trybuild::TestCases::new();
     cases.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_data_progression_examples.rs"));
     cases.compile_fail(
@@ -87,20 +86,20 @@ fn phase_four_progression_requires_exact_predecessor_authority() {
 }
 
 #[test]
-fn phase_six_checkpoint_authority_is_compile_bound() {
+fn checkpoint_authority_is_compile_bound() {
     let cases = trybuild::TestCases::new();
     cases
         .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/checkpoint_capture_authority_is_sealed.rs"));
 }
 
 #[test]
-fn phase_seven_root_publication_ownership_is_compile_bound() {
+fn root_publication_ownership_is_compile_bound() {
     let cases = trybuild::TestCases::new();
     cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/root_publication_plans_are_linear.rs"));
 }
 
 #[test]
-fn phase_eight_ordinary_mutation_outcomes_are_compile_bound() {
+fn ordinary_mutation_outcomes_are_compile_bound() {
     let cases = trybuild::TestCases::new();
     cases.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/ordinary_mutation_outcomes_are_supported.rs"));
     cases.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_durability_guide_examples.rs"));
@@ -116,7 +115,7 @@ fn phase_eight_ordinary_mutation_outcomes_are_compile_bound() {
 }
 
 #[test]
-fn c11_blob_ingest_keeps_store_allocation_and_runtime_authority_bound() {
+fn blob_ingest_keeps_store_allocation_and_runtime_authority_bound() {
     let cases = trybuild::TestCases::new();
     cases.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/blob_ingest_supported.rs"));
     cases.compile_fail(
@@ -127,7 +126,7 @@ fn c11_blob_ingest_keeps_store_allocation_and_runtime_authority_bound() {
 }
 
 #[test]
-fn c11_blob_relocation_requires_store_selected_hold() {
+fn blob_relocation_requires_store_selected_hold() {
     let cases = trybuild::TestCases::new();
     cases.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/blob_relocation_supported.rs"));
     cases.compile_fail(
@@ -136,7 +135,7 @@ fn c11_blob_relocation_requires_store_selected_hold() {
 }
 
 #[test]
-fn c11_terminal_head_retirement_authority_is_owner_issued() {
+fn terminal_head_retirement_authority_is_owner_issued() {
     let cases = trybuild::TestCases::new();
     cases.compile_fail(
         concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/terminal_head_retirement_authority_is_sealed.rs"),

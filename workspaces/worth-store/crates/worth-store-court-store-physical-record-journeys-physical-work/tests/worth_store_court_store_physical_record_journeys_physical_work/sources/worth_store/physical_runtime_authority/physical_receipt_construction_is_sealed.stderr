@@ -1,5 +1,5 @@
 error[E0451]: fields `owner`, `store`, `coordinate`, `payload_digest`, `completed_bytes`, `operation` and `durability` of struct `CompletedArtifactRangeWrite` are private
-  --> tests/physical_runtime_authority/physical_receipt_construction_is_sealed.rs:7:9
+  --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_receipt_construction_is_sealed.rs:7:9
    |
  6 |     let _ = CompletedArtifactRangeWrite {
    |             --------------------------- in this type

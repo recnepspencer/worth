@@ -1,9 +1,15 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_foundational::PhysicalArtifactFamily};
-pub(crate) use {worth_store_offline_integrity_observer::observe_store, worth_store_offline_integrity_observer::OfflineArtifactDuplicateEvidence, worth_store_offline_integrity_observer::OfflineArtifactFamily, worth_store_offline_integrity_observer::OfflineIndeterminatePhysicalReason, worth_store_offline_integrity_observer::OfflineIntegrityObservationDenial, worth_store_offline_integrity_observer::OfflineIntegrityObservationLimits, worth_store_offline_integrity_observer::OfflineIntegrityObservationRequest, worth_store_offline_integrity_observer::OfflineIntegrityOutcome, worth_store_offline_integrity_observer::OfflineIntegrityProtocolContext, worth_store_offline_integrity_observer::OfflineIntegrityReportCompleteness, worth_store_offline_integrity_observer::OfflineIntegrityReportDestination, worth_store_offline_integrity_observer::OfflineIntegrityReportWireDenial};
+pub(crate) use worth_foundational::PhysicalArtifactFamily;
+pub(crate) use worth_store_offline_integrity_observer::{
+    observe_store, OfflineArtifactDuplicateEvidence, OfflineArtifactFamily,
+    OfflineIndeterminatePhysicalReason, OfflineIntegrityObservationDenial,
+    OfflineIntegrityObservationLimits, OfflineIntegrityObservationRequest, OfflineIntegrityOutcome,
+    OfflineIntegrityProtocolContext, OfflineIntegrityReportCompleteness,
+    OfflineIntegrityReportDestination, OfflineIntegrityReportWireDenial,
+};
 
-pub(crate) use {crate::support::fixtures::clean_store, crate::support::fixtures::StoreFixture};
+pub(crate) use crate::support::fixtures::{clean_store, StoreFixture};
 
 pub(crate) fn limits(
     entries: u64,
@@ -30,7 +36,10 @@ pub(crate) fn bounded_request(
     worth_store_offline_integrity_observer::OfflineIntegrityObservationRequest::new(
         fixture.store.clone(),
         limits,
-        worth_store_offline_integrity_observer::OfflineIntegrityReportDestination::file(fixture.report.clone()).unwrap(),
+        worth_store_offline_integrity_observer::OfflineIntegrityReportDestination::file(
+            fixture.report.clone(),
+        )
+        .unwrap(),
         worth_store_offline_integrity_observer::OfflineIntegrityProtocolContext::new(
             "fixture-observer",
             "process-1",

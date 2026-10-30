@@ -1,22 +1,25 @@
-#[allow(unused_imports)] use crate::physical_media_journeys::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_media_journeys::*;
+use std::path::Path;
 
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::AdmissionError, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::MediaShutdownOutcome, worth_store::physical_runtime::ObservationError, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore};
-use {worth_store_physical_backend::FilesystemAccessPosture};
+use worth_proof::TransitionOutcome;
+use worth_store_physical_backend::FilesystemAccessPosture;
+use {
+    worth_store::physical_runtime::AdmissionError,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::MediaShutdownOutcome,
+    worth_store::physical_runtime::ObservationError,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+};
 
-
-
-
-
-
-
-
-
-use {crate::physical_media_journeys::process_contender::run_contender, crate::physical_media_journeys::process_contender::spawn_lease_holder};
+use {
+    crate::physical_media_journeys::process_contender::run_contender,
+    crate::physical_media_journeys::process_contender::spawn_lease_holder,
+};
 
 #[test]
-fn media_progression_preserves_identity_and_stales_the_c3_observer() {
+fn media_progression_preserves_identity_and_stales_the_admission_observer() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let c3 = admit_runtime(&root);
@@ -37,12 +40,17 @@ fn media_progression_preserves_identity_and_stales_the_c3_observer() {
     assert_eq!(observation.runtime_identity(), runtime_identity);
     assert_eq!(observation.store_identity(), media.store_identity());
     assert!(matches!(
-        worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(&root).unwrap()),
+        worth_store::physical_runtime::PhysicalStore::admit(
+            worth_store::physical_runtime::PhysicalRuntimeAdmission::new(&root).unwrap()
+        ),
         Err(worth_store::physical_runtime::AdmissionError::DeclaredRootAlreadyAdmitted(_))
     ));
 
     let stable_identity = media.store_identity();
-    assert!(matches!(media.close(), worth_store::physical_runtime::MediaShutdownOutcome::Released(_)));
+    assert!(matches!(
+        media.close(),
+        worth_store::physical_runtime::MediaShutdownOutcome::Released(_)
+    ));
     let closed_media = media_observer.media_counters();
     assert_eq!(closed_media.ownership_releases(), 1);
     assert_eq!(closed_media.live_file_handles(), 0);
@@ -77,13 +85,14 @@ fn media_progression_preserves_identity_and_stales_the_c3_observer() {
 }
 
 #[test]
-fn definite_pre_effect_denial_returns_the_exact_c3_authority() {
+fn definite_pre_effect_denial_returns_the_exact_admission_authority() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let runtime = admit_runtime(&root);
     let identity = runtime.runtime_identity();
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::production(worth_store_physical_backend::FilesystemAccessPosture::UnmanagedWritersPossible);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::production(
+        worth_store_physical_backend::FilesystemAccessPosture::UnmanagedWritersPossible,
+    );
     let denial = match runtime.try_admit_filesystem_media(admission).into_raw() {
         worth_proof::TransitionOutcome::Denied(denial) => denial,
         _ => panic!("unmanaged access must deny before media effects"),
@@ -158,12 +167,16 @@ fn independent_observer_reads_closed_media_without_runtime_authority() {
         _ => panic!("media progression must succeed"),
     };
     let expected = media.store_identity();
-    assert!(matches!(media.close(), worth_store::physical_runtime::MediaShutdownOutcome::Released(_)));
+    assert!(matches!(
+        media.close(),
+        worth_store::physical_runtime::MediaShutdownOutcome::Released(_)
+    ));
 
-    let output = std::process::Command::new(worth_store_testkit_executables::physical_media_os_observer())
-        .arg(&root)
-        .output()
-        .unwrap();
+    let output =
+        std::process::Command::new(worth_store_testkit_executables::physical_media_os_observer())
+            .arg(&root)
+            .output()
+            .unwrap();
     assert!(output.status.success());
     let observed = String::from_utf8(output.stdout).unwrap();
     let expected = expected
@@ -188,7 +201,10 @@ fn independent_observer_rejects_every_identity_grammar_corruption_class() {
         worth_proof::TransitionOutcome::Success(media) => media,
         _ => panic!("media progression must succeed"),
     };
-    assert!(matches!(media.close(), worth_store::physical_runtime::MediaShutdownOutcome::Released(_)));
+    assert!(matches!(
+        media.close(),
+        worth_store::physical_runtime::MediaShutdownOutcome::Released(_)
+    ));
     let identity_path = root.join("namespace/identity");
     let valid = std::fs::read(&identity_path).unwrap();
     let corruptions: [IdentityCorruptionCase; 9] = [
@@ -210,10 +226,12 @@ fn independent_observer_rejects_every_identity_grammar_corruption_class() {
             bytes[40..].copy_from_slice(&digest);
         }
         std::fs::write(&identity_path, bytes).unwrap();
-        let output = std::process::Command::new(worth_store_testkit_executables::physical_media_os_observer())
-            .arg(&root)
-            .output()
-            .unwrap();
+        let output = std::process::Command::new(
+            worth_store_testkit_executables::physical_media_os_observer(),
+        )
+        .arg(&root)
+        .output()
+        .unwrap();
         assert!(!output.status.success());
     }
     std::fs::write(identity_path, valid).unwrap();
@@ -223,8 +241,9 @@ fn independent_observer_rejects_every_identity_grammar_corruption_class() {
 fn lease_release_is_linearized_against_a_second_process() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::production(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::production(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let faults = admission.fault_schedule_authority();
     let gate = faults.pause_gate();
     let schedule = faults
@@ -266,7 +285,7 @@ fn process_death_releases_the_os_owner_without_a_close_claim() {
 
 #[test]
 fn store_counters_lower_only_after_real_execution() {
-    use {worth_store::physical_runtime::certification::lower_media_operation_summary};
+    use worth_store::physical_runtime::certification::lower_media_operation_summary;
 
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
@@ -286,7 +305,10 @@ fn store_counters_lower_only_after_real_execution() {
         37 + worth_store_physical_backend::MediaOperationRole::ALL.len() * 7
     );
     assert_foundational_rows_fail_closed(&receipt);
-    assert!(matches!(media.close(), worth_store::physical_runtime::MediaShutdownOutcome::Released(_)));
+    assert!(matches!(
+        media.close(),
+        worth_store::physical_runtime::MediaShutdownOutcome::Released(_)
+    ));
 }
 #[path = "child_dispatch/mod.rs"]
 pub(crate) mod child_dispatch;

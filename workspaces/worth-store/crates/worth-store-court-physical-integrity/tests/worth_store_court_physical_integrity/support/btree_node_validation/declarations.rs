@@ -1,6 +1,14 @@
-pub(crate) use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-pub(crate) use {worth_store_physical_format::BTreeNodeCellV1, worth_store_physical_format::BTreeNodeV1, worth_store_physical_format::PersistedRecordIdentity};
-pub(crate) use {worth_store_physical_integrity::validate_btree_node, worth_store_physical_integrity::BTreeNodeIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::store_namespace::{
+    ProposedStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+};
+pub(crate) use worth_store_physical_format::{
+    BTreeNodeCellV1, BTreeNodeV1, PersistedRecordIdentity,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_btree_node, BTreeNodeIntegrityValidation, PhysicalArtifactScope, PhysicalByteRange,
+    PhysicalDamageCause, PhysicalIntegrityRejection, PhysicalIntegrityVersionAxis,
+    UntrustedPhysicalArtifact,
+};
 
 pub(crate) fn record() -> PersistedRecordIdentity {
     worth_store_physical_format::PersistedRecordIdentity::new([9; 16], 7).unwrap()
@@ -9,7 +17,10 @@ pub(crate) fn record() -> PersistedRecordIdentity {
 pub(crate) fn scope(length: usize, family_code: u16) -> PhysicalArtifactScope {
     let store = worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(
         worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT,
-        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes([3; 16]).unwrap(),
+        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(
+            [3; 16],
+        )
+        .unwrap(),
     )
     .published_identity();
     worth_store_physical_integrity::PhysicalArtifactScope::btree_node(

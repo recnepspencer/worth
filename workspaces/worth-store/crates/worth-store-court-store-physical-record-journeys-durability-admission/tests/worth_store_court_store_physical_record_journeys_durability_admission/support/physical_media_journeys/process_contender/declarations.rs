@@ -1,6 +1,11 @@
-pub(crate) use {worth_store::physical_runtime::MediaShutdownOutcome, std::path::Path, worth_proof::TransitionOutcome, crate::physical_media_journeys::admit_runtime, crate::physical_media_journeys::media_admission};
+pub(crate) use {
+    crate::physical_media_journeys::admit_runtime, crate::physical_media_journeys::media_admission,
+    std::path::Path, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::MediaShutdownOutcome,
+};
 
-pub(crate) const CHILD_TEST: &str = "process_contender::child_media_contender";
+pub(crate) const CHILD_TEST: &str =
+    "process::store::physical_media_journeys::process_contender::child_media_contender";
 
 pub(crate) fn run_contender(root: &Path, expectation: &str) {
     let status = std::process::Command::new(std::env::current_exe().unwrap())
@@ -13,7 +18,7 @@ pub(crate) fn run_contender(root: &Path, expectation: &str) {
 }
 
 pub(crate) fn spawn_lease_holder(root: &Path) -> std::process::Child {
-    use {std::io::BufRead};
+    use std::io::BufRead;
 
     let mut child = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", CHILD_TEST, "--nocapture"])

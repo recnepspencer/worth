@@ -1,7 +1,13 @@
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_integrity::validate_inline_page, worth_store_physical_integrity::InlinePageIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityValidationDigest, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+use worth_store_physical_integrity::{
+    validate_inline_page, InlinePageIntegrityValidation, PhysicalArtifactScope,
+    PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause, PhysicalIntegrityValidationDigest,
+    UntrustedPhysicalArtifact,
+};
 
-use {crate::support::page_validation::assert_damage, crate::support::page_validation::clean_page, crate::support::page_validation::format, crate::support::page_validation::page, crate::support::page_validation::page_scope, crate::support::page_validation::reseal, crate::support::page_validation::store, crate::support::page_validation::PAGE_OFFSET, crate::support::page_validation::PAGE_SIZES};
+use crate::support::page_validation::{
+    assert_damage, clean_page, format, page, page_scope, reseal, store, PAGE_OFFSET, PAGE_SIZES,
+};
 
 #[test]
 fn nonzero_data_page_lsn_remains_intact_and_is_carried_into_the_validated_view() {
@@ -11,8 +17,13 @@ fn nonzero_data_page_lsn_remains_intact_and_is_carried_into_the_validated_view()
         bytes[36..44].copy_from_slice(&0x0807_0605_0403_0201_u64.to_le_bytes());
         reseal(&mut bytes);
         let scope = page_scope(store(7), page_size, identity);
-        let (worth_store_physical_integrity::InlinePageIntegrityValidation::Intact(validated), counters) =
-            validate_inline_page(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes), scope)
+        let (
+            worth_store_physical_integrity::InlinePageIntegrityValidation::Intact(validated),
+            counters,
+        ) = validate_inline_page(
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes),
+            scope,
+        )
         else {
             panic!("a legitimate data-page LSN was treated as metadata reserved bytes");
         };
@@ -29,9 +40,12 @@ fn all_declared_page_sizes_seal_geometry_scope_and_exact_incarnation() {
         let bytes = clean_page(page_size, page_identity);
         let other_incarnation = bytes.clone();
         let scope = page_scope(store(7), page_size, page_identity);
-        let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+        let artifact =
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
         let (validation, counters) = validate_inline_page(artifact, scope);
-        let worth_store_physical_integrity::InlinePageIntegrityValidation::Intact(validated) = validation else {
+        let worth_store_physical_integrity::InlinePageIntegrityValidation::Intact(validated) =
+            validation
+        else {
             panic!("clean inline page rejected at {page_size:?}");
         };
 
@@ -44,11 +58,11 @@ fn all_declared_page_sizes_seal_geometry_scope_and_exact_incarnation() {
             page_size.bytes() - 48 - 24 - 2 * 40 - 11
         );
         assert!(validated.matches_input(artifact));
-        assert!(
-            !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+        assert!(!validated.matches_input(
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
                 &other_incarnation
-            ))
-        );
+            )
+        ));
         let record = validated.into_validation_record();
         assert!(record.matches_scope(scope));
         assert_eq!(
@@ -75,7 +89,8 @@ fn validation_record_binds_store_page_generation_and_range_without_source_author
     let page_size = worth_store_physical_format::PhysicalPageSizeClass::KiB16;
     let identity = page(5, 9, 13);
     let bytes = clean_page(page_size, identity);
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let left_scope = page_scope(store(7), page_size, identity);
     let right_scope = page_scope(store(8), page_size, identity);
 
@@ -108,7 +123,11 @@ fn clean_page_under_root_scope_rejects_before_page_interpretation() {
         store(7),
         format(page_size),
         13,
-        worth_store_physical_integrity::PhysicalByteRange::new(PAGE_OFFSET, u64::from(page_size.bytes())).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            PAGE_OFFSET,
+            u64::from(page_size.bytes()),
+        )
+        .unwrap(),
     )
     .unwrap();
 

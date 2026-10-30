@@ -1,21 +1,46 @@
 #![cfg(all())]
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::layout_shape_corruption::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::layout_shape_corruption::*;
 use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
-use {worth_store_physical_format::BTreeNodeCellV1, worth_store_physical_format::BTreeNodeKind, worth_store_physical_format::BTreeNodeV1};
-use {worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection};
+use worth_store_blob_chunks::BlobChunkSize;
+use worth_store_contracts::DurableArtifactFamilyId;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
+    worth_store::physical_runtime::PhysicalIndexPointKey,
+    worth_store::physical_runtime::PhysicalLayoutDenial,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
+use {
+    worth_store_physical_format::BTreeNodeCellV1, worth_store_physical_format::BTreeNodeKind,
+    worth_store_physical_format::BTreeNodeV1,
+};
+use {
+    worth_store_physical_integrity::PhysicalDamageCause,
+    worth_store_physical_integrity::PhysicalFormatField,
+    worth_store_physical_integrity::PhysicalIntegrityObservationOutcome,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+};
 
-use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
-fn resealed_c9_valid_wrong_catalog_cell_width_is_damaged_to_store_and_offline_scrub() {
+fn resealed_valid_wrong_catalog_cell_width_is_damaged_to_store_and_offline_scrub() {
     let root = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.catalog.shape.corrupt");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let (object, published) = {
         let serving = serving_from_initialization(root.path());
         let blobs = serving.blobs().unwrap();
@@ -26,7 +51,8 @@ fn resealed_c9_valid_wrong_catalog_cell_width_is_damaged_to_store_and_offline_sc
             2,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -51,10 +77,15 @@ fn resealed_c9_valid_wrong_catalog_cell_width_is_damaged_to_store_and_offline_sc
     assert_eq!(row["outcome"]["posture"], "damaged", "{after}");
 
     let serving = serving_from_open(root.path());
-    let key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence()).unwrap();
+    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        object,
+        published.generation().sequence(),
+    )
+    .unwrap();
     let layouts = serving.layouts().unwrap();
-    let btree = layouts.btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog).unwrap();
+    let btree = layouts
+        .btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog)
+        .unwrap();
     assert!(matches!(
         btree.point(key),
         Err(worth_store::physical_runtime::PhysicalLayoutDenial::NodeFamilyMismatch)
@@ -75,7 +106,10 @@ fn resealed_c9_valid_wrong_catalog_cell_width_is_damaged_to_store_and_offline_sc
     )
     .unwrap();
     let mut scrub = serving.start_physical_integrity_scrub(request).unwrap();
-    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(window) = scrub.next_window() else {
+    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(
+        window,
+    ) = scrub.next_window()
+    else {
         panic!("selected malformed catalog node must be inspected")
     };
     assert_eq!(window.scope.btree_node_identity().unwrap().0, target_record);

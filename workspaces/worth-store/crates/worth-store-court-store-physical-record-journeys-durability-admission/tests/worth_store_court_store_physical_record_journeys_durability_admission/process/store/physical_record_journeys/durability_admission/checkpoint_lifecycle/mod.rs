@@ -2,13 +2,46 @@
 use {std::path::Path};
 use {std::time::Duration, std::time::Instant};
 
+use worth_signal::facade::TemporalDuration;
 use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-use {worth_signal::facade::TemporalDuration};
-use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint, worth_store::physical_runtime::certification::CertificationPhysicalExecutionPauseGate, worth_store::physical_runtime::certification::MediaFaultDirective};
-use {worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalCheckpointCancellationOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointHandle, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointProgressPhase, worth_store::physical_runtime::PhysicalCheckpointProvenNoEffectCause, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalCheckpointStartDeferred, worth_store::physical_runtime::PhysicalCheckpointStartStale, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_backend::CertificationMediaFaultActivation, worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaOperationRole};
+use {
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint,
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionPauseGate,
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+};
+use {
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalCheckpointCancellationOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointHandle,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointProgressPhase,
+    worth_store::physical_runtime::PhysicalCheckpointProvenNoEffectCause,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalCheckpointStartDeferred,
+    worth_store::physical_runtime::PhysicalCheckpointStartStale,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+    worth_store::physical_runtime::PhysicalWalGroupAppendOutcome,
+    worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+use {
+    worth_store_physical_backend::CertificationMediaFaultActivation,
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability, worth_store_testkit_store::physical_record_journeys::serving_from_initialization, worth_store_testkit_store::physical_record_journeys::success};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::durability,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn active_checkpoint_joins_same_key_and_defers_distinct_key_without_parallel_effects() {
@@ -28,7 +61,9 @@ fn active_checkpoint_joins_same_key_and_defers_distinct_key_without_parallel_eff
             .checkpoints()
             .start(checkpoint_request(12))
             .into_raw(),
-        worth_proof::TransitionOutcome::Deferred(worth_store::physical_runtime::PhysicalCheckpointStartDeferred::CaptureAlreadyActive)
+        worth_proof::TransitionOutcome::Deferred(
+            worth_store::physical_runtime::PhysicalCheckpointStartDeferred::CaptureAlreadyActive
+        )
     ));
 
     let identity = joined.identity();
@@ -46,7 +81,7 @@ fn active_checkpoint_joins_same_key_and_defers_distinct_key_without_parallel_eff
 }
 
 #[test]
-fn accepted_cancellation_reconciles_the_exact_candidate_through_c4_delete() {
+fn accepted_cancellation_reconciles_the_exact_candidate_through_media_delete() {
     let parent = tempfile::tempdir().unwrap();
     let store_root = parent.path().join("store");
     let serving = serving_with_durable_wal(&store_root, 112);
@@ -80,13 +115,17 @@ fn accepted_cancellation_reconciles_the_exact_candidate_through_c4_delete() {
 
     let after = serving.media_counters();
     assert_eq!(
-        after.identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::Delete)
-            - before.identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::Delete),
+        after.identified_operation_attempts_for(
+            worth_store_physical_backend::MediaOperationRole::Delete
+        ) - before.identified_operation_attempts_for(
+            worth_store_physical_backend::MediaOperationRole::Delete
+        ),
         1
     );
     assert!(
         after.completed_operations_for(worth_store_physical_backend::MediaOperationRole::Delete)
-            > before.completed_operations_for(worth_store_physical_backend::MediaOperationRole::Delete)
+            > before
+                .completed_operations_for(worth_store_physical_backend::MediaOperationRole::Delete)
     );
     assert_eq!(
         after.partial_effects_for(worth_store_physical_backend::MediaOperationRole::Delete),
@@ -112,7 +151,9 @@ fn later_no_effect_attempt_does_not_erase_retained_publication_authority() {
     let serving = serving_with_durable_wal(&store_root, 114);
     let first = start(&serving, checkpoint_request(41));
     let published = match first.wait() {
-        worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(completed) => completed.basis().identity(),
+        worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(completed) => {
+            completed.basis().identity()
+        }
         _ => panic!("the first checkpoint must publish"),
     };
 
@@ -221,7 +262,10 @@ fn close_drains_store_owned_checkpoint_after_the_caller_drops_its_handle() {
 
     gate.release();
     let closed = closing.join().unwrap();
-    assert!(matches!(closed, worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }));
+    assert!(matches!(
+        closed,
+        worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }
+    ));
     assert_eq!(closed.shutdown().checkpoint().started(), 1);
     assert_eq!(closed.shutdown().checkpoint().proven_no_effect(), 1);
     assert_eq!(closed.shutdown().checkpoint().latest_publication(), None);

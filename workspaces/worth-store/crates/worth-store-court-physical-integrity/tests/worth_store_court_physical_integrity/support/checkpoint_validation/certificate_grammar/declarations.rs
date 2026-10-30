@@ -1,8 +1,23 @@
-pub(crate) use {worth_store_physical_format::encode_checkpoint_certificate, worth_store_physical_format::CheckpointCertificateKind, worth_store_physical_format::CheckpointSelectiveRecordAggregate, worth_store_physical_format::OriginalDropReservationRequestV1, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::ReleaseCheckpointAccumulatorV1, worth_store_physical_format::ReleaseCheckpointAccumulatorV2, worth_store_physical_format::ReleaseCheckpointBatchV1, worth_store_physical_format::ReleaseCheckpointNoReleaseV1, worth_store_physical_format::ReleasedDropWalFateWitnessV1};
-pub(crate) use {worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::{
+    encode_checkpoint_certificate, CheckpointCertificateKind, CheckpointSelectiveRecordAggregate,
+    OriginalDropReservationRequestV1, PersistedRecordIdentity, ReleaseCheckpointAccumulatorV1,
+    ReleaseCheckpointAccumulatorV2, ReleaseCheckpointBatchV1, ReleaseCheckpointNoReleaseV1,
+    ReleasedDropWalFateWitnessV1,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_checkpoint_footer, CheckpointFooterIntegrityValidation,
+    CheckpointFooterValidationBasis, PhysicalArtifactScope, PhysicalBlastRadius, PhysicalByteRange,
+    PhysicalDamageCause, UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-pub(crate) use {crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_header, crate::checkpoint_validation::support::FOOTER_OFFSET};
+pub(crate) use crate::checkpoint_validation::support::{
+    assert_damage, binding_scope, compaction_scope, dirty_scope, header_scope_staged, identity,
+    reseal_record, validate_binding, validate_compaction, validate_dirty, validate_header,
+    FOOTER_OFFSET,
+};
+pub(crate) use crate::literal_vectors::checkpoint_validation::{
+    BINDING, BINDING_COMPACTION, DIRTY_BASIS, FOOTER, HEADER,
+};
 
 pub(crate) fn record(ordinal: u64) -> PersistedRecordIdentity {
     worth_store_physical_format::PersistedRecordIdentity::new([9; 16], ordinal).unwrap()
@@ -19,8 +34,12 @@ pub(crate) fn batch() -> ReleaseCheckpointBatchV1 {
         [3; 32],
         record(5),
         [4; 32],
-        worth_store_physical_format::OriginalDropReservationRequestV1::new([5; 32], [6; 32], 10, 20).unwrap(),
-        worth_store_physical_format::ReleasedDropWalFateWitnessV1::new(100, 110, [7; 32], [8; 32]).unwrap(),
+        worth_store_physical_format::OriginalDropReservationRequestV1::new(
+            [5; 32], [6; 32], 10, 20,
+        )
+        .unwrap(),
+        worth_store_physical_format::ReleasedDropWalFateWitnessV1::new(100, 110, [7; 32], [8; 32])
+            .unwrap(),
         12,
         [9; 32],
         None,
@@ -74,7 +93,10 @@ pub(crate) fn v2_accumulator_only_frame() -> Vec<u8> {
         false,
     )
     .unwrap();
-    let v2 = worth_store_physical_format::ReleaseCheckpointAccumulatorV2::new(carried, 1, [17; 32], 1, [16; 32]).unwrap();
+    let v2 = worth_store_physical_format::ReleaseCheckpointAccumulatorV2::new(
+        carried, 1, [17; 32], 1, [16; 32],
+    )
+    .unwrap();
     release_frame(&v2.encode())
 }
 
@@ -96,7 +118,10 @@ pub(crate) fn v2_accumulator_after_batch_frame() -> Vec<u8> {
         false,
     )
     .unwrap();
-    let v2 = worth_store_physical_format::ReleaseCheckpointAccumulatorV2::new(v1, 1, [17; 32], 0, [0; 32]).unwrap();
+    let v2 = worth_store_physical_format::ReleaseCheckpointAccumulatorV2::new(
+        v1, 1, [17; 32], 0, [0; 32],
+    )
+    .unwrap();
     release_frame(&v2.encode())
 }
 
@@ -115,11 +140,17 @@ pub(crate) fn no_release_frame() -> Vec<u8> {
 }
 
 pub(crate) fn release_frame(payload: &[u8]) -> Vec<u8> {
-    let frame =
-        encode_checkpoint_certificate(worth_store_physical_format::CheckpointCertificateKind::ReleasedDrop, payload).unwrap();
+    let frame = encode_checkpoint_certificate(
+        worth_store_physical_format::CheckpointCertificateKind::ReleasedDrop,
+        payload,
+    )
+    .unwrap();
     assert_eq!(
         worth_store_physical_format::decode_checkpoint_certificate(&frame).unwrap(),
-        (worth_store_physical_format::CheckpointCertificateKind::ReleasedDrop, payload)
+        (
+            worth_store_physical_format::CheckpointCertificateKind::ReleasedDrop,
+            payload
+        )
     );
     frame
 }
@@ -134,7 +165,11 @@ pub(crate) fn assert_certificate_sequence_admitted(frames: &[Vec<u8>]) {
     let certificates: Vec<_> = frames
         .iter()
         .map(|frame| {
-            let range = worth_store_physical_integrity::PhysicalByteRange::new(next_offset, frame.len() as u64).unwrap();
+            let range = worth_store_physical_integrity::PhysicalByteRange::new(
+                next_offset,
+                frame.len() as u64,
+            )
+            .unwrap();
             next_offset = range.end_exclusive();
             (range, frame.as_slice())
         })
@@ -154,7 +189,8 @@ pub(crate) fn assert_certificate_sequence_admitted(frames: &[Vec<u8>]) {
     reseal_record(&mut footer);
     let scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(
         checkpoint,
-        worth_store_physical_integrity::PhysicalByteRange::new(next_offset, footer.len() as u64).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(next_offset, footer.len() as u64)
+            .unwrap(),
     );
     let basis = worth_store_physical_integrity::CheckpointFooterValidationBasis::new(
         &header,
@@ -173,11 +209,15 @@ pub(crate) fn assert_certificate_sequence_admitted(frames: &[Vec<u8>]) {
         worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Intact(_)
     ));
     crate::checkpoint_validation::certificate_grammar::prepared_retention::assert_exact_prepared_retention(frames, &footer);
-    crate::checkpoint_validation::certificate_grammar::bounded_scrub::assert_admitted(frames, &footer);
+    crate::checkpoint_validation::certificate_grammar::bounded_scrub::assert_admitted(
+        frames, &footer,
+    );
 }
 
 pub(crate) fn assert_certificate_sequence_denied(frames: &[Vec<u8>]) {
-    crate::checkpoint_validation::certificate_grammar::bounded_scrub::assert_denied(frames, &FOOTER);
+    crate::checkpoint_validation::certificate_grammar::bounded_scrub::assert_denied(
+        frames, &FOOTER,
+    );
     let checkpoint = identity();
     let header = validate_header(&HEADER, header_scope_staged());
     let dirty = validate_dirty(&DIRTY_BASIS, dirty_scope(checkpoint));
@@ -187,14 +227,19 @@ pub(crate) fn assert_certificate_sequence_denied(frames: &[Vec<u8>]) {
     let certificates: Vec<_> = frames
         .iter()
         .map(|frame| {
-            let range = worth_store_physical_integrity::PhysicalByteRange::new(next_offset, frame.len() as u64).unwrap();
+            let range = worth_store_physical_integrity::PhysicalByteRange::new(
+                next_offset,
+                frame.len() as u64,
+            )
+            .unwrap();
             next_offset = range.end_exclusive();
             (range, frame.as_slice())
         })
         .collect();
     let scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(
         checkpoint,
-        worth_store_physical_integrity::PhysicalByteRange::new(next_offset, FOOTER.len() as u64).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(next_offset, FOOTER.len() as u64)
+            .unwrap(),
     );
     let basis = worth_store_physical_integrity::CheckpointFooterValidationBasis::new(
         &header,
@@ -208,7 +253,9 @@ pub(crate) fn assert_certificate_sequence_denied(frames: &[Vec<u8>]) {
         scope,
         basis,
     );
-    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) = validation else {
+    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("ambiguous release certificate roster unexpectedly validated");
     };
     assert_damage(

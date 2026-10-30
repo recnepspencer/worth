@@ -1,2 +1,1 @@
-#[path = "store/mod.rs"]
-pub(crate) mod store;
+pub(crate) mod serial;

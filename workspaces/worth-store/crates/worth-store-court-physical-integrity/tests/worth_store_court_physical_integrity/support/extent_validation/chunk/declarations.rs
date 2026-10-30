@@ -1,8 +1,19 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PhysicalPageSizeClass};
-pub(crate) use {worth_store_physical_integrity::validate_extent_chunk, worth_store_physical_integrity::ExtentChunkIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::{
+    encode_extent_chunk, ExtentChunkCoordinate, PhysicalPageSizeClass,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_extent_chunk, ExtentChunkIntegrityValidation, PhysicalArtifactScope,
+    PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause, PhysicalFormatField,
+    PhysicalIntegrityRejection, PhysicalIntegrityRejectionClass, PhysicalIntegrityVersionAxis,
+    UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::support::extent_validation::assert_damage, crate::support::extent_validation::assert_rejected_counters, crate::support::extent_validation::chunk_payload_capacity, crate::support::extent_validation::chunk_scope, crate::support::extent_validation::extent_cell, crate::support::extent_validation::field_range, crate::support::extent_validation::format, crate::support::extent_validation::record, crate::support::extent_validation::reseal_durable_frame, crate::support::extent_validation::store, crate::support::extent_validation::validated_manifest, crate::support::extent_validation::ExtentFixture, crate::support::extent_validation::CHUNK_OFFSET};
+pub(crate) use crate::support::extent_validation::{
+    assert_damage, assert_rejected_counters, chunk_payload_capacity, chunk_scope, extent_cell,
+    field_range, format, record, reseal_durable_frame, store, validated_manifest, ExtentFixture,
+    CHUNK_OFFSET,
+};
 
 pub(crate) fn coordinate(
     record: worth_store_physical_format::PersistedRecordIdentity,
@@ -11,7 +22,14 @@ pub(crate) fn coordinate(
     logical_offset: u64,
     ordinal: u32,
 ) -> ExtentChunkCoordinate {
-    worth_store_physical_format::ExtentChunkCoordinate::new(record, extent, logical_bytes, logical_offset, ordinal).unwrap()
+    worth_store_physical_format::ExtentChunkCoordinate::new(
+        record,
+        extent,
+        logical_bytes,
+        logical_offset,
+        ordinal,
+    )
+    .unwrap()
 }
 
 pub(crate) fn assert_chunk_damage(
@@ -28,7 +46,9 @@ pub(crate) fn assert_chunk_damage(
         scope,
         manifest,
     );
-    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Rejected(rejection) = validation else {
+    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("damaged extent chunk unexpectedly validated")
     };
     assert_damage(rejection, scope, cause, range, field, blast_radius);
@@ -48,9 +68,9 @@ pub(crate) fn assert_unsupported(
     observed: u32,
 ) {
     let (
-        worth_store_physical_integrity::ExtentChunkIntegrityValidation::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(
-            unsupported,
-        )),
+        worth_store_physical_integrity::ExtentChunkIntegrityValidation::Rejected(
+            worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(unsupported),
+        ),
         counters,
     ) = validate_extent_chunk(
         worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
@@ -64,7 +84,9 @@ pub(crate) fn assert_unsupported(
     assert_eq!(unsupported.axis(), axis);
     assert_eq!(unsupported.observed(), observed);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported
+        ),
         1
     );
 }

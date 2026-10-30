@@ -1,8 +1,5 @@
-#[allow(unused_imports)] use crate::extent_validation::validation_records::*;
-use {worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::PhysicalPageSizeClass};
-use {worth_store_physical_integrity::validate_extent_chunk, worth_store_physical_integrity::ExtentChunkIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalIntegrityValidationRecord, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::extent_validation::chunk_payload_capacity, crate::support::extent_validation::chunk_scope, crate::support::extent_validation::extent_cell, crate::support::extent_validation::format, crate::support::extent_validation::record, crate::support::extent_validation::store, crate::support::extent_validation::validated_manifest, crate::support::extent_validation::ExtentFixture};
+#[allow(unused_imports)]
+use crate::extent_validation::validation_records::*;
 
 #[test]
 fn intact_validation_records_bind_every_extent_identity_axis() {
@@ -75,21 +72,31 @@ fn identical_bytes_keep_byte_digest_but_bind_store_and_range() {
         &other_manifest,
     );
     let arena = fixture.arena_range();
-    let shifted_arena =
-        worth_store_physical_format::ExtentArenaRange::new(arena.arena(), arena.offset() + 65_536, arena.length()).unwrap();
-    let shifted_placement = worth_store_physical_format::DurableExtentRecordPlacement::legacy_unknown(
-        fixture.record,
-        fixture.extent,
-        fixture.logical_bytes,
-        shifted_arena,
+    let shifted_arena = worth_store_physical_format::ExtentArenaRange::new(
+        arena.arena(),
+        arena.offset() + 65_536,
+        arena.length(),
     )
     .unwrap();
-    let shifted_manifest_scope = worth_store_physical_integrity::PhysicalArtifactScope::extent_manifest(
-        fixture.store,
-        fixture.format,
-        shifted_placement,
-        worth_store_physical_integrity::PhysicalByteRange::new(shifted_arena.offset(), manifest_bytes.len() as u64).unwrap(),
-    );
+    let shifted_placement =
+        worth_store_physical_format::DurableExtentRecordPlacement::legacy_unknown(
+            fixture.record,
+            fixture.extent,
+            fixture.logical_bytes,
+            shifted_arena,
+        )
+        .unwrap();
+    let shifted_manifest_scope =
+        worth_store_physical_integrity::PhysicalArtifactScope::extent_manifest(
+            fixture.store,
+            fixture.format,
+            shifted_placement,
+            worth_store_physical_integrity::PhysicalByteRange::new(
+                shifted_arena.offset(),
+                manifest_bytes.len() as u64,
+            )
+            .unwrap(),
+        );
     let shifted_manifest = validated_manifest(&manifest_bytes, shifted_manifest_scope);
     let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(
         fixture.format,

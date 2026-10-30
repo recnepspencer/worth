@@ -1,26 +1,42 @@
-
-
-
-
-
-pub(crate) use {crate::c10_phase_five_rewrite_crash::c10_crash_evidence::directory_snapshot, crate::c10_phase_five_rewrite_crash::c10_crash_evidence::ordinary_limits, crate::c10_phase_five_rewrite_crash::c10_crash_evidence::prepare_rewrite, crate::c10_phase_five_rewrite_crash::c10_crash_evidence::segment_snapshot, crate::c10_phase_five_rewrite_crash::c10_crash_evidence::wal_contains_rewrite};
+pub(crate) use std::thread;
+pub(crate) use {
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::directory_snapshot,
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::ordinary_limits,
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::prepare_rewrite,
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::segment_snapshot,
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::wal_contains_rewrite,
+};
 pub(crate) use {std::path::Path, std::path::PathBuf};
 pub(crate) use {std::process::Command, std::process::Stdio};
-pub(crate) use {std::thread};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-pub(crate) use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
+pub(crate) use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 pub(crate) const CHILD_MARKER: &str = "C10_PHASE5_REWRITE_MARKER";
 pub(crate) const CHILD_CHECKPOINT: &str = "C10_PHASE5_REWRITE_CHECKPOINT";
 
 pub(crate) fn reseal_wrong_page(path: &Path) {
-    use {worth_store_physical_format::decode_data_frame_page_lsn, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES};
+    use {
+        worth_store_physical_format::decode_data_frame_page_lsn,
+        worth_store_physical_format::DurableFrameKind,
+        worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES,
+    };
     let mut page = std::fs::read(path).unwrap();
     let lsn = decode_data_frame_page_lsn(&page, DurableFrameKind::InlinePage).unwrap();
     page[400] ^= 0xff;
@@ -52,7 +68,8 @@ pub(crate) fn rewrite_checkpoint(name: &str) -> CertificationPhysicalMutationChe
 pub(crate) fn checkpoint_source(world: &PhysicalResidencyStoreWorld) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x83; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let handle = match world.serving().checkpoints().start(request).into_raw() {
         worth_proof::TransitionOutcome::Success(handle) => handle,
@@ -69,7 +86,7 @@ pub(crate) fn kill_child(checkpoint: &str) -> (tempfile::TempDir, PathBuf) {
     let mut child = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "c10_rewrite_child_parks_at_checkpoint",
+            "process::recovery_runtime::c10_phase_five_rewrite_crash::rewrite_child_parks_at_checkpoint",
             "--ignored",
             "--nocapture",
         ])
@@ -101,11 +118,16 @@ pub(crate) fn kill_child(checkpoint: &str) -> (tempfile::TempDir, PathBuf) {
     }
     child.kill().unwrap();
     let _ = child.wait();
-    let root = std::path::PathBuf::from(std::fs::read_to_string(parent.path().join("root-path.txt")).unwrap());
+    let root = std::path::PathBuf::from(
+        std::fs::read_to_string(parent.path().join("root-path.txt")).unwrap(),
+    );
     (parent, root)
 }
 
-pub(crate) fn release_after_read(marker: &Path, root: &Path) -> (Vec<(u64, u64, u64, u64)>, Vec<u8>, u64) {
+pub(crate) fn release_after_read(
+    marker: &Path,
+    root: &Path,
+) -> (Vec<(u64, u64, u64, u64)>, Vec<u8>, u64) {
     let handoff = recover(root);
     let facts = (
         retirements(&handoff),
@@ -116,9 +138,12 @@ pub(crate) fn release_after_read(marker: &Path, root: &Path) -> (Vec<(u64, u64, 
     facts
 }
 
-pub(crate) fn recover(root: &Path) -> worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff {
-    let outcome =
-        worth_store_recovery_runtime::WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
+pub(crate) fn recover(
+    root: &Path,
+) -> worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff {
+    let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
+        recovery_request_with_limits(root, ordinary_limits()),
+    );
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("killed rewrite must recover");
     };
@@ -151,5 +176,9 @@ pub(crate) fn source_payload(
     root: &Path,
     handoff: &worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
 ) -> Vec<u8> {
-    worth_store_testkit_recovery_runtime::c10_phase_five_read::selected_payload(root, handoff, worth_store_testkit_recovery_runtime::c10_phase_five_read::load_identity(marker))
+    worth_store_testkit_recovery_runtime::c10_phase_five_read::selected_payload(
+        root,
+        handoff,
+        worth_store_testkit_recovery_runtime::c10_phase_five_read::load_identity(marker),
+    )
 }

@@ -1,8 +1,5 @@
-#[allow(unused_imports)] use crate::page_validation::matrix::*;
-use {worth_store_physical_format::encode_inline_page, worth_store_physical_format::PhysicalPageSizeClass};
-use {worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis};
-
-use {crate::support::page_validation::assert_damage, crate::support::page_validation::clean_page, crate::support::page_validation::field_range, crate::support::page_validation::format, crate::support::page_validation::page, crate::support::page_validation::page_scope, crate::support::page_validation::reseal, crate::support::page_validation::store, crate::support::page_validation::validate_rejection, crate::support::page_validation::PAGE_OFFSET, crate::support::page_validation::PAGE_SIZES};
+#[allow(unused_imports)]
+use crate::page_validation::matrix::*;
 
 #[test]
 fn page_b_k_l_s_t_u_matrix_is_exact_at_16_32_and_64_kib() {
@@ -73,7 +70,11 @@ fn page_b_k_l_s_t_u_matrix_is_exact_at_16_32_and_64_kib() {
             truncated,
             scope,
             worth_store_physical_integrity::PhysicalDamageCause::Truncated,
-            worth_store_physical_integrity::PhysicalByteRange::new(PAGE_OFFSET + u64::from(page_size.bytes()) - 7, 7).unwrap(),
+            worth_store_physical_integrity::PhysicalByteRange::new(
+                PAGE_OFFSET + u64::from(page_size.bytes()) - 7,
+                7,
+            )
+            .unwrap(),
             None,
             worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
         );
@@ -119,7 +120,11 @@ fn kind_format_segment_page_and_generation_substitutions_name_the_exact_field() 
     );
 
     let mut other_format = clean_page(page_size, identity);
-    other_format[12..16].copy_from_slice(&worth_store_physical_format::PhysicalPageSizeClass::KiB32.bytes().to_le_bytes());
+    other_format[12..16].copy_from_slice(
+        &worth_store_physical_format::PhysicalPageSizeClass::KiB32
+            .bytes()
+            .to_le_bytes(),
+    );
     reseal(&mut other_format);
     assert_damage(
         &other_format,

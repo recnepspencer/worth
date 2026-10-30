@@ -3,19 +3,43 @@
 //! from durable state, and survives a killed process on both sides of the
 //! first checkpoint.
 
-pub use {std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
+pub use {
+    std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio,
+    std::thread, std::time::Duration, std::time::Instant,
+};
 
+pub use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
 pub use {sha2::Digest, sha2::Sha256};
-pub use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-pub use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::OrderedJournalPublication, worth_store::physical_runtime::OrderedJournalPublicationFailure, worth_store::physical_runtime::OrderedJournalPublished, worth_store::physical_runtime::OrderedJournalResolution, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+pub use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::OrderedJournalPublication,
+    worth_store::physical_runtime::OrderedJournalPublicationFailure,
+    worth_store::physical_runtime::OrderedJournalPublished,
+    worth_store::physical_runtime::OrderedJournalResolution,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-pub use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, crate::production_entry::certified_release_serving};
+pub use {
+    crate::production_entry::certified_release_serving, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 pub const ROLE_ENV: &str = "WORTH_JOURNAL_CHILD_ROLE";
 pub const MARKER_ENV: &str = "WORTH_JOURNAL_CHILD_MARKER";
-pub const CHILD_TEST: &str = "ordered_journals::canonical_journal::canonical_journal_child";
-
+pub const CHILD_TEST: &str = "process::recovery_runtime::production_entry::ordered_journals::canonical_journal::canonical_journal_child";
 
 pub const ENTRIES: u64 = 12;
 pub const CHECKPOINT_AFTER: u64 = 7;
@@ -31,9 +55,13 @@ pub fn payload(position: u64) -> Vec<u8> {
 pub fn placement() -> AdmittedRecordPlacementPolicy {
     worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap())
-        .admit(worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-            worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
-        ))
+        .admit(
+            worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+                worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+                    .admit()
+                    .unwrap(),
+            ),
+        )
         .unwrap()
 }
 
@@ -50,12 +78,15 @@ pub fn publication(
     serving
         .canonical_commits()
         .expect("journal access")
-        .publish(worth_store::physical_runtime::OrderedJournalPublication::new(
-            position,
-            bytes,
-            placement,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-        ))
+        .publish(
+            worth_store::physical_runtime::OrderedJournalPublication::new(
+                position,
+                bytes,
+                placement,
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
+            ),
+        )
 }
 
 /// Requires positions 1..=head to read back exactly, newest first in range.
@@ -132,7 +163,7 @@ impl Stop {
     }
 
     pub fn seam(self) -> Option<CertificationPhysicalMutationCheckpoint> {
-        use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam};
+        use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
         match self {
             Self::BeforeFirstCheckpoint | Self::AboveCheckpoint => None,
             Self::BeforeWalAppend => Some(Seam::BeforeWalAppend),
@@ -188,7 +219,9 @@ pub fn launch(stop: Stop) -> (PathBuf, tempfile::TempDir) {
 }
 
 pub fn serve(root: &Path, stage: &str) -> ServingPhysicalRuntime {
-    let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(crate::production_entry::certified_release_serving::recovery_request::request(root));
+    let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
+        crate::production_entry::certified_release_serving::recovery_request::request(root),
+    );
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("{stage} did not recover: {outcome:?}");
     };
@@ -218,7 +251,8 @@ pub fn assert_killed_journal_recovers(stop: Stop) {
 pub fn checkpoint(world: &PhysicalResidencyStoreWorld) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0xc1; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -247,7 +281,10 @@ pub fn child(marker: &Path, stop: Stop) -> ! {
             payload(position),
         )
         .expect("publication before the kill");
-        if stop == crate::production_entry::ordered_journals::canonical_journal::Stop::AboveCheckpoint && position == CHECKPOINT_AFTER {
+        if stop
+            == crate::production_entry::ordered_journals::canonical_journal::Stop::AboveCheckpoint
+            && position == CHECKPOINT_AFTER
+        {
             checkpoint(&world);
         }
     }

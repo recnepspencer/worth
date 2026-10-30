@@ -1,21 +1,24 @@
-#[allow(unused_imports)] use crate::manifest_access::*;
-use {worth_store_contracts::AcceptedHandoffReadiness, worth_store_contracts::HandoffEvidenceDigestSet, worth_store_contracts::StableDigest, worth_store_contracts::ROADMAP_2_S1_SCOPE};
-use {worth_store_physical_format::AllocationClassKind, worth_store_physical_format::InMemoryPhysicalFormatModel, worth_store_physical_format::InMemoryPhysicalFormatModelDenialKind, worth_store_physical_format::InMemoryPhysicalFormatModelRequest, worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalFreeSpaceSearchPolicy, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::PlatformPhysicalAppendRequest};
+#[allow(unused_imports)]
+use crate::manifest_access::*;
 
 #[test]
 fn root_manifest_and_manifest_index_use_public_physical_access() {
     let mut facade = open_facade();
     let page_append = facade
-        .append_physical_record(worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
-            slot_cell(1),
-            b"root-page",
-        ))
+        .append_physical_record(
+            worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
+                slot_cell(1),
+                b"root-page",
+            ),
+        )
         .expect("page append");
     facade
-        .append_physical_record(worth_store_physical_format::PlatformPhysicalAppendRequest::extent(
-            extent_cell(1),
-            b"root-extent",
-        ))
+        .append_physical_record(
+            worth_store_physical_format::PlatformPhysicalAppendRequest::extent(
+                extent_cell(1),
+                b"root-extent",
+            ),
+        )
         .expect("extent append");
     facade.publish_physical_root().expect("root publish");
 
@@ -50,20 +53,25 @@ fn root_manifest_and_manifest_index_use_public_physical_access() {
 fn allocation_free_space_and_fragmentation_stay_family_local() {
     let mut facade = open_facade();
     facade
-        .append_physical_record(worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
-            slot_cell(2),
-            b"alloc-page",
-        ))
+        .append_physical_record(
+            worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
+                slot_cell(2),
+                b"alloc-page",
+            ),
+        )
         .expect("page append");
     facade
-        .append_physical_record(worth_store_physical_format::PlatformPhysicalAppendRequest::extent(
-            extent_cell(2),
-            b"alloc-extent",
-        ))
+        .append_physical_record(
+            worth_store_physical_format::PlatformPhysicalAppendRequest::extent(
+                extent_cell(2),
+                b"alloc-extent",
+            ),
+        )
         .expect("extent append");
     facade.publish_physical_root().expect("root publish");
 
-    let policy = worth_store_physical_format::PhysicalFreeSpaceSearchPolicy::foreground_bounded(4, 4);
+    let policy =
+        worth_store_physical_format::PhysicalFreeSpaceSearchPolicy::foreground_bounded(4, 4);
     let root_report = facade
         .root_manifest_access()
         .current_root_manifest()
@@ -118,10 +126,12 @@ fn allocation_free_space_and_fragmentation_stay_family_local() {
 fn reopen_discovers_same_root_manifest_family_truth() {
     let mut facade = open_facade();
     facade
-        .append_physical_record(worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
-            slot_cell(3),
-            b"reopen-page",
-        ))
+        .append_physical_record(
+            worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
+                slot_cell(3),
+                b"reopen-page",
+            ),
+        )
         .expect("page append");
     let published = facade.publish_physical_root().expect("root publish");
     let original = facade
@@ -130,7 +140,8 @@ fn reopen_discovers_same_root_manifest_family_truth() {
         .expect("discover original root");
     let mut reopened = worth_store_physical_format::InMemoryPhysicalFormatModel::restore(
         readiness(),
-        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_canonical(),
+        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_canonical(
+        ),
         published.replay_artifact(),
     )
     .expect("public replay reopen");
@@ -147,10 +158,12 @@ fn reopen_discovers_same_root_manifest_family_truth() {
 fn manifest_membership_rejects_unpublished_runtime_append() {
     let mut facade = open_facade();
     let page_append = facade
-        .append_physical_record(worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
-            slot_cell(4),
-            b"unpublished-page",
-        ))
+        .append_physical_record(
+            worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
+                slot_cell(4),
+                b"unpublished-page",
+            ),
+        )
         .expect("page append");
     let denial = facade
         .manifest_index_access()
@@ -166,7 +179,8 @@ fn manifest_membership_rejects_unpublished_runtime_append() {
 #[test]
 fn allocation_free_space_and_fragmentation_require_published_root_truth() {
     let mut facade = open_facade();
-    let policy = worth_store_physical_format::PhysicalFreeSpaceSearchPolicy::foreground_bounded(4, 4);
+    let policy =
+        worth_store_physical_format::PhysicalFreeSpaceSearchPolicy::foreground_bounded(4, 4);
 
     let allocation_denial = facade
         .allocation_access()

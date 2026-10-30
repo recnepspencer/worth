@@ -1,10 +1,11 @@
+pub(crate) use std::path::Path;
+pub(crate) use std::process::Stdio;
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::time::Duration;
 pub(crate) use {std::io::BufRead, std::io::Write};
-pub(crate) use {std::path::Path};
-pub(crate) use {std::process::Stdio};
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::time::Duration};
 
-pub(crate) const CHILD_TEST: &str = "child_dispatch::journey_child_role";
+pub(crate) const CHILD_TEST: &str =
+    "process::store::physical_media_journeys::child_dispatch::journey_child_role";
 pub(crate) const EVENT_PREFIX: &str = "C4_EVENT ";
 
 pub(crate) fn run_abrupt_writer(root: &Path, case: &str) -> String {
@@ -27,7 +28,9 @@ pub(crate) fn run_abrupt_writer(root: &Path, case: &str) -> String {
             }
         }
     });
-    let boundary = receiver.recv_timeout(std::time::Duration::from_secs(30)).unwrap();
+    let boundary = receiver
+        .recv_timeout(std::time::Duration::from_secs(30))
+        .unwrap();
     assert!(boundary.starts_with("fault-boundary;"));
     child.kill().unwrap();
     assert!(!child.wait().unwrap().success());

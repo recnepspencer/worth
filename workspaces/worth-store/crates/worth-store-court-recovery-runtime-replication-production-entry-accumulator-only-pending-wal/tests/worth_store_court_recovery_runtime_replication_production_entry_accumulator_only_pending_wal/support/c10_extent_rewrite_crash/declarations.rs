@@ -1,25 +1,60 @@
+pub(crate) use {
+    crate::c10_extent_rewrite_crash::arena_io::arena_path,
+    crate::c10_extent_rewrite_crash::arena_io::extent_payload,
+    crate::c10_extent_rewrite_crash::arena_io::flip_arena_byte,
+    crate::c10_extent_rewrite_crash::arena_io::payload,
+};
 
-
-pub(crate) use {crate::c10_extent_rewrite_crash::arena_io::arena_path, crate::c10_extent_rewrite_crash::arena_io::extent_payload, crate::c10_extent_rewrite_crash::arena_io::flip_arena_byte, crate::c10_extent_rewrite_crash::arena_io::payload};
-
-
-
-
-
+pub(crate) use std::thread;
 pub(crate) use {std::io::Seek, std::io::SeekFrom, std::io::Write};
 pub(crate) use {std::path::Path, std::path::PathBuf};
 pub(crate) use {std::process::Command, std::process::Stdio};
-pub(crate) use {std::thread};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {crate::c10_extent_rewrite_crash::c10_crash_evidence::directory_snapshot, crate::c10_extent_rewrite_crash::c10_crash_evidence::ordinary_limits, crate::c10_extent_rewrite_crash::c10_crash_evidence::wal_contains_rewrite};
-pub(crate) use {worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest};
-pub(crate) use {worth_store_physical_format::decode_data_frame_page_lsn, worth_store_physical_format::decode_extent_chunk, worth_store_physical_format::encode_data_frame_page_lsn, worth_store_physical_format::prepare_extent_chunk, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES, worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES, worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff, worth_store_recovery_runtime::WorthStoreRecovery};
-pub(crate) use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
+pub(crate) use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
+pub(crate) use {
+    crate::c10_extent_rewrite_crash::c10_crash_evidence::directory_snapshot,
+    crate::c10_extent_rewrite_crash::c10_crash_evidence::ordinary_limits,
+    crate::c10_extent_rewrite_crash::c10_crash_evidence::wal_contains_rewrite,
+};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_data_frame_page_lsn,
+    worth_store_physical_format::decode_extent_chunk,
+    worth_store_physical_format::encode_data_frame_page_lsn,
+    worth_store_physical_format::prepare_extent_chunk,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurableExtentManifest,
+    worth_store_physical_format::DurableExtentRecordPlacement,
+    worth_store_physical_format::DurableFrameKind,
+    worth_store_physical_format::ExtentArenaFrameLayout,
+    worth_store_physical_format::ExtentArenaRange,
+    worth_store_physical_format::ExtentChunkCoordinate,
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
+    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
+    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 pub(crate) const CHILD_MARKER: &str = "C10_EXTENT_REWRITE_MARKER";
 pub(crate) const CHILD_CHECKPOINT: &str = "C10_EXTENT_REWRITE_CHECKPOINT";
@@ -28,11 +63,19 @@ pub(crate) const PAYLOAD_BYTES: usize = 40_000;
 pub(crate) const ARENAS: &str = "families/records/arenas";
 
 pub(crate) fn assert_blocked_without_successor(marker: &Path, root: &Path) {
-    let outcome =
-        worth_store_recovery_runtime::WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
-    assert!(matches!(outcome, worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(_)));
+    let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
+        recovery_request_with_limits(root, ordinary_limits()),
+    );
+    assert!(matches!(
+        outcome,
+        worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(_)
+    ));
     assert_eq!(
-        selected_route(root, worth_store_testkit_recovery_runtime::c10_phase_five_read::load_identity(marker)).generation,
+        selected_route(
+            root,
+            worth_store_testkit_recovery_runtime::c10_phase_five_read::load_identity(marker)
+        )
+        .generation,
         1
     );
 }
@@ -53,7 +96,9 @@ pub(crate) fn replace_source_payload(root: &Path) {
     assert_eq!(manifest.extent().get(), record.extent);
     assert_eq!(manifest.extent_cell().generation().get(), record.generation);
     assert_eq!(manifest.logical_bytes(), record.payload_bytes);
-    let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment()).unwrap();
+    let layout =
+        worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment())
+            .unwrap();
     assert!(layout.admits(record.range, manifest.chunk_count()));
     let mut forged = payload();
     forged[PAYLOAD_BYTES / 2] ^= 0xff;
@@ -80,7 +125,12 @@ pub(crate) fn replace_source_payload(root: &Path) {
             worth_store_physical_format::DurableFrameKind::Extent,
         )
         .unwrap();
-        encode_data_frame_page_lsn(&mut frame, worth_store_physical_format::DurableFrameKind::Extent, page_lsn).unwrap();
+        encode_data_frame_page_lsn(
+            &mut frame,
+            worth_store_physical_format::DurableFrameKind::Extent,
+            page_lsn,
+        )
+        .unwrap();
         file.seek(std::io::SeekFrom::Start(offset as u64)).unwrap();
         file.write_all(&frame).unwrap();
     }
@@ -102,7 +152,8 @@ pub(crate) fn rewrite_checkpoint(name: &str) -> CertificationPhysicalMutationChe
 pub(crate) fn checkpoint_source(world: &PhysicalResidencyStoreWorld) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x93; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let handle = match world.serving().checkpoints().start(request).into_raw() {
         worth_proof::TransitionOutcome::Success(handle) => handle,
@@ -119,7 +170,7 @@ pub(crate) fn kill_child(checkpoint: &str) -> (tempfile::TempDir, PathBuf) {
     let mut child = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "c10_extent_rewrite_child_parks_at_checkpoint",
+            "process::recovery_runtime::c10_extent_rewrite_crash::extent_rewrite_child_parks_at_checkpoint",
             "--ignored",
             "--nocapture",
         ])
@@ -151,7 +202,9 @@ pub(crate) fn kill_child(checkpoint: &str) -> (tempfile::TempDir, PathBuf) {
     }
     child.kill().unwrap();
     let _ = child.wait();
-    let root = std::path::PathBuf::from(std::fs::read_to_string(parent.path().join("root-path.txt")).unwrap());
+    let root = std::path::PathBuf::from(
+        std::fs::read_to_string(parent.path().join("root-path.txt")).unwrap(),
+    );
     (parent, root)
 }
 
@@ -159,7 +212,10 @@ pub(crate) fn kill_child(checkpoint: &str) -> (tempfile::TempDir, PathBuf) {
 /// first and the settled passes select. A handoff reports the root recovery
 /// selected before publishing, so the second pass shows what the first
 /// published; no extent data or manifest may change after the first pass.
-pub(crate) fn recover_until_settled(marker: &Path, root: &Path) -> ((Vec<u8>, u64), (Vec<u8>, u64)) {
+pub(crate) fn recover_until_settled(
+    marker: &Path,
+    root: &Path,
+) -> ((Vec<u8>, u64), (Vec<u8>, u64)) {
     let record = worth_store_testkit_recovery_runtime::c10_phase_five_read::load_identity(marker);
     let first = selected(root, &recover(root), record);
     let arenas = directory_snapshot(root, ARENAS);
@@ -173,7 +229,10 @@ pub(crate) fn recover_until_settled(marker: &Path, root: &Path) -> ((Vec<u8>, u6
 }
 
 pub(crate) fn recover(root: &Path) -> RecoveredPhysicalRuntimeHandoff {
-    match worth_store_recovery_runtime::WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits())) {
+    match worth_store_recovery_runtime::WorthStoreRecovery::recover(recovery_request_with_limits(
+        root,
+        ordinary_limits(),
+    )) {
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) => *handoff,
         _ => panic!("killed extent rewrite must recover"),
     }
@@ -190,7 +249,9 @@ pub(crate) fn selected(
         .placements()
         .iter()
         .find_map(|placement| match placement {
-            worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(extent) if extent.record() == record => {
+            worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(extent)
+                if extent.record() == record =>
+            {
                 Some(*extent)
             }
             _ => None,

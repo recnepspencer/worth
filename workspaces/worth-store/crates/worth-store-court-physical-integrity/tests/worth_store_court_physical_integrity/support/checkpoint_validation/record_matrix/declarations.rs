@@ -1,11 +1,26 @@
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::num::NonZeroU64;
 
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::PhysicalCheckpointIdentity};
-pub(crate) use {worth_store_physical_integrity::validate_checkpoint_binding, worth_store_physical_integrity::validate_checkpoint_binding_compaction, worth_store_physical_integrity::validate_checkpoint_dirty_basis, worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::validate_checkpoint_stream_header, worth_store_physical_integrity::CheckpointBindingCompactionIntegrityValidation, worth_store_physical_integrity::CheckpointBindingIntegrityValidation, worth_store_physical_integrity::CheckpointDirtyBasisIntegrityValidation, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::CheckpointStreamHeaderIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityObservationCounters, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::PhysicalCheckpointIdentity;
+pub(crate) use worth_store_physical_integrity::{
+    validate_checkpoint_binding, validate_checkpoint_binding_compaction,
+    validate_checkpoint_dirty_basis, validate_checkpoint_footer, validate_checkpoint_stream_header,
+    CheckpointBindingCompactionIntegrityValidation, CheckpointBindingIntegrityValidation,
+    CheckpointDirtyBasisIntegrityValidation, CheckpointFooterIntegrityValidation,
+    CheckpointFooterValidationBasis, CheckpointStreamHeaderIntegrityValidation,
+    PhysicalArtifactScope, PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause,
+    PhysicalFormatField, PhysicalIntegrityObservationCounters, PhysicalIntegrityRejection,
+    PhysicalIntegrityRejectionClass, PhysicalIntegrityVersionAxis, UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-pub(crate) use {crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::field_range, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::header_scope_known, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::other_store, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_header};
+pub(crate) use crate::checkpoint_validation::support::{
+    assert_damage, binding_scope, compaction_scope, dirty_scope, field_range, footer_scope,
+    header_scope_known, header_scope_staged, identity, other_store, reseal_record,
+    validate_binding, validate_compaction, validate_dirty, validate_header,
+};
+pub(crate) use crate::literal_vectors::checkpoint_validation::{
+    BINDING, BINDING_COMPACTION, DIRTY_BASIS, FOOTER, HEADER,
+};
 
 #[derive(Clone, Copy)]
 pub(crate) enum Kind {
@@ -55,7 +70,8 @@ pub(crate) fn rejection(
     PhysicalIntegrityRejection,
     PhysicalIntegrityObservationCounters,
 ) {
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes);
     match kind {
         crate::checkpoint_validation::record_matrix::Kind::Header => match validate_checkpoint_stream_header(artifact, scope) {
             (worth_store_physical_integrity::CheckpointStreamHeaderIntegrityValidation::Rejected(rejection), counters) => {
@@ -106,9 +122,12 @@ pub(crate) fn footer_rejection(
         footer_scope(identity),
         basis,
     ) {
-        (worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection), counters) => {
-            (rejection, counters)
-        }
+        (
+            worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(
+                rejection,
+            ),
+            counters,
+        ) => (rejection, counters),
         _ => panic!("damaged footer unexpectedly validated"),
     }
 }
@@ -158,17 +177,22 @@ pub(crate) fn assert_rejected_counters(
     assert_eq!(counters.rejected_frames(), 1);
     if let Some(cause) = cause {
         assert_eq!(
-            counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)),
+            counters.rejected_for(
+                worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)
+            ),
             1
         );
     } else {
         assert_eq!(
-            counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported),
+            counters.rejected_for(
+                worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported
+            ),
             1
         );
     }
 }
 
-pub(crate) fn store_for_identity() -> worth_store_physical_format::store_namespace::StableStoreIdentity {
+pub(crate) fn store_for_identity(
+) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
     identity().store_identity()
 }

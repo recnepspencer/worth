@@ -1,8 +1,15 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::PhysicalPageSizeClass};
-pub(crate) use {worth_store_physical_integrity::validate_extent_manifest, worth_store_physical_integrity::ExtentManifestIntegrityValidation, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::{DurableExtentManifest, PhysicalPageSizeClass};
+pub(crate) use worth_store_physical_integrity::{
+    validate_extent_manifest, ExtentManifestIntegrityValidation, PhysicalBlastRadius,
+    PhysicalByteRange, PhysicalDamageCause, PhysicalFormatField, PhysicalIntegrityRejection,
+    PhysicalIntegrityRejectionClass, PhysicalIntegrityVersionAxis, UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::support::extent_validation::assert_damage, crate::support::extent_validation::assert_rejected_counters, crate::support::extent_validation::chunk_payload_capacity, crate::support::extent_validation::extent_cell, crate::support::extent_validation::field_range, crate::support::extent_validation::format, crate::support::extent_validation::manifest_scope, crate::support::extent_validation::record, crate::support::extent_validation::reseal_durable_frame, crate::support::extent_validation::store, crate::support::extent_validation::ExtentFixture, crate::support::extent_validation::MANIFEST_OFFSET};
+pub(crate) use crate::support::extent_validation::{
+    assert_damage, assert_rejected_counters, chunk_payload_capacity, extent_cell, field_range,
+    format, manifest_scope, record, reseal_durable_frame, store, ExtentFixture, MANIFEST_OFFSET,
+};
 
 pub(crate) fn manifest_bytes(
     fixture: ExtentFixture,
@@ -35,7 +42,10 @@ pub(crate) fn intact<'a>(
     scope: worth_store_physical_integrity::PhysicalArtifactScope,
 ) -> worth_store_physical_integrity::IntegrityValidatedExtentManifest<'a> {
     let (worth_store_physical_integrity::ExtentManifestIntegrityValidation::Intact(validated), _) =
-        validate_extent_manifest(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes), scope)
+        validate_extent_manifest(
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
+            scope,
+        )
     else {
         panic!("expected intact manifest")
     };
@@ -50,9 +60,13 @@ pub(crate) fn assert_manifest_damage(
     field: Option<PhysicalFormatField>,
     blast_radius: PhysicalBlastRadius,
 ) {
-    let (validation, counters) =
-        validate_extent_manifest(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes), scope);
-    let worth_store_physical_integrity::ExtentManifestIntegrityValidation::Rejected(rejection) = validation else {
+    let (validation, counters) = validate_extent_manifest(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
+        scope,
+    );
+    let worth_store_physical_integrity::ExtentManifestIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("damaged extent manifest unexpectedly validated")
     };
     assert_damage(rejection, scope, cause, range, field, blast_radius);
@@ -71,11 +85,14 @@ pub(crate) fn assert_unsupported(
     observed: u32,
 ) {
     let (
-        worth_store_physical_integrity::ExtentManifestIntegrityValidation::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(
-            unsupported,
-        )),
+        worth_store_physical_integrity::ExtentManifestIntegrityValidation::Rejected(
+            worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(unsupported),
+        ),
         counters,
-    ) = validate_extent_manifest(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes), scope)
+    ) = validate_extent_manifest(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
+        scope,
+    )
     else {
         panic!("expected unsupported extent manifest version")
     };
@@ -83,7 +100,9 @@ pub(crate) fn assert_unsupported(
     assert_eq!(unsupported.axis(), axis);
     assert_eq!(unsupported.observed(), observed);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported
+        ),
         1
     );
 }

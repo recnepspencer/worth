@@ -1,7 +1,8 @@
 //! Two completed distinct-object V3 batches plus a third OS-killed WAL batch
 //! under the same NoRelease checkpoint. No synthetic root or WAL link is used.
 
-use {worth_store_testkit_recovery_runtime::production_entry::certified_release_serving};
+use worth_store_testkit_recovery_runtime::production_entry::certified_release_serving;
+use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first;
 
 #[test]
 fn three_distinct_v3_descriptors_before_checkpoint_reach_durable_wal() {

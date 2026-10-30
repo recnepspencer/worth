@@ -1,8 +1,14 @@
-use {worth_store_physical_format::PhysicalRecordFormatDeclaration};
-use {worth_store_physical_integrity::validate_physical_work_obligation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+use worth_store_physical_format::PhysicalRecordFormatDeclaration;
+use worth_store_physical_integrity::{
+    validate_physical_work_obligation, PhysicalArtifactScope, PhysicalBlastRadius,
+    PhysicalByteRange, PhysicalDamageCause, PhysicalFormatField,
+    PhysicalWorkObligationIntegrityValidation, UntrustedPhysicalArtifact,
+};
 
-use {crate::support::physical_work_obligation_validation::assert_damage, crate::support::physical_work_obligation_validation::field_range, crate::support::physical_work_obligation_validation::identity, crate::support::physical_work_obligation_validation::reseal, crate::support::physical_work_obligation_validation::scope, crate::support::physical_work_obligation_validation::store};
-use {crate::vectors::operation_3, crate::vectors::STORE_BYTES};
+use crate::support::physical_work_obligation_validation::{
+    assert_damage, field_range, identity, reseal, scope, store,
+};
+use crate::vectors::{operation_3, STORE_BYTES};
 
 #[test]
 fn checksum_valid_store_and_filename_identity_substitution_fail_exact_scope() {
@@ -22,7 +28,8 @@ fn checksum_valid_store_and_filename_identity_substitution_fail_exact_scope() {
     );
 
     let filename_substitution = operation_3();
-    let other_filename_scope = crate::support::physical_work_obligation_validation::scope(store, identity(1, 2, 4));
+    let other_filename_scope =
+        crate::support::physical_work_obligation_validation::scope(store, identity(1, 2, 4));
     assert_damage(
         &filename_substitution,
         other_filename_scope,
@@ -77,7 +84,9 @@ fn family_and_exact_range_substitution_are_rejected_before_projection() {
     let bytes = operation_3();
     let wrong_family = worth_store_physical_integrity::PhysicalArtifactScope::current_root_selector(
         store,
-        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
         worth_store_physical_integrity::PhysicalByteRange::new(8_192, 160).unwrap(),
     );
     assert_damage(
@@ -89,11 +98,12 @@ fn family_and_exact_range_substitution_are_rejected_before_projection() {
         worth_store_physical_integrity::PhysicalBlastRadius::CompleteArtifact,
     );
 
-    let wrong_range = worth_store_physical_integrity::PhysicalArtifactScope::physical_work_obligation(
-        store,
-        identity(1, 2, 3),
-        worth_store_physical_integrity::PhysicalByteRange::new(8_192, 159).unwrap(),
-    );
+    let wrong_range =
+        worth_store_physical_integrity::PhysicalArtifactScope::physical_work_obligation(
+            store,
+            identity(1, 2, 3),
+            worth_store_physical_integrity::PhysicalByteRange::new(8_192, 159).unwrap(),
+        );
     assert_damage(
         &bytes,
         wrong_range,
@@ -109,11 +119,17 @@ fn sealed_view_cannot_be_reused_for_an_equal_but_distinct_byte_incarnation() {
     let bytes = operation_3();
     let other = bytes;
     let scope = scope(store(STORE_BYTES), identity(1, 2, 3));
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let (validation, _) = validate_physical_work_obligation(artifact, scope);
-    let worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation::Intact(validated) = validation else {
+    let worth_store_physical_integrity::PhysicalWorkObligationIntegrityValidation::Intact(
+        validated,
+    ) = validation
+    else {
         panic!("clean literal rejected")
     };
     assert!(validated.matches_input(artifact));
-    assert!(!validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&other)));
+    assert!(!validated.matches_input(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&other)
+    ));
 }

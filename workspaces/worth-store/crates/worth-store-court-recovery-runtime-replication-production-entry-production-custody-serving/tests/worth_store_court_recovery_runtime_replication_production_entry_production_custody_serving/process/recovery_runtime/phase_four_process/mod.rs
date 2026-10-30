@@ -1,16 +1,41 @@
-
-
-#[allow(unused_imports)] use crate::phase_four_process::*;
+#[allow(unused_imports)]
+use crate::phase_four_process::*;
 use {std::path::Path, std::path::PathBuf};
 use {std::process::Command, std::process::Output};
 
-use {worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration, worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-use {worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_physics::PhysicalRedoDecisionKind, worth_store_recovery_physics::PhysicalRedoDecisionPrior, worth_store_recovery_physics::PhysicalRedoTargetIdentity, worth_store_recovery_physics::RecoveryOperationFate, worth_store_recovery_physics::RecoveryPageSource};
-use {worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveryPublicationAction, worth_store_recovery_runtime::WorthStoreRecovery};
-use {worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use worth_proof::TransitionOutcome;
+use worth_store_physical_format::RecordArtifactFile;
+use {
+    worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+use {
+    worth_store_recovery_physics::PhysicalRedoDecisionKind,
+    worth_store_recovery_physics::PhysicalRedoDecisionPrior,
+    worth_store_recovery_physics::PhysicalRedoTargetIdentity,
+    worth_store_recovery_physics::RecoveryOperationFate,
+    worth_store_recovery_physics::RecoveryPageSource,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveryPublicationAction,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
+use {
+    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+use {
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+    worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits,
+};
 
 #[test]
 fn ordinary_store_state_crosses_process_death_into_one_recovered_handoff() {
@@ -19,7 +44,8 @@ fn ordinary_store_state_crosses_process_death_into_one_recovered_handoff() {
     let writer = run_child(WRITER_TEST, &marker, parent.path());
     assert_child_succeeded("writer", &writer);
 
-    let root = std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
+    let root =
+        std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
     assert!(root.starts_with(parent.path()));
     assert!(root.is_dir());
     append_torn_terminal_wal_segment(&root);
@@ -34,21 +60,23 @@ fn production_facade_replaces_a_dead_writer_in_a_distinct_process() {
     let writer = run_child(WRITER_TEST, &marker, parent.path());
     assert_child_succeeded("writer", &writer);
 
-    let root = std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
+    let root =
+        std::path::PathBuf::from(std::fs::read_to_string(&marker).expect("writer root marker"));
     let facade = run_child(FACADE_TEST, &root, parent.path());
     assert_child_succeeded("facade", &facade);
 }
 
 #[test]
 #[ignore = "launched by the process-boundary parent"]
-fn phase_four_writer_process() {
+fn planning_writer_process() {
     let marker = required_child_path();
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery("c8-phase4-process").unwrap();
     let retained_root = world.retained_root();
     canonical_physical_mutation_acknowledgment(&world, [0x41; 32], b"ordinary-c8-redo");
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x42; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -56,7 +84,9 @@ fn phase_four_writer_process() {
         panic!("ordinary checkpoint admission must succeed")
     };
     let checkpoint = match handle.wait() {
-        worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(checkpoint) => checkpoint,
+        worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(checkpoint) => {
+            checkpoint
+        }
         other => panic!("ordinary checkpoint publication must complete: {other:?}"),
     };
     assert!(checkpoint.retained_wal_tail().segment_count().get() > 0);
@@ -69,7 +99,7 @@ fn phase_four_writer_process() {
 
 #[test]
 #[ignore = "launched by the process-boundary parent"]
-fn phase_four_planner_process() {
+fn planner_process() {
     let root = required_child_path();
     let planned = admitted_recovery_with_limits(&root, ordinary_limits())
         .discover()
@@ -85,19 +115,28 @@ fn phase_four_planner_process() {
     assert_eq!(planned.discovery_counters().wal_owner_decoder_entries, 0);
     assert!(planned.discovery_counters().wal_integrity_rejections > 0);
     assert_eq!(fates.len(), 3);
-    assert_eq!(fates[0].fate(), worth_store_recovery_physics::RecoveryOperationFate::AcknowledgedDurable);
+    assert_eq!(
+        fates[0].fate(),
+        worth_store_recovery_physics::RecoveryOperationFate::AcknowledgedDurable
+    );
     assert_eq!(
         fates[1].fate(),
         worth_store_recovery_physics::RecoveryOperationFate::DurableUnacknowledged
     );
-    assert_eq!(fates[2].fate(), worth_store_recovery_physics::RecoveryOperationFate::Indeterminate);
+    assert_eq!(
+        fates[2].fate(),
+        worth_store_recovery_physics::RecoveryOperationFate::Indeterminate
+    );
     let decisions = planned.redo_plan().resolved_decisions().collect::<Vec<_>>();
     assert_eq!(decisions.len(), 2);
     assert_eq!(
         decisions[0].kind(),
         worth_store_recovery_physics::PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn
     );
-    assert_eq!(decisions[1].kind(), worth_store_recovery_physics::PhysicalRedoDecisionKind::Apply);
+    assert_eq!(
+        decisions[1].kind(),
+        worth_store_recovery_physics::PhysicalRedoDecisionKind::Apply
+    );
     assert_eq!(decisions[1].record().lsn().get(), 3);
     assert_eq!(
         decisions[1].target().identity(),
@@ -107,7 +146,8 @@ fn phase_four_planner_process() {
             generation: 3,
         }
     );
-    let worth_store_recovery_physics::PhysicalRedoDecisionPrior::Page(prior) = decisions[1].prior() else {
+    let worth_store_recovery_physics::PhysicalRedoDecisionPrior::Page(prior) = decisions[1].prior()
+    else {
         panic!("an applicable redo step retains its exact selected-page proof")
     };
     let worth_store_recovery_physics::RecoveryPageSource::Materialized {
@@ -182,7 +222,9 @@ fn phase_four_planner_process() {
     );
     assert_eq!(reopened.reopen_counters().selector_reads_completed, 1);
     assert_eq!(reopened.reopen_counters().root_reads_completed, 1);
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        reopened.finish()
+    else {
         panic!("process-death recovery must produce the recovered handoff")
     };
     assert_eq!(handoff.core().root().generation(), expected_generation);
@@ -220,10 +262,12 @@ fn phase_four_planner_process() {
 
 #[test]
 #[ignore = "launched by the process-boundary parent"]
-fn phase_six_facade_process() {
+fn recovery_facade_process() {
     let root = required_child_path();
     let request = recovery_request_with_limits(&root, ordinary_limits());
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = worth_store_recovery_runtime::WorthStoreRecovery::recover(request) else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        worth_store_recovery_runtime::WorthStoreRecovery::recover(request)
+    else {
         panic!("the production facade must recover the dead ordinary writer")
     };
     assert_ne!(

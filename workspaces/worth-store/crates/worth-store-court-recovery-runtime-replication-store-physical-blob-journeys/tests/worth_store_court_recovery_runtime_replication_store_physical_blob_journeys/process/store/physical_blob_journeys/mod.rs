@@ -1,87 +1,43 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #[test]
-fn c11_blob_child_role() {
+fn blob_child_role() {
     let Ok(role) = std::env::var("WORTH_STORE_C11_BLOB_CHILD_ROLE") else {
         return;
     };
     let root =
         std::path::PathBuf::from(std::env::var_os("WORTH_STORE_C11_BLOB_CHILD_ROOT").unwrap());
     match role.as_str() {
-        "allocator_negative" => crate::physical_blob_journeys::blob_ingest_process::allocator_negative_control(),
+        "allocator_negative" => {
+            crate::physical_blob_journeys::blob_ingest_process::allocator_negative_control()
+        }
         "writer" => crate::physical_blob_journeys::blob_ingest_process::writer(&root),
         "reader" => crate::physical_blob_journeys::blob_ingest_process::range_read::reader(&root),
-        "crash-interior-selected" => blob_resume_multilevel::child(&root),
-        "crash-abort-wal" | "crash-abort-root" => crate::physical_blob_journeys::blob_abort_crash::child(&root, &role),
+        "crash-interior-selected" => {
+            crate::physical_blob_journeys::blob_resume_multilevel::child::run(&root)
+        }
+        "crash-abort-wal" | "crash-abort-root" => {
+            crate::physical_blob_journeys::blob_abort_crash::child(&root, &role)
+        }
         "crash-reclaim-manifest"
         | "crash-reclaim-reservation"
         | "crash-reclaim-reservation-aged"
-        | "crash-reclaim-wal" => crate::physical_blob_journeys::blob_reclaim_crash::child(&root, &role),
-        crate::physical_blob_journeys::blob_reclaim_cleanup_crash::SELECTOR_ROLE | crate::physical_blob_journeys::blob_reclaim_cleanup_crash::INTENT_ROLE => {
+        | "crash-reclaim-wal" => {
+            crate::physical_blob_journeys::blob_reclaim_crash::child(&root, &role)
+        }
+        crate::physical_blob_journeys::blob_reclaim_cleanup_crash::SELECTOR_ROLE
+        | crate::physical_blob_journeys::blob_reclaim_cleanup_crash::INTENT_ROLE => {
             crate::physical_blob_journeys::blob_reclaim_cleanup_crash::child(&root, &role)
         }
         "crash-released-first-wal" | "crash-released-tier-first-wal" => {
             crate::physical_blob_journeys::blob_reclaim_released_crash::child(&root, &role)
         }
-        "checkpoint-envelope" => worth_store_testkit_store::physical_blob_journeys::checkpoint_capture_envelope::child(&root),
-        "crash-expiry-wal" | "crash-expiry-root" => crate::physical_blob_journeys::blob_expiry_crash::child(&root, &role),
+        "checkpoint-envelope" => {
+            worth_store_testkit_store::physical_blob_journeys::checkpoint_capture_envelope::child(
+                &root,
+            )
+        }
+        "crash-expiry-wal" | "crash-expiry-root" => {
+            crate::physical_blob_journeys::blob_expiry_crash::child(&root, &role)
+        }
         "crash-declaration"
         | "crash-chunk"
         | "crash-generation-wal"
@@ -120,8 +76,6 @@ pub(crate) mod blob_occurrence_corruption;
 pub(crate) mod blob_reachability;
 #[path = "blob_reclaim/mod.rs"]
 pub(crate) mod blob_reclaim;
-#[path = "blob_reclaim_batch_boundary/mod.rs"]
-pub(crate) mod blob_reclaim_batch_boundary;
 #[path = "blob_reclaim_cleanup_crash/mod.rs"]
 pub(crate) mod blob_reclaim_cleanup_crash;
 #[path = "blob_reclaim_contention/mod.rs"]
@@ -136,8 +90,6 @@ pub(crate) mod blob_reclaim_released;
 pub(crate) mod blob_reclaim_released_crash;
 #[path = "blob_resume_crash/mod.rs"]
 pub(crate) mod blob_resume_crash;
-#[path = "blob_resume_multilevel/mod.rs"]
-pub(crate) mod blob_resume_multilevel;
 #[path = "blob_resume_tree/mod.rs"]
 pub(crate) mod blob_resume_tree;
 #[path = "blob_scheduler_interference/mod.rs"]

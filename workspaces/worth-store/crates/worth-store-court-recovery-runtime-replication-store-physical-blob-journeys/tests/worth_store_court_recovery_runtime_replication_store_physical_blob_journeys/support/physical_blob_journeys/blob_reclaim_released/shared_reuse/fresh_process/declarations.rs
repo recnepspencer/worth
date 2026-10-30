@@ -2,9 +2,9 @@
 
 pub(crate) use {std::path::Path, std::process::Command};
 
-pub(crate) use {crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::denied_reopen};
+pub(crate) use crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::denied_reopen;
 
-pub(crate) const CHILD_TEST: &str = "blob_reclaim_released::shared_reuse::released_reuse_child";
+pub(crate) const CHILD_TEST: &str = "process::store::physical_blob_journeys::blob_reclaim_released::shared_reuse::released_reuse_child";
 pub(crate) const ROOT_ENV: &str = "WORTH_C11_RELEASE_CHILD_ROOT";
 
 pub(crate) fn assert_open_denied(root: &Path) {

@@ -1,24 +1,45 @@
-
-
-
-
-pub(crate) use {crate::c10_phase_five_mixed_tail::c10_crash_evidence::ordinary_limits, crate::c10_phase_five_mixed_tail::c10_crash_evidence::prepare_rewrite, crate::c10_phase_five_mixed_tail::c10_crash_evidence::segment_snapshot, crate::c10_phase_five_mixed_tail::c10_crash_evidence::wal_contains_rewrite};
+pub(crate) use std::thread;
+pub(crate) use {
+    crate::c10_phase_five_mixed_tail::c10_crash_evidence::ordinary_limits,
+    crate::c10_phase_five_mixed_tail::c10_crash_evidence::prepare_rewrite,
+    crate::c10_phase_five_mixed_tail::c10_crash_evidence::segment_snapshot,
+    crate::c10_phase_five_mixed_tail::c10_crash_evidence::wal_contains_rewrite,
+};
 pub(crate) use {std::path::Path, std::path::PathBuf};
 pub(crate) use {std::process::Command, std::process::Stdio};
-pub(crate) use {std::thread};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalMutationRequest};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-pub(crate) use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
+pub(crate) use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 pub(crate) const CHILD_MARKER: &str = "C10_PHASE5_MIXED_MARKER";
 pub(crate) const CHILD_SEAM: &str = "C10_PHASE5_MIXED_SEAM";
 
-pub(crate) fn finish_append_ahead_of_stale_rewrite(world: &PhysicalResidencyStoreWorld, marker: &Path) {
+pub(crate) fn finish_append_ahead_of_stale_rewrite(
+    world: &PhysicalResidencyStoreWorld,
+    marker: &Path,
+) {
     let gate = world.serving().certification_pause_physical_mutation_at(
         worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::AfterWalDurability,
     );
@@ -41,9 +62,13 @@ pub(crate) fn finish_append_ahead_of_stale_rewrite(world: &PhysicalResidencyStor
     gate.release();
     match append.wait() {
         worth_store::physical_runtime::PhysicalMutationOutcome::Completed(done) => {
-            worth_store_testkit_recovery_runtime::c10_phase_five_read::store_identity(marker, done.persisted_records()[0]);
+            worth_store_testkit_recovery_runtime::c10_phase_five_read::store_identity(
+                marker,
+                done.persisted_records()[0],
+            );
         }
-        worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_) | worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => {
+        worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_)
+        | worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => {
             panic!("released append must publish")
         }
     }
@@ -71,9 +96,13 @@ pub(crate) fn publish_append(
 ) {
     match prepare_append(world, material, payload).execute() {
         worth_store::physical_runtime::PhysicalMutationOutcome::Completed(done) => {
-            worth_store_testkit_recovery_runtime::c10_phase_five_read::store_identity(marker, done.persisted_records()[0]);
+            worth_store_testkit_recovery_runtime::c10_phase_five_read::store_identity(
+                marker,
+                done.persisted_records()[0],
+            );
         }
-        worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_) | worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => {
+        worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_)
+        | worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => {
             panic!("mixed append must publish")
         }
     }
@@ -82,7 +111,8 @@ pub(crate) fn publish_append(
 pub(crate) fn checkpoint_source(world: &PhysicalResidencyStoreWorld) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x96; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let handle = match world.serving().checkpoints().start(request).into_raw() {
         worth_proof::TransitionOutcome::Success(handle) => handle,
@@ -101,7 +131,9 @@ pub(crate) fn prepare_append(
 ) -> worth_store::physical_runtime::PreparedPhysicalMutation {
     let submission = world.serving().record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     match submission
         .prepare_durable_append(
@@ -109,14 +141,15 @@ pub(crate) fn prepare_append(
             world.placement(),
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("append preparation must succeed"),
     }
 }
@@ -126,7 +159,7 @@ pub(crate) fn kill_child(seam: &str) -> (tempfile::TempDir, PathBuf) {
     let mut child = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "c10_mixed_child_parks_at_seam",
+            "process::recovery_runtime::c10_phase_five_mixed_tail::mixed_child_parks_at_seam",
             "--ignored",
             "--nocapture",
         ])
@@ -158,13 +191,16 @@ pub(crate) fn kill_child(seam: &str) -> (tempfile::TempDir, PathBuf) {
     }
     child.kill().unwrap();
     let _ = child.wait();
-    let root = std::path::PathBuf::from(std::fs::read_to_string(parent.path().join("root-path.txt")).unwrap());
+    let root = std::path::PathBuf::from(
+        std::fs::read_to_string(parent.path().join("root-path.txt")).unwrap(),
+    );
     (parent, root)
 }
 
 pub(crate) fn recover(root: &Path, marker: &Path) -> (Vec<(u64, u64, u64, u64)>, Vec<u8>) {
-    let outcome =
-        worth_store_recovery_runtime::WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
+    let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
+        recovery_request_with_limits(root, ordinary_limits()),
+    );
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         if let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = &outcome {
             panic!(

@@ -1,6 +1,8 @@
-pub(crate) use {crate::support::fixtures::clean_store};
-pub(crate) use {serde_json::json, serde_json::Value};
-pub(crate) use {std::collections::BTreeMap, std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Output};
+pub(crate) use crate::support::fixtures::clean_store;
+pub(crate) use serde_json::{json, Value};
+pub(crate) use std::{
+    collections::BTreeMap, fs, path::Path, path::PathBuf, process::Command, process::Output,
+};
 
 pub(crate) fn observe(root: &Path, entries: u64) -> Value {
     let output = run(root, entries, std::path::Path::new("-"));

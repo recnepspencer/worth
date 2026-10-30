@@ -1,18 +1,29 @@
 #![cfg(all())]
 
-
-
-
-
-use {crate::phase_seven_faults::world::assert_child_succeeded, crate::phase_seven_faults::world::cleanup_fault, crate::phase_seven_faults::world::cleanup_world, crate::phase_seven_faults::world::empty_fault_schedule, crate::phase_seven_faults::world::paused_cleanup_schedule, crate::phase_seven_faults::world::recover_with_schedule, crate::phase_seven_faults::world::reopen_with_schedule, crate::phase_seven_faults::world::required_child_root, crate::phase_seven_faults::world::required_crash_marker, crate::phase_seven_faults::world::run_child, crate::phase_seven_faults::world::spawn_crashing_child};
+use {
+    crate::phase_seven_faults::world::assert_child_succeeded,
+    crate::phase_seven_faults::world::cleanup_fault,
+    crate::phase_seven_faults::world::cleanup_world,
+    crate::phase_seven_faults::world::empty_fault_schedule,
+    crate::phase_seven_faults::world::paused_cleanup_schedule,
+    crate::phase_seven_faults::world::recover_with_schedule,
+    crate::phase_seven_faults::world::reopen_with_schedule,
+    crate::phase_seven_faults::world::required_child_root,
+    crate::phase_seven_faults::world::required_crash_marker,
+    crate::phase_seven_faults::world::run_child,
+    crate::phase_seven_faults::world::spawn_crashing_child,
+};
 
 #[test]
 fn killed_cleanup_after_the_deletion_effect_reopens_in_a_fresh_process() {
     let world = cleanup_world("cleanup-crash-restart");
     let candidate = world.oldest_wal();
     let marker = world.root.parent().unwrap().join("cleanup-effect-reached");
-    let mut first =
-        spawn_crashing_child("phase_seven_killed_cleanup_process", &world.root, &marker);
+    let mut first = spawn_crashing_child(
+        "process::recovery_runtime::phase_seven_faults::child_process::killed_cleanup_process",
+        &world.root,
+        &marker,
+    );
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
     while !marker.exists() {
         assert!(
@@ -35,57 +46,12 @@ fn killed_cleanup_after_the_deletion_effect_reopens_in_a_fresh_process() {
         !candidate.exists(),
         "the deletion effect must escape before the forced process death"
     );
-    let second = run_child("phase_seven_reopen_after_cleanup_process", &world.root);
+    let second = run_child(
+        "process::recovery_runtime::phase_seven_faults::child_process::reopen_after_cleanup_process",
+        &world.root,
+    );
     assert_child_succeeded("post-cleanup recovery", &second);
 }
-
-#[test]
-#[ignore = "launched and forcibly terminated by the Phase 7 cleanup crash-matrix parent"]
-fn phase_seven_killed_cleanup_process() {
-    let root = required_child_root();
-    let marker = required_crash_marker();
-    let (schedule, gate) = paused_cleanup_schedule();
-    let worker = std::thread::spawn(move || recover_with_schedule(&root, schedule));
-    gate.wait_until_reached();
-    std::fs::write(marker, b"cleanup effect reached before settlement").unwrap();
-    std::hint::black_box(&worker);
-    loop {
-        std::thread::park();
-    }
-}
-
-#[test]
-#[ignore = "launched by the Phase 7 cleanup crash-matrix parent"]
-fn phase_seven_indeterminate_cleanup_process() {
-    let root = required_child_root();
-    let handoff = recover_with_schedule(
-        &root,
-        cleanup_fault(worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect),
-    );
-    assert!(matches!(
-        handoff.cleanup_posture(),
-        worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(_)
-    ));
-}
-
-#[test]
-#[ignore = "launched by the Phase 7 cleanup crash-matrix parent"]
-fn phase_seven_reopen_after_cleanup_process() {
-    let root = required_child_root();
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
-        reopen_with_schedule(&root, empty_fault_schedule()).finish()
-    else {
-        panic!("ambiguous cleanup debt cannot invalidate a fresh recovery")
-    };
-    assert!(!handoff
-        .cleanup_posture()
-        .evidence()
-        .dispositions()
-        .is_empty());
-}
-use {worth_store::physical_runtime::certification::MediaFaultDirective};
-use {worth_store::physical_runtime::PhysicalRecoveryCleanupAdmissionDenialKind, worth_store::physical_runtime::PhysicalRecoveryCleanupCommandStage, worth_store::physical_runtime::PhysicalRecoveryCleanupFreshnessReadDenialKind, worth_store::physical_runtime::PhysicalRecoveryCleanupRemovalDenialKind, worth_store::physical_runtime::PhysicalRecoveryCleanupRemovalIndeterminate, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalWorkSchedulerPosture, worth_store::physical_runtime::StoreRecoveryCleanupFreshnessDenial};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence, worth_store_recovery_runtime::RecoveryCleanupDispositionKind, worth_store_recovery_runtime::RecoveryCleanupPosture};
 
 #[test]
 fn ambiguous_cleanup_effect_is_deferred_without_performed_authority() {
@@ -95,7 +61,9 @@ fn ambiguous_cleanup_effect_is_deferred_without_performed_authority() {
         &world.root,
         cleanup_fault(worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect),
     );
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
+    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) =
+        handoff.cleanup_posture()
+    else {
         panic!("ambiguous cleanup still returns recovered handoff with deferred debt")
     };
     assert!(
@@ -123,10 +91,14 @@ fn owner_sampled_generation_change_rejects_the_stale_cleanup_plan() {
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
     reopened.certification_shift_cleanup_generation();
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        reopened.finish()
+    else {
         panic!("stale cleanup plan remains maintenance debt, not recovery failure")
     };
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
+    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) =
+        handoff.cleanup_posture()
+    else {
         panic!("generation shift defers cleanup")
     };
     assert!(candidate.exists());
@@ -149,10 +121,14 @@ fn cleanup_plan_admission_denial_is_retained_before_any_freshness_read() {
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
     reopened.certification_fail_cleanup_plan_admission();
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        reopened.finish()
+    else {
         panic!("cleanup-plan denial remains deferred maintenance")
     };
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
+    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) =
+        handoff.cleanup_posture()
+    else {
         panic!("cleanup-plan denial must be retained")
     };
     assert!(candidate.exists());
@@ -162,7 +138,10 @@ fn cleanup_plan_admission_denial_is_retained_before_any_freshness_read() {
     assert_eq!(evidence.counters().freshness_bytes_read, 0);
     assert_eq!(evidence.counters().scheduler_commands_submitted, 0);
     assert_eq!(evidence.counters().actions_attempted, 0);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::Freshness { failure, .. }] = evidence.deferrals() else {
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::Freshness {
+        failure, ..
+    }] = evidence.deferrals()
+    else {
         panic!("one exact Store cleanup-plan admission denial")
     };
     assert_eq!(
@@ -178,7 +157,10 @@ fn cleanup_media_handle_leak_blocks_the_recovered_handoff() {
     let world = cleanup_world("cleanup-media-handle-leak");
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
     reopened.certification_leak_cleanup_media_handle();
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(indeterminate) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+        indeterminate,
+    ) = reopened.finish()
+    else {
         panic!("one live cleanup media handle must block recovered handoff")
     };
     assert_eq!(
@@ -196,10 +178,14 @@ fn post_read_eligibility_denial_retains_the_completed_freshness_stage() {
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
     reopened.certification_fail_cleanup_eligibility_after_read();
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        reopened.finish()
+    else {
         panic!("post-read eligibility debt cannot invalidate recovery")
     };
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
+    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) =
+        handoff.cleanup_posture()
+    else {
         panic!("post-read eligibility denial defers cleanup")
     };
     assert!(candidate.exists());
@@ -213,7 +199,10 @@ fn post_read_eligibility_denial_retains_the_completed_freshness_stage() {
     );
     assert_eq!(evidence.counters().freshness_scheduler_submitted, 1);
     assert_eq!(evidence.counters().freshness_scheduler_settled, 1);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::Freshness { failure, .. }] = evidence.deferrals() else {
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::Freshness {
+        failure, ..
+    }] = evidence.deferrals()
+    else {
         panic!("one exact post-read freshness failure")
     };
     assert_eq!(
@@ -261,123 +250,12 @@ fn cleanup_cancellation_from_another_plan_defers_without_effect() {
     );
 }
 
-#[test]
-fn cleanup_scheduler_rejection_after_removal_retains_escaped_effect_without_performed_authority() {
-    let world = cleanup_world("cleanup-scheduler-settlement");
-    let candidate = world.oldest_wal();
-    let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
-    reopened.certification_fail_cleanup_scheduler_settlement_at(
-        worth_store::physical_runtime::PhysicalRecoveryCleanupCommandStage::Removal,
-    );
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-        panic!("cleanup scheduler debt cannot invalidate recovered publication")
-    };
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-        panic!("escaped removal with rejected scheduler settlement is deferred")
-    };
-    assert!(!candidate.exists());
-    assert!(evidence.performed_removals().is_empty());
-    assert_eq!(evidence.counters().removal_scheduler_submitted, 1);
-    assert_eq!(evidence.counters().removal_scheduler_settled, 1);
-    assert_eq!(evidence.counters().performed_effects, 0);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::IndeterminateEffect {
-        evidence:
-            worth_store::physical_runtime::PhysicalRecoveryCleanupRemovalIndeterminate::Scheduler {
-                posture, signal, ..
-            },
-        ..
-    }] = evidence.deferrals()
-    else {
-        panic!("one exact scheduler-indeterminate cleanup settlement")
-    };
-    assert_eq!(*posture, worth_store::physical_runtime::PhysicalWorkSchedulerPosture::RejectedAfterEffect);
-    assert_eq!(
-        *signal,
-        worth_store::physical_runtime::PhysicalSignalSettlementOutcome::ReconciledFromPhysicalTruth
-    );
-}
-
-#[test]
-fn cleanup_background_deferral_cancels_before_the_physical_effect() {
-    let world = cleanup_world("cleanup-background-deferral");
-    let candidate = world.oldest_wal();
-    let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
-    reopened.certification_defer_cleanup_background();
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-        panic!("scheduler deferral remains cleanup debt")
-    };
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-        panic!("background pacing deferral retains the candidate")
-    };
-    assert!(candidate.exists());
-    assert!(evidence.performed_removals().is_empty());
-    assert_eq!(evidence.counters().removal_scheduler_submitted, 1);
-    assert_eq!(evidence.counters().removal_scheduler_deferred, 1);
-    assert_eq!(evidence.counters().removal_scheduler_cancelled, 1);
-    assert_eq!(evidence.counters().removal_scheduler_settled, 0);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
-    else {
-        panic!("one exact pre-effect cleanup deferral")
-    };
-    let worth_store::physical_runtime::PhysicalRecoveryCleanupRemovalDenialKind::Admission(admission) = denial.kind() else {
-        panic!("cleanup deferral retains Store admission evidence")
-    };
-    assert!(matches!(
-        admission.kind(),
-        worth_store::physical_runtime::PhysicalRecoveryCleanupAdmissionDenialKind::BackgroundPacing(_)
-    ));
-}
-
-#[test]
-fn freshness_scheduler_and_signal_failures_stop_before_cleanup_effects() {
-    for (label, signal) in [
-        ("cleanup-freshness-scheduler", false),
-        ("cleanup-freshness-signal", true),
-    ] {
-        let world = cleanup_world(label);
-        let candidate = world.oldest_wal();
-        let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
-        if signal {
-            reopened.certification_fail_cleanup_freshness_signal_settlement();
-        } else {
-            reopened.certification_fail_cleanup_scheduler_settlement_at(
-                worth_store::physical_runtime::PhysicalRecoveryCleanupCommandStage::FreshnessRead,
-            );
-        }
-        let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-            panic!("freshness failure remains cleanup debt")
-        };
-        let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-            panic!("freshness settlement failure defers cleanup")
-        };
-        assert!(candidate.exists());
-        assert!(evidence.performed_removals().is_empty());
-        assert_eq!(evidence.counters().actions_attempted, 0);
-        assert_eq!(evidence.counters().freshness_reads_completed, 1);
-        assert_eq!(evidence.counters().freshness_scheduler_submitted, 1);
-        assert_eq!(evidence.counters().freshness_scheduler_settled, 1);
-        let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::Freshness { failure, .. }] = evidence.deferrals()
-        else {
-            panic!("one exact freshness failure")
-        };
-        let kind = failure.read().expect("completed freshness read").kind();
-        assert!(if signal {
-            matches!(
-                kind,
-                worth_store::physical_runtime::PhysicalRecoveryCleanupFreshnessReadDenialKind::SignalSettlement(
-                    worth_store::physical_runtime::PhysicalSignalSettlementOutcome::DerivedStateUnavailable
-                )
-            )
-        } else {
-            matches!(
-                kind,
-                worth_store::physical_runtime::PhysicalRecoveryCleanupFreshnessReadDenialKind::SchedulerSettlement(
-                    worth_store::physical_runtime::PhysicalWorkSchedulerPosture::RejectedAfterEffect
-                )
-            )
-        });
-    }
-}
 #[cfg(all())]
 #[path = "revalidation/mod.rs"]
 pub(crate) mod revalidation;
+
+#[path = "child_process/mod.rs"]
+pub(crate) mod child_process;
+
+#[path = "scheduler_admission/mod.rs"]
+pub(crate) mod scheduler_admission;

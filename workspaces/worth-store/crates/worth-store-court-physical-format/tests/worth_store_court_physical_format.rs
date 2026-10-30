@@ -7,21 +7,31 @@ pub(crate) mod c9_scope_identity_contracts;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/comparison_protocol/mod.rs"]
 pub(crate) mod comparison_protocol;
+#[path = "worth_store_court_physical_format/cost/mod.rs"]
+pub(crate) mod cost;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/hostile_process/mod.rs"]
 pub(crate) mod hostile_process;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/manifest_access/mod.rs"]
 pub(crate) mod manifest_access;
+#[path = "worth_store_court_physical_format/offline_integrity_observer/mod.rs"]
+pub(crate) mod offline_integrity_observer;
+#[path = "worth_store_court_physical_format/oracle/mod.rs"]
+pub(crate) mod oracle;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/phase_4_literal_vectors/mod.rs"]
 pub(crate) mod phase_4_literal_vectors;
+#[path = "worth_store_court_physical_format/physical_format/mod.rs"]
+pub(crate) mod physical_format;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/physical_record_access/mod.rs"]
 pub(crate) mod physical_record_access;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/physical_work_obligation_v6_golden/mod.rs"]
 pub(crate) mod physical_work_obligation_v6_golden;
+#[path = "worth_store_court_physical_format/process/mod.rs"]
+pub(crate) mod process;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/record_truncation/mod.rs"]
 pub(crate) mod record_truncation;
@@ -55,9 +65,3 @@ pub(crate) mod support;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/wal_frame_v1_golden/mod.rs"]
 pub(crate) mod wal_frame_v1_golden;
-#[path = "worth_store_court_physical_format/offline_integrity_observer/mod.rs"]
-pub(crate) mod offline_integrity_observer;
-#[path = "worth_store_court_physical_format/physical_format/mod.rs"]
-pub(crate) mod physical_format;
-#[path = "worth_store_court_physical_format/process/mod.rs"]
-pub(crate) mod process;

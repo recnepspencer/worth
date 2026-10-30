@@ -1,6 +1,13 @@
-pub(crate) use {worth_store_physical_integrity::validate_free_space_header, worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_integrity::{
+    validate_free_space_header, FreeSpaceHeaderIntegrityValidation, PhysicalBlastRadius,
+    PhysicalDamageCause, PhysicalFormatField, PhysicalIntegrityRejectionClass,
+    UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::support::free_space_validation::assert_damage, crate::support::free_space_validation::assert_rejected_counters, crate::support::free_space_validation::header_scope, crate::support::free_space_validation::range, crate::support::free_space_validation::reseal, crate::support::free_space_validation::store, crate::support::free_space_validation::HEADER_COMPLETE_CRC32C, crate::support::free_space_validation::HEADER_LITERAL};
+pub(crate) use crate::support::free_space_validation::{
+    assert_damage, assert_rejected_counters, header_scope, range, reseal, store,
+    HEADER_COMPLETE_CRC32C, HEADER_LITERAL,
+};
 
 pub(crate) fn assert_header_localization(
     bytes: &[u8],
@@ -10,8 +17,13 @@ pub(crate) fn assert_header_localization(
     length: u64,
     field: PhysicalFormatField,
 ) {
-    let (worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Rejected(rejection), counters) =
-        validate_free_space_header(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes), scope)
+    let (
+        worth_store_physical_integrity::FreeSpaceHeaderIntegrityValidation::Rejected(rejection),
+        counters,
+    ) = validate_free_space_header(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
+        scope,
+    )
     else {
         panic!("damaged header validated");
     };

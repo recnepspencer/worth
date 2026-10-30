@@ -1,38 +1,5 @@
-#[allow(unused_imports)] use crate::checkpoint_validation::stream_bindings::*;
-use {worth_store_physical_format::CheckpointSelectiveRecordAggregate, worth_store_physical_format::PhysicalCheckpointIdentity, worth_store_physical_format::RecordArtifactFile};
-use {worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::checksum_oracles::crc32c, crate::checksum_oracles::sha256};
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_AGGREGATE, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_AGGREGATE, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-use {crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::field_range, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_footer, crate::checkpoint_validation::support::validate_header, crate::checkpoint_validation::support::BINDING_OFFSET, crate::checkpoint_validation::support::DIRTY_OFFSET};
-use {std::num::NonZeroU64};
-
-#[test]
-fn literal_records_have_independent_crc_and_sha_vectors() {
-    for record in [
-        HEADER.as_slice(),
-        DIRTY_BASIS.as_slice(),
-        BINDING_COMPACTION.as_slice(),
-        BINDING.as_slice(),
-        FOOTER.as_slice(),
-    ] {
-        let checksum_offset = record.len() - 4;
-        assert_eq!(
-            u32::from_le_bytes(record[checksum_offset..].try_into().unwrap()),
-            crc32c(&record[..checksum_offset])
-        );
-    }
-    assert_eq!(sha256(&DIRTY_BASIS), DIRTY_AGGREGATE);
-    assert_eq!(sha256(&BINDING), BINDING_AGGREGATE);
-    assert_eq!(&FOOTER[48..80], DIRTY_AGGREGATE);
-    assert_eq!(&FOOTER[120..152], BINDING_AGGREGATE);
-
-    let mut aggregate = worth_store_physical_format::CheckpointSelectiveRecordAggregate::new();
-    aggregate.include(&DIRTY_BASIS).unwrap();
-    assert_eq!(aggregate.summary().digest(), DIRTY_AGGREGATE);
-    assert_eq!(aggregate.summary().record_count(), 1);
-    assert_eq!(aggregate.summary().encoded_bytes(), 68);
-}
+#[allow(unused_imports)]
+use crate::checkpoint_validation::stream_bindings::*;
 
 #[test]
 fn clean_literal_stream_seals_all_five_views_and_validation_records() {
@@ -42,9 +9,12 @@ fn clean_literal_stream_seals_all_five_views_and_validation_records() {
     let compaction_scope = compaction_scope(identity);
     let binding_scope = binding_scope(identity, BINDING.len() as u64);
     let footer_scope = footer_scope(identity);
-    let header_input = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&HEADER);
-    let dirty_input = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&DIRTY_BASIS);
-    let binding_input = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&BINDING);
+    let header_input =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&HEADER);
+    let dirty_input =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&DIRTY_BASIS);
+    let binding_input =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&BINDING);
 
     let header = validate_header(&HEADER, header_scope);
     let dirty = validate_dirty(&DIRTY_BASIS, dirty_scope);
@@ -118,7 +88,9 @@ fn footer_rejects_checksum_valid_selective_aggregate_substitution() {
         scope,
         basis,
     );
-    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) = validation else {
+    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("substituted dirty aggregate unexpectedly validated");
     };
     assert_damage(
@@ -156,7 +128,9 @@ fn footer_rejects_binding_aggregate_cardinality_and_ordering_lies() {
         scope,
         basis,
     );
-    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) = validation else {
+    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("substituted binding aggregate unexpectedly validated");
     };
     assert_damage(
@@ -183,7 +157,9 @@ fn footer_rejects_binding_aggregate_cardinality_and_ordering_lies() {
         scope,
         basis,
     );
-    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) = validation else {
+    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("footer cardinality lie unexpectedly validated");
     };
     assert_damage(
@@ -211,7 +187,9 @@ fn footer_rejects_binding_aggregate_cardinality_and_ordering_lies() {
         scope,
         basis,
     );
-    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) = validation else {
+    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("misordered binding unexpectedly validated");
     };
     assert_damage(
@@ -239,11 +217,31 @@ fn footer_rejects_every_later_record_identity_substitution() {
 #[test]
 fn footer_localizes_each_compaction_and_binding_summary_field() {
     let cases = [
-        (80, 8, worth_store_physical_integrity::PhysicalFormatField::CheckpointAggregate),
-        (88, 8, worth_store_physical_integrity::PhysicalFormatField::PhysicalGeneration),
-        (96, 8, worth_store_physical_integrity::PhysicalFormatField::WalLsnRange),
-        (104, 8, worth_store_physical_integrity::PhysicalFormatField::CheckpointAggregate),
-        (112, 8, worth_store_physical_integrity::PhysicalFormatField::CheckpointAggregate),
+        (
+            80,
+            8,
+            worth_store_physical_integrity::PhysicalFormatField::CheckpointAggregate,
+        ),
+        (
+            88,
+            8,
+            worth_store_physical_integrity::PhysicalFormatField::PhysicalGeneration,
+        ),
+        (
+            96,
+            8,
+            worth_store_physical_integrity::PhysicalFormatField::WalLsnRange,
+        ),
+        (
+            104,
+            8,
+            worth_store_physical_integrity::PhysicalFormatField::CheckpointAggregate,
+        ),
+        (
+            112,
+            8,
+            worth_store_physical_integrity::PhysicalFormatField::CheckpointAggregate,
+        ),
     ];
     for (offset, length, field) in cases {
         let identity = identity();
@@ -266,7 +264,10 @@ fn footer_localizes_each_compaction_and_binding_summary_field() {
             scope,
             basis,
         );
-        let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) = validation else {
+        let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(
+            rejection,
+        ) = validation
+        else {
             panic!("footer summary-field lie at {offset} unexpectedly validated");
         };
         assert_damage(

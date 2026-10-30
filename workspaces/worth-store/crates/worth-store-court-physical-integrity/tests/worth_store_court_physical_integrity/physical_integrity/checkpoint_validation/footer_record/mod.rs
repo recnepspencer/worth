@@ -1,8 +1,18 @@
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+use worth_store_physical_integrity::{
+    validate_checkpoint_footer, CheckpointFooterIntegrityValidation,
+    CheckpointFooterValidationBasis, PhysicalBlastRadius, PhysicalDamageCause, PhysicalFormatField,
+    PhysicalIntegrityRejectionClass, UntrustedPhysicalArtifact,
+};
 
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-use {crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::field_range, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_header};
+use crate::checkpoint_validation::support::{
+    assert_damage, binding_scope, compaction_scope, dirty_scope, field_range, footer_scope,
+    header_scope_staged, identity, reseal_record, validate_binding, validate_compaction,
+    validate_dirty, validate_header,
+};
+use crate::literal_vectors::checkpoint_validation::{
+    BINDING, BINDING_COMPACTION, DIRTY_BASIS, FOOTER, HEADER,
+};
 
 #[test]
 fn footer_rejects_checksum_valid_record_kind_substitution() {
@@ -26,7 +36,9 @@ fn footer_rejects_checksum_valid_record_kind_substitution() {
         scope,
         basis,
     );
-    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) = validation else {
+    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) =
+        validation
+    else {
         panic!("record-kind-substituted footer unexpectedly validated");
     };
     assert_damage(
@@ -46,9 +58,11 @@ fn footer_rejects_checksum_valid_record_kind_substitution() {
     assert_eq!(counters.intact_frames(), 0);
     assert_eq!(counters.rejected_frames(), 1);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(
-            worth_store_physical_integrity::PhysicalDamageCause::RecordKindMismatch
-        )),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(
+                worth_store_physical_integrity::PhysicalDamageCause::RecordKindMismatch
+            )
+        ),
         1
     );
 }

@@ -1,7 +1,16 @@
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis};
+use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+use worth_store_physical_integrity::{
+    PhysicalArtifactScope, PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause,
+    PhysicalFormatField, PhysicalIntegrityRejection, PhysicalIntegrityRejectionClass,
+    PhysicalIntegrityVersionAxis,
+};
 
-use {crate::wal_frame_validation::support::assert_damage, crate::wal_frame_validation::support::assert_independent_frame_checksums, crate::wal_frame_validation::support::assert_rejected_counters, crate::wal_frame_validation::support::literal, crate::wal_frame_validation::support::rejection, crate::wal_frame_validation::support::scope, crate::wal_frame_validation::support::store, crate::wal_frame_validation::support::CLEAN_HEX, crate::wal_frame_validation::support::FOOTER_CHECKSUM_HEX, crate::wal_frame_validation::support::FRAME_OFFSET, crate::wal_frame_validation::support::GENERATION_HEX, crate::wal_frame_validation::support::HEADER_LENGTH_HEX, crate::wal_frame_validation::support::LENGTH_HEX, crate::wal_frame_validation::support::LSN_HEX, crate::wal_frame_validation::support::MAGIC_HEX, crate::wal_frame_validation::support::PAYLOAD_BYTE_HEX, crate::wal_frame_validation::support::PAYLOAD_CHECKSUM_HEX, crate::wal_frame_validation::support::SEGMENT_HEX, crate::wal_frame_validation::support::VERSION_HEX, crate::wal_frame_validation::support::ZERO_GENERATION_HEX, crate::wal_frame_validation::support::ZERO_SEGMENT_HEX};
+use crate::wal_frame_validation::support::{
+    assert_damage, assert_independent_frame_checksums, assert_rejected_counters, literal,
+    rejection, scope, store, CLEAN_HEX, FOOTER_CHECKSUM_HEX, FRAME_OFFSET, GENERATION_HEX,
+    HEADER_LENGTH_HEX, LENGTH_HEX, LSN_HEX, MAGIC_HEX, PAYLOAD_BYTE_HEX, PAYLOAD_CHECKSUM_HEX,
+    SEGMENT_HEX, VERSION_HEX, ZERO_GENERATION_HEX, ZERO_SEGMENT_HEX,
+};
 
 #[test]
 fn magic_and_family_denials_preserve_exact_scope() {
@@ -17,17 +26,26 @@ fn magic_and_family_denials_preserve_exact_scope() {
         Some(worth_store_physical_integrity::PhysicalFormatField::Magic),
         worth_store_physical_integrity::PhysicalBlastRadius::CompleteArtifact,
     );
-    assert_rejected_counters(counters, 151, worth_store_physical_integrity::PhysicalDamageCause::WrongMagic);
+    assert_rejected_counters(
+        counters,
+        151,
+        worth_store_physical_integrity::PhysicalDamageCause::WrongMagic,
+    );
 
     let clean = literal(CLEAN_HEX);
     let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
         .admit()
         .unwrap();
-    let selector_scope = worth_store_physical_integrity::PhysicalArtifactScope::current_root_selector(
-        store(7),
-        format,
-        worth_store_physical_integrity::PhysicalByteRange::new(FRAME_OFFSET, clean.len() as u64).unwrap(),
-    );
+    let selector_scope =
+        worth_store_physical_integrity::PhysicalArtifactScope::current_root_selector(
+            store(7),
+            format,
+            worth_store_physical_integrity::PhysicalByteRange::new(
+                FRAME_OFFSET,
+                clean.len() as u64,
+            )
+            .unwrap(),
+        );
     let (rejection, _) = rejection(&clean, selector_scope);
     assert_damage(
         rejection,
@@ -46,15 +64,22 @@ fn unsupported_version_is_not_collapsed_into_damage() {
     assert_independent_frame_checksums(&bytes);
     let scope = scope(7, 1, 2, bytes.len() as u64);
     let (rejection, counters) = rejection(&bytes, scope);
-    let worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(unsupported) = rejection else {
+    let worth_store_physical_integrity::PhysicalIntegrityRejection::Unsupported(unsupported) =
+        rejection
+    else {
         panic!("unsupported WAL version must retain its posture");
     };
     assert_eq!(unsupported.scope(), scope);
-    assert_eq!(unsupported.axis(), worth_store_physical_integrity::PhysicalIntegrityVersionAxis::WalFrame);
+    assert_eq!(
+        unsupported.axis(),
+        worth_store_physical_integrity::PhysicalIntegrityVersionAxis::WalFrame
+    );
     assert_eq!(unsupported.observed(), 2);
     assert_eq!(counters.family(), worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::WalFrame);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Unsupported
+        ),
         1
     );
 }
@@ -75,7 +100,11 @@ fn checksum_valid_framing_lies_name_the_encoded_length_field() {
             Some(worth_store_physical_integrity::PhysicalFormatField::EncodedLength),
             worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
         );
-        assert_rejected_counters(counters, 151, worth_store_physical_integrity::PhysicalDamageCause::FramingLengthMismatch);
+        assert_rejected_counters(
+            counters,
+            151,
+            worth_store_physical_integrity::PhysicalDamageCause::FramingLengthMismatch,
+        );
     }
 }
 
@@ -162,7 +191,11 @@ fn checksum_valid_invalid_lsn_order_is_exposed_only_as_sequence_damage() {
         Some(worth_store_physical_integrity::PhysicalFormatField::WalLsnRange),
         worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
     );
-    assert_rejected_counters(counters, 151, worth_store_physical_integrity::PhysicalDamageCause::SequenceMismatch);
+    assert_rejected_counters(
+        counters,
+        151,
+        worth_store_physical_integrity::PhysicalDamageCause::SequenceMismatch,
+    );
 }
 
 #[test]
@@ -181,7 +214,11 @@ fn checksum_rejection_precedes_scope_identity_and_lsn_semantics() {
             None,
             worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
         );
-        assert_rejected_counters(counters, 151, worth_store_physical_integrity::PhysicalDamageCause::ChecksumMismatch);
+        assert_rejected_counters(
+            counters,
+            151,
+            worth_store_physical_integrity::PhysicalDamageCause::ChecksumMismatch,
+        );
     }
 }
 
@@ -223,6 +260,10 @@ fn checksum_coverage_distinguishes_combined_and_isolated_failures() {
             field,
             blast_radius,
         );
-        assert_rejected_counters(counters, 151, worth_store_physical_integrity::PhysicalDamageCause::ChecksumMismatch);
+        assert_rejected_counters(
+            counters,
+            151,
+            worth_store_physical_integrity::PhysicalDamageCause::ChecksumMismatch,
+        );
     }
 }

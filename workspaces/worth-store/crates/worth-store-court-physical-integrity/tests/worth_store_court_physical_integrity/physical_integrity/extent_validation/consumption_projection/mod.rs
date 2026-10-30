@@ -1,8 +1,5 @@
-#[allow(unused_imports)] use crate::extent_validation::consumption_projection::*;
-use {worth_store_physical_format::encode_data_frame_page_lsn, worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::ExtentArenaId, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageLsn};
-use {worth_store_physical_integrity::validate_extent_chunk, worth_store_physical_integrity::validate_extent_chunk_membership, worth_store_physical_integrity::ExtentChunkIntegrityValidation, worth_store_physical_integrity::ExtentChunkProjectionDenial, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::SelectedExtentPayloadBuilder, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::extent_validation::chunk_payload_capacity, crate::support::extent_validation::chunk_scope, crate::support::extent_validation::manifest_scope, crate::support::extent_validation::record, crate::support::extent_validation::store, crate::support::extent_validation::validated_manifest, crate::support::extent_validation::ExtentFixture};
+#[allow(unused_imports)]
+use crate::extent_validation::consumption_projection::*;
 
 #[test]
 fn selected_payload_witness_requires_every_exact_validated_chunk() {
@@ -19,10 +16,14 @@ fn selected_payload_witness_requires_every_exact_validated_chunk() {
         fixture.chunk_coordinate(1),
         first.len() as u64,
     );
-    let first_input = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&first);
-    let last_input = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&last);
-    let (worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(first_validated), _) =
-        validate_extent_chunk_membership(first_input, first_scope, manifest.membership())
+    let first_input =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&first);
+    let last_input =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&last);
+    let (
+        worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(first_validated),
+        _,
+    ) = validate_extent_chunk_membership(first_input, first_scope, manifest.membership())
     else {
         panic!("first extent chunk must validate")
     };
@@ -50,13 +51,18 @@ fn selected_payload_witness_requires_every_exact_validated_chunk() {
         fixture.chunk_coordinate(1),
         first.len() as u64,
     );
-    let (worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(foreign_validated), _) =
-        validate_extent_chunk(first_input, foreign_scope, &foreign_manifest)
+    let (
+        worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(foreign_validated),
+        _,
+    ) = validate_extent_chunk(first_input, foreign_scope, &foreign_manifest)
     else {
         panic!("same-coordinate foreign chunk must validate under its own store")
     };
-    let mut builder =
-        worth_store_physical_integrity::SelectedExtentPayloadBuilder::new(manifest.membership(), fixture.placement()).unwrap();
+    let mut builder = worth_store_physical_integrity::SelectedExtentPayloadBuilder::new(
+        manifest.membership(),
+        fixture.placement(),
+    )
+    .unwrap();
     assert!(
         builder.append(&foreign_validated, first_input).is_none(),
         "another store's valid chunk cannot enter this manifest membership"
@@ -67,13 +73,14 @@ fn selected_payload_witness_requires_every_exact_validated_chunk() {
         fixture.arena_range().length(),
     )
     .unwrap();
-    let other_placement = worth_store_physical_format::DurableExtentRecordPlacement::legacy_unknown(
-        fixture.record,
-        fixture.extent,
-        fixture.logical_bytes,
-        other_arena,
-    )
-    .unwrap();
+    let other_placement =
+        worth_store_physical_format::DurableExtentRecordPlacement::legacy_unknown(
+            fixture.record,
+            fixture.extent,
+            fixture.logical_bytes,
+            other_arena,
+        )
+        .unwrap();
     let other_manifest = validated_manifest(
         &manifest_bytes,
         manifest_scope(
@@ -90,8 +97,10 @@ fn selected_payload_witness_requires_every_exact_validated_chunk() {
         first_scope.byte_range(),
         other_arena,
     );
-    let (worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(other_validated), _) =
-        validate_extent_chunk(first_input, other_scope, &other_manifest)
+    let (
+        worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(other_validated),
+        _,
+    ) = validate_extent_chunk(first_input, other_scope, &other_manifest)
     else {
         panic!("same-coordinate other-arena chunk must validate under its own placement")
     };
@@ -108,7 +117,9 @@ fn selected_payload_witness_requires_every_exact_validated_chunk() {
         builder
             .append(
                 &first_validated,
-                worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&copied)
+                worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+                    &copied
+                )
             )
             .is_none(),
         "equal bytes from a different C.9 incarnation grant no custody"
@@ -118,8 +129,11 @@ fn selected_payload_witness_requires_every_exact_validated_chunk() {
         builder.finish().is_none(),
         "partial payload grants no custody"
     );
-    let mut builder =
-        worth_store_physical_integrity::SelectedExtentPayloadBuilder::new(manifest.membership(), fixture.placement()).unwrap();
+    let mut builder = worth_store_physical_integrity::SelectedExtentPayloadBuilder::new(
+        manifest.membership(),
+        fixture.placement(),
+    )
+    .unwrap();
     builder.append(&first_validated, first_input).unwrap();
     builder.append(&last_validated, last_input).unwrap();
     let witness = builder.finish().unwrap();
@@ -142,9 +156,12 @@ fn sealed_extent_chunk_projects_exact_payload_and_page_lsn() {
         worth_store_physical_format::PhysicalPageLsn::new(144),
     )
     .unwrap();
-    let input = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let input =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let (validation, _) = validate_extent_chunk(input, fixture.tail_chunk_scope(), &manifest);
-    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(validated) = validation else {
+    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(validated) =
+        validation
+    else {
         panic!("clean extent chunk rejected");
     };
 
@@ -153,7 +170,10 @@ fn sealed_extent_chunk_projects_exact_payload_and_page_lsn() {
         .unwrap();
 
     assert_eq!(projection.coordinate(), fixture.chunk_coordinate(2));
-    assert_eq!(projection.page_lsn(), worth_store_physical_format::PhysicalPageLsn::new(144));
+    assert_eq!(
+        projection.page_lsn(),
+        worth_store_physical_format::PhysicalPageLsn::new(144)
+    );
     assert_eq!(&bytes[projection.payload_range()], b"tail!");
 }
 
@@ -163,9 +183,12 @@ fn extent_projection_denies_foreign_incarnation_generation_and_ordinal() {
     let manifest_bytes = fixture.manifest_bytes();
     let manifest = validated_manifest(&manifest_bytes, fixture.manifest_scope());
     let bytes = fixture.tail_chunk_bytes();
-    let input = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let input =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let (validation, _) = validate_extent_chunk(input, fixture.tail_chunk_scope(), &manifest);
-    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(validated) = validation else {
+    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(validated) =
+        validation
+    else {
         panic!("clean extent chunk rejected");
     };
     let exact = fixture.chunk_coordinate(2);
@@ -173,7 +196,9 @@ fn extent_projection_denies_foreign_incarnation_generation_and_ordinal() {
     assert_eq!(
         validated
             .project_chunk(
-                worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&equal_copy),
+                worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+                    &equal_copy
+                ),
                 exact,
             )
             .unwrap_err(),
@@ -279,17 +304,23 @@ fn admitted_manifest_membership_rejects_a_foreign_store_scope() {
         manifest.membership(),
     );
 
-    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(damage)) =
-        validation
+    let worth_store_physical_integrity::ExtentChunkIntegrityValidation::Rejected(
+        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(damage),
+    ) = validation
     else {
         panic!("foreign store scope must be rejected as localized physical damage")
     };
-    assert_eq!(damage.cause(), worth_store_physical_integrity::PhysicalDamageCause::StoreIdentityMismatch);
+    assert_eq!(
+        damage.cause(),
+        worth_store_physical_integrity::PhysicalDamageCause::StoreIdentityMismatch
+    );
     assert_eq!(counters.rejected_frames(), 1);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(
-            worth_store_physical_integrity::PhysicalDamageCause::StoreIdentityMismatch,
-        )),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(
+                worth_store_physical_integrity::PhysicalDamageCause::StoreIdentityMismatch,
+            )
+        ),
         1
     );
 }

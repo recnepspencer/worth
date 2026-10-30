@@ -1,38 +1,81 @@
 //! Reopens a real namespace-durable group before its in-memory root advance.
 
-pub(crate) use {std::collections::BTreeMap};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::path::Path;
 pub(crate) use {std::num::NonZeroU32, std::num::NonZeroU64};
-pub(crate) use {std::path::Path};
 
 pub(crate) use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalDataSettlementOutcome, worth_store::physical_runtime::PhysicalDurabilityStateReopenFailure, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalReadProtectionPolicy, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalRootNamespaceDurabilityOutcome, worth_store::physical_runtime::PhysicalRootPublicationPreparationOutcome, worth_store::physical_runtime::PhysicalRootReplacementOutcome, worth_store::physical_runtime::PhysicalSignalConstructionFailure, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordBootstrapFailure, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalDataSettlementOutcome,
+    worth_store::physical_runtime::PhysicalDurabilityStateReopenFailure,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalReadProtectionPolicy,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::PhysicalRootNamespaceDurabilityOutcome,
+    worth_store::physical_runtime::PhysicalRootPublicationPreparationOutcome,
+    worth_store::physical_runtime::PhysicalRootReplacementOutcome,
+    worth_store::physical_runtime::PhysicalSignalConstructionFailure,
+    worth_store::physical_runtime::PhysicalWalGroupAppendOutcome,
+    worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome,
+    worth_store::physical_runtime::PhysicalWalPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordBootstrapFailure,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
 
-pub(crate) use {worth_store_testkit_store::publication_metadata_oracle as oracle, crate::physical_record_journeys::maintenance_interference::publication_charge::prepared, crate::physical_record_journeys::maintenance_interference::publication_charge::require_dispatched, crate::physical_record_journeys::maintenance_interference::publication_charge::EXTENT_SEED};
+pub(crate) use {
+    crate::physical_record_journeys::maintenance_interference::publication_charge::prepared,
+    crate::physical_record_journeys::maintenance_interference::publication_charge::require_dispatched,
+    crate::physical_record_journeys::maintenance_interference::publication_charge::EXTENT_SEED,
+    worth_store_testkit_store::publication_metadata_oracle as oracle,
+};
 
 pub(crate) const CHILD_ROOT: &str = "WORTH_STORE_PUBLICATION_CUTOVER_CHILD_ROOT";
 pub(crate) const CHILD_NAME: &str =
-    "maintenance_interference::publication_charge::cutover::namespace_durable_before_memory_advance_child";
+    "process::store::physical_record_journeys::maintenance_interference::publication_charge::cutover::namespace_durable_before_memory_advance_child";
 pub(crate) const CONFLICT_CHILD_ROOT: &str = "WORTH_STORE_PUBLICATION_CONFLICT_CHILD_ROOT";
 pub(crate) const CONFLICT_CHILD_NAME: &str =
-    "maintenance_interference::publication_charge::cutover::conflicting_complete_groups_child";
+    "process::store::physical_record_journeys::maintenance_interference::publication_charge::cutover::conflicting_complete_groups_child";
 
 pub(crate) fn publish_conflicting_complete_groups(root: &Path) -> ! {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(2).unwrap())
         .admit(format)
         .unwrap();
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(root);
-    let durability = worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
-        &media,
-        worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-            worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(512 * 1024).unwrap()),
-            worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(64).unwrap()),
-        ),
-    );
+    let durability =
+        worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
+            &media,
+            worth_store::physical_runtime::PhysicalWalPolicy::segmented(
+                worth_store::physical_runtime::WalSegmentByteLimit::new(
+                    std::num::NonZeroU64::new(512 * 1024).unwrap(),
+                ),
+                worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+                    std::num::NonZeroU32::new(64).unwrap(),
+                ),
+            ),
+        );
     let serving = worth_store_testkit_store::physical_record_journeys::success(
         media.initialize_record_store(
             worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
@@ -45,11 +88,12 @@ pub(crate) fn publish_conflicting_complete_groups(root: &Path) -> ! {
     let submission = serving.certification_record_submission();
     let first = prepared(&submission, placement, [221; 32], b"selected-first");
     let second = prepared(&submission, placement, [222; 32], b"unselected-second");
-    let append_one =
-        |member| match submission.append_prepared_wal_group(worth_proof::NonEmpty::new(member, Vec::new())) {
-            worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(value) => value,
-            _ => panic!("complete competing group was not appended"),
-        };
+    let append_one = |member| match submission
+        .append_prepared_wal_group(worth_proof::NonEmpty::new(member, Vec::new()))
+    {
+        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(value) => value,
+        _ => panic!("complete competing group was not appended"),
+    };
     let first = append_one(first);
     let second = append_one(second);
     let first_basis = first.basis();
@@ -60,7 +104,9 @@ pub(crate) fn publish_conflicting_complete_groups(root: &Path) -> ! {
         _ => panic!("selected group WAL was not durable"),
     };
     let second = match submission.synchronize_appended_wal_group(second) {
-        worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome::Durable(group) => group.into_members(),
+        worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome::Durable(group) => {
+            group.into_members()
+        }
         _ => panic!("competing group WAL was not durable"),
     };
     assert_eq!(second.as_slice().len(), 1);
@@ -103,18 +149,26 @@ pub(crate) fn read_selected_records(serving: &ServingPhysicalRuntime) -> Vec<Vec
     let mut scan = serving
         .records()
         .unwrap()
-        .scan(worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(16).unwrap()))
+        .scan(
+            worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(
+                worth_store::physical_runtime::RecordCountLimit::new(16).unwrap(),
+            ),
+        )
         .unwrap();
     let mut scratch = vec![0; 64_000];
     let mut found = Vec::new();
-    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scratch).unwrap()
+    {
         for entry in batch.records() {
             // Extent scan rows intentionally contain identity, not inline
             // payload. Read both forms through the ordinary protected reader.
             let mut read = records
                 .open(
                     entry.record_id(),
-                    worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(20_000).unwrap()),
+                    worth_store::physical_runtime::RecordReadLimits::new(
+                        worth_store::physical_runtime::RecordByteLimit::new(20_000).unwrap(),
+                    ),
                 )
                 .unwrap();
             let mut bytes = Vec::new();
@@ -132,21 +186,30 @@ pub(crate) fn read_selected_records(serving: &ServingPhysicalRuntime) -> Vec<Vec
 
 pub(crate) fn publish_durable_group_without_memory_advance(root: &Path) -> ! {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(2).unwrap())
         .admit(format)
         .unwrap();
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(root);
-    let durability = worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
-        &media,
-        worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-            worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(512 * 1024).unwrap()),
-            worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(64).unwrap()),
-        ),
-    );
+    let durability =
+        worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
+            &media,
+            worth_store::physical_runtime::PhysicalWalPolicy::segmented(
+                worth_store::physical_runtime::WalSegmentByteLimit::new(
+                    std::num::NonZeroU64::new(512 * 1024).unwrap(),
+                ),
+                worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+                    std::num::NonZeroU32::new(64).unwrap(),
+                ),
+            ),
+        );
     let serving = worth_store_testkit_store::physical_record_journeys::success(
         media.initialize_record_store(
             worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
@@ -167,13 +230,16 @@ pub(crate) fn publish_durable_group_without_memory_advance(root: &Path) -> ! {
     let submission = serving.certification_record_submission();
     let left = prepared(&submission, placement, [212; 32], b"left");
     let right = prepared(&submission, placement, [213; 32], b"right");
-    let appended = match submission.append_prepared_wal_group(worth_proof::NonEmpty::new(left, vec![right])) {
-        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(value) => value,
-        _ => panic!("cutover group did not append"),
-    };
+    let appended =
+        match submission.append_prepared_wal_group(worth_proof::NonEmpty::new(left, vec![right])) {
+            worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(value) => value,
+            _ => panic!("cutover group did not append"),
+        };
     let basis = appended.basis();
     let durable = match submission.synchronize_appended_wal_group(appended) {
-        worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome::Durable(group) => group.into_members(),
+        worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome::Durable(group) => {
+            group.into_members()
+        }
         _ => panic!("cutover WAL was not durable"),
     };
     let settled = durable
@@ -193,7 +259,8 @@ pub(crate) fn publish_durable_group_without_memory_advance(root: &Path) -> ! {
     let joined = submission
         .join_data_settled_group(
             basis,
-            worth_proof::NonEmpty::try_from_vec(settled).unwrap_or_else(|_| unreachable!("two settled members")),
+            worth_proof::NonEmpty::try_from_vec(settled)
+                .unwrap_or_else(|_| unreachable!("two settled members")),
         )
         .unwrap_or_else(|rejected| panic!("cutover group rejected: {:?}", rejected.cause()));
     let prepared_root = match submission.prepare_root_publication(joined) {
@@ -219,7 +286,9 @@ pub(crate) fn publish_durable_group_without_memory_advance(root: &Path) -> ! {
                 failure.cause()
             )
         }
-        worth_store::physical_runtime::PhysicalRootReplacementOutcome::InspectionRequired(failure) => {
+        worth_store::physical_runtime::PhysicalRootReplacementOutcome::InspectionRequired(
+            failure,
+        ) => {
             panic!(
                 "cutover root replacement required inspection: {:?}",
                 failure.effect_fate()

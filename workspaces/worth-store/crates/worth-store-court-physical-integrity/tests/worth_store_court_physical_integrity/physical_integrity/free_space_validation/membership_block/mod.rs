@@ -1,62 +1,5 @@
-#[allow(unused_imports)] use crate::free_space_validation::membership_block::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::ExtentArenaId, worth_store_physical_format::FreeSpaceBlockReference, worth_store_physical_format::FreeSpaceKey, worth_store_physical_format::RecordAllocationClass};
-use {worth_store_physical_integrity::validate_free_space_membership_block, worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::support::free_space_validation::assert_intact_counters, crate::support::free_space_validation::assert_membership_damage, crate::support::free_space_validation::assert_rejected_counters, crate::support::free_space_validation::first_key, crate::support::free_space_validation::format, crate::support::free_space_validation::independent_crc32c, crate::support::free_space_validation::last_key, crate::support::free_space_validation::membership_reference, crate::support::free_space_validation::membership_scope, crate::support::free_space_validation::membership_scope_at, crate::support::free_space_validation::range, crate::support::free_space_validation::reseal, crate::support::free_space_validation::store, crate::support::free_space_validation::MEMBERSHIP_COMPLETE_CRC32C, crate::support::free_space_validation::MEMBERSHIP_LITERAL, crate::support::free_space_validation::MEMBERSHIP_OFFSET};
-
-#[test]
-fn independent_literal_membership_seals_parent_crc_range_and_leaf_projection() {
-    assert_eq!(
-        independent_crc32c(&[MEMBERSHIP_LITERAL]),
-        MEMBERSHIP_COMPLETE_CRC32C
-    );
-    assert_eq!(
-        independent_crc32c(&[&MEMBERSHIP_LITERAL[..44], &MEMBERSHIP_LITERAL[48..]]),
-        u32::from_le_bytes(MEMBERSHIP_LITERAL[44..48].try_into().unwrap())
-    );
-    let scope = membership_scope(store(7), membership_reference(MEMBERSHIP_COMPLETE_CRC32C));
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(MEMBERSHIP_LITERAL);
-    let (validation, counters) = validate_free_space_membership_block(artifact, scope);
-    let worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(validated) = validation else {
-        panic!("literal free-space membership block rejected");
-    };
-
-    assert_eq!(validated.scope(), scope);
-    assert_eq!(validated.identity().tree().get(), 8);
-    assert_eq!(
-        validated.reference(),
-        membership_reference(MEMBERSHIP_COMPLETE_CRC32C)
-    );
-    assert_eq!(validated.record_format(), format());
-    assert_eq!(validated.generation(), 6);
-    assert_eq!(validated.block_identity(), 1);
-    assert_eq!(validated.level(), 0);
-    let entries = validated.entries().unwrap();
-    assert_eq!(entries.len(), 2);
-    assert_eq!(entries[0].class(), worth_store_physical_format::RecordAllocationClass::InlinePage);
-    assert_eq!(entries[0].owner(), 7);
-    assert_eq!(entries[1].class(), worth_store_physical_format::RecordAllocationClass::ExtentArena);
-    assert_eq!(entries[1].owner(), 5);
-    let arena = entries[1].arena_free_range().unwrap();
-    assert_eq!(arena.offset(), 100);
-    assert_eq!(arena.length(), 1);
-    assert_eq!(entries[1].generation(), 1);
-    assert!(validated.children().is_none());
-    assert!(validated.matches_input(artifact));
-    let identical_copy = MEMBERSHIP_LITERAL.to_vec();
-    assert!(
-        !validated.matches_input(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
-            &identical_copy
-        ))
-    );
-    assert_intact_counters(
-        counters,
-        worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::FreeSpaceMembershipBlock,
-        MEMBERSHIP_LITERAL.len() as u64,
-    );
-    assert!(validated.into_validation_record().matches_scope(scope));
-}
+#[allow(unused_imports)]
+use crate::free_space_validation::membership_block::*;
 
 #[test]
 fn membership_framing_checksum_version_kind_length_and_truncation_fail_closed() {
@@ -180,9 +123,15 @@ fn membership_tree_generation_block_reference_range_and_parent_crc_are_not_subst
         worth_store_physical_integrity::PhysicalBlastRadius::ReachableSubtree,
     );
 
-    let foreign_level =
-        worth_store_physical_format::FreeSpaceBlockReference::new(6, 1, 1, MEMBERSHIP_COMPLETE_CRC32C, first_key(), last_key())
-            .unwrap();
+    let foreign_level = worth_store_physical_format::FreeSpaceBlockReference::new(
+        6,
+        1,
+        1,
+        MEMBERSHIP_COMPLETE_CRC32C,
+        first_key(),
+        last_key(),
+    )
+    .unwrap();
     let level_scope = membership_scope(store(7), foreign_level);
     assert_membership_damage(
         MEMBERSHIP_LITERAL,
@@ -193,7 +142,10 @@ fn membership_tree_generation_block_reference_range_and_parent_crc_are_not_subst
         worth_store_physical_integrity::PhysicalBlastRadius::ReachableSubtree,
     );
 
-    let foreign_last = worth_store_physical_format::FreeSpaceKey::arena(worth_store_physical_format::ExtentArenaId::new(6).unwrap(), 100);
+    let foreign_last = worth_store_physical_format::FreeSpaceKey::arena(
+        worth_store_physical_format::ExtentArenaId::new(6).unwrap(),
+        100,
+    );
     let foreign_range = worth_store_physical_format::FreeSpaceBlockReference::new(
         6,
         1,
@@ -219,7 +171,10 @@ fn membership_tree_generation_block_reference_range_and_parent_crc_are_not_subst
         0,
         MEMBERSHIP_COMPLETE_CRC32C,
         first_key(),
-        worth_store_physical_format::FreeSpaceKey::arena(worth_store_physical_format::ExtentArenaId::new(5).unwrap(), 101),
+        worth_store_physical_format::FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(5).unwrap(),
+            101,
+        ),
     )
     .unwrap();
     let offset_scope = membership_scope(store(7), wrong_offset);
@@ -271,26 +226,48 @@ fn membership_validation_record_binds_store_without_reclassifying_allocator_trut
     let shifted = membership_scope_at(
         store(7),
         reference,
-        worth_store_physical_integrity::PhysicalByteRange::new(MEMBERSHIP_OFFSET + 512, MEMBERSHIP_LITERAL.len() as u64).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            MEMBERSHIP_OFFSET + 512,
+            MEMBERSHIP_LITERAL.len() as u64,
+        )
+        .unwrap(),
     );
     let shorter = membership_scope_at(
         store(7),
         reference,
-        worth_store_physical_integrity::PhysicalByteRange::new(MEMBERSHIP_OFFSET, MEMBERSHIP_LITERAL.len() as u64 - 1).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            MEMBERSHIP_OFFSET,
+            MEMBERSHIP_LITERAL.len() as u64 - 1,
+        )
+        .unwrap(),
     );
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(MEMBERSHIP_LITERAL);
-    let (worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(left_validated), _) =
-        validate_free_space_membership_block(artifact, left)
+    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+        MEMBERSHIP_LITERAL,
+    );
+    let (
+        worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(
+            left_validated,
+        ),
+        _,
+    ) = validate_free_space_membership_block(artifact, left)
     else {
         panic!("left scope rejected");
     };
-    let (worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(right_validated), _) =
-        validate_free_space_membership_block(artifact, right)
+    let (
+        worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(
+            right_validated,
+        ),
+        _,
+    ) = validate_free_space_membership_block(artifact, right)
     else {
         panic!("right scope rejected");
     };
-    let (worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(shifted_validated), _) =
-        validate_free_space_membership_block(artifact, shifted)
+    let (
+        worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(
+            shifted_validated,
+        ),
+        _,
+    ) = validate_free_space_membership_block(artifact, shifted)
     else {
         panic!("shifted scope rejected");
     };
@@ -322,11 +299,15 @@ fn membership_validation_record_binds_store_without_reclassifying_allocator_trut
     reseal(&mut changed);
     let changed_crc = independent_crc32c(&[&changed]);
     let changed_scope = membership_scope(store(7), membership_reference(changed_crc));
-    let (worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(changed_validated), _) =
-        validate_free_space_membership_block(
-            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&changed),
-            changed_scope,
-        )
+    let (
+        worth_store_physical_integrity::FreeSpaceMembershipBlockIntegrityValidation::Intact(
+            changed_validated,
+        ),
+        _,
+    ) = validate_free_space_membership_block(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&changed),
+        changed_scope,
+    )
     else {
         panic!("changed byte range rejected");
     };

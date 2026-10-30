@@ -1,8 +1,18 @@
-pub(crate) use {worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_integrity::{
+    validate_checkpoint_footer, CheckpointFooterIntegrityValidation,
+    CheckpointFooterValidationBasis, PhysicalArtifactScope, PhysicalBlastRadius, PhysicalByteRange,
+    PhysicalDamageCause, PhysicalFormatField, PhysicalIntegrityRejection,
+    UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::checksum_oracles::sha256};
-pub(crate) use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-pub(crate) use {crate::checkpoint_validation::support::assert_damage, crate::checkpoint_validation::support::field_range, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_footer, crate::checkpoint_validation::support::validate_header};
+pub(crate) use crate::checkpoint_validation::support::{
+    assert_damage, field_range, header_scope_staged, identity, reseal_record, validate_binding,
+    validate_compaction, validate_dirty, validate_footer, validate_header,
+};
+pub(crate) use crate::checksum_oracles::sha256;
+pub(crate) use crate::literal_vectors::checkpoint_validation::{
+    BINDING, BINDING_COMPACTION, DIRTY_BASIS, FOOTER, HEADER,
+};
 
 pub(crate) const DIRTY_A_OFFSET: u64 = 164;
 pub(crate) const DIRTY_B_OFFSET: u64 = 232;
@@ -11,7 +21,11 @@ pub(crate) const BINDING_A_OFFSET: u64 = 336;
 pub(crate) const BINDING_B_OFFSET: u64 = 359;
 pub(crate) const FOOTER_OFFSET: u64 = 382;
 
-pub(crate) fn validate_correct_two_record_stream(dirty_b: &[u8], binding_b: &[u8], footer_bytes: &[u8]) {
+pub(crate) fn validate_correct_two_record_stream(
+    dirty_b: &[u8],
+    binding_b: &[u8],
+    footer_bytes: &[u8],
+) {
     let header = validate_header(&HEADER, header_scope_staged());
     let dirty = [
         validate_dirty(&DIRTY_BASIS, dirty_scope(DIRTY_A_OFFSET)),
@@ -25,7 +39,12 @@ pub(crate) fn validate_correct_two_record_stream(dirty_b: &[u8], binding_b: &[u8
     let validated = validate_footer(
         footer_bytes,
         footer_scope(),
-        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(&header, &dirty, &compaction, &bindings),
+        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(
+            &header,
+            &dirty,
+            &compaction,
+            &bindings,
+        ),
     );
     assert_eq!(validated.footer().dirty_record_count(), 2);
     assert_eq!(validated.footer().binding_record_count(), 2);
@@ -47,7 +66,12 @@ pub(crate) fn assert_swapped_dirty_rejected(dirty_b: &[u8], binding_b: &[u8], fo
     let rejection = reject_footer(
         footer_bytes,
         scope,
-        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(&header, &dirty, &compaction, &bindings),
+        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(
+            &header,
+            &dirty,
+            &compaction,
+            &bindings,
+        ),
     );
     assert_damage(
         rejection,
@@ -59,7 +83,11 @@ pub(crate) fn assert_swapped_dirty_rejected(dirty_b: &[u8], binding_b: &[u8], fo
     );
 }
 
-pub(crate) fn assert_swapped_binding_rejected(dirty_b: &[u8], binding_b: &[u8], footer_bytes: &[u8]) {
+pub(crate) fn assert_swapped_binding_rejected(
+    dirty_b: &[u8],
+    binding_b: &[u8],
+    footer_bytes: &[u8],
+) {
     let header = validate_header(&HEADER, header_scope_staged());
     let dirty = [
         validate_dirty(&DIRTY_BASIS, dirty_scope(DIRTY_A_OFFSET)),
@@ -74,7 +102,12 @@ pub(crate) fn assert_swapped_binding_rejected(dirty_b: &[u8], binding_b: &[u8], 
     let rejection = reject_footer(
         footer_bytes,
         scope,
-        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(&header, &dirty, &compaction, &bindings),
+        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(
+            &header,
+            &dirty,
+            &compaction,
+            &bindings,
+        ),
     );
     assert_damage(
         rejection,
@@ -106,19 +139,31 @@ pub(crate) fn concatenate(left: &[u8], right: &[u8]) -> Vec<u8> {
 }
 
 pub(crate) fn dirty_scope(offset: u64) -> PhysicalArtifactScope {
-    worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_dirty_basis(identity(), range(offset, 68))
+    worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_dirty_basis(
+        identity(),
+        range(offset, 68),
+    )
 }
 
 pub(crate) fn compaction_scope(offset: u64) -> PhysicalArtifactScope {
-    worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding_compaction(identity(), range(offset, 36))
+    worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding_compaction(
+        identity(),
+        range(offset, 36),
+    )
 }
 
 pub(crate) fn binding_scope(offset: u64) -> PhysicalArtifactScope {
-    worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding(identity(), range(offset, 23))
+    worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding(
+        identity(),
+        range(offset, 23),
+    )
 }
 
 pub(crate) fn footer_scope() -> PhysicalArtifactScope {
-    worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(identity(), range(FOOTER_OFFSET, 156))
+    worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(
+        identity(),
+        range(FOOTER_OFFSET, 156),
+    )
 }
 
 pub(crate) fn range(offset: u64, length: u64) -> PhysicalByteRange {
@@ -137,14 +182,19 @@ pub(crate) fn reject_footer<'records, 'media>(
     )
     .0
     {
-        worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(rejection) => rejection,
+        worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Rejected(
+            rejection,
+        ) => rejection,
         worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Intact(_) => {
             panic!("invalid ordered checkpoint stream unexpectedly validated")
         }
     }
 }
 
-pub(crate) fn assert_sequence_damage(rejection: PhysicalIntegrityRejection, scope: PhysicalArtifactScope) {
+pub(crate) fn assert_sequence_damage(
+    rejection: PhysicalIntegrityRejection,
+    scope: PhysicalArtifactScope,
+) {
     assert_damage(
         rejection,
         scope,

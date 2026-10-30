@@ -1,8 +1,18 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::ManifestBlockReference, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::SegmentManifestBlockReference, worth_store_physical_format::SegmentPageKey};
-pub(crate) use {worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::{
+    ManifestBlockReference, PersistedRecordIdentity, PhysicalPageId, PhysicalSegmentId,
+    SegmentManifestBlockReference, SegmentPageKey,
+};
+pub(crate) use worth_store_physical_integrity::{
+    PhysicalBlastRadius, PhysicalDamageCause, PhysicalFormatField,
+};
 
-pub(crate) use {crate::support::root_tree_family_validation::assert_damage, crate::support::root_tree_family_validation::assert_rejected_counters, crate::support::root_tree_family_validation::assert_root_mutation_contract, crate::support::root_tree_family_validation::assert_segment_mutation_contract, crate::support::root_tree_family_validation::field_range, crate::support::root_tree_family_validation::independent_crc32c, crate::support::root_tree_family_validation::root_leaf, crate::support::root_tree_family_validation::root_rejection, crate::support::root_tree_family_validation::root_scope_with_reference, crate::support::root_tree_family_validation::segment_leaf, crate::support::root_tree_family_validation::segment_rejection, crate::support::root_tree_family_validation::segment_scope_with_reference, crate::support::root_tree_family_validation::store, crate::support::root_tree_family_validation::ROOT_BLOCK_OFFSET, crate::support::root_tree_family_validation::SEGMENT_BLOCK_OFFSET};
+pub(crate) use crate::support::root_tree_family_validation::{
+    assert_damage, assert_rejected_counters, assert_root_mutation_contract,
+    assert_segment_mutation_contract, field_range, independent_crc32c, root_leaf, root_rejection,
+    root_scope_with_reference, segment_leaf, segment_rejection, segment_scope_with_reference,
+    store, ROOT_BLOCK_OFFSET, SEGMENT_BLOCK_OFFSET,
+};
 
 pub(crate) fn assert_root_damage(
     bytes: &[u8],

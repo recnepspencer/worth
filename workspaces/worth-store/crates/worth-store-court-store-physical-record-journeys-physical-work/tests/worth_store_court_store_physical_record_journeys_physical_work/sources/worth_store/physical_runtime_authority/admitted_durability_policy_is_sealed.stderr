@@ -1,5 +1,5 @@
 error: cannot construct `AdmittedPhysicalDurabilityPolicy` with struct literal syntax due to private fields
- --> tests/physical_runtime_authority/admitted_durability_policy_is_sealed.rs:4:5
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/admitted_durability_policy_is_sealed.rs:4:5
   |
 4 |     AdmittedPhysicalDurabilityPolicy {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

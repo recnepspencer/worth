@@ -9,7 +9,7 @@ fn physical_adapters_receive_observation_without_pool_control() {
         "operation_scopes_supported.rs",
         "successor_scoped_allocations_supported.rs",
     ] {
-        cases.pass(format!("tests/physical_adapter_authority/{supported}"));
+        cases.pass(format!("{}/tests/worth_store_court_store_entry/sources/worth_store/physical_adapter_authority/{supported}", env!("CARGO_MANIFEST_DIR")));
     }
     for denied in [
         "pool_construction_is_sealed.rs",
@@ -24,7 +24,7 @@ fn physical_adapters_receive_observation_without_pool_control() {
         "successor_allocation_cannot_escape_runtime.rs",
         "successor_runtime_cannot_close_with_live_allocation.rs",
     ] {
-        cases.compile_fail(format!("tests/physical_adapter_authority/{denied}"));
+        cases.compile_fail(format!("{}/tests/worth_store_court_store_entry/sources/worth_store/physical_adapter_authority/{denied}", env!("CARGO_MANIFEST_DIR")));
     }
     #[cfg(not(all()))]
     cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_entry/sources/worth_store/physical_adapter_authority/certification_authority_is_absent.rs"));

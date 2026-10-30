@@ -1,11 +1,11 @@
 error[E0599]: no method named `into_acknowledgment` found for struct `PhysicalMutationExecutedBoundaryEvidence` in the current scope
- --> tests/physical_runtime_authority/mutation_evidence_cannot_reenter_authority.rs:6:22
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/mutation_evidence_cannot_reenter_authority.rs:6:22
   |
 6 |     let _ = evidence.into_acknowledgment();
   |                      ^^^^^^^^^^^^^^^^^^^ method not found in `PhysicalMutationExecutedBoundaryEvidence`
 
 error[E0599]: no method named `into_acknowledgment` found for struct `PhysicalMutationPerformanceEvidence` in the current scope
-  --> tests/physical_runtime_authority/mutation_evidence_cannot_reenter_authority.rs:10:22
+  --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/mutation_evidence_cannot_reenter_authority.rs:10:22
    |
 10 |     let _ = evidence.into_acknowledgment();
    |                      ^^^^^^^^^^^^^^^^^^^ method not found in `PhysicalMutationPerformanceEvidence`

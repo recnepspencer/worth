@@ -1,7 +1,16 @@
-pub(crate) use {worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::PhysicalPageSizeClass};
-pub(crate) use {worth_store_physical_integrity::validate_extent_chunk, worth_store_physical_integrity::ExtentChunkIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalIntegrityValidationRecord, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::{
+    encode_extent_chunk, DurableExtentRecordPlacement, ExtentArenaFrameLayout, ExtentArenaRange,
+    PhysicalPageSizeClass,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_extent_chunk, ExtentChunkIntegrityValidation, PhysicalArtifactScope,
+    PhysicalByteRange, PhysicalIntegrityValidationRecord, UntrustedPhysicalArtifact,
+};
 
-pub(crate) use {crate::support::extent_validation::chunk_payload_capacity, crate::support::extent_validation::chunk_scope, crate::support::extent_validation::extent_cell, crate::support::extent_validation::format, crate::support::extent_validation::record, crate::support::extent_validation::store, crate::support::extent_validation::validated_manifest, crate::support::extent_validation::ExtentFixture};
+pub(crate) use crate::support::extent_validation::{
+    chunk_payload_capacity, chunk_scope, extent_cell, format, record, store, validated_manifest,
+    ExtentFixture,
+};
 
 pub(crate) fn records(
     fixture: ExtentFixture,
@@ -39,11 +48,13 @@ pub(crate) fn chunk_record(
     scope: PhysicalArtifactScope,
     manifest: &worth_store_physical_integrity::IntegrityValidatedExtentManifest<'_>,
 ) -> PhysicalIntegrityValidationRecord {
-    let (worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(chunk), _) = validate_extent_chunk(
-        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
-        scope,
-        manifest,
-    ) else {
+    let (worth_store_physical_integrity::ExtentChunkIntegrityValidation::Intact(chunk), _) =
+        validate_extent_chunk(
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
+            scope,
+            manifest,
+        )
+    else {
         panic!("clean extent chunk rejected")
     };
     chunk.into_validation_record()

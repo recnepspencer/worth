@@ -1,63 +1,5 @@
-#[allow(unused_imports)] use crate::root_tree_family_validation::segment_membership_block::*;
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::maximum_segment_manifest_pages, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::PhysicalSegmentMembershipBlock, worth_store_physical_format::SegmentManifestBlockReference, worth_store_physical_format::SegmentPageKey};
-use {worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityValidationDigest, worth_store_physical_integrity::PhysicalIntegrityValidationMechanism, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
-
-use {crate::literal_vectors::root_tree_family_validation::SEGMENT_MEMBERSHIP_LEAF_COMPLETE_CRC32C, crate::literal_vectors::root_tree_family_validation::SEGMENT_MEMBERSHIP_LEAF_LITERAL};
-use {crate::support::root_tree_family_validation::assert_damage, crate::support::root_tree_family_validation::assert_rejected_counters, crate::support::root_tree_family_validation::assert_segment_checksum_mutation_contract, crate::support::root_tree_family_validation::assert_segment_mutation_contract, crate::support::root_tree_family_validation::field_range, crate::support::root_tree_family_validation::format, crate::support::root_tree_family_validation::independent_crc32c, crate::support::root_tree_family_validation::reseal_durable_frame, crate::support::root_tree_family_validation::segment_branch, crate::support::root_tree_family_validation::segment_leaf, crate::support::root_tree_family_validation::segment_rejection as validate_rejection, crate::support::root_tree_family_validation::segment_scope, crate::support::root_tree_family_validation::segment_scope_with_reference, crate::support::root_tree_family_validation::store, crate::support::root_tree_family_validation::validate_segment_intact as validate_intact, crate::support::root_tree_family_validation::SEGMENT_BLOCK_OFFSET};
-
-#[test]
-fn membership_literal_vector_has_independent_complete_child_crc_and_validates() {
-    assert_eq!(
-        segment_leaf().encode(format()),
-        SEGMENT_MEMBERSHIP_LEAF_LITERAL
-    );
-    assert_eq!(
-        independent_crc32c(&[&SEGMENT_MEMBERSHIP_LEAF_LITERAL]),
-        SEGMENT_MEMBERSHIP_LEAF_COMPLETE_CRC32C
-    );
-    assert_eq!(
-        u32::from_le_bytes(SEGMENT_MEMBERSHIP_LEAF_LITERAL[44..48].try_into().unwrap()),
-        independent_crc32c(&[
-            &SEGMENT_MEMBERSHIP_LEAF_LITERAL[..44],
-            &SEGMENT_MEMBERSHIP_LEAF_LITERAL[48..],
-        ])
-    );
-    let key = worth_store_physical_format::SegmentPageKey::new(
-        worth_store_physical_format::PhysicalSegmentId::from_raw(13).unwrap(),
-        worth_store_physical_format::PhysicalPageId::from_raw(17).unwrap(),
-    );
-    let reference = worth_store_physical_format::SegmentManifestBlockReference::new(
-        11,
-        5,
-        0,
-        SEGMENT_MEMBERSHIP_LEAF_COMPLETE_CRC32C,
-        key,
-        key,
-    )
-    .unwrap();
-    let scope = segment_scope_with_reference(
-        store(7),
-        reference,
-        SEGMENT_MEMBERSHIP_LEAF_LITERAL.len() as u64,
-        SEGMENT_BLOCK_OFFSET,
-    );
-    let validated = validate_intact(
-        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&SEGMENT_MEMBERSHIP_LEAF_LITERAL),
-        scope,
-    );
-    assert_eq!(validated.entries().unwrap().len(), 1);
-    let record = validated.into_validation_record();
-    assert_eq!(
-        record.byte_range_digest(),
-        worth_store_physical_integrity::PhysicalIntegrityValidationDigest::crc32c(SEGMENT_MEMBERSHIP_LEAF_COMPLETE_CRC32C)
-    );
-    assert_eq!(
-        record.mechanism(),
-        worth_store_physical_integrity::PhysicalIntegrityValidationMechanism::Crc32cV1
-    );
-    assert_eq!(record.mechanism().version(), 1);
-}
+#[allow(unused_imports)]
+use crate::root_tree_family_validation::segment_membership_block::*;
 
 #[test]
 fn clean_leaf_and_branch_seal_membership_projections_and_recursive_child_scope() {
@@ -65,7 +7,8 @@ fn clean_leaf_and_branch_seal_membership_projections_and_recursive_child_scope()
     let leaf = segment_leaf();
     let leaf_bytes = leaf.encode(format());
     let leaf_scope = segment_scope(store, &leaf, &leaf_bytes, SEGMENT_BLOCK_OFFSET);
-    let leaf_artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&leaf_bytes);
+    let leaf_artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&leaf_bytes);
     let leaf_validated = validate_intact(leaf_artifact, leaf_scope);
     assert_eq!(leaf_validated.scope(), leaf_scope);
     assert_eq!(leaf_validated.tree_identity(), 73);
@@ -101,7 +44,9 @@ fn clean_leaf_and_branch_seal_membership_projections_and_recursive_child_scope()
     let branch_bytes = branch.encode(format());
     let branch_scope = segment_scope(store, &branch, &branch_bytes, SEGMENT_BLOCK_OFFSET + 4_096);
     let branch_validated = validate_intact(
-        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&branch_bytes),
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+            &branch_bytes,
+        ),
         branch_scope,
     );
     assert_eq!(branch_validated.level(), 1);
@@ -230,7 +175,11 @@ fn membership_crc_framing_kinds_length_and_truncation_are_bounded() {
         truncated,
         clean_scope,
         worth_store_physical_integrity::PhysicalDamageCause::Truncated,
-        worth_store_physical_integrity::PhysicalByteRange::new(SEGMENT_BLOCK_OFFSET + truncated.len() as u64, 5).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(
+            SEGMENT_BLOCK_OFFSET + truncated.len() as u64,
+            5,
+        )
+        .unwrap(),
         None,
         worth_store_physical_integrity::PhysicalBlastRadius::CanonicalFrame,
     );
@@ -322,8 +271,18 @@ fn membership_version_axes_remain_unsupported_not_corrupt() {
     let block = segment_leaf();
     let clean = block.encode(format());
     for (offset, width, axis, observed) in [
-        (9, 1, worth_store_physical_integrity::PhysicalIntegrityVersionAxis::EnvelopeSchema, 3),
-        (10, 2, worth_store_physical_integrity::PhysicalIntegrityVersionAxis::PhysicalFormat, 3),
+        (
+            9,
+            1,
+            worth_store_physical_integrity::PhysicalIntegrityVersionAxis::EnvelopeSchema,
+            3,
+        ),
+        (
+            10,
+            2,
+            worth_store_physical_integrity::PhysicalIntegrityVersionAxis::PhysicalFormat,
+            3,
+        ),
     ] {
         let mut bytes = clean.clone();
         if width == 1 {

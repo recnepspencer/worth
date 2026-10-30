@@ -4,27 +4,43 @@
 //! and a bounded real redo prefix. Three recoveries, continuation and fresh
 //! identity allocation must then agree with the same memory-only reference.
 
-pub(crate) use {std::fs};
+pub(crate) use std::fs;
 pub(crate) use {std::ffi::OsString, std::num::NonZeroU64, std::path::PathBuf};
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam};
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::production::PhysicalCheckpointStep};
-pub(crate) use {worth_store::physical_runtime::PhysicalRecoveryProcessYieldpoint, worth_store::physical_runtime::PhysicalRecoveryYieldpointStage as Stage};
-pub(crate) use {worth_store_relational::RelationalStoreCertificationProfile, worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
+pub(crate) use worth_store::physical_runtime::production::PhysicalCheckpointStep;
+pub(crate) use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalRecoveryProcessYieldpoint,
+    worth_store::physical_runtime::PhysicalRecoveryYieldpointStage as Stage,
+};
+pub(crate) use {
+    worth_store_relational::RelationalStoreCertificationProfile,
+    worth_store_relational::RelationalStoreHome,
+    worth_store_relational::RelationalStoreHomeRequest,
+};
 
-pub(crate) use {crate::crash_oracle::assert_continues, crate::crash_oracle::assert_recovered, crate::crash_oracle::InFlight};
-pub(crate) use {crate::durable_run::assert_holds, crate::durable_run::open, crate::durable_run::recorded_schema};
+pub(crate) use crate::schema_transition;
+pub(crate) use crate::workload;
+pub(crate) use {
+    crate::crash_oracle::assert_continues, crate::crash_oracle::assert_recovered,
+    crate::crash_oracle::InFlight,
+};
+pub(crate) use {
+    crate::durable_run::assert_holds, crate::durable_run::open, crate::durable_run::recorded_schema,
+};
 pub(crate) use {crate::killed_child, crate::killed_child::ChildEnd};
 pub(crate) use {crate::process_kill, crate::process_kill::Stop, crate::process_kill::SEED};
-pub(crate) use {crate::schema_transition};
-pub(crate) use {crate::workload};
 
 pub(crate) const STAGE_ENV: &str = "WORTH_RELATIONAL_HOME_RECOVERY_STAGE";
 pub(crate) const LOCATION_ENV: &str = "WORTH_RELATIONAL_HOME_RECOVERY_LOCATION";
 pub(crate) const MARKERS_ENV: &str = "WORTH_RELATIONAL_HOME_RECOVERY_MARKERS";
-pub(crate) const RECOVERY_CHILD: &str = "recovery_interruption::recovery_interruption_child";
+pub(crate) const RECOVERY_CHILD: &str =
+    "process::relational::relational_home::recovery_interruption::recovery_interruption_child";
 
 pub(crate) const STAGES: [Stage; 13] = [
     worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::StagingMaterialization,
@@ -77,7 +93,8 @@ pub(crate) fn prove_stage(
         (crate::process_kill::Stop::Commit(worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::AfterWalDurability), crate::crash_oracle::InFlight::Durable)
     };
     let killed = crate::process_kill::launch_with_wal_segment_bytes(stop, wal_segment_bytes);
-    if stage == worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::ObligationDischarge {
+    if stage == worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::ObligationDischarge
+    {
         leave_indeterminate_replacement(&killed.location, execution);
     }
     let markers = tempfile::tempdir().unwrap();
@@ -149,7 +166,10 @@ pub(crate) fn leave_indeterminate_replacement(
 }
 
 pub(crate) fn recover_child_at(label: OsString) {
-    let stage = worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::from_label(label.to_str().unwrap()).expect("a recovery stage label");
+    let stage = worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::from_label(
+        label.to_str().unwrap(),
+    )
+    .expect("a recovery stage label");
     let location = std::path::PathBuf::from(std::env::var_os(LOCATION_ENV).unwrap());
     let markers = std::path::PathBuf::from(std::env::var_os(MARKERS_ENV).unwrap());
     let yieldpoint = worth_store::physical_runtime::PhysicalRecoveryProcessYieldpoint::new(
@@ -160,14 +180,15 @@ pub(crate) fn recover_child_at(label: OsString) {
     );
     let request = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
-    let opened = worth_store_relational::RelationalStoreHome::certification_open_with_recovery_yieldpoint(
-        worth_store_relational::RelationalStoreHomeRequest::new(
-            &location,
-            crate::workload::runtime_builder(crate::schema_transition::SOURCE),
-        ),
-        yieldpoint,
-        &execution,
-    );
+    let opened =
+        worth_store_relational::RelationalStoreHome::certification_open_with_recovery_yieldpoint(
+            worth_store_relational::RelationalStoreHomeRequest::new(
+                &location,
+                crate::workload::runtime_builder(crate::schema_transition::SOURCE),
+            ),
+            yieldpoint,
+            &execution,
+        );
     // The commit fixture includes a durable schema transition, so a completed
     // recovery serves its target. The checkpoint fixture still serves SOURCE.
     let home = match opened {

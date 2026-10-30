@@ -1,5 +1,5 @@
 error: lifetime may not live long enough
-  --> tests/physical_runtime_authority/blob_ingest_cannot_escape_runtime.rs:12:5
+  --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/blob_ingest_cannot_escape_runtime.rs:12:5
    |
  6 |   fn escape<'runtime>(
    |             -------- lifetime `'runtime` defined here

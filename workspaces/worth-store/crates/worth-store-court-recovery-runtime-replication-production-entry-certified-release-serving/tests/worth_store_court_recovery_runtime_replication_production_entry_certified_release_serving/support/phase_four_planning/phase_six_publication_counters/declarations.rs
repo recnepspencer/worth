@@ -1,8 +1,20 @@
 #![cfg(all())]
 
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::PhysicalRecoveryPublicationCommandIndeterminate, worth_store::physical_runtime::PhysicalRecoveryPublicationCommandStage, worth_store::physical_runtime::PhysicalRecoveryPublicationSettlementFailure, worth_store::physical_runtime::PhysicalSignalSettlementOutcome};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPublicationIndeterminate, worth_store_recovery_runtime::PhysicalRecoveryPublicationSettlement};
+pub(crate) use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalRecoveryPublicationCommandIndeterminate,
+    worth_store::physical_runtime::PhysicalRecoveryPublicationCommandStage,
+    worth_store::physical_runtime::PhysicalRecoveryPublicationSettlementFailure,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPublicationIndeterminate,
+    worth_store_recovery_runtime::PhysicalRecoveryPublicationSettlement,
+};
 
 pub(crate) fn publication_signal_outcome(
     label: &str,
@@ -16,7 +28,10 @@ pub(crate) fn publication_signal_outcome(
         .unwrap();
     let expected_candidates = staged.publication_plan().candidates().len() as u64;
     staged.certification_fail_publication_signal_settlement_at(stage);
-    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(outcome)) = staged.publish() else {
+    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+        outcome,
+    )) = staged.publish()
+    else {
         panic!("publication Signal failure must retain indeterminate evidence")
     };
     (*outcome, expected_candidates)
@@ -45,15 +60,19 @@ pub(crate) fn publication_fault_outcome(
     directive: MediaFaultDirective,
 ) -> PhysicalRecoveryPublicationIndeterminate {
     let retained_root = crate::phase_four_planning::prepare_ordinary_recovery_root(label);
-    let (selected, activation) = crate::process::recovery_runtime::phase_four_planning::phase_six_publication::selected_with_publication_fault(
-        retained_root.path(),
-        role,
-        occurrence,
-        directive,
-    );
+    let (selected, activation) =
+        crate::phase_four_planning::publication_faults::selected_with_publication_fault(
+            retained_root.path(),
+            role,
+            occurrence,
+            directive,
+        );
     let staged = selected.plan().unwrap().stage().unwrap();
     activation.arm().unwrap();
-    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(outcome)) = staged.publish() else {
+    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+        outcome,
+    )) = staged.publish()
+    else {
         panic!("the activated publication fault must retain indeterminate evidence")
     };
     *outcome

@@ -1,12 +1,25 @@
-pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-pub(crate) use {worth_store_physical_format::BlobChunkFrameV1, worth_store_physical_format::BlobChunkOccurrenceV1, worth_store_physical_format::BlobGenerationPublicationV1, worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobTreeEntryV1, worth_store_physical_format::BlobTreeNodeKind, worth_store_physical_format::BlobTreeNodeV1, worth_store_physical_format::BlobTreeOccurrenceV1, worth_store_physical_format::PersistedRecordIdentity};
-pub(crate) use {worth_store_physical_integrity::inspect_physical_integrity_window, worth_store_physical_integrity::validate_blob_record, worth_store_physical_integrity::BlobRecordIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityScrubWindow, worth_store_physical_integrity::PhysicalIntegrityVersionAxis, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use sha2::{Digest, Sha256};
+pub(crate) use worth_store_physical_format::store_namespace::{
+    ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+};
+pub(crate) use worth_store_physical_format::{
+    BlobChunkFrameV1, BlobChunkOccurrenceV1, BlobGenerationPublicationV1, BlobRecordKind,
+    BlobTreeEntryV1, BlobTreeNodeKind, BlobTreeNodeV1, BlobTreeOccurrenceV1,
+    PersistedRecordIdentity,
+};
+pub(crate) use worth_store_physical_integrity::{
+    inspect_physical_integrity_window, validate_blob_record, BlobRecordIntegrityValidation,
+    PhysicalArtifactScope, PhysicalByteRange, PhysicalDamageCause, PhysicalIntegrityRejection,
+    PhysicalIntegrityScrubWindow, PhysicalIntegrityVersionAxis, UntrustedPhysicalArtifact,
+};
 
 pub(crate) fn store(byte: u8) -> StableStoreIdentity {
     worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(
         worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT,
-        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes([byte; 16]).unwrap(),
+        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(
+            [byte; 16],
+        )
+        .unwrap(),
     )
     .published_identity()
 }
@@ -28,6 +41,13 @@ pub(crate) fn chunk_bytes() -> Vec<u8> {
     .unwrap()
 }
 
-pub(crate) fn chunk_scope(bytes: &[u8], identity: PersistedRecordIdentity) -> PhysicalArtifactScope {
-    worth_store_physical_integrity::PhysicalArtifactScope::blob_chunk_frame(store(3), identity, range(bytes))
+pub(crate) fn chunk_scope(
+    bytes: &[u8],
+    identity: PersistedRecordIdentity,
+) -> PhysicalArtifactScope {
+    worth_store_physical_integrity::PhysicalArtifactScope::blob_chunk_frame(
+        store(3),
+        identity,
+        range(bytes),
+    )
 }

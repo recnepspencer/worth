@@ -1,27 +1,56 @@
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread,
+    std::time::Duration, std::time::Instant,
+};
+pub(crate) use {
+    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalExtentCopyPhase,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+};
+pub(crate) use {
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store_testkit_recovery_runtime::support::append,
+    worth_store_testkit_recovery_runtime::support::configuration,
+    worth_store_testkit_recovery_runtime::support::generation,
+    worth_store_testkit_recovery_runtime::support::initialize,
+    worth_store_testkit_recovery_runtime::support::open,
+    worth_store_testkit_recovery_runtime::support::recovery_request,
+    worth_store_testkit_recovery_runtime::support::scan,
+    worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
+};
+pub(crate) use {
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurableExtentRecordPlacement,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
+pub(crate) use crate::c11_arena_copy_crash::observation::observe_copy_media;
 
-pub(crate) use {std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
-pub(crate) use {worth_store_testkit_recovery_runtime::support::EXTENT_BYTES, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store_testkit_recovery_runtime::support::append, worth_store_testkit_recovery_runtime::support::configuration, worth_store_testkit_recovery_runtime::support::generation, worth_store_testkit_recovery_runtime::support::initialize, worth_store_testkit_recovery_runtime::support::open, worth_store_testkit_recovery_runtime::support::recovery_request, worth_store_testkit_recovery_runtime::support::scan};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationRequest};
-pub(crate) use {worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::PersistedRecordIdentity};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff, worth_store_recovery_runtime::WorthStoreRecovery};
-
-pub(crate) use {crate::c11_arena_copy_crash::observation::observe_copy_media};
-
-
-
-
-
-pub(crate) const CHILD: &str = "final_copy_wal_child";
+pub(crate) const CHILD: &str =
+    "process::recovery_runtime::c11_arena_copy_crash::final_copy_wal_child";
 pub(crate) const MARKER: &str = "C11_FINAL_COPY_CRASH_MARKER";
 
 pub(crate) fn checkpoint_source(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([204; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("source checkpoint did not admit")
     };
     assert!(matches!(
@@ -72,7 +101,9 @@ pub(crate) fn selected_extent(
         .placements()
         .iter()
         .find_map(|placement| match placement {
-            worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(extent) if extent.record() == record => {
+            worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(extent)
+                if extent.record() == record =>
+            {
                 Some(*extent)
             }
             _ => None,

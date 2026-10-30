@@ -1,5 +1,5 @@
 error[E0432]: unresolved imports `worth_store::physical_runtime::IntegrityAdmittedResidentPage`, `worth_store::physical_runtime::ResidentAdmissionContext`, `worth_store::physical_runtime::ResidentIntegrityRecordBinding`
- --> tests/physical_runtime_authority/resident_admission_internals_are_sealed.rs:2:5
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/resident_admission_internals_are_sealed.rs:2:5
   |
 2 |     IntegrityAdmittedResidentPage, ResidentAdmissionContext, ResidentIntegrityRecordBinding,
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ResidentIntegrityRecordBinding` in `physical_runtime`

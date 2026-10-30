@@ -1,11 +1,9 @@
 #[path = "c11_arena_append_crash/mod.rs"]
 pub(crate) mod c11_arena_append_crash;
-#[path = "phase_five_bootstrap_cutover/mod.rs"]
-pub(crate) mod phase_five_bootstrap_cutover;
+
 #[path = "phase_five_cancellation/mod.rs"]
 pub(crate) mod phase_five_cancellation;
-#[path = "phase_five_checkpoint_cutover/mod.rs"]
-pub(crate) mod phase_five_checkpoint_cutover;
+
 #[path = "phase_five_faults/mod.rs"]
 pub(crate) mod phase_five_faults;
 #[path = "phase_five_generation_axes/mod.rs"]
@@ -14,8 +12,7 @@ pub(crate) mod phase_five_generation_axes;
 pub(crate) mod phase_five_prefix_completion;
 #[path = "phase_five_staging/mod.rs"]
 pub(crate) mod phase_five_staging;
-#[path = "phase_five_wal_admission/mod.rs"]
-pub(crate) mod phase_five_wal_admission;
+
 #[path = "phase_four_process/mod.rs"]
 pub(crate) mod phase_four_process;
 #[path = "phase_three_denials/mod.rs"]
@@ -24,8 +21,7 @@ pub(crate) mod phase_three_denials;
 pub(crate) mod phase_three_manifest_denials;
 #[path = "phase_three_media_denials/mod.rs"]
 pub(crate) mod phase_three_media_denials;
-#[path = "phase_three_noncanonical_selectors/mod.rs"]
-pub(crate) mod phase_three_noncanonical_selectors;
+
 #[path = "phase_three_root_anchor/mod.rs"]
 pub(crate) mod phase_three_root_anchor;
 #[path = "production_entry/mod.rs"]

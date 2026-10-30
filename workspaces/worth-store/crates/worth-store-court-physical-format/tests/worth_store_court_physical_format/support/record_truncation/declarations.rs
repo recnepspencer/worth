@@ -1,7 +1,8 @@
-pub(crate) use {crate::phase_4_literal_vectors::bootstrap_catalog, crate::phase_4_literal_vectors::routing_block};
-pub(crate) use {crate::support::fixtures::clean_store, crate::support::fixtures::StoreFixture};
-pub(crate) use {serde_json::json, serde_json::Value};
-pub(crate) use {std::fs, std::path::Path, std::process::Command};
+pub(crate) use crate::phase_4_literal_vectors::{bootstrap_catalog, routing_block};
+use crate::support::checksum::{checksum, refresh_crc32c};
+pub(crate) use crate::support::fixtures::{clean_store, StoreFixture};
+pub(crate) use serde_json::{json, Value};
+pub(crate) use std::{fs, path::Path, process::Command};
 
 pub(crate) const ROUTING: &str =
     "families/records/roots/root-0000000000000001-block-0000000000000003.manifest";
@@ -32,29 +33,31 @@ pub(crate) fn addressed_routing(fixture: &StoreFixture) -> Vec<u8> {
 }
 
 pub(crate) fn observe(root: &Path) -> Value {
-    let output = std::process::Command::new(worth_store_testkit_executables::physical_store_integrity_observer())
-        .args(["observe", "--store-root"])
-        .arg(root)
-        .args([
-            "--report",
-            "-",
-            "--max-entries",
-            "100",
-            "--max-bytes",
-            "16384",
-            "--max-open-files",
-            crate::store_offline_integrity_observer_support::FIXTURE_OPEN_FILE_ARGUMENT,
-            "--max-depth",
-            "8",
-            "--max-symlinks",
-            "0",
-            "--max-elapsed-ms",
-            crate::store_offline_integrity_observer_support::FIXTURE_ELAPSED_ARGUMENT,
-            "--max-report-bytes",
-            "65536",
-        ])
-        .output()
-        .unwrap();
+    let output = std::process::Command::new(
+        worth_store_testkit_executables::physical_store_integrity_observer(),
+    )
+    .args(["observe", "--store-root"])
+    .arg(root)
+    .args([
+        "--report",
+        "-",
+        "--max-entries",
+        "100",
+        "--max-bytes",
+        "16384",
+        "--max-open-files",
+        crate::store_offline_integrity_observer_support::FIXTURE_OPEN_FILE_ARGUMENT,
+        "--max-depth",
+        "8",
+        "--max-symlinks",
+        "0",
+        "--max-elapsed-ms",
+        crate::store_offline_integrity_observer_support::FIXTURE_ELAPSED_ARGUMENT,
+        "--max-report-bytes",
+        "65536",
+    ])
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",
@@ -72,7 +75,14 @@ pub(crate) fn row<'a>(report: &'a Value, path: &str) -> &'a Value {
         .unwrap()
 }
 
-pub(crate) fn assert_damage(row: &Value, cause: &str, offset: u64, length: u64, field: Value, blast: &str) {
+pub(crate) fn assert_damage(
+    row: &Value,
+    cause: &str,
+    offset: u64,
+    length: u64,
+    field: Value,
+    blast: &str,
+) {
     assert_eq!(
         row["outcome"],
         json!({

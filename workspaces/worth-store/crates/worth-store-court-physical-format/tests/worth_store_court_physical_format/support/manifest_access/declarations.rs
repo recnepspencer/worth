@@ -1,17 +1,28 @@
-pub(crate) use {worth_store_contracts::AcceptedHandoffReadiness, worth_store_contracts::HandoffEvidenceDigestSet, worth_store_contracts::StableDigest, worth_store_contracts::ROADMAP_2_S1_SCOPE};
-pub(crate) use {worth_store_physical_format::AllocationClassKind, worth_store_physical_format::InMemoryPhysicalFormatModel, worth_store_physical_format::InMemoryPhysicalFormatModelDenialKind, worth_store_physical_format::InMemoryPhysicalFormatModelRequest, worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalFreeSpaceSearchPolicy, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::PlatformPhysicalAppendRequest};
+pub(crate) use worth_store_contracts::{
+    AcceptedHandoffReadiness, HandoffEvidenceDigestSet, StableDigest, ROADMAP_2_S1_SCOPE,
+};
+pub(crate) use worth_store_physical_format::{
+    AllocationClassKind, InMemoryPhysicalFormatModel, InMemoryPhysicalFormatModelDenialKind,
+    InMemoryPhysicalFormatModelRequest, PhysicalExtentId, PhysicalFreeSpaceSearchPolicy,
+    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId, PhysicalRecordSlot,
+    PhysicalSegmentId, PlatformPhysicalAppendRequest,
+};
 
 pub(crate) fn open_facade() -> InMemoryPhysicalFormatModel {
     worth_store_physical_format::InMemoryPhysicalFormatModel::start_empty_model(
         readiness(),
-        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_canonical(),
+        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_canonical(
+        ),
     )
     .expect("open S.1 facade")
 }
 
 pub(crate) fn readiness() -> AcceptedHandoffReadiness {
-    worth_store_contracts::AcceptedHandoffReadiness::from_foundational_handoff_artifacts(ROADMAP_2_S1_SCOPE, digest_set())
-        .expect("S.1 handoff readiness")
+    worth_store_contracts::AcceptedHandoffReadiness::from_foundational_handoff_artifacts(
+        ROADMAP_2_S1_SCOPE,
+        digest_set(),
+    )
+    .expect("S.1 handoff readiness")
 }
 
 pub(crate) fn digest_set() -> HandoffEvidenceDigestSet {

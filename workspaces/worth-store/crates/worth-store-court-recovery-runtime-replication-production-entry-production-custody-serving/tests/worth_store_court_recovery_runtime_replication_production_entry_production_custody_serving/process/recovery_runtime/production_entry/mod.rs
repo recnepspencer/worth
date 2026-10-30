@@ -1,52 +1,62 @@
-#[allow(unused_imports)] use worth_store_testkit_recovery_runtime::production_entry::*;
+use std::path::Path;
+use std::process::Command;
+#[allow(unused_imports)]
+use worth_store_testkit_recovery_runtime::production_entry::*;
 use {std::num::NonZeroU16, std::num::NonZeroU64};
-use {std::path::Path};
-use {std::process::Command};
 
-use {worth_foundational::aspects, worth_foundational::AspectValue, worth_foundational::ContractValidationInput, worth_foundational::InternedString, worth_foundational::ScalarAspectType};
+use worth_store_authority::require_current_store_authority;
+use worth_store_blob_chunks::BlobChunkSize;
+use {
+    worth_foundational::aspects, worth_foundational::AspectValue,
+    worth_foundational::ContractValidationInput, worth_foundational::InternedString,
+    worth_foundational::ScalarAspectType,
+};
 use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-use {worth_store::aspect_native::StoreAspectAuthorityInput, worth_store::aspect_native::StoreAspectBoundaryFact, worth_store::aspect_native::StoreAspectIdentity, worth_store::aspect_native::StorePhysicalAuthorityWitness, worth_store::aspect_native::StorePhysicalBoundaryWitness, worth_store::aspect_native::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_authority::require_current_store_authority};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_security::admit_store_security_scope, worth_store_security::StoreAuthenticityRequirement, worth_store_security::StoreAuthenticityRequirementClass, worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope, worth_store_security::StoreKeyVersionPosture, worth_store_security::StoreSecurityScopeAdmissionExpectation, worth_store_security::StoreSecurityScopeAdmissionRequest, worth_store_security::StoreTenantScope};
-use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use {
+    worth_store::aspect_native::StoreAspectAuthorityInput,
+    worth_store::aspect_native::StoreAspectBoundaryFact,
+    worth_store::aspect_native::StoreAspectIdentity,
+    worth_store::aspect_native::StorePhysicalAuthorityWitness,
+    worth_store::aspect_native::StorePhysicalBoundaryWitness,
+    worth_store::aspect_native::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+};
+use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestFailure,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
+use {
+    worth_store_security::admit_store_security_scope,
+    worth_store_security::StoreAuthenticityRequirement,
+    worth_store_security::StoreAuthenticityRequirementClass,
+    worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope,
+    worth_store_security::StoreKeyVersionPosture,
+    worth_store_security::StoreSecurityScopeAdmissionExpectation,
+    worth_store_security::StoreSecurityScopeAdmissionRequest,
+    worth_store_security::StoreTenantScope,
+};
+use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
-
-
-
-use {worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope};
-
-
-
-
-
-
-
-
-
-
-
-
-
+use worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope;
 
 #[cfg(all())]
-use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+use {
+    worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal,
+    worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle,
+};
 
 #[cfg(all())]
 #[test]
@@ -83,12 +93,6 @@ fn selected_tier_and_released_custody_open_serving_from_one_composite_seal() {
 fn selected_empty_no_release_custody_opens_serving_and_checkpoints() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::empty_no_release::run_empty_no_release();
 }
-
-
-
-
-
-
 
 #[test]
 fn production_entry_admits_an_existing_store_in_a_fresh_process() {
@@ -165,7 +169,8 @@ fn production_entry_refuses_absent_incomplete_and_contended_roots() {
 
 #[test]
 fn completed_release_first_batch_survives_checkpoint_and_fresh_recovery() {
-    let output = worth_store_testkit_recovery_runtime::production_entry::release_reopen::run(1, false);
+    let output =
+        worth_store_testkit_recovery_runtime::production_entry::release_reopen::run(1, false);
     assert!(
         output.status.success(),
         "fresh release recovery: {}",
@@ -175,7 +180,8 @@ fn completed_release_first_batch_survives_checkpoint_and_fresh_recovery() {
 
 #[test]
 fn terminal_release_survives_checkpoint_and_fresh_recovery() {
-    let output = worth_store_testkit_recovery_runtime::production_entry::release_reopen::run(1024, true);
+    let output =
+        worth_store_testkit_recovery_runtime::production_entry::release_reopen::run(1024, true);
     assert!(
         output.status.success(),
         "terminal release recovery: {}",
@@ -195,12 +201,16 @@ fn two_releases_recover_after_accumulator_only_carryforward() {
 
 #[test]
 fn two_distinct_released_generations_recover_with_current_batch() {
-    worth_store_testkit_recovery_runtime::production_entry::release_reopen::two_generations::run(false);
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen::two_generations::run(
+        false,
+    );
 }
 
 #[test]
 fn two_distinct_released_generations_recover_after_carryforward() {
-    worth_store_testkit_recovery_runtime::production_entry::release_reopen::two_generations::run(true);
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen::two_generations::run(
+        true,
+    );
 }
 
 #[test]
@@ -216,7 +226,7 @@ fn release_candidate_certificate_crash_keeps_prior_selected_custody() {
 #[cfg(all())]
 #[test]
 fn release_candidate_crash_recovery_allows_successor_checkpoint() {
-    worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving::process::recovery_runtime::production_entry::release_reopen::candidate_crash::run_checkpoint_liveness();
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen::candidate_crash::run_inner(true);
 }
 
 #[cfg(all())]
@@ -227,7 +237,7 @@ fn genuine_release_custody_rejoins_store_media_before_serving() {
 
 #[cfg(all())]
 #[test]
-fn changed_selected_checkpoint_after_c8_claim_denies_store_rejoin() {
+fn changed_selected_checkpoint_after_recovery_claim_denies_store_rejoin() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation::AfterClaimCheckpoint);
 }
 
@@ -257,12 +267,13 @@ fn production_entry_rejects_a_report_path_inside_the_store_root() {
     drop(world);
 
     let report = root.join("report-inside-store.bin");
-    let output = std::process::Command::new(worth_store_testkit_executables::physical_store_recover())
-        .arg(&root)
-        .arg("--bounded-profile=c8-phase2-admission-v1")
-        .arg(format!("--report={}", report.display()))
-        .output()
-        .expect("run report safety entry");
+    let output =
+        std::process::Command::new(worth_store_testkit_executables::physical_store_recover())
+            .arg(&root)
+            .arg("--bounded-profile=c8-phase2-admission-v1")
+            .arg(format!("--report={}", report.display()))
+            .output()
+            .expect("run report safety entry");
     assert!(!output.status.success());
     assert!(!report.exists());
     let after = std::fs::read_dir(&root)
@@ -319,3 +330,12 @@ pub(crate) mod tier_epoch_reopen;
 #[cfg(all())]
 #[path = "tier_release_pending_wal/mod.rs"]
 pub(crate) mod tier_release_pending_wal;
+
+#[path = "pending_wal_world/mod.rs"]
+pub(crate) mod pending_wal_world;
+
+#[path = "release_reopen/mod.rs"]
+pub(crate) mod release_reopen;
+
+#[path = "ordered_journals/mod.rs"]
+pub(crate) mod ordered_journals;

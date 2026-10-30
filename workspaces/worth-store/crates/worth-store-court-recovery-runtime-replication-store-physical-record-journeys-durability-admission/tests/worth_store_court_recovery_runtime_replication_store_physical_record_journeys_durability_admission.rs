@@ -1,3 +1,10 @@
+#[macro_use]
+extern crate worth_store_testkit_store;
+
+#[global_allocator]
+static ALLOCATOR: &stats_alloc::StatsAlloc<std::alloc::System> =
+    worth_store_testkit_store::allocation_probe::physical_record_journeys::ALLOCATOR;
+
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_durability_admission/support/child_process/mod.rs"]
 pub(crate) mod child_process;

@@ -1,11 +1,5 @@
-#[allow(unused_imports)] use crate::checkpoint_validation::validation_records::*;
-use {std::num::NonZeroU64};
-
-use {worth_store_physical_format::PhysicalCheckpointIdentity};
-use {worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalIntegrityValidationRecord};
-
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-use {crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::header_scope_known, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::other_store, crate::checkpoint_validation::support::validate_binding, crate::checkpoint_validation::support::validate_compaction, crate::checkpoint_validation::support::validate_dirty, crate::checkpoint_validation::support::validate_footer, crate::checkpoint_validation::support::validate_header};
+#[allow(unused_imports)]
+use crate::checkpoint_validation::validation_records::*;
 
 #[test]
 fn validation_records_bind_every_kind_to_store_sequence_family_and_range() {
@@ -14,7 +8,10 @@ fn validation_records_bind_every_kind_to_store_sequence_family_and_range() {
         identity.store_identity(),
         std::num::NonZeroU64::new(identity.sequence().get() + 1).unwrap(),
     );
-    let foreign_store = worth_store_physical_format::PhysicalCheckpointIdentity::new(other_store(), identity.sequence());
+    let foreign_store = worth_store_physical_format::PhysicalCheckpointIdentity::new(
+        other_store(),
+        identity.sequence(),
+    );
     let header_scope = header_scope_staged();
     let dirty_own = dirty_scope(identity);
     let compaction_own = compaction_scope(identity);

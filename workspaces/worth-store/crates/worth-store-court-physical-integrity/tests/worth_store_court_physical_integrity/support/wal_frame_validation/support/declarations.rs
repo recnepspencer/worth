@@ -1,9 +1,16 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-pub(crate) use {worth_store_physical_format::WalSegmentIdentity};
-pub(crate) use {worth_store_physical_integrity::validate_wal_frame, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalDamageLocalization, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityObservationCounters, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::UntrustedPhysicalArtifact, worth_store_physical_integrity::WalFrameIntegrityValidation};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::store_namespace::{
+    ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+};
+pub(crate) use worth_store_physical_format::WalSegmentIdentity;
+pub(crate) use worth_store_physical_integrity::{
+    validate_wal_frame, PhysicalArtifactScope, PhysicalBlastRadius, PhysicalByteRange,
+    PhysicalDamageCause, PhysicalDamageLocalization, PhysicalFormatField,
+    PhysicalIntegrityObservationCounters, PhysicalIntegrityRejection,
+    PhysicalIntegrityRejectionClass, UntrustedPhysicalArtifact, WalFrameIntegrityValidation,
+};
 
-pub(crate) use {crate::sha256::independent_sha256};
+pub(crate) use crate::sha256::independent_sha256;
 
 pub(crate) const FRAME_OFFSET: u64 = 8_192;
 pub(crate) const CLEAN_HEX: &str = "574f52544857414c0100740001000000000000000200000000000000030000000000000004000000000000000300000000000000d675c4a7b3dc55cebb3c413a084473b6e80a549d48106af3439bbdf5c76eb5768e1336ab78ebe687fd8056a37f2d3b0c32f4cf8fa8b691b653800fa693d570b9102030c8b5e38493d6397d83ab40999718d0fcaf7354454bff68c9a716003b636fa681";
@@ -46,12 +53,20 @@ pub(crate) fn assert_independent_frame_checksums(bytes: &[u8]) {
 pub(crate) fn store(byte: u8) -> StableStoreIdentity {
     worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(
         worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT,
-        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes([byte; 16]).unwrap(),
+        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(
+            [byte; 16],
+        )
+        .unwrap(),
     )
     .published_identity()
 }
 
-pub(crate) fn scope(store_byte: u8, segment: u64, generation: u64, length: u64) -> PhysicalArtifactScope {
+pub(crate) fn scope(
+    store_byte: u8,
+    segment: u64,
+    generation: u64,
+    length: u64,
+) -> PhysicalArtifactScope {
     worth_store_physical_integrity::PhysicalArtifactScope::wal_frame(
         store(store_byte),
         worth_store_physical_format::WalSegmentIdentity::new(segment, generation).unwrap(),
@@ -66,9 +81,17 @@ pub(crate) fn rejection(
     PhysicalIntegrityRejection,
     PhysicalIntegrityObservationCounters,
 ) {
-    match validate_wal_frame(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes), scope) {
-        (worth_store_physical_integrity::WalFrameIntegrityValidation::Rejected(rejection), counters) => (rejection, counters),
-        (worth_store_physical_integrity::WalFrameIntegrityValidation::Intact(_), _) => panic!("WAL vector unexpectedly validated"),
+    match validate_wal_frame(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
+        scope,
+    ) {
+        (
+            worth_store_physical_integrity::WalFrameIntegrityValidation::Rejected(rejection),
+            counters,
+        ) => (rejection, counters),
+        (worth_store_physical_integrity::WalFrameIntegrityValidation::Intact(_), _) => {
+            panic!("WAL vector unexpectedly validated")
+        }
     }
 }
 
@@ -83,13 +106,19 @@ pub(crate) fn assert_damage(
 ) {
     assert_eq!(
         rejection,
-        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(worth_store_physical_integrity::PhysicalDamageLocalization::new(
-            scope,
-            cause,
-            worth_store_physical_integrity::PhysicalByteRange::new(FRAME_OFFSET + offset, length).unwrap(),
-            field,
-            blast_radius,
-        ))
+        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(
+            worth_store_physical_integrity::PhysicalDamageLocalization::new(
+                scope,
+                cause,
+                worth_store_physical_integrity::PhysicalByteRange::new(
+                    FRAME_OFFSET + offset,
+                    length
+                )
+                .unwrap(),
+                field,
+                blast_radius,
+            )
+        )
     );
 }
 
@@ -108,7 +137,9 @@ pub(crate) fn assert_rejected_counters(
         (0, 1)
     );
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)
+        ),
         1
     );
 }

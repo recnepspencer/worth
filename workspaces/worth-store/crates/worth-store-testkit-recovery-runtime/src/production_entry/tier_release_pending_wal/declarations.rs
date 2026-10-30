@@ -1,16 +1,50 @@
 //! A selected Tier checkpoint and process-killed V3 drop share one recovery suffix.
 
-pub use {worth_proof::AdmittedBlobReleaseProof, worth_store::physical_runtime::BlobCheckpointLimit, worth_store_blob_chunks::BlobChunkSize, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimRequest, std::num::NonZeroU16, std::num::NonZeroU64, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, crate::production_entry::blob_scope_admission::admitted_blob_scope, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, crate::production_entry::certified_release_serving};
-pub use {std::collections::BTreeSet, std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::sync::atomic::AtomicBool, std::sync::atomic::Ordering, std::thread, std::time::Duration, std::time::Instant};
-pub use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest};
-pub use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobReclaimSourceBasisV1, worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::SelectedRecordContentClass};
+pub use {
+    crate::production_entry::blob_scope_admission::admitted_blob_scope,
+    crate::production_entry::certified_release_serving, std::num::NonZeroU16, std::num::NonZeroU64,
+    worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestFailure,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_blob_chunks::BlobChunkSize,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+pub use {
+    std::collections::BTreeSet, std::fs, std::path::Path, std::path::PathBuf,
+    std::process::Command, std::process::Stdio, std::sync::atomic::AtomicBool,
+    std::sync::atomic::Ordering, std::thread, std::time::Duration, std::time::Instant,
+};
+pub use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+};
+pub use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::BlobReclaimSourceBasisV1,
+    worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::SelectedRecordContentClass,
+};
 
-
-pub use {worth_proof::AdmittedBlobReleaseProof, worth_store::physical_runtime::BlobCheckpointLimit, worth_store_blob_chunks::BlobChunkSize, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimRequest, std::num::NonZeroU16, std::num::NonZeroU64, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, crate::production_entry::blob_scope_admission::admitted_blob_scope, crate::production_entry::tier_release_pending_wal::checkpoint::assert_tier_and_batch, crate::production_entry::tier_release_pending_wal::checkpoint::assert_tier_and_no_release, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, crate::production_entry::certified_release_serving, crate::production_entry::tier_release_pending_wal::checkpoint::selected_checkpoint};
+pub use crate::production_entry::tier_release_pending_wal::checkpoint::{
+    assert_tier_and_batch, assert_tier_and_no_release, selected_checkpoint,
+};
 
 pub const ROLE_ENV: &str = "WORTH_C11_TIER_RELEASE_PENDING_CHILD";
 pub const MARKER_ENV: &str = "WORTH_C11_TIER_RELEASE_PENDING_MARKER";
-pub const CHILD_TEST: &str = "tier_release_pending_wal::mixed_tier_pending_child";
+pub const CHILD_TEST: &str = "process::recovery_runtime::production_entry::tier_release_pending_wal::mixed_tier_pending_child";
 pub const BASELINE: &[u8] = b"c11-tier-release-surviving-record";
 pub const CHUNK: usize = 64 << 10;
 
@@ -65,7 +99,8 @@ pub fn produce_pending_world(marker: &Path) {
 
     let scope = admitted_blob_scope("c11.recovery.tier-pending-v3.scope");
     let blobs = world.serving().blobs().unwrap();
-    let read = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(read).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -73,7 +108,8 @@ pub fn produce_pending_world(marker: &Path) {
         (2 * CHUNK) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -82,9 +118,11 @@ pub fn produce_pending_world(marker: &Path) {
     ingest.push(&vec![0x37; CHUNK]).unwrap();
     ingest.push(&vec![0x48; CHUNK]).unwrap();
     let published = match ingest.finish() {
-        Ok(published) | Err(worth_store::physical_runtime::BlobIngestFailure::PublishedIndexPending { published, .. }) => {
-            published
-        }
+        Ok(published)
+        | Err(worth_store::physical_runtime::BlobIngestFailure::PublishedIndexPending {
+            published,
+            ..
+        }) => published,
         Err(failure) => panic!("real blob publication before crash: {failure:?}"),
     };
     let publication = world
@@ -106,7 +144,8 @@ pub fn produce_pending_world(marker: &Path) {
     let request = worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         world.placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(128).unwrap(),
             std::num::NonZeroU64::new(32 << 20).unwrap(),
@@ -120,7 +159,8 @@ pub fn produce_pending_world(marker: &Path) {
 pub fn checkpoint_world(world: &PhysicalResidencyStoreWorld, key: u8) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -139,7 +179,9 @@ pub fn park_at_descriptor_wal(
     marker: &Path,
     root: &Path,
 ) {
-    let first = serving.pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterWalDurability);
+    let first = serving.pause_physical_mutation_at(
+        worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterWalDurability,
+    );
     let cancelled = std::sync::atomic::AtomicBool::new(false);
     std::thread::scope(|workers| {
         workers.spawn(|| {
@@ -274,14 +316,18 @@ pub fn assert_selected_result(serving: &worth_store::physical_runtime::ServingPh
         .scan(
             worth_store::physical_runtime::RecordScanRequest::from_start()
                 .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(8).unwrap())
-                .with_payload_limit(worth_store::physical_runtime::RecordByteLimit::new(512 << 10).unwrap()),
+                .with_payload_limit(
+                    worth_store::physical_runtime::RecordByteLimit::new(512 << 10).unwrap(),
+                ),
         )
         .unwrap();
     let mut scratch = vec![0; 512 << 10];
     let (mut baseline, mut surviving_blob_payload, mut descriptor) = (0, 0, 0);
     let mut selected = std::collections::BTreeSet::new();
     let mut dropped = None;
-    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scratch).unwrap()
+    {
         for index in 0..batch.records().len() {
             let record = batch.records()[index].record_id();
             selected.insert(
@@ -295,24 +341,32 @@ pub fn assert_selected_result(serving: &worth_store::physical_runtime::ServingPh
                 assert!(!matches!(
                     batch.records()[index].content_class(),
                     worth_store_physical_format::SelectedRecordContentClass::Blob(
-                        worth_store_physical_format::BlobRecordKind::DropSetManifestV3 | worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3
+                        worth_store_physical_format::BlobRecordKind::DropSetManifestV3
+                            | worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3
                     )
                 ));
                 continue;
             };
             baseline += usize::from(payload == BASELINE);
             match decode_blob_record(payload) {
-                Ok(worth_store_physical_format::BlobRecordV1::Chunk(_) | worth_store_physical_format::BlobRecordV1::TreeNode(_)) => {
+                Ok(
+                    worth_store_physical_format::BlobRecordV1::Chunk(_)
+                    | worth_store_physical_format::BlobRecordV1::TreeNode(_),
+                ) => {
                     surviving_blob_payload += 1;
                 }
                 Ok(worth_store_physical_format::BlobRecordV1::DropSetManifestV3(manifest)) => {
                     assert!(matches!(
                         manifest.source_basis(),
-                        worth_store_physical_format::BlobReclaimSourceBasisV1::ReleasedGeneration(_)
+                        worth_store_physical_format::BlobReclaimSourceBasisV1::ReleasedGeneration(
+                            _
+                        )
                     ));
                     assert!(dropped.replace(manifest.dropped().to_vec()).is_none());
                 }
-                Ok(worth_store_physical_format::BlobRecordV1::ReclaimDescriptorV3(_)) => descriptor += 1,
+                Ok(worth_store_physical_format::BlobRecordV1::ReclaimDescriptorV3(_)) => {
+                    descriptor += 1
+                }
                 _ => {}
             }
         }

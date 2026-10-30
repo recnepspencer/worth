@@ -1,24 +1,39 @@
-#[allow(unused_imports)] use crate::store_recovery_runtime_context::process_context::*;
-use {std::collections::BTreeMap};
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::store_recovery_runtime_context::process_context::*;
+use std::collections::BTreeMap;
+use std::num::NonZeroU64;
 use {std::path::Path, std::path::PathBuf};
 use {std::process::Command, std::process::Output};
 
-use {worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration, worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity};
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-use {worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveryCleanupTarget};
-use {worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
+use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveryCleanupTarget,
+};
+use {
+    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+use {
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+    worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits,
+};
 
-
-
-use {crate::artifact_snapshot::process_context::ArtifactSnapshot};
-use {crate::assertions::process_context::assert_expected_posture};
+use crate::artifact_snapshot::process_context::ArtifactSnapshot;
+use crate::assertions::process_context::assert_expected_posture;
 
 #[test]
 #[ignore = "launched by the Phase 7 process-boundary parent"]
-fn phase_seven_writer_process() {
+fn writer_process() {
     let marker = required_path(CHILD_ROOT);
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery_with_wal_segment_bytes(
         "c8-phase7-writer",
@@ -69,7 +84,7 @@ fn phase_seven_writer_process() {
 
 #[test]
 #[ignore = "launched by the Phase 7 process-boundary parent"]
-fn phase_seven_cleanup_process() {
+fn cleanup_process() {
     let root = required_path(CHILD_ROOT);
     let mut artifacts = crate::artifact_snapshot::process_context::ArtifactSnapshot::capture(&root);
     let expected = required_text(EXPECTED_WAL);
@@ -115,11 +130,16 @@ fn phase_seven_cleanup_process() {
     };
     let posture = handoff.cleanup_posture();
     let evidence = posture.evidence();
-    let expected_identity = worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity::parse(&expected).unwrap();
+    let expected_identity =
+        worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity::parse(&expected)
+            .unwrap();
     let disposition = evidence
         .dispositions()
         .iter()
-        .find(|disposition| disposition.target() == &worth_store_recovery_runtime::RecoveryCleanupTarget::Wal(expected_identity))
+        .find(|disposition| {
+            disposition.target()
+                == &worth_store_recovery_runtime::RecoveryCleanupTarget::Wal(expected_identity)
+        })
         .expect("checkpoint-covered artifact has one disposition");
     artifacts.assert_reconciled(&root, evidence);
     assert_eq!(evidence.counters().eligible_after_cleanup, 0);

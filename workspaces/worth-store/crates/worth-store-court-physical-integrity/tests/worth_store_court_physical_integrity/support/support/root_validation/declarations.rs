@@ -1,7 +1,22 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-pub(crate) use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-pub(crate) use {worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::FreeSpaceBlockReference, worth_store_physical_format::FreeSpaceKey, worth_store_physical_format::ManifestBlockReference, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalPageSizeClass, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::RootSelectorIdentity, worth_store_physical_format::RootSelectorRole, worth_store_physical_format::SegmentManifestBlockReference, worth_store_physical_format::SegmentPageKey, worth_store_physical_format::ROOT_SELECTOR_BYTES};
-pub(crate) use {worth_store_physical_integrity::validate_current_root_selector, worth_store_physical_integrity::validate_previous_root_selector, worth_store_physical_integrity::CurrentRootSelectorIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalDamageLocalization, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityObservationCounters, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::PhysicalIntegrityRejectionClass, worth_store_physical_integrity::PreviousRootSelectorIntegrityValidation, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+pub(crate) use worth_store_physical_format::store_namespace::{
+    ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+};
+pub(crate) use worth_store_physical_format::{
+    DurablePhysicalRootManifest, DurableRootSelector, FreeSpaceBlockReference, FreeSpaceKey,
+    ManifestBlockReference, PersistedRecordIdentity, PhysicalGeneration,
+    PhysicalGenerationAuthority, PhysicalPageId, PhysicalPageSizeClass,
+    PhysicalRecordFormatDeclaration, PhysicalSegmentId, RootSelectorIdentity, RootSelectorRole,
+    SegmentManifestBlockReference, SegmentPageKey, ROOT_SELECTOR_BYTES,
+};
+pub(crate) use worth_store_physical_integrity::{
+    validate_current_root_selector, validate_previous_root_selector,
+    CurrentRootSelectorIntegrityValidation, PhysicalArtifactScope, PhysicalBlastRadius,
+    PhysicalByteRange, PhysicalDamageCause, PhysicalDamageLocalization, PhysicalFormatField,
+    PhysicalIntegrityObservationCounters, PhysicalIntegrityRejection,
+    PhysicalIntegrityRejectionClass, PreviousRootSelectorIntegrityValidation,
+    UntrustedPhysicalArtifact,
+};
 
 pub(crate) const SELECTOR_OFFSET: u64 = 4_096;
 pub(crate) const MANIFEST_OFFSET: u64 = 16_384;
@@ -41,7 +56,10 @@ impl SelectorKind {
 pub(crate) fn store(byte: u8) -> StableStoreIdentity {
     worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(
         worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT,
-        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes([byte; 16]).unwrap(),
+        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(
+            [byte; 16],
+        )
+        .unwrap(),
     )
     .published_identity()
 }
@@ -80,11 +98,21 @@ pub(crate) fn selector_scope(
     store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
 ) -> PhysicalArtifactScope {
-    let range = worth_store_physical_integrity::PhysicalByteRange::new(SELECTOR_OFFSET, ROOT_SELECTOR_BYTES as u64).unwrap();
+    let range = worth_store_physical_integrity::PhysicalByteRange::new(
+        SELECTOR_OFFSET,
+        ROOT_SELECTOR_BYTES as u64,
+    )
+    .unwrap();
     match kind {
-        crate::support::root_validation::SelectorKind::Current => worth_store_physical_integrity::PhysicalArtifactScope::current_root_selector(store, format, range),
+        crate::support::root_validation::SelectorKind::Current => {
+            worth_store_physical_integrity::PhysicalArtifactScope::current_root_selector(
+                store, format, range,
+            )
+        }
         crate::support::root_validation::SelectorKind::Previous => {
-            worth_store_physical_integrity::PhysicalArtifactScope::previous_root_selector(store, format, range)
+            worth_store_physical_integrity::PhysicalArtifactScope::previous_root_selector(
+                store, format, range,
+            )
         }
     }
 }
@@ -97,7 +125,8 @@ pub(crate) fn validate_selector_rejection(
     PhysicalIntegrityRejection,
     PhysicalIntegrityObservationCounters,
 ) {
-    let artifact = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes);
+    let artifact =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(bytes);
     match kind {
         crate::support::root_validation::SelectorKind::Current => match validate_current_root_selector(artifact, scope) {
             (worth_store_physical_integrity::CurrentRootSelectorIntegrityValidation::Rejected(rejection), counters) => {
@@ -128,12 +157,19 @@ pub(crate) fn manifest_bytes_with_capacity(
     node_capacity: u16,
 ) -> Vec<u8> {
     let key = worth_store_physical_format::FreeSpaceKey::inline(1).unwrap();
-    let free_space_root = worth_store_physical_format::FreeSpaceBlockReference::new(generation, 1, 0, 41, key, key).unwrap();
-    worth_store_physical_format::DurablePhysicalRootManifest::builder(generation, 71, node_capacity, 43)
-        .free_space_root(Some(free_space_root))
-        .admit()
-        .unwrap()
-        .encode(format)
+    let free_space_root =
+        worth_store_physical_format::FreeSpaceBlockReference::new(generation, 1, 0, 41, key, key)
+            .unwrap();
+    worth_store_physical_format::DurablePhysicalRootManifest::builder(
+        generation,
+        71,
+        node_capacity,
+        43,
+    )
+    .free_space_root(Some(free_space_root))
+    .admit()
+    .unwrap()
+    .encode(format)
 }
 
 pub(crate) fn populated_manifest_bytes(
@@ -141,17 +177,35 @@ pub(crate) fn populated_manifest_bytes(
     format: PhysicalRecordFormatDeclaration,
 ) -> Vec<u8> {
     let record = worth_store_physical_format::PersistedRecordIdentity::new([0x41; 16], 1).unwrap();
-    let routing_root = worth_store_physical_format::ManifestBlockReference::new(generation, 1, 0, 51, record, record).unwrap();
+    let routing_root = worth_store_physical_format::ManifestBlockReference::new(
+        generation, 1, 0, 51, record, record,
+    )
+    .unwrap();
     let segment = worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap();
-    let segment_key = worth_store_physical_format::SegmentPageKey::new(segment, worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap());
-    let segment_root =
-        worth_store_physical_format::SegmentManifestBlockReference::new(generation, 1, 0, 52, segment_key, segment_key).unwrap();
-    let segment_cell = worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
-        .segment_cell(segment)
-        .with_segment_generation(worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap());
+    let segment_key = worth_store_physical_format::SegmentPageKey::new(
+        segment,
+        worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
+    );
+    let segment_root = worth_store_physical_format::SegmentManifestBlockReference::new(
+        generation,
+        1,
+        0,
+        52,
+        segment_key,
+        segment_key,
+    )
+    .unwrap();
+    let segment_cell =
+        worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
+            .segment_cell(segment)
+            .with_segment_generation(
+                worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap(),
+            );
     let free_key = worth_store_physical_format::FreeSpaceKey::inline(1).unwrap();
-    let free_space_root =
-        worth_store_physical_format::FreeSpaceBlockReference::new(generation, 1, 0, 41, free_key, free_key).unwrap();
+    let free_space_root = worth_store_physical_format::FreeSpaceBlockReference::new(
+        generation, 1, 0, 41, free_key, free_key,
+    )
+    .unwrap();
     worth_store_physical_format::DurablePhysicalRootManifest::builder(generation, 71, 2, 43)
         .record_count(1)
         .next_block(2)
@@ -175,7 +229,8 @@ pub(crate) fn manifest_scope(
         store,
         format,
         generation,
-        worth_store_physical_integrity::PhysicalByteRange::new(MANIFEST_OFFSET, MANIFEST_BYTES).unwrap(),
+        worth_store_physical_integrity::PhysicalByteRange::new(MANIFEST_OFFSET, MANIFEST_BYTES)
+            .unwrap(),
     )
     .unwrap()
 }
@@ -195,13 +250,15 @@ pub(crate) fn assert_damage(
 ) {
     assert_eq!(
         rejection,
-        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(worth_store_physical_integrity::PhysicalDamageLocalization::new(
-            scope,
-            cause,
-            range,
-            field,
-            blast_radius,
-        ))
+        worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(
+            worth_store_physical_integrity::PhysicalDamageLocalization::new(
+                scope,
+                cause,
+                range,
+                field,
+                blast_radius,
+            )
+        )
     );
 }
 
@@ -217,13 +274,23 @@ pub(crate) fn assert_rejected_counters(
     assert_eq!(counters.intact_frames(), 0);
     assert_eq!(counters.rejected_frames(), 1);
     assert_eq!(
-        counters.rejected_for(worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)),
+        counters.rejected_for(
+            worth_store_physical_integrity::PhysicalIntegrityRejectionClass::Damaged(cause)
+        ),
         1
     );
 }
 
-pub(crate) fn field_range(scope: PhysicalArtifactScope, offset: u64, length: u64) -> PhysicalByteRange {
-    worth_store_physical_integrity::PhysicalByteRange::new(scope.byte_range().offset() + offset, length).unwrap()
+pub(crate) fn field_range(
+    scope: PhysicalArtifactScope,
+    offset: u64,
+    length: u64,
+) -> PhysicalByteRange {
+    worth_store_physical_integrity::PhysicalByteRange::new(
+        scope.byte_range().offset() + offset,
+        length,
+    )
+    .unwrap()
 }
 
 pub(crate) fn independent_crc32c(parts: &[&[u8]]) -> u32 {

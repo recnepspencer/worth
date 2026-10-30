@@ -6,10 +6,11 @@
 //! parses them with its independent reader. Change both copies together: a
 //! field-order change in this encoder then fails here, not silently there.
 
-
-
-pub(crate) use {crate::store_physical_format_support::independent_sha256};
-pub(crate) use {worth_store_physical_format::BlobChunkReuseClaimV1, worth_store_physical_format::BlobChunkReuseClaimV2, worth_store_physical_format::BlobDedupeQuarantineV1, worth_store_physical_format::BlobGenerationPublicationV1, worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use crate::store_physical_format_support::independent_sha256;
+pub(crate) use worth_store_physical_format::{
+    BlobChunkReuseClaimV1, BlobChunkReuseClaimV2, BlobDedupeQuarantineV1,
+    BlobGenerationPublicationV1, PersistedRecordIdentity,
+};
 
 /// Kind 11: store [1;16], session [2;16], ordinal 7, scope [3;32], 64 KiB
 /// chunk and length, digest [4;32], chunk ([5;16], 6), source publication
@@ -28,7 +29,8 @@ pub(crate) const REUSE_CLAIM_V2_FRAME_HEX: &str = "5752433131424c420f010100b4010
 pub(crate) const CHUNK: u32 = 64 << 10;
 
 pub(crate) fn record(epoch: u8, ordinal: u64) -> PersistedRecordIdentity {
-    worth_store_physical_format::PersistedRecordIdentity::new([epoch; 16], ordinal).expect("nonzero record")
+    worth_store_physical_format::PersistedRecordIdentity::new([epoch; 16], ordinal)
+        .expect("nonzero record")
 }
 
 pub(crate) fn claim(

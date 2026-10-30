@@ -1,10 +1,16 @@
+use crate::physical_blob_journeys::blob_resume_multilevel::child::{CHUNK_BYTES, TOTAL_BYTES};
 pub(crate) use {std::collections::BTreeMap, std::num::NonZeroU64, std::path::Path};
 
+pub(crate) use worth_store::physical_runtime::BlobReadLimits;
+pub(crate) use worth_store_physical_format::BlobGenerationPublicationV1;
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::BlobReadLimits};
-pub(crate) use {worth_store_physical_format::BlobGenerationPublicationV1};
 
-pub(crate) use {crate::physical_blob_journeys::blob_crash::SCOPE_KEY, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_with_limits, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    crate::physical_blob_journeys::blob_crash::SCOPE_KEY,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_with_limits,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 /// Recomputes the child specification by absolute byte position, not from the
 /// child's source buffer or a full-object expected allocation.
@@ -23,7 +29,9 @@ pub(crate) fn assert_fresh_stream(
     let serving = serving_from_open(root);
     let scope = admitted_blob_scope(SCOPE_KEY);
     let blobs = serving.blobs().unwrap();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(8192).unwrap());
+    let limits = worth_store::physical_runtime::BlobReadLimits::new(
+        std::num::NonZeroU64::new(8192).unwrap(),
+    );
     let published = blobs
         .resolve_publication(object, 1, &scope, limits)
         .expect("fresh C5 selected publication must resolve");

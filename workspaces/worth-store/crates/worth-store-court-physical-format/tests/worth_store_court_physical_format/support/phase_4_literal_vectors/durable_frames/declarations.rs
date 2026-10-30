@@ -1,6 +1,18 @@
-pub(crate) use {worth_store_physical_format::integrity_declarations::families::free_space::FREE_SPACE_HEADER_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::free_space::FREE_SPACE_MEMBERSHIP_BLOCK_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::root::BOOTSTRAP_CATALOG_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::root::ROOT_ROUTING_BLOCK_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::EXTENT_CHUNK_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::EXTENT_MANIFEST_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::families::SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION, worth_store_physical_format::integrity_declarations::PhysicalIntegrityAlgorithm, worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily, worth_store_physical_format::integrity_declarations::PhysicalIntegrityCoverageBoundary, worth_store_physical_format::integrity_declarations::PhysicalIntegrityFormatDeclaration};
+pub(crate) use worth_store_physical_format::integrity_declarations::{
+    families::free_space::FREE_SPACE_HEADER_INTEGRITY_DECLARATION,
+    families::free_space::FREE_SPACE_MEMBERSHIP_BLOCK_INTEGRITY_DECLARATION,
+    families::root::BOOTSTRAP_CATALOG_INTEGRITY_DECLARATION,
+    families::root::ROOT_ROUTING_BLOCK_INTEGRITY_DECLARATION,
+    families::EXTENT_CHUNK_INTEGRITY_DECLARATION, families::EXTENT_MANIFEST_INTEGRITY_DECLARATION,
+    families::SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION, PhysicalIntegrityAlgorithm,
+    PhysicalIntegrityArtifactFamily, PhysicalIntegrityCoverageBoundary,
+    PhysicalIntegrityFormatDeclaration,
+};
 
-pub(crate) use {crate::phase_4_literal_vectors::oracle::assert_declaration, crate::phase_4_literal_vectors::oracle::assert_literal_vector, crate::phase_4_literal_vectors::oracle::decode_hex, crate::phase_4_literal_vectors::oracle::DeclarationChecksumExpectation, crate::phase_4_literal_vectors::oracle::LiteralChecksum, crate::phase_4_literal_vectors::oracle::LiteralChecksumExpectation, crate::phase_4_literal_vectors::oracle::LiteralVector};
+pub(crate) use crate::phase_4_literal_vectors::oracle::{
+    assert_declaration, assert_literal_vector, decode_hex, DeclarationChecksumExpectation,
+    LiteralChecksum, LiteralChecksumExpectation, LiteralVector,
+};
 
 pub(crate) const BOOTSTRAP: &str = concat!(
     "5752433546524d0001020200004000000101011830000000220000000b000000000000000000000000000000d0131264",
@@ -82,7 +94,9 @@ pub(crate) fn verify() {
         let bytes = decode_hex(case.hex);
         let ranges = [(0, 44), (48, bytes.len())];
         let checksums = [LiteralChecksumExpectation {
-            checksum: crate::phase_4_literal_vectors::oracle::LiteralChecksum::Crc32c(case.checksum),
+            checksum: crate::phase_4_literal_vectors::oracle::LiteralChecksum::Crc32c(
+                case.checksum,
+            ),
             ranges: &ranges,
             field: (44, 48),
         }];

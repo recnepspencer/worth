@@ -1,4 +1,18 @@
-pub(crate) use {crate::c10_extent_rewrite_crash::ARENAS, worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES, worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES, worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::ExtentChunkCoordinate, crate::c10_extent_rewrite_crash::PAGE_BYTES, crate::c10_extent_rewrite_crash::PAYLOAD_BYTES, std::path::Path, std::path::PathBuf, std::io::SeekFrom, worth_store_physical_format::decode_extent_chunk};
+use std::io::{Seek, Write};
+
+pub(crate) use {
+    crate::c10_extent_rewrite_crash::ARENAS, crate::c10_extent_rewrite_crash::PAGE_BYTES,
+    crate::c10_extent_rewrite_crash::PAYLOAD_BYTES, std::io::SeekFrom, std::path::Path,
+    std::path::PathBuf, worth_store_physical_format::decode_extent_chunk,
+    worth_store_physical_format::DurableExtentManifest,
+    worth_store_physical_format::DurableExtentRecordPlacement,
+    worth_store_physical_format::ExtentArenaFrameLayout,
+    worth_store_physical_format::ExtentArenaRange,
+    worth_store_physical_format::ExtentChunkCoordinate,
+    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
+    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
+    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
+};
 
 pub(crate) fn extent_payload(root: &Path, placement: DurableExtentRecordPlacement) -> Vec<u8> {
     let range = placement.arena_range();
@@ -11,7 +25,9 @@ pub(crate) fn extent_payload(root: &Path, placement: DurableExtentRecordPlacemen
     assert_eq!(manifest.record(), placement.record());
     assert_eq!(manifest.generation(), placement.extent_generation());
     assert_eq!(manifest.logical_bytes(), placement.payload_bytes());
-    let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment()).unwrap();
+    let layout =
+        worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment())
+            .unwrap();
     assert!(layout.admits(range, manifest.chunk_count()));
     let overhead = DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES;
     let capacity = PAGE_BYTES - overhead;
@@ -47,10 +63,13 @@ pub(crate) fn flip_arena_byte(root: &Path, range: ExtentArenaRange) {
     let path = arena_path(root, range);
     let arena = std::fs::read(&path).unwrap();
     let start = range.offset() as usize;
-    let (manifest, format) =
-        worth_store_physical_format::DurableExtentManifest::decode(&arena[start..start + EXTENT_ARENA_MANIFEST_FRAME_BYTES])
+    let (manifest, format) = worth_store_physical_format::DurableExtentManifest::decode(
+        &arena[start..start + EXTENT_ARENA_MANIFEST_FRAME_BYTES],
+    )
+    .unwrap();
+    let layout =
+        worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment())
             .unwrap();
-    let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment()).unwrap();
     assert!(layout.admits(range, manifest.chunk_count()));
     let within = layout.chunk_offset(1).unwrap() + 128;
     assert!(within < range.length());
@@ -59,7 +78,8 @@ pub(crate) fn flip_arena_byte(root: &Path, range: ExtentArenaRange) {
         .write(true)
         .open(path)
         .unwrap();
-    file.seek(std::io::SeekFrom::Start(range.offset() + within)).unwrap();
+    file.seek(std::io::SeekFrom::Start(range.offset() + within))
+        .unwrap();
     let mut byte = [0];
     std::io::Read::read_exact(&mut file, &mut byte).unwrap();
     byte[0] ^= 0xff;

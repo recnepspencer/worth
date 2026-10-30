@@ -1,7 +1,12 @@
-use {worth_store_physical_format::encode_inline_page, worth_store_physical_format::InlineRecordAppend, worth_store_physical_format::PhysicalPageSizeClass};
-use {worth_store_physical_integrity::validate_inline_page, worth_store_physical_integrity::InlinePageIntegrityValidation, worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+use worth_store_physical_format::{encode_inline_page, InlineRecordAppend, PhysicalPageSizeClass};
+use worth_store_physical_integrity::{
+    validate_inline_page, InlinePageIntegrityValidation, PhysicalBlastRadius, PhysicalDamageCause,
+    PhysicalFormatField, UntrustedPhysicalArtifact,
+};
 
-use {crate::support::page_validation::assert_damage, crate::support::page_validation::field_range, crate::support::page_validation::format, crate::support::page_validation::page, crate::support::page_validation::page_scope, crate::support::page_validation::record, crate::support::page_validation::reseal, crate::support::page_validation::slot, crate::support::page_validation::store};
+use crate::support::page_validation::{
+    assert_damage, field_range, format, page, page_scope, record, reseal, slot, store,
+};
 
 #[test]
 fn canonical_slot_directory_and_zero_gaps_admit_owner_geometry() {
@@ -11,15 +16,27 @@ fn canonical_slot_directory_and_zero_gaps_admit_owner_geometry() {
         format(page_size),
         identity,
         &[
-            worth_store_physical_format::InlineRecordAppend::new(record(0x31, 1), slot(identity, 1, 3), b"one"),
-            worth_store_physical_format::InlineRecordAppend::new(record(0x32, 2), slot(identity, 2, 4), b"two-two"),
+            worth_store_physical_format::InlineRecordAppend::new(
+                record(0x31, 1),
+                slot(identity, 1, 3),
+                b"one",
+            ),
+            worth_store_physical_format::InlineRecordAppend::new(
+                record(0x32, 2),
+                slot(identity, 2, 4),
+                b"two-two",
+            ),
         ],
     )
     .unwrap();
     let scope = page_scope(store(5), page_size, identity);
-    let (validation, _) =
-        validate_inline_page(worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes), scope);
-    let worth_store_physical_integrity::InlinePageIntegrityValidation::Intact(validated) = validation else {
+    let (validation, _) = validate_inline_page(
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes),
+        scope,
+    );
+    let worth_store_physical_integrity::InlinePageIntegrityValidation::Intact(validated) =
+        validation
+    else {
         panic!("canonical slot directory rejected");
     };
     assert_eq!(validated.slot_count(), 2);
@@ -36,8 +53,16 @@ fn slot_count_record_identity_generation_location_and_gap_damage_are_exact() {
             format(page_size),
             identity,
             &[
-                worth_store_physical_format::InlineRecordAppend::new(record(0x31, 1), slot(identity, 1, 3), b"one"),
-                worth_store_physical_format::InlineRecordAppend::new(record(0x32, 2), slot(identity, 2, 4), b"two-two"),
+                worth_store_physical_format::InlineRecordAppend::new(
+                    record(0x31, 1),
+                    slot(identity, 1, 3),
+                    b"one",
+                ),
+                worth_store_physical_format::InlineRecordAppend::new(
+                    record(0x32, 2),
+                    slot(identity, 2, 4),
+                    b"two-two",
+                ),
             ],
         )
         .unwrap()

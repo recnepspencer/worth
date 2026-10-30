@@ -1,19 +1,33 @@
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::num::NonZeroU64;
 pub(crate) use {std::path::Path, std::path::PathBuf};
 pub(crate) use {std::process::Command, std::process::Output};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration, worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity};
-pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveryCleanupTarget};
-pub(crate) use {worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveryCleanupTarget,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+pub(crate) use {
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+    worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits,
+};
 
-
-
-pub(crate) use {crate::artifact_snapshot::process_context::ArtifactSnapshot};
-pub(crate) use {crate::assertions::process_context::assert_expected_posture};
+pub(crate) use crate::artifact_snapshot::process_context::ArtifactSnapshot;
+pub(crate) use crate::assertions::process_context::assert_expected_posture;
 
 pub(crate) const CHILD_ROOT: &str = "WORTH_C8_PHASE7_CHILD_ROOT";
 pub(crate) const CLEANUP_BYTES: &str = "WORTH_C8_PHASE7_CLEANUP_BYTES";
@@ -23,8 +37,10 @@ pub(crate) const EXPECTED_POSTURE: &str = "WORTH_C8_PHASE7_EXPECTED_POSTURE";
 pub(crate) const EXPECTED_DEFERRED: &str = "WORTH_C8_PHASE7_EXPECTED_DEFERRED";
 pub(crate) const CANCEL_AFTER: &str = "WORTH_C8_PHASE7_CANCEL_AFTER";
 pub(crate) const WRITER_MODE: &str = "WORTH_C8_PHASE7_WRITER_MODE";
-pub(crate) const WRITER_TEST: &str = "process::phase_seven_writer_process";
-pub(crate) const CLEANER_TEST: &str = "process::phase_seven_cleanup_process";
+pub(crate) const WRITER_TEST: &str =
+    "process::recovery_runtime::phase_seven_cleanup::process_context::writer_process";
+pub(crate) const CLEANER_TEST: &str =
+    "process::recovery_runtime::phase_seven_cleanup::process_context::cleanup_process";
 
 pub(crate) struct ProcessWorld {
     pub(crate) parent: tempfile::TempDir,
@@ -136,7 +152,8 @@ pub(crate) fn restore_preserved_wal(root: &Path, preserved: BTreeMap<std::ffi::O
 pub(crate) fn publish_checkpoint(world: &PhysicalResidencyStoreWorld) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x74; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -149,7 +166,10 @@ pub(crate) fn publish_checkpoint(world: &PhysicalResidencyStoreWorld) {
     ));
 }
 
-pub(crate) fn cleanup_limits(cleanup_bytes: u64, cleanup_candidates: u64) -> PhysicalRecoveryLimits {
+pub(crate) fn cleanup_limits(
+    cleanup_bytes: u64,
+    cleanup_candidates: u64,
+) -> PhysicalRecoveryLimits {
     let mut declaration = limit_declaration(4, 16, 4 * 1024 * 1024);
     declaration.manifest_entries = 4_096;
     declaration.wal_bytes = 4 * 1024 * 1024;
@@ -174,12 +194,17 @@ pub(crate) fn wal_files(root: &Path) -> Vec<PathBuf> {
         .filter(|path| {
             path.file_name()
                 .and_then(|name| name.to_str())
-                .and_then(worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity::parse)
+                .and_then(
+                    worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity::parse,
+                )
                 .is_some()
         })
         .collect::<Vec<_>>();
     files.sort_by_key(|path| {
-        worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity::parse(path.file_name().unwrap().to_str().unwrap()).unwrap()
+        worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity::parse(
+            path.file_name().unwrap().to_str().unwrap(),
+        )
+        .unwrap()
     });
     files
 }
@@ -200,7 +225,9 @@ pub(crate) fn run_child<const N: usize>(
 }
 
 pub(crate) fn required_path(name: &str) -> PathBuf {
-    std::env::var_os(name).map(std::path::PathBuf::from).unwrap()
+    std::env::var_os(name)
+        .map(std::path::PathBuf::from)
+        .unwrap()
 }
 
 pub(crate) fn required_text(name: &str) -> String {

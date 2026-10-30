@@ -1,7 +1,23 @@
-pub(crate) use {worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobGenerationPublicationV1, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::BlobTreeNodeKind, worth_store_physical_format::BlobTreeNodeV1, worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::BlobGenerationPublicationV1,
+    worth_store_physical_format::BlobRecordV1, worth_store_physical_format::BlobTreeNodeKind,
+    worth_store_physical_format::BlobTreeNodeV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-pub(crate) use {};
+use crate::physical_blob_journeys::blob_resume_multilevel::child::{
+    CHUNKS, CHUNK_BYTES, TOTAL_BYTES,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ChunkClaim {
@@ -42,13 +58,18 @@ pub(crate) fn selected(serving: &ServingPhysicalRuntime, session: [u8; 16]) -> S
         .scan(
             worth_store::physical_runtime::RecordScanRequest::from_start()
                 .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap())
-                .with_payload_limit(worth_store::physical_runtime::RecordByteLimit::new(236).unwrap()),
+                .with_payload_limit(
+                    worth_store::physical_runtime::RecordByteLimit::new(236).unwrap(),
+                ),
         )
         .unwrap();
     let mut scan_scratch = [0_u8; 4096];
-    let mut frame = Vec::with_capacity(worth_store_physical_format::BlobTreeNodeV1::maximum_encoded_bytes());
+    let mut frame =
+        Vec::with_capacity(worth_store_physical_format::BlobTreeNodeV1::maximum_encoded_bytes());
     let mut visited = 0_usize;
-    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scan_scratch).unwrap() {
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scan_scratch).unwrap()
+    {
         for row in batch.records() {
             visited += 1;
             assert!(
@@ -58,7 +79,8 @@ pub(crate) fn selected(serving: &ServingPhysicalRuntime, session: [u8; 16]) -> S
             let record = row.record_id();
             let length = row.declared_payload_bytes();
             assert!(
-                length as usize <= worth_store_physical_format::BlobTreeNodeV1::maximum_encoded_bytes(),
+                length as usize
+                    <= worth_store_physical_format::BlobTreeNodeV1::maximum_encoded_bytes(),
                 "selected frame exceeds bounded blob-node read"
             );
             frame.clear();
@@ -68,7 +90,10 @@ pub(crate) fn selected(serving: &ServingPhysicalRuntime, session: [u8; 16]) -> S
                 .open(
                     record,
                     worth_store::physical_runtime::RecordReadLimits::new(
-                        worth_store::physical_runtime::RecordByteLimit::new(u32::try_from(length).unwrap()).unwrap(),
+                        worth_store::physical_runtime::RecordByteLimit::new(
+                            u32::try_from(length).unwrap(),
+                        )
+                        .unwrap(),
                     ),
                 )
                 .unwrap();
@@ -82,10 +107,14 @@ pub(crate) fn selected(serving: &ServingPhysicalRuntime, session: [u8; 16]) -> S
                 continue; // Recovery bootstrap may have one ordinary C5 record.
             }
             match decode_blob_record(&frame).unwrap() {
-                worth_store_physical_format::BlobRecordV1::SessionDeclared(value) if value.session() == session => {
+                worth_store_physical_format::BlobRecordV1::SessionDeclared(value)
+                    if value.session() == session =>
+                {
                     inventory.declaration_count += 1;
                 }
-                worth_store_physical_format::BlobRecordV1::Chunk(value) if value.occurrence().session() == session => {
+                worth_store_physical_format::BlobRecordV1::Chunk(value)
+                    if value.occurrence().session() == session =>
+                {
                     assert!(
                         inventory.chunks.len() < CHUNKS,
                         "extra selected chunk claim"
@@ -96,14 +125,18 @@ pub(crate) fn selected(serving: &ServingPhysicalRuntime, session: [u8; 16]) -> S
                         digest: value.stored_digest(),
                     });
                 }
-                worth_store_physical_format::BlobRecordV1::TreeNode(value) if value.occurrence().session() == session => {
+                worth_store_physical_format::BlobRecordV1::TreeNode(value)
+                    if value.occurrence().session() == session =>
+                {
                     assert!(inventory.nodes.len() < 3, "extra selected tree node");
                     inventory.nodes.push(NodeClaim {
                         record,
                         node: value,
                     });
                 }
-                worth_store_physical_format::BlobRecordV1::SessionFrontier(value) if value.session() == session => {
+                worth_store_physical_format::BlobRecordV1::SessionFrontier(value)
+                    if value.session() == session =>
+                {
                     assert!(inventory.frontier_ordinals.len() < 64, "extra frontier");
                     inventory.frontier_ordinals.push(value.next_chunk_ordinal());
                     assert_eq!(
@@ -111,7 +144,9 @@ pub(crate) fn selected(serving: &ServingPhysicalRuntime, session: [u8; 16]) -> S
                         value.next_chunk_ordinal() * CHUNK_BYTES as u64
                     );
                 }
-                worth_store_physical_format::BlobRecordV1::GenerationPublished(value) if value.session() == session => {
+                worth_store_physical_format::BlobRecordV1::GenerationPublished(value)
+                    if value.session() == session =>
+                {
                     assert!(inventory.publications.is_empty(), "duplicate generation");
                     inventory.publications.push(value);
                 }
@@ -148,15 +183,37 @@ pub(crate) fn assert_selected_tree(inventory: &SelectedInventory, session: [u8; 
         panic!("expected two selected leaves and one selected interior root")
     };
     for (node, index, kind, entries, covered) in [
-        (full, 0, worth_store_physical_format::BlobTreeNodeKind::Leaf, 4096, 4096 * CHUNK_BYTES),
-        (partial, 1, worth_store_physical_format::BlobTreeNodeKind::Leaf, 1, CHUNK_BYTES),
-        (root, 0, worth_store_physical_format::BlobTreeNodeKind::Interior, 2, TOTAL_BYTES),
+        (
+            full,
+            0,
+            worth_store_physical_format::BlobTreeNodeKind::Leaf,
+            4096,
+            4096 * CHUNK_BYTES,
+        ),
+        (
+            partial,
+            1,
+            worth_store_physical_format::BlobTreeNodeKind::Leaf,
+            1,
+            CHUNK_BYTES,
+        ),
+        (
+            root,
+            0,
+            worth_store_physical_format::BlobTreeNodeKind::Interior,
+            2,
+            TOTAL_BYTES,
+        ),
     ] {
         assert_eq!(node.node.occurrence().session(), session);
         assert_eq!(node.node.occurrence().kind(), kind);
         assert_eq!(
             node.node.occurrence().level(),
-            if kind == worth_store_physical_format::BlobTreeNodeKind::Leaf { 0 } else { 1 }
+            if kind == worth_store_physical_format::BlobTreeNodeKind::Leaf {
+                0
+            } else {
+                1
+            }
         );
         assert_eq!(node.node.occurrence().index(), index);
         assert_eq!(node.node.entries().len(), entries);

@@ -1,23 +1,42 @@
-
-
-
-pub(crate) use {crate::c10_phase_five_retirement_crash::c10_crash_evidence::ordinary_limits, crate::c10_phase_five_retirement_crash::c10_crash_evidence::prepare_rewrite, crate::c10_phase_five_retirement_crash::c10_crash_evidence::segment_snapshot, crate::c10_phase_five_retirement_crash::c10_crash_evidence::wal_contains_rewrite};
+pub(crate) use std::thread;
+pub(crate) use {
+    crate::c10_phase_five_retirement_crash::c10_crash_evidence::ordinary_limits,
+    crate::c10_phase_five_retirement_crash::c10_crash_evidence::prepare_rewrite,
+    crate::c10_phase_five_retirement_crash::c10_crash_evidence::segment_snapshot,
+    crate::c10_phase_five_retirement_crash::c10_crash_evidence::wal_contains_rewrite,
+};
 pub(crate) use {std::path::Path, std::path::PathBuf};
 pub(crate) use {std::process::Command, std::process::Stdio};
-pub(crate) use {std::thread};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-pub(crate) use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalMutationRequest};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-pub(crate) use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
+pub(crate) use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 pub(crate) const CHILD_MARKER: &str = "C10_PHASE5_RETIREMENT_MARKER";
 pub(crate) const CHILD_SEAM: &str = "C10_PHASE5_RETIREMENT_SEAM";
 
-pub(crate) fn park_retirement_until_killed(world: &PhysicalResidencyStoreWorld, marker: &Path, seam: u8) {
+pub(crate) fn park_retirement_until_killed(
+    world: &PhysicalResidencyStoreWorld,
+    marker: &Path,
+    seam: u8,
+) {
     let arrived = world.serving().certification_arm_retirement_kill(seam);
     let marker = marker.to_path_buf();
     std::thread::spawn(move || {
@@ -61,7 +80,9 @@ pub(crate) fn park_behind_durable_append(world: &PhysicalResidencyStoreWorld) {
                 worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause::ScopeConflict
             );
         }
-        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) => panic!("rewrite passed a pending append"),
+        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) => {
+            panic!("rewrite passed a pending append")
+        }
         worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(fate) => {
             panic!("rewrite reached an effect: {:?}", fate.stage())
         }
@@ -93,7 +114,9 @@ pub(crate) fn prepare_append(
 ) -> worth_store::physical_runtime::PreparedPhysicalMutation {
     let submission = world.serving().record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     match submission
         .prepare_durable_append(
@@ -101,14 +124,15 @@ pub(crate) fn prepare_append(
             world.placement(),
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("append preparation must succeed"),
     }
 }
@@ -127,7 +151,7 @@ pub(crate) fn kill_child(seam: &str) -> (tempfile::TempDir, PathBuf) {
     let mut child = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "c10_retirement_child_parks_at_seam",
+            "process::recovery_runtime::c10_phase_five_retirement_crash::retirement_child_parks_at_seam",
             "--ignored",
             "--nocapture",
         ])
@@ -159,33 +183,42 @@ pub(crate) fn kill_child(seam: &str) -> (tempfile::TempDir, PathBuf) {
     }
     child.kill().unwrap();
     let _ = child.wait();
-    let root = std::path::PathBuf::from(std::fs::read_to_string(parent.path().join("root-path.txt")).unwrap());
+    let root = std::path::PathBuf::from(
+        std::fs::read_to_string(parent.path().join("root-path.txt")).unwrap(),
+    );
     (parent, root)
 }
 
 pub(crate) fn publish_rewrite(world: &PhysicalResidencyStoreWorld) {
     let submission = world.serving().record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x72; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x72; 32]),
+        )
         .unwrap();
     let prepared = match submission
         .rewrite_selected_inline_segment(
             world.placement(),
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
+        worth_proof::TransitionOutcome::Success(_) => {
+            panic!("rewrite preparation must return a mutation")
         }
-        worth_proof::TransitionOutcome::Success(_) => panic!("rewrite preparation must return a mutation"),
         worth_proof::TransitionOutcome::Denied(_) => panic!("rewrite preparation was denied"),
         worth_proof::TransitionOutcome::Deferred(_) => panic!("rewrite preparation was deferred"),
         worth_proof::TransitionOutcome::Stale(_) => panic!("rewrite preparation was stale"),
-        worth_proof::TransitionOutcome::RebindRequired(_) => panic!("rewrite preparation required rebind"),
+        worth_proof::TransitionOutcome::RebindRequired(_) => {
+            panic!("rewrite preparation required rebind")
+        }
         worth_proof::TransitionOutcome::Failed(_) => panic!("rewrite preparation failed"),
     };
     match prepared.execute() {
@@ -200,8 +233,9 @@ pub(crate) fn publish_rewrite(world: &PhysicalResidencyStoreWorld) {
 }
 
 pub(crate) fn recovered_retirements(root: &Path) -> Vec<(u64, u64, u64, u64)> {
-    let outcome =
-        worth_store_recovery_runtime::WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
+    let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
+        recovery_request_with_limits(root, ordinary_limits()),
+    );
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("killed retirement must recover: {outcome:?}")
     };

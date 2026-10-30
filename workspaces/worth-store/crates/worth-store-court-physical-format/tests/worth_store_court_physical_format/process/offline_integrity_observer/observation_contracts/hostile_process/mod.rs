@@ -1,7 +1,6 @@
-#[allow(unused_imports)] use crate::hostile_process::*;
-use {crate::support::fixtures::clean_store};
-use {serde_json::json, serde_json::Value};
-use {std::collections::BTreeMap, std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Output};
+#[allow(unused_imports)]
+use crate::hostile_process::*;
+use crate::support::checksum::refresh_crc32c;
 
 #[test]
 fn binary_hostile_walk_keeps_alias_cost_bounds_and_output_separation() {

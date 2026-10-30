@@ -1,11 +1,49 @@
 //! A non-global-tip A head survives native WAL cutover and authorizes A's successor.
 
-#[allow(unused_imports)] use crate::production_entry::release_reopen::per_object_pruned_successor::*;
-use {worth_proof::AdmittedBlobReleaseProof, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, std::num::NonZeroU16, std::num::NonZeroU64, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::ServingPhysicalRuntime, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, crate::process::recovery_runtime::production_entry::release_reopen::released_world_with_wal_segment_bytes, worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle, worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates, worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates_from_bytes, worth_store_testkit_recovery_runtime::selected_tag7_pruned_wal, worth_store_testkit_recovery_runtime::production_entry::release_reopen::two_generations};
+#[allow(unused_imports)]
+use crate::production_entry::release_reopen::per_object_pruned_successor::*;
+use {
+    crate::production_entry::release_reopen::per_object_pruned_successor::released_world_with_wal_segment_bytes,
+    std::num::NonZeroU16, std::num::NonZeroU64, worth_proof::AdmittedBlobReleaseProof,
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates_from_bytes,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen::two_generations,
+    worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle,
+    worth_store_testkit_recovery_runtime::selected_tag7_pruned_wal,
+};
 use {std::fmt::Write, std::fs, std::path::Path, std::process::Command};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::release_checkpoint_batch_records_digest_v1, worth_store_physical_format::BlobReclaimSourceBasisV1, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::ReleaseCustodyHeadKeyV1, worth_store_physical_format::ReleasedGenerationReclaimBasisV1};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+};
+use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::release_checkpoint_batch_records_digest_v1,
+    worth_store_physical_format::BlobReclaimSourceBasisV1,
+    worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::ReleaseCustodyHeadKeyV1,
+    worth_store_physical_format::ReleasedGenerationReclaimBasisV1,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
 fn non_global_a_head_survives_pruned_wal_and_fresh_successor() {
@@ -17,7 +55,11 @@ fn non_global_a_head_survives_pruned_wal_and_fresh_successor() {
     );
     let (a_batches, a_accumulator) = selected_release_certificates(&world);
     assert_eq!(a_batches.len(), 1);
-    let first_heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), a_accumulator);
+    let first_heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            a_accumulator,
+        );
     let [a_head] = first_heads.as_slice() else {
         panic!("first checkpoint must select exactly A's keyed head");
     };
@@ -33,7 +75,11 @@ fn non_global_a_head_survives_pruned_wal_and_fresh_successor() {
         b_accumulator.base().tip().descriptor_record(),
         selected_release_certificates(&world).0[0].descriptor_record()
     );
-    let b_heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), b_accumulator);
+    let b_heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            b_accumulator,
+        );
     assert_eq!(b_heads.len(), 2);
     assert_eq!(
         b_heads.iter().find(|head| head.key() == a_key),
@@ -43,7 +89,9 @@ fn non_global_a_head_survives_pruned_wal_and_fresh_successor() {
     let c2 = std::fs::read(world.root().join("families/checkpoint.current")).unwrap();
     assert_ne!(c2, c1, "B must publish a successor checkpoint");
 
-    worth_store_testkit_recovery_runtime::selected_tag7_pruned_wal::rotate_completed_wal(world.serving());
+    worth_store_testkit_recovery_runtime::selected_tag7_pruned_wal::rotate_completed_wal(
+        world.serving(),
+    );
     checkpoint(world.serving(), [0xa3; 32]);
     let c3 = std::fs::read(world.root().join("families/checkpoint.current")).unwrap();
     assert_ne!(
@@ -54,7 +102,10 @@ fn non_global_a_head_survives_pruned_wal_and_fresh_successor() {
     assert!(idle_batches.is_empty());
     assert_eq!(idle_accumulator.base().tip(), b_accumulator.base().tip());
     assert_eq!(
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), idle_accumulator),
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            idle_accumulator
+        ),
         b_heads,
     );
     assert!(
@@ -127,7 +178,11 @@ fn non_global_a_head_survives_pruned_wal_and_fresh_successor() {
         successor_accumulator.prior_head_roster_digest(),
         idle_accumulator.head_roster_digest(),
     );
-    let final_heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(&root, successor_accumulator);
+    let final_heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            &root,
+            successor_accumulator,
+        );
     assert_eq!(final_heads.len(), 2);
     assert_eq!(
         final_heads.iter().find(|head| head.key() == b_key),
@@ -160,7 +215,10 @@ fn non_global_a_head_survives_pruned_wal_and_fresh_successor() {
         successor_accumulator.base().tip()
     );
     assert_eq!(
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(&root, carry_accumulator),
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            &root,
+            carry_accumulator
+        ),
         final_heads
     );
     recover_serving(&root, wal_bytes).close();
@@ -174,13 +232,18 @@ fn fresh_child_continues_a() {
     let root = std::path::Path::new(&root);
     let object = decode_object(&std::env::var(OBJECT_ENV).unwrap());
     let generation = std::env::var(GENERATION_ENV).unwrap().parse().unwrap();
-    let a_key = worth_store_physical_format::ReleaseCustodyHeadKeyV1::new(object, generation).unwrap();
+    let a_key =
+        worth_store_physical_format::ReleaseCustodyHeadKeyV1::new(object, generation).unwrap();
     let wal_bytes = std::num::NonZeroU64::new(WAL_SEGMENT_BYTES).unwrap();
     let serving = recover_serving(root, wal_bytes);
     let (_, accumulator) = selected_release_certificates_from_bytes(
         &std::fs::read(root.join("families/checkpoint.current")).unwrap(),
     );
-    let heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(root, accumulator);
+    let heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            root,
+            accumulator,
+        );
     let a_head = heads.iter().find(|head| head.key() == a_key).unwrap();
     assert!(!a_head.terminal());
     let source = selected_source_for_key(&serving, a_key);
@@ -196,14 +259,19 @@ fn fresh_child_continues_a() {
     .unwrap();
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap())
-        .admit(worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-            worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
-        ))
+        .admit(
+            worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+                worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+                    .admit()
+                    .unwrap(),
+            ),
+        )
         .unwrap();
     let request = worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         placement,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(128).unwrap(),
             std::num::NonZeroU64::new(32 << 20).unwrap(),
@@ -218,7 +286,10 @@ fn fresh_child_continues_a() {
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(receipt.dropped_records().len(), 1);
     serving.close();
 }

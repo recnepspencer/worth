@@ -1,11 +1,10 @@
 pub(crate) use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::EXTENT_PAYLOAD_BYTES, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction, std::path::Path, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::arena_file, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::extent_payload, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::prepare_extent_rewrite, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_record, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
 pub(crate) use {std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
 
-
 pub(crate) use {crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::crash::post_reopen::observe_release_fixture, crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::crash::post_reopen::reseal_observer_fixture_frame};
 
 pub(crate) const CHILD: &str =
-    "durability_admission::managed_mutation::extent_record_rewrite::crash::extent_release_child";
+    "process::store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::crash::extent_release_child";
 pub(crate) const MARKER: &str = "C11_EXTENT_RELEASE_MARKER";
 pub(crate) const SEAM: &str = "C11_EXTENT_RELEASE_SEAM";
 pub(crate) const RESUME: &str = "C11_EXTENT_RELEASE_RESUME";
@@ -39,7 +38,7 @@ pub(crate) fn finish_reopened_release(root: &Path) {
         .filter(|record| record.action == worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction::Completion)
         .count();
     assert_eq!(completed_count, 1);
-    use {sha2::Digest};
+    use sha2::Digest;
     let root_bytes = std::fs::read(root.join(format!(
         "families/records/roots/root-{:016x}.manifest",
         roots[1]

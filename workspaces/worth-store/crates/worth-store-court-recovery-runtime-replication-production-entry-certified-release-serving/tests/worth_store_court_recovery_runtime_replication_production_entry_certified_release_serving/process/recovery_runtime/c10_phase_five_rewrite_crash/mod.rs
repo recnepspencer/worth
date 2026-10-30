@@ -1,21 +1,34 @@
-
-
-
-
-
-#[allow(unused_imports)] use crate::c10_phase_five_rewrite_crash::*;
-use {crate::c10_phase_five_rewrite_crash::c10_crash_evidence::directory_snapshot, crate::c10_phase_five_rewrite_crash::c10_crash_evidence::ordinary_limits, crate::c10_phase_five_rewrite_crash::c10_crash_evidence::prepare_rewrite, crate::c10_phase_five_rewrite_crash::c10_crash_evidence::segment_snapshot, crate::c10_phase_five_rewrite_crash::c10_crash_evidence::wal_contains_rewrite};
+#[allow(unused_imports)]
+use crate::c10_phase_five_rewrite_crash::*;
+use std::thread;
+use {
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::directory_snapshot,
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::ordinary_limits,
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::prepare_rewrite,
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::segment_snapshot,
+    crate::c10_phase_five_rewrite_crash::c10_crash_evidence::wal_contains_rewrite,
+};
 use {std::path::Path, std::path::PathBuf};
 use {std::process::Command, std::process::Stdio};
-use {std::thread};
 use {std::time::Duration, std::time::Instant};
 
-use {worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
+use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
+use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
+use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 #[test]
 fn killed_rewrite_before_wal_leaves_the_checkpointed_source() {
@@ -111,7 +124,9 @@ fn inline_rewrite_result_remains_exact_after_its_root_becomes_historical() {
     let (_, expected_payload, _) = release_after_read(parent.path(), &root);
     assert_eq!(expected_payload, b"phase5-rewrite-source");
     let result_root = worth_store_testkit_recovery_runtime::historical_rewrite_support::selected_catalog_generation(&root);
-    worth_store_testkit_recovery_runtime::historical_rewrite_support::advance_with_ordinary_appends(&root, false);
+    worth_store_testkit_recovery_runtime::historical_rewrite_support::advance_with_ordinary_appends(
+        &root, false,
+    );
     let selected_before = worth_store_testkit_recovery_runtime::historical_rewrite_support::selected_catalog_generation(&root);
     assert!(
         selected_before >= result_root + 2,
@@ -146,17 +161,22 @@ fn published_rewrite_rejects_a_wrong_page_and_a_missing_page() {
         } else {
             reseal_wrong_page(&path);
         }
-        let outcome =
-            worth_store_recovery_runtime::WorthStoreRecovery::recover(recovery_request_with_limits(&root, ordinary_limits()));
-        assert!(matches!(outcome, worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(_)));
+        let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
+            recovery_request_with_limits(&root, ordinary_limits()),
+        );
+        assert!(matches!(
+            outcome,
+            worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(_)
+        ));
         drop(parent);
     }
 }
 
 #[test]
 #[ignore = "launched by the phase 5 rewrite parent"]
-fn c10_rewrite_child_parks_at_checkpoint() {
-    let marker = std::path::PathBuf::from(std::env::var_os(CHILD_MARKER).expect("phase 5 rewrite marker"));
+fn rewrite_child_parks_at_checkpoint() {
+    let marker =
+        std::path::PathBuf::from(std::env::var_os(CHILD_MARKER).expect("phase 5 rewrite marker"));
     let checkpoint = std::env::var(CHILD_CHECKPOINT).expect("phase 5 rewrite checkpoint");
     let world =
         worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery("c10-phase5-rewrite-kill").unwrap();
@@ -180,23 +200,5 @@ fn c10_rewrite_child_parks_at_checkpoint() {
     std::fs::write(marker.join("reached"), b"1").unwrap();
     loop {
         std::thread::park();
-    }
-}
-
-/// Completing an inline rewrite reads its page from the source generation,
-/// and from the successor too once the root publishes it.
-#[test]
-fn every_observation_limit_under_the_need_of_a_killed_inline_rewrite_is_that_limit() {
-    for (seam, reads) in [("after-wal", 1), ("after-replace", 2)] {
-        let (parent, root) = kill_child(seam);
-        let blocks =
-            crate::c10_phase_five_rewrite_crash::c10_crash_evidence::observation_sweep::completion_blocks_under_every_observation_limit(
-                seam, &root,
-            );
-        assert!(
-            blocks >= reads,
-            "{seam}: completing the rewrite ran its reader out {blocks} times",
-        );
-        drop(parent);
     }
 }

@@ -1,13 +1,38 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::durability_admission::closeout_handoff::*;
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::TemporalDuration};
-use {worth_store::physical_runtime::lower_physical_durability_performance_receipt, worth_store::physical_runtime::PageBasisPerformanceExpectation, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalDurabilityCloseoutOutcome, worth_store::physical_runtime::PhysicalDurabilityPerformanceContract, worth_store::physical_runtime::PhysicalDurabilityPerformanceEvidenceDenial, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecoveryAttemptBindingFact, worth_store::physical_runtime::PhysicalRecoveryOperationFate, worth_store::physical_runtime::RecordAppendBatch};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::durability_admission::closeout_handoff::*;
+use worth_proof::TransitionOutcome;
+use worth_signal::facade::TemporalDuration;
+use {
+    worth_store::physical_runtime::lower_physical_durability_performance_receipt,
+    worth_store::physical_runtime::PageBasisPerformanceExpectation,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalDurabilityCloseoutOutcome,
+    worth_store::physical_runtime::PhysicalDurabilityPerformanceContract,
+    worth_store::physical_runtime::PhysicalDurabilityPerformanceEvidenceDenial,
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecoveryAttemptBindingFact,
+    worth_store::physical_runtime::PhysicalRecoveryOperationFate,
+    worth_store::physical_runtime::RecordAppendBatch,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::durability};
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
+use worth_store_testkit_store::physical_record_journeys::durability;
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
-fn clean_close_constructs_the_only_c8_handoff_from_exact_terminal_facts() {
+fn clean_close_constructs_the_only_recovery_handoff_from_exact_terminal_facts() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let serving = initialized(&root);
@@ -62,7 +87,10 @@ fn published_and_reopened_closeout_retains_current_and_immediate_previous_roots(
         placement,
         worth_store::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x71; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"closeout-root-lineage".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"closeout-root-lineage".as_slice()
+        ])
+        .unwrap(),
     );
     let published_generation = published.current_root().generation();
     assert_eq!(published_generation, initialized_generation + 1);
@@ -81,8 +109,9 @@ fn published_and_reopened_closeout_retains_current_and_immediate_previous_roots(
     let (format, _, access) = configuration();
     let reopened_media = media(&root);
     let policy = durability(&reopened_media);
-    let reopened =
-        success(reopened_media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, policy)));
+    let reopened = success(reopened_media.open_record_store(
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, policy),
+    ));
     let reopened_close = reopened.close();
     let reopened_handoff = reopened_close
         .durability_closeout()
@@ -111,22 +140,29 @@ fn ordinary_genesis_reopen_checkpoints_under_its_own_custody() {
         placement,
         worth_store::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x7a; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"custody-fence".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"custody-fence".as_slice()
+        ])
+        .unwrap(),
     );
     serving.close();
 
     let (format, _, access) = configuration();
     let reopened_media = media(&root);
     let policy = durability(&reopened_media);
-    let reopened =
-        success(reopened_media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, policy)));
+    let reopened = success(reopened_media.open_record_store(
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, policy),
+    ));
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x7b; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::at(worth_signal::facade::TemporalDuration::temporal_duration(10_000).unwrap()),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::at(
+            worth_signal::facade::TemporalDuration::temporal_duration(10_000).unwrap(),
+        ),
     );
     // No checkpoint was ever selected and no drop was released, so the
     // retained WAL from genesis is the whole ledger: the clean case.
-    let worth_proof::TransitionOutcome::Success(handle) = reopened.checkpoints().start(request).into_raw()
+    let worth_proof::TransitionOutcome::Success(handle) =
+        reopened.checkpoints().start(request).into_raw()
     else {
         panic!("a clean genesis reopen owns its checkpoint custody")
     };
@@ -144,12 +180,16 @@ fn completed_but_unobserved_identity_survives_into_operation_fates() {
     let (_, placement, _) = configuration();
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x72; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x72; 32]),
+        )
         .unwrap();
     let prepared = match submission
         .prepare_durable_append(
-            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"completed-unobserved-closeout".as_slice()])
-                .unwrap(),
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                b"completed-unobserved-closeout".as_slice(),
+            ])
+            .unwrap(),
             placement,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
@@ -160,9 +200,9 @@ fn completed_but_unobserved_identity_survives_into_operation_fates() {
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("closeout mutation preparation must succeed"),
     };
     let identity = prepared.mutation_identity();
@@ -214,7 +254,9 @@ fn completed_but_unobserved_identity_survives_into_operation_fates() {
         fact.attempt(),
         worth_store::physical_runtime::PhysicalRecoveryAttemptBindingFact::WalBound(_)
     ));
-    let worth_store::physical_runtime::PhysicalRecoveryOperationFate::Completed(completed) = fact.fate() else {
+    let worth_store::physical_runtime::PhysicalRecoveryOperationFate::Completed(completed) =
+        fact.fate()
+    else {
         panic!("completed closeout operation must retain completed fate")
     };
     assert_eq!(completed.completed_breadth().current_root_generation(), 2);
@@ -228,11 +270,16 @@ fn unstarted_preparation_remains_an_exact_bounded_unresolved_handoff_fact() {
     let (_, placement, _) = configuration();
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x73; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x73; 32]),
+        )
         .unwrap();
     let prepared = match submission
         .prepare_durable_append(
-            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"unresolved-closeout".as_slice()]).unwrap(),
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                b"unresolved-closeout".as_slice(),
+            ])
+            .unwrap(),
             placement,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
@@ -243,9 +290,9 @@ fn unstarted_preparation_remains_an_exact_bounded_unresolved_handoff_fact() {
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("closeout mutation preparation must succeed"),
     };
     let expected_identity = prepared.mutation_identity();

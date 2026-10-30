@@ -1,7 +1,5 @@
-#[allow(unused_imports)] use crate::checkpoint_validation::scrub_streaming::*;
-use {crate::literal_vectors::checkpoint_validation::BINDING, crate::literal_vectors::checkpoint_validation::BINDING_COMPACTION, crate::literal_vectors::checkpoint_validation::DIRTY_BASIS, crate::literal_vectors::checkpoint_validation::FOOTER, crate::literal_vectors::checkpoint_validation::HEADER};
-use {std::num::NonZeroU64, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_format::PhysicalCheckpointIdentity, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store_physical_integrity::UntrustedPhysicalArtifact, crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::compaction_scope, crate::checkpoint_validation::support::dirty_scope, crate::checkpoint_validation::support::field_range, crate::checkpoint_validation::support::footer_scope, crate::checkpoint_validation::support::header_scope_staged, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::reseal_record, crate::checkpoint_validation::support::store};
-use {worth_store_physical_integrity::*};
+#[allow(unused_imports)]
+use crate::checkpoint_validation::scrub_streaming::*;
 
 #[test]
 fn bounded_windows_validate_literal_selective_aggregates_without_retaining_bytes() {
@@ -14,7 +12,9 @@ fn bounded_windows_validate_literal_selective_aggregates_without_retaining_bytes
     assert!(
         matches!(
             inspect(&mut validator, footer_scope(identity()), &FOOTER),
-            PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_))
+            PhysicalIntegrityObservationOutcome::Rejected(
+                worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+            )
         ),
         "footer cannot replay consumed context"
     );
@@ -48,17 +48,23 @@ fn missing_or_failed_middle_window_cannot_borrow_prior_aggregate() {
             compaction_scope(identity()),
             &BINDING_COMPACTION
         ),
-        PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_))
+        PhysicalIntegrityObservationOutcome::Rejected(
+            worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+        )
     ));
     assert!(matches!(
         inspect(&mut validator, footer_scope(identity()), &FOOTER),
-        PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_))
+        PhysicalIntegrityObservationOutcome::Rejected(
+            worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+        )
     ));
     prefix(&mut validator);
     validator.invalidate(binding_scope(identity(), BINDING.len() as u64));
     assert!(matches!(
         inspect(&mut validator, footer_scope(identity()), &FOOTER),
-        PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_))
+        PhysicalIntegrityObservationOutcome::Rejected(
+            worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+        )
     ));
 }
 
@@ -68,7 +74,9 @@ fn healthy_omitted_or_other_checkpoint_context_is_unknown_not_damage() {
     inspect(&mut validator, header_scope_staged(), &HEADER);
     assert!(matches!(
         inspect(&mut validator, footer_scope(identity()), &FOOTER),
-        PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_))
+        PhysicalIntegrityObservationOutcome::Rejected(
+            worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+        )
     ));
     inspect(&mut validator, header_scope_staged(), &HEADER);
     let other = worth_store_physical_format::PhysicalCheckpointIdentity::new(
@@ -77,6 +85,8 @@ fn healthy_omitted_or_other_checkpoint_context_is_unknown_not_damage() {
     );
     assert!(matches!(
         inspect(&mut validator, dirty_scope(other), &DIRTY_BASIS),
-        PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_))
+        PhysicalIntegrityObservationOutcome::Rejected(
+            worth_store_physical_integrity::PhysicalIntegrityRejection::Unknown(_)
+        )
     ));
 }

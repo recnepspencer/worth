@@ -1,16 +1,21 @@
-use {std::num::NonZeroU64};
+use std::num::NonZeroU64;
 
-use {worth_store_physical_format::PhysicalCheckpointIdentity};
-use {worth_store_physical_integrity::CheckpointBindingPayloadProjectionDenial, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+use worth_store_physical_format::PhysicalCheckpointIdentity;
+use worth_store_physical_integrity::{
+    CheckpointBindingPayloadProjectionDenial, UntrustedPhysicalArtifact,
+};
 
-use {crate::literal_vectors::checkpoint_validation::BINDING};
-use {crate::checkpoint_validation::support::binding_scope, crate::checkpoint_validation::support::identity, crate::checkpoint_validation::support::other_store, crate::checkpoint_validation::support::validate_binding};
+use crate::checkpoint_validation::support::{
+    binding_scope, identity, other_store, validate_binding,
+};
+use crate::literal_vectors::checkpoint_validation::BINDING;
 
 #[test]
 fn binding_payload_projection_is_exact_incarnation_and_checkpoint_scoped() {
     let checkpoint = identity();
     let bytes = BINDING.to_vec();
-    let input = worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
+    let input =
+        worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&bytes);
     let validated = validate_binding(&bytes, binding_scope(checkpoint, bytes.len() as u64));
 
     let projection = validated.project_payload(input, checkpoint).unwrap();
@@ -28,7 +33,10 @@ fn binding_payload_projection_is_exact_incarnation_and_checkpoint_scoped() {
             .unwrap_err(),
         worth_store_physical_integrity::CheckpointBindingPayloadProjectionDenial::InputIncarnationMismatch
     );
-    let foreign = worth_store_physical_format::PhysicalCheckpointIdentity::new(other_store(), std::num::NonZeroU64::new(7).unwrap());
+    let foreign = worth_store_physical_format::PhysicalCheckpointIdentity::new(
+        other_store(),
+        std::num::NonZeroU64::new(7).unwrap(),
+    );
     assert_eq!(
         validated.project_payload(input, foreign).unwrap_err(),
         worth_store_physical_integrity::CheckpointBindingPayloadProjectionDenial::CheckpointIdentityMismatch

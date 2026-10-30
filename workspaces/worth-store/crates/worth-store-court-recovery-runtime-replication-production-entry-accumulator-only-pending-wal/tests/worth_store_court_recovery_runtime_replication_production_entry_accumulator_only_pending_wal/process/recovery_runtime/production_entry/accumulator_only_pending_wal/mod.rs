@@ -1,20 +1,49 @@
 //! A same-object V3 successor survives a selected idle accumulator-only checkpoint.
 
-#[allow(unused_imports)] use crate::production_entry::accumulator_only_pending_wal::*;
-use {std::fs, std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::sync::atomic::AtomicBool, std::sync::atomic::Ordering, std::thread, std::time::Duration, std::time::Instant};
+#[allow(unused_imports)]
+use crate::production_entry::accumulator_only_pending_wal::*;
+use {
+    std::fs, std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, std::path::PathBuf,
+    std::process::Command, std::process::Stdio, std::sync::atomic::AtomicBool,
+    std::sync::atomic::Ordering, std::thread, std::time::Duration, std::time::Instant,
+};
 
 use {sha2::Digest, sha2::Sha256};
 use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::release_checkpoint_batch_records_digest_v1, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::ReleasedDropCumulativeEvidenceV1};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+};
+use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::release_checkpoint_batch_records_digest_v1,
+    worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::ReleasedDropCumulativeEvidenceV1,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-
-use {crate::production_entry::accumulator_only_pending_wal::selected_media::selected_blob_control, crate::production_entry::accumulator_only_pending_wal::selected_media::selected_certificates, crate::production_entry::accumulator_only_pending_wal::selected_media::selected_released_source};
+use {
+    crate::production_entry::accumulator_only_pending_wal::selected_media::selected_blob_control,
+    crate::production_entry::accumulator_only_pending_wal::selected_media::selected_certificates,
+    crate::production_entry::accumulator_only_pending_wal::selected_media::selected_released_source,
+};
 
 #[test]
 fn same_object_pending_v3_follows_idle_accumulator_tip() {
-    let world = super::pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     let root = world.root();
     let serving = recover_serving(root);
     serving
@@ -32,7 +61,10 @@ fn same_object_pending_v3_follows_idle_accumulator_tip() {
         "first drop remains nonterminal"
     );
     let first_heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(root, first_accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            root,
+            first_accumulator,
+        );
     assert_eq!(first_heads.len(), 1);
     assert!(!first_heads[0].terminal());
 
@@ -62,7 +94,10 @@ fn same_object_pending_v3_follows_idle_accumulator_tip() {
         first_accumulator.head_roster_digest()
     );
     let idle_heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(root, idle_accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            root,
+            idle_accumulator,
+        );
     assert_eq!(idle_heads, first_heads);
     serving.close();
 
@@ -105,7 +140,10 @@ fn same_object_pending_v3_follows_idle_accumulator_tip() {
         release_checkpoint_batch_records_digest_v1(&successor_batches).unwrap()
     );
     let successor_heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(root, successor_accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            root,
+            successor_accumulator,
+        );
     assert_eq!(successor_heads.len(), 1);
     assert_eq!(successor_heads[0].key(), idle_heads[0].key());
     assert_eq!(
@@ -122,7 +160,8 @@ fn same_object_pending_v3_follows_idle_accumulator_tip() {
         panic!("C3 selected descriptor must be the genuine V3 control")
     };
     let manifest_bytes = selected_blob_control(&fresh, descriptor.base().manifest_record());
-    let worth_store_physical_format::BlobRecordV1::DropSetManifestV3(manifest) = decode_blob_record(&manifest_bytes).unwrap()
+    let worth_store_physical_format::BlobRecordV1::DropSetManifestV3(manifest) =
+        decode_blob_record(&manifest_bytes).unwrap()
     else {
         panic!("C3 selected manifest must be the genuine V3 control")
     };
@@ -186,14 +225,19 @@ fn successor_child() {
     .unwrap();
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap())
-        .admit(worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-            worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
-        ))
+        .admit(
+            worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+                worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+                    .admit()
+                    .unwrap(),
+            ),
+        )
         .unwrap();
     let request = worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         placement,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(128).unwrap(),
             std::num::NonZeroU64::new(32 << 20).unwrap(),

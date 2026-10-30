@@ -1,5 +1,5 @@
 error[E0432]: unresolved import `worth_store::physical_runtime::OpenedPhysicalRecord`
- --> tests/physical_runtime_authority/opened_physical_record_alias_is_absent.rs:1:5
+ --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/opened_physical_record_alias_is_absent.rs:1:5
   |
 1 | use worth_store::physical_runtime::OpenedPhysicalRecord;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^--------------------

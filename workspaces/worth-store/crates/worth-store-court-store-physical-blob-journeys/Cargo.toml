@@ -17,7 +17,7 @@
 "worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
 "worth-proof" = { "path" = "../../../../crates/worth-proof" }
 "worth-signal" = { "path" = "../../../../crates/worth-signal" }
-"worth-store" = { "path" = "../worth-store", "features" = ["certification-test-authority"] }
+"worth-store" = { "path" = "../worth-store", "features" = ["certification-test-authority", "recovery-runtime-owner"] }
 "worth-store-authority" = { "path" = "../worth-store-authority" }
 "worth-store-blob-chunks" = { "path" = "../worth-store-blob-chunks" }
 "worth-store-contracts" = { "path" = "../worth-store-contracts" }

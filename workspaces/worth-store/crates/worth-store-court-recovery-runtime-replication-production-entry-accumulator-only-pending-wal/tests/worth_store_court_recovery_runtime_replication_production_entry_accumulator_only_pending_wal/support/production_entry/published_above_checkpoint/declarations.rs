@@ -3,19 +3,25 @@
 //! and retired every record on them, so recovery meets WAL images of pages
 //! the selected root no longer routes.
 
-pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_successor_above_history, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, crate::production_entry::published_above_checkpoint};
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld};
-pub(crate) use {std::fs};
-
-
-
-
+pub(crate) use std::fs;
+pub(crate) use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld;
+use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::{Tail, Workload};
+pub(crate) use {
+    crate::production_entry::published_above_checkpoint, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_successor_above_history,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+};
 
 /// Recovers in this fresh process and reads every object back, does so again
 /// above the same checkpoint, then checkpoints and requires the next recovery
 /// to find nothing left to do.
 pub(crate) fn assert_recovers_reads_back_and_reopens(workload: Workload, tail: Tail, key: u8) {
-    let world = pending_wal_world::published_above_checkpoint(workload, tail);
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::published_above_checkpoint(workload, tail);
     let checkpoint = std::fs::read(world.root().join("families/checkpoint.current")).unwrap();
     let serving = serve(&world, "first recovery");
     world.assert_objects_read_back(&serving);
@@ -29,9 +35,12 @@ pub(crate) fn assert_recovers_reads_back_and_reopens(workload: Workload, tail: T
     world.assert_objects_read_back(&serving);
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("checkpoint over the recovered publications must admit")
     };
     assert!(matches!(

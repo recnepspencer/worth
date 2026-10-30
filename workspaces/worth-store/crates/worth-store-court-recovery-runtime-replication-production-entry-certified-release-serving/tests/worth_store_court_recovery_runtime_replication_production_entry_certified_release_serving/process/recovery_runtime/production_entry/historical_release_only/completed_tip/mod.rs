@@ -1,10 +1,30 @@
 //! Two completed releases rejoin without an ordinary tail or new checkpoint,
 //! then retain exact per-object progress across checkpoint and fresh recovery.
 
-#[allow(unused_imports)] use crate::production_entry::historical_release_only::completed_tip::*;
-use {std::path::Path, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_physical_format::RecordArtifactFile, worth_proof::TransitionOutcome, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, std::fs, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::release_reopen, crate::production_entry::historical_release_only::selected_generation};
-use {worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::ReleaseCustodyHeadEntryV1};
-use {worth_store_physical_integrity::walk_release_custody_head, worth_store_physical_integrity::ReleaseCustodyHeadWalkLimitsV1};
+#[allow(unused_imports)]
+use crate::production_entry::historical_release_only::completed_tip::*;
+use {
+    crate::production_entry::historical_release_only::selected_generation, std::fs,
+    std::path::Path, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
+use {
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::ReleaseCustodyHeadEntryV1,
+};
+use {
+    worth_store_physical_integrity::walk_release_custody_head,
+    worth_store_physical_integrity::ReleaseCustodyHeadWalkLimitsV1,
+};
 
 #[test]
 fn two_completed_releases_without_ordinary_tail_serve_checkpoint_and_reopen_exact_heads() {
@@ -12,7 +32,7 @@ fn two_completed_releases_without_ordinary_tail_serve_checkpoint_and_reopen_exac
         .name("completed-release-tip".into())
         .stack_size(16 << 20)
         .spawn(|| {
-            let world = pending_wal_world::first();
+            let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
             let checkpoint = std::fs::read(world.root().join("families/checkpoint.current")).unwrap();
             world.kill_distinct_release_before_checkpoint();
             let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root()));

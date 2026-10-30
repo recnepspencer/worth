@@ -1,5 +1,5 @@
-#[allow(unused_imports)] use crate::resource_bounds::symlink_refusal::*;
-use {worth_store_offline_integrity_observer::OfflineIndeterminatePhysicalReason, worth_store_offline_integrity_observer::OfflineIntegrityOutcome, std::path::Path, worth_foundational::PhysicalArtifactFamily, crate::resource_bounds::bounded_request, crate::support::fixtures::clean_store, crate::resource_bounds::limits, worth_store_offline_integrity_observer::observe_store};
+#[allow(unused_imports)]
+use crate::resource_bounds::symlink_refusal::*;
 
 #[test]
 fn symlinked_artifact_is_refused_without_reading_its_target() {
@@ -18,7 +18,9 @@ fn symlinked_artifact_is_refused_without_reading_its_target() {
     let root_observation = report
         .artifacts()
         .iter()
-        .find(|artifact| artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest)
+        .find(|artifact| {
+            artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest
+        })
         .unwrap();
     assert_eq!(
         root_observation.outcome(),
@@ -69,7 +71,9 @@ fn escaping_root_directory_symlink_is_never_followed() {
     let root = report
         .artifacts()
         .iter()
-        .find(|artifact| artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest)
+        .find(|artifact| {
+            artifact.family() == worth_foundational::PhysicalArtifactFamily::RootManifest
+        })
         .unwrap();
     assert_eq!(
         root.outcome(),

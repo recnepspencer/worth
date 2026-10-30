@@ -1,14 +1,25 @@
 //! A certified Batch/Accumulator checkpoint is the starting point for two
 //! completed postcheckpoint V3 releases and one final killed V3 descriptor.
 
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::release_reopen};
-use {std::fs};
-use {worth_store_physical_format::release_checkpoint_batch_records_digest_v1};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+use std::fs;
+use worth_store_physical_format::release_checkpoint_batch_records_digest_v1;
+use {
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 #[test]
 fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {
-    let world = pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_second_after_certified_retirement();
     let checkpoint = std::fs::read(world.root().join("families/checkpoint.current")).unwrap();
     let (base_batches, base_accumulator) =
@@ -28,7 +39,10 @@ fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {
         "same-object successor needs a nonterminal certified tip"
     );
     let base_heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), base_accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            base_accumulator,
+        );
     assert_eq!(base_heads.len(), 1);
     world.kill_distinct_release_before_checkpoint();
     world.kill_distinct_release_before_checkpoint();
@@ -48,9 +62,12 @@ fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {
     let serving = worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::admit_serving_with_seal(world.root(), seal);
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0xc4; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("ordered Batch-base successor checkpoint must start");
     };
     assert!(matches!(
@@ -92,7 +109,10 @@ fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {
         batches[2].tip_provenance().unwrap()
     );
     let heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            accumulator,
+        );
     assert_eq!(heads.len(), 3);
     assert!(heads.iter().any(|head| head.key() == base_heads[0].key()));
     let fresh = worth_store_recovery_runtime::WorthStoreRecovery::recover(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request(world.root()));
@@ -112,7 +132,7 @@ fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {
 /// releases. Store must rejoin that history from the checkpoint-source heads.
 #[test]
 fn selected_batch_base_with_three_completed_v3_recovers_again_before_checkpoint() {
-    let world = pending_wal_world::first();
+    let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
     world.kill_second_after_certified_retirement();
     let checkpoint = std::fs::read(world.root().join("families/checkpoint.current")).unwrap();
     world.kill_distinct_release_before_checkpoint();
