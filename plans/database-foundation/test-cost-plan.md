@@ -485,3 +485,34 @@ scheduler or source classifier. Resolve the concrete local/default reporting
 contract before implementing that second cut. The accepted 4,408 Store membership
 proof remains scoped to its earlier HEAD; four later admission tests have exact
 targeted runtime evidence and do not retroactively enlarge that proof.
+
+### B4.5 second cut: ordinary local selection
+
+Use the nearest actual Cargo workspace declaration and the existing governed
+workspace map to choose local defaults: Root's four ordinary owner suites,
+Query's two, or Bank's one. Derive those names from `TEST_SUITES` and
+`CATEGORY_SUITES`; do not maintain another ownership/risk registry. Unsupported
+nested workspaces require an explicit suite. The separate Root and Store landing
+entrypoints retain their complete default contracts, as do Query/Bank landing
+aliases. Explicit generic `--full` selects the retained full `ORDER`, including
+checker implementation tests; named process/oracle/cost and other category
+requests remain explicit material-risk selections. No ignored restriction changes.
+
+Put CLI selection and qualification reporting in `query_gate_selection.py` so the
+existing command owner stays below 400 lines. The final gate summary reports
+requested-check status separately from per-workspace coverage. Ordinary requests
+are partial. Full workspace coverage requires successful results for every native
+partition and documentation, with the existing complete/observed coverage fields;
+a full request alone is insufficient. Test the default, risk, full, unsupported,
+failure and partial-reporting paths with fixture workspaces and command doubles.
+Do not execute matrices to test routing. Reuse accepted unchanged-source runtime
+evidence and keep the older Store membership proof's original scope explicit.
+
+B4.4 coordination: Root accepted the single corrected semantic pilot at
+`2320d91083`. `record_chunk_view_exposes_no_pool_authority.rs` uses the existing
+compiler testkit's narrow certification/check path and its actual captured
+E0614/`PhysicalRecordChunkView` attribution. The complete 25-dependency audience,
+including five version dependencies, remains represented; the actual 153-package
+closure is unchanged. Store readers and all Cargo manifests/locks are restored
+unchanged. The broad Store test-support dependency was rejected and is absent
+from the accepted net tree. This is one pilot, not a completed snapshot migration.

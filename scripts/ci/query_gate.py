@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Fast local gate for the Query line and the crates beneath it.
 
-    python scripts/ci/query_gate.py                  every non-UI suite
+    python scripts/ci/query_gate.py                  current workspace ordinary cases (partial)
+    python scripts/ci/query_gate.py --full           complete existing Query-line gate
     python scripts/ci/query_gate.py relational,bank  the named suites
     python scripts/ci/query_gate.py query-landing    all normal Query suites and docs
     python scripts/ci/query_gate.py bank-landing     all normal Bank suites and docs
@@ -29,7 +30,8 @@ from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment, require_build_identity, verification_identity
 from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
-from query_gate_cost import CostGate, DOC_SUITES, SUITE_ALIASES, expand_suites, governed
+from query_gate_cost import CostGate, DOC_SUITES, SUITE_ALIASES, governed
+from query_gate_selection import select_suites, workspace_coverage
 from cargo_capture import CargoRunner
 
 from query_gate_courts import (
@@ -336,8 +338,9 @@ class Gate:
 
 def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("suites", nargs="?", default=",".join(default_suites or ORDER),
+    parser.add_argument("suites", nargs="?",
                         help="suite names or query-landing, bank-landing, doc")
+    parser.add_argument("--full", action="store_true", help="the complete existing gate (Root wrapper stays Root-only)")
     parser.add_argument("--out", type=Path, default=default_out or ROOT / "target" / "query-gate")
     parser.add_argument("--list", action="store_true", help="print suite names")
     parser.add_argument("--census", action="store_true", help="refuse scheduled scale suites")
@@ -345,7 +348,10 @@ def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
     if args.list:
         print("\n".join(allowed_suites or dict.fromkeys([*ORDER, *TEST_SUITES, *SUITE_ALIASES, *COMMAND_SUITES])))
         return 0
-    suites = expand_suites(args.suites.split(","))
+    try:
+        suites = select_suites(args.suites, args.full, default_suites, ORDER, ROOT, Path.cwd())
+    except ValueError as error:
+        parser.error(str(error))
     unknown = [name for name in suites if name not in TEST_SUITES and name not in COMMAND_SUITES and name not in DOC_SUITES]
     if unknown:
         parser.error("unknown suite: " + ", ".join(unknown))
@@ -360,9 +366,10 @@ def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
     args.out.mkdir(parents=True, exist_ok=True)
     gate = Gate(args.out, census=args.census)
     gate.plan(suites)
-    red = []
+    red, results = [], []
     for suite in suites:
         result = gate.run(suite)
+        results.append(result)
         brief = {key: value for key, value in result.items()
                  if key not in ("chunks", "commands", "binaries")}
         print("GATE", json.dumps(brief), flush=True)
@@ -370,7 +377,10 @@ def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
             red.append(suite)
             if suite == "fmt":
                 break
-    print("GATE", "green" if not red else "red: " + ", ".join(red), flush=True)
+    summary = {"status": "red" if red else "green", "requested_suites": suites,
+               "workspace_coverage": workspace_coverage(suites, results)}
+    (args.out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n', encoding='utf-8')
+    print("GATE", json.dumps(summary), flush=True)
     return 1 if red else 0
 
 
