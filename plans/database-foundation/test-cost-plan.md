@@ -232,3 +232,29 @@ Prebuilt nextest runs stream result events into their existing evidence log.
 real child that cannot finish until its first result is visible in the log.
 The normal exit footer remains the only indication of a completed lane; an
 interrupted capture is never rewritten into a completed capture.
+
+### 2026-10-30 landing disposition
+
+The user authorized landing the reviewed integration without the remaining
+Store verification gate and made finishing Track B and reducing test cost the
+next priority. This is a landing exception, not a claim that Store qualification
+or Milestone 3 is complete.
+
+The reviewed implementation is `8514c21769`. Its strict static checks, repository
+boundaries, agent-context, formatting, source caps and lock alignment passed.
+The separate Query/Bank qualification and independent source reviews passed.
+All 88 failures from the earlier Store capture now have passing observations.
+
+The Store follow-up finished during landing preparation. Its 1,049 selected
+cases produced 1,041 passes and eight failures: owner units 213/0, ordinary
+46/0, process 725/0, cost 4/0, determinism 1/0, oracle 27/0, and compiler-proof
+readers 25/8. The eight failures report `WrongDiagnostics`; they remain open.
+The actual logs are retained under
+`target/test-cost/b3-pool-integration/store-composed-correction/`, including
+`run-correction-compile-fail.log`. Earlier failed and interrupted captures retain
+their original dispositions. This Store follow-up is not green.
+
+Ignored tests, Query scale, WORTH UI and exhaustive Store certification were not
+run. The warm prebuild and follow-up measurements do not establish a complete
+cold-landing speedup. Track B must resolve the remaining proof-reader failures
+and complete its outstanding cost work with honest end-to-end evidence.
