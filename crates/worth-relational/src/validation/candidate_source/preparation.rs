@@ -36,6 +36,7 @@ pub(crate) struct SourceViews<'a> {
 
 /// Native-created invocation scope. No constructor or caller root argument.
 pub struct ManagedIndexSourceScope<'a> {
+    correspondence: Option<&'a super::correspondence::NativeManagedSourceCorrespondence<'a>>,
     pub(crate) program: &'a ManagedIndexSourceProgram,
     pub(crate) scope: EntityId,
     pub(crate) changed: &'a std::collections::BTreeSet<EntityId>,
@@ -45,6 +46,18 @@ pub struct ManagedIndexSourceScope<'a> {
 }
 
 impl<'a> ManagedIndexSourceScope<'a> {
+    /// Native proved complete logical equality at this actual reconstruction.
+    /// This returns proposed backing only; the committed physical view stays
+    /// unavailable. Query still validates its typed provider installation.
+    pub fn corresponding_root(&self) -> Result<Option<RootPayload>, Denial> {
+        self.views
+            .after
+            .read_budget()
+            .checkpoint(1)
+            .map_err(ReadDenial::Structural)?;
+        self.correspondence
+            .map_or(Ok(None), |proof| proof.root(self.program, self.scope))
+    }
     pub fn read_budget(&self) -> crate::validation::custom_rule::CustomInvariantReadBudget<'_> {
         self.views.after.read_budget()
     }
@@ -182,6 +195,8 @@ pub(crate) struct PreparedSourceProgram {
 
 /// The existing participant receives this only from Native's applied draft.
 pub struct ManagedIndexSourcePreparation<'a> {
+    pub(super) correspondence:
+        Option<&'a super::correspondence::NativeManagedSourceCorrespondence<'a>>,
     pub(crate) program: &'a ManagedIndexSourceProgram,
     pub(crate) closure: &'a PreparedManagedIndexScopeClosure,
     pub(crate) views: SourceViews<'a>,
@@ -204,6 +219,7 @@ impl ManagedIndexSourcePreparation<'_> {
             .scopes
             .iter()
             .map(|(&scope, changed)| ManagedIndexSourceScope {
+                correspondence: self.correspondence,
                 program: self.program,
                 scope,
                 changed,

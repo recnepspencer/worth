@@ -616,8 +616,27 @@ committed physical custody and refuses without moving Native/World selection.
 Its lawful reconstruction restores canonical material; fresh A/B reads add no
 provider builds. All 27 public managed-index controls and exact final-owner
 allocation balance pass. This proves unopened B, not cold B or fresh historical
-query admission. Geometry-generated composition, correspondence/reuse and both
-original-request interruption directions remain open.
+query admission.
+Exact Source correspondence is now qualified conservatively: Native derives a
+candidate-specific witness from real suspension custody, actual full-generation
+manifest records, shared schema authority, unchanged outside-manifest effects
+and complete authoritative aspect equality. Its original-request receiver admits
+the selected suspension image through canonical runtime/branch/registration/root/
+commit/position and the actual compiled program/scope, then Query checks the
+actual provider installation. Exact restoration shares immutable backing with no
+provider builds or updates, mints an available association and still runs both
+required rules with unavailable committed physical Source. A lawful unprojected
+ItemBounds change declines correspondence and rebuilds both scopes; the existing
+name-change rejection still reaches B's domain rule. Original-request cancellation
+after one real proposed-Source rule query preserves typed Cancelled, actual custody
+and suspended Native/World selection; fresh reconstruction/retry succeeds. The
+outer restoration owner retains the complete in-phase outcome across its final
+control handoff. Proof namespace and Native receiver controls pass alongside the
+public court's exact final-owner allocation balance. See
+[the correspondence slice](milestone-9.19-phase2-source-correspondence-plan.md).
+Geometry-generated composition, cold B, fresh historical query admission, the
+opposite availability-direction interruption and wider recovery/growth controls
+remain open.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication

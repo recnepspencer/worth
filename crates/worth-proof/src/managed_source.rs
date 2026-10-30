@@ -35,7 +35,12 @@ impl ManagedIndexSourceAudienceAuthority {
     }
 }
 
+mod correspondence;
 mod initialization;
+pub use correspondence::{
+    AdmittedManagedIndexSourceCorrespondence, ManagedIndexSourceCorrespondenceAuthority,
+    ManagedIndexSourceCorrespondenceIssuer,
+};
 pub use initialization::{
     AdmittedManagedIndexSourceInitialization, ManagedIndexSourceInitializationAuthority,
     ManagedIndexSourceInitializationIssuer,

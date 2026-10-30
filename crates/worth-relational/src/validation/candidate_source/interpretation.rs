@@ -3,6 +3,8 @@ use crate::branch::{AdmittedRelationalBranchBasis, RelationalMaterializationReco
 use crate::identity::data::VersionId;
 use crate::mvcc::RelationalMaterializationTransactionMode;
 use std::sync::{Arc, Weak};
+mod restoration;
+pub(crate) use restoration::NativeSourceRestorationOrigin;
 
 /// Minted from the real suspension read. Retains its actual basis and manifest;
 /// neither this backing nor its identifiers grant an installed Source audience.
@@ -41,6 +43,7 @@ pub(crate) struct NativeManagedSourceInterpretation {
     proposed_version: VersionId,
     posture: Option<RelationalMaterializationTransactionMode>,
     materialization: Option<Arc<NativeMaterializationSource>>,
+    restoration: Option<NativeSourceRestorationOrigin>,
     pub(super) prepared: std::sync::OnceLock<super::staged::PreparedManagedIndexSources>,
 }
 
@@ -56,6 +59,7 @@ impl NativeManagedSourceInterpretation {
             proposed_version,
             posture: input.intent().materialization_mode(),
             materialization: input.intent().materialization_source().cloned(),
+            restoration: input.intent().restoration_origin().cloned(),
             prepared: std::sync::OnceLock::new(),
         })
     }

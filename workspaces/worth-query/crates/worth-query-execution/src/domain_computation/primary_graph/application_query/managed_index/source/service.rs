@@ -1,4 +1,5 @@
 //! Installed generic mechanics consume Native Source loans, never caller scope lists.
+mod correspondence;
 use super::super::{
     adapter::{InstalledIndexProvider, TypedIndexProvider},
     source::occurrences::PersistentSourceRows,
@@ -149,6 +150,11 @@ where
             return Err(Denial::ForeignSource);
         }
         let proposed_exists = scope.scope_exists()?;
+        if proposed_exists {
+            if let Some(payload) = self.corresponding_root(execution, &scope)? {
+                return Ok(scope.seal(None, Some(payload)));
+            }
+        }
         // Unavailable is an explicit Native physical posture, not an empty
         // membership result. All other before-view failures retain their cause.
         let before_exists = match scope.committed_scope_exists() {

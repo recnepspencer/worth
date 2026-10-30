@@ -8,12 +8,14 @@ use worth_query_decl::facade::{
 use worth_query_host::facade::application_invariants::*;
 pub(crate) struct Calls {
     pub records: Mutex<Vec<Record>>,
+    pub after_first_observation: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     provider: Arc<prefix::Calls>,
 }
 impl Calls {
     pub(crate) fn new(provider: Arc<prefix::Calls>) -> Self {
         Self {
             records: Mutex::new(Vec::new()),
+            after_first_observation: Mutex::new(None),
             provider,
         }
     }
@@ -105,6 +107,9 @@ impl Rule {
             after,
             updates_before_callback,
         });
+        if let Some(observe) = self.calls.after_first_observation.lock().unwrap().take() {
+            observe();
+        }
         Ok(if violation {
             WorthQueryApplicationInvariantVerdict::Violation(())
         } else {

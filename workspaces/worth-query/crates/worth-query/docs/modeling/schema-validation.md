@@ -225,6 +225,16 @@ composes this path with a real fixed source action and producer. Both actual
 Directory scopes retain logical rows during suspension; current public reads
 refuse before provider queries. The manifest-correct reconstructed duplicate
 reaches its installed Source invariant, and its lawful twin restores warm reads.
+Native may prove complete authoritative-record equality from actual restoration
+custody and the applied candidate before preparing those roots. Its transient
+correspondence selects only the exact suspended image through canonical
+runtime/branch/registration/root/commit/position admission and the actual compiled
+program and scope. Query verifies the typed provider installation before sharing
+the immutable payload as proposed backing. No unavailable committed loan opens;
+normal required-rule judgment and coordinated publication still apply. A changed
+unprojected field declines this conservative proof and rebuilds under AdmitRebuild.
+The court also cancels the original request after one real rule query and retries
+from the returned suspension custody without moving the selected basis.
 
 Native stages provider roots before its first dependent invariant. Each actual
 observation reborrows its own Source loan. The existing SourceInvalidationOwner

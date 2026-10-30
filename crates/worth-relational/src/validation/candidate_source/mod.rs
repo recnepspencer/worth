@@ -1,4 +1,5 @@
 //! Native-owned candidate Source interpretation and its retained materialization basis.
+mod correspondence;
 mod denial;
 mod interpretation;
 mod program;
@@ -36,5 +37,5 @@ pub use projection::{ManagedIndexSourceProjection, PreparedManagedIndexRelationR
 
 pub(crate) use interpretation::{
     NativeManagedSourceInterpretation, NativeMaterializationSource,
-    NativeSourceInterpretationIdentity,
+    NativeSourceInterpretationIdentity, NativeSourceRestorationOrigin,
 };

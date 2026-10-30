@@ -5,6 +5,8 @@ use super::super::{bounds, host, prefix, query, rule, schema::*};
 use super::{operation, producer, program, source};
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
+mod cancellation;
+mod fallback;
 mod reconstruction;
 
 fn find(directory: &str) -> query::FindPrefix {
@@ -205,6 +207,15 @@ fn journey() {
         &suspended_position,
         "the real rejected candidate leaves Native/World selection unchanged"
     );
+    let suspended = cancellation::reject(&world, &provider, &rules, suspended);
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &suspended_position
+    );
+    assert_suspended(request.query(find("A")).execute());
+    rules.records.lock().unwrap().clear();
+    let builds_before_restore = provider.builds.load(Ordering::SeqCst);
+    let updates_before_restore = provider.updates.load(Ordering::SeqCst);
     let completed = reconstruction::complete(&world, suspended, "taken-generated");
     world
         .restore_generated_output(completed, &scope)
@@ -214,6 +225,32 @@ fn journey() {
                 failure.cause()
             )
         });
+    assert_eq!(
+        provider.builds.load(Ordering::SeqCst),
+        builds_before_restore,
+        "exact actual restoration shares canonical payload without a provider build"
+    );
+    assert_eq!(
+        provider.updates.load(Ordering::SeqCst),
+        updates_before_restore,
+        "exact actual restoration shares canonical payload without provider maintenance"
+    );
+    {
+        let records = rules.records.lock().unwrap();
+        assert_eq!(
+            records.len(),
+            2,
+            "both required rules run with corresponding payloads"
+        );
+        for (scope, directory) in [(a_scope, "A"), (b_scope, "B")] {
+            let row = records.iter().find(|row| row.scope == scope).unwrap();
+            assert_eq!(values(&row.after), expected(directory, "taken-generated"));
+            assert!(
+                row.before.is_none(),
+                "correspondence never opens committed suspension Source"
+            );
+        }
+    }
     let builds = provider.builds.load(Ordering::SeqCst);
     for directory in ["A", "B"] {
         assert_eq!(
@@ -223,6 +260,7 @@ fn journey() {
     }
     assert_eq!(values(original.rows()), expected("A", "taken-generated"));
     assert_eq!(provider.builds.load(Ordering::SeqCst), builds, "fresh resumed public reads use the judged canonical material without another reconstruction");
+    fallback::restore_changed_unprojected_field(&world, &provider, &scope);
     a.close();
 }
 fn assert_suspended<T>(result: Result<T, WorthQueryApplicationRequestQueryDenial>) {

@@ -114,6 +114,8 @@ fn prepare(
     }
     let runtime_view =
         InvariantRuntimeView::from_preparation_for_state(runtime, selected.selected().state());
+    let correspondence =
+        super::correspondence::prepare(draft, execution, runtime, &after, generation)?;
     let observation = InvariantObservation::applied_with_proposal(
         OverlayStateView::new(&selected, draft.state()),
         selected.version_id(),
@@ -220,6 +222,7 @@ fn prepare(
             &work,
         );
         let source = ManagedIndexSourcePreparation {
+            correspondence: correspondence.as_ref(),
             program,
             closure: &closure,
             views: logical,

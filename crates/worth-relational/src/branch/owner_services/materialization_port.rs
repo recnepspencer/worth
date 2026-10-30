@@ -209,7 +209,7 @@ impl RelationalMaterializationPort {
                 RelationalTransactionIntent::materialization(
                     RelationalMaterializationTransactionMode::Rematerialize,
                 )
-                .with_materialization_source(basis, std::sync::Arc::clone(&custody.data().source)),
+                .with_materialization_custody(basis, custody),
             )
             .map_err(RelationalMaterializationError::TransactionAdmission)?;
         transaction

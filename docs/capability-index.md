@@ -449,6 +449,11 @@ generated-output suspension does not make a current public physical read Ready.
 The generated Catalog prefix journey uses actual producer/reconstruction custody:
 logical rules preserve suspended rows, an exact manifest cannot bypass the
 reconstructed proposed-domain check, and valid restoration serves fresh reads.
+Exact authoritative-record correspondence can share the selected suspended
+Source payload without provider construction or maintenance, while publication
+mints a fresh available association. Any authoritative field difference declines
+this conservative proof and uses the declared cold policy. Original-request
+cancellation after a real rule query returns suspension custody for retry.
 See the
 [current limits](build-an-application.md#prepare-candidate-structural-source-changes)
 and [Native audience](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md).

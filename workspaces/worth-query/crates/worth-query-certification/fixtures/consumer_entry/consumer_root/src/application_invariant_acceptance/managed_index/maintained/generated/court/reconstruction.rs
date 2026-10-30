@@ -5,6 +5,14 @@ pub(super) fn complete(
     suspended: WorthQuerySuspendedGeneratedOutput,
     name: &str,
 ) -> WorthQueryCompletedGeneratedOutputReconstruction<Catalog, producer::Producer> {
+    with_bounds(world, suspended, name, bounds::Coordinates::new(0, 0, 0, 0))
+}
+pub(super) fn with_bounds(
+    world: &host::Host,
+    suspended: WorthQuerySuspendedGeneratedOutput,
+    name: &str,
+    coordinates: bounds::Coordinates,
+) -> WorthQueryCompletedGeneratedOutputReconstruction<Catalog, producer::Producer> {
     let mut reconstruction = world
         .with_host_advancement(|phase| {
             world
@@ -36,11 +44,7 @@ pub(super) fn complete(
         .field(&item, ItemEnabled::reference(), true)
         .unwrap();
     reconstruction
-        .field(
-            &item,
-            bounds::ItemBounds::reference(),
-            bounds::Coordinates::new(0, 0, 0, 0),
-        )
+        .field(&item, bounds::ItemBounds::reference(), coordinates)
         .unwrap();
     let directories = reconstruction
         .retained_relation_sources(Contains::reference(), Directory::reference(), &item)

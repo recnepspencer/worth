@@ -5626,6 +5626,16 @@ Suspension preserves logical invariant rows in both affected scopes while curren
 public reads refuse. Reconstructing the exact manifest still runs the Source
 rules on the proposed values; the valid reconstruction publishes material used
 by fresh public reads. A retained result keeps its original values throughout.
+For an exact reconstruction, Native compares the actual authoritative manifest
+records with their retained suspension source before the first rule. It can then
+share the selected suspension image's immutable Source backing with a fresh
+available association. Query still checks the actual provider installation and
+World lineage; every required rule runs, and committed suspended Source reads
+remain unavailable. This conservative proof declines even an unprojected field
+change, which follows the declared cold-source policy. The same journey checks
+zero provider build/update calls on exact restoration, an ItemBounds change that
+rebuilds both scopes, and original-request cancellation after the first real rule
+query followed by a fresh retry.
 The compiled endpoint shape preserves each actual `Starts` and `Ends` relation
 occurrence and checks its declared cardinality before provider maintenance:
 

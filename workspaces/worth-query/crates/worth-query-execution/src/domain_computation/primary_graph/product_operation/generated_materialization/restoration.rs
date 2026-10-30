@@ -1,3 +1,4 @@
+mod in_phase;
 mod publication;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::RelationalRematerializationCompletion;
@@ -121,151 +122,21 @@ where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         let mut retained = Some(completed);
+        let mut completed_result = None;
         let result = self.with_application_advancement(request, |phase| {
-            let execution = match phase.execution_request_for(&self.product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    return Err(restoration_failure(
-                        retained.take().expect("one refused restoration").suspended,
-                        WorthQueryGeneratedOutputRestorationFailureCause::advancement(cause.into()),
-                    ))
-                }
-            };
-            let phase = &phase;
-            let completed = retained.take().expect("one admitted restoration");
-
-            let WorthQueryCompletedGeneratedOutputReconstruction {
-                suspended,
-                entities,
-                relations,
-                marker: _,
-            } = completed;
-            if !std::sync::Arc::ptr_eq(
-                &suspended.publication.root_identity(),
-                &self.product_runtime.root_identity(),
-            ) || !suspended.matches_runtime(self)
-            {
-                return Err(restoration_failure(
-                    suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::ForeignRuntime,
-                ));
-            }
-            if !suspended.matches_producer_binding::<Schema, Producer>() {
-                return Err(restoration_failure(
-                    suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::WrongProducer,
-                ));
-            }
-            if !suspended.matches_provider_version::<Schema, Producer>()
-                || self.installed_producers.provider::<Producer>().is_none()
-            {
-                return Err(restoration_failure(
-                    suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::StaleProducerVersion,
-                ));
-            }
-            if !suspended.matches_retained_lineage::<Schema, Producer>(self) {
-                return Err(restoration_failure(
-                    suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::StaleOutputLineage,
-                ));
-            }
-            let gate = match self
-                .product_runtime
-                .activations
-                .gate(suspended.publication.observation().branch_identity())
-            {
-                Ok(gate) => gate,
-                Err(_) => {
-                    return Err(restoration_failure(
-                    suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
-                ));
-                }
-            };
-            let _publication_admission = match gate.begin_publication() {
-                Ok(admission) => admission,
-                Err(_) => {
-                    return Err(restoration_failure(
-                    suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
-                ));
-                }
-            };
-            let WorthQuerySuspendedGeneratedOutput {
-                publication,
-                branch,
-                custody,
-                correspondence,
-                producer,
-            } = suspended;
-            let prepared = self
-                .primary_provider
-                .graph
-                .with_runtime(&execution, |runtime| {
-                    runtime
-                        .owner_component_services()
-                        .materialization_port()
-                        .prepare_generated_rematerialization(
-                            &execution,
-                            publication.observation().basis().relational_basis(),
-                            custody,
-                            entities,
-                            relations,
-                        )
-                });
-            let prepared = match prepared {
-                Ok(prepared) => prepared,
-                Err(failure) => {
-                    let cause = preparation_failure_cause(&failure.error);
-                    return Err(restoration_failure(
-                        WorthQuerySuspendedGeneratedOutput {
-                            publication,
-                            branch,
-                            custody: failure.custody,
-                            correspondence,
-                            producer,
-                        },
-                        cause,
-                    ));
-                }
-            };
-            let (candidate, completion, invariant_evidence) = prepared.into_parts();
-            if let Err(denial) = invariant_admission::admit::<Schema, Producer>(
-                &invariant_evidence,
-                publication
-                    .observation()
-                    .basis()
-                    .relational_basis()
-                    .identity()
-                    .branch_id(),
-            ) {
-                drop(candidate);
-                return Err(restoration_failure(
-                    suspended_from_completion(
-                        publication,
-                        branch,
-                        correspondence,
-                        producer,
-                        completion,
-                    ),
-                    WorthQueryGeneratedOutputRestorationFailureCause::InvariantAdmission(denial),
-                ));
-            }
-            self.publish_restoration(
-                &execution,
-                phase,
-                publication,
-                branch,
-                correspondence,
-                producer,
-                candidate,
-                completion,
+            completed_result = Some(self.restore_generated_output_in_phase(
+                retained.take().expect("one admitted restoration"),
+                &phase,
                 request,
-            )
+            ));
         });
+        // The callback owns the actual outcome after it consumes custody. A
+        // final outer control refusal cannot discard that outcome or recovery.
+        if let Some(result) = completed_result {
+            return result;
+        }
         match result {
-            Ok(result) => result,
+            Ok(()) => unreachable!("advancement invokes its callback"),
             Err(cause) => Err(restoration_failure(
                 retained.expect("refusal precedes admission").suspended,
                 WorthQueryGeneratedOutputRestorationFailureCause::advancement(cause),
