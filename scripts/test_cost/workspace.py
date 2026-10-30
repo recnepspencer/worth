@@ -8,9 +8,8 @@ import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_topology'))
 from filesystem_path import filesystem_path
-from module_tree import read_tree
-from rust_items import items
 from source_roots import roots as cargo_source_roots
+from source_documents import documents
 
 
 WORKSPACES = {'root': 'Cargo.toml', 'query': 'workspaces/worth-query/Cargo.toml',
@@ -61,28 +60,7 @@ def sources(manifest):
         declaration = tomllib.loads(package['manifest'].read_text(encoding='utf-8'))
         roots = [(row['source'], support or row['family'] not in ('lib', 'bin'))
                  for row in cargo_source_roots(root, declaration, inherited_edition)]
-        spans = {}
-
-        def visit(node, testing):
-            testing = testing or bool(node.declaration and 'test' in node.declaration.attributes)
-            if testing:
-                spans.setdefault(node.source, []).append((node.offset, node.offset + len(node.text)))
-            else:
-                for item in items(node.text):
-                    header = node.text[item.start:item.body[0] if item.body else item.end]
-                    if item.test or ('cfg' in header and 'test' in header):
-                        spans.setdefault(node.source, []).append((node.offset + item.start, node.offset + item.end))
-            for child in node.children:
-                visit(child, testing)
-
-        for path, testing in sorted(set(roots)):
-            visit(read_tree(path), testing)
-        for path, selected in sorted(spans.items()):
-            text = filesystem_path(path).read_text(encoding='utf-8-sig')
-            masked = ['\n' if character == '\n' else ' ' for character in text]
-            for start, end in selected:
-                masked[start:end] = text[start:end]
-            result.append((package, path, ''.join(masked)))
+        result.extend(documents(package, sorted(set(roots))))
     return result
 
 

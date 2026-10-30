@@ -22,7 +22,7 @@ class WorkspaceDiscoveryTests(unittest.TestCase):
             (root / 'src/lib.rs').write_text('fn ordinary() { loop {} }\n#[cfg(test)] mod tests;')
             (root / 'src/tests.rs').write_text('#[test] fn waits() { thread::sleep(delay); }')
             values = sources(root / 'Cargo.toml')
-            text = '\n'.join(value for _, _, value in values)
+            text = '\n'.join(value.text for value in values)
             self.assertIn('thread::sleep', text)
             self.assertNotIn('loop {}', text)
 
@@ -84,7 +84,7 @@ class WorkspaceDiscoveryTests(unittest.TestCase):
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_text('fn main() {}')
             self.assertEqual([m['name'] for m in members(root / 'Cargo.toml')], ['a-court-runtime'])
-            self.assertEqual([p.name for _, p, _ in sources(root / 'Cargo.toml')], ['suite.rs'])
+            self.assertEqual([row.path.name for row in sources(root / 'Cargo.toml')], ['suite.rs'])
 
     def test_mounted_ui_harness_is_scanned_while_unmounted_ui_fixture_is_not(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -94,9 +94,58 @@ class WorkspaceDiscoveryTests(unittest.TestCase):
             (root / 'tests/court.rs').write_text('#[path="ui/mod.rs"] mod ui;')
             (root / 'tests/ui/mod.rs').write_text('#[test] fn boundary() { trybuild::TestCases::new(); }')
             (root / 'tests/ui/fixture.rs').write_text('fn main() {}')
-            found = {path.relative_to(root).as_posix() for _, path, _ in sources(root / 'Cargo.toml')}
+            found = {row.path.relative_to(root).as_posix() for row in sources(root / 'Cargo.toml')}
             self.assertIn('tests/ui/mod.rs', found)
             self.assertNotIn('tests/ui/fixture.rs', found)
+
+    def test_external_unit_tests_keep_enclosing_alias_and_constant_bindings(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root / 'src').mkdir()
+            manifest = root / 'Cargo.toml'
+            manifest.write_text('[package]\nname="product"\nversion="0.0.0"\n')
+            (root / 'src/lib.rs').write_text('use std::process::Command as Process;\n'
+                                            'const EXECUTABLE:&str="cargo";\n#[cfg(test)] mod tests;')
+            (root / 'src/tests.rs').write_text('use super::*;\n#[test] fn proof() { Process::new(EXECUTABLE); }')
+            violations = scan_workspace(manifest, root)
+            self.assertEqual([(row['kind'], row['path'], row['line']) for row in violations],
+                             [('cargo-command', 'src/tests.rs', 2)])
+
+    def test_literal_included_tests_keep_compiler_sleep_and_timeout_sites(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root / 'src').mkdir()
+            manifest = root / 'Cargo.toml'
+            manifest.write_text('[package]\nname="product"\nversion="0.0.0"\n')
+            (root / 'src/lib.rs').write_text('#[cfg(test)] mod tests { include!("included.rs"); }')
+            (root / 'src/included.rs').write_text('#[test] fn proof() { Command::new("cargo");\n'
+                                                 'thread::sleep(Duration::from_secs(1)); }')
+            violations = scan_workspace(manifest, root)
+            self.assertEqual({row['kind'] for row in violations}, {'cargo-command', 'sleep', 'fixed-timeout'})
+            self.assertEqual({row['path'] for row in violations}, {'src/included.rs'})
+
+    def test_only_referenced_production_helpers_enter_the_test_scope(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root / 'src').mkdir()
+            manifest = root / 'Cargo.toml'
+            manifest.write_text('[package]\nname="product"\nversion="0.0.0"\n')
+            (root / 'src/lib.rs').write_text('fn unrelated() { Command::new("cargo"); }\n'
+                                            'fn prepare() { compile(); }\n'
+                                            'fn compile() { Command::new("cargo"); }\n'
+                                            '#[cfg(test)] mod tests { #[test] fn proof() { prepare(); } }')
+            violations = [row for row in scan_workspace(manifest, root) if row['kind'] == 'cargo-command']
+            self.assertEqual([(row['function'], row['line']) for row in violations], [('compile', 3)])
+
+    def test_unresolved_test_source_refuses_the_workspace_census(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root / 'src').mkdir()
+            manifest = root / 'Cargo.toml'
+            manifest.write_text('[package]\nname="product"\nversion="0.0.0"\n')
+            (root / 'src/lib.rs').write_text('#[cfg(test)] mod tests { include!(unknown_path!()); }')
+            with self.assertRaisesRegex(ValueError, 'unresolved include'):
+                scan_workspace(manifest, root)
 
 
 if __name__ == '__main__':

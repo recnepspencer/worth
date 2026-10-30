@@ -41,7 +41,8 @@ def plan(repository, manifest, inventory):
     repository, manifest = Path(repository).resolve(), Path(manifest).resolve()
     writes, moved, helpers, packages = {}, {}, set(), set()
     owned_sources = sources(manifest)
-    for package, path, masked in owned_sources:
+    for source in owned_sources:
+        package, path, masked = source.package, source.path, source.text
         if 'trybuild' not in masked and 'run_compile_pass_bundle' not in masked:
             continue
         original = filesystem_path(path).read_text(encoding='utf-8')
@@ -55,7 +56,8 @@ def plan(repository, manifest, inventory):
         if cutover.moved_tests:
             moved[path.relative_to(repository).as_posix()] = cutover.moved_tests
     # Session parameters may have callers in a different module.
-    for package, path, _ in owned_sources:
+    for source in owned_sources:
+        path = source.path
         original = writes.get(path, filesystem_path(path).read_text(encoding='utf-8'))
         changed = helper_calls(original, helpers)
         if changed != original:

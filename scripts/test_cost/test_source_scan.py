@@ -49,6 +49,34 @@ class SourceCostTests(unittest.TestCase):
         self.assertEqual([s['kind'] for s in scan_text('tokio::time::sleep(delay).await;')], ['sleep'])
         self.assertEqual(scan_text('let text = "Command::new(\\\"cargo\\\")";'), [])
 
+    def test_enclosing_command_aliases_and_executable_constants_are_resolved(self):
+        for context, body in [
+            ('use std::process::Command as Process;', 'Process::new("cargo");'),
+            ('const EXECUTABLE:&str="cargo";', 'Command::new(EXECUTABLE);'),
+            ('const EXECUTABLE:&str=env!("CARGO");', 'Command::new(EXECUTABLE);'),
+            ('type Process=std::process::Command;', 'Process::new("cargo");'),
+        ]:
+            with self.subTest(context=context):
+                self.assertIn('cargo-command', [row['kind'] for row in scan_text(body, context)])
+
+    def test_enclosing_grouped_and_crate_aliases_retain_compiler_api_identity(self):
+        for context, body, expected in [
+            ('use trybuild::{TestCases as Cases};', 'let cases=Cases::new(); cases.pass("yes.rs");',
+             {'trybuild', 'trybuild-pass'}),
+            ('use trybuild as tb;', 'tb::TestCases::new();', {'trybuild'}),
+            ('use cargo_metadata::{MetadataCommand as Metadata};', 'Metadata::new();', {'cargo-metadata'}),
+        ]:
+            with self.subTest(context=context):
+                self.assertEqual({row['kind'] for row in scan_text(body, context)}, expected)
+
+    def test_unused_production_context_does_not_become_a_test_invocation(self):
+        self.assertEqual(scan_text('fn claim() {}', 'fn ordinary() { Command::new("cargo"); }'), [])
+
+    def test_same_line_compiler_invocations_remain_distinct_sites(self):
+        rows = scan_text('Process::new("cargo"); Process::new("cargo");',
+                         'use std::process::Command as Process;')
+        self.assertEqual([row['kind'] for row in rows], ['cargo-command', 'cargo-command'])
+
     def test_sleep_poll_and_timeout_locations_are_retained(self):
         sites = scan_text('fn wait() { loop { thread::sleep(Duration::from_secs(4)); } }')
         self.assertEqual({s['kind'] for s in sites}, {'sleep', 'polling-loop', 'fixed-timeout'})

@@ -10,6 +10,12 @@ source enforcement and LLVM ownership. It includes binary unit tests under
 edition, and refuses missing or ambiguous declared sources. Small fixture
 probes compare discovery with real `cargo metadata`; no compilation is needed.
 
+`source_documents.py` keeps selected test text and enclosing lexical context
+together. Imported command names and executable constants remain resolvable
+without counting unrelated production calls. Named helpers referenced by test
+code enter a conservative same-target source closure. Literal `include!`
+sources retain their real paths; selected unresolved includes refuse the census.
+
 ```text
 python scripts/test_cost/census.py --all --check-sources
 python scripts/test_cost/run_lane.py --workspace store
