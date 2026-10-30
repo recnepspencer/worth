@@ -13,6 +13,7 @@ use worth_query_host::facade::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
     },
 };
+mod preparation;
 
 #[test]
 fn partial_attempt_disposal_retries_actual_retired_cleanup_until_its_reader_releases() {

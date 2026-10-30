@@ -115,21 +115,7 @@ fn dispose<'host>(
         Phase::ClaimTerminal(owner) => {
             metadata::close(metadata::Owner::Terminal(owner), host, caller, loaded)
         }
-        Phase::Registered(mut registration) => {
-            match &mut registration.evidence {
-                WorthQuerySourceCompletion::Fresh { retained, .. }
-                | WorthQuerySourceCompletion::Recovered { retained, .. } => drop(retained.take()),
-            }
-            (
-                None,
-                Ok(DisposalEvent::Disposed(Disposed {
-                    _receipt: Receipt::Registered {
-                        _evidence: registration.evidence,
-                    },
-                    handoff: None,
-                })),
-            )
-        }
+        Phase::Registered(registration) => registered(registration),
         Phase::Staging {
             registration,
             staging,
@@ -144,10 +130,19 @@ fn dispose<'host>(
             drop(registration);
             candidate::closed(ready.close(caller))
         }
-        phase @ Phase::PreparingFailed { .. } => (
-            Some(phase),
-            Ok(DisposalEvent::Retained(DisposalClass::PreparationRetained)),
-        ),
+        Phase::PreparingFailed {
+            registration,
+            failure,
+        } => match failure.try_discard_uncreated() {
+            Ok(()) => registered(registration),
+            Err(failure) => (
+                Some(Phase::PreparingFailed {
+                    registration,
+                    failure,
+                }),
+                Ok(DisposalEvent::Retained(DisposalClass::PreparationRetained)),
+            ),
+        },
         Phase::Disposing(state) => match state {
             State::Metadata { owner, .. } => metadata::close(owner, host, caller, loaded),
             State::Candidate(failure) => candidate::retry(failure, host, caller),
@@ -167,4 +162,25 @@ fn dispose<'host>(
             )),
         ),
     }
+}
+
+fn registered<'host>(
+    mut registration: Registration,
+) -> (
+    Option<Phase<'host>>,
+    Result<DisposalEvent, WorthQueryAdvancementDenial>,
+) {
+    match &mut registration.evidence {
+        WorthQuerySourceCompletion::Fresh { retained, .. }
+        | WorthQuerySourceCompletion::Recovered { retained, .. } => drop(retained.take()),
+    }
+    (
+        None,
+        Ok(DisposalEvent::Disposed(Disposed {
+            _receipt: Receipt::Registered {
+                _evidence: registration.evidence,
+            },
+            handoff: None,
+        })),
+    )
 }

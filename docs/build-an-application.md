@@ -2614,6 +2614,13 @@ the committed continuation. Use acceptance for result recording and normal
 previous-head close. Inspect retained close failures through the admitted
 `inspect_attempt` entrance.
 
+A failed preparation that created no candidate can also be disposed. This
+releases its pending slot while leaving its committed Claim intact; retrying
+that old key without a result still refuses. Record a fresh basis and use a new
+attempt key to proceed. Unpublished creation recovery, existing candidate
+custody and unresolved panicked handoffs remain retained rather than being
+discarded as owner-free refusals.
+
 If previous-head close returns `OwnerCleanupPending`, the head has already
 retired. Keep the performed adoption evidence and stored result while transferring
 that exact failure into its cleanup owner. The
