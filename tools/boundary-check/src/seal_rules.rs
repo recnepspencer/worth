@@ -39,8 +39,8 @@ fn permitted(path: &str, owners: &BTreeSet<String>, callers: &BTreeSet<(&str, &s
 fn declarations<'a>(t: &[Token<'a>]) -> (Vec<&'a str>, Vec<&'a str>) {
     let (mut names, mut aliases) = (Vec::new(), Vec::new());
     for (i, w) in t.windows(2).enumerate() {
-        if w[0].end - w[0].start != w[0].text.len() {
-            continue; // A raw identifier such as r#struct is not a keyword.
+        if w[0].end - w[0].start != w[0].text.len() || i > 0 && t[i - 1].text == "'" {
+            continue; // Raw identifiers and lifetime names are not item keywords.
         }
         if [
             "fn", "struct", "enum", "trait", "type", "const", "static", "mod", "union", "macro",
@@ -264,12 +264,13 @@ mod tests {
             "use owner::Control as r#struct; fn build() { r#struct { arm_for_test: () }; }",
             "use owner::arm_for_test as bridge_for_test;",
             "use owner::arm_for_test as arm_for_test;",
+            "use owner::ControlForTest; fn borrow(_: &'static ControlForTest) {}",
         ] {
             let mut input = Inputs::fixture(
                 &[
                     (
                         "owner/src/lib.rs",
-                        "pub struct Control { pub arm_for_test: () }",
+                        "pub struct Control { pub arm_for_test: () } pub struct ControlForTest;",
                     ),
                     ("app/src/lib.rs", reference),
                 ],
