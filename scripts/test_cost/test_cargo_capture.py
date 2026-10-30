@@ -8,6 +8,8 @@ from unittest.mock import patch
 
 from cargo_capture import CargoRunner, capture_record, compiler_profile, instrument, retention_name
 from test_compiler_units import graph, unit
+from compiler_units import CompilerUnitRefusal
+from unit_plan import declare
 
 
 class CargoCaptureTests(unittest.TestCase):
@@ -54,6 +56,24 @@ class CargoCaptureTests(unittest.TestCase):
             log = (Path(temporary) / 'check.log').read_text()
             self.assertIn('"unit_plan":', log)
             self.assertTrue((Path(temporary) / 'check-units.json').is_file())
+
+    def test_preexecution_drift_refusal_retains_footer_without_invoking_the_compiler(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            command = ['cargo', 'check', '--message-format=json']
+            plan = declare(command, root, {}, json.dumps(graph(unit('owner'))))
+            plan['graph_log'] = 'declared.log'
+            runner = CargoRunner(Path.cwd(), {'RUSTFLAGS': 'unplanned'})
+            with patch.object(runner, 'unit_plan', return_value=plan), \
+                 patch('cargo_capture.subprocess.run') as compiler, \
+                 patch('cargo_capture.subprocess.check_output', side_effect=['head\n', '']), \
+                 self.assertRaises(CompilerUnitRefusal):
+                runner(command, root, root/'refused.log')
+            compiler.assert_not_called()
+            text = (root/'refused.log').read_text()
+            self.assertIn('End: ', text)
+            self.assertIn('Exit code: 125', text)
+            self.assertIn('drifted after declaration', text)
 
     def test_repeated_invocations_cannot_overwrite_retained_lane_evidence(self):
         first = retention_name('test-cost/store/build.log', '0123456789abcdef', '2026-01-01T00:00:01Z')

@@ -126,18 +126,22 @@ class CargoRunner:
             if matches:
                 marker['target_dir'] = max(matches, key=lambda pair: len(pair[0].parts))[1]
         print('prebuild: ' + subprocess.list2cmdline(command), flush=True)
+        refusal = None
         with log_path.open('w', encoding='utf-8') as log:
             log.write(f'Command: {json.dumps(command)}\nWorking directory: {cwd}\nHEAD: {head}\n'
                       f'Git status --short empty: {clean}\nStart: {start}\n\n')
             log.write(json.dumps(marker) + '\n')
             log.flush()
-            if plan is not None:
-                verify(plan, command, cwd, self.environment)
             try:
+                if plan is not None:
+                    verify(plan, command, cwd, self.environment)
                 result = subprocess.run(command, cwd=cwd, env=self.environment, stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT if ordered else subprocess.PIPE,
                                         text=True, encoding='utf-8', errors='replace')
                 result.stderr = result.stderr or ''
+            except CompilerUnitRefusal as error:
+                refusal = error
+                result = subprocess.CompletedProcess(command, 125, '', str(error))
             except OSError as error:
                 result = subprocess.CompletedProcess(command, 127, '', str(error))
             log.write(result.stdout)
@@ -153,6 +157,8 @@ class CargoRunner:
             shutil.copyfile(log_path, retained)
         self.logs.append(retained)
         capture_record(self.environment, retained)
+        if refusal is not None:
+            raise refusal
         if plan is not None:
             from logs import json_objects
             verify(plan, command, cwd, self.environment)

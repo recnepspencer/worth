@@ -51,6 +51,38 @@ class RequiredUnitPlanTests(unittest.TestCase):
             with self.assertRaises(CompilerUnitRefusal):
                 verify(plan, command, root, {})
 
+    def test_cargo_build_and_rustdoc_flag_overrides_cannot_drift_after_declaration(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            command = ['cargo', 'check']
+            plan = declare(command, temporary, {}, json.dumps(graph(unit('owner'))))
+            for name in ('CARGO_BUILD_RUSTFLAGS', 'CARGO_ENCODED_RUSTDOCFLAGS', 'CARGO_INCREMENTAL'):
+                with self.subTest(name=name), self.assertRaises(CompilerUnitRefusal):
+                    verify(plan, command, temporary, {name: 'changed'})
+
+    def test_local_dependency_manifest_or_workspace_lock_drift_refuses_before_compilation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            dependency = root/'dependency'
+            dependency.mkdir()
+            (root/'Cargo.toml').write_text('[workspace]\nmembers=["dependency"]\n')
+            manifest = dependency/'Cargo.toml'
+            manifest.write_text('[package]\nname="owner"\nversion="0.1.0"\n')
+            lock = root/'Cargo.lock'
+            lock.write_text('version=4\n')
+            required = unit('owner')
+            required['pkg_id'] = 'path+' + dependency.as_uri() + '#0.1.0'
+            command = ['cargo', 'check', '--manifest-path', str(root/'Cargo.toml')]
+            plan = declare(command, root, {}, json.dumps(graph(required)))
+            self.assertIn(str(manifest), plan['contract']['manifests'])
+            self.assertIn(str(lock), plan['contract']['manifests'])
+            for path in (manifest, lock):
+                original = path.read_text()
+                path.write_text(original + '\n# changed dependency graph\n')
+                with self.subTest(path=path), self.assertRaises(CompilerUnitRefusal):
+                    verify(plan, command, root, {})
+                path.write_text(original)
+            verify(plan, command, root, {})
+
     def test_unsupported_graph_cannot_become_an_accepted_zero_compilation(self):
         with tempfile.TemporaryDirectory() as temporary:
             with self.assertRaises(CompilerUnitRefusal):
