@@ -231,12 +231,19 @@ fn unknown_schemas_and_missing_fixture_maps_are_refused() {
 }
 
 #[test]
-fn recursive_or_character_class_globs_require_explicit_expansion() {
-    for path in ["tests/**/private.rs", "tests/[abc].rs", "tests/file?.rs"] {
-        assert!(matches!(
-            paths::expand(Path::new(path)),
-            Err(CompilerFixtureRefusal::UnsupportedPattern(_))
-        ));
+fn malformed_glob_syntax_is_refused() {
+    for path in [
+        "tests/**x/private.rs",
+        "tests/[abc.rs",
+        "tests/***/private.rs",
+    ] {
+        assert!(
+            matches!(
+                paths::expand(Path::new(path)),
+                Err(CompilerFixtureRefusal::InvalidPattern { .. })
+            ),
+            "{path}"
+        );
     }
 }
 

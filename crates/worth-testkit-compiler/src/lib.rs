@@ -14,6 +14,9 @@ mod snapshot;
 mod source_locations;
 
 #[cfg(test)]
+mod fixture_path_tests;
+
+#[cfg(test)]
 mod normalization_tests;
 
 #[cfg(test)]

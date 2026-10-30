@@ -9,13 +9,17 @@ pub(crate) fn read(path: &Path) -> Result<String, CompilerFixtureRefusal> {
     })
 }
 
-pub(crate) fn source_key(path: &Path) -> String {
+fn portable_path(path: &Path) -> String {
     let value = path.to_string_lossy().replace('\\', "/");
-    let value = if let Some(unc) = value.strip_prefix("//?/UNC/") {
+    if let Some(unc) = value.strip_prefix("//?/UNC/") {
         format!("//{unc}")
     } else {
         value.strip_prefix("//?/").unwrap_or(&value).to_owned()
-    };
+    }
+}
+
+pub(crate) fn source_key(path: &Path) -> String {
+    let value = portable_path(path);
     if cfg!(windows) {
         value.to_ascii_lowercase()
     } else {
@@ -24,45 +28,30 @@ pub(crate) fn source_key(path: &Path) -> String {
 }
 
 pub(crate) fn expand(path: &Path) -> Result<Vec<PathBuf>, CompilerFixtureRefusal> {
-    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+    if path.file_name().is_none() {
         return Err(CompilerFixtureRefusal::EmptyPattern(path.to_path_buf()));
-    };
-    let directory = path.parent().unwrap_or(Path::new("."));
-    if source_key(directory)
-        .chars()
-        .any(|value| matches!(value, '*' | '?' | '['))
-        || name.chars().any(|value| matches!(value, '?' | '['))
-        || name.matches('*').count() > 1
-    {
-        return Err(CompilerFixtureRefusal::UnsupportedPattern(
-            path.to_path_buf(),
-        ));
     }
-    let Some((prefix, suffix)) = name.split_once('*') else {
+    if !portable_path(path).contains(['*', '?', '[']) {
         return Ok(vec![path.to_path_buf()]);
-    };
-    let entries = std::fs::read_dir(directory).map_err(|error| CompilerFixtureRefusal::Read {
-        path: directory.to_path_buf(),
-        reason: error.to_string(),
+    }
+    let entries = glob::glob(&portable_path(path)).map_err(|error| {
+        CompilerFixtureRefusal::InvalidPattern {
+            path: path.to_path_buf(),
+            reason: error.to_string(),
+        }
     })?;
     let mut paths = Vec::new();
     for entry in entries {
         let entry = entry.map_err(|error| CompilerFixtureRefusal::Read {
-            path: directory.to_path_buf(),
+            path: error.path().to_path_buf(),
             reason: error.to_string(),
         })?;
-        let name = entry.file_name();
-        let name = name.to_string_lossy();
-        if name.starts_with(prefix) && name.ends_with(suffix) {
-            let metadata = entry
-                .metadata()
-                .map_err(|error| CompilerFixtureRefusal::Read {
-                    path: entry.path(),
-                    reason: error.to_string(),
-                })?;
-            if metadata.is_file() {
-                paths.push(entry.path());
-            }
+        let metadata = std::fs::metadata(&entry).map_err(|error| CompilerFixtureRefusal::Read {
+            path: entry.clone(),
+            reason: error.to_string(),
+        })?;
+        if metadata.is_file() {
+            paths.push(entry);
         }
     }
     paths.sort();

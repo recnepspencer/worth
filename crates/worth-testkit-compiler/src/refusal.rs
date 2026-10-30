@@ -31,7 +31,10 @@ pub enum CompilerFixtureRefusal {
         observed: String,
     },
     EmptyPattern(PathBuf),
-    UnsupportedPattern(PathBuf),
+    InvalidPattern {
+        path: PathBuf,
+        reason: String,
+    },
 }
 
 impl std::fmt::Display for CompilerFixtureRefusal {
@@ -49,7 +52,7 @@ impl std::fmt::Display for CompilerFixtureRefusal {
             Self::MissingRenderedDiagnostic { path, index } => write!(formatter, "{} error {index} omits its rendered diagnostic", path.display()),
             Self::WrongDiagnostics { path, expected, observed } => write!(formatter, "{} differs from its compiler snapshot\nexpected:\n{expected}\nobserved:\n{observed}", path.display()),
             Self::EmptyPattern(path) => write!(formatter, "compiler fixture pattern {} selects no source", path.display()),
-            Self::UnsupportedPattern(path) => write!(formatter, "compiler fixture pattern {} requires an explicit supported expansion", path.display()),
+            Self::InvalidPattern { path, reason } => write!(formatter, "invalid compiler fixture pattern {}: {reason}", path.display()),
         }
     }
 }

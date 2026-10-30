@@ -71,6 +71,10 @@ fn mask_external(
             }
             index += 1;
             actual.push(render(&location));
+        } else if line.trim_start().starts_with("...") {
+            // Elision markers do not end the current external snippet. Their
+            // alignment belongs to the compiler, not its line-number gutter.
+            actual.push(line.to_owned());
         } else if let Some((expected_width, actual_width)) = hide_gutter.zip(snippet_width(line)) {
             let preserved_width = match width {
                 GutterWidth::Compiler => actual_width,
@@ -102,7 +106,7 @@ fn snippet_width(line: &str) -> Option<usize> {
         .take_while(|byte| *byte == b' ' || byte.is_ascii_digit())
         .count();
     let tail = &line[width..];
-    (tail == "|" || tail.starts_with("| ") || tail.starts_with("...")).then_some(width)
+    (tail == "|" || tail.starts_with("| ")).then_some(width)
 }
 
 fn registry_version(observed: &str, expected: &str) -> String {

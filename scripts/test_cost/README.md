@@ -125,3 +125,37 @@ the original caller, including unreferenced declarations. Their replacements
 assert the complete producer audience, exclude unrelated court dependencies,
 and preserve target conditions. Every compiler fixture and diagnostic claim is
 retained.
+
+## Resource policy denial fixture composition
+
+The former `resource_policy_proof_artifacts_cannot_be_deserialized` bundle
+contained 21 `DeserializeOwned` denials and exceeded the 400-line snapshot cap
+after the actual compiler's Serde suggestion update. Its bundle identity is
+retired solely for this responsibility split; no type claim or diagnostic is
+retired. `resource_policy_descriptor_artifacts_cannot_be_deserialized` retains
+the original first 11 assertions for descriptors, validated declarations,
+compatibility and lowered policy artifacts. The decision counterpart retains
+the last 10 assertions for decision plans and revalidation proofs. The original
+court test calls both fixtures, preserving all 21 assertions and all 21 complete
+E0277 blocks. Golden changes rebase only fixture filenames, source coordinates
+and source snippet gutters; error codes, labels, trait requirements and example
+lists are unchanged from the current original snapshot. The separate nullable
+optional codegen-stage fixture and its proof-gap ruling are unchanged.
+
+The decision to preserve the original Root caller pattern grammar retires
+`recursive_or_character_class_globs_require_explicit_expansion`, introduced in
+commit `7910247d6d`. That reader test wrongly required refusal of valid caller
+patterns such as `[a-f]*.rs`, `[g-r]*.rs` and `[s-z]*.rs`, which already existed
+at base `1c4b93bb9a`. Standard `glob` pattern support and malformed-pattern
+refusal tests replace that incorrect claim. No fixture membership, compiler
+denial or named implementor assertion is removed or narrowed by this decision.
+
+
+The batched Root production graph enables `serde_json/raw_value`. Thirteen
+existing denial snapshots therefore name `RawValue` in the compiler's first
+eight example implementors instead of the former eighth tuple example. These
+snapshots now assert the actual complete examples; no named implementor is
+masked by the renderer. Every target type, missing trait, error code, source
+span, bound and denial claim remains checked. The old example order described
+separate pre-batch dependency graphs and is retired by this required batching
+cutover; it was not the target type's serialization authority claim.

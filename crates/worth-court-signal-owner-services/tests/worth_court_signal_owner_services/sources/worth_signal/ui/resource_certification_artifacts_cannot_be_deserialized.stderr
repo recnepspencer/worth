@@ -7,12 +7,12 @@ error[E0277]: the trait bound `ResourceCertificationRecord: serde::de::Deseriali
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceCertificationRecord` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -30,12 +30,12 @@ error[E0277]: the trait bound `ResourceCertificationSummary: serde::de::Deserial
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceCertificationSummary` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -53,12 +53,12 @@ error[E0277]: the trait bound `ResourceCertificationBundle: serde::de::Deseriali
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceCertificationBundle` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -76,12 +76,12 @@ error[E0277]: the trait bound `ResourceMilestoneBHostileScenarioEvidenceRow: ser
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneBHostileScenarioEvidenceRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -99,12 +99,12 @@ error[E0277]: the trait bound `ResourceMilestoneBHostileScenarioEvidence: serde:
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneBHostileScenarioEvidence` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -122,12 +122,12 @@ error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseoutRow: serde::
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneBPerformanceCloseoutRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -145,12 +145,12 @@ error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseoutSummary: ser
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneBPerformanceCloseoutSummary` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -168,12 +168,12 @@ error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseout: serde::de:
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneBPerformanceCloseout` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -191,12 +191,12 @@ error[E0277]: the trait bound `ResourceMilestoneBScenarioRow: serde::de::Deseria
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneBScenarioRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -214,12 +214,12 @@ error[E0277]: the trait bound `ResourceMilestoneBScenarioMatrix: serde::de::Dese
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneBScenarioMatrix` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -237,12 +237,12 @@ error[E0277]: the trait bound `ResourceMilestoneBCertificationRun: serde::de::De
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneBCertificationRun` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -260,12 +260,12 @@ error[E0277]: the trait bound `ResourceMilestoneCPolicyScenarioRow: serde::de::D
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneCPolicyScenarioRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -283,12 +283,12 @@ error[E0277]: the trait bound `ResourceMilestoneCPolicyScenarioMatrix: serde::de
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneCPolicyScenarioMatrix` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -306,12 +306,12 @@ error[E0277]: the trait bound `ResourceMilestoneCPolicyPerformanceCloseoutRow: s
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneCPolicyPerformanceCloseoutRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -329,12 +329,12 @@ error[E0277]: the trait bound `ResourceMilestoneCPolicyPerformanceCloseout: serd
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneCPolicyPerformanceCloseout` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
@@ -352,12 +352,12 @@ error[E0277]: the trait bound `ResourceMilestoneCCertificationRun: serde::de::De
    = help: the following other types implement trait `Deserialize<'de>`:
              &'a Path
              &'a [u8]
+             &'a serde_json::raw::RawValue
              &'a str
              ()
              (T,)
              (T0, T1)
              (T0, T1, T2)
-             (T0, T1, T2, T3)
            and $N others
    = note: required for `ResourceMilestoneCCertificationRun` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`

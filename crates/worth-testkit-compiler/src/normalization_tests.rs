@@ -192,3 +192,18 @@ fn an_existing_constructor_count_placeholder_masks_only_the_numeric_tail() {
     let (expected, observed) = compared(&expected, &changed, &source()).unwrap();
     assert_ne!(expected, observed);
 }
+
+#[test]
+fn external_definition_elisions_keep_the_compiler_alignment() {
+    let actual = format!("error: denied\n --> {}:81:3\n    |\n81  | fn sealed() {{\n... |     required();\n    | }}\n...\n91  | fn another() {{}}", workspace().join("crates/worth-foundational/src/contracts.rs").display());
+    let expected = "error: denied\n --> src/contracts.rs\n  |\n  | fn sealed() {\n... |     required();\n  | }\n...\n  | fn another() {}";
+    let (expected, observed) = compared(expected, &actual, &source()).unwrap();
+    assert_eq!(expected, observed);
+    for changed in [
+        actual.replace("required", "optional"),
+        actual.replace("another", "removed"),
+    ] {
+        let (expected, observed) = compared(expected.as_str(), &changed, &source()).unwrap();
+        assert_ne!(expected, observed);
+    }
+}
