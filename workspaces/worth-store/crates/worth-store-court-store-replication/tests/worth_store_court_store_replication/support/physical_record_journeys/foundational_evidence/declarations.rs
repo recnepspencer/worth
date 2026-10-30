@@ -1,8 +1,33 @@
-pub(crate) use {worth_foundational::compare_canonical_basis, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::prepare_canonical_comparison, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalMismatchKind};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::lower_record_operation_performance_receipt, worth_store::physical_runtime::lower_record_publication_canonical_basis, worth_store::physical_runtime::PhysicalRecordAccessSummary, worth_store::physical_runtime::PhysicalRecordPerformanceContract, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordLocatePerformanceExpectation, worth_store::physical_runtime::RecordManifestPerformanceExpectation, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanPerformanceExpectation, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::RecordTransferPerformanceExpectation};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::compare_canonical_basis,
+    worth_foundational::prepare_canonical_basis_sequence,
+    worth_foundational::prepare_canonical_comparison, worth_foundational::CanonicalBasisEntry,
+    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue,
+    worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis,
+    worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalMismatchKind,
+};
+pub(crate) use {
+    worth_store::physical_runtime::lower_record_operation_performance_receipt,
+    worth_store::physical_runtime::lower_record_publication_canonical_basis,
+    worth_store::physical_runtime::PhysicalRecordAccessSummary,
+    worth_store::physical_runtime::PhysicalRecordPerformanceContract,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordLocatePerformanceExpectation,
+    worth_store::physical_runtime::RecordManifestPerformanceExpectation,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanPerformanceExpectation,
+    worth_store::physical_runtime::RecordScanRequest,
+    worth_store::physical_runtime::RecordTransferPerformanceExpectation,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+pub(crate) use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 pub(crate) fn zero_locate_expectation() -> RecordLocatePerformanceExpectation {
     RecordLocatePerformanceExpectation {
@@ -60,9 +85,14 @@ pub(crate) fn success<T, D>(outcome: TransitionOutcome<T, D>) -> T {
     }
 }
 
-pub(crate) fn assert_rows_fail_closed(receipt: &worth_store::physical_runtime::StoreRecordPerformanceReceipt) {
-    use {worth_foundational::performance_api::lower_lane::receipts};
-    use {worth_foundational::FoundationalCounterBackedPerformanceReceiptConstructionDenial as Denial, worth_foundational::FoundationalPerformanceCounterRow};
+pub(crate) fn assert_rows_fail_closed(
+    receipt: &worth_store::physical_runtime::StoreRecordPerformanceReceipt,
+) {
+    use worth_foundational::performance_api::lower_lane::receipts;
+    use {
+        worth_foundational::FoundationalCounterBackedPerformanceReceiptConstructionDenial as Denial,
+        worth_foundational::FoundationalPerformanceCounterRow,
+    };
 
     assert!(matches!(
         receipts::counter_backed_performance_receipt(receipt.bundle().clone()).finish(),

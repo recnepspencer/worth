@@ -1,9 +1,34 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::PhysicalLocatorReadmissionDenial, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordAppendDenial, worth_store::physical_runtime::RecordBootstrapDenial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordServingTerminalPosture};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole};
-pub(crate) use {worth_store_physical_format::PhysicalFreeSpaceMembershipBlock, worth_store_physical_format::RecordAllocationClass, worth_store_physical_format::RecordFreeSpaceManifestEntry};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_physical_backend::MediaOperationRole;
+pub(crate) use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::PhysicalLocatorReadmissionDenial,
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordAppendDenial,
+    worth_store::physical_runtime::RecordBootstrapDenial,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordServingTerminalPosture,
+};
+pub(crate) use {
+    worth_store_physical_format::PhysicalFreeSpaceMembershipBlock,
+    worth_store_physical_format::RecordAllocationClass,
+    worth_store_physical_format::RecordFreeSpaceManifestEntry,
+};
 
-pub(crate) use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::physical_record_journeys::success};
+pub(crate) use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(crate) fn assert_mutation_fenced(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
@@ -15,12 +40,17 @@ pub(crate) fn assert_mutation_fenced(
             placement,
             worth_store::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
             worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([209; 32]),
-            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"must stay sealed".as_slice()]).unwrap(),
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                b"must stay sealed".as_slice()
+            ])
+            .unwrap(),
         )
         .into_raw(),
-        worth_proof::TransitionOutcome::Denied(worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
-            worth_store::physical_runtime::RecordAppendDenial::ServingRequiresInspection
-        ))
+        worth_proof::TransitionOutcome::Denied(
+            worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
+                worth_store::physical_runtime::RecordAppendDenial::ServingRequiresInspection
+            )
+        )
     ));
 }
 
@@ -29,14 +59,17 @@ pub(crate) fn assert_current_root_damage_denies_bootstrap(
     format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
     access: worth_store::physical_runtime::AdmittedRecordAccessPolicy,
 ) {
-    let outcome = open_record_store!(media(root), |durability| worth_store::physical_runtime::PhysicalRecordOpen::new(
-        format, access, durability
-    ))
+    let outcome = open_record_store!(media(root), |durability| {
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+    })
     .into_raw();
     let worth_proof::TransitionOutcome::Denied(denial) = outcome else {
         panic!("an unreferenced free-space or routing block must deny Store bootstrap");
     };
-    assert_eq!(denial.reason(), worth_store::physical_runtime::RecordBootstrapDenial::CurrentRootDamaged);
+    assert_eq!(
+        denial.reason(),
+        worth_store::physical_runtime::RecordBootstrapDenial::CurrentRootDamaged
+    );
     denial.into_runtime().close();
 }
 

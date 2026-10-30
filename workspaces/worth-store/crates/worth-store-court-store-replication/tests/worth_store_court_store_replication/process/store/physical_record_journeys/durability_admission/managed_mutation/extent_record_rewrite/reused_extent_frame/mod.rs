@@ -71,7 +71,9 @@ fn held_reader_prevents_reuse_and_reused_frame_rejects_forged_old_route() {
     );
     assert!(matches!(
         validate_extent_arena_frame(
-            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&frame[..104]),
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+                &frame[..104]
+            ),
             worth_store_physical_integrity::ExtentArenaFrameExpectation::Manifest(new_scope),
         )
         .0,
@@ -86,7 +88,9 @@ fn held_reader_prevents_reuse_and_reused_frame_rejects_forged_old_route() {
     assert!(
         matches!(
             validate_extent_arena_frame(
-                worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&frame[..104]),
+                worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+                    &frame[..104]
+                ),
                 worth_store_physical_integrity::ExtentArenaFrameExpectation::Manifest(old_scope),
             )
             .0,

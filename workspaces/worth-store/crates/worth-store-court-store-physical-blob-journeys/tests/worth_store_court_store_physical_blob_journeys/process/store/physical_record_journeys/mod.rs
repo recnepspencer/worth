@@ -4,6 +4,8 @@ pub(crate) mod baseline_admission;
 pub(crate) mod batch_admission;
 #[path = "bootstrap_faults/mod.rs"]
 pub(crate) mod bootstrap_faults;
+#[path = "child_process.rs"]
+pub(crate) mod child_process;
 #[path = "configuration_boundaries/mod.rs"]
 pub(crate) mod configuration_boundaries;
 #[path = "durable_publication/mod.rs"]

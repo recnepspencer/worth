@@ -1,5 +1,3 @@
-
-
 pub(crate) fn prove_causal_work_and_resident_reuse(observations: &[ScaleObservation]) {
     assert!(observations.iter().all(|value| {
         let point_frames = value.point_blocks.saturating_add(value.point_pages);

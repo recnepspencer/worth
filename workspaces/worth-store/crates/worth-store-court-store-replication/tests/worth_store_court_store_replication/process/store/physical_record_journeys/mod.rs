@@ -1,3 +1,5 @@
+#[path = "child_process.rs"]
+pub(crate) mod child_process;
 #[path = "durability_admission/mod.rs"]
 pub(crate) mod durability_admission;
 #[path = "foundational_evidence/mod.rs"]

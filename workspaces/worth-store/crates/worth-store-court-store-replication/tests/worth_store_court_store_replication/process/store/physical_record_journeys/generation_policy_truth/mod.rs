@@ -1,12 +1,32 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::generation_policy_truth::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::generation_policy_truth::*;
+use std::path::Path;
 
-use {worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PageFillPercent, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::SegmentPageCount};
-use {worth_store_offline_verifier::OfflineDurableManifestWalk, worth_store_offline_verifier::OfflineRecordPlacement};
-use {worth_store_physical_backend::MediaOperationRole};
-use {worth_store_physical_format::RecordAllocationClass};
+use worth_store_physical_backend::MediaOperationRole;
+use worth_store_physical_format::RecordAllocationClass;
+use {
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PageFillPercent,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::SegmentPageCount,
+};
+use {
+    worth_store_offline_verifier::OfflineDurableManifestWalk,
+    worth_store_offline_verifier::OfflineRecordPlacement,
+};
 
-use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::physical_record_journeys::success};
+use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn multi_page_cow_preserves_untouched_page_generation_and_all_records() {
@@ -14,14 +34,20 @@ fn multi_page_cow_preserves_untouched_page_generation_and_all_records() {
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(4);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let first_payloads = [vec![1_u8; 3_000], vec![2_u8; 3_000], vec![3_u8; 3_000]];
     let first = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("multi-page-cow-generation", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter(first_payloads.iter()).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "multi-page-cow-generation",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter(first_payloads.iter())
+            .unwrap(),
     );
     let first = &first.settled_members()[0];
     let old_root = decode_root(&root, 2, format.declaration());
@@ -33,8 +59,14 @@ fn multi_page_cow_preserves_untouched_page_generation_and_all_records() {
     let fourth_publication = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("multi-page-cow-generation", 2),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([fourth_payload.as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "multi-page-cow-generation",
+            2,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter(
+            [fourth_payload.as_slice()],
+        )
+        .unwrap(),
     );
     let fourth = &fourth_publication.settled_members()[0];
     let after_cow = serving.media_counters();
@@ -104,7 +136,9 @@ fn multi_page_cow_preserves_untouched_page_generation_and_all_records() {
             .expect("read protection admission")
             .open(
                 first.record_id(index).unwrap(),
-                worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(3_000).unwrap()),
+                worth_store::physical_runtime::RecordReadLimits::new(
+                    worth_store::physical_runtime::RecordByteLimit::new(3_000).unwrap(),
+                ),
             )
             .unwrap();
         assert_eq!(read_record(session, payload.len()).0, *payload);
@@ -114,7 +148,9 @@ fn multi_page_cow_preserves_untouched_page_generation_and_all_records() {
         .expect("read protection admission")
         .open(
             fourth.record_id(0).unwrap(),
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(3_000).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(3_000).unwrap(),
+            ),
         )
         .unwrap();
     assert_eq!(read_record(session, fourth_payload.len()).0, fourth_payload);
@@ -129,13 +165,22 @@ fn segment_target_drift_opens_a_new_policy_honest_segment() {
     let first_policy = placement(format, 2);
     let second_policy = placement(format, 3);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, first_policy, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format,
+            first_policy,
+            access,
+            durability,
+        )
     }));
     let first = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         first_policy,
-        worth_store_testkit_store::durable_publication::material::certification_material("segment-target-policy-drift", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"first".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "segment-target-policy-drift",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"first".as_slice()])
+            .unwrap(),
     );
     let first = &first.settled_members()[0];
     let checkpoint =
@@ -156,8 +201,12 @@ fn segment_target_drift_opens_a_new_policy_honest_segment() {
     let second = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         second_policy,
-        worth_store_testkit_store::durable_publication::material::certification_material("segment-target-policy-drift", 2),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"second".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "segment-target-policy-drift",
+            2,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"second".as_slice()])
+            .unwrap(),
     );
     let second = &second.settled_members()[0];
     serving.close();
@@ -191,7 +240,9 @@ fn segment_target_drift_opens_a_new_policy_honest_segment() {
     let inline_ranges = free
         .entries
         .iter()
-        .filter(|entry| entry.class() == worth_store_physical_format::RecordAllocationClass::InlinePage)
+        .filter(|entry| {
+            entry.class() == worth_store_physical_format::RecordAllocationClass::InlinePage
+        })
         .map(|entry| {
             (
                 entry.owner(),
@@ -215,7 +266,9 @@ fn segment_target_drift_opens_a_new_policy_honest_segment() {
             .expect("read protection admission")
             .open(
                 record,
-                worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(16).unwrap()),
+                worth_store::physical_runtime::RecordReadLimits::new(
+                    worth_store::physical_runtime::RecordByteLimit::new(16).unwrap(),
+                ),
             )
             .unwrap();
         assert_eq!(read_record(session, expected.len()).0, expected);
@@ -231,26 +284,43 @@ fn returning_to_an_older_policy_does_not_search_historical_segments() {
     let two_page_policy = placement(format, 2);
     let three_page_policy = placement(format, 3);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, two_page_policy, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format,
+            two_page_policy,
+            access,
+            durability,
+        )
     }));
     let first = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         two_page_policy,
-        worth_store_testkit_store::durable_publication::material::certification_material("historical-segment-policy", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"first".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "historical-segment-policy",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"first".as_slice()])
+            .unwrap(),
     );
     let first = &first.settled_members()[0];
     worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         three_page_policy,
-        worth_store_testkit_store::durable_publication::material::certification_material("historical-segment-policy", 2),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"second".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "historical-segment-policy",
+            2,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"second".as_slice()])
+            .unwrap(),
     );
     let third = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         two_page_policy,
-        worth_store_testkit_store::durable_publication::material::certification_material("historical-segment-policy", 3),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"third".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "historical-segment-policy",
+            3,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"third".as_slice()])
+            .unwrap(),
     );
     let third = &third.settled_members()[0];
     serving.close();
