@@ -111,6 +111,20 @@ fn install_fixture_world_with_source(
     let estate = compose_estate(&spec);
     let estate_world = estate.clone();
     let world_seed = seed::assemble(snapshot, estate, &identities, &spec);
+    // These positive scale fixtures measure warm authorization, not bulk authoring.
+    let world_seed = if spec.unrelated_grants > 0 {
+        world_seed.with_execution_policy_for_test(worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(128 * 1024 * 1024),
+                Some(16_000_000 + spec.unrelated_grants as u64 * 64_000),
+            ),
+        ))
+    } else {
+        world_seed
+    };
     let world_seed = match deployment_grant {
         Some(grant) => world_seed.program_deployment_grant(grant),
         None => world_seed,

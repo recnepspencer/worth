@@ -73,7 +73,13 @@ pub(super) fn prepare_installation(
     ];
     let declaration = BankSchema::declaration()
         .map_err(|denial| BankIdentityRuntimeBuildError::SchemaDeclaration(Box::new(denial)))?;
-    let limits = bank_application_limits();
+    let resources = super::product_world_resources::bank_product_world_resources();
+    #[cfg(test)]
+    let resources = match world.as_ref().and_then(|seed| seed.execution_policy) {
+        Some(policy) => resources.with_execution_policy(policy),
+        None => resources,
+    };
+    let limits = application_limits(resources);
     let mut invariant_projection = None;
     let initialize =
         |_phase: &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -207,11 +213,17 @@ fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling 
 }
 
 pub(crate) fn bank_application_limits() -> WorthQueryInMemoryApplicationLimits {
+    application_limits(super::product_world_resources::bank_product_world_resources())
+}
+
+fn application_limits(
+    resources: worth_query_host::facade::runtime::WorthQueryProductWorldResources,
+) -> WorthQueryInMemoryApplicationLimits {
     let queries = WorthQueryApplicationQueryResourceProfile::new(
         std::num::NonZeroUsize::new(64).expect("native graph concurrency is nonzero"),
     );
     WorthQueryInMemoryApplicationLimits::new(
-        super::product_world_resources::bank_product_world_resources(),
+        resources,
         queries,
         SignalConditionalEvaluationBudget::development(),
     )
