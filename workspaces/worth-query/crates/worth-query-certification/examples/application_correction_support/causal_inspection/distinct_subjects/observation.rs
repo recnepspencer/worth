@@ -12,7 +12,7 @@ use worth_query_host::facade::{
     *,
 };
 
-pub(super) fn read(
+pub(in super::super) fn read(
     application: &host::OutputHost,
     external: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
     scope: &WorthQueryRequestScope,

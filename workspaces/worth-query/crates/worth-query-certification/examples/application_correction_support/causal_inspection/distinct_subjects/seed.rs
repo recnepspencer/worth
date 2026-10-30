@@ -4,7 +4,7 @@ use super::super::capability::Disclosure;
 use worth_query_host::facade::primary_graph::*;
 pub(super) const OBSERVER: &str = "observer";
 pub(super) const DECOY: &str = "observer-decoy";
-pub(super) fn seed(
+pub(in super::super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     for key in [OBSERVER, DECOY] {

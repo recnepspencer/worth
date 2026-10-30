@@ -18,6 +18,9 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        contracts.producer::<super::causal_inspection::retired_outputs::calculation::Producer>()?;
+        contracts
+            .conditional::<super::causal_inspection::retired_outputs::readiness::Readiness>()?;
         contracts.producer::<super::calculation::Producer>()?;
         contracts.producer::<super::aspect_input::calculation::Producer>()?;
         contracts.producer::<super::scalar_input::calculation::Producer>()?;
@@ -34,6 +37,13 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         setup.handler::<super::causal_inspection::distinct_subjects::grant_status::Binding, _>(
             super::causal_inspection::distinct_subjects::grant_status::Handler,
         )?;
+        setup.handler::<super::causal_inspection::retired_outputs::calculation::Binding, _>(
+            super::causal_inspection::retired_outputs::calculation::Handler,
+        )?;
+        setup.producer::<super::causal_inspection::retired_outputs::calculation::Producer>(
+            super::causal_inspection::retired_outputs::calculation::Provider,
+        )?;
+        setup.conditional::<super::causal_inspection::retired_outputs::readiness::Readiness>(())?;
         setup.handler::<super::calculation::Binding, _>(super::calculation::Handler)?;
         setup.handler::<super::scalar_input::authoring::Binding, _>(
             super::scalar_input::authoring::Handler,

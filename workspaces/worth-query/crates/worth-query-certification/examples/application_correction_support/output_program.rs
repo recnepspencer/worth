@@ -113,7 +113,10 @@ impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
         Root,
         (
             super::aspect_input::program::Root,
-            super::scalar_input::program::Root,
+            (
+                super::scalar_input::program::Root,
+                super::causal_inspection::retired_outputs::program::Root,
+            ),
         ),
     )>;
     type Rules = ApplicationRuleLeaf;
@@ -126,6 +129,7 @@ impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
     }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
+            super::causal_inspection::retired_outputs::program::feature(),
             super::scalar_input::program::source_feature(),
             super::scalar_input::program::calculation_feature(),
             super::aspect_input::program::source_feature(),

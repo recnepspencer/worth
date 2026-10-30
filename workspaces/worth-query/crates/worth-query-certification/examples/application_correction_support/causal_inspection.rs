@@ -10,6 +10,7 @@ pub mod independent;
 pub mod journey;
 pub mod output_query;
 pub mod query;
+pub mod retired_outputs;
 pub mod source_only;
 pub struct SourceOnlyDisclosure;
 impl ApplicationSourceDisclosureBinding<NumericSchema> for SourceOnlyDisclosure {
@@ -43,6 +44,7 @@ impl ApplicationSourceDisclosureBinding<NumericSchema> for SourceDisclosure {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
+    let schema = retired_outputs::calculation::declare(schema);
     distinct_subjects::grant_status::declare(capability::declare(schema))
         .application_query(distinct_subjects::query::definition())
         .application_query_binding::<distinct_subjects::query::Binding>()

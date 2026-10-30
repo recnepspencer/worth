@@ -113,3 +113,8 @@ fn distinct_subject_permissions_cannot_be_borrowed_and_revoke_independently() {
 fn distinct_original_query_subject_keeps_generation_cancellation_and_release() {
     super::model::causal_inspection::distinct_subjects::lifecycle::original_query_subject_refuses_replacement_generation_and_cancelled_inspection();
 }
+
+#[test]
+fn retained_original_produced_output_connects_after_retirement_and_equal_replacement() {
+    super::model::causal_inspection::retired_outputs::original_output_survives_retirement_and_equal_replacement();
+}

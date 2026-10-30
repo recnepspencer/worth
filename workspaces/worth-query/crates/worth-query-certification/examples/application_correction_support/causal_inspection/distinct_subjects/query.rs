@@ -23,8 +23,9 @@ worth_query_portable_type!(ReferencesSlot => "distinct-subject.references-slot.v
 pub struct Row {
     pub key: String,
     pub references: Vec<(String, u64)>,
+    pub reference_entities: Vec<worth_query_host::facade::application_invariants::EntityId>,
 }
-worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "distinct-subject.result.v1" });
+worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "distinct-subject.result.v2" });
 worth_query_structured_value_binding!(pub ChildBinding for () { identity: "distinct-subject.child.v1" });
 worth_query_application_query!(pub Query for NumericSchema, identity "distinct-subject.query.v1",
     parameters ParametersBinding, result ResultBinding, scope Number => "Number", name "distinct-subject");
@@ -140,12 +141,15 @@ impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
         row: &WorthQueryApplicationProjectionRow<'_, NumericSchema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         let mut result = Vec::new();
+        let mut reference_entities = Vec::new();
         for child in row.many(references())?.iter() {
+            reference_entities.push(child.entity_id());
             result.push((child.field(child_key())?, child.field(calculated())?));
         }
         Ok(Self {
             key: row.field(root_key())?,
             references: result,
+            reference_entities,
         })
     }
 }

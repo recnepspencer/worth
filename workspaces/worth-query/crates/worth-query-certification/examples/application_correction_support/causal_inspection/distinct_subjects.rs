@@ -10,9 +10,9 @@ use worth_query_host::facade::{
 };
 pub mod grant_status;
 pub mod lifecycle;
-mod observation;
+pub(super) mod observation;
 pub mod query;
-mod seed;
+pub(super) mod seed;
 pub fn connects_distinct_original_source_and_nested_query_subjects() {
     let application = install();
     let readers = application.application_query_basis_observer();
@@ -33,23 +33,13 @@ pub fn connects_distinct_original_source_and_nested_query_subjects() {
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let (source, producer, read) = journey::perform(&application, 11, "distinct-source");
     let (after, row) = observation::read(&application, &principal, &scope, &read, seed::OBSERVER);
-    assert_eq!(
-        row,
-        query::Row {
-            key: seed::OBSERVER.to_owned(),
-            references: vec![("numeric".to_owned(), 23)]
-        }
-    );
+    assert_eq!(row.key, seed::OBSERVER);
+    assert_eq!(row.references, vec![("numeric".to_owned(), 23)]);
     assert_ne!(row.key, row.references[0].0);
     let (decoy, decoy_row) =
         observation::read(&application, &principal, &scope, &read, seed::DECOY);
-    assert_eq!(
-        decoy_row,
-        query::Row {
-            key: seed::DECOY.to_owned(),
-            references: vec![(seed::OBSERVER.to_owned(), 0)]
-        }
-    );
+    assert_eq!(decoy_row.key, seed::DECOY);
+    assert_eq!(decoy_row.references, vec![(seed::OBSERVER.to_owned(), 0)]);
     drop(read);
     let denial = inspect(
         &application,
@@ -100,7 +90,7 @@ fn install() -> host::OutputHost {
         seed::seed,
     )
 }
-fn link(application: &host::OutputHost, from: &str, to: &str, key: &str) {
+pub(super) fn link(application: &host::OutputHost, from: &str, to: &str, key: &str) {
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let outcome = application

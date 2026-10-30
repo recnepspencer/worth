@@ -1379,7 +1379,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.4 | Independent source/query bindings and permissions | Complete; qualified `21674b9dac` | Integrated regression protection in 9.11 |
 | 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
-| 9.7 | Remaining connection shapes and lifecycle cases | In progress; U64 Scalar and distinct nested-subject journeys qualified | Retired original output-role connections |
+| 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
 | 9.8 | Genuine equivalent-output suppression explanations | Open | Actual Signal suppression evidence through the application surface |
 | 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
@@ -1462,7 +1462,7 @@ Do not weaken Required-child semantics or substitute scalar owner tests.
 
 #### Phase 9.7: Remaining Connection Shapes And Lifecycle Cases
 
-**Status: in progress; U64 Scalar and distinct nested-subject slices qualified. Depends on: 9.4-9.6 for their respective meanings.** Complete
+**Status: complete; bounded supported shapes qualified. Depends on: 9.4-9.6 for their respective meanings.** Complete
 the public Query scalar storage/binding journey, connections between distinct
 genuine subjects and connections involving retired output roles. Preserve full
 generations, installed shape/contract interpretation, actual performed reads,
@@ -1478,8 +1478,8 @@ The bounded scalar journey installs an Optional Scalar aspect with one Required
 output. It connects the original performed input, source-created Native revision,
 declared role and settled query observation under independent admissions. Equal,
 no-op, ABA, foreign-source and reader-release controls retain their distinct
-meanings. Retired original output roles remain required for 9.7 and parent
-Phase 9.
+meanings. The retired-original journey below completes the remaining 9.7 shape;
+parent Phase 9 remains open through 9.8-9.11.
 
 The qualified Scalar-output journey extends that ordinary producer with an
 explicitly installed Optional Scalar output, Required `u64` child and Scalar-only
@@ -1512,6 +1512,29 @@ values, a same-kind wrong nested output, swapped subject capabilities, actual
 withdrawal of either scoped grant, replacement generation, cancellation and
 release. This names nested observation support without claiming cross-entity
 producer publication or an unrestricted path language.
+
+The qualified retirement shape is a pre-retirement nested observation of B's
+produced field, rooted at surviving source A. An ordinary source action and its
+existing calculator settle first; a separately declared program output root then
+runs the installed producer reading A and publishing B under a Preserve role.
+The public program-demand path supplies the genuine receipt and retained supplier;
+the ordinary non-program demand's `ApplicationProgramRequired` refusal remains
+intact. No new publication authority or constructor is introduced.
+
+The public journey independently observes B0's Native full-generation identity
+and expected value, retains that exact nested projection, lawfully retires B0,
+and connects the original source/producer/publication after retirement. It then
+restores the same selector and equal value under genuine B1, proves the current
+nested projection names B1 while the original names B0, and connects only the
+retained original supplier. A plain replacement-head query cannot acquire that
+supplier; current grant withdrawal refuses before protected cause discovery.
+Reader counts return to baseline after success, refusal and final close. The
+existing grouped correction lane passes all 50 tests, including all 26 causal
+inspection journeys, without a new test binary. Boundary/context, formatting and
+dirty line-cap checks pass. This qualifies the named pre-retirement original;
+an empty post-retirement query establishing a Retire publication remains a typed
+unsupported shape. This slice adds no archive, arbitrary path language or
+correction authority.
 
 #### Phase 9.8: Genuine Equivalent-Output Suppression Explanations
 

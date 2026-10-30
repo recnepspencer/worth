@@ -190,6 +190,24 @@ This qualified shape is a nested observation of A from B. Applications still
 need actual performed input, canonical output and declared role correspondence;
 a reference alone cannot establish a producer or authorize another subject.
 
+### Retained Output After Retirement
+
+An original query rooted at a surviving source A can retain its nested observation
+of output B. Later lawful retirement of B does not replace the original observed
+field or its declared output correspondence. Inspect that original under fresh
+source/query admission. A replacement under B's old selector has a different full
+generation, even when it has equal field values; a current query cannot borrow the
+original supplier.
+
+The [compiled retirement journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/retired_outputs.rs)
+uses a real installed producer reading A and publishing B through a Preserve role.
+It retains B's actual Native identity and independently expected value, retires B
+through an ordinary action, and inspects the original before and after equal-value
+replacement. Current grant withdrawal still refuses before cause discovery and
+all holders release their readers. This supports inspection of a pre-retirement
+original. An empty post-retirement query does not establish a Retire publication
+connection; that unsupported shape continues to refuse.
+
 ### Original Settled Producer Custody
 
 Read through the genuine settled observation to preserve its supplier association.
