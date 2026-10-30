@@ -8,7 +8,7 @@ pub fn check(config: &toml::Value) -> Vec<Diagnostic> {
     for split in &splits {
         let fail = |message| {
             diagnostic(
-                "BC9002",
+                Code::Topology,
                 &format!("{CONFIG}court-frontier-splits.toml"),
                 message,
             )

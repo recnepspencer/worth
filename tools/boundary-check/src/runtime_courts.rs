@@ -184,7 +184,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         input.text(&format!("{CONFIG}src-court-baseline.json")),
     ) {
         Ok(b) => b,
-        Err(e) => return vec![diagnostic("BC9002", CONFIG, e.to_string())],
+        Err(e) => return vec![diagnostic(Code::Topology, CONFIG, e.to_string())],
     };
     if baseline.iter().any(|b| {
         b["source"].as_str().is_none()
@@ -194,7 +194,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 .is_none_or(|a| a.iter().any(|r| r.as_str().is_none()))
     }) {
         return vec![diagnostic(
-            "BC9002",
+            Code::Topology,
             CONFIG,
             "invalid runtime-root baseline schema",
         )];
@@ -214,7 +214,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         })
         .map(|f| {
             diagnostic(
-                "BC9002",
+                Code::Topology,
                 &format!("{}::{}", f.source, f.module),
                 serde_json::to_string(&f).unwrap(),
             )

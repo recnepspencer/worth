@@ -82,7 +82,7 @@ fn products_cannot_hide_integration_tests_in_the_file_list() {
     input
         .paths
         .insert("workspaces/a/crates/product/tests/hidden.rs".into());
-    assert!(check(&input).iter().any(|d| d.code == "BC9002"));
+    assert!(check(&input).iter().any(|d| d.code == Code::Topology));
 }
 #[test]
 fn dependency_denials_and_allowlists_reject_only_disallowed_edges() {

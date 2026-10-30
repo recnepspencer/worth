@@ -10,13 +10,13 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     let config =
         match toml::from_str::<toml::Value>(input.text(&format!("{CONFIG}consumer-docs.toml"))) {
             Ok(c) => c,
-            Err(e) => return vec![diagnostic("BC8008", CONFIG, e.to_string())],
+            Err(e) => return vec![diagnostic(Code::DocumentRegion, CONFIG, e.to_string())],
         };
     let mut out = Vec::new();
     for document in strings(&config, "documents") {
         let Some(text) = input.files.get(&document) else {
             out.push(diagnostic(
-                "BC8008",
+                Code::DocumentRegion,
                 &document,
                 "configured document missing",
             ));
@@ -55,7 +55,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     let source = binding.map_or_else(|| format!("workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/{name}"), |b| format!("{}/{}", string(b, "crate_root"), string(b, "source")));
                     if !region_matches(input.text(&source), &code) {
                         out.push(diagnostic(
-                            "BC8008",
+                            Code::DocumentRegion,
                             &subject,
                             format!("compiled code region differs from {source}"),
                         ));
@@ -65,7 +65,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             }
             if marker.take().is_some() {
                 out.push(diagnostic(
-                    "BC8008",
+                    Code::DocumentRegion,
                     &subject,
                     "compiled marker must immediately precede a fenced region",
                 ));
@@ -73,7 +73,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             for destination in destinations(line, &definitions) {
                 if let Err(reason) = link(input, &document, &destination) {
                     out.push(diagnostic(
-                        "BC8009",
+                        Code::DocumentLink,
                         &subject,
                         format!("{destination}: {reason}"),
                     ));
@@ -82,7 +82,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         }
         if marker.is_some() {
             out.push(diagnostic(
-                "BC8008",
+                Code::DocumentRegion,
                 &document,
                 "compiled marker has no fenced region",
             ));
@@ -341,7 +341,7 @@ fn facts(input: &Inputs, config: &toml::Value) -> Vec<Diagnostic> {
             .unwrap_or_default();
         if definitions.len() != 1 || definitions[0] != rows {
             out.push(diagnostic(
-                "BC8008",
+                Code::DocumentRegion,
                 document,
                 format!("source-facts variant or payload drift for {name}"),
             ));

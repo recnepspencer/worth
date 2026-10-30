@@ -6,19 +6,59 @@ use serde::{
 use std::collections::BTreeMap;
 
 pub const CONFIG: &str = "tools/boundary-check/config/";
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Code {
+    Dependency,
+    Clippy,
+    Control,
+    Construction,
+    DocumentRegion,
+    DocumentLink,
+    OneBuild,
+    Topology,
+    InputFailure,
+}
+impl Code {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Dependency => "BC2001_BAND_DEPENDENCY_VIOLATION",
+            Self::Clippy => "BC7009_CANONICAL_ORDER",
+            Self::Control => "BC7012_CONTROL_SEAL",
+            Self::Construction => "BC7013_CERTIFICATION_CONSTRUCTION_SEAL",
+            Self::DocumentRegion => "BC8008_CONSUMER_DOC_MARKER",
+            Self::DocumentLink => "BC8009_CONSUMER_DOC_LINK",
+            Self::OneBuild => "BC9001_ONE_BUILD",
+            Self::Topology => "BC9002_TEST_TOPOLOGY",
+            Self::InputFailure => "BOUNDARY_INPUT_FAILURE",
+        }
+    }
+    fn legal_home(self) -> &'static str {
+        match self {
+            Self::Dependency => "tools/boundary-check/config/road1.toml [rule_contracts]",
+            Self::Clippy => "tools/boundary-check/src/text_rules.rs; local Clippy configuration must include every root setting",
+            Self::Control => "tools/boundary-check/src/seal_rules.rs; Law 1, reach: control references belong only to owners and closed test/certification callers",
+            Self::Construction => "tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths",
+            Self::DocumentRegion => "tools/boundary-check/config/consumer-docs.toml; restore exact marker grammar and genuine compilation ownership",
+            Self::DocumentLink => "tools/boundary-check/config/consumer-docs.toml; repair the relative destination or GitHub heading fragment in the named document",
+            Self::OneBuild => "tools/boundary-check/src/graph_rules.rs; remove the build predicate or feature declaration and use an owned inert control",
+            Self::Topology => "docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts",
+            Self::InputFailure => "tools/boundary-check/src/inputs.rs; restore readable Git inputs and offline Cargo metadata before judging boundaries",
+        }
+    }
+}
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Diagnostic {
-    pub code: &'static str,
+    pub code: Code,
     pub subject: String,
     pub message: String,
     pub legal_home: String,
 }
-pub fn diagnostic(code: &'static str, subject: &str, message: impl Into<String>) -> Diagnostic {
+pub fn diagnostic(code: Code, subject: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic {
         code,
         subject: subject.into(),
         message: message.into(),
-        legal_home: format!("{CONFIG}road1.toml"),
+        legal_home: code.legal_home().into(),
     }
 }
 pub type Files = BTreeMap<String, String>;
@@ -198,6 +238,63 @@ mod tests {
         )
         .is_err());
     }
+    #[test]
+    fn diagnostics_preserve_wire_identifiers_and_point_to_their_current_owner() {
+        for (code, wire, owner) in [
+            (
+                Code::Dependency,
+                "BC2001_BAND_DEPENDENCY_VIOLATION",
+                "tools/boundary-check/config/road1.toml",
+            ),
+            (
+                Code::Clippy,
+                "BC7009_CANONICAL_ORDER",
+                "tools/boundary-check/src/text_rules.rs",
+            ),
+            (
+                Code::Control,
+                "BC7012_CONTROL_SEAL",
+                "tools/boundary-check/src/seal_rules.rs",
+            ),
+            (
+                Code::Construction,
+                "BC7013_CERTIFICATION_CONSTRUCTION_SEAL",
+                "tools/boundary-check/config/certification-construction-callers.txt",
+            ),
+            (
+                Code::DocumentRegion,
+                "BC8008_CONSUMER_DOC_MARKER",
+                "tools/boundary-check/config/consumer-docs.toml",
+            ),
+            (
+                Code::DocumentLink,
+                "BC8009_CONSUMER_DOC_LINK",
+                "tools/boundary-check/config/consumer-docs.toml",
+            ),
+            (
+                Code::OneBuild,
+                "BC9001_ONE_BUILD",
+                "tools/boundary-check/src/graph_rules.rs",
+            ),
+            (
+                Code::Topology,
+                "BC9002_TEST_TOPOLOGY",
+                "docs/coding-guidelines/iteration_laws.md",
+            ),
+            (
+                Code::InputFailure,
+                "BOUNDARY_INPUT_FAILURE",
+                "tools/boundary-check/src/inputs.rs",
+            ),
+        ] {
+            let json = serde_json::to_value(diagnostic(code, "subject", "message")).unwrap();
+            assert_eq!(json.as_object().unwrap().len(), 4);
+            assert_eq!(json["code"], wire);
+            assert_eq!(json["subject"], "subject");
+            assert_eq!(json["message"], "message");
+            assert!(json["legal_home"].as_str().unwrap().starts_with(owner));
+        }
+    }
 }
 #[derive(Default)]
 pub struct Metadata {
@@ -249,7 +346,7 @@ pub struct Kind {
 impl Serialize for Diagnostic {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut state = serializer.serialize_struct("Diagnostic", 4)?;
-        state.serialize_field("code", &self.code)?;
+        state.serialize_field("code", self.code.as_str())?;
         state.serialize_field("subject", &self.subject)?;
         state.serialize_field("message", &self.message)?;
         state.serialize_field("legal_home", &self.legal_home)?;

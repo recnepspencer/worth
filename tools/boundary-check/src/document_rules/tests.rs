@@ -46,7 +46,7 @@ fn shortcut_reference_links_check_defined_targets_without_treating_definitions_a
         .insert("docs/a.md".into(), "[label]\n[label]: missing.md".into());
     let failures = check(&input);
     assert_eq!(failures.len(), 1);
-    assert_eq!(failures[0].code, "BC8009");
+    assert_eq!(failures[0].code, Code::DocumentLink);
     assert_eq!(failures[0].subject, "docs/a.md:1");
 }
 #[test]
@@ -65,5 +65,5 @@ fn a_compiled_marker_requires_a_following_code_region() {
     input
         .files
         .insert("docs/a.md".into(), "<!-- compiled: demo.rs -->".into());
-    assert_eq!(check(&input)[0].code, "BC8008");
+    assert_eq!(check(&input)[0].code, Code::DocumentRegion);
 }

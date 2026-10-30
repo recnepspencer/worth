@@ -13,7 +13,10 @@ Input failures retain a separate outcome: exit 2 and the engine code
 `BOUNDARY_INPUT_FAILURE`. Checked violations exit 1; successful checks exit 0.
 Its JSON output is an array of `code`, `subject`, `message`, and `legal_home`
 records; a clean run produces `[]`. The constitution script retains its existing
-envelope and prebuilt freshness checks.
+envelope and prebuilt freshness checks. Stable diagnostic identifiers keep their
+existing full wire names; remediation paths follow their surviving owners.
+Court category segments come from file paths, as the approved scope specifies;
+inline module nesting is not a taxonomy input.
 
 Run the in-memory suite with:
 
@@ -29,6 +32,7 @@ and construct no disk repositories.
 
 | Requirement | Behaviour tests |
 | --- | --- |
+| Diagnostic wire contract | `diagnostics_preserve_wire_identifiers_and_point_to_their_current_owner` |
 | BC2001 graph policy | `dependency_denials_and_allowlists_reject_only_disallowed_edges`, `dependency_contracts_preserve_exact_versions_defaults_and_features` |
 | BC2001 identifier denials | `identifier_denials_respect_exclusions_and_token_boundaries` |
 | BC7009 root Clippy superset | `local_clippy_configuration_carries_every_root_entry` |

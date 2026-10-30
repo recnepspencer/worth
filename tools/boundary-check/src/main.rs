@@ -6,7 +6,7 @@ mod lexical;
 mod runtime_courts;
 mod seal_rules;
 mod text_rules;
-use config::{diagnostic, Diagnostic};
+use config::{diagnostic, Code, Diagnostic};
 use inputs::Inputs;
 use std::{env, path::PathBuf, thread};
 
@@ -72,10 +72,7 @@ impl Outcome {
                 let status = i32::from(!diagnostics.is_empty());
                 (diagnostics, status)
             }
-            Self::InputFailure(error) => (
-                vec![diagnostic("BOUNDARY_INPUT_FAILURE", "inputs", error)],
-                2,
-            ),
+            Self::InputFailure(error) => (vec![diagnostic(Code::InputFailure, "inputs", error)], 2),
         }
     }
 }
@@ -89,7 +86,10 @@ fn emit(outcome: Outcome, json: bool) {
         for d in &diagnostics {
             eprintln!(
                 "{} {}: {}\nbelongs: {}",
-                d.code, d.subject, d.message, d.legal_home
+                d.code.as_str(),
+                d.subject,
+                d.message,
+                d.legal_home
             );
         }
     }
@@ -107,10 +107,14 @@ mod tests {
         let json: serde_json::Value =
             serde_json::from_str(&serde_json::to_string(&unchecked).unwrap()).unwrap();
         assert_eq!(json[0]["code"], "BOUNDARY_INPUT_FAILURE");
-        let (checked, status) =
-            Outcome::Checked(vec![diagnostic("BC2001", "crate", "forbidden dependency")]).report();
+        let (checked, status) = Outcome::Checked(vec![diagnostic(
+            Code::Dependency,
+            "crate",
+            "forbidden dependency",
+        )])
+        .report();
         assert_eq!(status, 1);
-        assert_eq!(checked[0].code, "BC2001");
+        assert_eq!(checked[0].code, Code::Dependency);
         assert_eq!(Outcome::Checked(Vec::new()).report().1, 0);
     }
 }

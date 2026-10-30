@@ -52,7 +52,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         for rule in table(&input.config, key) {
             let Some(graph) = input.graphs.get(string(rule, "workspace_manifest")) else {
                 out.push(diagnostic(
-                    "BC2001",
+                    Code::Dependency,
                     key,
                     "configured workspace metadata is missing",
                 ));
@@ -68,7 +68,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     let splits = match splits {
         Ok(v) => v,
         Err(e) => {
-            out.push(diagnostic("BC9002", CONFIG, e.to_string()));
+            out.push(diagnostic(Code::Topology, CONFIG, e.to_string()));
             return out;
         }
     };
@@ -77,7 +77,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     for (workspace, stem) in input.courts() {
         let Some(graph) = input.graphs.get(&format!("{workspace}/Cargo.toml")) else {
             out.push(diagnostic(
-                "BC9002",
+                Code::Topology,
                 workspace,
                 "workspace metadata missing",
             ));
@@ -110,14 +110,14 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 })
             {
                 out.push(diagnostic(
-                    "BC9002",
+                    Code::Topology,
                     &p.manifest_path,
                     "product normal/build dependencies cannot provide testkit authority",
                 ));
             }
             if p.dependencies.iter().any(|d| d.name.contains("-court-")) {
                 out.push(diagnostic(
-                    "BC9002",
+                    Code::Topology,
                     &p.manifest_path,
                     "court must be a leaf, including dev dependencies",
                 ));
@@ -146,7 +146,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                             || t.get("test").and_then(toml::Value::as_bool) == Some(false)
                     })
                 {
-                    out.push(diagnostic("BC9002", &p.manifest_path, "court requires one explicit canonical standard-harness test target and autotests=false"));
+                    out.push(diagnostic(Code::Topology, &p.manifest_path, "court requires one explicit canonical standard-harness test target and autotests=false"));
                 }
                 if p.targets.iter().any(|t| t.kind.iter().any(|k| k != "test"))
                     || input.paths.iter().any(|f| {
@@ -156,7 +156,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     })
                 {
                     out.push(diagnostic(
-                        "BC9002",
+                        Code::Topology,
                         &p.manifest_path,
                         "court cannot contain production targets or Rust outside tests/",
                     ));
@@ -180,7 +180,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                         || string(split, "area").is_empty()
                     {
                         out.push(diagnostic(
-                            "BC9002",
+                            Code::Topology,
                             &p.manifest_path,
                             "invalid frontier split registration",
                         ));
@@ -188,7 +188,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 }
                 if p.name != expected {
                     out.push(diagnostic(
-                        "BC9002",
+                        Code::Topology,
                         &p.manifest_path,
                         format!("frontier naming requires `{expected}`"),
                     ));
@@ -201,7 +201,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 {
                     if !category_valid(path) {
                         out.push(diagnostic(
-                            "BC9002",
+                            Code::Topology,
                             &format!("{directory}/tests/{canonical}/{path}"),
                             "category must be a top-level path segment",
                         ));
@@ -214,7 +214,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 || manifest.get("test").is_some()
             {
                 out.push(diagnostic(
-                    "BC9002",
+                    Code::Topology,
                     &p.manifest_path,
                     "product/testkit cannot contain tests/ or integration targets",
                 ));
@@ -223,13 +223,17 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 && !(p.name == format!("{stem}-testkit")
                     || p.name.starts_with(&format!("{stem}-testkit-")))
             {
-                out.push(diagnostic("BC9002", &p.manifest_path, "misnamed testkit"));
+                out.push(diagnostic(
+                    Code::Topology,
+                    &p.manifest_path,
+                    "misnamed testkit",
+                ));
             }
         }
         for courts in groups.values() {
             if courts.len() > 1 && courts.iter().any(|p| !registered.contains(&p.name)) {
                 out.push(diagnostic(
-                    "BC9002",
+                    Code::Topology,
                     workspace,
                     "equal product frontiers require registered area splits",
                 ));
@@ -239,7 +243,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     for split in table(&splits, "splits") {
         if !registered.contains(string(split, "court")) {
             out.push(diagnostic(
-                "BC9002",
+                Code::Topology,
                 CONFIG,
                 "frontier split names an absent court",
             ));
@@ -291,7 +295,7 @@ fn dependencies(key: &str, rule: &toml::Value, p: &Package) -> Vec<Diagnostic> {
         };
         if denied {
             out.push(diagnostic(
-                "BC2001",
+                Code::Dependency,
                 &p.manifest_path,
                 format!("{} -> {}: {}", p.name, d.name, string(rule, "guidance")),
             ));
@@ -310,7 +314,7 @@ fn dependencies(key: &str, rule: &toml::Value, p: &Package) -> Vec<Diagnostic> {
                         == strings(contract, "features").iter().collect()
             }) {
                 out.push(diagnostic(
-                    "BC2001",
+                    Code::Dependency,
                     &p.manifest_path,
                     "dependency contract mismatch",
                 ));

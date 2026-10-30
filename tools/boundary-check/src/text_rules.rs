@@ -45,7 +45,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                         })
                     {
                         out.push(diagnostic(
-                            "BC2001",
+                            Code::Dependency,
                             path,
                             format!("forbidden identifier {}: {}", token.text, guidance),
                         ));
@@ -66,7 +66,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                             let name = window[2].text.trim_matches('"');
                             if !feature_allowed(path, name) {
                                 out.push(diagnostic(
-                                    "BC9001",
+                                    Code::OneBuild,
                                     path,
                                     format!("one build forbids feature predicate `{name}`"),
                                 ));
@@ -80,7 +80,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             match (&root_clippy, toml::from_str::<toml::Value>(text)) {
                 (Ok(root), Ok(local)) if superset(&root, &local) => {}
                 _ => out.push(diagnostic(
-                    "BC7009",
+                    Code::Clippy,
                     path,
                     "crate Clippy configuration must be a superset of root configuration",
                 )),
@@ -121,7 +121,7 @@ pub fn manifest_features(
     if let Some(features) = value.get("features").and_then(toml::Value::as_table) {
         if features.is_empty() || features.keys().any(|n| !feature_allowed(path, n)) {
             out.push(diagnostic(
-                "BC9001",
+                Code::OneBuild,
                 path,
                 "one build forbids this features table",
             ));
@@ -163,7 +163,7 @@ pub fn manifest_features(
                                         && !explicit.contains(name.as_str())
                                 {
                                     out.push(diagnostic(
-                                        "BC9001",
+                                        Code::OneBuild,
                                         path,
                                         format!(
                                             "one build forbids dependency features on `{name}`"
@@ -180,7 +180,7 @@ pub fn manifest_features(
                         })
                     {
                         out.push(diagnostic(
-                            "BC9001",
+                            Code::OneBuild,
                             path,
                             "one build forbids required-features",
                         ));

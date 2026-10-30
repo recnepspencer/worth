@@ -67,7 +67,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         let declared = regions::declared(&t, &ranges);
         if regions::ambiguous_macro(&t, &declared, &ranges) {
             out.push(diagnostic(
-                "BC7012",
+                Code::Control,
                 path,
                 "macro control names require a literal exported declaration",
             ));
@@ -113,7 +113,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             if let Some(owners) = doors.get(*name) {
                 if control_names.contains(name) && !permitted(path, owners, &controls) {
                     out.push(diagnostic(
-                        "BC7012",
+                        Code::Control,
                         path,
                         format!(
                             "sealed control `{name}` is outside its owner and closed caller set"
@@ -132,7 +132,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 };
                 if !path.starts_with(owner) && !factories.contains(&(class, path.as_str())) {
                     out.push(diagnostic(
-                        "BC7013",
+                        Code::Construction,
                         path,
                         format!(
                             "sealed factory `{name}` is outside its owner and closed caller set"
@@ -214,7 +214,10 @@ mod tests {
             "",
         );
         assert_eq!(
-            check(&input).iter().filter(|d| d.code == "BC7012").count(),
+            check(&input)
+                .iter()
+                .filter(|d| d.code == Code::Control)
+                .count(),
             1
         );
         input.files.insert(
@@ -246,7 +249,10 @@ mod tests {
             "",
         );
         assert_eq!(
-            check(&input).iter().filter(|d| d.code == "BC7012").count(),
+            check(&input)
+                .iter()
+                .filter(|d| d.code == Code::Control)
+                .count(),
             1
         );
         input.files.insert(
