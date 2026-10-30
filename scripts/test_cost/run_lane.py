@@ -145,7 +145,8 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     generated = output / 'nextest.toml'
     previous_path = output / 'recommendations.json'
     slot_directory = repository / 'scripts/test_cost/slots' / workspace
-    previous = load_slots(slot_directory)
+    known = {row['binary'] + '\n' + row['test'] for row in inventory(discovered)}
+    previous = load_slots(slot_directory, known=known)
     configuration(config, generated, nextest_profile, previous, Path(__file__).with_name('account.py'))
     reservations.update(previous)
     reservation_path.write_text(json.dumps(reservations, indent=2) + '\n', encoding='utf-8')
@@ -202,10 +203,9 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     observed = read_lane(telemetry)
     baseline = original_reservations(config, nextest_profile, discovered, lambda index, query:
         json.loads((output / 'build' / f'reservation-{index}.json').read_text(encoding='utf-8')))
-    known = {row['binary'] + '\n' + row['test'] for row in inventory(discovered)}
     retain_slots(slot_directory, observed['cpu'], read_lane(runner.logs[0])['headers']['HEAD'],
                  str(telemetry.relative_to(repository)), baseline, known)
-    previous_path.write_text(json.dumps(load_slots(slot_directory), indent=2) + '\n', encoding='utf-8')
+    previous_path.write_text(json.dumps(load_slots(slot_directory, known=known), indent=2) + '\n', encoding='utf-8')
     logs = [(path.stem + '-' + str(index), path) for index, path in enumerate(runner.logs)]
     result = collect(manifest, repository, logs, complete, requested)
     if documentation is None and result['coverage']['status'] == 'pass':

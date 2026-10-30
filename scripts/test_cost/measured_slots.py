@@ -6,7 +6,8 @@ from policy_catalog import index as read_index, read as read_catalog
 from slot_policy import generate
 
 
-def load(directory):
+def load(directory, known=None):
+    """Select current rules without migrating or discarding historical samples."""
     directory = Path(directory).resolve()
     value = read_index(directory)
     if not value:
@@ -17,7 +18,7 @@ def load(directory):
         if identity in result or type(row['slots']) is not int or row['slots'] < 1:
             raise ValueError('invalid or repeated reservation identity in its catalog')
         result[identity] = row['slots']
-    return result
+    return result if known is None else {key: slots for key, slots in result.items() if key in known}
 
 
 def retain(directory, events, head, log, baseline=None, known=None):

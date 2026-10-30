@@ -78,6 +78,19 @@ class MeasuredSchedulingPolicyTests(unittest.TestCase):
             retain(temporary, [], 'head', empty)
             self.assertNotIn('court\nretired', load(temporary))
 
+    def test_current_inventory_filters_active_rules_without_rewriting_historical_measurements(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            event = dict(binary='retired-court', test='claim', cpu_seconds=6,
+                         wall_seconds=2, reserved_slots=1)
+            log, events = self.capture(temporary, 'real.log', [event, dict(event, binary='current-court')])
+            retain(temporary, events, 'capture-head', log)
+            directory = Path(temporary)
+            before = {path.name: path.read_bytes() for path in directory.iterdir()}
+            self.assertEqual(load(temporary, known={'current-court\nclaim'}), {'current-court\nclaim': 3})
+            self.assertEqual(load(temporary, known={'renamed-court\nclaim'}), {})
+            self.assertEqual({path.name: path.read_bytes() for path in directory.iterdir()}, before)
+            self.assertEqual(load(temporary), {'current-court\nclaim': 3, 'retired-court\nclaim': 3})
+
     def test_supplied_cpu_data_must_match_the_actual_retained_capture(self):
         with tempfile.TemporaryDirectory() as temporary:
             event = dict(binary='court', test='claim', cpu_seconds=1, wall_seconds=2, reserved_slots=8)
