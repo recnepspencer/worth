@@ -33,6 +33,7 @@ pub(super) fn validate_denial(
     expected: &ExpectedCompilerDenial,
     diagnostics: &[CheckedCompilerDiagnostic],
     stderr: &str,
+    fixture_attribution: &[bool],
 ) -> Result<(), String> {
     if diagnostics.is_empty() {
         return Err(format!(
@@ -53,18 +54,28 @@ pub(super) fn validate_denial(
             ));
         }
     }
-    if !expected.error_codes.is_empty()
-        && !diagnostics.iter().any(|diagnostic| {
-            diagnostic
-                .code
-                .as_ref()
-                .is_some_and(|code| expected.error_codes.contains(code))
-        })
-    {
-        return Err(format!(
-            "compiler denial omitted every declared error code {:?}",
-            expected.error_codes
-        ));
+    if !expected.error_codes.is_empty() {
+        return diagnostics
+            .iter()
+            .zip(fixture_attribution)
+            .any(|(diagnostic, attributed)| {
+                *attributed
+                    && diagnostic
+                        .code
+                        .as_ref()
+                        .is_some_and(|code| expected.error_codes.contains(code))
+                    && expected
+                        .required_semantic_fragments
+                        .iter()
+                        .all(|fragment| diagnostic.message.contains(fragment))
+            })
+            .then_some(())
+            .ok_or_else(|| {
+                format!(
+                    "compiler denial omitted a fixture-attributed error with code {:?} and semantic fragments {:?}",
+                    expected.error_codes, expected.required_semantic_fragments
+                )
+            });
     }
     let semantic_text = diagnostics
         .iter()
