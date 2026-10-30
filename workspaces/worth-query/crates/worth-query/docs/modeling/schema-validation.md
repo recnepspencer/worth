@@ -255,6 +255,19 @@ before selecting old data, so suspension preserves the exact current principal
 refusal. After restoring endpoint 20, fresh retained Source execution returns
 endpoint 10 independently of the current result. Retained Parent mode remains
 UnsupportedMode; this evidence does not widen historical managed support.
+The [pending geometry court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court/pending.rs)
+parks real publication after Native owner execution and cancels its original
+request before World comparison. The existing activation gate excludes fresh
+selection while publication is live; its exact ProductActivationUnavailable
+precedes Source disclosure. After ProductUnpublished returns and releases that
+admission, fresh reads use the predecessor World basis/image even though Native
+has moved: old available geometry for suspension, suspended refusal for restoration.
+Actual recovery carriers survive cancelled admission and fresh continuation;
+settled adoption performs no provider construction/maintenance or rule replay.
+Fresh current endpoint-20 and retained ordinary endpoint-10 answers distinguish
+the images. The complete warmed journey balances all final owners. No new
+recovery registry, scheduler, read posture or publication updater is introduced.
+Competing publication interference and crash/network persistence remain separate.
 
 Native stages provider roots before its first dependent invariant. Each actual
 observation reborrows its own Source loan. The existing SourceInvalidationOwner

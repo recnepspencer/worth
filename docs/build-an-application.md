@@ -5660,6 +5660,20 @@ After lawful endpoint-20 restoration, a fresh retained ordinary Source query
 returns the original endpoint 10 while current reads return 20. Managed Parent
 queries in retained mode continue to refuse `UnsupportedMode` before provider
 callbacks. Retaining decoded rows is a separate immutable-result property.
+The [pending materialization court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court/pending.rs)
+uses the existing World comparison pause after real Native work. While publication
+holds activation admission, fresh selection returns `ProductActivationUnavailable`
+before disclosure. Cancelling there returns the actual `ProductUnpublished`
+suspension/restoration recovery carrier. Once the entry returns, fresh reads use
+the predecessor World image: available endpoint 10 for pending suspension, or the
+suspended principal refusal for pending restoration despite Native being ahead.
+
+Continue the returned recovery with a fresh request. A cancelled continuation
+returns its carrier through `into_recovery()`; successful continuation adopts the
+settled Native result without rebuilding provider data or rerunning rules. The
+court restores endpoint 20 and independently reads retained ordinary endpoint 10.
+This qualifies process-local pending recovery, separately from a competing
+publisher race or crash persistence.
 The compiled endpoint shape preserves each actual `Starts` and `Ends` relation
 occurrence and checks its declared cardinality before provider maintenance:
 

@@ -669,7 +669,24 @@ controls and the warmed exact final-owner balance pass. See
 [the cold/history slice](milestone-9.19-phase2-generated-cold-history-plan.md).
 Historical managed execution and successful historical READ under suspended
 current security remain unqualified; this slice does not widen their admission.
-Late-success/pending recovery execution and wider recovery/growth controls remain open.
+Real generated materialization pending recovery is now qualified in both
+availability directions through the existing World comparison pause after actual
+Native owner work. Live publication preserves exact ProductActivationUnavailable
+before Source/provider disclosure. Original cancellation yields genuine
+ProductUnpublished suspension/restoration custody. After the entry releases its
+publication admission, fresh World-selected reads preserve the exact predecessor
+image while Native is ahead: available endpoint-10 Source/Parent answers for
+pending suspension, and the suspended principal refusal for pending restoration.
+Cancelled continuation returns its actual recovery carrier; fresh continuation
+adopts the settled Native result without provider build/update or rule replay.
+Fresh current endpoint-20 and retained ordinary endpoint-10 answers distinguish
+the images after restoration. Both actual attempt obligations return to zero,
+and the warmed complete journey balances all final physical owners. All 30
+public managed-index controls pass. See
+[the pending recovery slice](milestone-9.19-phase2-generated-pending-plan.md).
+Cancellation after successful World movement, competing-winner interference,
+remaining hostile controls and whole-path growth remain open. This process-local
+pending court does not qualify crash/network persistence or a publication race.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication

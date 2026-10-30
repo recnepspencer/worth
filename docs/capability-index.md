@@ -466,6 +466,12 @@ before either rule. Fresh pinned ordinary Source queries keep current principal
 admission: they refuse during suspension, then read the original endpoint after
 a changed lawful restoration. Retained managed Parent mode remains unsupported;
 old data cannot supply fresh security or select a current managed root.
+Generated suspension and restoration also qualify real Native-ahead/World-pending
+recovery. Live publication preserves typed activation exclusion. After its actual
+unpublished carrier returns, fresh reads select the predecessor World image;
+cancelled continuation returns custody and fresh continuation adopts the settled
+Native image with no provider/rule replay. This is pending recovery evidence,
+not competing-winner interference or crash persistence.
 See the
 [current limits](build-an-application.md#prepare-candidate-structural-source-changes)
 and [Native audience](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md).
