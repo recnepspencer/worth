@@ -4,6 +4,7 @@ use crate::proposal_acceptance::{
     application::{candidate::PreparationRefusal, storage::AdmissionFailure},
     attempts::result_query,
     failure::Failure as ApplicationFailure,
+    mutation_access,
 };
 
 fn read_denied(failure: Failure, kind: ReadKind) {
@@ -156,6 +157,88 @@ fn cached_acceptance_requires_each_current_read_while_sibling_reads_remain_lawfu
         assert_eq!(model.read(&fresh).unwrap().days, 3);
         assert_eq!(other.read(&fresh).unwrap().days, 5);
     }
+    let mutation_branch = model.branch();
+    let change_mutation = |active, key| {
+        let outcome = host
+            .request(&author.principal, author.scope)
+            .on_branch(mutation_branch)
+            .advanced()
+            .mutate(mutation_access::status::SetStatus {
+                identity: mutation_access::grant_key("model-1", 2),
+                active,
+            })
+            .without_source()
+            .idempotency(&key)
+            .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        assert!(matches!(
+            outcome,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ));
+        drop(outcome);
+    };
+    change_mutation(false, 1520);
+    let denied_scope = authentication::request_scope();
+    let denied =
+        authentication::authenticate(host.installed_schema(), Actor::Reviewer, &denied_scope)
+            .unwrap();
+    assert_eq!(model.read(&denied).unwrap().days, 3);
+    assert_eq!(
+        storage.load(&denied, &reference).unwrap(),
+        *loaded.proposal()
+    );
+    {
+        let rows = host
+            .request(&denied.principal, denied.scope)
+            .on_branch(storage.branch())
+            .query(result_query::ReadResults {
+                model: model.identity.label.clone(),
+            })
+            .execute_governed(
+                access::ReadDomain::reference(),
+                access::InspectDomain::reference(),
+                access::ReadAccess {
+                    model: model.identity.label.clone(),
+                },
+            )
+            .unwrap();
+        assert_eq!(rows.rows().len(), 1);
+        assert_eq!(rows.rows()[0].data, result);
+    }
+    let before = model.describe(&author).unwrap();
+    let storage_before = describe(&host, &author, storage.branch());
+    let failure = model.accept(&storage, &denied, &loaded, 1504).unwrap_err();
+    let Failure::Admission(AdmissionFailure::Preparation(PreparationRefusal::Mutation(
+        WorthQueryApplicationRequestMutationDenial::Authorization(cause),
+    ))) = failure
+    else {
+        panic!("cached ingress requires current independent mutation authority: {failure:?}")
+    };
+    assert_eq!(
+        cause.kind(),
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            WorthQueryOperationAuthorizationRefusalKind::CapabilityAuthorizationMissing
+        )
+    );
+    assert_eq!(model.branch(), head);
+    assert_eq!(model.describe(&author).unwrap(), before);
+    assert_eq!(describe(&host, &author, storage.branch()), storage_before);
+    assert_eq!(model.read(&denied).unwrap().days, 3);
+    change_mutation(true, 1521);
+    let fresh_scope = authentication::request_scope();
+    let fresh =
+        authentication::authenticate(host.installed_schema(), Actor::Reviewer, &fresh_scope)
+            .unwrap();
+    let before = model.describe(&author).unwrap();
+    let storage_before = describe(&host, &author, storage.branch());
+    let Event::Cached(observed) = model.accept(&storage, &fresh, &loaded, 1504).unwrap() else {
+        panic!("restored mutation authority admits the same cached outcome")
+    };
+    assert_eq!(observed, result);
+    assert_eq!(model.branch(), head);
+    assert_eq!(model.describe(&author).unwrap(), before);
+    assert_eq!(describe(&host, &author, storage.branch()), storage_before);
+    assert_eq!(other.read(&fresh).unwrap().days, 5);
     storage.close(&author).unwrap();
     model.close(&author).unwrap();
     other.close(&author).unwrap();

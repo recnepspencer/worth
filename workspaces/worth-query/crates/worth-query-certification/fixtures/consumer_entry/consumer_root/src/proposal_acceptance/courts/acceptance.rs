@@ -20,6 +20,7 @@ mod contenders;
 mod disclosure;
 mod disposal;
 mod identities;
+mod initial_stop;
 mod previous;
 mod revisions;
 mod versions;
