@@ -112,10 +112,6 @@ where
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-)]
 fn prepare_typed_extraction<Schema, Family>(
     progress: &RequiredFreshProgress<Schema>,
 ) -> Result<(), WorthQueryOutputDemandDenial>

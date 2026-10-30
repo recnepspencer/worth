@@ -143,10 +143,6 @@ impl<Schema: ApplicationSchema + 'static> PendingResourceRegistry<Schema> {
 impl<Schema: ApplicationSchema + 'static, Binding: ApplicationResourceBinding<Schema>>
     PendingResource<Schema> for PendingBinding<Schema, Binding>
 {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     fn install(
         self: Box<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

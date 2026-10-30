@@ -20,10 +20,6 @@ struct RuleReadableCount {
 }
 
 impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     pub(in crate::domain_computation::primary_graph) fn bind_collection<Feature, Collection>(
         &mut self,
     ) where
@@ -43,10 +39,6 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
         });
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     pub(in crate::domain_computation::primary_graph) fn bind_rule_readable_count<
         Feature,
         Collection,

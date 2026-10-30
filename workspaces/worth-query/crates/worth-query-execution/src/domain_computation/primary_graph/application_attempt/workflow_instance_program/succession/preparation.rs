@@ -19,10 +19,6 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 impl WorthQueryWorkflowSuccessionAdapter {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     pub fn prepare<Schema, Binding, Role, Spec>(
         phase: &WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,

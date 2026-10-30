@@ -5,10 +5,6 @@ use worth_query_declaration::facade::application_program::ApplicationOutputGraph
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>
 {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     pub fn validate_selected_output_root<R: ApplicationOutputGraphShape<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

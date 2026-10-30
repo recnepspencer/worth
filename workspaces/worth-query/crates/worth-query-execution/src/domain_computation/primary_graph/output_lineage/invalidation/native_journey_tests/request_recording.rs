@@ -161,10 +161,6 @@ fn a_restored_output_registers_before_commit() {
 }
 
 /// The account's sealed native output witness at `snapshot`.
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-)]
 pub(super) fn account_witness(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,

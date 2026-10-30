@@ -25,10 +25,6 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
             && binding.entity_name == matching.producer_role().entity
             && binding.entity == EntityReference::Existing(target)
     }
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
     pub(in crate::domain_computation::primary_graph::application_attempt) fn succession_subject<
         Schema,
         Binding,
