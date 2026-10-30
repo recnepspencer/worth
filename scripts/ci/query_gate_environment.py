@@ -26,7 +26,7 @@ def require_build_identity(value):
 
 def verification_identity(root, output, workspaces):
     """Read issued native-build inputs; this never qualifies an old execution."""
-    identities = set()
+    identities = {}
     for workspace in sorted(workspaces):
         manifest = (Path(root) / WORKSPACES[workspace]).resolve()
         receipt = Path(output) / workspace / 'build/binaries-build-units.json'
@@ -50,8 +50,8 @@ def verification_identity(root, output, workspaces):
                 return None
         except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError):
             return None
-        identities.add(identity)
-    return identities.pop() if len(identities) == 1 else None
+        identities.setdefault(identity.lower(), identity)
+    return next(iter(identities.values())) if len(identities) == 1 else None
 
 
 def environment(root):

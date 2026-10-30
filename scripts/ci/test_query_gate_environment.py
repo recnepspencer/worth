@@ -30,6 +30,14 @@ def receipt(root, output, workspace, identity=FIRST):
 
 
 class VerificationArtifactIdentityTests(unittest.TestCase):
+    def test_uuid_case_variants_are_coherent_and_one_artifact_keeps_its_issued_spelling(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve(); output = root/'out'
+            receipt(root, output, 'query', FIRST.upper())
+            self.assertEqual(verification_identity(root, output, ['query']), FIRST.upper())
+            receipt(root, output, 'bank', FIRST)
+            self.assertEqual(verification_identity(root, output, ['query', 'bank']), FIRST)
+
     def test_each_requested_artifact_must_carry_one_coherent_issued_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve(); output = root/'out'
