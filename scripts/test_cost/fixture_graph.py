@@ -140,7 +140,10 @@ def configured_inputs(repository, path):
 def dependency_records(repository, rows):
     dependencies = {}
     for row in rows:
-        spec = {'path': str((repository / row['path']).resolve()).replace('\\', '/')}
+        if ('path' in row) == ('version' in row):
+            raise ValueError(f"compiler dependency requires exactly one path or version: {row['name']}")
+        spec = ({'path': str((repository / row['path']).resolve()).replace('\\', '/')}
+                if 'path' in row else {'version': row['version']})
         if row['features']:
             spec['features'] = row['features']
         if not row['default_features']:
