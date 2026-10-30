@@ -145,11 +145,11 @@ impl UiNativeAppearanceRetained {
         self.order
             .place_after(key, predecessor)
             .map_err(UiNativeAppearanceRetainedDenial::Order)?;
-        if let Some(candidate) = candidate {
-            if let Err(error) = self.damage_index.insert(key, candidate) {
-                let _ = self.order.remove(key);
-                return Err(map_index_denial(error));
-            }
+        if let Some(candidate) = candidate
+            && let Err(error) = self.damage_index.insert(key, candidate)
+        {
+            let _ = self.order.remove(key);
+            return Err(map_index_denial(error));
         }
         self.next_key = next_key;
         let text_commands = text_paint_commands(&command);
