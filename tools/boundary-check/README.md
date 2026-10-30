@@ -9,6 +9,8 @@ or JSON rendering.
 Prepare both constitutional tools with `scripts/prepare-constitution-hook.ps1`.
 Use `WORTH_CONSTITUTION_PREBUILT=1 ./scripts/check-constitution.ps1` for lanes.
 The standalone checker accepts `--root`, `--config`, and `--format human|json`.
+Input failures retain a separate outcome: exit 2 and the engine code
+`BOUNDARY_INPUT_FAILURE`. Checked violations exit 1; successful checks exit 0.
 Its JSON output is an array of `code`, `subject`, `message`, and `legal_home`
 records; a clean run produces `[]`. The constitution script retains its existing
 envelope and prebuilt freshness checks.
@@ -33,7 +35,7 @@ and construct no disk repositories.
 | BC7012 closed control callers | `exported_control_references_require_an_exact_caller`, `composed_controls_and_reexporting_owners_keep_their_existing_reach`, `test_only_methods_do_not_seal_unrelated_namesakes`, `macro_controls_require_literal_exported_declarations` |
 | BC7013 construction callers | `certification_factory_callers_are_class_and_file_exact` |
 | BC8008 compiled regions and source facts | `compiled_regions_compare_exact_code_and_require_unique_delimiters`, `documented_enum_rows_detect_payload_changes_as_well_as_variants` |
-| BC8009 relative links | `relative_links_require_targets_and_unique_heading_anchors` |
+| BC8009 relative links | `relative_links_require_targets_and_unique_heading_anchors`, `shortcut_reference_links_check_defined_targets_without_treating_definitions_as_links` |
 | BC9001 one build | `features_are_refused_except_for_declared_signal_profiles`, `feature_predicates_are_detected_without_matching_quoted_examples` |
 | BC9002 court topology | `courts_have_one_canonical_target_and_remain_dependency_leaves`, `products_cannot_hide_integration_tests_in_the_file_list`, `categories_follow_top_level_directory_segments`, `frontier_uses_reachable_product_roots_and_excludes_dependency_dev_edges`, `area_splits_require_explicit_delegation_of_nested_owners` |
 | Law 2 runtime roots | `runtime_mentions_are_scoped_to_inline_and_mounted_test_modules` |
