@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 
-from census import collect, markdown
+from census import collect, includes_scheduled_selection, markdown
 from ratchet import source_violations
 
 
@@ -46,6 +46,20 @@ class CensusFixtureTests(unittest.TestCase):
                 self.assertEqual(Path(result['manifest']), Path(relative))
                 self.assertTrue((output / workspace / 'census.md').is_file())
             self.assertFalse((root / 'target').exists())
+
+    def test_scheduled_forms_are_refused_before_measurement_starts(self):
+        for arguments in [
+                ['--ignored'], ['--include-ignored'], ['--include-ignored=true'],
+                ['--run-ignored', 'all'], ['--run-ignored=all'],
+                ['--run-ignored=only'], ['--run-ignored'],
+                ['query-scale'], ['query-execution,query-scale'],
+                ['--suites=bank,bank-scale'], ['root-rest,root-scale']]:
+            with self.subTest(arguments=arguments):
+                self.assertTrue(includes_scheduled_selection(['cargo', 'test', *arguments]))
+        for arguments in [[], ['--run-ignored', 'default'], ['--run-ignored=default'],
+                          ['query-landing'], ['bank-landing'], ['--test', 'ordinary']]:
+            with self.subTest(arguments=arguments):
+                self.assertFalse(includes_scheduled_selection(['cargo', 'test', *arguments]))
 
     def test_source_rule_refuses_compiler_launches_but_does_not_gate_telemetry(self):
         sites = [{'kind': kind} for kind in ('cargo-command', 'cargo-environment',

@@ -24,6 +24,21 @@ def named_path(value):
     return name, Path(path)
 
 
+def includes_scheduled_selection(command):
+    for index, argument in enumerate(command):
+        key, separator, value = argument.partition('=')
+        if key in ('--include-ignored', '--ignored'):
+            return True
+        if key == '--run-ignored':
+            mode = value if separator else (command[index + 1] if index + 1 < len(command) else None)
+            if mode != 'default':
+                return True
+        suites = value if separator else argument
+        if {'query-scale', 'bank-scale', 'root-scale'} & set(suites.split(',')):
+            return True
+    return False
+
+
 def collect(manifest, repository, lane_logs=(), discovered=None, selections=None, llvm=()):
     repository, manifest = repository.resolve(), manifest.resolve()
     sites = scan_workspace(manifest, repository)
@@ -125,9 +140,7 @@ def main():
         command = args.command[1:] if args.command[:1] == ['--'] else args.command
         logs = list(args.log)
         if command:
-            if any(flag in command for flag in ('--include-ignored', '--ignored', 'query-scale')) or any(
-                    a == '--run-ignored' and command[i + 1:i + 2] != ['default']
-                    for i, a in enumerate(command)):
+            if includes_scheduled_selection(command):
                 parser.error('ignored tests are scheduled-only and cannot be measured here')
             if command[0] == 'cargo':
                 command = instrument(command)
