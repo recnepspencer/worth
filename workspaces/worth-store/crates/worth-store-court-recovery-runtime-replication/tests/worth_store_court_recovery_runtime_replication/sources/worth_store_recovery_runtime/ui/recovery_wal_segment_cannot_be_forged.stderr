@@ -1,5 +1,5 @@
-error[E0599]: no function or associated item named `from_complete_frames` found for struct `IntegrityAdmittedRecoveryWalSegment` in the current scope
+error[E0599]: no associated function or constant named `from_complete_frames` found for struct `IntegrityAdmittedRecoveryWalSegment` in the current scope
  --> tests/ui/recovery_wal_segment_cannot_be_forged.rs:6:42
   |
 6 |     IntegrityAdmittedRecoveryWalSegment::from_complete_frames(observed, identity, Vec::new())
-  |                                          ^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `IntegrityAdmittedRecoveryWalSegment`
+  |                                          ^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `IntegrityAdmittedRecoveryWalSegment`

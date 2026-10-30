@@ -3,18 +3,28 @@ error[E0432]: unresolved import `worth_store::physical_runtime::FilesystemObserv
   |
 3 | use worth_store::physical_runtime::FilesystemObservationAllowance;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------------------------------
-  |     |                              |
-  |     |                              help: a similar name exists in the module: `FilesystemObservationBound`
-  |     no `FilesystemObservationAllowance` in `physical_runtime`
+  |                                    |
+  |                                    no `FilesystemObservationAllowance` in `physical_runtime`
+  |
+help: a similar name exists in the module
+  |
+3 - use worth_store::physical_runtime::FilesystemObservationAllowance;
+3 + use worth_store::physical_runtime::FilesystemObservationBound;
+  |
 
 error[E0432]: unresolved import `worth_store_physical_integrity::ReleaseCustodyHeadWalkAllowance`
  --> tests/ui/recovery_cannot_ask_an_owners_allowance.rs:4:5
   |
 4 | use worth_store_physical_integrity::ReleaseCustodyHeadWalkAllowance;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------------------------------
-  |     |                               |
-  |     |                               help: a similar name exists in the module: `ReleaseCustodyHeadWalkBound`
-  |     no `ReleaseCustodyHeadWalkAllowance` in the root
+  |                                     |
+  |                                     no `ReleaseCustodyHeadWalkAllowance` in the root
+  |
+help: a similar name exists in the module
+  |
+4 - use worth_store_physical_integrity::ReleaseCustodyHeadWalkAllowance;
+4 + use worth_store_physical_integrity::ReleaseCustodyHeadWalkBound;
+  |
 
 error[E0432]: unresolved imports `worth_store_recovery_physics::HeadReplayAllowance`, `worth_store_recovery_physics::PhysicsAllowance`, `worth_store_recovery_physics::RootHistoryAllowance`
  --> tests/ui/recovery_cannot_ask_an_owners_allowance.rs:5:36

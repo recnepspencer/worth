@@ -4,7 +4,6 @@ error: cannot construct `RecoveredPhysicalRuntimeHandoff` with struct literal sy
 4 |     RecoveredPhysicalRuntimeHandoff {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `core` and `evidence` that were not provided
 help: you might have meant to use the `new` associated function
   |
 4 -     RecoveredPhysicalRuntimeHandoff {}

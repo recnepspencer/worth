@@ -1,5 +1,5 @@
-error[E0599]: no function or associated item named `new` found for struct `PhysicalDurabilityRecoveryHandoff` in the current scope
- --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_handoff_constructor_is_sealed.rs:4:48
+error[E0599]: no associated function or constant named `new` found for struct `PhysicalDurabilityRecoveryHandoff` in the current scope
+ --> tests/physical_runtime_authority/c8_recovery_handoff_constructor_is_sealed.rs:4:48
   |
 4 |     let _ = PhysicalDurabilityRecoveryHandoff::new();
-  |                                                ^^^ function or associated item not found in `PhysicalDurabilityRecoveryHandoff`
+  |                                                ^^^ associated function or constant not found in `PhysicalDurabilityRecoveryHandoff`

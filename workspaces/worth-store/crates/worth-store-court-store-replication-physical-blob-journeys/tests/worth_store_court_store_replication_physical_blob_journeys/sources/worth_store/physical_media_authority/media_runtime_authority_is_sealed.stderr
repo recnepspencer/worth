@@ -4,7 +4,6 @@ error: cannot construct `MediaOwnedPhysicalRuntime` with struct literal syntax d
 4 |     MediaOwnedPhysicalRuntime {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `termination`, `media`, `core` and `root_protocol_counters` that were not provided
 help: you might have meant to use the `new` associated function
   |
 4 -     MediaOwnedPhysicalRuntime {}
@@ -35,7 +34,7 @@ error[E0382]: borrow of moved value: `runtime`
 13 |     let _ = runtime.store_identity();
    |             ^^^^^^^ value borrowed here after move
    |
-note: `MediaOwnedPhysicalRuntime::close` takes ownership of the receiver `self`, which moves `runtime`
+note: `worth_store::physical_runtime::MediaOwnedPhysicalRuntime::close` takes ownership of the receiver `self`, which moves `runtime`
   --> src/physical_runtime/media_ownership/runtime.rs
    |
    |     pub fn close(self) -> MediaShutdownOutcome<ClosedRuntime> {

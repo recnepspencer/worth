@@ -7,7 +7,6 @@ warning: unreachable expression
   |                       ^^^^^^^ unreachable expression
   |
   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
-  = note: this warning originates in the macro `todo` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: cannot construct `StagedPhysicalRecovery` with struct literal syntax due to private fields
   --> tests/ui/staged_recovery_cannot_be_forged.rs:4:19

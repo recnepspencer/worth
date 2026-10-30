@@ -4,7 +4,6 @@ error: cannot construct `ReopenedPhysicalRecovery` with struct literal syntax du
 4 |     ReopenedPhysicalRecovery {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `state`, `expectation`, `publication_counters`, `publication_settlement`, `reopened` and `reopen_counters` that were not provided
 help: you might have meant to use the `new` associated function
   |
 4 -     ReopenedPhysicalRecovery {}

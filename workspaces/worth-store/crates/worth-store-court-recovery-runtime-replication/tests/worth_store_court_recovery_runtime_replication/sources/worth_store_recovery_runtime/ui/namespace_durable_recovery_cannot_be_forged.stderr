@@ -4,7 +4,6 @@ error: cannot construct `NamespaceDurablePhysicalRecovery` with struct literal s
 4 |     NamespaceDurablePhysicalRecovery {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `state`, `expectation`, `publication_counters` and `publication_settlement` that were not provided
 help: you might have meant to use the `new` associated function
   |
 4 -     NamespaceDurablePhysicalRecovery {}

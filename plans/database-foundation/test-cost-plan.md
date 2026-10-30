@@ -258,3 +258,32 @@ Ignored tests, Query scale, WORTH UI and exhaustive Store certification were not
 run. The warm prebuild and follow-up measurements do not establish a complete
 cold-landing speedup. Track B must resolve the remaining proof-reader failures
 and complete its outstanding cost work with honest end-to-end evidence.
+
+### Next B3 slice: pinned compiler proof snapshots
+
+Boundary review: the completed production/certification batches own the actual
+compiler observations. The existing public result reader validates their
+fixture attribution before comparing complete diagnostics. Its audit of 136
+snapshot fixtures finds 35 stale goldens; eight court groups fail comparison.
+The operations, source identities, audiences and primary denials remain intact.
+Error-code inventories match except the compiler's omitted secondary E0282
+after the preserved missing-method E0599. No boundary was opened by that change.
+The pinned 1.99.1 compiler ruling supersedes the old diagnostic wording, optional
+private-field and macro-origin notes, suggestion layout and type rendering.
+No test or denial claim is retired; literal goldens must describe actual output.
+
+Plan: update only those 35 complete observed goldens, retaining existing external
+coordinate masks. Do not change the renderer, fixture Rust, production behavior,
+audiences, features or compiler stages. Reuse the already-built public reader to
+audit all 136 snapshots, then run the eight failed court groups with the existing
+native binaries and real compiler outcomes. Keep the failed 1,049-case capture
+and every expected/observed pair. No compiler batch or passed durability/process
+case needs another execution for this data correction.
+
+Separately retain the completed capture's generated Store slot observations.
+Validate bounded catalog framing, immutable historical samples, current native
+identity filtering and the generated nextest configuration. Timing remains
+telemetry. Commit snapshot correction and measured policy separately. Obtain
+fresh independent review of these changes and the affected evidence; prior
+source approval does not cover the generated catalog. A comparable full cold
+landing and the ranked runtime/setup/generic residue remain separate work.

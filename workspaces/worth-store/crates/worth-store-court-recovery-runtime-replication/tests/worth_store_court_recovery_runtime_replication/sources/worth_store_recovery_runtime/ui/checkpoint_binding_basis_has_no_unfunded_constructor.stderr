@@ -1,8 +1,8 @@
-error[E0599]: no function or associated item named `begin` found for struct `StoreRecoveryCheckpointBindingRebuilder` in the current scope
+error[E0599]: no associated function or constant named `begin` found for struct `StoreRecoveryCheckpointBindingRebuilder` in the current scope
  --> tests/ui/checkpoint_binding_basis_has_no_unfunded_constructor.rs:7:54
   |
 7 |     let _ = StoreRecoveryCheckpointBindingRebuilder::begin;
-  |                                                      ^^^^^ function or associated item not found in `StoreRecoveryCheckpointBindingRebuilder`
+  |                                                      ^^^^^ associated function or constant not found in `StoreRecoveryCheckpointBindingRebuilder`
 
 error[E0624]: associated function `prepare` is private
  --> tests/ui/checkpoint_binding_basis_has_no_unfunded_constructor.rs:8:54
