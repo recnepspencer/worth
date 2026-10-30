@@ -60,11 +60,14 @@ def build(manifest, output, cargo_runner, profile='dev'):
             '--binaries-metadata', str(binaries_path)]
 
 
-def list_tests(reuse, output, cargo_runner, expression='all()'):
+def list_tests(reuse, output, cargo_runner, expression='all()', partition=None):
     metadata = json.loads(Path(reuse[1]).read_text(encoding='utf-8'))
     directory = Path(metadata.get('workspace_root', Path(reuse[1]).parent))
-    observed = cargo_runner(['cargo', 'nextest', 'list', *reuse, '--message-format', 'json',
-                             '--ignore-default-filter', '-E', expression],
+    command = ['cargo', 'nextest', 'list', *reuse, '--message-format', 'json',
+               '--ignore-default-filter', '-E', expression]
+    if partition:
+        command += ['--partition', partition]
+    observed = cargo_runner(command,
                             directory, Path(output).with_suffix('.log'))
     if observed.returncode:
         raise NextestPrebuildFailure('nextest test inventory failed')

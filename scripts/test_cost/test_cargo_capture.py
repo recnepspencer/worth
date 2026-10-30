@@ -3,11 +3,29 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import subprocess
+from unittest.mock import patch
 
-from cargo_capture import CargoRunner, capture_record, instrument
+from cargo_capture import CargoRunner, capture_record, instrument, retention_name
 
 
 class CargoCaptureTests(unittest.TestCase):
+    def test_doctest_owner_headings_keep_their_actual_order_with_result_blocks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runner = CargoRunner(Path.cwd())
+            stream = 'Doc-tests owner\nrunning 0 tests\ntest result: ok. 0 passed; 0 failed; 0 ignored\n'
+            with patch('cargo_capture.subprocess.run', return_value=subprocess.CompletedProcess([], 0, stream, None)) as child:
+                observed = runner(['cargo', 'test', '--doc'], Path.cwd(), Path(temporary) / 'doc.log')
+            self.assertEqual(child.call_args.kwargs['stderr'], subprocess.STDOUT)
+            self.assertEqual(observed.stdout, stream)
+            self.assertEqual(observed.stderr, '')
+
+    def test_repeated_invocations_cannot_overwrite_retained_lane_evidence(self):
+        first = retention_name('test-cost/store/build.log', '0123456789abcdef', '2026-01-01T00:00:01Z')
+        second = retention_name('test-cost/store/build.log', '0123456789abcdef', '2026-01-01T00:00:02Z')
+        self.assertNotEqual(first, second)
+        self.assertLess(len(retention_name('x' * 1000, 'head', '2026-01-01T00:00:01Z')), 140)
+
     def test_nested_gate_processes_register_their_complete_evidence_logs(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

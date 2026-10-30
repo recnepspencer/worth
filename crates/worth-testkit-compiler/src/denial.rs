@@ -111,8 +111,8 @@ pub(crate) fn check_outcome(
             source.to_path_buf(),
         ));
     }
-    let expected = diagnostics::normalize(expected, source);
-    let observed = diagnostics::normalize(&observed, source);
+    let (expected, observed) = crate::snapshot::compared(expected, &observed, source)
+        .map_err(CompilerFixtureRefusal::InvalidPrebuild)?;
     if expected != observed {
         return Err(CompilerFixtureRefusal::WrongDiagnostics {
             path: source.to_path_buf(),

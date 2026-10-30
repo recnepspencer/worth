@@ -42,6 +42,7 @@ fn scenario_plan_names_real_targets_without_absorbing_special_lanes() {
         assert!(command.contains(selector), "missing court selector {selector}");
     }
     assert!(command.contains(" & (test(/^process::/))"));
+    assert!(command.contains(" & (test(/^determinism::/))"));
     assert!(command.contains(
         "not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))"
     ));
@@ -52,6 +53,16 @@ fn scenario_plan_names_real_targets_without_absorbing_special_lanes() {
         );
     }
     assert!(!command.contains("binary_id(=worth-store::physical_record_journeys)"));
+}
+
+#[test]
+fn nonignored_cost_contracts_have_their_own_landing_partition() {
+    let plan = ci_plan(CiTestLane::Cost, None);
+    let arguments = nextest(&plan).arguments();
+    assert!(arguments.join(" ").contains(" & (test(/^cost::/))"));
+    assert!(!arguments
+        .iter()
+        .any(|argument| argument == "--include-ignored"));
 }
 
 #[test]

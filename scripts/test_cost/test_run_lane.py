@@ -1,9 +1,13 @@
 import unittest
 
-from run_lane import LANDING, child_environment, selected_lanes
+from run_lane import LANDING, child_environment, selected_lanes, log_label
 
 
 class GovernedExecutionPlanTests(unittest.TestCase):
+    def test_rust_plan_identities_have_windows_safe_log_paths(self):
+        self.assertEqual(log_label('scenario::nextest'), 'scenario--nextest')
+        self.assertLessEqual(len(log_label('smoke::' + 'domain' * 100)), 80)
+
     def test_scheduled_scale_is_never_an_executable_landing_lane(self):
         self.assertNotIn('scale', LANDING)
         with self.assertRaises(ValueError):

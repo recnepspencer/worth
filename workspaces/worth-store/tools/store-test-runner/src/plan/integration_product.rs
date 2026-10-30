@@ -16,6 +16,9 @@ pub(super) fn ui(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutio
 pub(super) fn formal(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
     units("formal", &["oracle"], shard, root)
 }
+pub(super) fn cost(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
+    units("cost", &["cost"], shard, root)
+}
 fn units(
     lane: &str,
     categories: &[&str],
@@ -35,11 +38,8 @@ fn units(
     .map(str::to_owned)
     .collect();
     let mut filters = Vec::new();
-    for &(package, binary, present) in COURTS {
+    for &(package, binary) in COURTS {
         for &category in categories {
-            if category != "ordinary" && !present.contains(&category) {
-                continue;
-            }
             let prefix = match category {
                 "ordinary" => "not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))".to_owned(),
                 "process" | "oracle" | "cost" | "determinism" | "compile_fail" => format!("test(/^{category}::/)"),
@@ -61,30 +61,30 @@ fn units(
         args,
     )]
 }
-const COURTS: &[(&str, &str, &[&str])] = &[
-    ("worth-store-court-source", "worth_store_court_source", &["process"]),
-    ("worth-store-court-store-entry", "worth_store_court_store_entry", &["compile_fail", "ordinary", "process"]),
-    ("worth-store-court-store-physical-record-journeys-durability-admission", "worth_store_court_store_physical_record_journeys_durability_admission", &["ordinary", "process"]),
-    ("worth-store-court-store-physical-record-journeys-physical-work", "worth_store_court_store_physical_record_journeys_physical_work", &["compile_fail", "process"]),
-    ("worth-store-court-store-physical-blob-journeys", "worth_store_court_store_physical_blob_journeys", &["compile_fail", "process"]),
-    ("worth-store-court-store-replication", "worth_store_court_store_replication", &["process"]),
-    ("worth-store-court-aspect-native", "worth_store_court_aspect_native", &["ordinary"]),
-    ("worth-store-court-branch-deltas", "worth_store_court_branch_deltas", &["ordinary"]),
-    ("worth-store-court-buffer-pool", "worth_store_court_buffer_pool", &["ordinary"]),
-    ("worth-store-court-layout-indexes", "worth_store_court_layout_indexes", &["ordinary"]),
-    ("worth-store-court-layout-indexes-replication", "worth_store_court_layout_indexes_replication", &["ordinary", "process"]),
-    ("worth-store-court-maintenance-recovery-runtime-replication", "worth_store_court_maintenance_recovery_runtime_replication", &["compile_fail", "ordinary"]),
-    ("worth-store-court-physical-format", "worth_store_court_physical_format", &["ordinary", "process"]),
-    ("worth-store-court-physical-integrity", "worth_store_court_physical_integrity", &["ordinary"]),
-    ("worth-store-court-physical-isolation", "worth_store_court_physical_isolation", &["ordinary"]),
-    ("worth-store-court-recovery-runtime", "worth_store_court_recovery_runtime", &["ordinary", "process"]),
-    ("worth-store-court-recovery-runtime-replication-phase-eight-process", "worth_store_court_recovery_runtime_replication_phase_eight_process", &["oracle", "ordinary", "process"]),
-    ("worth-store-court-recovery-runtime-replication-production-entry-certified-release-serving", "worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving", &["cost", "ordinary", "process"]),
-    ("worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal", "worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal", &["ordinary", "process"]),
-    ("worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving", "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving", &["compile_fail", "oracle", "ordinary", "process"]),
-    ("worth-store-court-recovery-runtime-replication-store-physical-blob-journeys", "worth_store_court_recovery_runtime_replication_store_physical_blob_journeys", &["process"]),
-    ("worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission", "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_durability_admission", &["process"]),
-    ("worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views", "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_record_chunk_views", &["process"]),
-    ("worth-store-court-relational", "worth_store_court_relational", &["process"]),
-    ("worth-store-court-snapshots", "worth_store_court_snapshots", &["ordinary"]),
+const COURTS: &[(&str, &str)] = &[
+    ("worth-store-court-source", "worth_store_court_source"),
+    ("worth-store-court-store-entry", "worth_store_court_store_entry"),
+    ("worth-store-court-store-physical-record-journeys-durability-admission", "worth_store_court_store_physical_record_journeys_durability_admission"),
+    ("worth-store-court-store-physical-record-journeys-physical-work", "worth_store_court_store_physical_record_journeys_physical_work"),
+    ("worth-store-court-store-physical-blob-journeys", "worth_store_court_store_physical_blob_journeys"),
+    ("worth-store-court-store-replication", "worth_store_court_store_replication"),
+    ("worth-store-court-aspect-native", "worth_store_court_aspect_native"),
+    ("worth-store-court-branch-deltas", "worth_store_court_branch_deltas"),
+    ("worth-store-court-buffer-pool", "worth_store_court_buffer_pool"),
+    ("worth-store-court-layout-indexes", "worth_store_court_layout_indexes"),
+    ("worth-store-court-layout-indexes-replication", "worth_store_court_layout_indexes_replication"),
+    ("worth-store-court-maintenance-recovery-runtime-replication", "worth_store_court_maintenance_recovery_runtime_replication"),
+    ("worth-store-court-physical-format", "worth_store_court_physical_format"),
+    ("worth-store-court-physical-integrity", "worth_store_court_physical_integrity"),
+    ("worth-store-court-physical-isolation", "worth_store_court_physical_isolation"),
+    ("worth-store-court-recovery-runtime", "worth_store_court_recovery_runtime"),
+    ("worth-store-court-recovery-runtime-replication-phase-eight-process", "worth_store_court_recovery_runtime_replication_phase_eight_process"),
+    ("worth-store-court-recovery-runtime-replication-production-entry-certified-release-serving", "worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving"),
+    ("worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal", "worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal"),
+    ("worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving", "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving"),
+    ("worth-store-court-recovery-runtime-replication-store-physical-blob-journeys", "worth_store_court_recovery_runtime_replication_store_physical_blob_journeys"),
+    ("worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission", "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_durability_admission"),
+    ("worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views", "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_record_chunk_views"),
+    ("worth-store-court-relational", "worth_store_court_relational"),
+    ("worth-store-court-snapshots", "worth_store_court_snapshots"),
 ];

@@ -98,11 +98,17 @@ TEST_SUITES = {
 CATEGORY_SUITES = {}
 for prefix in ("query", "bank", "root"):
     for label, category in (("process", "process"), ("exhaustive", "oracle"),
-                            ("scale", "cost"), ("determinism", "determinism"),
+                            ("cost", "cost"), ("scale", "cost"), ("determinism", "determinism"),
                             ("compile-fail", "compile_fail")):
         suite = prefix + "-" + label
         CATEGORY_SUITES[suite] = category
         TEST_SUITES[suite] = (prefix, courts_only, 150, 1)
+
+
+def landing_suites(workspace):
+    """Every nonignored category belongs to the ordinary landing gate."""
+    return tuple(name for name, selection in TEST_SUITES.items()
+                 if selection[0] == workspace and not name.endswith('-scale'))
 
 # Build real product executables, not only their test harnesses.
 BEFORE = {name: [("bank-product-binaries", ["cargo", "build", "--manifest-path", BANK,

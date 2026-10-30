@@ -40,10 +40,11 @@ class PrebuiltNextestTests(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0, json.dumps({key: {}}), '')
 
             reuse = build(root / 'Cargo.toml', root / 'out', runner)
-            list_tests(reuse, root / 'out/inventory.json', runner)
+            list_tests(reuse, root / 'out/inventory.json', runner, partition='hash:1/2')
             self.assertEqual(len(commands), 3)
             self.assertIn('--binaries-metadata', commands[-1])
             self.assertIn('--ignore-default-filter', commands[-1])
+            self.assertEqual(commands[-1][-2:], ['--partition', 'hash:1/2'])
             self.assertNotIn('--manifest-path', commands[-1])
             self.assertNotIn('--all-targets', commands[-1])
             self.assertNotIn('--include-ignored', ' '.join(' '.join(c) for c in commands))

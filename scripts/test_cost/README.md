@@ -1,0 +1,94 @@
+# Governed test cost
+
+The standard-library census covers root, Query, Bank and Store. `worth-ui` is
+excluded. Timings, CPU parallelism and setup frequency are telemetry; they never
+decide whether a test passes.
+
+```text
+python scripts/test_cost/census.py --all --check-sources
+python scripts/test_cost/run_lane.py --workspace store
+python scripts/ci/root_gate.py
+python scripts/ci/query_gate.py --list
+python -m unittest discover -s scripts/test_cost -p test_*.py
+```
+
+`run_lane.py` executes every nonignored partition by default, including ordinary
+cost cases and doctests. It never runs scheduled scale cases or ignored tests.
+Filtered runs prove only their selected subset. A complete nextest inventory is
+not evidence that those tests executed: `executed-coverage.json` separately
+compares terminal observations with the requested identities.
+
+## Ownership and enforcement
+
+* `source_scan.py` and `ratchet.source_violations` refuse Cargo, cargo_metadata
+  and trybuild calls in tests, courts and testkits. This check belongs here
+  pending the coordinator's replacement boundary checker; this task does not
+  modify `tools/boundary-check`.
+* `CargoRunner` captures compiler JSON, command, revision, dirty status, start,
+  end and exit code. Immutable retained copies live in `target/lane-evidence`.
+  Metadata reuse prevents nextest execution from rebuilding the graph.
+* `budgets.json` declares build profiles and per-lane compiler-unit budgets.
+  Libraries, their libtest executables and distinct binaries are distinct
+  compiler units. Recompiling an identical unit in another target directory
+  exceeds the budget. Package-level duplicate graphs remain visible with their
+  features, profiles, target directories and check modes.
+* The runner builds process helpers as independent executable targets. Tests
+  read typed prebuilt manifests and refuse missing or malformed observations.
+  They never silently build a fallback.
+* `compile_batch.py` runs actual fail fixtures together with
+  `cargo check --bins --keep-going`, once per required environment. It copies
+  the owning workspace lockfile, checks dependency lock consistency and
+  attributes diagnostics through real compiler spans. A dependency error or
+  an unattempted fixture cannot satisfy a denial.
+* Store's production fixture graph rejects certification and test features.
+  `certification_authority_is_absent_in_the_production_environment` is an
+  unconditional court test reading that independent production observation.
+  Certification-enabled court dependencies cannot supply this evidence.
+* Supported programs formerly passed to trybuild are ordinary executing court
+  tests. Their bodies remain compiled by their owning court. Duplicate textual
+  copies of root Proof supported fixtures have one source owner; crash sweep
+  continuations are never deduplicated.
+* CPU accounting includes child processes. Generated slot reservations use
+  measured CPU/wall ratios; missing CPU accounting stays unmeasured. Existing
+  reservations remain until measurements exist. Committed sparse reservations
+  retain provenance in `slots/<workspace>`.
+* `coverage.py` proves structural selection; `complete_coverage.py` adds
+  rustdoc-owned identities; `executed_coverage.py` rejects missing, repeated,
+  unknown, failed or actually executed ignored cases. Harness-free programs
+  execute their independently built main exactly once.
+* Store's bounded sweep pool drains every case, joins every worker and reports
+  failures in input order. Independent cases receive worker-local mutable
+  state. Shared-state loops remain judgement work.
+* Store setup recording lives in a closed-court testkit. Fingerprints include
+  the complete recorded builder inputs. Disabled observation changes no builder
+  behaviour; uninstrumented builders remain unmeasured.
+
+## Requirement-to-test map
+
+| Requirement | Executable evidence owner |
+|---|---|
+| Build artifacts and duplicate causes | `test_logs.py`, `test_ratchet.py`, `test_cargo_capture.py` |
+| Nested compiler-call source boundary | `test_source_scan.py`, `test_rust_calls.py`, `test_workspace.py` |
+| LLVM totals and helper attribution | `test_llvm_measure.py`, `test_logs.py` |
+| CPU/slots and generated policy | `test_account.py`, `test_account_windows.py`, `test_telemetry.py`, `test_measured_slots.py`, `test_reservations.py` |
+| Repeated construction observations | `test_telemetry.py`; Store recovery-runtime court setup recorder tests |
+| Sleep, timeout and polling census | `test_source_scan.py` |
+| Exact nonignored selection and execution | `test_coverage.py`, `test_complete_coverage.py`, `test_executed_coverage.py`, `test_doc_contracts.py` |
+| Independent prebuilt executables | `test_store_prebuild.py`, `test_standalone.py`, `test_prebuild.py` |
+| Real batched compiler fates and lockfile | `test_compile_batch.py`, `test_compiler_prebuild.py`, `compiler_probe.py` |
+| Production certification absence | `test_compiler_prebuild.py`; `worth-testkit-compiler` production-denial tests; Store production-absence court |
+| Clean supported-program migration | `test_pass_cutover.py`, `test_supported_programs.py` |
+| Exhaustive independent sweep rewriting | `test_sweep_cutover.py`; Store sweep pool court tests |
+| Store court selectors and categories | `test_store_plan.py`; `store-test-runner` plan tests |
+
+## Evidence limits
+
+Historical Landing 1 logs do not retain compiler-artifact JSON, per-process CPU
+or construction fingerprints. Such cells are unknown, not zero. The historical
+source census identifies its source revision separately from the earlier lane
+timings. New build-only coverage is explicitly distinct from runtime coverage.
+
+Serial workspace testing may be removed from a landing set only after its full
+nonignored coverage, including harness-free programs and doctests, is proved
+and the selected partitions have execution evidence. The TLC script lane keeps
+its separate claim.

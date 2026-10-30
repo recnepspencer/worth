@@ -8,6 +8,7 @@ pub(crate) enum CiTestLane {
     ProcessScenario,
     Ui,
     Formal,
+    Cost,
     Structural,
 }
 
@@ -19,6 +20,7 @@ impl CiTestLane {
             Self::ProcessScenario => "process-scenario",
             Self::Ui => "ui",
             Self::Formal => "formal",
+            Self::Cost => "cost",
             Self::Structural => "structural",
         }
     }
@@ -40,9 +42,10 @@ impl FromStr for CiTestLane {
             "process-scenario" => Ok(Self::ProcessScenario),
             "ui" => Ok(Self::Ui),
             "formal" => Ok(Self::Formal),
+            "cost" => Ok(Self::Cost),
             "structural" => Ok(Self::Structural),
             _ => Err(format!(
-                "unknown CI lane `{value}`; expected owner-unit, scenario, process-scenario, ui, formal, or structural"
+                "unknown CI lane `{value}`; expected owner-unit, scenario, process-scenario, ui, formal, cost, or structural"
             )),
         }
     }

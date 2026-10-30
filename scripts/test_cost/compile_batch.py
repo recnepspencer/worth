@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_topology'))
 from manifest_edit import toml_value
 
 from logs import json_objects
+from diagnostic_flags import arguments as diagnostic_arguments
 
 
 class FixtureFate(Enum):
@@ -109,7 +110,8 @@ def prepare_environment(workspace_manifest, environment, output, cargo_runner):
                '--manifest-path', str(output / 'Cargo.toml'),
                '--target-dir', str(target), '--config', 'build.incremental=false',
                '--profile', environment['profile']]
-    observed = cargo_runner(command, workspace_manifest.parent, output / 'check.log')
+    with diagnostic_arguments(cargo_runner) as flags:
+        observed = cargo_runner(command + flags, workspace_manifest.parent, output / 'check.log')
     if observed.returncode not in (0, 101):
         raise BatchCompilationFailure(f'compiler session failed to execute: {observed.returncode}')
     outcomes = attribute(list(json_objects(observed.stdout)), environment['sources'])

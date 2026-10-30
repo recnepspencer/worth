@@ -3,7 +3,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from query_gate_cost import CostGate, GateSelectionFailure, SuiteQueries, executed_observations
+from query_gate_cost import (CostGate, GateSelectionFailure, SuiteQueries, executed_observations,
+                             DOC_SUITES, expand_suites)
 
 
 def binary(package, kind, names, harness=True):
@@ -64,7 +65,8 @@ class SharedGateSelectionTests(unittest.TestCase):
                 def __init__(self, repository, environment):
                     self.environment, self.logs = environment, []
 
-            def execute(repository, workspace, lanes, output, cargo_runner, queries):
+            def execute(repository, workspace, lanes, output, cargo_runner, queries, include_docs=False):
+                self.assertFalse(include_docs)
                 calls.append(workspace)
                 jobs = queries(discovered)
                 for suite, _, _, _, _ in jobs:
@@ -84,6 +86,44 @@ class SharedGateSelectionTests(unittest.TestCase):
             self.assertEqual(ordinary['names'], ['court$host::ordinary'])
             self.assertEqual(process['names'], ['court$process::crash'])
             self.assertTrue(ordinary['ok'] and process['ok'])
+
+    def test_documentation_aliases_select_each_canonical_workspace_without_example_commands(self):
+        self.assertEqual(expand_suites(['doc']), ['root-doc', 'query-doc', 'bank-doc'])
+        self.assertEqual(set(DOC_SUITES.values()), {'root', 'query', 'bank'})
+
+    def test_docs_share_the_native_execution_and_preserve_actual_ignored_observations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            calls = []
+            discovered = {'rust-suites': {'court': binary('worth-query-court-host', 'test',
+                                                        [('host::ordinary', False)])}}
+            snippet = {'binary': 'worth-query-host::doc', 'test': 'src/lib.rs (line 1)', 'ignored': False}
+            ignored = dict(snippet, test='src/lib.rs (line 9)', ignored=True)
+            class Runner:
+                def __init__(self, repository, environment):
+                    self.environment, self.logs = environment, []
+            def execute(repository, workspace, lanes, output, cargo_runner, queries, include_docs=False):
+                calls.append((workspace, include_docs))
+                queries(discovered)
+                log = output / 'native.log'
+                log.write_text('Command: ["cargo", "nextest", "run"]\n' + json.dumps(dict(
+                    type='test', event='ok', name='worth-query-court-host::worth_query_court_host$host::ordinary')),
+                    encoding='utf-8')
+                doc = output / 'documentation.log'
+                doc.write_text('Command: ["cargo", "test", "--doc"]\n' + '\n'.join(json.dumps(dict(
+                    type='test', event=event, name=row['binary'] + '$' + row['test']))
+                    for row, event in ((snippet, 'ok'), (ignored, 'ignored'))), encoding='utf-8')
+                cargo_runner.logs += [log, doc]
+                return {'documentation': {'inventory': [snippet, ignored], 'selections': [snippet],
+                                          'status': 'pass', 'exit_code': 0}}
+            gate = CostGate(root, root/'out', {}, execute, Runner)
+            gate.configure(['query-rest', 'query-doc'])
+            native, docs = gate.run('query-rest'), gate.run('query-doc')
+            self.assertEqual(calls, [('query', True)])
+            self.assertTrue(native['ok'] and docs['ok'])
+            self.assertEqual(docs['passed'], 1)
+            self.assertEqual(docs['ignored'], 1)
+            self.assertEqual(docs['names'], ['worth-query-host::doc$src/lib.rs (line 1)'])
 
     def test_library_display_name_uses_the_actual_metadata_binary_identity(self):
         # Actual cargo-nextest 0.9.140 transport probe output: inventory and CPU

@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import query_gate
 import query_gate_courts
+import root_gate
 from query_gate_cost import SuiteQueries
 
 
@@ -193,6 +194,21 @@ class CostClassScheduling(unittest.TestCase):
 
 
 class CourtSelection(unittest.TestCase):
+    def test_docs_dispatch_through_shared_cost_execution_instead_of_legacy_commands(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            gate = query_gate.Gate(Path(temporary))
+            result = {'suite': 'query-doc', 'ok': True}
+            with patch.object(gate.cost, 'run', return_value=result) as run:
+                self.assertEqual(gate.run('query-doc'), result)
+            run.assert_called_once_with('query-doc')
+        self.assertNotIn('doc', query_gate.COMMAND_SUITES)
+        self.assertEqual(len(query_gate.ORDER), len(set(query_gate.ORDER)))
+        for workspace in ('root', 'query', 'bank'):
+            self.assertIn(workspace + '-doc', query_gate.ORDER)
+            self.assertTrue(set(query_gate_courts.landing_suites(workspace)) <= set(query_gate.ORDER))
+        self.assertIn('root-doc', root_gate.ROOT_SUITES)
+        self.assertIn('root-cost', root_gate.ROOT_SUITES)
+
     def test_category_suites_do_not_repeat_harness_free_product_examples(self):
         with tempfile.TemporaryDirectory() as temporary:
             discovered = {"rust-suites": {"owning-example::example/main": {
@@ -220,12 +236,21 @@ class CourtSelection(unittest.TestCase):
         cases = ["ordinary::process_word_is_a_behaviour", "process::io::behaviour",
                  "oracle::reference::behaviour", "cost::growth::behaviour",
                  "determinism::replay::behaviour", "compile_fail::sealed::behaviour"]
-        suites = ["query-rest", "query-process", "query-exhaustive", "query-scale",
+        suites = ["query-rest", "query-process", "query-exhaustive", "query-cost",
                   "query-determinism", "query-compile-fail"]
         for name, expected in zip(cases, suites):
             selected = [suite for suite in suites
                         if query_gate_courts.selected(suite, binary, name)]
             self.assertEqual(selected, [expected])
+
+    def test_full_workspace_landing_sets_include_cost_and_exclude_scheduled_scale(self):
+        for workspace in ('root', 'query', 'bank'):
+            suites = query_gate_courts.landing_suites(workspace)
+            self.assertIn(workspace + '-cost', suites)
+            self.assertNotIn(workspace + '-scale', suites)
+            categories = {query_gate_courts.CATEGORY_SUITES[name] for name in suites
+                          if name in query_gate_courts.CATEGORY_SUITES}
+            self.assertEqual(categories, set(query_gate_courts.CATEGORIES))
 
 
 

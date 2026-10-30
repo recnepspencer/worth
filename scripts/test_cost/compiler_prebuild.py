@@ -9,11 +9,13 @@ from pathlib import Path
 from compile_batch import prepare_environment, render_manifest, target_directory
 from fixture_graph import configured_inputs, dependency_manifest, merge_dependencies, snapshot_inputs
 from workspace import WORKSPACES
+from diagnostic_flags import FLAGS as DIAGNOSTIC_FLAGS
 
 
 class CompilerScope(Enum):
     NONE = 'none'
     UNITS = 'units'
+    FIXTURES = 'fixtures'
     ALL = 'all'
 
 
@@ -34,7 +36,7 @@ def environments(repository, workspace):
     if workspace == 'store':
         rows = configured_inputs(repository, Path(__file__).with_name('store_compiler_inputs.json'))
     else:
-        rows = {'production': {'identity': 'production', 'profile': 'dev', 'dependencies': {}, 'sources': []}}
+        rows = {'production': {'identity': 'production', 'profile': 'test', 'dependencies': {}, 'sources': []}}
     for snapshot in snapshots:
         name = 'production' if workspace != 'store' or snapshot['source'].name == 'certification_authority_is_absent.rs' else 'certification'
         row = rows[name]
@@ -58,7 +60,10 @@ def unit_inputs(output):
     (dependency / 'src').mkdir(parents=True, exist_ok=True)
     (dependency / 'Cargo.toml').write_text('[package]\nname="sealed-dependency"\nversion="0.0.0"\nedition="2021"\n[workspace]\n', encoding='utf-8')
     (dependency / 'src/lib.rs').write_text('pub(crate) fn private() {}\n', encoding='utf-8')
-    (dependency / 'build.rs').write_text('fn main() { assert_eq!(std::env::var("OPT_LEVEL").unwrap(), "0"); }\n', encoding='utf-8')
+    (dependency / 'build.rs').write_text(
+        'fn main() { assert_eq!(std::env::var("OPT_LEVEL").unwrap(), "0"); '
+        'let flags=std::env::var("CARGO_ENCODED_RUSTFLAGS").unwrap(); '
+        'assert!(flags.contains("--verbose")); assert!(flags.contains("dead_code")); }\n', encoding='utf-8')
     fixtures = root / 'fixtures'
     fixtures.mkdir(parents=True, exist_ok=True)
     for name in ('private_a', 'private_b'):
@@ -75,10 +80,10 @@ def prepare(repository, workspace, output, cargo_runner, scope=CompilerScope.ALL
     if scope is CompilerScope.NONE:
         return {}
     manifest = repository / WORKSPACES[workspace]
-    rows, orphaned = environments(repository, workspace) if scope is CompilerScope.ALL else ({}, [])
+    rows, orphaned = environments(repository, workspace) if scope in (CompilerScope.ALL, CompilerScope.FIXTURES) else ({}, [])
     (output / 'orphan-snapshots.json').write_text(json.dumps(orphaned, indent=2) + '\n', encoding='utf-8')
     environment = {}
-    if workspace == 'store':
+    if workspace == 'store' and scope in (CompilerScope.ALL, CompilerScope.UNITS):
         root, row = unit_inputs(output)
         rows[row['identity']] = row
         environment['WORTH_PREBUILT_COMPILER_UNIT_ROOT'] = str(root)
@@ -88,7 +93,9 @@ def prepare(repository, workspace, output, cargo_runner, scope=CompilerScope.ALL
             continue
         observed = prepare_environment(manifest, row, output / name, cargo_runner)
         rendered = render_manifest(row, manifest).replace(repository.as_posix(), '<workspace>')
-        identity = hashlib.sha256(rendered.encode()).hexdigest()
+        recipe = json.dumps({'manifest': rendered, 'profile': row['profile'],
+                             'diagnostic_flags': DIAGNOSTIC_FLAGS}, sort_keys=True)
+        identity = hashlib.sha256(recipe.encode()).hexdigest()
         target = target_directory(manifest, cargo_runner)
         for source, result in observed['fixtures'].items():
             key = normalized_source_key(source)

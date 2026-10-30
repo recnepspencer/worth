@@ -19,7 +19,6 @@ import shutil
 import subprocess
 import sys
 import time
-import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -27,7 +26,7 @@ from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment
 from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
-from query_gate_cost import CostGate, governed
+from query_gate_cost import CostGate, DOC_ALIASES, DOC_SUITES, expand_suites, governed
 from cargo_capture import CargoRunner
 
 from query_gate_courts import (
@@ -54,28 +53,6 @@ def bash():
     git_bash = Path("C:/Program Files/Git/bin/bash.exe")
     return str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
 
-def consumer_doctest_commands():
-    configuration = tomllib.loads(
-        (ROOT / "tools/boundary-check/config/consumer-docs.toml").read_text(encoding="utf-8")
-    )
-    return [
-        ("doc-" + Path(selection["manifest"]).parent.name,
-         ["cargo", "test", "--doc", "--no-fail-fast",
-          "--manifest-path", selection["manifest"], *packages(*selection["packages"])])
-        for selection in configuration["doctests"]
-    ] + [
-        ("doc-owning-fixtures", ["cargo", "test", "--manifest-path", FIXTURE,
-         "-p", "worth-query-consumer-root", "-p", "worth-query-topology-entry",
-         "--bins", "--lib", "--config", "build.incremental=false", "--no-fail-fast", "--",
-         "compiled_examples_match_consumer_documents"]),
-        ("doc-owning-examples", ["cargo", "test", "--manifest-path", QUERY,
-         *packages("worth-query-declaration", "worth-query-execution", "worth-query-publication",
-                   "worth-query-host", "worth-query-certification"),
-         "--example", "authored_workflow", "--example", "ordinary_product_workflow",
-         "--no-fail-fast"]),
-    ]
-
-
 # suite -> [(label, command)], one command at a time
 COMMAND_SUITES = {
     "fmt": [
@@ -98,11 +75,6 @@ COMMAND_SUITES = {
         ("clippy-ui-binding",
          clippy("--manifest-path", UI, *packages("worth-ui-query-binding"))),
     ],
-    # Compiled doc examples: no other suite builds them.
-    "doc-lower": [
-        ("doc-root", ["cargo", "test", "--doc", "--no-fail-fast", *packages(*LOWER)]),
-    ],
-    "doc": consumer_doctest_commands(),
     "wasm": [
         ("wasm-check", ["cargo", "check", "-p", "worth-signal-wasm", "--all-targets"]),
     ],
@@ -138,7 +110,8 @@ COMMAND_ENV = {
 
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "root-rest", "query-execution", "query-rest",
-         "query-process", "query-exhaustive", "fixture", "bank", "bank-process", "doc-lower", "doc", "wasm", "boundary", "extra"]
+         "query-process", "query-exhaustive", "fixture", "bank", "bank-process",
+         "root-doc", "query-doc", "bank-doc", "wasm", "boundary", "extra"]
 ORDER += [name for name in TEST_SUITES if name.startswith(("query-", "bank-", "root-"))
           and name not in ORDER and not name.endswith("-scale")]
 
@@ -320,7 +293,7 @@ class Gate:
         }
 
     def run(self, suite):
-        result = self.tests(suite) if suite in TEST_SUITES else self.commands(suite)
+        result = self.tests(suite) if suite in TEST_SUITES or suite in DOC_SUITES else self.commands(suite)
         (self.out / f"{suite}.json").write_text(json.dumps(result, indent=1),
                                                 encoding="utf-8")
         return result
@@ -334,10 +307,10 @@ def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
     parser.add_argument("--census", action="store_true", help="refuse scheduled scale suites")
     args = parser.parse_args(argv)
     if args.list:
-        print("\n".join(allowed_suites or dict.fromkeys([*ORDER, *TEST_SUITES, *COMMAND_SUITES])))
+        print("\n".join(allowed_suites or dict.fromkeys([*ORDER, *TEST_SUITES, *DOC_ALIASES, *COMMAND_SUITES])))
         return 0
-    suites = args.suites.split(",")
-    unknown = [name for name in suites if name not in TEST_SUITES and name not in COMMAND_SUITES]
+    suites = expand_suites(args.suites.split(","))
+    unknown = [name for name in suites if name not in TEST_SUITES and name not in COMMAND_SUITES and name not in DOC_SUITES]
     if unknown:
         parser.error("unknown suite: " + ", ".join(unknown))
     if len(set(suites)) != len(suites):

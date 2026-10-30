@@ -92,6 +92,7 @@ def artifact(event, context):
     return {'package': event['package_id'], 'target': event['target']['name'],
             'kind': sorted(event['target']['kind']), 'features': sorted(event['features']),
             'profile': event['profile'], 'target_dir': target_dir,
+            'cargo_profile': context.get('cargo_profile'),
             'check_mode': context.get('mode', 'check' if any(f.endswith('.rmeta') for f in files)
                                       and not any(f.endswith('.rlib') for f in files) else 'build'),
             'filenames': files}
@@ -105,7 +106,7 @@ def duplicates(artifacts):
     for package, values in sorted(packages.items()):
         if len(values) < 2:
             continue
-        causes = [key for key in ('features', 'profile', 'target_dir', 'check_mode', 'kind', 'target')
+        causes = [key for key in ('features', 'profile', 'cargo_profile', 'target_dir', 'check_mode', 'kind', 'target')
                   if len({json.dumps(v[key], sort_keys=True) for v in values}) > 1]
         result.append({'package': package, 'compiles': len(values),
                        'causes': causes or ['repeated identical graph'], 'artifacts': values})

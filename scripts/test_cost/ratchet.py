@@ -25,7 +25,7 @@ def build_violations(lane, budget):
         # two different binaries belonging to that package are not.
         key = (artifact['package'], artifact['target'], tuple(artifact['kind']),
                tuple(artifact['features']), json.dumps(artifact['profile'], sort_keys=True),
-               artifact['check_mode'])
+               artifact['check_mode'], artifact.get('cargo_profile'))
         counts[key] += 1
         directories.setdefault(key, set()).add(artifact['target_dir'])
     violations = []
@@ -34,6 +34,7 @@ def build_violations(lane, budget):
             violations.append({'kind': 'duplicate-graph', 'package': key[0], 'target': key[1],
                                'features': list(key[3]), 'profile': json.loads(key[4]),
                                'check_mode': key[5], 'compiles': count,
+                               'cargo_profile': key[6],
                                'target_dirs': sorted(str(p) for p in directories[key])})
     return violations
 

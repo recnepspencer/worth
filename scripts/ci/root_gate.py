@@ -3,10 +3,10 @@
 import sys
 
 from query_gate import ROOT, main as gate_main
+from query_gate_courts import landing_suites
 
 
-ROOT_SUITES = ('relational', 'signal', 'execution', 'root-rest', 'root-process',
-               'root-exhaustive', 'root-determinism', 'root-compile-fail')
+ROOT_SUITES = (*landing_suites('root'), 'root-doc')
 
 
 def main(argv=None):

@@ -6,10 +6,23 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_cost'))
 from cargo_capture import CargoRunner
+from doc_lane import execute as execute_documentation_lane
 from logs import read_lane
 from run_lane import execute as execute_workspace
 
-from query_gate_courts import CATEGORIES, CATEGORY_SUITES, TEST_SUITES, selected
+from query_gate_courts import CATEGORIES, CATEGORY_SUITES, TEST_SUITES, landing_suites, selected
+
+
+DOC_SUITES = {workspace + '-doc': workspace for workspace in ('root', 'query', 'bank')}
+DOC_ALIASES = {'doc': tuple(DOC_SUITES)}
+
+
+def expand_suites(suites):
+    return [name for suite in suites for name in DOC_ALIASES.get(suite, (suite,))]
+
+
+def workspace_of(suite):
+    return DOC_SUITES[suite] if suite in DOC_SUITES else TEST_SUITES[suite][0]
 
 
 class GateSelectionFailure(ValueError):
@@ -17,7 +30,8 @@ class GateSelectionFailure(ValueError):
 
 
 def governed(suite):
-    return suite in TEST_SUITES and TEST_SUITES[suite][0] in ('root', 'query', 'bank') and not suite.endswith('-scale')
+    return suite in DOC_SUITES or (suite in TEST_SUITES and
+           TEST_SUITES[suite][0] in ('root', 'query', 'bank') and not suite.endswith('-scale'))
 
 
 def descriptor(binary, suite):
@@ -122,8 +136,9 @@ def executed_observations(logs, aliases):
             continue
         command = json.loads(first.removeprefix('Command: '))
         native = command[:3] == ['cargo', 'nextest', 'run']
+        documentation = command[:2] == ['cargo', 'test'] and '--doc' in command
         main = len(command) > 1 and Path(command[1]).name == 'account.py'
-        if not (native or main):
+        if not (native or main or documentation):
             continue
         observed = read_lane(path)
         walls[str(path)] = observed['telemetry'].get('wall_seconds')
@@ -155,7 +170,7 @@ class CostGate:
             raise GateSelectionFailure('a governed suite repeats in the execution plan')
         groups = defaultdict(list)
         for suite in names:
-            groups[TEST_SUITES[suite][0]].append(suite)
+            groups[workspace_of(suite)].append(suite)
         if self.finished and dict(groups) != self.groups:
             raise GateSelectionFailure('configure every selected suite before workspace execution')
         self.groups, self.configured = dict(groups), True
@@ -165,7 +180,7 @@ class CostGate:
             raise GateSelectionFailure(f'{suite} is not a governed landing suite')
         if not self.configured:
             self.configure([suite])
-        workspace = TEST_SUITES[suite][0]
+        workspace = workspace_of(suite)
         if suite not in self.groups.get(workspace, []):
             raise GateSelectionFailure('configure every selected suite before workspace execution')
         if workspace not in self.finished:
@@ -174,13 +189,36 @@ class CostGate:
 
     def run_workspace(self, workspace):
         output = self.output / workspace
-        queries = SuiteQueries(self.groups[workspace], output)
+        names = self.groups[workspace]
+        native = [name for name in names if name not in DOC_SUITES]
+        doc_suite = next((name for name in names if name in DOC_SUITES), None)
+        queries = SuiteQueries(native, output)
         runner = self.runner_factory(self.repository, self.environment)
         failure = None
         try:
-            self.execute(self.repository, workspace, [], output, cargo_runner=runner, queries=queries)
+            if native:
+                result = self.execute(self.repository, workspace, [], output, cargo_runner=runner,
+                                      queries=queries, include_docs=bool(doc_suite))
+                documentation = result.get('documentation') if result else None
+            else:
+                result = execute_documentation_lane(self.repository, workspace, output, runner)
+                documentation = result['documentation']
+                queries.coverage = {'status': 'partial', 'reason': 'native inventory not requested'}
+            if doc_suite:
+                if documentation is None:
+                    raise GateSelectionFailure('requested documentation has no execution observation')
+                queries.expected[doc_suite] = {(r['binary'], r['test']) for r in documentation['selections']}
+                queries.ignored[doc_suite] = {(r['binary'], r['test']) for r in documentation['inventory'] if r['ignored']}
+                if documentation['status'] != 'pass':
+                    failure = f'documentation failed: exit {documentation["exit_code"]}'
+            if set(landing_suites(workspace)) <= set(native) and queries.coverage['status'] != 'pass':
+                raise GateSelectionFailure('complete landing gate leaves native tests unselected')
         except (ValueError, OSError) as error:
             failure = str(error)
+        if doc_suite:
+            queries.expected.setdefault(doc_suite, set())
+            queries.ignored.setdefault(doc_suite, set())
+        queries.coverage['documentation'] = 'requested' if doc_suite else 'not-requested'
         try:
             events, walls = executed_observations(runner.logs, queries.aliases)
             self.record(workspace, queries, events, walls, failure)
@@ -202,7 +240,7 @@ class CostGate:
             missing = sorted(expected - set(counts))
             logs = sorted({event['log'] for event in cases})
             timings = [walls[path] for path in logs]
-            eligible = bool(expected or queries.ignored[suite]) or suite in CATEGORY_SUITES
+            eligible = bool(expected or queries.ignored[suite]) or suite in CATEGORY_SUITES or suite in DOC_SUITES
             run_seconds = (sum(timings) if logs and all(t is not None for t in timings)
                            else 0 if not expected and not failure else None)
             self.results[suite] = {

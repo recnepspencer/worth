@@ -1,6 +1,8 @@
 """The runner's single Cargo process boundary and compiler-JSON capture."""
 from datetime import datetime, timezone
 import json
+import hashlib
+import re
 from pathlib import Path
 import subprocess
 import shutil
@@ -40,6 +42,14 @@ def capture_record(environment, path):
             stream.write((json.dumps({'log': str(Path(path).resolve())}) + '\n').encode('utf-8'))
 
 
+def retention_name(relative, head, start):
+    relative = str(relative).replace('\\', '/')
+    label = re.sub(r'[^A-Za-z0-9_.-]', '-', relative)[:64]
+    stamp = ''.join(character for character in start if character.isdigit())
+    digest = hashlib.sha256(relative.encode()).hexdigest()[:12]
+    return f'{label}-{head[:12]}-{stamp}-{digest}.log'
+
+
 class CargoRunner:
     def __init__(self, repository, environment=None):
         for stream in (sys.stdout, sys.stderr):
@@ -57,9 +67,16 @@ class CargoRunner:
         head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.repository, text=True).strip()
         clean = not subprocess.check_output(['git', 'status', '--short'], cwd=self.repository, text=True).strip()
         start = datetime.now(timezone.utc).isoformat()
+        ordered = command[:2] == ['cargo', 'test'] and '--doc' in command
         marker = {'type': 'cargo-invocation', 'command': command, 'cwd': str(cwd),
+                  'capture': 'ordered' if ordered else 'separate',
                   'mode': 'check' if command[1:2] in (['check'], ['clippy']) else 'build',
-                  'target_dir': None}
+                  'target_dir': None,
+                  'cargo_profile': ('release' if '--release' in command else
+                                    'test' if command[1:2] in (['test'], ['nextest']) else 'dev')}
+        for flag in ('--profile', '--cargo-profile'):
+            if flag in command:
+                marker['cargo_profile'] = command[command.index(flag) + 1]
         if '--target-dir' in command:
             marker['target_dir'] = command[command.index('--target-dir') + 1]
         else:
@@ -74,8 +91,10 @@ class CargoRunner:
             log.write(json.dumps(marker) + '\n')
             log.flush()
             try:
-                result = subprocess.run(command, cwd=cwd, env=self.environment, capture_output=True,
+                result = subprocess.run(command, cwd=cwd, env=self.environment, stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT if ordered else subprocess.PIPE,
                                         text=True, encoding='utf-8', errors='replace')
+                result.stderr = result.stderr or ''
             except OSError as error:
                 result = subprocess.CompletedProcess(command, 127, '', str(error))
             log.write(result.stdout)
@@ -84,9 +103,9 @@ class CargoRunner:
         retained = log_path.resolve()
         target = self.repository / 'target'
         evidence = target / 'lane-evidence'
-        if retained.is_relative_to(target) and not retained.is_relative_to(evidence):
+        if retained.is_relative_to(target):
             evidence.mkdir(parents=True, exist_ok=True)
-            retained_name = retained.relative_to(target).as_posix().replace('/', '--')
+            retained_name = retention_name(retained.relative_to(target), head, start)
             retained = evidence / retained_name
             shutil.copyfile(log_path, retained)
         self.logs.append(retained)
