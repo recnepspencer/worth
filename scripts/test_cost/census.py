@@ -119,7 +119,8 @@ def main():
     result_code = 0
     for name, path in manifests:
         manifest = (repository / path).resolve()
-        destination = args.output or repository / 'target/test-cost' / name
+        destination = ((args.output / name if args.all else args.output)
+                       if args.output else repository / 'target/test-cost' / name)
         destination.mkdir(parents=True, exist_ok=True)
         command = args.command[1:] if args.command[:1] == ['--'] else args.command
         logs = list(args.log)

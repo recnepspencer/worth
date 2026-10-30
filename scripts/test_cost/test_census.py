@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -23,6 +25,27 @@ class CensusFixtureTests(unittest.TestCase):
             self.assertEqual(result['coverage']['status'], 'pass')
             self.assertEqual(result['lanes']['lane']['timing_telemetry']['pass'], 1)
             self.assertIn('unknown', markdown(result))
+
+    def test_all_workspaces_keep_separate_reports_under_an_explicit_output_root(self):
+        from workspace import WORKSPACES
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / '.git').mkdir()
+            for workspace, relative in WORKSPACES.items():
+                manifest = root / relative
+                manifest.parent.mkdir(parents=True, exist_ok=True)
+                manifest.write_text(f'[package]\nname="fixture-court-{workspace}"\nversion="0.1.0"')
+            output = root / 'separate-output'
+            command = [sys.executable, str(Path(__file__).with_name('census.py').resolve()),
+                       '--all', '--check-sources', '--output', str(output)]
+            observed = subprocess.run(command, cwd=root, capture_output=True, text=True)
+            self.assertEqual(observed.returncode, 0, observed.stdout + observed.stderr)
+            self.assertEqual({path.name for path in output.iterdir()}, set(WORKSPACES))
+            for workspace, relative in WORKSPACES.items():
+                result = json.loads((output / workspace / 'census.json').read_text())
+                self.assertEqual(Path(result['manifest']), Path(relative))
+                self.assertTrue((output / workspace / 'census.md').is_file())
+            self.assertFalse((root / 'target').exists())
 
     def test_source_rule_refuses_compiler_launches_but_does_not_gate_telemetry(self):
         sites = [{'kind': kind} for kind in ('cargo-command', 'cargo-environment',
