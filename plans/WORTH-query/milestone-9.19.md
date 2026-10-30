@@ -586,6 +586,13 @@ including eight maintained courts and this Refuse allocation court with exact
 final-owner balance. A focused proof matrix rejects foreign issuers, and a
 compile-fail check proves installed runtime has no initializer. This qualifies
 fresh unpublished initialization only; recovery is not qualified by this court.
+Native retained Source affinity is now independent of the live cell's current
+cache. The real Native publication/fork/deletion court relinquishes the actual
+participant lookup while retaining its admitted snapshot and observations; the
+live Core expires, selected read/evict/refill still works, and currentness/write
+conditions refuse. Original affinity/fork/snapshot grants balance after all owners
+close. This is the Native lifetime prerequisite only: automatic Query lookup
+retirement and public branch-close reclamation remain unqualified.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication

@@ -1,4 +1,4 @@
-//! Source observations retain real cell/data custody, never an Execution grant.
+//! Source observations retain selected data/affinity, never newer live cache custody.
 use super::*;
 use crate::identity::data::EntityId;
 use crate::validation::candidate_source::{
@@ -6,9 +6,11 @@ use crate::validation::candidate_source::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
 };
 use std::sync::Weak;
+pub(in crate::mvcc::publication::companion) mod affinity;
 
 pub struct ManagedIndexSourceObservation {
-    pub(in crate::mvcc) core: Arc<CompanionBranchCellCore>,
+    pub(in crate::mvcc) core: Weak<CompanionBranchCellCore>,
+    affinity: Arc<affinity::ManagedSourceCellAffinity>,
     pub(in crate::mvcc) record: Arc<ManagedIndexSourceAssociation>,
     payload: Arc<dyn Any + Send + Sync>,
     selected: PositionedRelationalSnapshot,
@@ -20,6 +22,7 @@ pub struct ManagedIndexSourceObservation {
 #[derive(Clone)]
 pub(crate) struct ManagedSourceRootImage {
     pub(in crate::mvcc) core: Weak<CompanionBranchCellCore>,
+    pub(in crate::mvcc::publication::companion) affinity: Arc<affinity::ManagedSourceCellAffinity>,
     pub(in crate::mvcc) image: Arc<CompanionRootImage>,
     pub(in crate::mvcc) _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
@@ -44,26 +47,7 @@ impl ManagedSourceRootImage {
         Option<crate::validation::candidate_source::ManagedIndexSourceCacheRetirement>,
         Denial,
     > {
-        let core = self.core.upgrade().ok_or(Denial::RootUnavailable)?;
-        if core.registration_generation != registration_generation {
-            return Err(Denial::Publication(
-                CompanionPreflightStop::RegistrationChanged,
-            ));
-        }
-        if core.runtime_instance_id != selected.runtime_instance_id()
-            || core.branch_id != *selected.branch_id()
-        {
-            return Err(Denial::ForeignSource);
-        }
-        // A current World product may lawfully select an older Native
-        // component (ReuseExact or a pending coordinated successor). Its held
-        // Native root names this cache; the latest core is not that authority.
-        if self.image.root_id != selected.root_id()
-            || self.image.commit_id != selected.commit_id()
-            || self.image.position() != selected.position()
-        {
-            return Err(Denial::ForeignSource);
-        }
+        self.admit_selected(selected, registration_generation)?;
         let image = self
             .image
             .payload
@@ -83,23 +67,7 @@ impl ManagedSourceRootImage {
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         registration_generation: u64,
     ) -> Result<ManagedIndexSourceObservation, Denial> {
-        let core = self.core.upgrade().ok_or(Denial::RootUnavailable)?;
-        if core.registration_generation != registration_generation {
-            return Err(Denial::Publication(
-                CompanionPreflightStop::RegistrationChanged,
-            ));
-        }
-        if core.runtime_instance_id != selected.runtime_instance_id()
-            || core.branch_id != *selected.branch_id()
-        {
-            return Err(Denial::ForeignSource);
-        }
-        if self.image.root_id != selected.root_id()
-            || self.image.commit_id != selected.commit_id()
-            || self.image.position() != selected.position()
-        {
-            return Err(Denial::ForeignSource);
-        }
+        self.admit_selected(&selected, registration_generation)?;
         let image = self
             .image
             .payload
@@ -113,7 +81,8 @@ impl ManagedSourceRootImage {
         }
         let payload = record.payload().cloned().ok_or(Denial::RootUnavailable)?;
         Ok(ManagedIndexSourceObservation {
-            core,
+            core: self.core.clone(),
+            affinity: Arc::clone(&self.affinity),
             record: Arc::clone(&record.association),
             payload,
             selected,
@@ -135,7 +104,7 @@ impl ManagedIndexSourceObservation {
         self.record.revision
     }
     pub fn same_source(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.core, &other.core) && Arc::ptr_eq(&self.record, &other.record)
+        Arc::ptr_eq(&self.affinity, &other.affinity) && Arc::ptr_eq(&self.record, &other.record)
     }
 
     /// Compare the complete retained Source support at an actual Native image.
@@ -145,14 +114,17 @@ impl ManagedIndexSourceObservation {
         selected: &PositionedRelationalSnapshot,
         registration_generation: u64,
     ) -> bool {
-        if self.core.runtime_instance_id != selected.runtime_instance_id()
-            || self.core.branch_id != *selected.branch_id()
-            || self.core.registration_generation != registration_generation
+        if self
+            .affinity
+            .admit(selected, registration_generation)
+            .is_err()
         {
             return false;
         }
-        let current = self
-            .core
+        let Some(core) = self.core.upgrade() else {
+            return false;
+        };
+        let current = core
             .current
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -187,12 +159,14 @@ impl ManagedSourceReadConditions {
         expected_root: u64,
         expected_commit: Option<CommitId>,
     ) -> Result<Self, CompanionPreflightStop> {
-        if observation.core.runtime_instance_id != runtime || observation.core.branch_id != *branch
-        {
+        let core = observation
+            .core
+            .upgrade()
+            .ok_or(CompanionPreflightStop::ForeignCell)?;
+        if core.runtime_instance_id != runtime || core.branch_id != *branch {
             return Err(CompanionPreflightStop::ForeignCell);
         }
-        let current = observation
-            .core
+        let current = core
             .current
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -211,7 +185,7 @@ impl ManagedSourceReadConditions {
             return Err(CompanionPreflightStop::ManagedSourceChanged);
         }
         Ok(Self {
-            core: Arc::clone(&observation.core),
+            core: Arc::clone(&core),
             pinned: Arc::clone(&current),
         })
     }

@@ -36,7 +36,7 @@ impl ManagedIndexSourceRebuild {
         if self.selected != selected || self.generation != generation {
             return Err(Denial::ForeignSource);
         }
-        let core = self.image.admit_selected(&selected, generation)?;
+        self.image.admit_selected(&selected, generation)?;
         let image = self
             .image
             .image
@@ -48,7 +48,8 @@ impl ManagedIndexSourceRebuild {
             .map_err(Denial::Publication)?;
         Ok((
             ManagedIndexSourceObservation {
-                core,
+                core: self.image.core.clone(),
+                affinity: Arc::clone(&self.image.affinity),
                 record: Arc::clone(&self.expected.association),
                 payload: Arc::clone(payload),
                 selected,
@@ -59,27 +60,6 @@ impl ManagedIndexSourceRebuild {
     }
 }
 impl ManagedSourceRootImage {
-    fn admit_selected(
-        &self,
-        selected: &PositionedRelationalSnapshot,
-        generation: u64,
-    ) -> Result<Arc<CompanionBranchCellCore>, Denial> {
-        let core = self.core.upgrade().ok_or(Denial::RootUnavailable)?;
-        if core.registration_generation != generation {
-            return Err(Denial::Publication(
-                CompanionPreflightStop::RegistrationChanged,
-            ));
-        }
-        if core.runtime_instance_id != selected.runtime_instance_id()
-            || core.branch_id != *selected.branch_id()
-            || self.image.root_id != selected.root_id()
-            || self.image.commit_id != selected.commit_id()
-            || self.image.position() != selected.position()
-        {
-            return Err(Denial::ForeignSource);
-        }
-        Ok(core)
-    }
     pub(crate) fn prepare_rebuild(
         &self,
         projection: VisibilityProjectionView,

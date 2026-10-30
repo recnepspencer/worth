@@ -10,6 +10,7 @@ use std::sync::{
     Mutex,
 };
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+mod retained_affinity;
 struct Probe {
     core: Arc<Mutex<Weak<CompanionBranchCellCore>>>,
     port: PublicationCompanionRegistrationPort,

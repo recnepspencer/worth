@@ -31,6 +31,13 @@ impl PreparedPublicationCompanionEffect {
             root.managed_source_image
                 .set(super::super::cell::ManagedSourceRootImage {
                     core: std::sync::Arc::downgrade(&managed.cell),
+                    affinity: std::sync::Arc::clone(
+                        managed
+                            .cell
+                            .source_affinity
+                            .get()
+                            .expect("compound sealing prepared source affinity"),
+                    ),
                     image: std::sync::Arc::clone(&managed.next),
                     _fork_memory: None,
                 })

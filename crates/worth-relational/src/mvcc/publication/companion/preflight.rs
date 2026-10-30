@@ -273,6 +273,7 @@ impl<'a> PublicationCompanionPreflight<'a> {
         if Arc::ptr_eq(&marks.core, &managed.core) {
             return Err(CompanionPreflightStop::ForeignCell);
         }
+        managed.core.retain_source_affinity(self.execution)?;
         let mut effect = self.seal_replacement(marks, next_marks)?;
         let mut source = self.seal_replacement(managed, next_managed)?;
         effect.managed = source.primary.take();

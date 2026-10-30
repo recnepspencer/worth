@@ -97,10 +97,15 @@ impl PreparedManagedIndexSourceFork {
             .expect("fresh unshared fork core")
             ._fork_memory = memory.clone();
         let image = cell.read_image();
+        let affinity = cell
+            .core
+            .retain_source_affinity(execution)
+            .map_err(denied)?;
         header
             .managed_source_image
             .set(super::ManagedSourceRootImage {
                 core: Arc::downgrade(&cell.core),
+                affinity,
                 image: Arc::clone(&image.image),
                 _fork_memory: memory,
             })
