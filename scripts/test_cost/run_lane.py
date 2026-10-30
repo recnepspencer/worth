@@ -28,6 +28,34 @@ from workspace import WORKSPACES, repository_root
 LANDING = tuple(name for name in LANES if name != 'scale')
 
 
+class LaneExecutionFailure(ValueError):
+    """A completed execution failed enforcement; its actual observations survive."""
+    def __init__(self, message, result):
+        self.result = result
+        super().__init__(message)
+
+
+def full_workspace_required(lanes, queries, expression, partition, include_docs, selection_proof):
+    default_complete = (queries is None and expression is None and partition is None
+                        and set(lanes) == set(LANDING))
+    return default_complete or (include_docs and selection_proof['status'] == 'pass')
+
+
+def retain_completed(repository, workspace, output, result, violations, failures):
+    result['build_ratchet'] = {'violations': violations}
+    result['failures'] = list(failures)
+    for destination in {output, repository / 'target/test-cost' / workspace}:
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / 'census.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+        (destination / 'census.md').write_text(markdown(result), encoding='utf-8')
+    (output / 'build-ratchet.json').write_text(json.dumps(violations, indent=2) + '\n', encoding='utf-8')
+    if violations:
+        raise LaneExecutionFailure('build budget exceeded: ' + json.dumps(violations), result)
+    if failures:
+        raise LaneExecutionFailure(f'test lanes failed: {failures}', result)
+    return result
+
+
 def log_label(name):
     value = re.sub(r'[<>:"/\\|?*\r\n]', '-', name)
     if len(value) > 80:
@@ -162,7 +190,8 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     complete, requested, selection_proof = complete_coverage(discovered, requested, documentation)
     events, walls = execution_observations(runner.logs, discovered)
     executed = prove_executions(complete, requested, events,
-        require_full_workspace=queries is None and expression is None and set(lanes) == set(LANDING))
+        require_full_workspace=full_workspace_required(
+            lanes, queries, expression, partition, include_docs, selection_proof))
     if documentation is None and executed['status'] == 'pass':
         executed.update(status='partial', scope='native-only',
                         reason='documentation inventory and executions were not requested')
@@ -189,10 +218,6 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
                                   reason='documentation was not requested')
     result['executed_coverage'] = executed
     result['documentation'] = documentation
-    for destination in {output, repository / 'target/test-cost' / workspace}:
-        destination.mkdir(parents=True, exist_ok=True)
-        (destination / 'census.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
-        (destination / 'census.md').write_text(markdown(result), encoding='utf-8')
     # Count actual compiler units across all invocations in this lane, including
     # executable and fixture prebuilds. A warm graph remains a measured zero.
     compiled = [artifact for lane in result['lanes'].values() for artifact in lane['artifacts']]
@@ -200,12 +225,7 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
                                      for lane in result['lanes'].values()) else 'unmeasured'
     violations = build_violations({'build_observation': build_observation, 'artifacts': compiled,
                                   'log': str(output)}, budget)
-    (output / 'build-ratchet.json').write_text(json.dumps(violations, indent=2) + '\n', encoding='utf-8')
-    if violations:
-        raise ValueError('build budget exceeded: ' + json.dumps(violations))
-    if failures:
-        raise ValueError(f'test lanes failed: {failures}')
-    return result
+    return retain_completed(repository, workspace, output, result, violations, failures)
 
 
 def main():

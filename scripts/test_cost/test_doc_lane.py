@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from doc_lane import execute
+from run_lane import LaneExecutionFailure
 
 
 class DocLaneTests(unittest.TestCase):
@@ -69,6 +70,20 @@ class DocLaneTests(unittest.TestCase):
                 violations = json.loads((root/'output/build-ratchet.json').read_text())
                 self.assertEqual(violations[0]['kind'], 'duplicate-graph' if copies else 'unmeasured-build')
                 self.assertTrue((root/'target/test-cost/root/census.json').is_file())
+
+    def test_doc_only_budget_failure_carries_counts_without_claiming_native_coverage(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            self.workspace(root)
+            with self.assertRaises(LaneExecutionFailure) as raised:
+                execute(root, 'root', root/'output', SimpleNamespace(logs=[]), engine=self.engine(root, copies=2))
+            result = raised.exception.result
+            self.assertEqual(len(result['documentation']['selections']), 1)
+            self.assertEqual(result['executed_coverage']['passed'], 1)
+            self.assertEqual(result['coverage']['scope'], 'documentation-only')
+            self.assertEqual(result['coverage']['status'], 'partial')
+            self.assertFalse(result['executed_coverage']['require_full_workspace'])
+            self.assertIn('build budget exceeded', str(raised.exception))
 
     def test_warm_compiler_json_still_proves_zero_new_compilations(self):
         with tempfile.TemporaryDirectory() as temporary:

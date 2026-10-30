@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_cost'))
 from cargo_capture import CargoRunner
 from doc_lane import execute as execute_documentation_lane
 from logs import read_lane
-from run_lane import execute as execute_workspace
+from run_lane import LaneExecutionFailure, execute as execute_workspace
 
 from query_gate_courts import CATEGORIES, CATEGORY_SUITES, TEST_SUITES, landing_suites, selected
 
@@ -194,31 +194,37 @@ class CostGate:
         doc_suite = next((name for name in names if name in DOC_SUITES), None)
         queries = SuiteQueries(native, output)
         runner = self.runner_factory(self.repository, self.environment)
-        failure = None
+        failure, result, documentation = None, None, None
         try:
-            if native:
-                result = self.execute(self.repository, workspace, [], output, cargo_runner=runner,
-                                      queries=queries, include_docs=bool(doc_suite))
-                documentation = result.get('documentation') if result else None
-            else:
-                result = execute_documentation_lane(self.repository, workspace, output, runner)
-                documentation = result['documentation']
-                queries.coverage = {'status': 'partial', 'reason': 'native inventory not requested'}
+            try:
+                if native:
+                    result = self.execute(self.repository, workspace, [], output, cargo_runner=runner,
+                                          queries=queries, include_docs=bool(doc_suite))
+                else:
+                    result = execute_documentation_lane(self.repository, workspace, output, runner)
+                    queries.coverage = {'status': 'partial', 'reason': 'native inventory not requested'}
+            except LaneExecutionFailure as error:
+                result, failure = error.result, str(error)
+                if not native:
+                    queries.coverage = {'status': 'partial', 'reason': 'native inventory not requested'}
+            documentation = result.get('documentation') if result else None
             if doc_suite:
                 if documentation is None:
                     raise GateSelectionFailure('requested documentation has no execution observation')
                 queries.expected[doc_suite] = {(r['binary'], r['test']) for r in documentation['selections']}
                 queries.ignored[doc_suite] = {(r['binary'], r['test']) for r in documentation['inventory'] if r['ignored']}
                 if documentation['status'] != 'pass':
-                    failure = f'documentation failed: exit {documentation["exit_code"]}'
+                    message = f'documentation failed: exit {documentation["exit_code"]}'
+                    failure = f'{failure}; {message}' if failure else message
             if set(landing_suites(workspace)) <= set(native) and queries.coverage['status'] != 'pass':
                 raise GateSelectionFailure('complete landing gate leaves native tests unselected')
         except (ValueError, OSError) as error:
-            failure = str(error)
+            failure = f'{failure}; {error}' if failure else str(error)
         if doc_suite:
             queries.expected.setdefault(doc_suite, set())
             queries.ignored.setdefault(doc_suite, set())
-        queries.coverage['documentation'] = 'requested' if doc_suite else 'not-requested'
+        queries.coverage['documentation'] = (
+            'observed' if documentation is not None else 'unmeasured' if doc_suite else 'not-requested')
         try:
             events, walls = executed_observations(runner.logs, queries.aliases)
             self.record(workspace, queries, events, walls, failure)

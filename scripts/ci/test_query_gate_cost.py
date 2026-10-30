@@ -2,9 +2,12 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+
 
 from query_gate_cost import (CostGate, GateSelectionFailure, SuiteQueries, executed_observations,
                              DOC_SUITES, expand_suites)
+from run_lane import LaneExecutionFailure
 
 
 def binary(package, kind, names, harness=True):
@@ -124,6 +127,84 @@ class SharedGateSelectionTests(unittest.TestCase):
             self.assertEqual(docs['passed'], 1)
             self.assertEqual(docs['ignored'], 1)
             self.assertEqual(docs['names'], ['worth-query-host::doc$src/lib.rs (line 1)'])
+
+    def test_completed_budget_failure_retains_native_and_documentation_observations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            discovered = {'rust-suites': {'court': binary('worth-query-court-host', 'test',
+                                                        [('host::ordinary', False)])}}
+            snippet = {'binary': 'worth-query-host::doc', 'test': 'src/lib.rs (line 1)', 'ignored': False}
+            class Runner:
+                def __init__(self, repository, environment):
+                    self.environment, self.logs = environment, []
+            def execute(repository, workspace, lanes, output, cargo_runner, queries, include_docs=False):
+                self.assertTrue(include_docs)
+                queries(discovered)
+                native = output/'native.log'
+                native.write_text('Command: ["cargo", "nextest", "run"]\n'+json.dumps(dict(
+                    type='test', event='ok', name='worth-query-court-host::worth_query_court_host$host::ordinary')))
+                docs = output/'documentation.log'
+                docs.write_text('Command: ["cargo", "test", "--doc"]\n'+json.dumps(dict(
+                    type='test', event='ok', name=snippet['binary']+'$'+snippet['test'])))
+                cargo_runner.logs += [native, docs]
+                raise LaneExecutionFailure('build budget exceeded: duplicate graph', {
+                    'documentation': {'inventory': [snippet], 'selections': [snippet], 'status': 'pass', 'exit_code': 0},
+                    'executed_coverage': {'executed': 2, 'passed': 2}})
+            gate = CostGate(root, root/'out', {}, execute, Runner)
+            gate.configure(['query-rest', 'query-doc'])
+            native, docs = gate.run('query-rest'), gate.run('query-doc')
+            self.assertFalse(native['ok'] or docs['ok'])
+            self.assertEqual((native['passed'], docs['passed']), (1, 1))
+            self.assertEqual(docs['tests'], 1)
+            self.assertEqual(docs['missing'], [])
+            self.assertEqual(docs['coverage']['documentation'], 'observed')
+            self.assertEqual(docs['failure'], 'build budget exceeded: duplicate graph')
+            self.assertNotIn('unexpected executions', docs['failure'])
+
+    def test_prebuild_failure_without_result_leaves_documentation_unmeasured(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            discovered = {'rust-suites': {'court': binary('worth-query-court-host', 'test',
+                                                        [('host::ordinary', False)])}}
+            class Runner:
+                def __init__(self, repository, environment):
+                    self.environment, self.logs = environment, []
+            def execute(repository, workspace, lanes, output, cargo_runner, queries, include_docs=False):
+                queries(discovered)
+                raise ValueError('prebuild rejected before test execution')
+            gate = CostGate(root, root/'out', {}, execute, Runner)
+            gate.configure(['query-rest', 'query-doc'])
+            native, docs = gate.run('query-rest'), gate.run('query-doc')
+            self.assertFalse(native['ok'] or docs['ok'])
+            self.assertEqual(native['missing'], ['court$host::ordinary'])
+            self.assertEqual(docs['passed'], 0)
+            self.assertEqual(docs['coverage']['documentation'], 'unmeasured')
+            self.assertEqual(docs['failure'], 'prebuild rejected before test execution')
+
+    def test_doc_only_typed_failure_keeps_doc_counts_and_native_scope_unknown(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            snippet = {'binary': 'worth-query-host::doc', 'test': 'src/lib.rs (line 1)', 'ignored': False}
+            class Runner:
+                def __init__(self, repository, environment):
+                    self.environment, self.logs = environment, []
+            def docs_engine(repository, workspace, output, runner):
+                output.mkdir(parents=True, exist_ok=True)
+                log = output/'documentation.log'
+                log.write_text('Command: ["cargo", "test", "--doc"]\n'+json.dumps(dict(
+                    type='test', event='ok', name=snippet['binary']+'$'+snippet['test'])))
+                runner.logs.append(log)
+                raise LaneExecutionFailure('build budget exceeded: doc graph', {
+                    'documentation': {'inventory': [snippet], 'selections': [snippet], 'status': 'pass', 'exit_code': 0}})
+            gate = CostGate(root, root/'out', {}, runner_factory=Runner)
+            gate.configure(['query-doc'])
+            with patch('query_gate_cost.execute_documentation_lane', side_effect=docs_engine):
+                docs = gate.run('query-doc')
+            self.assertFalse(docs['ok'])
+            self.assertEqual(docs['passed'], 1)
+            self.assertEqual(docs['coverage']['status'], 'partial')
+            self.assertEqual(docs['coverage']['reason'], 'native inventory not requested')
+            self.assertEqual(docs['failure'], 'build budget exceeded: doc graph')
 
     def test_library_display_name_uses_the_actual_metadata_binary_identity(self):
         # Actual cargo-nextest 0.9.140 transport probe output: inventory and CPU

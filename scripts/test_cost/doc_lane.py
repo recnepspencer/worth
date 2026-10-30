@@ -7,6 +7,7 @@ from complete_coverage import merge
 from doc_contracts import execute as execute_documentation
 from executed_coverage import observations, prove
 from ratchet import build_violations, lane_budget, source_violations
+from run_lane import LaneExecutionFailure
 from workspace import WORKSPACES
 
 
@@ -67,7 +68,12 @@ def execute(repository, workspace, output, runner, profile='dev', engine=None):
     (output / 'build-ratchet.json').write_text(json.dumps(violations, indent=2) + '\n', encoding='utf-8')
     retain(result, repository, workspace, output)
     if violations:
-        raise ValueError('build budget exceeded: ' + json.dumps(violations))
+        message = 'build budget exceeded: ' + json.dumps(violations)
+        if documentation is not None:
+            raise LaneExecutionFailure(message, result)
+        raise ValueError(message)
     if failure is not None:
+        if documentation is not None:
+            raise LaneExecutionFailure(str(failure), result) from failure
         raise failure
     return result
