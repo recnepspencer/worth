@@ -170,6 +170,24 @@ fn vocabulary_enum_values_remain_private_unit_logic() {
     assert!(f.messages().is_empty(), "{:?}", f.messages());
 }
 #[test]
+fn vocabulary_variants_named_after_runtime_roots_remain_value_only() {
+    let f = product();
+    f.write("governed/src/lib.rs", "mod vocabulary { pub enum Denial { ApplicationRuntime(u8) } pub enum RecordDenial { ApplicationRuntime { code:u8 } } } use vocabulary::Denial as Stop; use vocabulary::RecordDenial as Record; #[test] fn private_logic() { let _=Stop::ApplicationRuntime(1); let _=Record::ApplicationRuntime { code:2 }; }");
+    assert!(f.messages().is_empty(), "{:?}", f.messages());
+}
+#[test]
+fn registered_runtime_enum_variants_still_require_a_court() {
+    let f = product();
+    f.write("governed/src/lib.rs", "enum ApplicationRuntime { Running(u8) } #[test] fn runtime() { let _=ApplicationRuntime::Running(1); }");
+    f.refuses("runtime` constructs `crate::ApplicationRuntime::Running`");
+}
+#[test]
+fn vocabulary_wrapping_a_registered_runtime_still_requires_a_court() {
+    let f = product();
+    f.write("governed/src/lib.rs", "enum Denial { ApplicationRuntime(foreign::Runtime) } #[test] fn runtime() { let _=Denial::ApplicationRuntime(foreign::Runtime::new()); }");
+    f.refuses("runtime` constructs `foreign::Runtime::new`");
+}
+#[test]
 fn value_only_generators_do_not_create_runtime_courts() {
     let f = product();
     f.write("governed/src/lib.rs", "#[cfg(test)] mod tests { resource_contract!(existing_case); resource_contract!(new_case); }");

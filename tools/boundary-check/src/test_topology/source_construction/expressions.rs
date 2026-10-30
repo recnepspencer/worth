@@ -8,6 +8,7 @@ pub(super) struct Body<'a> {
     pub(super) variables: BTreeMap<String, String>,
     pub(super) roots: &'a Registry,
     pub(super) imports: &'a BTreeMap<String, String>,
+    pub(super) enum_variants: &'a BTreeMap<String, String>,
     pub(super) foreign: &'a BTreeSet<String>,
     pub(super) scope: &'a [String],
     pub(super) calls: BTreeSet<String>,
@@ -25,6 +26,7 @@ impl Body<'_> {
             .join("::")
     }
     fn identity(&self, path: &str) -> Option<String> {
+        let path = self.enum_variants.get(path).map_or(path, String::as_str);
         let parts: Vec<_> = path.split("::").collect();
         let name = parts
             .iter()
@@ -81,6 +83,14 @@ impl Body<'_> {
         }
     }
     fn returned_root(&mut self, expression: &syn::Expr) {
+        if let syn::Expr::Call(call) = expression {
+            if let syn::Expr::Path(path) = &*call.func {
+                if self.enum_variants.contains_key(&self.expanded(&path.path)) {
+                    // Explicit enum construction is classified by its owner below.
+                    return;
+                }
+            }
+        }
         if let Some(identity) = self.inferred(expression) {
             if self.roots.matching(&identity).is_some() {
                 self.constructors.insert(format!("{identity}::<factory>"));
@@ -146,7 +156,9 @@ impl Body<'_> {
         );
         // The registry names work hosts, including roots owned by this crate.
         // Imported keys, enums, budgets and other vocabulary never qualify.
-        let returns_configuration = !struct_literal
+        let owner = self.enum_variants.get(&expanded).unwrap_or(&expanded);
+        let returns_configuration = !self.enum_variants.contains_key(&expanded)
+            && !struct_literal
             && path.segments.last().is_some_and(|last| {
                 let method = last.ident.to_string();
                 method == "builder"
@@ -156,12 +168,12 @@ impl Body<'_> {
                         .is_some_and(|ty| self.roots.matching(&ty).is_none())
             });
         if !returns_configuration {
-            if self.roots.matching(&expanded).is_some() {
+            if self.roots.matching(owner).is_some() {
                 self.constructors.insert(expanded);
             } else if !self.imports.contains_key(first) {
                 for (name, namespace) in self.imports {
                     if name.starts_with("*foreign:") {
-                        let candidate = format!("{namespace}::<glob>::{expanded}");
+                        let candidate = format!("{namespace}::<glob>::{owner}");
                         if self.roots.matching(&candidate).is_some() {
                             self.constructors.insert(candidate);
                         }

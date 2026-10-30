@@ -7,6 +7,7 @@ use std::{
 };
 use syn::visit::Visit;
 
+mod enum_variants;
 mod expressions;
 mod imports;
 use expressions::Body;
@@ -103,6 +104,7 @@ pub(super) fn inventory(
     for target in targets {
         let graph = crate::source_rules::parse_compiled_target_where(&owner, &target, &|_| true)?;
         let scopes = imports::graph_bindings(&graph, &foreign);
+        let enum_variants = enum_variants::owners(&graph);
         for (scope, node) in graph.modules {
             let physical = std::fs::canonicalize(
                 owner
@@ -128,6 +130,7 @@ pub(super) fn inventory(
                 source: relative,
                 scope: scope.clone(),
                 imports: inherited,
+                enum_variants: &enum_variants,
                 foreign: &foreign,
                 roots,
                 package: &owner.package.replace('-', "_"),
@@ -196,6 +199,7 @@ struct Functions<'a> {
     source: String,
     scope: Vec<String>,
     imports: BTreeMap<String, String>,
+    enum_variants: &'a BTreeMap<String, String>,
     foreign: &'a BTreeSet<String>,
     roots: &'a Registry,
     package: &'a str,
@@ -245,6 +249,7 @@ impl Functions<'_> {
             package: self.package,
             variables: BTreeMap::new(),
             imports: &imports,
+            enum_variants: self.enum_variants,
             foreign: self.foreign,
             scope: &self.scope,
             calls: BTreeSet::new(),
@@ -344,6 +349,7 @@ impl<'ast> Visit<'ast> for Functions<'_> {
                 variables: BTreeMap::new(),
                 roots: self.roots,
                 imports: &self.imports,
+                enum_variants: self.enum_variants,
                 foreign: self.foreign,
                 scope: &self.scope,
                 calls: BTreeSet::new(),
