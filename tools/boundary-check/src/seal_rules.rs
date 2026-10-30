@@ -34,12 +34,7 @@ fn permitted(path: &str, owners: &BTreeSet<String>, callers: &BTreeSet<(&str, &s
 pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     let mut out = Vec::new();
     let mut doors: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    for (path, text) in input.files.iter().filter(|(p, _)| {
-        p.ends_with(".rs")
-            && p.contains("/src/")
-            && !p.contains("/fixtures/")
-            && !p.contains("/examples/")
-    }) {
+    for (path, text) in input.files.iter().filter(|(p, _)| p.ends_with(".rs")) {
         if !text.contains("_for_test") && !text.contains("ForTest") {
             continue;
         }
