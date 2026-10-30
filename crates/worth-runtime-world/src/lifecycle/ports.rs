@@ -346,6 +346,10 @@ pub(crate) trait RuntimeWorldLifecycleService:
     fn bootstrap_root(&self, intent: RuntimeWorldBootstrapIntent) -> RuntimeWorldBootstrapOutcome;
 
     fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>;
+    /// Owner-wide automatic retirement of changed, eligible history interiors.
+    fn retire_changed_history(
+        &self,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
     /// Retire the unprotected history behind `keep` and reclaim the pins only
     /// that history held. Returns the retired commits, oldest first.
     fn retire_unprotected_history(

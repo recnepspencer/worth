@@ -6,38 +6,10 @@ use crate::identity::CompositeCommitIdentity;
 use super::counters::{lock_counters, HistoryCatalogCountersHandle};
 use super::denial::CompositeHistoryCatalogDenial;
 
-/// The only reachability fact the history owner stores for an installed
-/// occurrence. A dependency is acquired before a child reservation escapes;
-/// direct protection is acquired by an exact RAII obligation. The share of
-/// direct protections seated in a live product reference is counted apart, so
-/// a retired branch can tell history a live branch owns from a held read or a
-/// head still in custody; so is the share of dependencies whose child is
-/// still forming.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(in crate::history) struct HistoryReachabilityRecord {
-    descendant_dependencies: usize,
-    forming_children: usize,
-    direct_protections: usize,
-    product_head_protections: usize,
-}
-
-impl HistoryReachabilityRecord {
-    pub(super) const fn descendant_dependencies(self) -> usize {
-        self.descendant_dependencies
-    }
-
-    pub(super) const fn has_forming_child(self) -> bool {
-        self.forming_children > 0
-    }
-
-    pub(super) const fn direct_protections(self) -> usize {
-        self.direct_protections
-    }
-
-    pub(super) const fn held_by_product_head(self) -> bool {
-        self.product_head_protections > 0
-    }
-}
+mod frontier;
+mod installed_children;
+mod record;
+pub(in crate::history) use record::HistoryReachabilityRecord;
 
 /// Catalog-owned exact reachability index. Admission allocates an empty slot;
 /// installation fills it in place. Reclamation never reconstructs ancestry.
@@ -45,6 +17,8 @@ impl HistoryReachabilityRecord {
 pub(in crate::history) struct HistoryReachabilityIndex {
     records: HashMap<CompositeCommitIdentity, HistoryReachabilitySlot>,
     counters: HistoryCatalogCountersHandle,
+    dirty_head: Option<CompositeCommitIdentity>,
+    dirty_tail: Option<CompositeCommitIdentity>,
 }
 
 pub(in crate::history) type HistoryReachabilitySlot = Arc<Mutex<Option<HistoryReachabilityRecord>>>;
@@ -68,6 +42,8 @@ impl HistoryReachabilityIndex {
         Self {
             records: HashMap::new(),
             counters,
+            dirty_head: None,
+            dirty_tail: None,
         }
     }
 
@@ -97,7 +73,9 @@ impl HistoryReachabilityIndex {
         identity: &CompositeCommitIdentity,
     ) -> Option<HistoryReachabilityRecord> {
         lock_counters(&self.counters).record_reachability_lookup();
-        self.records.get(identity).and_then(|slot| *lock_slot(slot))
+        self.records
+            .get(identity)
+            .and_then(|slot| lock_slot(slot).clone())
     }
 
     pub(super) fn increment_descendant_dependency(
@@ -124,8 +102,13 @@ impl HistoryReachabilityIndex {
     }
 
     /// The reserved child of `parent` installed; its dependency stays.
-    pub(super) fn install_forming_child(&mut self, parent: &CompositeCommitIdentity) {
+    pub(super) fn install_forming_child(
+        &mut self,
+        parent: &CompositeCommitIdentity,
+        child: &CompositeCommitIdentity,
+    ) {
         self.settle_forming_child(parent);
+        self.install_child(parent, child);
     }
 
     /// The reserved child of `parent` was abandoned with its dependency.
@@ -159,6 +142,8 @@ impl HistoryReachabilityIndex {
             .checked_sub(1)
             .expect("each installed child owns one parent dependency");
         lock_counters(&self.counters).record_dependency_decrement();
+        drop(held);
+        self.mark_changed(parent);
     }
 
     /// The catalog still owns its installation lock and has not exposed this
@@ -168,7 +153,15 @@ impl HistoryReachabilityIndex {
         let record = held
             .as_mut()
             .expect("new installation has a reachability row");
-        assert_eq!(*record, HistoryReachabilityRecord::default());
+        assert_eq!(
+            (
+                record.direct_protections,
+                record.descendant_dependencies,
+                record.forming_children,
+                record.product_head_protections
+            ),
+            (0, 0, 0, 0)
+        );
         record.direct_protections = 1;
         lock_counters(&self.counters).record_direct_protection_acquisition();
     }
@@ -213,6 +206,11 @@ impl HistoryReachabilityIndex {
             .checked_sub(1)
             .expect("each protection obligation releases one direct protection");
         lock_counters(&self.counters).record_direct_protection_release();
+        let released = record.direct_protections == 0;
+        drop(held);
+        if released {
+            self.mark_changed(identity);
+        }
     }
 
     /// A live product reference now carries the head protection on
@@ -247,6 +245,8 @@ impl HistoryReachabilityIndex {
         &mut self,
         identity: &CompositeCommitIdentity,
     ) -> HistoryReachabilityRecord {
+        self.unlink_installed_child(identity);
+        self.forget_changed(identity);
         let slot = self
             .records
             .remove(identity)

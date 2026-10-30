@@ -68,14 +68,17 @@ impl OperationHandler<Schema, Binding> for Handler {
         let feature = reader.scope().clone();
         let target = (|| -> Result<_, HandlerExecutionDenial> {
             reader.field(&feature, FeatureKey::reference())?;
+            let Some(cell) = reader.resolve_optional_entity(CellKey::reference(), input.cell)?
+            else {
+                return Ok(None);
+            };
             for relation in reader
-                .relations_from(OwnsCell::reference(), &feature)
+                .relations_to(OwnsCell::reference(), &cell)
                 .map_err(HandlerExecutionDenial::new)?
             {
-                let cell = relation.to();
-                if reader.field(cell, CellKey::reference())? == Some(input.cell) {
-                    reader.field(cell, CellValue::reference())?;
-                    return reader.mutation_target(cell).map(Some);
+                if relation.from().entity_id() == feature.entity_id() {
+                    reader.field(&cell, CellValue::reference())?;
+                    return reader.mutation_target(&cell).map(Some);
                 }
             }
             Ok(None)

@@ -1806,7 +1806,8 @@ graph phases' existing tests. It is not a 9.18.1 closure dependency.
 ## Phase 16: Cell-Version Storage And Live-At-k Qualification
 
 **Status: unfinished; required. Priority: P3.**
-**Owner:** Relational + Query, certified through public application courts.
+**Owner:** Relational + Query + Runtime World publication-history maintenance,
+certified through public application courts.
 **Depends on:** real cell-bearing publication and genuine retained history custody.
 This phase qualifies cell-version storage and history reads independently of the
 transferred index work. Spatial-dependent integrated locality is rechecked in
@@ -1851,6 +1852,20 @@ copying every live cell or rebuilding all history. Historical materialization
 may scale with the returned cells and the actual owner traversal; report that
 work rather than requiring constant-time output or fitting exact-count goldens.
 
+Include receiving-owner maintenance in the ordinary interval. World retirement
+must consume actual changed reachability slots, rather than repeatedly walking
+all protected ancestors. Its deduplicated frontier and reverse installed-child
+links belong to the existing reserved catalog slots; last-protection Drop does
+bounded, allocation-free marking under the existing lock order. Eligibility
+requires a real sole installed child, no forming dependency, no direct
+protection and no unconsumed delivery. Manual ancestry-scoped retirement keeps
+its separate explicit traversal contract. Both routes consume the same assessed
+interior and splice/removal authority. Query releases only the actual returned
+retirement identities; it never infers a range or substitutes an observed id
+for custody. Preserve held gaps, fork points, delivery claims and accumulated
+generation spans. Existing World reachability counters expose this work;
+Native copy/hash counters alone cannot qualify it.
+
 Separate setup, warm local publication, historical read/materialization, cold
 checkpoint reconstruction and diagnostic allocation inspection. Report their
 elapsed distributions, repetitions, workload, compiler, runtime policy and
@@ -1893,11 +1908,18 @@ workspaces/worth-query/crates/worth-query-certification/tests/
     query.rs                                   # selected-basis live-cell projection
     host.rs                                    # real installation and seed truth
     live_at.rs                                 # fresh requests and original custody
-    cost/                                      # successor: independent scale axes
+    cost.rs                                    # independent scale-axis courts
+    cost/measurement.rs                        # actual owner/query observations
+    cost/workload.rs                           # real retained publications
     reconstruction/                            # successor: genuine checkpoint recovery
 crates/worth-relational/src/
   history/retention/                            # existing historical root authority
   inspection/mvcc/                             # existing read-only allocation observations
+crates/worth-runtime-world/src/history/catalog/
+  reachability/record.rs                       # authority and reserved navigation
+  reachability/frontier.rs                     # changed-slot lifecycle
+  reachability/installed_children.rs           # effective installed edges
+  history_retirement/interior.rs              # shared eligibility and splice
 ```
 
 Populate successor children only with their implementation. The application

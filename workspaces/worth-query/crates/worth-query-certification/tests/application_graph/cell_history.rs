@@ -1,5 +1,7 @@
 //! Public cell-bearing publications and genuine Native historical reads.
 //! Functional qualification only; scale and total retained bytes are separate evidence.
+#[path = "cell_history/cost.rs"]
+mod cost;
 #[path = "cell_history/edit.rs"]
 mod edit;
 #[path = "cell_history/host.rs"]

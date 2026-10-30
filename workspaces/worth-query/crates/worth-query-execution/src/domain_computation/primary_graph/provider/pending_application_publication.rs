@@ -187,13 +187,13 @@ impl WorthQueryPrimaryGraphProvider {
                 result
             })
             .map_err(failure)?;
-        let settled = result?;
+        result?;
         slot.complete();
         self.pending_application_publications
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .remove_exact(occurrence, &slot);
-        self.retire_history_behind(runtime, &settled);
+        self.retire_changed_history(runtime);
         Ok(())
     }
 }

@@ -76,7 +76,7 @@ worth_query_query_binding!(pub ReadBinding for LiveCells, schema Schema,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope Feature,FeatureFacts,FeatureKey,u64,ReadOnly,NoApplicationUnit,
-    field FeatureKey::reference(), value feature, limits results 16);
+    field FeatureKey::reference(), value feature, limits results 16_384);
 
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,

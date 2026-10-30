@@ -44,6 +44,22 @@ impl RuntimeWorldLifecyclePort {
             .close()
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
+    /// Automatically retires changed, unprotected history interiors throughout
+    /// this owner. Unchanged protected history is not traversed. The owner
+    /// returns only identities actually retired; their order is unspecified.
+    /// A live head, held observation/receipt, forming child or unconsumed
+    /// publication delivery remains protected. Component pins release outside
+    /// the catalog lock. This is distinct from scoped ancestry traversal below.
+    pub fn retire_changed_history(
+        &self,
+    ) -> Result<
+        Vec<crate::identity::CompositeCommitIdentity>,
+        RuntimeWorldServiceDenial<HistoryReclamationDenial>,
+    > {
+        self.service()?
+            .retire_changed_history()
+            .map_err(RuntimeWorldServiceDenial::Denied)
+    }
     /// Retires every commit behind `keep` that nothing protects: no product
     /// head, second child, observation, traversal, receipt or unconsumed
     /// delivery. The oldest kept commit becomes the history base, and a

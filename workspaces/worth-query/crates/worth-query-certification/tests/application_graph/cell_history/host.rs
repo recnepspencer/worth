@@ -38,6 +38,11 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
 
 pub fn install() -> Host {
+    install_cells(&[(10, 1, 7), (11, 1, 13), (20, 2, 29)], 64)
+}
+
+/// Domain seed rows and history capacity vary independently for the cost court.
+pub fn install_cells(cells: &[(u64, u64, u64)], retained_steps: u64) -> Host {
     in_memory_program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
             .validated_program()
@@ -46,7 +51,11 @@ pub fn install() -> Host {
         ((),),
         ApplicationBuildIdentity::parse("16161616-1616-1616-1616-161616161616").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
-            world_resources(64, 1_048_576, 128),
+            world_resources(
+                retained_steps + 64,
+                64 * 1024 * 1024,
+                retained_steps * 2 + 128,
+            ),
             WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(32).unwrap(),
             ),
@@ -71,7 +80,7 @@ pub fn install() -> Host {
                     .field(FeatureKey::reference(), feature),
                 )?;
             }
-            for (cell, feature, value) in [(10_u64, 1_u64, 7_u64), (11, 1, 13), (20, 2, 29)] {
+            for &(cell, feature, value) in cells {
                 let cell_key = WorthQueryApplicationEntityKey::new(format!("cell-{cell}")).unwrap();
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(

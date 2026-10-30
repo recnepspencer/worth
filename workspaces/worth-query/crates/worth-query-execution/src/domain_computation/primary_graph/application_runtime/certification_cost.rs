@@ -83,6 +83,7 @@ pub struct WorthQueryCertificationWorldHistory {
     reserved_commits: usize,
     metadata_bytes: usize,
     reserved_entry_writes: u64,
+    reachability_lookups: u64,
 }
 
 /// Read-only cost measurement on an application runtime, for certification.
@@ -204,6 +205,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             reserved_commits: snapshot.reserved_commits(),
             metadata_bytes: snapshot.metadata().total_occupancy(),
             reserved_entry_writes: snapshot.costs().reserved_entry_writes(),
+            reachability_lookups: snapshot.costs().reachability_lookups(),
         }
     }
 }
@@ -256,7 +258,7 @@ accessors!(WorthQueryCertificationWorldRetention;
 );
 accessors!(WorthQueryCertificationWorldHistory;
     installed_commits: usize, reserved_commits: usize, metadata_bytes: usize,
-    reserved_entry_writes: u64,
+    reserved_entry_writes: u64, reachability_lookups: u64,
 );
 
 impl From<WorthQueryApplicationAttemptWorkSnapshot> for WorthQueryCertificationApplicationWork {
