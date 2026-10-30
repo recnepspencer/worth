@@ -466,6 +466,15 @@ command separation and unchanged failure propagation with routing tests using
 the real Gate command owner and a recorded fake process boundary. Do not rerun
 the checker's own tests merely to prove routing. Run the actual constitution
 gate at phase completion, retain full evidence and obtain independent review.
+Caller audit: the generic full `ORDER` now selects `boundary-tests` explicitly
+once, preserving its prior implementation-test coverage. CI retains its direct
+checker-test invocation. The external affected-lane tool retains its checker
+workspace's direct Cargo self-test descriptor; source/config changes there still
+reach it. Documentation, scheduling data and product changes reach the actual
+global constitution check without creating a checker implementation-test reach.
+Existing preparation-only SessionStart wiring and explicit terminal/CI launchers
+are unchanged. No other generic `query_gate.py boundary` caller was found in the
+scoped script/workflow/hook or active orchestration prompt/launcher searches.
 
 The larger local-default cut remains separate. `landing_plan.py` explicitly
 requires the Root gate and Store runner defaults to cover every normal partition;

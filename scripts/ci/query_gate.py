@@ -141,7 +141,7 @@ COMMAND_ENV = {
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "root-rest", "query-execution", "query-rest",
          "query-process", "query-exhaustive", "fixture", "bank", "bank-process",
-         "root-doc", "query-doc", "bank-doc", "wasm", "boundary", "extra"]
+         "root-doc", "query-doc", "bank-doc", "wasm", "boundary", "boundary-tests", "extra"]
 ORDER += [name for name in TEST_SUITES if name.startswith(("query-", "bank-", "root-"))
           and name not in ORDER and not name.endswith("-scale")]
 

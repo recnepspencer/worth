@@ -47,6 +47,18 @@ class BoundaryCommandSelectionTests(unittest.TestCase):
         self.assertIn('boundary', output.getvalue().splitlines())
         self.assertIn('boundary-tests', output.getvalue().splitlines())
 
+    def test_generic_full_order_retains_checker_tests_exactly_once(self):
+        self.assertEqual(query_gate.ORDER.count('boundary-tests'), 1)
+        self.assertLess(query_gate.ORDER.index('boundary'), query_gate.ORDER.index('boundary-tests'))
+
+    def test_ci_full_boundary_job_keeps_validation_and_checker_self_tests(self):
+        source = (query_gate.ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8')
+        job = source.split('\n  boundary-check:\n', 1)[1].split('\n  query-checkpoint-recovery:\n', 1)[0]
+        self.assertEqual(job.count('run: ./scripts/prepare-constitution-hook.ps1'), 1)
+        self.assertEqual(job.count('run: ./scripts/check-constitution.ps1'), 1)
+        self.assertEqual(job.count('run: cargo test --manifest-path tools/boundary-check/Cargo.toml '
+                                   '--target-dir target/constitution-tools'), 1)
+
 
 if __name__ == '__main__':
     unittest.main()
