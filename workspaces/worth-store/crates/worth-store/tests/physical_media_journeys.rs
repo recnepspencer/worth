@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 use std::path::Path;
 
 use worth_proof::TransitionOutcome;

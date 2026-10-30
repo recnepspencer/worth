@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "c11_arena_crash_support/mod.rs"]
 mod support;
 

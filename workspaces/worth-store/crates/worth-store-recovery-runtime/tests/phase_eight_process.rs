@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "phase_eight_process/checkpoint_crash.rs"]
 mod checkpoint_crash;
 #[path = "phase_eight_process/child_lifecycle.rs"]

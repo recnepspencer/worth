@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "physical_blob_journeys/allocation_probe.rs"]
 mod allocation_probe;
 #[path = "physical_blob_journeys/blob_abort.rs"]

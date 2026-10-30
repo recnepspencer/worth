@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 use std::{
     ffi::OsString,
     path::{Path, PathBuf},
