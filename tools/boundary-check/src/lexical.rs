@@ -61,7 +61,9 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
         while quote < b.len() && b[quote] == b'#' {
             quote += 1;
         }
+        let mut literal = false;
         if raw > i && b.get(quote) == Some(&b'"') {
+            literal = true;
             let end = format!("\"{}", "#".repeat(quote - raw));
             i = source[quote + 1..]
                 .find(&end)
@@ -69,6 +71,7 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
         } else if b[i] == b'"'
             || b[i] == b'\'' && (b.get(i + 2) == Some(&b'\'') || b.get(i + 1) == Some(&b'\\'))
         {
+            literal = true;
             let delimiter = b[i];
             i += 1;
             while i < b.len() {
@@ -95,6 +98,18 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
             }
         } else {
             i += 1;
+        }
+        // Literal suffixes belong to the literal, including in macro input.
+        while literal
+            && i < b.len()
+            && !spacing(source, i)
+            && (b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128)
+        {
+            i += if b[i].is_ascii() {
+                1
+            } else {
+                source[i..].chars().next().unwrap().len_utf8()
+            };
         }
         result.push(Token {
             text: &source[start + if raw_identifier { 2 } else { 0 }..i],

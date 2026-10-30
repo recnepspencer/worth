@@ -35,12 +35,52 @@ fn permitted(path: &str, owners: &BTreeSet<String>, callers: &BTreeSet<(&str, &s
         }
     }) || owners.iter().any(|o| callers.contains(&(o.as_str(), path)))
 }
+fn generic_end(t: &[Token<'_>], open: usize) -> usize {
+    let (mut at, mut depth) = (open + 1, 1usize);
+    while at < t.len() {
+        match t[at].text {
+            "<" => depth += 1,
+            ">" if t[at - 1].text != "-" => {
+                depth -= 1;
+                if depth == 0 {
+                    return at;
+                }
+            }
+            "(" | "[" | "{" => at = close(t, at),
+            _ => {}
+        }
+        at += 1;
+    }
+    t.len()
+}
 // Definition positions establish ownership; every reference is still searched.
 fn declarations<'a>(t: &[Token<'a>]) -> (Vec<&'a str>, Vec<&'a str>) {
     let (mut names, mut aliases) = (Vec::new(), Vec::new());
+    let mut generic_until = 0;
     for (i, w) in t.windows(2).enumerate() {
         if w[0].end - w[0].start != w[0].text.len() || i > 0 && t[i - 1].text == "'" {
             continue; // Raw identifiers and lifetime names are not item keywords.
+        }
+        let header = i + if w[0].text == "impl" { 1 } else { 2 };
+        if ["fn", "struct", "enum", "trait", "type", "union", "impl"].contains(&w[0].text)
+            && t.get(header).is_some_and(|t| t.text == "<")
+        {
+            generic_until = generic_until.max(generic_end(t, header));
+        }
+        if !w[1]
+            .text
+            .chars()
+            .next()
+            .is_some_and(|c| c == '_' || c.is_alphabetic() || !c.is_ascii())
+        {
+            continue;
+        }
+        if w[0].text == "const"
+            && (i < generic_until
+                || i > 0 && t[i - 1].text == "*"
+                || t.get(i + 2).is_none_or(|t| t.text != ":"))
+        {
+            continue;
         }
         if [
             "fn", "struct", "enum", "trait", "type", "const", "static", "mod", "union", "macro",
@@ -55,16 +95,15 @@ fn declarations<'a>(t: &[Token<'a>]) -> (Vec<&'a str>, Vec<&'a str>) {
             });
         }
         if ["struct", "enum", "union"].contains(&w[0].text) {
-            let (mut at, mut angles) = (i + 2, 0usize);
+            let mut at = i + 2;
             while at < t.len() && t[at].text != ";" {
                 match t[at].text {
-                    "<" => angles += 1,
-                    ">" => angles = angles.saturating_sub(1),
-                    "{" if angles == 0 => {
+                    "<" => at = generic_end(t, at),
+                    "{" => {
                         members(t, at, w[0].text == "enum", &mut names);
                         break;
                     }
-                    "(" | "[" | "{" => at = close(t, at),
+                    "(" | "[" => at = close(t, at),
                     _ => {}
                 }
                 at += 1;
@@ -99,6 +138,10 @@ fn declarations<'a>(t: &[Token<'a>]) -> (Vec<&'a str>, Vec<&'a str>) {
 fn members<'a>(t: &[Token<'a>], open: usize, variants: bool, names: &mut Vec<&'a str>) {
     let (mut at, mut first) = (open + 1, true);
     while at < close(t, open) {
+        if t[at].text == "<" {
+            at = generic_end(t, at) + 1;
+            continue;
+        }
         if t[at].text == "#" && t.get(at + 1).is_some_and(|t| t.text == "[") {
             at = close(t, at + 1) + 1;
             continue;
@@ -198,6 +241,9 @@ mod tests {
     fn every_control_reference_requires_its_owner_or_an_exact_caller() {
         for declaration in [
             "fn arm_for_test() {}",
+            "pub const arm_for_test: usize = 0;",
+            "pub static arm_for_test: usize = 0;",
+            "pub struct Control<T: Fn() -> Option<()>, const N: usize = { 1 }> { pub arm_for_test: (), marker: std::marker::PhantomData<T> }",
             "fn\u{200e}arm_for_test() {}",
             "static mut arm_for_test: () = ();",
             "pub macro arm_for_test() {}",
@@ -265,6 +311,13 @@ mod tests {
             "use owner::arm_for_test as bridge_for_test;",
             "use owner::arm_for_test as arm_for_test;",
             "use owner::ControlForTest; fn borrow(_: &'static ControlForTest) {}",
+            "use owner::ControlForTest; fn borrow(_: *const ControlForTest) {}",
+            "#[cfg(any())] struct Binder { field: Box<dyn owner::Trait<ControlForTest: Copy>> } fn borrow(_: owner::ControlForTest) {}",
+            "macro_rules! noop { ($lit:literal $name:ident) => {} } noop!(\"ignored\"struct ControlForTest);",
+            "fn union(_: owner::Control) {} fn build() { union(owner::Control { arm_for_test: () }); }",
+            "fn borrow<T: Fn(<owner::ControlForTest as Trait>::Item), const ControlForTest: usize>(_: owner::ControlForTest) {}",
+            "fn borrow<const ControlForTest: usize>(_: owner::ControlForTest) {}",
+            "fn borrow<#[allow(non_upper_case_globals)] const ControlForTest: usize>(_: owner::ControlForTest) {}",
         ] {
             let mut input = Inputs::fixture(
                 &[
