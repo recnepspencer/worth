@@ -48,6 +48,9 @@ pub enum ApplicationOperationProgramTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationOperationDecisionReadTarget {
+    ManagedIndex {
+        parent: crate::application_query::ApplicationQueryBindingReference,
+    },
     Entity {
         entity: String,
     },
@@ -65,6 +68,11 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    InvariantManagedIndexSource {
+        invariant: String,
+        execution_point: super::ApplicationInvariantExecutionPoint,
+        requirement: crate::application_query::ApplicationInvariantManagedIndexSource,
+    },
     ManagedIndex {
         definition: crate::application_query::ErasedApplicationManagedIndexDefinition,
     },

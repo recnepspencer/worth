@@ -6,8 +6,7 @@ use super::{
 };
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 use crate::branch::SelectedRelationalBranchRead;
-use crate::derived_relation::{DerivedRelationDenial, DerivedRelationReadDenial};
-use crate::identity::data::KindId;
+use crate::derived_relation::DerivedRelationReadDenial;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::OverlayStateView;
 use crate::transactions::data::{RecordRef, TransactionCommitError};
@@ -28,6 +27,14 @@ impl AppliedMutationDraft {
         proposal: &crate::mvcc::RelationalMutationProposalIdentity,
     ) -> Result<(), TransactionCommitError> {
         prepare(self, execution, runtime, selected, proposal).map_err(|cause| {
+            if let Some(cause) = cause.execution_cause() {
+                return TransactionCommitError::execution(
+                    crate::transactions::data::CommitExecutionDenial {
+                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+                        partition_identity: None,
+                    },
+                );
+            }
             TransactionCommitError::preparation(
                 crate::transactions::data::CommitPreparationError::managed_index_source(
                     self.source_interpretation.physical_basis(),
@@ -153,10 +160,16 @@ fn prepare(
                 registration,
                 &work,
             );
+            let source_records = changed_source_records(
+                program,
+                &draft.outcome.effect.publication.changed_records,
+                &before,
+                &after,
+            );
             let closure = super::scope_closure::discover(
                 runtime_view.selected_registry.registry(),
                 program,
-                &draft.outcome.effect.publication.changed_records,
+                &source_records,
                 &draft.outcome.effect.adjacency.deltas,
                 &physical.before,
                 &physical.after,
@@ -244,6 +257,40 @@ struct SourcePlan<'a> {
     closure: super::scope_closure::PreparedManagedIndexScopeClosure,
     affected_scopes: std::collections::BTreeSet<crate::identity::data::EntityId>,
     work: CustomInvariantWorkMeter,
+}
+
+/// Routing reads Native metadata, then grants projection only to the installed
+/// Source audience. Unrelated kinds in a mixed mutation are not Source reads.
+fn changed_source_records(
+    program: &super::ManagedIndexSourceProgram,
+    records: &[RecordRef],
+    before: &InvariantStateView<'_>,
+    after: &InvariantStateView<'_>,
+) -> Vec<RecordRef> {
+    records
+        .iter()
+        .filter(|record| {
+            let RecordRef::Entity(id) = record else {
+                return false;
+            };
+            [before, after]
+                .into_iter()
+                .filter_map(|view| view.entity_metadata(*id))
+                .any(|metadata| {
+                    metadata.kind_id == program.scope_kind()
+                        || metadata.kind_id == program.row_kind()
+                        || program
+                            .0
+                            .path
+                            .physical_sources()
+                            .iter()
+                            .any(|&(_, from, to)| {
+                                metadata.kind_id == from || metadata.kind_id == to
+                            })
+                })
+        })
+        .cloned()
+        .collect()
 }
 
 fn views<'a>(

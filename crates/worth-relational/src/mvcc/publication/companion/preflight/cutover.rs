@@ -16,6 +16,37 @@ pub struct PreparedPublicationCompanionEffect {
 }
 
 impl PreparedPublicationCompanionEffect {
+    /// Attach only the sealed next image to the same unpublished Native root.
+    /// No caller-provided image or root identity is interpreted as association.
+    pub(in crate::mvcc) fn attach_managed_source_root(
+        &self,
+        root: &crate::branch::RelationalBranchRoot,
+    ) -> Result<(), CompanionPreflightStop> {
+        if root.id() != self.binding.next_root_id
+            || root.commit_id() != Some(self.binding.next_commit_id)
+        {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
+        }
+        if let Some(managed) = &self.managed {
+            root.managed_source_image
+                .set(super::super::cell::ManagedSourceRootImage {
+                    core: std::sync::Arc::downgrade(&managed.cell),
+                    image: std::sync::Arc::clone(&managed.next),
+                })
+                .map_err(|_| CompanionPreflightStop::SelectedSourceMismatch)?;
+        }
+        Ok(())
+    }
+    pub(in crate::mvcc) fn matches_managed_source_reads(
+        &self,
+        condition: &super::super::cell::ManagedSourceReadConditions,
+    ) -> Result<(), CompanionPreflightStop> {
+        let managed = self
+            .managed
+            .as_ref()
+            .ok_or(CompanionPreflightStop::ManagedSourceNotPrepared)?;
+        condition.matches_reserved(&managed.cell, &managed.pinned_image)
+    }
     pub(in crate::mvcc) fn matches_read_condition(
         &self,
         condition: &super::super::cell::CompanionReadCondition,

@@ -29,6 +29,7 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{
     identity::EntityId, transactions::RelationalExecutionDenialCause as Cause,
 };
+mod maintained;
 
 #[derive(Debug)]
 pub(super) enum SelectionDenial {

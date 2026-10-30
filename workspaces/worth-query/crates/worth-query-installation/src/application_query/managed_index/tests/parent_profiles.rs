@@ -8,6 +8,7 @@ use crate::facade::{
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
 use worth_query_declaration::facade::{application_query::*, application_schema::*};
+mod decision_read;
 mod model;
 mod queries;
 
@@ -56,6 +57,24 @@ pub(super) fn check_actual_parent_profiles() {
     );
     assert_ne!(a.canonical, b.canonical);
     let lawful = bind::<0>().unwrap();
+    let declared = lawful
+        .installed_mutation_binding::<decision_read::PrincipalDecision<Lawful>>()
+        .unwrap();
+    assert_eq!(
+        declared.operation().contracts().managed_index_reads().len(),
+        1
+    );
+    let foreign_scope = bind::<4>()
+        .err()
+        .expect("an input-field operation cannot borrow a principal-scoped Parent");
+    assert_eq!(
+        foreign_scope.kind(),
+        SchemaKind::OperationInstallationDenied
+    );
+    assert_eq!(
+        foreign_scope.subject(),
+        "worth.query.tests.managed-parent-field-decision.v1"
+    );
     let installed = lawful
         .installed_managed_index::<queries::ModelIndex<Lawful>>()
         .unwrap();

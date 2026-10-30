@@ -23,6 +23,10 @@ where
     P: WorthQueryManagedIndexProvider<S, I>,
 {
     decoded_provider(execution, image.bindings, |control, session| {
+        let source_control = image
+            .source_budget
+            .map(|budget| control.under_source(budget));
+        let control = source_control.as_ref().unwrap_or(control);
         let sources = WorthQueryManagedIndexSourceRows::<S, I>::new(image, session, control);
         let capacity = provider_result(
             execution,

@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
 mod derived_relation;
+mod managed_index;
 
 /// Borrowed, application-only view used while lowering one invariant factory.
 pub struct WorthQueryApplicationInvariantSchemaResolver<'layout, Schema> {
@@ -158,7 +159,7 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
     where
         Field: worth_query_declaration::facade::application_schema::DeclaredApplicationFieldValue<Value = Value>,
         Field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,
-    {
+{
         self.layout
             .field(field.entity(), field.aspect(), field.field())
             .map(|layout| super::super::application_invariant::WorthQueryApplicationInvariantFieldBinding {

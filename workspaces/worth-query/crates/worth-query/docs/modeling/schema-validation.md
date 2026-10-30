@@ -180,32 +180,43 @@ another proposal or a narrower reader refuses. The proof retains source backing
 and its original payer, without retaining an Execution request or granting reads
 from descriptive coordinates.
 
-Three focused Native source courts and the owning compiled-example inventory
-test pass for this structural custody prerequisite. The courts cover paired
-pullback, empty support, exact proposal/read audiences and incomplete affected
-declarations. It supplies structural pullback only: scalar projection changes
-still need the projection's per-entry
-dependency routing. It does not yet stage incremental managed provider roots,
-add managed-index reads to `DecisionReader`, or publish graph/index roots
-atomically. Those remain required Phase 2 work. Complete conservative Source
-dependencies remain in force; Phases 3–6 remain unfinished.
+Structural paired custody retains empty support, exact proposal/read audiences
+and complete affected declarations. It is not projected-row READ authority.
+The installed managed Source compiler binds physical scalar projection fields
+and stored/reverse/composed/union paths to Native's preparation audience.
+Query's persistent per-entry dependency postings cover scalar/lifecycle reads;
+Native supplies complete reverse scope closure from actual before/after changes.
+Neither public sessions nor a caller's initiating scope define that closure.
 
 The current backing uses immutable node pages in place of whole retained node
 arrays. An isolated edit shares untouched pages and allocates changed
 pages and directory paths under the current request. Prefix insertion/removal
 and keyed box edits/refits belong to their pure value owners. These mechanisms
-do not acquire projected rows, schedule validation, or publish a graph root.
-Two Query backing courts, eight consumer cases and the owning compiled inventory
-case pass for this bounded slice. In particular, neither
-the structural proof nor a cold Source ordinal supplies the stable full-generation
-occurrence identity or admitted scalar reads needed for maintained roots.
+do not themselves acquire projected rows, schedule validation, or publish a graph
+root. Native-issued full-generation occurrences supply maintained row identity;
+cold Source ordinals cannot address another scope or an incremental successor.
 
-Native still applies a proposal and runs its first invariant family before
-Query's existing managed-view publication preparation. The next integration must
-prepare admitted provider roots at that actual candidate boundary and attach
-them to the single-use publication owner. A later publication callback cannot
-provide that contract. Committed `DecisionReader` access, candidate invariant
-access and the Source/maintenance/scope-inclusive growth proof remain required.
+Native's sealed suspension custom reads use the actual logical before-image
+and its older version; native checks still see the physical candidate. Actual
+rematerialization does not substitute that logical image for the unavailable
+committed physical Source. The managed Source interpretation policy is fixed
+canonical meaning, not an application-selected posture. Live owner custody and
+an observation identity do not alone admit a projected index read: exact installed
+audience, complete Source preparation and publication remain required. Unsupported
+Source shapes refuse installation; valid shapes bind the same configured catalog
+and managed registry before bootstrap mutations and rule factory publication.
+
+Native stages provider roots before its first dependent invariant. Each actual
+observation reborrows its own Source loan. The existing SourceInvalidationOwner
+seals one fixed graph/availability/Source-image compound effect. The unpublished
+Native root receives the exact sealed image before movement; actual selected and
+pending World basis custody retains that pair, without a Query history cache.
+Failure or cancellation leaves the prior root unchanged and releases staging.
+Public committed reads still perform principal/scope/READ admission separately.
+Their complete Source condition is rebound at the real consuming candidate after
+idempotency resolution; copied program names and retained material grant no READ.
+The [compiled application examples](../../../../../../docs/build-an-application.md#maintain-a-provider-source-for-an-invariant)
+show both the committed DecisionReader and installed candidate reader audiences.
 
 ### Canonical Query Validation
 

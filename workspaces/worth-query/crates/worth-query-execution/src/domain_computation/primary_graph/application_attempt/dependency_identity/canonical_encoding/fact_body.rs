@@ -6,6 +6,24 @@ pub(super) fn append_fact(
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::ManagedIndexSource { observation } => {
+            kind(entries, prefix, "managed-complete-source");
+            entity(entries, prefix, "scope", observation.key().scope);
+            push(
+                entries,
+                format!("{prefix}.source"),
+                CanonicalBasisEntryKind::Value,
+                CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(
+                    observation.key().obligation,
+                )),
+            );
+            number_u64(
+                entries,
+                prefix,
+                "revision",
+                observation.native().source_revision().0,
+            );
+        }
         WorthQueryApplicationObservedFact::ComponentSelection { observation } => {
             kind(entries, prefix, "scoped-native-components");
             push(

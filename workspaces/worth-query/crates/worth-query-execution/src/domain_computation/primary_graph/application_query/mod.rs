@@ -44,12 +44,13 @@ pub(in crate::domain_computation::primary_graph) mod managed_index;
 pub use managed_index::{
     WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
     WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
-    WorthQueryManagedIndexLifecycle, WorthQueryManagedIndexNodeId,
-    WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
+    WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexLifecycle,
+    WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
     WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
     WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
-    WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceRows,
-    WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop, WorthQueryManagedIndexWorkDenial,
+    WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceChange,
+    WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
+    WorthQueryManagedIndexWorkDenial,
 };
 mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;

@@ -22,22 +22,41 @@ struct ConfiguredProvider<S> {
     adapter: Box<dyn Any + Send + Sync>,
     belongs_to: fn(&dyn Any, &WorthQueryInstalledApplicationSchema<S>) -> bool,
     executor: Arc<dyn ErasedIndexExecutor<S>>,
+    source: Arc<dyn super::source::service::SourceFactory>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct ManagedIndexProviderCatalog<S> {
-    entries: HashMap<EqualityTypeId, ConfiguredProvider<S>>,
+    entries: Arc<HashMap<EqualityTypeId, ConfiguredProvider<S>>>,
     marker: PhantomData<fn() -> S>,
 }
 impl<S> Default for ManagedIndexProviderCatalog<S> {
     fn default() -> Self {
         Self {
-            entries: HashMap::new(),
+            entries: Arc::new(HashMap::new()),
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<S> Clone for ManagedIndexProviderCatalog<S> {
+    fn clone(&self) -> Self {
+        Self {
+            entries: Arc::clone(&self.entries),
             marker: PhantomData,
         }
     }
 }
 
 impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
+    pub(super) fn source_factory(
+        &self,
+        definition: &worth_query_declaration::facade::application_query::ErasedApplicationManagedIndexDefinition,
+    ) -> Option<Arc<dyn super::source::service::SourceFactory>> {
+        self.entries
+            .values()
+            .find(|entry| entry.source.definition() == definition)
+            .map(|entry| Arc::clone(&entry.source))
+    }
     pub(in crate::domain_computation::primary_graph) fn take_complete(
         &mut self,
         schema: &WorthQueryInstalledApplicationSchema<S>,
@@ -113,18 +132,23 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         let concrete = Arc::new(TypedIndexProvider {
             installed,
             provider,
+            bindings: schema.value_bindings().clone(),
         });
         let adapter: Arc<dyn InstalledIndexProvider<S, I>> = concrete.clone();
-        let executor: Arc<dyn ErasedIndexExecutor<S>> = concrete;
-        self.entries.insert(
-            index_type,
-            ConfiguredProvider {
-                name: I::NAME.to_owned(),
-                adapter: Box::new(adapter),
-                belongs_to: configured_in::<S, I>,
-                executor,
-            },
-        );
+        let executor: Arc<dyn ErasedIndexExecutor<S>> = concrete.clone();
+        let source: Arc<dyn super::source::service::SourceFactory> = concrete;
+        Arc::get_mut(&mut self.entries)
+            .ok_or_else(|| Denial::new(Kind::ManagedIndexProviderConfigurationSealed, I::NAME))?
+            .insert(
+                index_type,
+                ConfiguredProvider {
+                    name: I::NAME.to_owned(),
+                    adapter: Box::new(adapter),
+                    belongs_to: configured_in::<S, I>,
+                    executor,
+                    source,
+                },
+            );
         Ok(())
     }
 

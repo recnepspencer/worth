@@ -7,6 +7,7 @@ mod capability;
 mod derived_relation;
 mod field;
 mod invariant;
+mod invariant_source;
 mod managed_index;
 mod mutation_description;
 mod operation;
@@ -27,6 +28,9 @@ pub(super) fn append_member(
 ) {
     let prefix = format!("member[{index}]");
     match member {
+        ApplicationSchemaMember::InvariantManagedIndexSource { .. } => {
+            invariant_source::append(basis, &prefix, member)
+        }
         ApplicationSchemaMember::ManagedIndex { definition } => {
             managed_index::append(basis, &prefix, definition)
         }

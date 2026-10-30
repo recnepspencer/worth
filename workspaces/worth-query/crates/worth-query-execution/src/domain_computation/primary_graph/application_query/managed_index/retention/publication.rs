@@ -32,6 +32,11 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Regis
         if state.status == WorthQueryManagedIndexLifecycle::Disposed {
             return;
         }
+        if matches!(state.root, Some(RetainedIndexImage::Maintained(_))) {
+            // The exact successor is already in the Native compound effect.
+            // This old post-publication cache path cannot evict or promote it.
+            return;
+        }
         let next = state.epoch.checked_add(1);
         state.status = if next.is_some() {
             WorthQueryManagedIndexLifecycle::Evicted

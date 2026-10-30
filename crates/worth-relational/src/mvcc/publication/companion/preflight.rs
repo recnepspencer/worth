@@ -13,6 +13,7 @@ use super::cell::{CompanionBranchCellCore, CompanionRootImage};
 use super::{PreparedCompanionBranchCell, ReservedCompanionBranchCell};
 mod cell_swap;
 mod cutover;
+mod managed_source;
 pub use cutover::PreparedPublicationCompanionEffect;
 
 mod observer;
@@ -37,6 +38,8 @@ pub enum CompanionPreflightStop {
     SelectedPositionUnavailable { commit_id: CommitId },
     ForeignCell,
     RegistrationChanged,
+    ManagedSourceNotPrepared,
+    ManagedSourceChanged,
     WorkCounterOverflow,
     PreparationMemoryCounterOverflow,
     Interrupted(RelationalInterruptionEvent),
@@ -88,6 +91,8 @@ pub struct PublicationCompanionPreflight<'a> {
     pub(crate) binding: CandidateCompanionBinding,
     pub(crate) envelope: &'a CanonicalCommitEnvelope,
     pub(crate) control: &'a RelationalOperationControl,
+    sources: crate::validation::candidate_source::ManagedIndexSourcePublication<'a>,
+    pub(crate) execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
 }
 
 impl<'a> PublicationCompanionPreflight<'a> {
@@ -95,12 +100,28 @@ impl<'a> PublicationCompanionPreflight<'a> {
         binding: CandidateCompanionBinding,
         envelope: &'a CanonicalCommitEnvelope,
         control: &'a RelationalOperationControl,
-    ) -> Self {
-        Self {
+        source: &'a crate::validation::candidate_source::NativeManagedSourceInterpretation,
+        execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
+    ) -> Result<Self, CompanionPreflightStop> {
+        if source.proposed_version() != envelope.commit.version_id {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
+        }
+        let sources = source.prepare_publication_loan(&binding)?;
+        Ok(Self {
             binding,
             envelope,
             control,
-        }
+            sources,
+            execution,
+        })
+    }
+
+    /// The exact payloads prepared before this candidate's first dependent rule.
+    /// Publication cannot rebuild them or turn their logical share into READ.
+    pub fn managed_sources(
+        &self,
+    ) -> &crate::validation::candidate_source::ManagedIndexSourcePublication<'a> {
+        &self.sources
     }
 
     pub fn canonical_commit(&self) -> &CanonicalCommitEnvelope {

@@ -1,4 +1,8 @@
+mod managed_source;
 mod read_condition;
+pub use managed_source::ManagedIndexSourceObservation;
+pub(in crate::mvcc) use managed_source::ManagedSourceReadConditions;
+pub(crate) use managed_source::ManagedSourceRootImage;
 pub(in crate::mvcc) use read_condition::CompanionReadCondition;
 use std::any::Any;
 use std::marker::PhantomData;

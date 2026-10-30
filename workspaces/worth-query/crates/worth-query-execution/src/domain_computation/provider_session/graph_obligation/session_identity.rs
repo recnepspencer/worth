@@ -27,6 +27,21 @@ impl WorthQueryGraphWorkManagedRunIdentity {
 pub struct WorthQueryGraphWorkSessionIdentity(u64);
 
 impl WorthQueryGraphWorkSessionIdentity {
+    /// Coordinate ownership for a provider invocation under an actual Native
+    /// Source loan. The identity itself grants no public purpose or Source read.
+    pub(in crate::domain_computation) fn for_native_source(
+        scope: &worth_relational::facade::runtime::ManagedIndexSourceScope<'_>,
+    ) -> Result<Self, worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial> {
+        use worth_relational::facade::runtime::{
+            DerivedRelationReadDenial, ManagedIndexSourcePreparationDenial as Denial,
+        };
+        if !scope.scope_exists()? && !scope.committed_scope_exists()? {
+            return Err(Denial::RootUnavailable);
+        }
+        Self::mint().ok_or_else(|| Denial::Source(DerivedRelationReadDenial::Request(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
+        )))
+    }
     pub(super) fn mint() -> Option<Self> {
         NEXT_GRAPH_WORK_SESSION_IDENTITY
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {

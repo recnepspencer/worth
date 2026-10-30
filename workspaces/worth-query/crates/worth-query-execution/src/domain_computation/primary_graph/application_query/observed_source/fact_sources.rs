@@ -101,6 +101,19 @@ impl WorthQueryObservedSourceFootprint {
             .flat_map(|selection| selection.managed_index.iter())
             .flat_map(|managed| managed.dependencies.meanings())
     }
+    pub(in crate::domain_computation::primary_graph::application_query) fn maintained_source(
+        &self,
+    ) -> Option<
+        &Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
+    > {
+        self.root_selection
+            .as_ref()?
+            .managed_index
+            .as_ref()?
+            .dependencies
+            .maintained
+            .as_ref()
+    }
     pub(super) fn validate_selections(
         &self,
         layout: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,

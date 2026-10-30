@@ -6,6 +6,12 @@ pub use denial::ManagedIndexSourcePreparationDenial;
 mod observation;
 mod preparation;
 mod projection;
+mod provider_failure;
+pub use provider_failure::ManagedIndexSourceProviderFailure;
+mod publication;
+pub use publication::{ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot};
+mod image;
+pub use image::{ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot};
 mod scope_closure;
 mod staged;
 pub(crate) use observation::{

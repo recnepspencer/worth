@@ -12,6 +12,7 @@ mod context;
 mod diagnostics;
 mod frontier_admission;
 mod kind_scan_visibility;
+mod managed_source;
 mod native_output_probe;
 mod paid_current_record_walk;
 mod paid_record_walk;

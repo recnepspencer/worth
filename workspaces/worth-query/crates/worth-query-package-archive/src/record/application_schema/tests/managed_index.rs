@@ -48,7 +48,46 @@ fn definition() -> ErasedApplicationManagedIndexDefinition {
 }
 
 #[test]
+fn invariant_source_policy_revision_is_explicit_and_refuses_unversioned_or_future_bytes() {
+    let member = ApplicationSchemaMember::InvariantManagedIndexSource {
+        invariant: "UniqueNames".into(),
+        execution_point: ApplicationInvariantExecutionPoint::CommitBoundary,
+        requirement: ApplicationInvariantManagedIndexSource::from_untrusted_parts(
+            definition(),
+            ApplicationManagedIndexColdSource::AdmitRebuild,
+        ),
+    };
+    let bytes = encode_member(&member);
+    assert_eq!(&bytes[..4], &[0, 49, 0, 1]);
+    let restored = decode_member(&bytes);
+    assert_eq!(restored, member);
+    assert_eq!(encode_member(&restored), bytes);
+    // Unknown policy refuses before any definition/projection payload is read.
+    assert_eq!(
+        try_decode_member(&[0, 49, 0, 2]).unwrap_err().kind(),
+        Kind::UnsupportedRecordVariant
+    );
+    assert_eq!(
+        try_decode_member(&[0, 49]).unwrap_err().kind(),
+        Kind::Truncated
+    );
+    // The pre-policy WIP layout cannot silently acquire revision1 meaning.
+    let unversioned = [&bytes[..2], &bytes[4..]].concat();
+    assert_eq!(
+        try_decode_member(&unversioned).unwrap_err().kind(),
+        Kind::UnsupportedRecordVariant
+    );
+}
+
+#[test]
 fn managed_index_v1_round_trips_full_probe_and_rejects_future_version_before_payload() {
+    let read = ApplicationSchemaMember::OperationDecisionRead {
+        operation: "Rename".into(),
+        target: ApplicationOperationDecisionReadTarget::ManagedIndex {
+            parent: definition().parts().source.binding.clone(),
+        },
+    };
+    assert_eq!(decode_member(&encode_member(&read)), read);
     let member = ApplicationSchemaMember::ManagedIndex {
         definition: definition(),
     };

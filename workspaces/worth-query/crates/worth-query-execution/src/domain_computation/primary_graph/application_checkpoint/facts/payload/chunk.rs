@@ -112,6 +112,7 @@ pub(super) fn deep_clone_bytes(fact: &Fact) -> Option<u64> {
             .checked_add(bytes(candidates)?),
         Fact::WorkflowInstanceCapacity { instances, .. } => bytes(instances),
         Fact::ComponentSelection { .. }
+        | Fact::ManagedIndexSource { .. }
         | Fact::SourcePublication { .. }
         | Fact::StructuralWalk { .. }
         | Fact::Aggregate { .. }

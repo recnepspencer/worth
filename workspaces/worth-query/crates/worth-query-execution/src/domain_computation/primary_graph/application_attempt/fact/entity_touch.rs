@@ -4,6 +4,9 @@ use super::WorthQueryApplicationObservedFact;
 
 pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: EntityId) -> bool {
     match fact {
+        // Complete Source currentness is compared at its owning Native record;
+        // no narrower row membership is claimed by this locator.
+        WorthQueryApplicationObservedFact::ManagedIndexSource { .. } => false,
         WorthQueryApplicationObservedFact::ComponentSelection { observation } => {
             observation.touches_entity(candidate)
         }

@@ -8,6 +8,16 @@ pub(super) fn validate_decision_read_target_identifiers(
     target: &ApplicationOperationDecisionReadTarget,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     match target {
+        ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
+            let p = parent.parts();
+            validate_identifiers([
+                &p.query_name,
+                &p.scope_entity,
+                &p.scope_aspect,
+                &p.scope_field,
+                &p.principal_binding,
+            ])
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => {
             validate_simple_identifier(entity)
         }

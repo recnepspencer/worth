@@ -298,7 +298,12 @@ where
         if self
             .admitted_contracts
             .as_deref()
-            .is_none_or(|contract| graph_reads_admit_target(contract.graph_reads(), target))
+            .is_none_or(|contract| match target {
+                ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
+                    contract.managed_index_reads().contains(parent)
+                }
+                _ => graph_reads_admit_target(contract.graph_reads(), target),
+            })
         {
             Ok(())
         } else {

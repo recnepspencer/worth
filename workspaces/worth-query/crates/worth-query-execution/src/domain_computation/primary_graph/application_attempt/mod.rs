@@ -1,4 +1,7 @@
 pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
+pub(in crate::domain_computation::primary_graph) use fact::{
+    ManagedSourceRead, ManagedSourceReadKey,
+};
 mod capability_revocation_program;
 mod commit_authority_binding;
 mod commit_outcome_identity;

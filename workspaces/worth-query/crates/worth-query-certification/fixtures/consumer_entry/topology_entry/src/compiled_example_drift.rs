@@ -62,6 +62,8 @@ fn compiled_examples_match_consumer_documents() {
             "candidate_source_changes.rs".to_owned(),
             "managed_prefix_index.rs".to_owned(),
             "managed_box_index.rs".to_owned(),
+            "managed_prefix_decision.rs".to_owned(),
+            "managed_prefix_invariant.rs".to_owned(),
             "checkpoint_recovery/computation_partition/oracle/collection/lifecycle/binding.rs"
                 .to_owned(),
             "final_output/feature.rs".to_owned(),

@@ -135,6 +135,8 @@ pub(in crate::domain_computation::primary_graph) fn preflight_stop(
         | CompanionPreflightStop::SelectedSourceMismatch
         | CompanionPreflightStop::SelectedPositionUnavailable { .. }
         | CompanionPreflightStop::ForeignCell
+        | CompanionPreflightStop::ManagedSourceNotPrepared
+        | CompanionPreflightStop::ManagedSourceChanged
         | CompanionPreflightStop::RegistrationChanged) => RetainedFactStop::Refused(refusal),
     }
 }

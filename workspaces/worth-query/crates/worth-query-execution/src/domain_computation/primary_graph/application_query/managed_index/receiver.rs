@@ -76,7 +76,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
-        _external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         mut plan: BoundPlan<'_, S, B>,
         allocation: &Arc<SourceFactsAllocation>,
     ) -> Result<WorthQueryApplicationOneShotResult<B::Query, ResultValue<S, B>>, ReceiverCause>
@@ -119,6 +119,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 plan.controls.request_scope(),
                 &context.association,
                 &context.selected,
+                external,
+                &context.selector,
                 probe,
                 allocation,
             )

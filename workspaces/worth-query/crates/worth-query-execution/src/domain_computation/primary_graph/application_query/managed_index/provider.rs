@@ -9,6 +9,22 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
 };
 
+/// A Native-issued occurrence delta. Coordinates describe material and carry no
+/// Source loan, public admission or mutation authority.
+#[derive(Clone, Copy, Debug)]
+pub struct WorthQueryManagedIndexSourceChange {
+    pub(super) before: Option<super::WorthQueryManagedIndexSourceSlot>,
+    pub(super) after: Option<super::WorthQueryManagedIndexSourceSlot>,
+}
+impl WorthQueryManagedIndexSourceChange {
+    pub const fn before(&self) -> Option<super::WorthQueryManagedIndexSourceSlot> {
+        self.before
+    }
+    pub const fn after(&self) -> Option<super::WorthQueryManagedIndexSourceSlot> {
+        self.after
+    }
+}
+
 /// The actual declared probe codec's domain value.
 pub type WorthQueryManagedIndexProbeValue<S, I> = <<I as ApplicationManagedIndexBinding<S>>::ProbeBinding as ApplicationScalarValueBinding>::Value;
 
@@ -47,4 +63,24 @@ where
         candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), WorthQueryManagedIndexProviderStop<Self::Denial>>;
+
+    /// Isolated maintenance of the actual changed occurrences. The writer edits
+    /// immutable retained pages; returning a root never publishes it. A provider
+    /// without maintenance refuses instead of rebuilding a warm Source.
+    fn update(
+        &self,
+        _before: &WorthQueryManagedIndexSourceRows<'_, S, I>,
+        _after: &WorthQueryManagedIndexSourceRows<'_, S, I>,
+        _changes: &[WorthQueryManagedIndexSourceChange],
+        _root: Option<WorthQueryManagedIndexNodeId>,
+        _nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Self::Node>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<
+        Option<WorthQueryManagedIndexNodeId>,
+        WorthQueryManagedIndexProviderStop<Self::Denial>,
+    > {
+        Err(control
+            .refuse(super::WorthQueryManagedIndexStop::IncrementalUnavailable)
+            .into())
+    }
 }

@@ -10,6 +10,19 @@ use worth_relational::facade::mvcc::PreparedPublicationCompanionEffect;
 use worth_relational::facade::mvcc::PublicationCompanionPreflight;
 use worth_relational::facade::mvcc::RelationalPublicationCompanion;
 impl RelationalPublicationCompanion for SourceInvalidationOwner {
+    fn prepare_managed_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &worth_relational::facade::runtime::ManagedIndexSourcePreparation<'_>,
+    ) -> Result<
+        Vec<worth_relational::facade::runtime::PreparedManagedIndexSourceRoot>,
+        worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
+    > {
+        if source.selected_basis().identity().runtime_instance_id() != self.runtime_instance_id {
+            return Err(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::ForeignSource);
+        }
+        self.managed_views.prepare_sources(execution, source)
+    }
     fn prepare(
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
@@ -45,7 +58,12 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
         root.current = Arc::new(state);
         root.last_native_marking = Some(report);
         context.checkpoint()?;
-        let mut effect = context.seal_replacement(reserved, Arc::new(root))?;
+        let mut effect = if let Some(managed) = self.managed_views.reserve_source_image(context)? {
+            let next = context.prepare_managed_source_image(&managed)?;
+            context.seal_managed_source_replacement(reserved, Arc::new(root), managed, next)?
+        } else {
+            context.seal_replacement(reserved, Arc::new(root))?
+        };
         if !selected.is_empty() {
             let observer = effect.attach_completion_observer(context)?;
             let branch =

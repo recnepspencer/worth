@@ -9,7 +9,7 @@ use worth_relational::facade::{
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(super) enum ViewDependency {
+pub(in crate::domain_computation::primary_graph::application_query) enum ViewDependency {
     Entity(EntityId),
     Aspect(EntityId, AspectKey),
     Field(EntityId, AspectFieldLocator),
@@ -17,7 +17,9 @@ pub(super) enum ViewDependency {
 }
 
 impl ViewDependency {
-    pub(super) fn retained_bytes(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph::application_query) fn retained_bytes(
+        &self,
+    ) -> usize {
         let owned = match self {
             Self::Aspect(_, aspect) => aspect.owned_allocation_capacity_bytes(),
             Self::Field(_, locator) => locator.owned_allocation_capacity_bytes(),

@@ -20,6 +20,8 @@ pub(super) fn require_witnessed_output(
         Err(CompanionPreflightStop::Execution(cause)) => Err(output_reuse::read_denial(cause)),
         Ok(true) => Ok(()),
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
+        Err(CompanionPreflightStop::ManagedSourceChanged) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
+        Err(CompanionPreflightStop::ManagedSourceNotPrepared) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
 
         Err(CompanionPreflightStop::Interrupted(event)) => {
             Err(output_reuse::interruption_denial(event))

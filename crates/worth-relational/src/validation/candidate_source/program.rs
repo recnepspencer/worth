@@ -33,6 +33,11 @@ impl PartialEq for ManagedIndexSourceProgram {
     }
 }
 impl Eq for ManagedIndexSourceProgram {}
+impl std::hash::Hash for ManagedIndexSourceProgram {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::ptr::hash(Arc::as_ptr(&self.0), state);
+    }
+}
 
 impl RelationalSchemaRegistry {
     /// Bind only a recipe actually registered by this schema owner. No root or

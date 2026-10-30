@@ -6,6 +6,7 @@ mod host;
 mod journey;
 #[cfg(test)]
 mod lifecycle;
+mod maintained;
 mod mutation;
 mod prefix;
 mod query;

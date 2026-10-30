@@ -46,6 +46,9 @@ impl PreparedManagedIndexSourceRead {
 }
 
 impl ManagedIndexSourceRead<'_> {
+    pub fn read_budget(&self) -> crate::validation::custom_rule::CustomInvariantReadBudget<'_> {
+        self.views.after.read_budget()
+    }
     pub fn committed_root(&self) -> Result<&(dyn std::any::Any + Send + Sync), Denial> {
         if !self.prepared.committed_available {
             return Err(Denial::RootUnavailable);

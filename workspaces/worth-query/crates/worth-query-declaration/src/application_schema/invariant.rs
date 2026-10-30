@@ -165,6 +165,8 @@ pub struct ApplicationInvariantDefinition<Schema, Invariant> {
     execution_point: ApplicationInvariantExecutionPoint,
     work_budget: RelationalInvariantWorkBudget,
     operational: ApplicationInvariantOperationalContract,
+    managed_indexes: Vec<crate::application_query::ErasedApplicationManagedIndexDefinition>,
+    managed_index_cold: worth_foundational::facade::ManagedIndexColdSourcePosture,
 }
 
 impl<Schema, Invariant> ApplicationInvariantDefinition<Schema, Invariant>
@@ -182,6 +184,8 @@ where
             execution_point,
             work_budget,
             operational,
+            managed_indexes: Vec::new(),
+            managed_index_cold: worth_foundational::facade::ManagedIndexColdSourcePosture::Refuse,
         }
     }
 
@@ -196,5 +200,44 @@ where
     }
     pub fn operational(&self) -> &ApplicationInvariantOperationalContract {
         &self.operational
+    }
+
+    pub fn managed_index_cold_sources(
+        mut self,
+        posture: crate::application_query::ApplicationManagedIndexColdSource,
+    ) -> Self {
+        self.managed_index_cold = posture;
+        self
+    }
+
+    pub fn managed_index_sources(
+        &self,
+    ) -> impl Iterator<Item = crate::application_query::ApplicationInvariantManagedIndexSource> + '_
+    {
+        self.managed_indexes.iter().map(|index| {
+            crate::application_query::ApplicationInvariantManagedIndexSource::from_untrusted_parts(
+                index.clone(),
+                self.managed_index_cold,
+            )
+        })
+    }
+}
+
+impl<Schema, Invariant> ApplicationInvariantDefinition<Schema, Invariant>
+where
+    Schema: super::ApplicationSchema,
+    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
+{
+    /// Bind this rule to the index's installed Source scope and physical audience.
+    pub fn managed_index_source<
+        I: crate::application_query::ApplicationManagedIndexBinding<Schema>,
+    >(
+        mut self,
+        _index: crate::application_query::ApplicationManagedIndexRef<Schema, I>,
+    ) -> Self {
+        self.managed_indexes.push(I::descriptor().meaning().clone());
+        self.managed_indexes.sort();
+        self.managed_indexes.dedup();
+        self
     }
 }

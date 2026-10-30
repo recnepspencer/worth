@@ -19,8 +19,9 @@ pub use publication::{
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    DiscardedRelationalCommitCandidate, PendingCompanionRegistration, PerformedRelationalCommit,
-    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    DiscardedRelationalCommitCandidate, ManagedIndexSourceObservation,
+    PendingCompanionRegistration, PerformedRelationalCommit, PreparedCompanionBranchCell,
+    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
     PublicationCompanionRegistrationStop, PublishRelationalCommit, RelationalPublicationCompanion,
@@ -31,7 +32,7 @@ pub use publication::{
     StaleRelationalBranchObservation,
 };
 pub(crate) use publication::{
-    PreparedIndexRefreshBasis, PreparedRelationalCandidateAdmissionStop,
+    ManagedSourceRootImage, PreparedIndexRefreshBasis, PreparedRelationalCandidateAdmissionStop,
     PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
     PublicationPreparationDenial,
 };

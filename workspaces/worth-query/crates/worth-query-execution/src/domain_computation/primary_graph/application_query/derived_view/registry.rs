@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
 mod managed_index;
+mod managed_source;
 mod material;
 mod native_count;
 
@@ -69,6 +70,12 @@ enum OwnedDerivedView {
 
 #[derive(Default)]
 struct RegistryState {
+    source_branches: im::OrdMap<
+        worth_relational::facade::history::BranchId,
+        worth_relational::facade::mvcc::CompanionBranchCellSlot<
+            worth_relational::facade::runtime::ManagedIndexBranchImage,
+        >,
+    >,
     next_id: u64,
     views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
     owned: Vec<(u64, OwnedDerivedView)>,
@@ -78,9 +85,18 @@ struct RegistryState {
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
+    sources: super::super::managed_index::ManagedSourceInstallation,
 }
 
 impl ManagedDerivedViewRegistry {
+    pub(in crate::domain_computation::primary_graph) fn with_sources(
+        sources: super::super::managed_index::ManagedSourceInstallation,
+    ) -> Self {
+        Self {
+            state: Mutex::new(RegistryState::default()),
+            sources,
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn has_live_views(&self) -> bool {
         self.state
             .lock()
@@ -171,7 +187,7 @@ impl ManagedDerivedViewRegistry {
     }
 
     pub(in crate::domain_computation::primary_graph) fn dispose(&self) {
-        let (views, owned, allocations) = {
+        let (views, owned, allocations, source_branches) = {
             let mut state = self
                 .state
                 .lock()
@@ -180,6 +196,7 @@ impl ManagedDerivedViewRegistry {
                 std::mem::take(&mut state.views),
                 std::mem::take(&mut state.owned),
                 std::mem::take(&mut state.material_allocations),
+                std::mem::take(&mut state.source_branches),
             )
         };
         // Move the real containers out. No upgrade, disposal, final owner drop
@@ -191,6 +208,7 @@ impl ManagedDerivedViewRegistry {
         }
         drop(owned);
         drop(allocations);
+        drop(source_branches);
     }
 }
 

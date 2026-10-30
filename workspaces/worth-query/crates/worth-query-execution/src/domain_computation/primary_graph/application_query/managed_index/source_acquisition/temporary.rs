@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 use std::sync::Arc;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-pub(super) fn scope(
+pub(in crate::domain_computation::primary_graph::application_query) fn scope(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     entity: &str,
     aspect: &str,

@@ -120,6 +120,11 @@ enum ViewPosture {
     Proposed,
     Committed,
 }
+mod managed_index;
+pub use managed_index::{
+    WorthQueryApplicationInvariantManagedIndexBinding, WorthQueryInvariantManagedIndexPair,
+    WorthQueryInvariantManagedIndexRead, WorthQueryPreparedInvariantManagedIndex,
+};
 
 pub struct WorthQueryApplicationInvariantReadView<'runtime, Schema> {
     aspects: worth_relational::facade::runtime::StructuralAspectStateView<'runtime>,

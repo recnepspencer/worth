@@ -102,7 +102,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-fn settle_admitted_read<Query, QueryResult>(
+pub(in crate::domain_computation::primary_graph::application_query) fn settle_admitted_read<
+    Query,
+    QueryResult,
+>(
     spent: &OneShotReadWorkObservation,
     result: Result<
         super::outcome::CompletedOneShotRead<Query, QueryResult>,
@@ -124,7 +127,7 @@ fn settle_admitted_read<Query, QueryResult>(
     }
 }
 
-fn map_selected_read_stop(
+pub(in crate::domain_computation::primary_graph::application_query) fn map_selected_read_stop(
     stop: SelectedAuthorizedReadStop,
     query: &str,
 ) -> WorthQueryAdmittedOneShotStop {

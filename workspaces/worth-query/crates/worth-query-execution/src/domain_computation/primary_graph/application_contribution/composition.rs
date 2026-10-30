@@ -110,7 +110,8 @@ where
         WorthQueryPrimaryGraphInstallationDenial,
     > {
         Ok((
-            self.factories,
+            self.factories
+                .with_managed_index_catalog(self.managed_indexes.clone()),
             self.handlers,
             self.producers,
             self.conditionals,

@@ -12,6 +12,19 @@ pub enum WorthQueryManagedIndexWorkDenial {
     Controlled(Stop),
     Provider(WorthQueryManagedIndexProviderFailure),
 }
+impl std::fmt::Display for WorthQueryManagedIndexWorkDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+impl std::error::Error for WorthQueryManagedIndexWorkDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Provider(cause) => Some(cause),
+            Self::Controlled(_) => None,
+        }
+    }
+}
 
 impl From<Stop> for WorthQueryManagedIndexWorkDenial {
     fn from(cause: Stop) -> Self {

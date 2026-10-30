@@ -61,6 +61,8 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
 
 /// Opaque, whole-operation input accepted by the compiled-contract owner.
 pub(in crate::application_operation) struct WorthQuerySealedOperationContractCompilation {
+    managed_index_reads:
+        Vec<worth_query_declaration::facade::application_query::ApplicationQueryBindingReference>,
     body: Option<ApplicationOperationBodyProgram>,
     authorization: WorthQueryInstalledApplicationOperationAuthorization,
     ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
@@ -262,6 +264,17 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             })
             .collect();
         let sealed = WorthQuerySealedOperationContractCompilation {
+            managed_index_reads: self
+                .members
+                .iter()
+                .filter_map(|member| match member {
+                    ApplicationSchemaMember::OperationDecisionRead {
+                        operation,
+                        target: ApplicationOperationDecisionReadTarget::ManagedIndex { parent },
+                    } if operation == &self.operation => Some(parent.clone()),
+                    _ => None,
+                })
+                .collect(),
             body: self.portable_contract.body().cloned(),
             authorization,
             ability_requirements,

@@ -20,7 +20,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
             && state
                 .root
                 .as_ref()
-                .is_some_and(|actual| Arc::ptr_eq(actual, root))
+                .is_some_and(|actual| matches!(actual, RetainedIndexImage::Completed(actual) if Arc::ptr_eq(actual, root)))
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn begin_build(
@@ -101,7 +101,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         {
             return Err(Denial::StaleImage);
         }
-        let old = state.root.replace(root);
+        let old = state.root.replace(RetainedIndexImage::Completed(root));
         state.status = Status::Ready;
         drop(state);
         drop(old);
@@ -134,10 +134,10 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         if state.status != Status::Ready {
             return Err(Denial::NotReady);
         }
-        Ok((
-            state.epoch,
-            Arc::clone(state.root.as_ref().ok_or(Denial::NotReady)?),
-        ))
+        match state.root.as_ref() {
+            Some(RetainedIndexImage::Completed(root)) => Ok((state.epoch, Arc::clone(root))),
+            _ => Err(Denial::NotReady),
+        }
     }
 
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn evict(
@@ -149,6 +149,9 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if state.status == Status::Disposed {
             return Err(Denial::Disposed);
+        }
+        if matches!(state.root, Some(RetainedIndexImage::Maintained(_))) {
+            return Err(Denial::InvariantOwned);
         }
         let next = state.epoch.checked_add(1);
         let old = state.root.take();

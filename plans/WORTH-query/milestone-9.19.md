@@ -512,12 +512,21 @@ courts, eight consumer cases and one compiled inventory case. Immutable node-pag
 edits and pure prefix/box insertion, retirement and refitting mechanics are
 implemented. The backing shares unchanged pages; value mechanisms accept generic
 occurrence keys.
-The application adapters still consume cold Source ordinals. Admitted projected
-row deltas and full-generation occurrence issuance, scalar/per-entry and indirect
-routing, preparation before Native's first invariant, both managed-index read
-postures and atomic graph/root publication/cleanup are not implemented by this
-backing work. The required 1,000/2,000 growth court is also pending; local algorithm
-checks cannot substitute for Source acquisition and scope maintenance evidence.
+The prefix integration is now qualified through the installed public entry:
+Native discovers and stages affected full-generation Source scopes before the
+first rule; committed DecisionReader and candidate invariant reads consume that
+same managed resource, with matching Native/World publication. Real installed
+record/membership authoring proves unopened-B domain refusal and its valid twin,
+unchanged committed truth on refusal, B attachment without reconstruction, exact
+original-request cancellation and retry, immediate original-funded staging/basis
+release, and physical allocator balance after all owners close. Parent decision
+reads require their declared portable query and the original operation scope and
+principal; installation and runtime hostile controls prove both boundaries.
+Box integration, cold invariant-root eviction/reconstruction, lifecycle/affinity
+hostile controls, materialization/recovery composition and the required
+1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
+cannot substitute for Source acquisition, reverse-scope discovery, publication
+and final-owner release across that path.
 
 #### Explicit Source And Scope Association
 

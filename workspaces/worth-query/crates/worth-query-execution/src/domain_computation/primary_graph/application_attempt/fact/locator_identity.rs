@@ -11,6 +11,8 @@ pub(super) fn write(
     output: &mut dyn std::fmt::Write,
 ) -> std::fmt::Result {
     match fact {
+        WorthQueryApplicationObservedFact::ManagedIndexSource { observation } =>
+            write!(output, "application-managed-source:{:?}", observation.key()),
         WorthQueryApplicationObservedFact::ComponentSelection {observation}=>observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::Aggregate { observation } => observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => observation.key().write_locator(output),

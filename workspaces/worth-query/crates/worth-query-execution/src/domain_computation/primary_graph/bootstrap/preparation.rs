@@ -114,7 +114,7 @@ impl WorthQueryExecutionInstallationAuthority {
             installed_schema.native_contracts(),
             &relational_runtime.config().schema.registry,
         )?;
-        let registrations =
+        let (registrations, managed_sources) =
             invariant_factories.lower(installed_schema.binding_identity(), &layout)?;
         let expected_invariant_inventory_digest =
             worth_relational::facade::runtime::custom_invariant_inventory_digest(&registrations);
@@ -182,6 +182,7 @@ impl WorthQueryExecutionInstallationAuthority {
             layout,
             relational_runtime,
             product_world_resources.invalidation_resources(),
+            managed_sources,
             checkpoint.is_some(),
         )?;
         if let Some(publisher) = source_publisher {

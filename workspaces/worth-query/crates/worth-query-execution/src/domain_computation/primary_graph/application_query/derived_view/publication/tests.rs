@@ -125,8 +125,23 @@ fn replacing_an_entry_dependency_removes_the_old_body_set_edge() {
     let new = ViewDependency::Entity(entity(3));
     let membership = BTreeSet::from([ViewDependency::Entity(entity(1))]);
     let mut index = DependencyIndex::build(&membership, [(&7, &BTreeSet::from([old.clone()]))]);
+    let retained = index.clone();
     index.remove_entry(&7, &BTreeSet::from([old]));
     index.insert_entry(&new, &7);
+    // Maintenance changes one successor. The retained committed posting image
+    // still routes its original full-generation entry and not the new entity.
+    assert_eq!(
+        retained
+            .affected(&[ViewChange::Entity(entity(2))], 16)
+            .unwrap()
+            .entries,
+        BTreeSet::from([7])
+    );
+    assert!(retained
+        .affected(&[ViewChange::Entity(entity(3))], 16)
+        .unwrap()
+        .entries
+        .is_empty());
     assert!(index
         .affected(&[ViewChange::Entity(entity(2))], 16)
         .unwrap()

@@ -247,7 +247,7 @@ pub(crate) struct PreparedCommitPublicationExecution {
 }
 
 pub(crate) struct PreparedCommitPublicationCompletion {
-    source_interpretation:
+    pub(crate) source_interpretation:
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     admitted: super::execution_admission::AdmittedCommitState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,

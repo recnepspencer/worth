@@ -21,7 +21,8 @@ mod live_cause;
 mod managed_index;
 mod marker_identity;
 pub use managed_index::{
-    ApplicationManagedIndexBinding, ApplicationManagedIndexBindingDescriptor,
+    ApplicationInvariantManagedIndexSource, ApplicationManagedIndexBinding,
+    ApplicationManagedIndexBindingDescriptor, ApplicationManagedIndexColdSource,
     ApplicationManagedIndexDefinition, ApplicationManagedIndexDefinitionDenial,
     ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexRef,
     ApplicationManagedIndexSelectionRecipe, ApplicationManagedIndexSourceMeaning,

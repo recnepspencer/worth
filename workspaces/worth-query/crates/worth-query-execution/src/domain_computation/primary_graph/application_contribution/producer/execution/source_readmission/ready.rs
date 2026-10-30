@@ -24,6 +24,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             Stop::Interrupted(event) => {
                 WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }
+            Stop::ManagedSourceNotPrepared => {
+                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+            }
+            Stop::ManagedSourceChanged => WorthQueryOutputDemandDenialKind::Superseded,
             Stop::TopologyPending
             | Stop::SelectedSourceMismatch
             | Stop::SelectedPositionUnavailable { .. }

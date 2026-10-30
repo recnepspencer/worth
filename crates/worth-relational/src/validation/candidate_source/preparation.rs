@@ -116,7 +116,9 @@ impl ManagedIndexSourceRows<'_> {
             .collect()
     }
 
-    pub(crate) fn occurrence(
+    /// Reacquire one full-generation occurrence through this actual audience's
+    /// inverse Source path. An entity identifier alone does not admit a row.
+    pub fn occurrence(
         &self,
         row: EntityId,
     ) -> Result<Option<ManagedIndexSourceOccurrence>, ReadDenial> {
@@ -182,6 +184,9 @@ impl ManagedIndexSourceRows<'_> {
 }
 
 impl<'a> ManagedIndexSourceScope<'a> {
+    pub fn read_budget(&self) -> crate::validation::custom_rule::CustomInvariantReadBudget<'_> {
+        self.views.after.read_budget()
+    }
     pub fn program(&self) -> &ManagedIndexSourceProgram {
         self.program
     }
@@ -290,6 +295,7 @@ impl<'a> ManagedIndexSourceScope<'a> {
             committed,
             proposed,
             availability: self.availability,
+            source_changed: !self.changed.is_empty(),
         }
     }
 }
@@ -300,6 +306,7 @@ pub struct PreparedManagedIndexSourceRoot {
     pub(crate) committed: Option<RootPayload>,
     pub(crate) proposed: Option<RootPayload>,
     pub(crate) availability: ManagedIndexSourceAvailability,
+    pub(crate) source_changed: bool,
 }
 
 pub(crate) struct PreparedSourceProgram {
@@ -329,7 +336,7 @@ impl ManagedIndexSourcePreparation<'_> {
     pub fn selected_basis(&self) -> &crate::branch::AdmittedRelationalBranchBasis {
         self.basis
     }
-    pub fn scopes(&self) -> impl Iterator<Item = ManagedIndexSourceScope<'_>> {
+    pub fn scopes(&self) -> impl ExactSizeIterator<Item = ManagedIndexSourceScope<'_>> {
         self.closure
             .scopes
             .iter()

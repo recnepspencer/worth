@@ -5446,26 +5446,84 @@ pub fn read_changes<S, R, F, T>(
 }
 ```
 
-Three focused Native source courts and the owning compiled-example inventory
-test pass for this structural custody prerequisite.
-It does not yet provide incremental managed roots, committed `DecisionReader`
-index reads or atomic graph/root publication. Projected scalar changes also need
-per-entry dependency routing. Those remain Phase 2 obligations; complete
-conservative Source invalidation and the later membership/footprint limits above
-remain unchanged.
+Use this loan for structural before/after pullback. It does not grant projected
+scalar reads, managed-index queries or publication authority. Declare a managed
+Source requirement separately when a rule needs a provider-backed read.
 
-The node backing and pure value mechanisms have focused passing evidence from
-two Query backing courts and eight consumer cases, plus the owning compiled
-inventory case. Immutable node pages and isolated edits share unchanged pages.
-The pure prefix owner supports insertion/removal; the
-pure box owner supports keyed insertion/removal and exact ancestor refitting.
-Their occurrence-key types are generic. This does not turn the current cold
-Source ordinals into stable incremental identities or grant candidate reads.
-Neither committed `DecisionReader` index access nor candidate invariant index
-access is available yet. Admitted projected-row changes, preparation before the
-first invariant, atomic graph/root publication and end-to-end 1k/2k growth
-qualification remain required. The existing compiled examples above continue to
-describe committed construction and structural Source custody only.
+### Maintain a provider Source for an invariant
+
+Add `.managed_index_source(Index::reference())` to the invariant definition.
+Choose `managed_index_cold_sources(ApplicationManagedIndexColdSource::AdmitRebuild)`
+when its original request may construct an unopened scope; `Refuse` instead
+requires available material. Install the matching provider through the same
+contribution as the index. Implement its `update` receiver using the supplied
+before/after Source rows, changed occurrences and isolated node writer. Share
+unchanged nodes; do not replace a warm update with a complete Source rebuild.
+Provider and controlled-work refusals prevent publication.
+
+The Source must use `SameAdmittedScope` with `NoParameters`, public disclosure,
+physical scalar projections and supported stored/reverse/composed/union paths.
+Unsupported shapes return `UnsupportedInvariantSource` during installation.
+Source result limits remain enforced; unavailable material is not an empty set.
+Native discovers affected scopes from actual before/after changes, including
+scopes with no open public handle, and prepares their roots before validation.
+Applications do not supply an affected-scope list.
+
+Inside a mutation handler, read a managed Parent through
+`DecisionReader::index_query`. Declare the Parent's projected fields in the
+operation's reads and register its exact binding with
+`schema.operation_managed_index_read::<PrefixBinding, _, _>(RenameItem::reference())`.
+Installation rejects a Parent whose scope mapping differs from that mutation;
+execution requires the resolved scope to equal the operation's admitted scope.
+Parent admission and the Source's own fresh principal, scope
+and READ checks still run. The decision retains a whole-Source expectation,
+including nonmatches and empty membership, for the actual consuming candidate.
+Ordinary row/result-set expectations use `expect_source` and `expect_result_set`.
+
+<!-- compiled: managed_prefix_decision.rs -->
+```rust
+                let rows = reader.index_query::<query::PrefixBinding>(query::FindPrefix {
+                    directory: input.directory.clone(),
+                    prefix: input.prefix.clone(),
+                });
+```
+
+Resolve the index with `resolver.typed_managed_index(Index::reference())` in its
+installed rule factory. Retain `planner.retain_managed_index(&binding)` in the
+rule's `Scope`, then use `context.managed_index(&prepared)` during evaluation.
+Each committed/proposed query borrows that actual Native observation and original
+request. A retained preparation from another observation cannot supply this loan.
+
+<!-- compiled: managed_prefix_invariant.rs -->
+```rust
+        let pair = context
+            .managed_index(scope)
+            .map_err(|cause| execution(format!("{cause:?}")))?;
+        let probe = query::Probe {
+            prefix: "taken".into(),
+        };
+        let after = pair.proposed().query(&probe).map_err(execution)?;
+```
+
+An ordinary successful commit publishes the matching graph and provider image.
+An admitted `open_index` attaches that maintained root as `Ready`; it does not
+call the provider's cold build. A current read still performs fresh Source READ.
+The standalone explicit-rebuild registration described above retains its own
+Created/Ready lifecycle. Closing a public attachment does not remove material
+still owned by an installed invariant or a retained Native/World basis.
+`evict` and explicit public `rebuild_index` return `InvariantOwned` for such an
+attachment; they cannot replace the invariant's matching committed image.
+
+See the [authored maintained catalog](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs)
+and [its installed rule](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs).
+
+Handle `BranchMaterializationSuspended` or `SnapshotUnavailable` from a current
+physical read during generated-output suspension. Retaining an earlier result
+does not make it current. After resumption, open the index through a fresh
+admitted request and handle its returned lifecycle status; an old payload or
+equal values cannot establish a new physical basis.
+An unavailable maintained Source returns its typed Native Source refusal.
+Logical invariant material never authorizes a current physical public read.
 
 ### Ordinary Query resource policies
 

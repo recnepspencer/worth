@@ -3,6 +3,7 @@
 mod availability;
 
 mod consumed_output;
+mod managed_source;
 mod managed_unpublished;
 mod managed_views;
 pub(in crate::domain_computation::primary_graph::provider) use managed_unpublished::ManagedUnpublishedAttempt;
@@ -140,6 +141,7 @@ pub(super) fn commit(
             .bind(&mut candidate)
             .map_err(native_output_witness_stop)?;
     }
+    managed_source::bind(&execution, &attempt, &mut candidate)?;
     let prepared_touched_records =
         touched_records::PreparedTouchedRecords::prepare(&candidate, allocation_policy)?;
     let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(),

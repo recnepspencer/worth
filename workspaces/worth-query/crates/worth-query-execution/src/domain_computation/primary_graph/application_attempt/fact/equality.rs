@@ -22,6 +22,10 @@ impl WorthQueryApplicationObservedFact {
         };
         check_request()?;
         let equal = match self {
+            Self::ManagedIndexSource { observation } => observation.remains_equal(runtime, execution, snapshot).map_err(|cause| match cause {
+                super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "managed Source comparison"),
+                _ => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "managed Source comparison"),
+            })?,
             Self::ComponentSelection { observation } => observation.remains_equal(runtime,execution,snapshot,None)
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),

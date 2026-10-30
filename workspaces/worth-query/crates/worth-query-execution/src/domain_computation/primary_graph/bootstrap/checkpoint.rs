@@ -32,6 +32,7 @@ pub(super) fn primary_graph_for_installation(
     layout: super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     relational_runtime: RelationalRuntime,
     invalidation_resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
+    managed_sources: super::super::application_query::managed_index::ManagedSourceInstallation,
     recovered: bool,
 ) -> Result<WorthQueryPrimaryGraph, WorthQueryPrimaryGraphInstallationDenial> {
     if !recovered {
@@ -41,6 +42,7 @@ pub(super) fn primary_graph_for_installation(
             layout,
             relational_runtime,
             invalidation_resources,
+            managed_sources,
         ));
     }
     WorthQueryPrimaryGraph::from_recovered_runtime(
@@ -49,6 +51,7 @@ pub(super) fn primary_graph_for_installation(
         layout,
         relational_runtime,
         invalidation_resources,
+        managed_sources,
     )
     .map_err(checkpoint_denial)
 }

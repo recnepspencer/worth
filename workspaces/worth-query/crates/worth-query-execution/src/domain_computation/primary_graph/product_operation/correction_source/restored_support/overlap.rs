@@ -165,6 +165,7 @@ pub(super) fn select(
             Fact::Aggregate { .. } => return Err(unsupported("Aggregate", fact)),
             Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection", fact)),
             Fact::SourcePublication { .. } => return Err(unsupported("SourcePublication", fact)),
+            Fact::ManagedIndexSource { .. } => return Err(unsupported("ManagedIndexSource", fact)),
             Fact::RetiredOutputEntity { entity_id, .. } => {
                 if entity_id.generation_value() == 0 {
                     return Err(unsupported("retirement-generation", fact));

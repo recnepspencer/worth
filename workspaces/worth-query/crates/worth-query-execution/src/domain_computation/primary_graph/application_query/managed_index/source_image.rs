@@ -51,10 +51,13 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> SourceImage<S, 
     ) -> SourceImageView<'a> {
         SourceImageView {
             owner: self.terminal.session_identity(),
-            tree: &self.tree,
-            order: &self.order,
+            rows: super::source_rows::SourceImageRows::Completed {
+                tree: &self.tree,
+                order: &self.order,
+            },
             governance: &WorthQueryApplicationQueryGovernance::Public,
             bindings,
+            source_budget: None,
         }
     }
 }

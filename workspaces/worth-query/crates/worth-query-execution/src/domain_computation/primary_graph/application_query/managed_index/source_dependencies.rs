@@ -84,10 +84,45 @@ pub(super) fn capture<Q>(
     storage.arc::<ManagedSourceDependencies>()?;
     Ok(Arc::new(ManagedSourceDependencies {
         rows: owners,
-        result_set: Arc::clone(&result_set.source().source_meaning),
+        result_set: Some(Arc::clone(&result_set.source().source_meaning)),
+        maintained: None,
         identity: digest.finalize().into(),
         fact_count,
         field_count,
+        _allocation: Arc::clone(allocation),
+    }))
+}
+
+pub(super) fn capture_maintained(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    observation: Arc<
+        crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,
+    >,
+    allocation: &Arc<SourceFactsAllocation>,
+) -> Result<Arc<ManagedSourceDependencies>, SourceDenial> {
+    let storage = MaterialCompletion::new(execution, allocation);
+    let storage_stop = |cause| SourceDenial::Work(Stop::Storage(cause).into());
+    let rows = worth_execution::ExecutionRequestArrayBuilder::allocate(*execution, 0)
+        .map_err(storage_stop)?
+        .seal()
+        .map_err(storage_stop)?;
+    let mut digest = Sha256::new();
+    storage.work(96)?;
+    digest.update(b"worth-query:maintained-source:v1");
+    digest.update(observation.key().obligation);
+    let scope = observation.key().scope;
+    digest.update(scope.partition_value().to_be_bytes());
+    digest.update(scope.local_slot_value().to_be_bytes());
+    digest.update(scope.generation_value().to_be_bytes());
+    digest.update(observation.native().source_revision().0.to_be_bytes());
+    storage.arc::<ManagedSourceDependencies>()?;
+    Ok(Arc::new(ManagedSourceDependencies {
+        rows,
+        result_set: None,
+        maintained: Some(observation),
+        identity: digest.finalize().into(),
+        fact_count: 1,
+        field_count: 0,
         _allocation: Arc::clone(allocation),
     }))
 }

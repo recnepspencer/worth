@@ -10,6 +10,9 @@ impl WorthQueryApplicationObservedFact {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, WorthQuerySourceCurrentnessFailure> {
         match self {
+            Self::ManagedIndexSource { observation } => {
+                observation.remains_equal(runtime, execution, snapshot)
+            }
             Self::ComponentSelection { observation } => {
                 observation.remains_equal(runtime, execution, snapshot, None)
             }

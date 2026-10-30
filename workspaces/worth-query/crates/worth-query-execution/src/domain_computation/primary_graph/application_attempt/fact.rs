@@ -8,11 +8,15 @@ mod entity_touch;
 mod equality;
 mod indexed_entity_selection;
 mod locator_identity;
+mod managed_source_read;
 mod movement;
 mod retirement_equality;
 mod source_currentness;
 mod source_merge;
 mod source_publication_read;
+pub(in crate::domain_computation::primary_graph) use managed_source_read::{
+    ManagedSourceRead, ManagedSourceReadKey,
+};
 pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
 mod workflow_definition_predecessor;
 mod workflow_history_basis;
@@ -53,6 +57,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
     Aggregate(super::super::aggregate_observation::AggregateKey),
     ComponentSelection(super::super::component_selection::ComponentSelectionKey),
     SourcePublication(SourcePublicationRead),
+    ManagedIndexSource(ManagedSourceReadKey),
     Entity {
         entity: String,
         entity_id: EntityId,
@@ -82,6 +87,10 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+    /// The complete original Source, including nonmatches and empty membership.
+    ManagedIndexSource {
+        observation: std::sync::Arc<ManagedSourceRead>,
+    },
     ComponentSelection {
         observation: std::sync::Arc<super::super::component_selection::ComponentSelection>,
     },

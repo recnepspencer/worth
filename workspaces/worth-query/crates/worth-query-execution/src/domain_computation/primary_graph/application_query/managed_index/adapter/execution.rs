@@ -1,5 +1,9 @@
 //! One erased entrance on the same typed installed provider allocation.
 use super::{InstalledIndexProvider, TypedIndexProvider};
+use crate::domain_computation::primary_graph::application_query::{
+    output_source_observation::SourceQueryReaderAccess, ApplicationQueryNativeAccess,
+    WorthQueryObservedScopeSelector,
+};
 use crate::domain_computation::{
     primary_graph::{
         application_query::managed_index::{
@@ -15,6 +19,7 @@ use crate::domain_computation::{
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::AspectValue;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
@@ -36,8 +41,24 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         request: &'a WorthQueryRequestScope,
         association: &WorthQueryInstalledManagedIndexParent,
         selected: &WorthQuerySelectedProductOperation<'_, S>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
         allocation: &Arc<SourceFactsAllocation>,
+    ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>;
+    #[allow(clippy::too_many_arguments)]
+    fn select_admitted<'a, 'request, 'authority>(
+        self: Arc<Self>,
+        execution: &ExecutionRequest<'request, 'authority>,
+        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        access: &SourceQueryReaderAccess<'_, S>,
+        parent: &'a WorthQueryManagedGraphWorkSession,
+        request: &'a WorthQueryRequestScope,
+        association: &WorthQueryInstalledManagedIndexParent,
+        selector: &WorthQueryObservedScopeSelector,
+        probe: &AspectValue,
+        allocation: &Arc<SourceFactsAllocation>,
+        native: &mut ApplicationQueryNativeAccess<'_>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>;
 }
 
@@ -59,6 +80,8 @@ where
         request: &'a WorthQueryRequestScope,
         association: &WorthQueryInstalledManagedIndexParent,
         selected: &WorthQuerySelectedProductOperation<'_, S>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
         allocation: &Arc<SourceFactsAllocation>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial> {
@@ -66,6 +89,40 @@ where
             return Err(Denial::ForeignAssociation);
         }
         let adapter: Arc<dyn InstalledIndexProvider<S, I>> = self;
+        let graph = application
+            .runtime
+            .primary_graph()
+            .ok_or(Denial::ForeignAssociation)?;
+        if graph
+            .layout
+            .managed_source(&adapter.installed().definition().parts().name)
+            .is_some()
+        {
+            let shared = selected
+                .retain_selection(execution)
+                .map_err(Denial::Product)?
+                .prepare_shared_query_basis()
+                .map_err(|(_, cause)| Denial::NativeAdmission(cause))?;
+            let access = SourceQueryReaderAccess {
+                application,
+                shared: &shared,
+                principal: external,
+                request,
+            };
+            return super::super::maintained_read::select::<S, I>(
+                execution,
+                application,
+                &access,
+                parent,
+                request,
+                association,
+                selector,
+                &adapter,
+                probe,
+                allocation,
+                &mut ApplicationQueryNativeAccess::acquire(),
+            );
+        }
         let candidate =
             ManagedIndexState::new(execution, association.clone(), adapter, parent, selected)
                 .map_err(Denial::Lifecycle)?;
@@ -88,6 +145,38 @@ where
             state,
             probe,
             allocation,
+        )
+    }
+
+    fn select_admitted<'a, 'request, 'authority>(
+        self: Arc<Self>,
+        execution: &ExecutionRequest<'request, 'authority>,
+        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        access: &SourceQueryReaderAccess<'_, S>,
+        parent: &'a WorthQueryManagedGraphWorkSession,
+        request: &'a WorthQueryRequestScope,
+        association: &WorthQueryInstalledManagedIndexParent,
+        selector: &WorthQueryObservedScopeSelector,
+        probe: &AspectValue,
+        allocation: &Arc<SourceFactsAllocation>,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+    ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial> {
+        if !self.installed.admits_association(association) {
+            return Err(Denial::ForeignAssociation);
+        }
+        let adapter: Arc<dyn InstalledIndexProvider<S, I>> = self;
+        super::super::maintained_read::select::<S, I>(
+            execution,
+            application,
+            access,
+            parent,
+            request,
+            association,
+            selector,
+            &adapter,
+            probe,
+            allocation,
+            native,
         )
     }
 }

@@ -192,6 +192,14 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 provider: operational.provider().to_owned(),
                 cost_posture: operational.cost_posture(),
             });
+        self.members
+            .extend(definition.managed_index_sources().map(|requirement| {
+                ApplicationSchemaMember::InvariantManagedIndexSource {
+                    invariant: reference.identifier().to_owned(),
+                    execution_point: definition.execution_point(),
+                    requirement,
+                }
+            }));
         self
     }
 

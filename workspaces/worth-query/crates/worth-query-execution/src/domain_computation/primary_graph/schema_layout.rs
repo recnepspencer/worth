@@ -21,6 +21,7 @@ mod equality_fields;
 mod field_optionality;
 mod installation_primitives;
 mod kind_lookup;
+mod managed_source;
 mod member_domain;
 pub(in crate::domain_computation::primary_graph) use member_domain::MemberDomainBinding;
 mod native_outputs;
@@ -82,6 +83,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     component_sets: BTreeMap<String, ComponentSetLayout>,
     derived_relations: BTreeMap<String, derived_relation::DerivedRelationLayout>,
+    managed_sources: BTreeMap<String, worth_relational::facade::runtime::ManagedIndexSourceProgram>,
     projected_domains: BTreeMap<String, projected_member_domain::ProjectedMemberDomainLayout>,
     application_entity_kinds: BTreeSet<KindId>,
     signing: signed_entities::SignedEntityLayout,
@@ -236,6 +238,14 @@ impl WorthQueryPrimaryGraphLayout {
         let capability_grant_joins =
             lower_capability_grant_joins(schema, &entity_kinds, &relation_layouts)?;
         let fields = lower_fields(schema, &entity_kinds)?;
+        let (registry, managed_sources) = managed_source::lower(
+            registry,
+            schema,
+            (&schema_id, schema_version_id),
+            &entity_kinds,
+            &relation_kinds,
+            &fields,
+        )?;
         let authorization_selectors =
             authorization_selectors::WorthQueryAuthorizationSelectors::lower(schema);
         let unique_fields = unique_fields::WorthQueryUniqueFieldNames::lower(&fields);
@@ -251,6 +261,7 @@ impl WorthQueryPrimaryGraphLayout {
                 relation_kinds: relation_layouts,
                 component_sets,
                 derived_relations,
+                managed_sources,
                 projected_domains,
                 application_entity_kinds,
                 signing,
@@ -303,14 +314,6 @@ impl WorthQueryPrimaryGraphLayout {
     ) -> Option<&WorthQueryPrimaryFieldLayout> {
         self.fields
             .get(&(entity.to_owned(), aspect.to_owned(), field.to_owned()))
-    }
-
-    pub(in crate::domain_computation) fn is_application_entity_kind(&self, kind: KindId) -> bool {
-        self.application_entity_kinds.contains(&kind)
-    }
-
-    pub(in crate::domain_computation) fn is_application_relation_kind(&self, kind: KindId) -> bool {
-        self.application_relation_kinds.contains(&kind)
     }
 
     #[cfg(test)]

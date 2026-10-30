@@ -62,6 +62,20 @@ pub struct CustomInvariantProvenance {
 }
 
 impl<'runtime> CustomInvariantExecutionContext<'runtime> {
+    /// Reborrow this observation and its original request for one consumption.
+    /// The higher-ranked callback cannot return borrowed Execution authority.
+    pub fn consume_managed_index_source<R>(
+        &self,
+        prepared: &crate::validation::candidate_source::PreparedManagedIndexSourceRead,
+        consume: impl for<'loan> FnOnce(
+            crate::validation::candidate_source::ManagedIndexSourceRead<'loan>,
+            worth_execution::ExecutionRequest<'loan, 'loan>,
+        ) -> R,
+    ) -> Result<R, crate::validation::candidate_source::ManagedIndexSourcePreparationDenial> {
+        let source = self.read_managed_index_source(prepared)?;
+        Ok(consume(source, self.execution))
+    }
+
     pub(crate) fn new(
         runtime: &InvariantRuntimeView<'runtime>,
         execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,

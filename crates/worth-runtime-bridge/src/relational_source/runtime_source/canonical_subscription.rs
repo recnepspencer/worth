@@ -104,6 +104,20 @@ impl RelationalBridgeCanonicalSubscription {
 }
 
 impl RelationalPublicationCompanion for CanonicalEnvelopeDelivery {
+    fn prepare_managed_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &worth_relational::facade::runtime::ManagedIndexSourcePreparation<'_>,
+    ) -> Result<
+        Vec<worth_relational::facade::runtime::PreparedManagedIndexSourceRoot>,
+        worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
+    > {
+        if source.selected_basis().identity().runtime_instance_id() != self.runtime_instance_id {
+            return Err(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::ForeignSource);
+        }
+        self.consumer.prepare_managed_source(execution, source)
+    }
+
     fn prepare(
         &self,
         context: &mut PublicationCompanionPreflight<'_>,

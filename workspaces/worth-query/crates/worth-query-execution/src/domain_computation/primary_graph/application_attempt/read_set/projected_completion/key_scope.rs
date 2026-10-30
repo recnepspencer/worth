@@ -11,7 +11,7 @@ pub(super) fn key_entities_are_in_scope(
         WorthQueryApplicationFactKey::StructuralWalk(key) => {
             key.roots().iter().all(|id| scope.admits(*id))
         }
-        WorthQueryApplicationFactKey::SourcePublication(_) => false,
+        WorthQueryApplicationFactKey::SourcePublication(_) | WorthQueryApplicationFactKey::ManagedIndexSource(_) => false,
         WorthQueryApplicationFactKey::Entity { entity_id, .. }
         | WorthQueryApplicationFactKey::AspectPresence { entity_id, .. }
         | WorthQueryApplicationFactKey::Field { entity_id, .. } => scope.admits(*entity_id),

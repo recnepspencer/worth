@@ -19,6 +19,7 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{identity::EntityId, transactions::RelationalExecutionDenialCause};
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIncarnation};
 
+mod maintained;
 mod publication;
 mod transitions;
 
@@ -46,6 +47,7 @@ pub(in crate::domain_computation::primary_graph::application_query) enum WorthQu
     EpochExhausted,
     StaleImage,
     NotReady,
+    InvariantOwned,
     Session(WorthQueryManagedIndexSessionDenial),
 }
 impl From<RelationalExecutionDenialCause> for WorthQueryManagedIndexLifecycleDenial {
@@ -67,7 +69,11 @@ struct Retained<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
     epoch: u64,
     current: CompositeCommitIdentity,
     status: WorthQueryManagedIndexLifecycle,
-    root: Option<Arc<ReadyIndex<S, I>>>,
+    root: Option<RetainedIndexImage<S, I>>,
+}
+enum RetainedIndexImage<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
+    Completed(Arc<ReadyIndex<S, I>>),
+    Maintained(Arc<worth_relational::facade::runtime::ManagedIndexSourceObservation>),
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ManagedIndexState<

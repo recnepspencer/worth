@@ -28,6 +28,8 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ManagedIndexProviderMeaningMismatch,
     /// A managed index was configured more than once.
     DuplicateManagedIndexProvider,
+    /// Provider configuration was already shared with installed Source lowering.
+    ManagedIndexProviderConfigurationSealed,
     /// A binding belongs to a different schema.
     BindingSchemaMismatch,
     /// Two bootstrap principals share an external identity.
@@ -131,6 +133,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignInvariantFactory,
     /// An invariant factory does not match its invariant's declared meaning.
     InvariantFactoryMeaningMismatch,
+    UnsupportedInvariantSource,
     /// An invariant factory rejected installation.
     InvariantFactoryRejected,
     /// A program-rostered rule's declared work budget cannot carry the platform

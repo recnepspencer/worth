@@ -5,11 +5,12 @@ use std::sync::{
     Arc, Mutex,
 };
 use worth_query_consumer_values::{
-    build_prefix_tree, query_prefix_tree, PrefixIndexDenial, PrefixNode,
+    insert_prefix_source, query_prefix_tree, remove_prefix_source, PrefixIndexDenial, PrefixNode,
 };
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
 
+#[path = "prefix/storage.rs"]
 mod storage;
 pub struct PrefixIndex;
 // compiled-example: begin
@@ -22,13 +23,14 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const PROVIDER_VERSION: u32 = 1;
 }
 // compiled-example: end
-pub type Node = PrefixNode<WorthQueryManagedIndexNodeId>;
+pub type Node = PrefixNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
 pub type Stop = WorthQueryManagedIndexProviderStop<PrefixIndexDenial>;
 #[derive(Default)]
 pub struct Calls {
     pub capacity: AtomicUsize,
     pub builds: AtomicUsize,
     pub queries: AtomicUsize,
+    pub updates: AtomicUsize,
     pub canonical_rows: AtomicUsize,
     // Consumer fixture observation, invoked only after a genuine first node write.
     pub after_first_node: Mutex<Option<Box<dyn FnOnce() + Send>>>,
@@ -72,8 +74,8 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
             sources.len() <= 8,
             "the literal fixture observation is finite"
         );
-        for ordinal in 0..sources.len() {
-            let (_, row) = sources.at(ordinal)?;
+        for (ordinal, slot) in sources.slots().enumerate() {
+            let row = sources.get(slot?)?;
             let actual = row.entity_id();
             assert!(previous.is_none_or(|previous| previous < actual));
             previous = Some(actual);
@@ -84,15 +86,59 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
             );
         }
         self.0.canonical_rows.store(sources.len(), Ordering::SeqCst);
-        build_prefix_tree(
-            0..sources.len(),
-            &mut storage::Build {
-                sources,
-                nodes,
-                control,
-                after_first_node: &self.0.after_first_node,
-            },
-        )
+        let mut storage = storage::Build {
+            sources,
+            nodes,
+            control,
+            after_first_node: &self.0.after_first_node,
+        };
+        let mut root = None;
+        for slot in sources.slots() {
+            root = Some(insert_prefix_source(root, slot?, &mut storage)?);
+        }
+        Ok(root)
+    }
+    fn update(
+        &self,
+        before: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        after: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        changes: &[WorthQueryManagedIndexSourceChange],
+        mut root: Option<WorthQueryManagedIndexNodeId>,
+        nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
+        self.0.updates.fetch_add(1, Ordering::SeqCst);
+        // All removals see the committed value order; only then may proposed
+        // values participate. The pages belong to this isolated staged edit.
+        for change in changes {
+            if let Some(slot) = change.before() {
+                root = remove_prefix_source(
+                    root,
+                    slot,
+                    &mut storage::Build {
+                        sources: before,
+                        nodes,
+                        control,
+                        after_first_node: &self.0.after_first_node,
+                    },
+                )?;
+            }
+        }
+        for change in changes {
+            if let Some(slot) = change.after() {
+                root = Some(insert_prefix_source(
+                    root,
+                    slot,
+                    &mut storage::Build {
+                        sources: after,
+                        nodes,
+                        control,
+                        after_first_node: &self.0.after_first_node,
+                    },
+                )?);
+            }
+        }
+        Ok(root)
     }
     fn query(
         &self,
