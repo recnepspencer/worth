@@ -88,14 +88,17 @@ where
     };
     let budget = source.read_budget();
     let probe = I::ProbeBinding::encode(probe).map_err(Denial::Probe)?;
-    let slots = root
+    let frame = crate::domain_computation::primary_graph::access_strategy::coverage::CoverageFrame::invariant(
+        root.rows.view(&root.bindings, Some(&budget)), &root.nodes, root, &probe, source, posture,
+    );
+    let selection = root
         .adapter
-        .candidates(
-            execution,
-            root.rows.view(&root.bindings, Some(&budget)),
-            root.nodes.as_ref(),
-            &probe,
-        )
+        .candidates(execution, frame)
         .map_err(Denial::Provider)?;
-    projection::read::<S, I>(execution, source, program, root, &rows, slots.elements())
+    let selected = super::invocation::controlled(execution, |control| {
+        let control = control.under_source(&budget);
+        selection.receive(frame, root.adapter.coverage_authority(), true, &control)
+    })
+    .map_err(Denial::Provider)?;
+    projection::read::<S, I>(execution, source, program, root, &rows, selected)
 }

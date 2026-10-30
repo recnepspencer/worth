@@ -10,7 +10,7 @@ pub(super) fn read<S, I>(
     program: &worth_relational::facade::runtime::ManagedIndexSourceProgram,
     root: &ManagedSourceRoot<S, I>,
     rows: &ManagedIndexSourceRows<'_>,
-    slots: &[WorthQueryManagedIndexSourceSlot],
+    selected: crate::domain_computation::primary_graph::access_strategy::coverage::ReceivedSelection,
 ) -> Result<Vec<ManagedSourceValue<S, I>>, Denial>
 where
     S: ApplicationSchema,
@@ -18,6 +18,9 @@ where
     ManagedSourceValue<S, I>:
         WorthQueryApplicationProjection<S, <I::SourceBinding as ApplicationQueryBinding<S>>::Query>,
 {
+    let slots = selected
+        .complete_slots()
+        .map_err(|cause| Denial::Provider(cause.into()))?;
     let budget = source.read_budget();
     let mut output = reserve_output::<ManagedSourceValue<S, I>>(&budget, slots.len())?;
     decoded_provider(execution, &root.bindings, |control, decode| {

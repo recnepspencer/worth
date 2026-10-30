@@ -17,6 +17,18 @@ pub(in crate::domain_computation) struct SourceFactsAllocation {
 }
 
 impl SourceFactsAllocation {
+    pub(in crate::domain_computation::primary_graph) fn claim_arc<T>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Cause> {
+        let bytes = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<T>())
+            .ok()
+            .map(|(layout, _)| layout.pad_to_align().size())
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or(Cause::ChargedBytesOverflow)?;
+        self.claim(execution, bytes)
+    }
     pub(in crate::domain_computation::primary_graph) fn has_payment(&self) -> bool {
         self.backing
             .lock()

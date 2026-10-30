@@ -56,13 +56,7 @@ impl<'a, 'request, 'authority> MaterialCompletion<'a, 'request, 'authority> {
     pub(in crate::domain_computation::primary_graph::application_query) fn arc<T>(
         &self,
     ) -> Result<(), Cause> {
-        let bytes = std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<T>())
-            .ok()
-            .map(|(layout, _)| layout.pad_to_align().size())
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(Cause::ChargedBytesOverflow)?;
-        self.bytes(bytes)
+        self.allocation.claim_arc::<T>(self.execution)
     }
     pub(super) fn text(&self, text: &str) -> Result<(), Cause> {
         let bytes = u64::try_from(text.len()).map_err(|_| Cause::ChargedBytesOverflow)?;

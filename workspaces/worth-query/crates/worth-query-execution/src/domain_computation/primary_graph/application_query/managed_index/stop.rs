@@ -4,6 +4,9 @@ use worth_execution::{ExecutionRequestArrayDenial, WorkCeilingDenial};
 /// Why controlled index work stopped before producing a usable answer.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexStop {
+    Coverage(worth_proof::ManagedIndexCoverageDenial),
+    ForeignCoverage,
+    IncompleteCoverage,
     MembershipUnavailable,
     IncompleteTraversal,
     SummaryUnavailable,

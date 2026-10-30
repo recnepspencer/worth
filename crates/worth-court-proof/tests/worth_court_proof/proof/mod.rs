@@ -4,6 +4,7 @@ pub(crate) mod blob_release_proof_contract;
 pub(crate) mod core_artifact_and_proof_substrate_certification;
 #[path = "dx_entrypoint_certification/mod.rs"]
 pub(crate) mod dx_entrypoint_certification;
+mod managed_coverage;
 #[path = "supported_public_workflows/mod.rs"]
 pub(crate) mod supported_public_workflows;
 #[path = "upfront_contract_vocabulary_certification/mod.rs"]

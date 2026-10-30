@@ -78,6 +78,7 @@ pub(super) fn select(
     source.set_managed_index(DeclaredManagedIndexSelection {
         access: Arc::clone(rows.association().access_contract()),
         dependencies: Arc::clone(rows.dependencies()),
+        coverage: rows.coverage.clone(),
     });
     source.observe_entity(execution, plan.root)?;
     let mut frontier = BTreeSet::new();

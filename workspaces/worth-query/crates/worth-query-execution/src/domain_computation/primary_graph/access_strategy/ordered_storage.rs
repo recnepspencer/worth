@@ -1,8 +1,14 @@
 //! Every copied ordered cell retains its original SDK grant, never a payer chain.
-use super::{Control, Stop};
+use crate::domain_computation::primary_graph::application_query::managed_index::{
+    WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexStop as Stop,
+};
 use worth_execution::{ExecutionOrderedMap as Map, ExecutionRequest};
 
-pub(super) fn lookup(control: &Control<'_>, count: usize, key_bytes: usize) -> Result<(), Stop> {
+pub(in crate::domain_computation::primary_graph) fn lookup(
+    control: &Control<'_>,
+    count: usize,
+    key_bytes: usize,
+) -> Result<(), Stop> {
     let levels = usize::BITS
         - count
             .checked_add(1)
@@ -15,7 +21,7 @@ pub(super) fn lookup(control: &Control<'_>, count: usize, key_bytes: usize) -> R
         .ok_or_else(|| control.refuse(Stop::CapacityOverflow))?;
     control.checkpoint(work)
 }
-pub(super) fn insert<K: Ord + Clone, V: Clone>(
+pub(in crate::domain_computation::primary_graph) fn insert<K: Ord + Clone, V: Clone>(
     map: &mut Map<K, V>,
     key: &K,
     value: &V,
@@ -32,7 +38,7 @@ pub(super) fn insert<K: Ord + Clone, V: Clone>(
     map.insert_cloned_native_for_request(key, value, *execution)
         .map_err(|cause| control.refuse(cause.into()))
 }
-pub(super) fn remove<K: Ord, V>(
+pub(in crate::domain_computation::primary_graph) fn remove<K: Ord, V>(
     map: &mut Map<K, V>,
     key: &K,
     execution: &ExecutionRequest<'_, '_>,

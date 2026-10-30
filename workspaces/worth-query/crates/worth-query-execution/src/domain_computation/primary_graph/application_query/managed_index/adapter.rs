@@ -1,9 +1,13 @@
 //! Installed typed callbacks; root erasure stays private to their actual adapter.
 use super::invocation::{decoded_provider, provider_result};
 use super::*;
+use crate::domain_computation::primary_graph::access_strategy::coverage::{
+    CandidateSelection, CoverageFrame, CoverageVerifier, RecordedFrontier,
+};
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity as Session;
 use std::{any::Any, sync::Arc};
-use worth_execution::{ExecutionArray, ExecutionRequest};
+use worth_execution::ExecutionRequest;
+use worth_proof::ManagedCoverageDisposition as Disposition;
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
@@ -18,19 +22,18 @@ where
     I: ApplicationManagedIndexBinding<S>,
 {
     fn installed(&self) -> &WorthQueryInstalledManagedIndex<S, I>;
+    fn coverage_authority(&self) -> &worth_proof::ManagedIndexCoverageAuthority;
     fn build(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         build_session: Session,
         image: source_rows::SourceImageView<'_>,
     ) -> Result<Arc<dyn Any + Send + Sync>, WorthQueryManagedIndexWorkDenial>;
-    fn candidates(
+    fn candidates<'frame, 'loan>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        image: source_rows::SourceImageView<'_>,
-        nodes: &(dyn Any + Send + Sync),
-        probe: &worth_foundational::facade::AspectValue,
-    ) -> Result<ExecutionArray<WorthQueryManagedIndexSourceSlot>, WorthQueryManagedIndexWorkDenial>;
+        frame: CoverageFrame<'frame, 'loan>,
+    ) -> Result<CandidateSelection<'frame, 'loan>, WorthQueryManagedIndexWorkDenial>;
     fn update(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -45,6 +48,7 @@ pub(super) struct TypedIndexProvider<S: ApplicationSchema, I: ApplicationManaged
 {
     pub(super) installed: WorthQueryInstalledManagedIndex<S, I>,
     pub(super) provider: P,
+    pub(super) coverage: CoverageVerifier,
     pub(super) bindings:
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 }
@@ -58,6 +62,9 @@ where
     fn installed(&self) -> &WorthQueryInstalledManagedIndex<S, I> {
         &self.installed
     }
+    fn coverage_authority(&self) -> &worth_proof::ManagedIndexCoverageAuthority {
+        self.coverage.authority()
+    }
     fn build(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -68,14 +75,14 @@ where
             build::build::<S, I, P>(execution, &self.provider, build_session, image)?;
         node_backing::retain::<S, I, P>(execution, nodes, structure).map_err(Into::into)
     }
-    fn candidates(
+    fn candidates<'frame, 'loan>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        image: source_rows::SourceImageView<'_>,
-        nodes: &(dyn Any + Send + Sync),
-        probe: &worth_foundational::facade::AspectValue,
-    ) -> Result<ExecutionArray<WorthQueryManagedIndexSourceSlot>, WorthQueryManagedIndexWorkDenial>
-    {
+        frame: CoverageFrame<'frame, 'loan>,
+    ) -> Result<CandidateSelection<'frame, 'loan>, WorthQueryManagedIndexWorkDenial> {
+        let image = frame.image;
+        let probe = frame.probe;
+        let payload = frame.nodes;
         decoded_provider(execution, image.bindings, |control, session| {
             let source_control = image
                 .source_budget
@@ -90,7 +97,8 @@ where
                             .expect("failed managed probe latches its refusal"),
                     ))
                 })?;
-            let nodes = nodes
+            let nodes = payload
+                .as_ref()
                 .downcast_ref::<node_backing::ProviderNodeBacking<S, I, P>>()
                 .ok_or_else(|| {
                     WorthQueryManagedIndexWorkDenial::Controlled(
@@ -109,6 +117,7 @@ where
             }
             let mut candidates =
                 WorthQueryManagedIndexCandidateWriter::allocate(execution, &source, control)?;
+            let mut frontier = RecordedFrontier::new();
             if complete {
                 let tree = nodes.structure.as_ref().ok_or_else(|| {
                     control.refuse(WorthQueryManagedIndexStop::MembershipUnavailable)
@@ -136,6 +145,12 @@ where
                                 self.provider
                                     .summary_may_match(summary, &sources, &probe, control),
                             )? {
+                                frontier.record(
+                                    execution,
+                                    ordinal,
+                                    Disposition::Pruned,
+                                    control,
+                                )?;
                                 return Ok(false);
                             }
                         }
@@ -149,6 +164,18 @@ where
                             if matches {
                                 candidates.emit(slot)?;
                             }
+                            frontier.record(
+                                execution,
+                                ordinal,
+                                if matches {
+                                    Disposition::Matched
+                                } else {
+                                    Disposition::Excluded
+                                },
+                                control,
+                            )?;
+                        } else {
+                            frontier.record(execution, ordinal, Disposition::Branch, control)?;
                         }
                         Ok(true)
                     },
@@ -162,7 +189,20 @@ where
                 )?;
             }
             source.check()?;
-            candidates.finish(execution).map_err(Into::into)
+            let slots = candidates.finish(execution)?;
+            if complete {
+                self.coverage.complete(
+                    execution,
+                    frame,
+                    nodes.structure.as_ref().unwrap(),
+                    frontier,
+                    I::MEMBERSHIP == Membership::CheckedSummarySourceTree,
+                    slots,
+                    control,
+                )
+            } else {
+                Ok(CandidateSelection::conservative(frame, slots))
+            }
         })
     }
     fn update(

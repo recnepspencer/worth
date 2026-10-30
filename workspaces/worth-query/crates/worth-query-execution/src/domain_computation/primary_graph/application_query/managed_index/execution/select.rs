@@ -76,18 +76,24 @@ where
         Arc::clone(&root.source.terminal),
         allocation,
     )?;
-    let (slots, callback) = session
-        .call(|actual| {
-            state.adapter.candidates(
-                actual,
-                root.source
-                    .view(application.installed_schema().value_bindings()),
-                material.nodes.as_ref(),
-                probe,
-            )
-        })
+    let frame =
+        crate::domain_computation::primary_graph::access_strategy::coverage::CoverageFrame::public(
+            root.source
+                .view(application.installed_schema().value_bindings()),
+            &material.nodes,
+            root.source.material.as_ref(),
+            probe,
+            parent,
+        );
+    let (selection, callback) = session
+        .call(|actual| state.adapter.candidates(actual, frame))
         .map_err(Denial::Session)?
         .map_err(Denial::Work)?;
+    let slots = super::super::invocation::controlled(execution, |control| selection.receive(
+        frame, state.adapter.coverage_authority(),
+        association.definition().parts().membership != worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::Candidates,
+        control,
+    )).map_err(Denial::Work)?;
     let proof = session.complete(callback).map_err(Denial::Session)?;
     ManagedSelectionLease::issue(proof, parent, request, state, root, epoch, slots)
         .map_err(Denial::Selection)

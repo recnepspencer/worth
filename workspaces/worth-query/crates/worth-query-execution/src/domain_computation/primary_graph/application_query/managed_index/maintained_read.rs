@@ -80,17 +80,23 @@ where
         Arc::clone(&source),
         allocation,
     )?;
-    let (slots, callback) = purpose
-        .call(|actual| {
-            adapter.candidates(
-                actual,
-                root.rows.view(&root.bindings, None),
-                root.nodes.as_ref(),
-                probe,
-            )
-        })
+    let frame =
+        crate::domain_computation::primary_graph::access_strategy::coverage::CoverageFrame::public(
+            root.rows.view(&root.bindings, None),
+            &root.nodes,
+            root,
+            probe,
+            parent,
+        );
+    let (selection, callback) = purpose
+        .call(|actual| adapter.candidates(actual, frame))
         .map_err(Denial::Session)?
         .map_err(Denial::Work)?;
+    let slots = super::invocation::controlled(execution, |control| selection.receive(
+        frame, adapter.coverage_authority(),
+        association.definition().parts().membership != worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::Candidates,
+        control,
+    )).map_err(Denial::Work)?;
     let proof = purpose.complete(callback).map_err(Denial::Session)?;
     let storage = MaterialCompletion::new(execution, allocation);
     storage.arc::<ManagedSourceRead>()?;
@@ -118,6 +124,7 @@ where
         slots,
         dependencies,
         allocation,
+        adapter.coverage_authority().clone(),
     )
     .map_err(Denial::Selection)
 }

@@ -57,12 +57,20 @@ impl std::fmt::Debug for ManagedSourceDependencies {
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph::application_query) struct DeclaredManagedIndexSelection
 {
+    pub(in crate::domain_computation::primary_graph::application_query) coverage: Option<
+        Arc<crate::domain_computation::primary_graph::access_strategy::coverage::RetainedCoverage>,
+    >,
     pub(in crate::domain_computation::primary_graph::application_query) access:
         Arc<WorthQueryInstalledManagedIndexAccessContract>,
     pub(in crate::domain_computation::primary_graph::application_query) dependencies:
         Arc<ManagedSourceDependencies>,
 }
 impl DeclaredManagedIndexSelection {
+    fn coverage_is_present(&self) -> bool {
+        self.access.meaning().definition().parts().membership ==
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::Candidates
+            || self.coverage.is_some()
+    }
     pub(in crate::domain_computation::primary_graph::application_query) const fn descriptor_work(
     ) -> u64 {
         b"declared-managed-index:v1".len() as u64 + 64
@@ -89,6 +97,9 @@ impl DeclaredManagedIndexSelection {
         >,
     ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         control()?;
+        if !self.coverage_is_present() || !other.coverage_is_present() {
+            return Ok(false);
+        }
         if self.dependencies.maintained != other.dependencies.maintained {
             return Ok(false);
         }
@@ -128,7 +139,10 @@ impl DeclaredManagedIndexSelection {
 }
 impl PartialEq for DeclaredManagedIndexSelection {
     fn eq(&self, other: &Self) -> bool {
-        self.access.graph_obligations().identity() == other.access.graph_obligations().identity()
+        self.coverage_is_present()
+            && other.coverage_is_present()
+            && self.access.graph_obligations().identity()
+                == other.access.graph_obligations().identity()
             && self.dependencies.maintained == other.dependencies.maintained
             && self.dependencies.identity == other.dependencies.identity
             && self.dependencies.rows.len() == other.dependencies.rows.len()

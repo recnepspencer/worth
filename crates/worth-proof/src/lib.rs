@@ -12,7 +12,13 @@ pub mod contracts;
 mod dx;
 mod effect;
 mod linear;
+mod managed_access;
 mod managed_source;
+pub use managed_access::{
+    AdmittedManagedIndexCoverage, BorrowedManagedCoverageFrame, ManagedCoverageDisposition,
+    ManagedCoverageFrontier, ManagedCoverageRegion, ManagedCoverageStep,
+    ManagedIndexCoverageAuthority, ManagedIndexCoverageDenial, ManagedIndexCoverageIssuer,
+};
 mod phase;
 pub mod prelude;
 mod proof;

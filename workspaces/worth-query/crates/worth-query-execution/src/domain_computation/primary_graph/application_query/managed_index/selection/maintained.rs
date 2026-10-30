@@ -6,14 +6,20 @@ use worth_relational::facade::runtime::ManagedIndexSourceObservation;
 struct MaintainedCurrency {
     association: WorthQueryInstalledManagedIndexParent,
     observation: Arc<ManagedIndexSourceObservation>,
+    authority: worth_proof::ManagedIndexCoverageAuthority,
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl RootCurrency for MaintainedCurrency {
-    fn current(&self, association: &WorthQueryInstalledManagedIndexParent) -> bool {
+    fn current(
+        &self,
+        association: &WorthQueryInstalledManagedIndexParent,
+        coverage: Option<&RetainedCoverage>,
+    ) -> bool {
         // The Native image belongs to the Source completion's exact selected
         // World basis. Live public currentness is checked by the real Parent
         // and Source sessions; Native may already have a pending successor.
         self.association.same_association(association)
+            && coverage.is_none_or(|c| c.admits(&self.authority))
     }
 }
 impl<'parent, 'request, 'authority> ManagedSelectionLease<'parent, 'request, 'authority> {
@@ -26,15 +32,17 @@ impl<'parent, 'request, 'authority> ManagedSelectionLease<'parent, 'request, 'au
         source: Arc<WorthQueryCompletedSourceRead>,
         observation: Arc<ManagedIndexSourceObservation>,
         rows: &PersistentSourceRows,
-        slots: ExecutionArray<Slot>,
+        selected: ReceivedSelection,
         dependencies: Arc<ManagedSourceDependencies>,
         allocation: &Arc<SourceFactsAllocation>,
+        authority: worth_proof::ManagedIndexCoverageAuthority,
     ) -> Result<Self, SelectionDenial> {
         proof.consult().map_err(SelectionDenial::Session)?;
         if !proof.admits(parent, request, association, &source) {
             return Err(SelectionDenial::ForeignSelection);
         }
         let execution = proof.execution();
+        let (slots, coverage) = selected.into_parts();
         let roots = controlled(&execution, |control| {
             let mut output = ExecutionRequestArrayBuilder::allocate(execution, slots.len())
                 .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
@@ -67,9 +75,11 @@ impl<'parent, 'request, 'authority> ManagedSelectionLease<'parent, 'request, 'au
                 scope,
                 roots,
                 dependencies,
+                coverage,
                 currency: Arc::new(MaintainedCurrency {
                     association: association.clone(),
                     observation,
+                    authority,
                     _allocation: Arc::clone(allocation),
                 }),
             },

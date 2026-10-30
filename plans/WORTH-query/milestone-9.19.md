@@ -1629,6 +1629,14 @@ without a Node write. Independent small locality and hostile courts pass; the
 new profile still needs large-scale qualification. Retained predicate routing,
 tracked exact refinement and protected continuation/disclosure work remain open.
 
+The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
+records and verifies actual visited/pruned cuts and their matched-slot bijection.
+Public and maintained selection receivers and Native invariant projections consume
+the private executable's coverage with actual borrowed invocation correspondence.
+Public Source observations retain the frontier without making physical rebuild
+shape part of semantic Source equality. This supplies no retained reverse routing,
+same-image registration, exact refinement or narrowing authority.
+
 **Owner:** Query access admission, managed dependencies and provider/domain refinement.
 **Depends on:** Phases 1–2 and existing installed capability/disclosure admission.
 **Result:** managed access returns complete admitted candidates and the evidence

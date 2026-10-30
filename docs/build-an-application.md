@@ -5686,6 +5686,15 @@ maintained prefix/geometry compositions use this same strategy. Prefix summaries
 keep exact UTF-8 extrema; geometry summaries use the numerical owner's closed
 bounds and union, without Query-specific tolerances or field policy.
 
+Both complete strategies record the actual visited regions and checked prunes.
+Before releasing slots, Query verifies that this cut covers the checked tree and
+that matched Source occurrences correspond exactly to those slots. The receiver
+checks the actual Source/root pair, probe and read session. Public selections
+retain the verified cut with their Source observation; Native committed and
+proposed invariant reads require complete evidence in their own read posture.
+An interrupted or incomplete cut refuses. Physical traversal shape does not
+change semantic Source equality after an index rebuild.
+
 Tracked exact refinement, retained predicate routing, same-image registration and
 protected continuation qualification remain unfinished Phase 3 work. No verified
 narrowed footprint is issued by either complete traversal strategy.

@@ -35,7 +35,7 @@ pub(super) enum SourceImageRows<'a> {
 
 /// Borrowed only from the private completed source owner, never from application values.
 #[derive(Clone, Copy)]
-pub(super) struct SourceImageView<'a> {
+pub(in crate::domain_computation::primary_graph) struct SourceImageView<'a> {
     pub(super) owner: WorthQueryGraphWorkSessionIdentity,
     pub(super) rows: SourceImageRows<'a>,
     pub(super) governance: &'a WorthQueryApplicationQueryGovernance,
@@ -201,6 +201,27 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
 }
 
 impl SourceImageView<'_> {
+    pub(in crate::domain_computation::primary_graph) fn same_image(&self, other: &Self) -> bool {
+        if self.owner != other.owner || !std::ptr::eq(self.bindings, other.bindings) {
+            return false;
+        }
+        match (self.rows, other.rows) {
+            (
+                SourceImageRows::Completed {
+                    tree: left,
+                    order: a,
+                },
+                SourceImageRows::Completed {
+                    tree: right,
+                    order: b,
+                },
+            ) => std::ptr::eq(left, right) && std::ptr::eq(a, b),
+            (SourceImageRows::Maintained(left), SourceImageRows::Maintained(right)) => {
+                std::ptr::eq(left, right)
+            }
+            _ => false,
+        }
+    }
     pub(super) fn len(&self) -> usize {
         match self.rows {
             SourceImageRows::Completed { order, .. } => order.len(),

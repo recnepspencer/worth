@@ -27,6 +27,7 @@ mod source_dependencies;
 mod source_image;
 mod source_order;
 mod source_rows;
+pub(in crate::domain_computation::primary_graph) use source_rows::SourceImageView;
 mod source_structure;
 pub(in crate::domain_computation::primary_graph) use source::{
     initialization::{

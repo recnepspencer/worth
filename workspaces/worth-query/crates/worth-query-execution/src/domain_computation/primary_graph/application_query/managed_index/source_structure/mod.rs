@@ -1,7 +1,7 @@
 //! Exact Source structure stays inside the existing provider/root custody pair.
 mod admission;
 mod capture;
-mod maps;
+use crate::domain_computation::primary_graph::access_strategy::ordered_storage as maps;
 mod region;
 mod summary;
 mod summary_frontier;
@@ -27,6 +27,14 @@ pub(in crate::domain_computation::primary_graph) struct SourceTree {
     owner: WorthQueryGraphWorkSessionIdentity,
 }
 impl SourceTree {
+    pub(in crate::domain_computation::primary_graph) fn source_node(
+        &self,
+        slot: Slot,
+        control: &Control<'_>,
+    ) -> Result<Option<usize>, Stop> {
+        maps::lookup(control, self.sources.len(), size_of::<Slot>())?;
+        Ok(self.sources.get(&slot).copied())
+    }
     pub(in crate::domain_computation::primary_graph) fn root(&self) -> Option<usize> {
         self.root
     }

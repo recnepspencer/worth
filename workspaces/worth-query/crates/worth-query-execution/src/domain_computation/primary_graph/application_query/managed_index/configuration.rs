@@ -149,6 +149,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         let concrete = Arc::new(TypedIndexProvider {
             installed,
             provider,
+            coverage: crate::domain_computation::primary_graph::access_strategy::coverage::CoverageVerifier::new(),
             bindings: schema.value_bindings().clone(),
         });
         let adapter: Arc<dyn InstalledIndexProvider<S, I>> = concrete.clone();
