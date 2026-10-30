@@ -13,7 +13,7 @@ from llvm_artifacts import attributed
 from logs import llvm_lines
 from run_lane import child_environment
 from workspace import WORKSPACES, members, repository_root
-from filesystem_path import filesystem_path
+from source_roots import roots as cargo_source_roots
 
 
 FLAGS = ['--emit=llvm-ir', '-Cno-prepopulate-passes', '-Cpasses=name-anon-globals', '-Ccodegen-units=1']
@@ -37,39 +37,22 @@ def publish(output, measured):
 
 def targets(manifest):
     rows = []
+    workspace = tomllib.loads(Path(manifest).read_text(encoding='utf-8'))
+    edition = workspace.get('workspace', {}).get('package', {}).get('edition')
     for package in members(manifest):
         name = package['name']
         if not any(value in name for value in ('-court-', '-testkit', '-test-support')):
             continue
         data = tomllib.loads(package['manifest'].read_text(encoding='utf-8'))
         root = package['manifest'].parent
-        library = data.get('lib', {})
-        source = root / library.get('path', 'src/lib.rs')
-        if 'lib' in data or data['package'].get('autolib', True) and filesystem_path(source).is_file():
-            if not filesystem_path(source).is_file():
-                raise ValueError(f'declared library source is missing: {source}')
-            rows.append(dict(package=name, target='lib', family='lib', manifest=str(package['manifest']),
-                             cargo_target=library.get('name', name.replace('-', '_')),
-                             source=str(source.resolve()), selector=['--lib']))
-        declared = data.get('test', [])
-        test_sources = {}
-        for target in declared:
-            candidates = ([root / target['path']] if 'path' in target else
-                          [root / 'tests' / (target['name'] + '.rs'),
-                           root / 'tests' / target['name'] / 'main.rs'])
-            existing = [path for path in candidates if filesystem_path(path).is_file()]
-            if len(existing) != 1:
-                raise ValueError(f'declared test has no unique source: {name}/{target["name"]}')
-            test_sources[target['name']] = existing[0]
-        if data['package'].get('autotests', True):
-            for source in sorted((root / 'tests').glob('*.rs')) + sorted((root / 'tests').glob('*/main.rs')):
-                target_name = source.stem if source.name != 'main.rs' else source.parent.name
-                if source not in test_sources.values():
-                    test_sources.setdefault(target_name, source)
-        for target_name, source in sorted(test_sources.items()):
-            rows.append(dict(package=name, target=target_name, family='test',
-                             manifest=str(package['manifest']), cargo_target=target_name,
-                             source=str(source.resolve()), selector=['--test', target_name]))
+        for target in cargo_source_roots(root, data, edition):
+            family, target_name = target['family'], target['name']
+            if family not in ('lib', 'test'):
+                continue
+            rows.append(dict(package=name, target='lib' if family == 'lib' else target_name,
+                             family=family, manifest=str(package['manifest']), cargo_target=target_name,
+                             source=str(target['source']), selector=['--lib'] if family == 'lib'
+                             else ['--test', target_name]))
     return rows
 
 

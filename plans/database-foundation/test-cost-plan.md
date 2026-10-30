@@ -68,7 +68,7 @@ govern compile size, test names and non-gating measurements respectively.
 | Requirement | Enforcement / named evidence |
 |---|---|
 | Build census, including nested gates | `test_nested_gate_processes_register_their_complete_evidence_logs`; `test_fresh_artifacts_do_not_count_as_compilation` |
-| No Cargo or trybuild in running tests | `census.py --all --check-sources`; `test_named_executable_and_imported_command_alias_cannot_bypass_the_rule` |
+| No Cargo or trybuild in running tests | `census.py --all --check-sources`; `test_named_executable_and_imported_command_alias_cannot_bypass_the_rule`; `test_cargo_in_autodiscovered_binary_unit_tests_is_refused` |
 | Real batched compiler fixtures and workspace lock | `test_each_diagnostic_is_attributed_to_its_fixture_not_the_aggregate_exit`; `test_generated_package_may_be_new_but_registry_versions_stay_workspace_locked`; `compiler_probe.py` |
 | Missing prerequisites refuse through types | `CompilerFixtureRefusal`, `PrebuiltExecutableRefusal`, Store compiler-boundary refusal types; consumer courts assert the real outcomes |
 | Complete compiler snapshots | `compiler_codes_labels_source_and_coordinates_are_not_normalized_away`; `compiler_warning_text_and_order_remain_part_of_the_snapshot` |

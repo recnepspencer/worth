@@ -3,6 +3,7 @@ import tempfile
 import unittest
 
 from workspace import members, sources
+from source_scan import scan_workspace
 
 
 class WorkspaceDiscoveryTests(unittest.TestCase):
@@ -24,6 +25,31 @@ class WorkspaceDiscoveryTests(unittest.TestCase):
             text = '\n'.join(value for _, _, value in values)
             self.assertIn('thread::sleep', text)
             self.assertNotIn('loop {}', text)
+
+    def test_cargo_in_autodiscovered_binary_unit_tests_is_refused(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            manifest = root / 'Cargo.toml'
+            manifest.write_text('[package]\nname="product"\nversion="0.1.0"\nedition="2024"\n')
+            paths = ['src/bin/direct.rs', 'src/bin/nested/main.rs']
+            for relative in paths:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('fn main() {}\n#[cfg(test)] mod tests {\n'
+                                '#[test] fn boundary() { std::process::Command::new("cargo"); }\n}')
+            violations = [row for row in scan_workspace(manifest, root) if row['kind'] == 'cargo-command']
+            self.assertEqual({row['path'] for row in violations}, set(paths))
+            self.assertEqual(len(violations), 2)
+
+    def test_declared_binary_without_explicit_path_keeps_its_unit_test_source(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root / 'src/bin').mkdir(parents=True)
+            manifest = root / 'Cargo.toml'
+            manifest.write_text('[package]\nname="product"\nversion="0.1.0"\nedition="2024"\n'
+                                'autobins=false\n[[bin]]\nname="owned"\n')
+            (root / 'src/bin/owned.rs').write_text('#[test] fn boundary() { Command::new("cargo"); }')
+            self.assertEqual([row['kind'] for row in scan_workspace(manifest, root)], ['cargo-command'])
 
     def test_deep_court_source_paths_are_read_on_windows(self):
         with tempfile.TemporaryDirectory() as temporary:

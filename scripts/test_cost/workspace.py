@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_topology'))
 from filesystem_path import filesystem_path
 from module_tree import read_tree
 from rust_items import items
+from source_roots import roots as cargo_source_roots
 
 
 WORKSPACES = {'root': 'Cargo.toml', 'query': 'workspaces/worth-query/Cargo.toml',
@@ -51,26 +52,15 @@ def members(manifest):
 
 def sources(manifest):
     result = []
+    declaration = tomllib.loads(Path(manifest).read_text(encoding='utf-8'))
+    inherited_edition = declaration.get('workspace', {}).get('package', {}).get('edition')
     for package in members(manifest):
         name = package['name']
         root = package['manifest'].parent
         support = any(s in name for s in ('-court-', '-testkit', '-test-support', '-certification'))
         declaration = tomllib.loads(package['manifest'].read_text(encoding='utf-8'))
-        roots = []
-        for family, folder in [('lib', 'src'), ('bin', 'src'), ('test', 'tests'),
-                               ('bench', 'benches'), ('example', 'examples')]:
-            explicit = declaration.get(family, [])
-            explicit = [explicit] if isinstance(explicit, dict) else explicit
-            for target in explicit:
-                if target.get('path'):
-                    roots.append((root / target['path'], support or family not in ('lib', 'bin')))
-            if family in ('lib', 'bin'):
-                default = root / folder / ('lib.rs' if family == 'lib' else 'main.rs')
-                if filesystem_path(default).is_file():
-                    roots.append((default, support))
-            elif declaration['package'].get('auto' + family + 's', True):
-                roots += [(path, True) for path in (root / folder).glob('*.rs')]
-                roots += [(path, True) for path in (root / folder).glob('*/main.rs')]
+        roots = [(row['source'], support or row['family'] not in ('lib', 'bin'))
+                 for row in cargo_source_roots(root, declaration, inherited_edition)]
         spans = {}
 
         def visit(node, testing):

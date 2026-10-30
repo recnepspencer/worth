@@ -4,6 +4,12 @@ The standard-library census covers root, Query, Bank and Store. `worth-ui` is
 excluded. Timings, CPU parallelism and setup frequency are telemetry; they never
 decide whether a test passes.
 
+`source_roots.py` resolves Cargo-declared and automatic target sources for both
+source enforcement and LLVM ownership. It includes binary unit tests under
+`src/bin/*.rs` and `src/bin/*/main.rs`, honors each automatic-target flag and
+edition, and refuses missing or ambiguous declared sources. Small fixture
+probes compare discovery with real `cargo metadata`; no compilation is needed.
+
 ```text
 python scripts/test_cost/census.py --all --check-sources
 python scripts/test_cost/run_lane.py --workspace store
