@@ -89,16 +89,18 @@ pub fn publish(
         .map(|_| ())
 }
 
-/// Opens the cleanly closed store with one fault rule per `(role, n)`, each
-/// firing at the nth identified operation of its role after its activation.
-/// `None` when the schedule refuses a directive for its role.
-pub fn open_with_faults(
-    root: &Path,
+/// The actual admitted schedule and its one-shot activations, retained before
+/// constructing the independent Store prefix that will consume them.
+pub struct PreparedFaultMediaAdmission {
+    admission: FilesystemMediaAdmission,
+    activations: Vec<CertificationMediaFaultActivation>,
+}
+
+/// Admits the exact fault rules without constructing or opening a Store.
+/// `None` when the existing authority refuses a directive for its role.
+pub fn prepare_faults(
     faults: &[(MediaOperationRole, NonZeroU64, MediaFaultDirective)],
-) -> Option<(
-    ServingPhysicalRuntime,
-    Vec<CertificationMediaFaultActivation>,
-)> {
+) -> Option<PreparedFaultMediaAdmission> {
     let admission = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
         worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount,
     );
@@ -117,31 +119,53 @@ pub fn open_with_faults(
         })
         .collect();
     let schedule = authority.schedule(rules).ok()?;
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
-        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap(),
-    )
-    .unwrap();
-    let worth_proof::TransitionOutcome::Success(media) = runtime
-        .try_admit_filesystem_media(admission.with_fault_schedule(schedule))
-        .into_raw()
-    else {
-        panic!("fault-scheduled media must admit")
-    };
-    let worth_proof::TransitionOutcome::Success(durability) =
-        crate::production_entry::certified_release_serving::serving_durability(
-            std::num::NonZeroU64::new(16 << 20).unwrap(),
+    Some(PreparedFaultMediaAdmission {
+        admission: admission.with_fault_schedule(schedule),
+        activations,
+    })
+}
+
+impl PreparedFaultMediaAdmission {
+    /// Consumes the admitted schedule while opening its fresh independent root.
+    pub fn open(
+        self,
+        root: &Path,
+    ) -> (
+        ServingPhysicalRuntime,
+        Vec<CertificationMediaFaultActivation>,
+    ) {
+        let Self {
+            admission,
+            activations,
+        } = self;
+        let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+            worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap(),
         )
-        .admit(media.physical_durability_admission_basis().unwrap())
-        .into_raw()
-    else {
-        panic!("durability must admit")
-    };
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
-        .admit(format())
         .unwrap();
-    let worth_proof::TransitionOutcome::Success(serving) = media
-        .open_record_store(
-            worth_store::physical_runtime::PhysicalRecordOpen::new(format(), access, durability)
+        let worth_proof::TransitionOutcome::Success(media) =
+            runtime.try_admit_filesystem_media(admission).into_raw()
+        else {
+            panic!("fault-scheduled media must admit")
+        };
+        let worth_proof::TransitionOutcome::Success(durability) =
+            crate::production_entry::certified_release_serving::serving_durability(
+                std::num::NonZeroU64::new(16 << 20).unwrap(),
+            )
+            .admit(media.physical_durability_admission_basis().unwrap())
+            .into_raw()
+        else {
+            panic!("durability must admit")
+        };
+        let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+            .admit(format())
+            .unwrap();
+        let worth_proof::TransitionOutcome::Success(serving) = media
+            .open_record_store(
+                worth_store::physical_runtime::PhysicalRecordOpen::new(
+                    format(),
+                    access,
+                    durability,
+                )
                 .with_journal_registry(
                     worth_store::physical_runtime::OrderedJournalRegistry::declare(
                         2,
@@ -153,12 +177,25 @@ pub fn open_with_faults(
                     )
                     .unwrap(),
                 ),
-        )
-        .into_raw()
-    else {
-        panic!("a cleanly closed store must open")
-    };
-    Some((serving, activations))
+            )
+            .into_raw()
+        else {
+            panic!("a cleanly closed store must open")
+        };
+        (serving, activations)
+    }
+}
+
+/// Opens the cleanly closed store with one admitted fault rule per `(role, n)`.
+/// Each rule fires at its nth identified operation after activation.
+pub fn open_with_faults(
+    root: &Path,
+    faults: &[(MediaOperationRole, NonZeroU64, MediaFaultDirective)],
+) -> Option<(
+    ServingPhysicalRuntime,
+    Vec<CertificationMediaFaultActivation>,
+)> {
+    Some(prepare_faults(faults)?.open(root))
 }
 
 /// A cleanly closed store holding reference entries `1..target`.
