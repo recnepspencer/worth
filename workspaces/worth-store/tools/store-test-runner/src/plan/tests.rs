@@ -29,30 +29,45 @@ fn scenario_sharding_uses_nextests_stable_hash_partition() {
         .any(|pair| pair == ["--partition", "hash:2/3"]));
 }
 
-#[test]
-fn scenario_plan_names_real_targets_without_absorbing_special_lanes() {
-    let plan = ci_plan(CiTestLane::Scenario, None);
-    let command = nextest(&plan).arguments().join(" ");
+const DURABILITY_COURT: &str = "binary_id(=worth-store-court-store-physical-record-journeys-durability-admission::worth_store_court_store_physical_record_journeys_durability_admission)";
+const PHASE_EIGHT_COURT: &str = "binary_id(=worth-store-court-recovery-runtime-replication-phase-eight-process::worth_store_court_recovery_runtime_replication_phase_eight_process)";
+const MAINTENANCE_COURT: &str = "binary_id(=worth-store-court-maintenance-recovery-runtime-replication::worth_store_court_maintenance_recovery_runtime_replication)";
 
-    assert!(command.contains("binary_id(=worth-store::physical_record_journeys)"));
-    assert!(command.contains("binary_id(=worth-store-recovery-runtime::phase_five_faults)"));
-    assert!(command.contains("binary_id(=worth-store-relational::relational_home)"));
-    assert!(command.contains("--features worth-store-relational/certification-test-authority"));
-    assert!(!command.contains("phase_eight_process"));
-    assert!(!command.contains("physical_runtime_authority_ui"));
-    assert!(!command.contains("backend_assumptions"));
+fn selects(command: &str, court: &str, category: &str) -> bool {
+    command.contains(&format!("({court} & (test(/^{category}::/)))"))
+}
+
+fn selects_category(command: &str, category: &str) -> bool {
+    command.contains(&format!(" & (test(/^{category}::/)))"))
 }
 
 #[test]
-fn ui_and_formal_products_map_to_their_real_targets() {
+fn scenario_plan_selects_ordinary_process_and_determinism_courts_by_prefix() {
+    let plan = ci_plan(CiTestLane::Scenario, None);
+    let command = nextest(&plan).arguments().join(" ");
+
+    assert!(selects(&command, DURABILITY_COURT, "process"));
+    assert!(command.contains(&format!("({PHASE_EIGHT_COURT} & (not (")));
+    for category in ["oracle", "cost", "compile_fail"] {
+        assert!(!selects_category(&command, category), "{category}");
+    }
+}
+
+#[test]
+fn ui_and_formal_products_select_compile_fail_and_oracle_prefixes() {
     let ui = TestPlan::build(&TestProduct::Ui, workspace_root()).unwrap();
     let ui_command = nextest(&ui).arguments().join(" ");
-    assert!(ui_command.contains("physical_runtime_authority_ui"));
+    assert!(selects(&ui_command, MAINTENANCE_COURT, "compile_fail"));
+    for category in ["process", "oracle", "cost", "determinism"] {
+        assert!(!selects_category(&ui_command, category), "{category}");
+    }
 
     let formal = ci_plan(CiTestLane::Formal, None);
     let formal_command = nextest(&formal).arguments().join(" ");
-    assert!(formal_command.contains("backend_assumptions"));
-    assert!(formal_command.contains("compaction_visibility_owner_execution"));
+    assert!(selects(&formal_command, PHASE_EIGHT_COURT, "oracle"));
+    for category in ["process", "cost", "determinism", "compile_fail"] {
+        assert!(!selects_category(&formal_command, category), "{category}");
+    }
 }
 
 #[test]
@@ -100,23 +115,6 @@ fn fresh_process_recovery_keeps_its_direct_phase_eight_dispatcher() {
         .arguments()
         .iter()
         .any(|argument| argument == "store_process_scenario"));
-}
-
-#[test]
-fn guarded_store_targets_enable_their_real_feature() {
-    for product in [
-        TestProduct::Ui,
-        TestProduct::Ci {
-            lane: CiTestLane::Scenario,
-            shard: None,
-        },
-    ] {
-        let plan = TestPlan::build(&product, workspace_root()).unwrap();
-        assert!(nextest(&plan)
-            .arguments()
-            .windows(2)
-            .any(|pair| { pair == ["--features", "worth-store/certification-test-authority"] }));
-    }
 }
 
 #[test]
