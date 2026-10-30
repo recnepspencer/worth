@@ -321,11 +321,15 @@ Codex settings contain no equivalent WORTH entry; active Git-hook inspection
 found none. Unrelated setting values were not exposed. SessionStart preparation
 builds the tools but does not execute boundary/context validation; preserve it.
 The explicit `scripts/check-constitution.ps1` and CI landing invocation remain
-unchanged, including prepared-tool refusal and diagnostic projection.
+the gate. Real launcher testing exposed a readiness bug: JSON emitted into the
+PowerShell return pipeline made a missing-tool result truthy. Emit that failure
+through standard output without contaminating the boolean readiness result;
+retain the typed refusal and existing diagnostic projection.
 
 Authorized files: remove only the identified PostToolUse registrations in the
-two repository hook configurations; retire their unused dedicated script; add
-focused cadence/launcher tests; update this plan. No checker rule/configuration,
+two repository hook configurations; retire their unused dedicated script; fix
+the launcher readiness-output seam; add focused cadence/launcher tests; update
+this plan. No checker rule/configuration,
 profile, registry, product, constructor or Phase 3 file changes are needed.
 
 Implementation and acceptance:
@@ -366,6 +370,6 @@ full cold campaign. The fresh independent reviewer policy is unchanged.
 No new scheduler, registry, daemon, persistent invalidation protocol or evidence
 framework is authorized. Benchmark products/configuration/captures remain frozen
 during the coordinator's controlled comparison. B3+ constructor/setup work and
-B4.3 require Phase 3 scope agreement. The current timing hold permits source
-edits/read-only review but no new tests, builds or full checker runs until the
-coordinator releases it; B4.0 runtime acceptance is pending that release.
+B4.3 require Phase 3 scope agreement. The controlled-comparison timing hold has
+been released. B4.0 runtime acceptance uses the focused real-tool fixture and
+explicit phase-end checks.

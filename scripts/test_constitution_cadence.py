@@ -71,7 +71,7 @@ class ExplicitFixture:
             self.write(f'crates/{package}/Cargo.toml',
                        f'[package]\nname = "{package}"\nversion = "0.1.0"\nedition = "2024"\n')
             self.write(f'crates/{package}/src/lib.rs',
-                       'mod behavior;\nmod facade;\npub use facade::*;\n')
+                       'mod behavior;\npub mod facade;\n')
             self.write(f'crates/{package}/src/facade.rs',
                        'pub use crate::behavior::permitted;\n')
             self.write(f'crates/{package}/src/behavior.rs', 'pub fn permitted() {}\n')
@@ -185,6 +185,11 @@ class ConstitutionCadenceTests(unittest.TestCase):
             code, report = fixture.check(prepared=fixture.root / 'not-prepared')
             self.assertEqual(code, 1)
             self.assertEqual({d['code'] for d in report['diagnostics']}, {'CONSTITUTION_PREBUILT_TOOLS_MISSING'})
+            for binary in (fixture.prepared / 'debug').iterdir():
+                os.utime(binary, (1, 1))
+            code, report = fixture.check()
+            self.assertEqual(code, 1)
+            self.assertEqual({d['code'] for d in report['diagnostics']}, {'CONSTITUTION_PREBUILT_TOOLS_STALE'})
 
 
 if __name__ == '__main__':
