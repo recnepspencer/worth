@@ -6,7 +6,7 @@ import unittest
 import re
 import tomllib
 
-from nextest_build import LANES, build, list_tests, summary
+from nextest_build import LANES, NextestPrebuildFailure, build, list_tests, summary, selection_arguments, source_packages
 from workspace import members, repository_root
 
 
@@ -52,6 +52,67 @@ class PrebuiltNextestTests(unittest.TestCase):
     def test_category_lanes_use_paths_and_ordinary_excludes_them(self):
         self.assertIn('test(/^compile_fail::/)', LANES['compile-fail'])
         self.assertIn('not ', LANES['ordinary'])
+
+    def test_owner_selection_is_resolved_before_the_only_compiling_command(self):
+        metadata = {'workspace_members': ['owner', 'other'], 'packages': [
+            {'id': name, 'name': name, 'targets': [{'name': name, 'kind': ['lib']}]}
+            for name in ('owner', 'other')]}
+        with tempfile.TemporaryDirectory() as temporary:
+            root, commands = Path(temporary), []
+            def runner(command, cwd, log):
+                commands.append(command)
+                value = metadata if command[1] == 'metadata' else {'rust-binaries': {}}
+                return subprocess.CompletedProcess(command, 0, json.dumps(value), '')
+            def selection(observed):
+                self.assertEqual(observed, metadata)
+                self.assertEqual(len(commands), 1)
+                return {'packages': ['owner'], 'targets': {'lib': True}}
+            build(root/'Cargo.toml', root/'out', runner, 'dev', selection)
+            command = commands[1]
+            self.assertEqual(command[3:7], ['--package', 'owner', '--lib', '--cargo-profile'])
+            self.assertNotIn('--workspace', command)
+            self.assertNotIn('--all-targets', command)
+            self.assertEqual(command[command.index('--cargo-profile') + 1], 'dev')
+            self.assertNotIn('--features', command)
+
+    def test_invalid_owners_and_targets_are_refused_without_fallback_to_workspace(self):
+        metadata = {'workspace_members': ['owner'], 'packages': [
+            {'id': 'owner', 'name': 'owner', 'targets': [{'name': 'claims', 'kind': ['test']}]}]}
+        for selection in ({'packages': []}, {'packages': ['absent']},
+                          {'packages': ['owner'], 'targets': {'lib': True}},
+                          {'packages': ['owner'], 'targets': {'test': ['absent']}},
+                          {'packages': ['owner'], 'targets': {'unknown': ['claims']}}):
+            with self.subTest(selection=selection), self.assertRaises(NextestPrebuildFailure):
+                selection_arguments(metadata, selection)
+        self.assertEqual(selection_arguments(metadata, {'packages': ['owner'], 'targets': {'test': ['claims']}}),
+                         ['--package', 'owner', '--test', 'claims'])
+
+    def test_source_scope_includes_resolved_transitive_testkits_but_not_unrelated_courts(self):
+        names = ['owner', 'testkit', 'dependency', 'unrelated-court']
+        metadata = {'workspace_members': names, 'packages': [{'id': name, 'name': name} for name in names],
+                    'resolve': {'nodes': [
+                        {'id': 'owner', 'dependencies': ['testkit']},
+                        {'id': 'testkit', 'dependencies': ['dependency']},
+                        {'id': 'dependency', 'dependencies': []},
+                        {'id': 'unrelated-court', 'dependencies': []}]}}
+        self.assertEqual(source_packages(metadata, {'packages': ['owner']}), ['dependency', 'owner', 'testkit'])
+        self.assertIsNone(source_packages(metadata, None))
+        metadata['resolve']['nodes'].pop(1)
+        with self.assertRaisesRegex(NextestPrebuildFailure, 'resolved dependency'):
+            source_packages(metadata, {'packages': ['owner']})
+
+    def test_source_boundary_refusal_happens_after_metadata_and_before_compilation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            commands = []
+            def runner(command, cwd, log):
+                commands.append(command)
+                return subprocess.CompletedProcess(command, 0, '{}', '')
+            def refuse(metadata, selection):
+                self.assertEqual(len(commands), 1)
+                raise ValueError('tests invoke compilers')
+            with self.assertRaisesRegex(ValueError, 'tests invoke compilers'):
+                build(Path(temporary)/'Cargo.toml', Path(temporary)/'out', runner, before_compile=refuse)
+            self.assertEqual(commands[0][1], 'metadata')
 
 
 if __name__ == '__main__':

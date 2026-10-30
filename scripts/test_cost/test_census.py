@@ -14,6 +14,20 @@ from test_compiler_units import event as compiler_event, graph, unit
 
 
 class CensusFixtureTests(unittest.TestCase):
+    def test_scoped_census_checks_required_owner_sources_without_unrelated_packages(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root/'Cargo.toml').write_text('[workspace]\nmembers=["owner", "other"]\n')
+            for name in ('owner', 'other'):
+                package = root/name
+                (package/'src').mkdir(parents=True)
+                (package/'Cargo.toml').write_text(f'[package]\nname="{name}"\nversion="0.1.0"\n')
+                (package/'src/lib.rs').write_text('#[test] fn bad() { Command::new("cargo"); }')
+            scoped = collect(root/'Cargo.toml', root, source_packages={'owner'})
+            self.assertEqual({row['package'] for row in source_violations(scoped['source_sites'])}, {'owner'})
+            complete = collect(root/'Cargo.toml', root)
+            self.assertEqual({row['package'] for row in source_violations(complete['source_sites'])}, {'owner', 'other'})
+
     def test_failed_attempt_inventory_does_not_change_fresh_artifact_measure(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

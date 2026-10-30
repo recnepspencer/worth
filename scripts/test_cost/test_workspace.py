@@ -7,6 +7,21 @@ from source_scan import scan_workspace
 
 
 class WorkspaceDiscoveryTests(unittest.TestCase):
+    def test_focused_source_discovery_does_not_open_unrelated_packages(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root/'Cargo.toml').write_text('[workspace]\nmembers=["owner", "unrelated"]\n')
+            for name in ('owner', 'unrelated'):
+                package = root/name
+                (package/'src').mkdir(parents=True)
+                (package/'Cargo.toml').write_text(f'[package]\nname="{name}"\nversion="0.1.0"\n')
+                (package/'src/lib.rs').write_text('#[test] fn boundary() { Command::new("cargo"); }')
+            self.assertEqual({row.package['name'] for row in sources(root/'Cargo.toml', {'owner'})}, {'owner'})
+            self.assertEqual({row.package['name'] for row in sources(root/'Cargo.toml')}, {'owner', 'unrelated'})
+            rows = scan_workspace(root/'Cargo.toml', root, {'owner'})
+            self.assertEqual({row['package'] for row in rows}, {'owner'})
+            self.assertEqual([row['kind'] for row in rows], ['cargo-command'])
+
     def test_missing_declared_member_cannot_silently_shrink_the_census(self):
         with tempfile.TemporaryDirectory() as temporary:
             manifest = Path(temporary) / 'Cargo.toml'

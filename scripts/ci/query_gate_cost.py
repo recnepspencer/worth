@@ -72,6 +72,28 @@ class SuiteQueries:
         self.binaries = {suite: {} for suite in suites}
         self.coverage = {'status': 'unmeasured'}
         self.aliases = {}
+        self.workspace_inventory = True
+
+    def build_selection(self, metadata):
+        """Apply existing suite ownership before building test executables."""
+        if set(landing_suites(workspace_of(self.suites[0]))) <= set(self.suites):
+            return None
+        self.workspace_inventory = False
+        members = set(metadata['workspace_members'])
+        chosen = []
+        for package in metadata['packages']:
+            if package['id'] not in members:
+                continue
+            for target in package['targets']:
+                binary = {'package': package['name'], 'target': target['name'],
+                          'lib': bool(set(target['kind']) & {'lib', 'proc-macro'}),
+                          'harness': target.get('harness', True)}
+                if any(TEST_SUITES[suite][1](binary) for suite in self.suites):
+                    chosen.append(binary)
+        if not chosen:
+            raise GateSelectionFailure('requested suites have no Cargo target owners')
+        return {'packages': sorted({row['package'] for row in chosen}),
+                'targets': {'lib': True} if all(row['lib'] for row in chosen) else {}}
 
     def __call__(self, discovered):
         jobs, owners, all_tests = [], defaultdict(list), set()
@@ -118,7 +140,8 @@ class SuiteQueries:
         if duplicate:
             raise GateSelectionFailure('requested suites repeat tests: ' + json.dumps(duplicate))
         unselected = sorted(all_tests - set(owners))
-        self.coverage = {'status': 'partial' if unselected else 'pass',
+        self.coverage = {'status': 'partial' if unselected or not self.workspace_inventory else 'pass',
+                         'inventory_scope': 'workspace' if self.workspace_inventory else 'selected-packages',
                          'unselected': [f'{binary}${name}' for binary, name in unselected],
                          'selected': len(owners), 'ignored': len(set().union(*self.ignored.values()))}
         self.output.mkdir(parents=True, exist_ok=True)

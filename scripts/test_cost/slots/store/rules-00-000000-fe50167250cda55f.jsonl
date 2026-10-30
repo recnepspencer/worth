@@ -1,4 +1,4 @@
-{"count": 66, "kind": "leaf"}
+{"count": 67, "kind": "leaf"}
 {"binary": "store-test-runner", "slots": 2, "test": "execution::tests::child_failure_is_returned_with_the_unit_identity"}
 {"binary": "store-test-runner", "slots": 2, "test": "plan::tests::fresh_process_recovery_keeps_its_direct_phase_eight_dispatcher"}
 {"binary": "worth-store", "slots": 2, "test": "physical_runtime::anchored_records::frame::tests::a_damaged_frame_or_table_refuses"}
@@ -19,6 +19,7 @@
 {"binary": "worth-store-court-physical-format::worth_store_court_physical_format", "slots": 2, "test": "offline_integrity_observer::observation_contracts::comparison_protocol::runtime_partial_source_range_is_preserved_and_validated_in_version_one"}
 {"binary": "worth-store-court-physical-integrity::worth_store_court_physical_integrity", "slots": 2, "test": "oracle::root_tree_family_validation_bootstrap_catalog::catalog_literal_vector_is_independent_of_writer_and_validates_directly"}
 {"binary": "worth-store-court-physical-integrity::worth_store_court_physical_integrity", "slots": 2, "test": "physical_integrity::checkpoint_validation::scrub_streaming::healthy_omitted_or_other_checkpoint_context_is_unknown_not_damage"}
+{"binary": "worth-store-court-recovery-runtime-replication-phase-eight-process::worth_store_court_recovery_runtime_replication_phase_eight_process", "slots": 6, "test": "process::recovery_runtime::phase_eight_process::checkpoint_crash::killed_checkpoint_writer_reopens_and_observes_each_persisted_effect_frontier"}
 {"binary": "worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal::worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal", "slots": 6, "test": "oracle::recovery_runtime::production_entry::anchored_record_members::replacement_recovery::every_media_operation_of_a_member_carrying_replacement_recovers_to_one_whole_value"}
 {"binary": "worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal::worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal", "slots": 9, "test": "process::recovery_runtime::production_entry::ordered_journals::branch_transitions_oracle::every_media_operation_of_a_branch_transition_recovers_to_the_old_or_new_head"}
 {"binary": "worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal::worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal", "slots": 9, "test": "process::recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::every_media_operation_of_a_publication_recovers_to_a_reference_prefix"}

@@ -8,6 +8,24 @@ from run_lane import LANDING, LaneExecutionFailure, full_workspace_required, ret
 
 
 class CompletedExecutionTests(unittest.TestCase):
+    def test_focused_result_cannot_replace_the_accepted_complete_workspace_census(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            canonical = root/'target/test-cost/root'
+            canonical.mkdir(parents=True)
+            (canonical/'census.json').write_text('accepted complete census')
+            output = root/'focused'; output.mkdir()
+            result = {'manifest': 'Cargo.toml', 'source_counts': {}, 'source_sites': [], 'lanes': {},
+                      'coverage': {'status': 'partial'}, 'llvm_lines': {},
+                      'native_build_scope': {'scope': 'selected-packages'}}
+            retain_completed(root, 'root', output, result, [], [])
+            self.assertEqual((canonical/'census.json').read_text(), 'accepted complete census')
+            self.assertEqual(json.loads((output/'census.json').read_text()), result)
+
+    def test_scoped_inventory_never_claims_full_workspace_even_with_all_lanes_and_docs(self):
+        self.assertFalse(full_workspace_required(LANDING, None, None, None, True,
+                                                {'status': 'pass'}, workspace_inventory=False))
+
     def test_budget_failure_retains_the_exact_completed_documentation_and_native_result(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

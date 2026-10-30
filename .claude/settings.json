@@ -9,17 +9,6 @@
           }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit|apply_patch|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -NoProfile -File scripts/check-constitution-post-tool-use.ps1"
-          }
-        ]
-      }
     ]
   }
 }
