@@ -3,6 +3,11 @@ error[E0432]: unresolved import `worth_runtime_world::facade::CompositeRuntimeWo
   |
 1 | use worth_runtime_world::facade::CompositeRuntimeWorldBasis;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^--------------------------
-  |     |                            |
-  |     |                            help: a similar name exists in the module: `CompositeRuntimeWorldCommit`
-  |     no `CompositeRuntimeWorldBasis` in `facade`
+  |                                  |
+  |                                  no `CompositeRuntimeWorldBasis` in `facade`
+  |
+help: a similar name exists in the module
+  |
+1 - use worth_runtime_world::facade::CompositeRuntimeWorldBasis;
+1 + use worth_runtime_world::facade::CompositeRuntimeWorldCommit;
+  |

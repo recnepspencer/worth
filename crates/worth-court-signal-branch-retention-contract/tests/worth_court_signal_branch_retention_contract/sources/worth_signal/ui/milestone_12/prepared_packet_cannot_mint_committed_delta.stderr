@@ -2,4 +2,6 @@ error[E0432]: unresolved import `worth_signal::facade::CommittedProducedAspectDe
  --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_12/prepared_packet_cannot_mint_committed_delta.rs:1:5
   |
 1 | use worth_signal::facade::CommittedProducedAspectDelta;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `CommittedProducedAspectDelta` in `facade`
+  |     ^^^^^^^^^^^^^^^^^^^^^^----------------------------
+  |                           |
+  |                           no `CommittedProducedAspectDelta` in `facade`

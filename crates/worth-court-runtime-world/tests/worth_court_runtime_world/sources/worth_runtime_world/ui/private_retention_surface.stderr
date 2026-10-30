@@ -11,8 +11,12 @@ error[E0432]: unresolved imports `worth_runtime_world::facade::ExactComponentBas
   |     |
   |     no `PublicationRetentionObligation` in `facade`
 4 |     RetentionTransferReceipt, RuntimeWorldRetentionOwner,
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |     |                         |
-  |     |                         no `RuntimeWorldRetentionOwner` in `facade`
-  |     |                         help: a similar name exists in the module: `RuntimeWorldRetentionEntry`
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^ no `RuntimeWorldRetentionOwner` in `facade`
+  |     |
   |     no `RetentionTransferReceipt` in `facade`
+  |
+help: a similar name exists in the module
+  |
+4 -     RetentionTransferReceipt, RuntimeWorldRetentionOwner,
+4 +     RetentionTransferReceipt, RuntimeWorldRetentionEntry,
+  |

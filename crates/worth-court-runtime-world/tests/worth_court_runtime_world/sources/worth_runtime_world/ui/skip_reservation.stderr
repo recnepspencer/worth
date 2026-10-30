@@ -2,7 +2,7 @@ error[E0308]: mismatched types
  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/skip_reservation.rs:9:44
   |
 9 |     port.execute_without_signal(execution, intent, token);
-  |          ----------------------            ^^^^^^ expected `PreparedCompositePublicationWithoutSignal`, found `CompositePublicationIntent<...>`
+  |          ----------------------            ^^^^^^ expected `PreparedCompositePublicationWithoutSignal`, found `CompositePublicationIntent<_>`
   |          |
   |          arguments to this method are incorrect
   |
