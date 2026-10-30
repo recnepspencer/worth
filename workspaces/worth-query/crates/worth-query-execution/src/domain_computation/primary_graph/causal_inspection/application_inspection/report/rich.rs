@@ -105,6 +105,7 @@ impl PreparedRichMaterialization {
                     .target()
                     .connection_source()
                     .and_then(|target| target.source())
+                    .or_else(|| reference.target().source())
                     .is_some_and(|original| source.matches(original)),
                 _ => true,
             }

@@ -73,6 +73,7 @@ pub enum WorthQueryMaterializedFamilyOutcome {
 }
 pub(super) enum OriginalQueryDetail {
     NotRequested,
+    Unselected,
     NotRetained,
     Provided(WorthQueryMaterializedQueryProjection),
 }
@@ -102,6 +103,9 @@ impl WorthQueryApplicationRichMaterialization {
         }
         match self.original {
             OriginalQueryDetail::NotRequested => Outcome::NotRequested,
+            OriginalQueryDetail::Unselected => {
+                Outcome::RequestedButNotProvidedBySelectedObservationMode
+            }
             OriginalQueryDetail::NotRetained => Outcome::OriginalProjectionNotRetained,
             OriginalQueryDetail::Provided(_) => Outcome::Provided,
         }
@@ -153,6 +157,7 @@ impl WorthQueryApplicationRichMaterialization {
     pub(super) fn projection_label(&self) -> &'static str {
         match self.original {
             OriginalQueryDetail::NotRequested => "not_requested",
+            OriginalQueryDetail::Unselected => "not_selected",
             OriginalQueryDetail::NotRetained => "original_projection_not_retained",
             OriginalQueryDetail::Provided(_) => "provided_original_projection",
         }

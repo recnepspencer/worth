@@ -3,8 +3,8 @@ mod action;
 mod funding;
 mod source;
 pub use source::{
-    WorthQueryPerformedSourceInspectionRequest, WorthQuerySourceInspectionRequest,
-    WorthQuerySourceReferenceOnlyInspectionRequest,
+    WorthQueryMaterializedSourceInspectionRequest, WorthQueryPerformedSourceInspectionRequest,
+    WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
 };
 mod connected;
 pub use connected::{

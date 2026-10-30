@@ -1381,7 +1381,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
 | 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | 9.9 optional rich materialization |
-| 9.9 | Optional rich materialization | In progress; original-query and connected rich views qualified, source-only rich remains | Freshly admitted, demand-driven views from existing evidence owners |
+| 9.9 | Optional rich materialization | Complete for original-query, connected creation/evaluation and source-only rich modes | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
 
@@ -1620,6 +1620,27 @@ checks pass. Phases 9.9-9.11 and parent Phase 9 remain open.
 
 #### Phase 9.9: Optional Rich Materialization
 
+**Source-only rich slice and phase closure qualified.** A new
+source-only rich request admits actual current source READ, metadata and a scoped
+Diagnostic loan before canonical fields or availability. Its consuming terminal
+requires the exact Source reference/original and same rich scope, and rejects
+query, before, connected-target/identity and producer payloads. The owned result
+retains original canonical Arcs and fresh SDK/report funding after receipt drop;
+query/producer selections are explicitly unprovided by this mode. The existing
+public numeric court proves source4 after head5 without a query original,
+independent metadata/diagnostic refusal, actual post-body cancellation, current
+grant withdrawal, receipt drop, business preservation and final release.
+The existing Host doctest lane proves the admitted owned-result signature and
+rejects diagnostic-free execution and forged success construction.
+Validation: 58 public correction tests, 23 focused owner tests and three scoped
+Host doctests pass; current-root topology/seals, context, 19-file Rust caps,
+function review and diff checks pass. All three legacy materialization fences
+remain. Actual query-owner NotRetained versus retained empty, selected-mode
+omissions, genuine source/producer evidence and fresh permission/custody cover
+9.9's requirements. Signal tier/actual expiry availability remains 9.10; broader
+consumer/portfolio qualification remains 9.11. Parent Phase 9 stays open. Independent
+review cleared this slice and the selected-mode 9.9 closure before commit.
+
 **Connected rich slice qualified.** Strict creation and performed
 output evaluation now accept an explicit materialization request on the same
 independently admitted source/query session. Source-effects and producer-evidence
@@ -1631,8 +1652,9 @@ checks the actual issued scope kind, direct-root shape, current diagnostic loan
 and request budget before lookup/allocation. Exact SDK array backing remains on
 the fresh payer; canonical payload ownership stays with the originals. The rich
 identity binds the actual connected identity, requested facets and their outcomes.
-Source-only rich inspection and remaining lifecycle/consumer qualification stay
-unfinished; this connected slice does not close Phase 9.9 or the parent phase.
+This connected slice left source-only richness for the following implementation.
+Its qualified closure is recorded above; lifecycle/consumer work remains in
+9.10/9.11 and the parent phase stays open.
 Verification: 57 public correction tests, 23 focused Query owner tests and two
 Native canonical field-effect tests pass in the existing binaries. Current-root
 topology/seals, context freshness, dirty Rust caps, function review and diff checks
@@ -1650,14 +1672,14 @@ owner courts cover earlier values after a head change, nested rows, fresh grant
 withdrawal, actual mid-assembly cancellation, empty versus unretained projections,
 Diagnostic denial before availability, scope substitution and reservation release.
 This first slice qualifies only the original-query view; connected rich evidence
-is recorded separately. Source-only rich inspection remains unfinished, so Phase
-9.9 and the parent phase stay open.
+is recorded separately. Source-only qualification and 9.9 closure are recorded
+above; 9.10/9.11 and the parent phase remain open.
 Validation: 56 existing grouped public correction tests and 23 focused owner
 tests pass, including the unchanged legacy fences; topology, context, dirty Rust
 line caps, function review and diff checks pass. The independent reviewer cleared
 the slice before commit. No new test binary or runtime schema was added.
 
-**Status: in progress. Depends on: 9.1 and 9.4 plus the selected qualified evidence
+**Status: complete for the selected qualified evidence modes. Depends on: 9.1 and 9.4 plus the selected qualified evidence
 mode.** Carry existing CausalInspection/Bridge/Signal materialization and omission
 meaning through Decl/Host. Admit current READ, metadata and DiagnosticMask before
 revealing fields, links, counts or family availability. Materialize only on demand

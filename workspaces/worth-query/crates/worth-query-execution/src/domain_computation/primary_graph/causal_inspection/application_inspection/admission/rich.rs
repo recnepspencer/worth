@@ -24,6 +24,7 @@ pub(in super::super) struct PreparedRichMaterialization {
     pub(in super::super) scope: RichReportScope,
     pub(in super::super) artifact: WorthQueryApplicationRichMaterialization,
 }
+mod source;
 struct AdmittedRichProjection<'a> {
     scope: RichReportScope,
     diagnostic: DiagnosticComparisonAdmission<'a>,

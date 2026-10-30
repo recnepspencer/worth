@@ -9,6 +9,8 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryScopeBinding,
 };
 mod action;
+mod rich;
+pub use rich::WorthQueryMaterializedSourceInspectionRequest;
 
 pub struct WorthQuerySourceInspectionRequest<'a, 'p, 'r, 'source, Schema, Disclosure> {
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -82,14 +84,9 @@ impl<
     where
         'a: 'funding,
     {
-        WorthQuerySourceReferenceOnlyInspectionRequest(WorthQuerySourceInspectionRequest {
-            runtime: self.0.runtime,
-            external: self.0.external,
-            request: self.0.request,
-            source: self.0.source,
-            allocation_policy,
-            disclosure: PhantomData,
-        })
+        WorthQuerySourceReferenceOnlyInspectionRequest(
+            self.0.with_allocation_policy_core(allocation_policy),
+        )
     }
     pub fn execute(
         self,
@@ -107,5 +104,26 @@ impl<
                 )
                 .map(Some)
             })
+    }
+}
+
+impl<'a, 'p, 'r, 's, Schema, Disclosure>
+    WorthQuerySourceInspectionRequest<'a, 'p, 'r, 's, Schema, Disclosure>
+{
+    fn with_allocation_policy_core<'funding>(
+        self,
+        allocation_policy: ExecutionAllocationPolicy<'funding, 'funding>,
+    ) -> WorthQuerySourceInspectionRequest<'funding, 'p, 'r, 's, Schema, Disclosure>
+    where
+        'a: 'funding,
+    {
+        WorthQuerySourceInspectionRequest {
+            runtime: self.runtime,
+            external: self.external,
+            request: self.request,
+            source: self.source,
+            allocation_policy,
+            disclosure: PhantomData,
+        }
     }
 }

@@ -29,14 +29,15 @@ pub use request::{
     WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryEvaluatedInspectionRequest,
     WorthQueryEvaluatedReferenceOnlyInspectionRequest,
     WorthQueryMaterializedConnectedInspectionRequest, WorthQueryMaterializedInspectionRequest,
-    WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspectionRequest,
-    WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest,
-    WorthQuerySourceReferenceOnlyInspectionRequest,
+    WorthQueryMaterializedSourceInspectionRequest, WorthQueryObservedInspectionRequest,
+    WorthQueryPerformedSourceInspectionRequest, WorthQueryReferenceOnlyInspectionRequest,
+    WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
 };
 pub use result::{
     WorthQueryComparedApplicationInspection, WorthQueryConnectedApplicationInspection,
     WorthQueryEvaluatedApplicationInspection, WorthQueryMaterializedApplicationInspection,
-    WorthQueryObservedApplicationInspection, WorthQueryPerformedSourceInspection,
+    WorthQueryMaterializedPerformedSourceInspection, WorthQueryObservedApplicationInspection,
+    WorthQueryPerformedSourceInspection,
 };
 pub use stop::{
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,

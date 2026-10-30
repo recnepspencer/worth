@@ -45,12 +45,14 @@ pub use application_inspection::{
     WorthQueryConnectedApplicationInspection, WorthQueryConnectedInspectionRequest,
     WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryEvaluatedApplicationInspection,
     WorthQueryEvaluatedInspectionRequest, WorthQueryEvaluatedReferenceOnlyInspectionRequest,
-    WorthQueryMaterializedConnectedInspectionRequest, WorthQueryObservedApplicationInspection,
-    WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspection,
-    WorthQueryPerformedSourceInspectionRequest, WorthQueryProducerConnectionDenial,
-    WorthQueryProducerEvaluationDecision, WorthQueryProducerEvaluationDenial,
-    WorthQueryProducerOutputConnectionDenial, WorthQueryReferenceOnlyInspectionRequest,
-    WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
+    WorthQueryMaterializedConnectedInspectionRequest,
+    WorthQueryMaterializedPerformedSourceInspection, WorthQueryMaterializedSourceInspectionRequest,
+    WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest,
+    WorthQueryPerformedSourceInspection, WorthQueryPerformedSourceInspectionRequest,
+    WorthQueryProducerConnectionDenial, WorthQueryProducerEvaluationDecision,
+    WorthQueryProducerEvaluationDenial, WorthQueryProducerOutputConnectionDenial,
+    WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest,
+    WorthQuerySourceReferenceOnlyInspectionRequest,
 };
 pub use application_observation::WorthQueryApplicationQueryObservation;
 pub use builder::{

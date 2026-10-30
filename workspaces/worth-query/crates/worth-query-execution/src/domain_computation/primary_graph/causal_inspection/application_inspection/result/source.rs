@@ -1,6 +1,9 @@
 //! The source report owns immutable evidence, never the original receipt or read.
 use super::super::source_original::SourceOriginal;
 use super::*;
+mod rich;
+pub(in super::super) use rich::PreparedMaterializedSourceInspection;
+pub use rich::WorthQueryMaterializedPerformedSourceInspection;
 
 pub struct WorthQueryPerformedSourceInspection {
     original: SourceOriginal,

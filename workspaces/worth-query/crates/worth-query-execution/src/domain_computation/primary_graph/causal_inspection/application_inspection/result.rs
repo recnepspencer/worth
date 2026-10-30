@@ -21,7 +21,10 @@ use crate::domain_computation::{
 };
 pub(super) use comparison::PreparedComparedInspection;
 pub use comparison::WorthQueryComparedApplicationInspection;
-pub use source::WorthQueryPerformedSourceInspection;
+pub(super) use source::{PreparedMaterializedSourceInspection, PreparedSourceInspection};
+pub use source::{
+    WorthQueryMaterializedPerformedSourceInspection, WorthQueryPerformedSourceInspection,
+};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure, ScopeStop};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

@@ -22,3 +22,6 @@ pub use rich_query::rich_original_query_survives_head_change_and_private_assembl
 
 mod rich_connected;
 pub use rich_connected::rich_source_and_producer_keep_original_values_both_authorities_and_release;
+
+mod rich_source;
+pub use rich_source::source_only_rich_survives_receipt_drop_and_rechecks_diagnostics_cancellation_and_release;

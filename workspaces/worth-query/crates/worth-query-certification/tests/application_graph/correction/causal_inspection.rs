@@ -152,3 +152,8 @@ fn rich_original_query_keeps_original_cells_and_rechecks_live_authority() {
 fn rich_connected_originals_keep_canonical_source_effects_and_exact_producer_evidence() {
     super::model::causal_inspection::output_equivalence::rich_source_and_producer_keep_original_values_both_authorities_and_release();
 }
+
+#[test]
+fn rich_source_only_keeps_original_effects_without_query_or_producer_claims() {
+    super::model::causal_inspection::output_equivalence::source_only_rich_survives_receipt_drop_and_rechecks_diagnostics_cancellation_and_release();
+}

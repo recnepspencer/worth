@@ -590,5 +590,53 @@ continues to report `RequestedButNotProvidedBySelectedObservationMode`.
 Both subjects are freshly admitted before canonical values or their availability
 are inspected. Revoking either subject refuses a new rich request. Cancellation
 after both private bodies are prepared prevents publication, preserves committed
-business state and releases fresh request funding. Rich source-only inspection
-and remaining lifecycle/consumer qualification are subsequent milestone work.
+business state and releases fresh request funding. Source-only richness uses the
+same source effect owner through the separate request described below. Evidence
+availability/expiry and broader consumer qualification remain subsequent phases.
+
+
+## Rich source-only inspection
+
+A performed source can materialize its canonical effects without supplying any
+completed query observation. Reuse the explicit materialization request with its
+source-effects facet selected:
+
+```rust,ignore
+let rich = fresh.inspect_source::<SourceDisclosure>(&original_source)
+    .why_performed().materialize(detail)
+    .execute_governed(current_source_metadata, current_source_diagnostic)?;
+let expected_commit = rich.source_commit().clone();
+drop(original_source);
+for field in rich.materialization().source_effects().into_iter().flat_map(|s| s.fields()) {
+    consume(field.output_name(), field.effect(), field.value());
+}
+assert_eq!(rich.source_commit(), &expected_commit);
+rich.close();
+```
+
+Public inspection metadata uses `execute_with_diagnostic(current_diagnostic)`.
+There is no diagnostic-free `execute()` on a rich source request. Metadata and
+field diagnostics are independently prepared and revalidated through the actual
+source binding, principal, full-generation scope and single inspection session.
+The source report's consuming terminal checks the exact original Source target
+and rich request before publication. Source-only success cannot contain a query
+projection, connected target or producer payload.
+
+The result owns immutable original source data and the same fresh report ticket;
+it borrows neither the original receipt nor an operational query read. Closing
+other receipt/producer holders leaves its original canonical values usable.
+Already admitted descriptive values remain usable after later grant withdrawal;
+a new rich request rechecks access. A diagnostic capability whose own request was
+cancelled cannot supply permission. Real cancellation after private source-body
+assembly prevents publication and releases fresh report/view funding without
+changing the business head.
+
+If selected by `detail`, QueryInspection and producer evidence report
+`RequestedButNotProvidedBySelectedObservationMode`, not projection-not-retained,
+producer absence or a Signal evaluation verdict. Unrequested facets remain
+NotRequested. Source-only mode performs no query or producer/Signal discovery.
+Owner/family references come from the actual admitted Source reporting envelope.
+The existing Host doctest lane checks the admitted signature, absence of a
+capability-free execution method, and private success construction. Signal tier
+availability, actual owner expiry and integrated consumer handoff remain Phases
+9.10 and 9.11.
