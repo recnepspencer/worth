@@ -13,7 +13,7 @@ impl RelationalRuntime {
         selected: RelationalSelectedCommit,
     ) -> Result<(), Denial> {
         require_exact(self, &selected)?;
-        super::run(execution, |context| super::visit(context))?;
+        super::run(execution, super::visit)?;
         self.history
             .discard_authored_write_generation(selected.commit_id())
     }

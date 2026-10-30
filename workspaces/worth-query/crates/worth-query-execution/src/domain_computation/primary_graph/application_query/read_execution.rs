@@ -128,7 +128,7 @@ pub(super) fn read_bounded_plan_rows(
     let pinned = pin_runtime_read(
         runtime,
         execution,
-        &read,
+        read,
         &[],
         WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
     )?;

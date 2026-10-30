@@ -69,9 +69,7 @@ pub(super) fn check_actual_parent_profiles() {
             .installed_query_binding::<queries::ParentBinding<Lawful>>()
             .unwrap()
     ));
-    let foreign = bind::<1>()
-        .err()
-        .expect("the actual foreign codec profile refuses");
+    let foreign = bind::<1>().expect_err("the actual foreign codec profile refuses");
     assert_eq!(
         foreign.kind(),
         SchemaKind::ManagedIndexBindingMeaningChanged
@@ -91,8 +89,7 @@ pub(super) fn check_actual_parent_profiles() {
                 .unwrap()
         ));
     let disclosure = bind::<3>()
-        .err()
-        .expect("an opaque installed-policy recipe still lacks executable disclosure");
+        .expect_err("an opaque installed-policy recipe still lacks executable disclosure");
     assert_eq!(disclosure.kind(), SchemaKind::ManagedIndexParentUnsupported);
     assert_eq!(
         disclosure.subject(),

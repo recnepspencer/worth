@@ -2,10 +2,6 @@
 use super::*;
 
 impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-    )]
     pub(in crate::domain_computation::primary_graph::application_query) fn into_facts(
         self,
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
@@ -61,10 +57,6 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
     }
 }
 
-#[expect(
-    clippy::mutable_key_type,
-    reason = "Locator keys order immutable source coordinates"
-)]
 pub(super) fn merge_facts(
     facts: Vec<Fact>,
     control: SourceFactExpansionControl<'_, '_>,

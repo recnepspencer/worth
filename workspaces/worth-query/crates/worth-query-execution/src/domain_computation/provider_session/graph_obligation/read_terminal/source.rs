@@ -7,14 +7,15 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 pub(in crate::domain_computation) struct WorthQueryCompletedSourceRead {
     context: super::super::session::WorthQueryQuerySourceContext,
     session: WorthQueryGraphWorkSessionIdentity,
-    managed_run: WorthQueryGraphWorkManagedRunIdentity,
-    plan: WorthQueryGraphWorkPlanIdentity,
+    // Terminal evidence stays owned even when no later read inspects it.
+    _managed_run: WorthQueryGraphWorkManagedRunIdentity,
+    _plan: WorthQueryGraphWorkPlanIdentity,
     binding: ApplicationSchemaBindingIdentity,
     obligation: WorthQueryInstalledGraphObligationSetIdentity,
     basis: WorthQueryApplicationBasisIdentity,
-    basis_release: WorthQueryApplicationBasisReleaseReceipt,
-    dependencies: WorthQueryGraphReadDependencyEvidence,
-    release: WorthQueryExecutionCapacityReleaseReceipt,
+    _basis_release: WorthQueryApplicationBasisReleaseReceipt,
+    _dependencies: WorthQueryGraphReadDependencyEvidence,
+    _release: WorthQueryExecutionCapacityReleaseReceipt,
     _allocation: Arc<SourceFactsAllocation>,
 }
 
@@ -45,14 +46,14 @@ impl WorthQueryGraphReadCompletion {
         Ok(Some(WorthQueryCompletedSourceRead {
             context,
             session: self.session,
-            managed_run: self.managed_run,
-            plan: self.plan,
+            _managed_run: self.managed_run,
+            _plan: self.plan,
             binding: self.binding,
             obligation: self.obligation,
             basis,
-            basis_release,
-            dependencies: self.dependencies,
-            release: self.release,
+            _basis_release: basis_release,
+            _dependencies: self.dependencies,
+            _release: self.release,
             _allocation: Arc::clone(allocation),
         }))
     }

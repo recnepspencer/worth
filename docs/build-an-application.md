@@ -1891,6 +1891,19 @@ activation to name a supported program. For an app-owned predecessor mapping,
 through the ordinary program/roster installation path. The predecessor rendering
 never becomes a program revision or a roster member.
 
+For fresh installation with a separately funded setup request, borrow that original
+request with `host::application_contribution::with_bootstrap_advancement_from_request`.
+Call `host::application_installation::in_memory_rostered_program_in_advancement` with
+the phase first, followed by the validated program, roster, declaration,
+configuration, build identity, World limits and ordinary seed callback. It uses the
+same construction and roster core as default installation. The phase's original
+work, memory, cancellation and deadline govern all setup; the installed World's
+request policy remains the one declared in its limits. A larger seed grant therefore
+cannot make a zero-work runtime query succeed. Default `in_memory_program` and
+`in_memory_rostered_program` still open their bootstrap from the World policy.
+The public-entry funding, cancellation and memory regressions live in
+`topology_entry/src/checkpoint_recovery/support/bootstrap_funding.rs`.
+
 When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
 and pass the resulting phase to

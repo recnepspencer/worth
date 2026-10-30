@@ -178,7 +178,7 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
 }
 
 #[test]
-fn phase_six_warm_consumers_cannot_hide_hashing_behind_a_helper() {
+fn warm_consumers_cannot_hide_hashing_behind_a_helper() {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
     for relative in [
         "../worth-query-execution/src/domain_computation/primary_graph/application_query",
@@ -235,6 +235,30 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
     }
     let source = std::fs::read_to_string(path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
+    let is_managed_source_capture = path.ends_with(Path::new(
+        "application_query/managed_index/source_dependencies.rs",
+    ));
+    if is_managed_source_capture {
+        assert!(source.contains("worth-query:managed-source-dependencies:v1"));
+    }
+    // Dependency evidence is captured only while explicitly rebuilding an
+    // index. Ordinary selection must keep carrying the completed evidence.
+    for (caller, call) in [
+        (
+            "application_query/managed_index/execution/build.rs",
+            "source_acquisition::acquire(",
+        ),
+        (
+            "application_query/managed_index/source_completion.rs",
+            "source_dependencies::capture(",
+        ),
+    ] {
+        assert!(
+            path.ends_with(Path::new(caller)) || !source.contains(call),
+            "{} entered managed-source reconstruction through {call}",
+            path.display()
+        );
+    }
     // The interner derives result-set evidence and checkpoint identity on a
     // meaning miss. Its parent now only carries the resulting witnesses.
     if is_source_meaning_interner {
@@ -277,6 +301,10 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         (
             "application_query/observed_source/root_selection/components.rs",
             "declared-components:v1",
+        ),
+        (
+            "application_query/observed_source/root_selection/managed_index.rs",
+            "declared-managed-index:v1",
         ),
     ] {
         if !path.ends_with(Path::new(owner)) {
@@ -324,6 +352,9 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         ".render_support_hex()",
         ".render_hex()",
     ] {
+        if is_managed_source_capture && matches!(forbidden, "Sha256" | "sha2::") {
+            continue;
+        }
         if is_source_meaning_interner
             && matches!(
                 forbidden,

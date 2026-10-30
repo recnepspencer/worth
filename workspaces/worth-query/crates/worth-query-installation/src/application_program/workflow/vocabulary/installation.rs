@@ -121,7 +121,7 @@ where
         Binding::Query: ApplicationQueryMarkerIdentity<Schema> + 'static,
         <<Binding::Query as ApplicationQueryMarkerIdentity<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             ApplicationExpressionOperandValue,
-    {
+{
         self.insert_marker(
             6,
             TypeId::of::<Binding::Query>(),

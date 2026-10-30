@@ -83,12 +83,13 @@ mod serial {
             threads
                 .spawn(move || {
                     let (scope, principal) = authenticate(application);
-                    demand.release_managed_cleanup(&application.request(&principal, &scope))
+                    demand
+                        .release_managed_cleanup(&application.request(&principal, &scope))
+                        .expect_err("the actual Signal terminal refuses a different native thread")
                 })
                 .join()
                 .unwrap()
-        })
-        .expect_err("the actual Signal terminal refuses a different native thread");
+        });
         assert!(
             matches!(refused, WorthQueryApplicationOutputDemandDenial::Demand(ref denial)
         if denial.kind() == primary_graph::WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(Failure::Native(

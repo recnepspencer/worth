@@ -135,7 +135,7 @@ pub enum BankApplicationQueryDenial {
     Admission(BankApplicationQueryLaneDenial<BankApplicationQueryAdmissionDenialKind>),
     Execution(BankApplicationQueryLaneDenial<BankApplicationOneShotDenialKind>),
     OutputSettlement(BankApplicationOutputSettlementDenialKind),
-    ManagedIndex(worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenial),
+    ManagedIndex(Box<worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenial>),
     ContinuationExecution(BankApplicationQueryLaneDenial<BankApplicationContinuationDenialKind>),
     LiveOpen(BankApplicationQueryLaneDenial<BankApplicationLiveOpenDenialKind>),
 }
@@ -224,7 +224,7 @@ impl BankApplicationQueryDenial {
                 Self::from_continuation_execution(denial)
             }
             WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause) => {
-                Self::ManagedIndex(cause)
+                Self::ManagedIndex(Box::new(cause))
             }
             WorthQueryApplicationRequestQueryDenial::RequestMode => Self::RequestMode,
             WorthQueryApplicationRequestQueryDenial::CapabilityInstallation(denial) => {

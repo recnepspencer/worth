@@ -12,8 +12,7 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
 mod execution;
 pub(super) use execution::ErasedIndexExecutor;
 
-pub(in crate::domain_computation::primary_graph) trait InstalledIndexProvider<S, I>:
-    Send + Sync
+pub(super) trait InstalledIndexProvider<S, I>: Send + Sync
 where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,

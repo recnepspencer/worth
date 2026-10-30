@@ -248,14 +248,24 @@ pub(super) fn prepare_publication_phase(
     let validated_lineage_events = crate::runtime::ValidatedLineageEventBatch::from_reserved(
         canonical_commit_envelope.lineage_events().to_vec(),
     );
-    let canonical_publication_route = runtime
-        .history
-        .reserve_canonical_publication_route(
-            *execution,
+    let reserve_route = |execution: worth_execution::ExecutionRequest<'_, '_>| {
+        runtime.history.reserve_canonical_publication_route(
+            execution,
             prepared_history.envelope_residency(),
             Arc::clone(prepared_history.root()),
         )
-        .map_err(|error| error.with_commit_log(commit_log.clone()))?;
+    };
+    let canonical_publication_route = match (
+        super::super::request_lease(execution),
+        runtime.commit_work_budget.as_ref(),
+    ) {
+        (Some(lease), Some(budget)) => budget
+            .run_stage(lease, reserve_route)
+            .map_err(|stop| TransactionCommitError::execution(stop.into()))
+            .and_then(std::convert::identity),
+        _ => reserve_route(*execution),
+    }
+    .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
     let mirror_publication = runtime
         .mirror_residency

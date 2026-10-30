@@ -45,7 +45,7 @@ impl InstalledWorkflowCondition {
         Binding::Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
         <<Binding::Query as ApplicationQueryMarkerIdentity<Spec::Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             ApplicationExpressionOperandValue,
-    {
+{
         let query = ApplicationWorkflowConditionQuery::declared::<Spec, Binding::Query>();
         Self {
             query_identifier: query.identifier(),

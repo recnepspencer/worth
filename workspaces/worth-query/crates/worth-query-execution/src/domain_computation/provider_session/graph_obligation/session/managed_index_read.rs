@@ -59,10 +59,11 @@ pub(in crate::domain_computation) struct WorthQueryManagedIndexSelectionProof<
     request: &'a WorthQueryRequestScope,
     association: WorthQueryInstalledManagedIndexParent,
     source: Arc<WorthQueryCompletedSourceRead>,
-    session: WorthQueryGraphWorkSessionIdentity,
-    managed_run: WorthQueryGraphWorkManagedRunIdentity,
-    plan: worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity,
-    release: worth_query_admission::integration::WorthQueryExecutionCapacityReleaseReceipt,
+    // The selection proof carries the completed callback's original terminal.
+    _session: WorthQueryGraphWorkSessionIdentity,
+    _managed_run: WorthQueryGraphWorkManagedRunIdentity,
+    _plan: worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity,
+    _release: worth_query_admission::integration::WorthQueryExecutionCapacityReleaseReceipt,
 }
 
 impl<'a, 'request, 'authority> WorthQueryManagedIndexReadSession<'a, 'request, 'authority> {
@@ -217,10 +218,10 @@ impl<'a, 'request, 'authority> WorthQueryManagedIndexReadSession<'a, 'request, '
             request: self.request,
             association: self.association,
             source: self.source,
-            session: self.identity,
-            managed_run: self.managed_run,
-            plan,
-            release,
+            _session: self.identity,
+            _managed_run: self.managed_run,
+            _plan: plan,
+            _release: release,
         })
     }
 }

@@ -25,7 +25,7 @@ where
                 Schema,
                 <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
             >,
-    {
+{
         let application = self.application;
         let scope = self.scope;
         application
@@ -54,7 +54,7 @@ where
                 Schema,
                 <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
             >,
-    {
+{
         if self.retained.is_some() {
             return Err(super::super::WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis);
         }

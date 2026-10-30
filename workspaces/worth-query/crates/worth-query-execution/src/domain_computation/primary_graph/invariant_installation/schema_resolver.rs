@@ -158,7 +158,7 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
     where
         Field: worth_query_declaration::facade::application_schema::DeclaredApplicationFieldValue<Value = Value>,
         Field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,
-    {
+{
         self.layout
             .field(field.entity(), field.aspect(), field.field())
             .map(|layout| super::super::application_invariant::WorthQueryApplicationInvariantFieldBinding {

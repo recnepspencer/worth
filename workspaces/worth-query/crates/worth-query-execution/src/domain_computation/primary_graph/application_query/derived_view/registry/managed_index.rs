@@ -36,15 +36,14 @@ impl ManagedDerivedViewRegistry {
             .ok_or(Cause::WorkCounterOverflow)?;
         MaterialCompletion::new(execution, &candidate.allocation).work(visits)?;
         for (_, entry) in &state.owned {
-            if let OwnedDerivedView::ManagedIndex { state: found, .. } = entry {
-                if found
+            if let OwnedDerivedView::ManagedIndex { state: found, .. } = entry
+                && found
                     .downcast_ref::<ManagedIndexState<S, I>>()
                     .is_some_and(|actual| actual.same_association(candidate))
-                {
-                    return Arc::clone(found)
-                        .downcast::<ManagedIndexState<S, I>>()
-                        .map_err(|_| Denial::ForeignAssociation);
-                }
+            {
+                return Arc::clone(found)
+                    .downcast::<ManagedIndexState<S, I>>()
+                    .map_err(|_| Denial::ForeignAssociation);
             }
         }
         Err(Denial::NotReady)

@@ -64,9 +64,15 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
     let valid = ApplicationSchemaMember::ManagedIndex {
         definition: recipe.meaning().clone(),
     };
-    validate_definitions(&[valid.clone()], &[recipe.clone()], &[], &bindings).unwrap();
+    validate_definitions(
+        std::slice::from_ref(&valid),
+        std::slice::from_ref(&recipe),
+        &[],
+        &bindings,
+    )
+    .unwrap();
     assert_eq!(
-        validate_definitions(&[valid.clone()], &[], &[], &bindings)
+        validate_definitions(std::slice::from_ref(&valid), &[], &[], &bindings)
             .unwrap_err()
             .kind(),
         Kind::ManagedIndexBindingMeaningChanged
@@ -79,7 +85,7 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
         definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
     };
     assert_eq!(
-        validate_definitions(&[foreign], &[recipe.clone()], &[], &bindings)
+        validate_definitions(&[foreign], std::slice::from_ref(&recipe), &[], &bindings)
             .unwrap_err()
             .kind(),
         Kind::ManagedIndexBindingMeaningChanged

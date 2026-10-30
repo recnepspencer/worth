@@ -30,11 +30,27 @@ impl RuntimeSequenceState {
     }
 
     pub(super) fn next_proposal_ordinal(&self) -> Option<u64> {
-        self.next_proposal_ordinal
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                (current != 0).then(|| current.checked_add(1).unwrap_or(0))
-            })
-            .ok()
+        {
+            let update_counter = &self.next_proposal_ordinal;
+            let mut current = update_counter.load(Ordering::Relaxed);
+            loop {
+                let Some(updated_value) =
+                    (current != 0).then(|| current.checked_add(1).unwrap_or(0))
+                else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .ok()
     }
 
     pub(super) fn runtime_instance_id(&self) -> u64 {

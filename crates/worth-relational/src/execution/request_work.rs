@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use worth_execution::{CancellationToken, ExecutionResourceLease, LeaseRequest};
+use worth_execution::{
+    CancellationToken, ExecutionRequest, ExecutionResourceLease, ExecutionWorkCeiling,
+    LeaseRequest, WorkCeilingDenial,
+};
 use worth_foundational::{ExecutionBudget, ExecutionReport, ExecutionRequestPolicy};
 
 /// The charged work of one leased validation or commit preparation request.
@@ -16,14 +19,41 @@ impl RequestWorkBudget {
     }
 
     /// Validation and commit preparation dispatch these patterns in phase order.
-    /// Only their top-level packet runners receive this account; kernels never
-    /// receive it. A validated proposal carries the account into preparation.
+    /// Top-level packet runners and native evidence stages receive this account;
+    /// kernels never receive it. A validated proposal carries the account into preparation.
     /// Hold the lock through each run so no dispatch borrows unreported work.
     pub(crate) fn run<R>(
         &self,
         lease: &ExecutionResourceLease<'_>,
         run: impl FnOnce(&ExecutionResourceLease<'_>) -> R,
         report: impl FnOnce(&R) -> ExecutionReport,
+    ) -> R {
+        self.run_reported(lease, run, |outcome| Some(report(outcome)))
+    }
+
+    /// Native evidence settles into the same account as packet preparation.
+    /// A refusal before callback entry has no work report to settle.
+    pub(crate) fn run_stage<'authority, R>(
+        &self,
+        lease: &ExecutionResourceLease<'authority>,
+        stage: impl FnOnce(ExecutionRequest<'_, 'authority>) -> R,
+    ) -> Result<R, WorkCeilingDenial> {
+        self.run_reported(
+            lease,
+            |child| {
+                let execution = ExecutionRequest::leased(child);
+                execution.run(ExecutionWorkCeiling::new(None), |_| stage(execution))
+            },
+            |outcome| outcome.as_ref().ok().map(|(_, report)| *report),
+        )
+        .map(|(value, _)| value)
+    }
+
+    fn run_reported<'authority, R>(
+        &self,
+        lease: &ExecutionResourceLease<'authority>,
+        run: impl FnOnce(&ExecutionResourceLease<'authority>) -> R,
+        report: impl FnOnce(&R) -> Option<ExecutionReport>,
     ) -> R {
         let policy = *lease.policy();
         let Some(budget) = policy.accounting() else {
@@ -53,10 +83,11 @@ impl RequestWorkBudget {
             })
             .expect(/* Proof: The child copies its already admitted parent policy and only reduces remaining work; it introduces no invalid limit or deadline relation. */ "a remaining-work child preserves its parent's policy limits");
         let outcome = run(&child);
-        let report = report(&outcome);
-        #[cfg(test)]
-        observation::record(report.charged_work());
-        *charged = charged.saturating_add(report.charged_work());
+        if let Some(report) = report(&outcome) {
+            #[cfg(test)]
+            observation::record(report.charged_work());
+            *charged = charged.saturating_add(report.charged_work());
+        }
         outcome
     }
 }

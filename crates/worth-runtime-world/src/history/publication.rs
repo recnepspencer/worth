@@ -23,11 +23,24 @@ impl PublicationRevision {
         self.0.load(Ordering::Acquire)
     }
     pub(crate) fn advance(&self) {
-        let _ = self
-            .0
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
-                value.checked_add(1)
-            });
+        let _ = {
+            let update_counter = &self.0;
+            let mut value = update_counter.load(Ordering::Acquire);
+            loop {
+                let Some(updated_value) = value.checked_add(1) else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        };
     }
 }
 

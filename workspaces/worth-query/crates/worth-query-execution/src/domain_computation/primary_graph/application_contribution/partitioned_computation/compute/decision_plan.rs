@@ -54,7 +54,7 @@ where
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<Schema, Operation = Owner::Operation>,
         Owner::Stopped: Into<crate::domain_computation::primary_graph::application_entry::mutation::HandlerFailure<Domain>> + std::fmt::Debug + Sync,
-    {
+{
         match self.prepare(reader, input) {
             Ok(prepared) => prepared.into_decision_plan(move |computed| {
                 match computed.and_then(|computed| computed.complete()) {

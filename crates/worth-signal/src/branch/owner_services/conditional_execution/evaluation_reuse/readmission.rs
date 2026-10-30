@@ -127,14 +127,25 @@ where
             .last()
             .map(|transition| Arc::clone(&transition.inner.successor))
             .unwrap_or_else(|| Arc::clone(&request.predecessor.retained_basis));
-        let ordinal = self
-            .next_evaluation_ordinal
-            .fetch_update(
-                std::sync::atomic::Ordering::Relaxed,
-                std::sync::atomic::Ordering::Relaxed,
-                |value| value.checked_add(1),
-            )
-            .map_err(|_| Denial::EvaluationIdentityExhausted)?;
+        let ordinal = {
+            let update_counter = &self.next_evaluation_ordinal;
+            let mut value = update_counter.load(std::sync::atomic::Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = value.checked_add(1) else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| Denial::EvaluationIdentityExhausted)?;
         let execution_identity = super::super::evaluation_identity::evaluation_identity(ordinal);
         let charge = super::super::admission_retention::evaluation_admission_charge(
             &request.predecessor.contract,

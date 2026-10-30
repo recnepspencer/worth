@@ -228,7 +228,7 @@ where
                     Schema,
                 >>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
             >,
-    {
+{
         match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
             let selected = request.select_program_owner(phase, application)?.selected;
             super::authorization::prepare_capability_selected(

@@ -135,7 +135,9 @@ pub fn decode_hex(corpus: &str) -> Vec<u8> {
     assert!(corpus.len().is_multiple_of(2), "hex corpus has a remainder");
     let bytes = corpus
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
         .collect::<Vec<_>>();
     assert_eq!(bytes.len() * 2, corpus.len());

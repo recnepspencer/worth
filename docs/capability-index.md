@@ -499,6 +499,14 @@ For business reversal, declare a domain operation with the required source,
 authorization and effects. For branch adoption, retain the target branch's
 native adoption result and handle its typed preparation and publication outcomes.
 
+For fresh program installation inside an already admitted original execution request,
+use `host::application_contribution::with_bootstrap_advancement_from_request` and pass
+its phase first to `host::application_installation::in_memory_rostered_program_in_advancement`,
+then the validated program, roster, declaration, configuration, build identity, World
+limits and seed callback. Setup spends the supplied request; the installed World keeps
+its declared runtime request policy. Default installation entries still open setup
+from that policy. See [installation funding](build-an-application.md#4-install-the-application-graph).
+
 For installation and checkpoint-transition work inside an already admitted original
 execution request, use `host::application_contribution::with_bootstrap_advancement_from_request`.
 Its bootstrap phase borrows the same cancellation/deadline and cumulative native work.

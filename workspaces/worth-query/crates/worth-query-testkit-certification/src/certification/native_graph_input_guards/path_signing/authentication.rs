@@ -37,12 +37,25 @@ impl WorthQueryNamedClockSource<Clock> for Source {
             )
         };
         let coordinate = u64::try_from(self.started.elapsed().as_nanos()).map_err(|_| denied())?;
-        let sequence = self
-            .sequence
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-                value.checked_add(1)
-            })
-            .map_err(|_| denied())?;
+        let sequence = {
+            let update_counter = &self.sequence;
+            let mut value = update_counter.load(Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = value.checked_add(1) else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| denied())?;
         Ok(WorthQueryNamedClockReading::new(
             sequence,
             WorthQueryClockCoordinate::from_nanoseconds(coordinate),

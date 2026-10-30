@@ -9,7 +9,7 @@ impl InstalledWorkflowOperation {
     where
         Spec: ApplicationWorkflowSpec,
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Spec::Schema>,
-    {
+{
         let reference = ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>();
         Self {
             marker: reference.operation_type(),

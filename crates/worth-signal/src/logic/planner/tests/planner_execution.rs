@@ -178,7 +178,7 @@ where
             task_records: Vec::new(),
         };
 
-        for (task, prepared) in stage.tasks.iter().zip(prepared_tasks.into_iter()) {
+        for (task, prepared) in stage.tasks.iter().zip(prepared_tasks) {
             let record_id = ExecutionRecordId(next_record_id);
             next_record_id += 1;
             let before_state = graph.get_state(task.node)?;

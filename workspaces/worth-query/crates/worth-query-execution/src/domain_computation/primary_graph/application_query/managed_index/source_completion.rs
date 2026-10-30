@@ -111,7 +111,7 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
             let (projected, retained) = read_execution::project_non_live_kernel_source(
                 kernel,
                 |count| {
-                    storage.work(u64::try_from(count).map_err(|_| failure(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow))?).map_err(&failure)
+                    storage.work(u64::try_from(count).map_err(|_| failure(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow))?).map_err(failure)
                 },
             )?;
             tree = Some(retained);
@@ -129,18 +129,18 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
     )?;
     storage
         .arc::<crate::domain_computation::provider_session::WorthQueryCompletedSourceRead>()
-        .map_err(&failure)?;
+        .map_err(failure)?;
     let terminal = Arc::new(parts.terminal);
-    storage.arc::<SourceImage<S, I>>().map_err(&failure)?;
+    storage.arc::<SourceImage<S, I>>().map_err(failure)?;
     Ok(Arc::new(SourceImage {
         installed,
         tree,
         order,
         dependencies,
-        sources: parts.sources,
-        result_set: parts.result_set,
-        affinity: parts.affinity,
+        _sources: parts.sources,
+        _result_set: parts.result_set,
+        _affinity: parts.affinity,
         terminal,
-        allocation: parts.allocation,
+        _allocation: parts.allocation,
     }))
 }

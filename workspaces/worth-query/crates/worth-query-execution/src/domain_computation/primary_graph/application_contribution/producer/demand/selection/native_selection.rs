@@ -14,6 +14,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
         selected_override: Option<&crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation<'_, Schema>>,
+        purpose: SelectionPurpose,
         native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
     where
@@ -266,7 +267,11 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                     // this exact source epoch without an input-cutoff contract.
                     // Keep the ordinary admission path: no retained key or
                     // checkpoint/input-reuse authority is supplied here.
-                    if let Some(epoch) = source.output_source_epoch() {
+                    let may_rejoin_ready = match purpose {
+                        SelectionPurpose::Lifecycle => false,
+                        SelectionPurpose::OutputDelivery => true,
+                    };
+                    if may_rejoin_ready && let Some(epoch) = source.output_source_epoch() {
                         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
                             Family::IDENTITY, selected.identity.clone(), selected.applicability, epoch,
                         );

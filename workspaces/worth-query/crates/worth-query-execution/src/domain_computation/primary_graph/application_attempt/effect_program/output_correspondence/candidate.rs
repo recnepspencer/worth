@@ -101,7 +101,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Contract: worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract<Schema>,
-    {
+{
         let (roles, families) = self
             .prepare_contract::<Schema, Contract>()
             .expect("the test contract is well formed");

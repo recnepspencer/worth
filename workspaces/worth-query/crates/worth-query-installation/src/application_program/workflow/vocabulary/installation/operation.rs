@@ -17,7 +17,7 @@ where
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
-    {
+{
         self.insert_marker(0, TypeId::of::<Binding>(), Binding::IDENTITY)?;
         if !self
             .program
