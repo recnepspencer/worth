@@ -1,3 +1,9 @@
+#[allow(
+    dead_code,
+    reason = "Shared private transport supports typed fields used by other closed testkits."
+)]
+#[path = "../../../scripts/test_cost/setup_observation.rs"]
+mod setup_observation;
 #[allow(dead_code, unused_imports)]
 #[allow(dead_code, unused_imports)]
 #[path = "shared_support_compat_http_phase_eight_runtime/mod.rs"]

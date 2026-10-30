@@ -1,11 +1,33 @@
+pub use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
 pub use {std::sync::atomic::AtomicUsize, std::sync::Arc, std::sync::Mutex};
 pub use {worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
-pub use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerConfig, worth_server::WorthServerDenialCode, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceBindingError, worth_server::WorthServerQueryWorkspaceBindingRequest, worth_server::WorthServerQueryWorkspaceBindingTarget, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass, worth_server::WorthServerWorthNativeSessionDenial, worth_server::WorthServerWorthNativeSessionInput};
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerConfig,
+    worth_server::WorthServerDenialCode, worth_server::WorthServerMiddlewareConfig,
+    worth_server::WorthServerQueryHandoffConfig,
+    worth_server::WorthServerQueryWorkspaceBindingError,
+    worth_server::WorthServerQueryWorkspaceBindingRequest,
+    worth_server::WorthServerQueryWorkspaceBindingTarget,
+    worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig,
+    worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext,
+    worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass,
+    worth_server::WorthServerWorthNativeSessionDenial,
+    worth_server::WorthServerWorthNativeSessionInput,
+};
 
-pub use {crate::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledCountingTestWorkspaceProvider, crate::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider, crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
+pub use {
+    crate::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledCountingTestWorkspaceProvider,
+    crate::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider,
+    crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider,
+};
 
 pub fn build_server(register_worth_native: bool) -> WorthServer {
+    let _ = crate::setup_observation::record("root-default-query-provider-server", &|inputs| {
+        inputs.unsigned("recipe_revision", 1);
+        inputs.boolean("register_worth_native", register_worth_native);
+    });
     build_server_with_workspace_provider(TestWorkspaceProvider, register_worth_native)
 }
 
@@ -17,7 +39,9 @@ pub fn build_server_with_disabled_worth_native() -> WorthServer {
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -51,7 +75,9 @@ pub fn build_server_with_preview_denial() -> WorthServer {
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -95,9 +121,10 @@ pub fn build_server_with_profiled_counting_workspace(
     (server, attempted_writes)
 }
 
-pub fn build_server_with_capturing_workspace_provider(
-) -> (WorthServer, CapturingWorkspaceProvider) {
-    let workspace_provider = crate::shared_support_worth_native_runtime::CapturingWorkspaceProvider::default();
+pub fn build_server_with_capturing_workspace_provider() -> (WorthServer, CapturingWorkspaceProvider)
+{
+    let workspace_provider =
+        crate::shared_support_worth_native_runtime::CapturingWorkspaceProvider::default();
     let server = build_server_with_workspace_provider(workspace_provider.clone(), true);
     (server, workspace_provider)
 }
@@ -224,7 +251,9 @@ pub fn build_server_with_workspace_provider(
             .with_request_context_config(
                 worth_server::WorthServerRequestContextConfig::builder()
                     .with_preview_targeting_enabled(true)
-                    .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                    .with_default_diagnostics_profile(
+                        worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                    )
                     .build()
                     .expect("request context config should validate"),
             )

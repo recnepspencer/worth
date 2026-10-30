@@ -23,6 +23,10 @@ pub fn principal(number: u64) -> BankPrincipalId {
 }
 impl World {
     pub fn new(seed: u64) -> Self {
+        let _ = crate::setup_observation::record("bank-parallel-history-seeded-world", &|inputs| {
+            inputs.unsigned("recipe_revision", 1);
+            inputs.unsigned("seed", seed);
+        });
         let identities = (1..=4)
             .map(|actor| DynamicIdentity::new(&format!("history-{seed}-{actor}")))
             .collect::<Vec<_>>();

@@ -114,6 +114,11 @@ pub fn workspace(
 
 pub fn configured_runtime(
 ) -> worth_query::facade::consumer_kit::WorthQueryInMemoryTestRuntimeBuilder {
+    let _ = crate::setup_observation::record("query-default-installed-runtime", &|inputs| {
+        inputs.unsigned("recipe_revision", 1);
+        inputs.boolean("reversed", false);
+        inputs.boolean("conflicting_duplicate", false);
+    });
     configured_base_runtime_for_package(package(false, false))
 }
 
@@ -327,6 +332,11 @@ pub fn package(
     reversed: bool,
     conflicting_duplicate: bool,
 ) -> domain::WorthQueryDomainPackage<GeometryDomain> {
+    let _ = crate::setup_observation::record("query-installed-geometry-package", &|inputs| {
+        inputs.unsigned("recipe_revision", 1);
+        inputs.boolean("reversed", reversed);
+        inputs.boolean("conflicting_duplicate", conflicting_duplicate);
+    });
     let read = read_vertex_definition(domain::WorthQuerySupportRequirement::Required);
     let count = count_vertices_definition();
     let mut package = domain::WorthQueryDomainPackage::declare(

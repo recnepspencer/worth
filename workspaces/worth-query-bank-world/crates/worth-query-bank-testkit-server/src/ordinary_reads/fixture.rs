@@ -116,6 +116,15 @@ pub fn ordinary_read_world_with_pending_payments(
     unrelated_accounts: usize,
     pending_payment_count: usize,
 ) -> OrdinaryReadFixture {
+    let _ = crate::setup_observation::record("bank-default-auth-ordinary-read-world", &|inputs| {
+        inputs.unsigned("recipe_revision", 1);
+        inputs.text("scenario", scenario);
+        inputs.unsigned("unrelated_accounts", unrelated_accounts as u64);
+        inputs.unsigned("pending_payment_count", pending_payment_count as u64);
+        inputs.boolean("custom_approval_authentication", false);
+        inputs.boolean("second_approver", false);
+        inputs.signed("payment_minor_units", 900);
+    });
     build_ordinary_read_world(
         scenario,
         unrelated_accounts,
