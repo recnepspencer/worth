@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Integration courts grouped by execution cost.
 
 use worth_relational::facade::mvcc::RelationalTransactionIntent;
