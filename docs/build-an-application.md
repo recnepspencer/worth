@@ -5644,12 +5644,26 @@ children. Query checks exact Source membership, unique slots and parents,
 connectivity and absence of cycles before retaining the root. Warm edits carry
 that correspondence using actual changed node coordinates and Native Source
 deltas. Opaque structure remains an explicit conservative profile. Definition v1
-means Opaque; v2 transports the declared profile.
+means Opaque; v2 transports structure; v3 also binds the membership strategy.
+Old v1/v2 definitions always retain candidate-only membership.
 
-A Source-complete tree is not complete query coverage or a verified narrowed
-footprint. Candidate matching still uses the provider; Source dependencies remain
-conservative. Framework traversal/pruning, tracked exact refinement and retained
-predicate routing remain unfinished Phase 3 work.
+A Source-complete tree alone does not establish complete query membership.
+Declare `MEMBERSHIP = ApplicationManagedIndexMembership::ExhaustiveSourceTree`
+and implement `validate_probe` plus `matches_source(row, probe, control)` to use
+Query's complete traversal. Query validates the probe even for an empty Source,
+visits every checked region and applies the installed pure candidate predicate
+to each genuine Source row. It emits that row's slot itself and returns only
+after the complete walk and final controls succeed. An interrupted traversal
+refuses; it cannot return a partial or empty success. The prefix and small public
+box examples below use this profile. The provider's legacy `query` callback is
+unused on this path; candidate-only providers keep their existing contract.
+
+Exhaustive membership deliberately visits the whole Source and provides no
+locality or pruning claim. Candidate membership is distinct from exact domain
+refinement such as geometric contact, and grants no mutation eligibility.
+Source dependencies remain conservative. Checked summary pruning, tracked exact
+refinement and retained predicate routing remain unfinished Phase 3 work; no
+verified narrowed footprint is issued by this traversal.
 
 Indexed results retain complete positive, empty and ordering dependencies from
 the original Source, including nonmatching rows. The ordinary `expect_source`
@@ -5695,6 +5709,8 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const PROVIDER_VERSION: u32 = 1;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
+    const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
 }
 ```
 
@@ -5709,6 +5725,8 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const PROVIDER_VERSION: u32 = 1;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
+    const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
 }
 ```
 

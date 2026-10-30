@@ -10,6 +10,7 @@ pub enum ApplicationManagedIndexDefinitionDenial {
     InvalidIdentifier,
     UnsupportedProbeProfile,
     UnsupportedSourceStructure,
+    UnsupportedMembership,
     UnsupportedSourcePosture,
     UnsupportedSourceShape,
     SourceDependencyCycle,
@@ -29,6 +30,7 @@ pub struct WorthQueryPortableManagedIndexParts {
     pub provider: String,
     pub provider_version: u32,
     pub structure: super::ApplicationManagedIndexSourceStructure,
+    pub membership: super::ApplicationManagedIndexMembership,
     pub source: super::ApplicationManagedIndexSourceMeaning,
     pub entity: String,
     pub probe: ApplicationManagedIndexProbeMeaning,
@@ -36,13 +38,14 @@ pub struct WorthQueryPortableManagedIndexParts {
 
 /// A deterministic provider with canonical-source candidate ordering, complete
 /// source dependencies, same-admitted-scope/no-source-parameter correspondence
-/// and reconstruction from Public committed sources. V1 is Opaque; v2 binds structure.
+/// and reconstruction from Public committed sources. V1 is Opaque; v2 binds structure;
+/// v3 additionally binds the installed candidate-membership execution contract.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ErasedApplicationManagedIndexDefinition {
     parts: WorthQueryPortableManagedIndexParts,
 }
 impl ErasedApplicationManagedIndexDefinition {
-    pub const CURRENT_VERSION: u16 = 2;
+    pub const CURRENT_VERSION: u16 = 3;
 
     pub fn from_untrusted_parts(parts: WorthQueryPortableManagedIndexParts) -> Self {
         Self { parts }
@@ -72,6 +75,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
                     provider: I::PROVIDER.to_owned(),
                     provider_version: I::PROVIDER_VERSION,
                     structure: I::STRUCTURE,
+                    membership: I::MEMBERSHIP,
                     source:
                         super::ApplicationManagedIndexSourceMeaning::same_scope_without_parameters(
                             ApplicationQueryBindingReference::of::<S, I::SourceBinding>(),

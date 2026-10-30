@@ -23,7 +23,7 @@ impl WorthQueryManagedIndexNodeRegion {
 }
 
 #[derive(Clone, Copy)]
-pub(super) struct Region {
+pub(in crate::domain_computation::primary_graph) struct Region {
     pub source: Option<Slot>,
     pub children: [Option<usize>; 2],
 }

@@ -22,6 +22,7 @@ fn definition() -> ErasedApplicationManagedIndexDefinition {
             provider: "worth.tests.prefix.v1".into(),
             provider_version: 1,
             structure: ApplicationManagedIndexSourceStructure::Opaque,
+            membership: ApplicationManagedIndexMembership::Candidates,
             source: ApplicationManagedIndexSourceMeaning::same_scope_without_parameters(
                 ApplicationQueryBindingReference::from_untrusted_parts(
                     ApplicationQueryBindingReferenceParts {
@@ -97,7 +98,7 @@ fn managed_index_v1_round_trips_full_probe_and_rejects_future_version_before_pay
     assert_eq!(decode_member(&bytes), member);
     // No payload follows: version refusal must precede any source/profile read.
     assert_eq!(
-        try_decode_member(&[0, 48, 0, 3]).unwrap_err().kind(),
+        try_decode_member(&[0, 48, 0, 4]).unwrap_err().kind(),
         Kind::UnsupportedRecordVariant
     );
     let mut parts = definition().parts().clone();
@@ -150,6 +151,50 @@ fn managed_index_structure_is_versioned_and_old_bytes_cannot_claim_source_covera
     assert_eq!(
         old.parts().structure,
         ApplicationManagedIndexSourceStructure::Opaque
+    );
+}
+
+#[test]
+fn managed_index_membership_keeps_old_versions_conservative_and_requires_actual_tree_profile() {
+    for version in [1, 2, 3] {
+        let mut parts = definition().parts().clone();
+        parts.semantic_version = version;
+        let member = ApplicationSchemaMember::ManagedIndex {
+            definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                parts.clone(),
+            ),
+        };
+        assert_eq!(decode_member(&encode_member(&member)), member);
+        parts.membership = ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+        assert_eq!(
+            ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()).validate(),
+            Err(ApplicationManagedIndexDefinitionDenial::UnsupportedMembership)
+        );
+        if version >= 2 {
+            parts.structure = ApplicationManagedIndexSourceStructure::BinarySourceTree;
+            let definition = ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts);
+            if version == 2 {
+                assert_eq!(
+                    definition.validate(),
+                    Err(ApplicationManagedIndexDefinitionDenial::UnsupportedMembership)
+                );
+            } else {
+                let member = ApplicationSchemaMember::ManagedIndex { definition };
+                let bytes = encode_member(&member);
+                assert_eq!(&bytes[..4], &[0, 48, 0, 3]);
+                assert_eq!(decode_member(&bytes), member);
+            }
+        }
+    }
+    // Literal v3 name/provider/version, BinarySourceTree and unknown membership2.
+    // No Source bytes follow: reject the strategy before interpreting any payload.
+    assert_eq!(
+        try_decode_member(&[
+            0, 48, 0, 3, 0, 0, 0, 1, b'I', 0, 0, 0, 1, b'P', 0, 0, 0, 1, 0, 1, 0, 2
+        ])
+        .unwrap_err()
+        .kind(),
+        Kind::UnsupportedRecordVariant
     );
 }
 

@@ -35,6 +35,7 @@ pub(in crate::domain_computation::primary_graph) use source::{
     },
     ManagedSourceInstallation,
 };
+pub(in crate::domain_computation::primary_graph) use source_structure::SourceTree;
 pub use source_structure::WorthQueryManagedIndexNodeRegion;
 mod stop;
 
@@ -51,7 +52,7 @@ pub use nodes::{
 };
 pub use provider::{
     WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
-    WorthQueryManagedIndexSourceChange,
+    WorthQueryManagedIndexSourceChange, WorthQueryManagedIndexSourceRow,
 };
 pub use provider_failure::WorthQueryManagedIndexProviderFailure;
 pub use retention::WorthQueryManagedIndexLifecycle;

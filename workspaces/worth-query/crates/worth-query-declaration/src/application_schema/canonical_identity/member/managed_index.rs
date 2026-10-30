@@ -19,6 +19,12 @@ pub(super) fn append(
             parts.structure.canonical_token(),
         );
     }
+    if parts.semantic_version >= 3 {
+        basis.text(
+            format!("{prefix}.membership"),
+            parts.membership.canonical_token(),
+        );
+    }
     basis.text(format!("{prefix}.entity"), &parts.entity);
     for (name, value) in parts.source.binding.canonical_fields() {
         basis.text(format!("{prefix}.source.{name}"), value);

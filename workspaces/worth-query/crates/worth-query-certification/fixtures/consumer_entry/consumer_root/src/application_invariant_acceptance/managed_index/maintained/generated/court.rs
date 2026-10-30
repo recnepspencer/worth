@@ -167,7 +167,7 @@ fn journey() {
             );
         }
     }
-    let queries = provider.queries.load(Ordering::SeqCst);
+    let queries = provider.probe_validations.load(Ordering::SeqCst);
     assert_suspended(request.query(find("A")).execute());
     let suspended_position = request
         .retain_current_read()
@@ -175,7 +175,7 @@ fn journey() {
         .selected_commit()
         .clone();
     assert_eq!(
-        provider.queries.load(Ordering::SeqCst),
+        provider.probe_validations.load(Ordering::SeqCst),
         queries,
         "current suspension refusal precedes provider query"
     );

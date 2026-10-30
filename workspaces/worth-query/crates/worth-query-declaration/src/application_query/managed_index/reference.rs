@@ -18,6 +18,8 @@ pub trait ApplicationManagedIndexBinding<Schema: ApplicationSchema>: Sized + 'st
     /// Source structure only; this grants no complete query or narrowed influence.
     const STRUCTURE: super::ApplicationManagedIndexSourceStructure =
         super::ApplicationManagedIndexSourceStructure::Opaque;
+    const MEMBERSHIP: super::ApplicationManagedIndexMembership =
+        super::ApplicationManagedIndexMembership::Candidates;
 
     #[doc(hidden)]
     fn descriptor() -> super::ApplicationManagedIndexBindingDescriptor {

@@ -1615,6 +1615,12 @@ Its [boundary, implementation and evidence](milestone-9.19-phase3-source-structu
 do not establish query traversal coverage. The remaining requirements below are
 unfinished.
 
+The next [exhaustive membership slice](milestone-9.19-phase3-exhaustive-membership-plan.md)
+adds an explicit installed strategy in which Query visits every checked region
+and applies the provider's pure candidate predicate. It preserves complete
+conservative Source dependencies and ordinary disclosure. Checked pruning,
+retained predicate routing and the other Phase 3 obligations remain unfinished.
+
 **Owner:** Query access admission, managed dependencies and provider/domain refinement.
 **Depends on:** Phases 1–2 and existing installed capability/disclosure admission.
 **Result:** managed access returns complete admitted candidates and the evidence

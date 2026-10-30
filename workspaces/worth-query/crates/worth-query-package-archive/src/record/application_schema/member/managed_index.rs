@@ -1,13 +1,13 @@
-//! Member48/v1 is Opaque; v2 carries structure. Both describe one provider contract; no executable root is transported.
+//! Member48: v1 Opaque; v2 structure; v3 membership. No executable root is transported.
 use super::*;
 use crate::record::application_schema::wire_vocabulary::{
     decode_optional, decode_type_identity, write_optional, write_type_identity,
 };
 use crate::record::application_schema::{canonical_value_reference, query_binding_reference};
 use worth_query_declaration::facade::application_query::{
-    ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexSourceMeaning,
-    ApplicationManagedIndexSourceParameters, ApplicationManagedIndexSourceScope,
-    ApplicationManagedIndexSourceStructure as Structure,
+    ApplicationManagedIndexMembership as Membership, ApplicationManagedIndexProbeMeaning,
+    ApplicationManagedIndexSourceMeaning, ApplicationManagedIndexSourceParameters,
+    ApplicationManagedIndexSourceScope, ApplicationManagedIndexSourceStructure as Structure,
     ErasedApplicationManagedIndexDefinition as Definition,
     WorthQueryPortableManagedIndexParts as Parts,
     WorthQueryPortableManagedIndexProbeParts as Probe,
@@ -34,10 +34,16 @@ pub(super) fn write(
     output.text(&parts.name)?;
     output.text(&parts.provider)?;
     output.u32(parts.provider_version)?;
-    if parts.semantic_version == 2 {
+    if parts.semantic_version >= 2 {
         output.u16(match parts.structure {
             Structure::Opaque => 0,
             Structure::BinarySourceTree => 1,
+        })?;
+    }
+    if parts.semantic_version >= 3 {
+        output.u16(match parts.membership {
+            Membership::Candidates => 0,
+            Membership::ExhaustiveSourceTree => 1,
         })?;
     }
     query_binding_reference::write(output, &parts.source.binding)?;
@@ -70,7 +76,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     let semantic_version = input.u16()?;
-    if !matches!(semantic_version, 1 | 2) {
+    if !matches!(semantic_version, 1 | 2 | 3) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     budget.require_nesting_depth(2)?;
@@ -83,6 +89,15 @@ pub(super) fn decode(
         match input.u16()? {
             0 => Structure::Opaque,
             1 => Structure::BinarySourceTree,
+            _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+        }
+    };
+    let membership = if semantic_version < 3 {
+        Membership::Candidates
+    } else {
+        match input.u16()? {
+            0 => Membership::Candidates,
+            1 => Membership::ExhaustiveSourceTree,
             _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
         }
     };
@@ -111,6 +126,7 @@ pub(super) fn decode(
             provider,
             provider_version,
             structure,
+            membership,
             source: ApplicationManagedIndexSourceMeaning {
                 binding,
                 scope,

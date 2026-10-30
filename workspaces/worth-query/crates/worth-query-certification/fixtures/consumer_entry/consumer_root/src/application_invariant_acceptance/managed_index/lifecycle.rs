@@ -14,6 +14,7 @@ use worth_query_host::facade::{
 pub(super) static ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYSTEM;
 
 mod affinity;
+mod complete_membership;
 mod installation;
 mod publication;
 mod registration;

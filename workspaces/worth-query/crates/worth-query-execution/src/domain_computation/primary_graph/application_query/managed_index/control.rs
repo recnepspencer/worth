@@ -64,7 +64,7 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
         }
     }
 
-    pub(super) fn refuse(&self, cause: Stop) -> Stop {
+    pub(in crate::domain_computation::primary_graph) fn refuse(&self, cause: Stop) -> Stop {
         self.first.borrow_mut().get_or_insert(cause).clone()
     }
 }

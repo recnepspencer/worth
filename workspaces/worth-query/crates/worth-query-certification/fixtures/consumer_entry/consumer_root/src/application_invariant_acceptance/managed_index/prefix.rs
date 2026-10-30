@@ -5,7 +5,7 @@ use std::sync::{
     Arc, Mutex,
 };
 use worth_query_consumer_values::{
-    insert_prefix_source, query_prefix_tree, remove_prefix_source, PrefixIndexDenial, PrefixNode,
+    insert_prefix_source, remove_prefix_source, PrefixIndexDenial, PrefixNode,
 };
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
@@ -25,6 +25,8 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const PROVIDER_VERSION: u32 = 1;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
+    const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
 }
 // compiled-example: end
 pub type Node = PrefixNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
@@ -32,10 +34,13 @@ pub type Stop = WorthQueryManagedIndexProviderStop<PrefixIndexDenial>;
 #[derive(Default)]
 pub struct Calls {
     #[cfg(test)]
+    pub(super) after_second_match: Mutex<Option<Box<dyn FnOnce() + Send>>>,
+    pub matched_sources: AtomicUsize,
+    #[cfg(test)]
     pub(super) structure_fault: Mutex<structure::Fault>,
     pub capacity: AtomicUsize,
     pub builds: AtomicUsize,
-    pub queries: AtomicUsize,
+    pub probe_validations: AtomicUsize,
     pub updates: AtomicUsize,
     pub canonical_rows: AtomicUsize,
     // Consumer fixture observation, invoked only after a genuine first node write.
@@ -47,7 +52,7 @@ impl Calls {
         (
             self.capacity.load(Ordering::SeqCst),
             self.builds.load(Ordering::SeqCst),
-            self.queries.load(Ordering::SeqCst),
+            self.probe_validations.load(Ordering::SeqCst),
         )
     }
 }
@@ -158,26 +163,36 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         }
         Ok(root)
     }
-    fn query(
+    fn validate_probe(
         &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
-        nodes: &WorthQueryManagedIndexNodes<Node>,
-        probe: &query::Probe,
-        candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
+        _probe: &query::Probe,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), Stop> {
-        self.0.queries.fetch_add(1, Ordering::SeqCst);
-        query_prefix_tree(
-            nodes.root(),
-            nodes.len(),
-            &mut storage::Query {
-                sources,
-                nodes,
-                probe,
-                candidates,
-                control,
-            },
-        )
+        self.0.probe_validations.fetch_add(1, Ordering::SeqCst);
+        control.checkpoint(1).map_err(Into::into)
+    }
+    fn matches_source(
+        &self,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, PrefixIndex>,
+        probe: &query::Probe,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<bool, Stop> {
+        let name = row
+            .field(query::name())
+            .map_err(|_| Stop::Domain(PrefixIndexDenial::InvalidTopology))?;
+        let order = worth_query_consumer_values::prefix_order(&name, &probe.prefix, |units| {
+            control.checkpoint(units).map_err(Stop::Controlled)
+        })?;
+        let previous = self.0.matched_sources.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        if previous == 1 {
+            if let Some(observe) = self.0.after_second_match.lock().unwrap().take() {
+                observe();
+            }
+        }
+        #[cfg(not(test))]
+        let _ = previous;
+        Ok(order == worth_query_consumer_values::PrefixOrder::Matches)
     }
 }
 

@@ -28,6 +28,10 @@ impl WorthQueryManagedIndexSourceChange {
 
 /// The actual declared probe codec's domain value.
 pub type WorthQueryManagedIndexProbeValue<S, I> = <<I as ApplicationManagedIndexBinding<S>>::ProbeBinding as ApplicationScalarValueBinding>::Value;
+/// One actual Source row selected by Query's complete traversal.
+pub type WorthQueryManagedIndexSourceRow<'a, S, I> = super::super::WorthQueryApplicationProjectionRow<
+    'a, S, <<I as ApplicationManagedIndexBinding<S>>::SourceBinding as worth_query_declaration::facade::application_query::ApplicationQueryBinding<S>>::Query,
+>;
 
 /// Pure controlled mechanics over finite framework storage and genuine source slots.
 /// No callback returns a root object, entity handle, permission or completeness proof.
@@ -58,12 +62,38 @@ where
     >;
     fn query(
         &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, S, I>,
-        nodes: &WorthQueryManagedIndexNodes<Self::Node>,
-        probe: &WorthQueryManagedIndexProbeValue<S, I>,
-        candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
+        _sources: &WorthQueryManagedIndexSourceRows<'_, S, I>,
+        _nodes: &WorthQueryManagedIndexNodes<Self::Node>,
+        _probe: &WorthQueryManagedIndexProbeValue<S, I>,
+        _candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<(), WorthQueryManagedIndexProviderStop<Self::Denial>>;
+    ) -> Result<(), WorthQueryManagedIndexProviderStop<Self::Denial>> {
+        Err(control
+            .refuse(super::WorthQueryManagedIndexStop::MembershipUnavailable)
+            .into())
+    }
+
+    /// Runs even for an empty Source, before complete traversal or candidates.
+    fn validate_probe(
+        &self,
+        _probe: &WorthQueryManagedIndexProbeValue<S, I>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<(), WorthQueryManagedIndexProviderStop<Self::Denial>> {
+        control.poll().map_err(Into::into)
+    }
+
+    /// Pure candidate predicate. Query controls exhaustive visitation and emission.
+    /// This is distinct from exact domain refinement and grants no READ authority.
+    fn matches_source(
+        &self,
+        _row: WorthQueryManagedIndexSourceRow<'_, S, I>,
+        _probe: &WorthQueryManagedIndexProbeValue<S, I>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+        Err(control
+            .refuse(super::WorthQueryManagedIndexStop::MembershipUnavailable)
+            .into())
+    }
 
     /// Describe the actual node's Source contribution and child coordinates.
     /// BinarySourceTree roots are checked by Query; this is no query coverage assertion.

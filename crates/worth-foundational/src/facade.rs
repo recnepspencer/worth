@@ -420,6 +420,7 @@ pub use crate::locators::{
     FoundationalMergeScopeLocator, FoundationalSelectedAspectScopeLocator,
     FoundationalSelectedNodeScopeLocator, FoundationalTransitionLocator, LocatorAuthority,
 };
+pub use crate::managed_access::ManagedIndexMembership;
 pub use crate::managed_index_source::{
     ManagedIndexColdSourcePosture, ManagedIndexSourceStructure,
     ManagedSourceInterpretationCommitment,

@@ -98,13 +98,46 @@ where
                     )
                 })?;
             let source = WorthQueryManagedIndexSourceRows::<S, I>::new(image, session, control);
+            let complete = I::MEMBERSHIP == worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+            if complete {
+                provider_result(
+                    execution,
+                    control,
+                    self.provider.validate_probe(&probe, control),
+                )?;
+            }
             let mut candidates =
                 WorthQueryManagedIndexCandidateWriter::allocate(execution, &source, control)?;
-            let result =
-                self.provider
-                    .query(&source, &nodes.nodes, &probe, &mut candidates, control);
+            if complete {
+                let tree = nodes.structure.as_ref().ok_or_else(|| {
+                    control.refuse(WorthQueryManagedIndexStop::MembershipUnavailable)
+                })?;
+                crate::domain_computation::primary_graph::access_strategy::coverage::visit(
+                    tree,
+                    nodes.nodes.root().map(|id| id.ordinal),
+                    control,
+                    &mut |slot| {
+                        let row = source.get(slot)?;
+                        let matches = provider_result(
+                            execution,
+                            control,
+                            self.provider.matches_source(row, &probe, control),
+                        )?;
+                        if matches {
+                            candidates.emit(slot)?;
+                        }
+                        Ok(())
+                    },
+                )?;
+            } else {
+                provider_result(
+                    execution,
+                    control,
+                    self.provider
+                        .query(&source, &nodes.nodes, &probe, &mut candidates, control),
+                )?;
+            }
             source.check()?;
-            provider_result(execution, control, result)?;
             candidates.finish(execution).map_err(Into::into)
         })
     }

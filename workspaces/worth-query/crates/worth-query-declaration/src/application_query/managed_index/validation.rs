@@ -5,7 +5,7 @@ use super::{
 pub(super) fn validate_definition(
     parts: &WorthQueryPortableManagedIndexParts,
 ) -> Result<(), Denial> {
-    if !matches!(parts.semantic_version, 1 | 2) {
+    if !matches!(parts.semantic_version, 1 | 2 | 3) {
         return Err(Denial::UnsupportedVersion {
             observed: parts.semantic_version,
         });
@@ -14,6 +14,12 @@ pub(super) fn validate_definition(
         && parts.structure != super::ApplicationManagedIndexSourceStructure::Opaque
     {
         return Err(Denial::UnsupportedSourceStructure);
+    }
+    if parts.membership == super::ApplicationManagedIndexMembership::ExhaustiveSourceTree
+        && (parts.semantic_version < 3
+            || parts.structure != super::ApplicationManagedIndexSourceStructure::BinarySourceTree)
+    {
+        return Err(Denial::UnsupportedMembership);
     }
     if [&parts.name, &parts.provider, &parts.entity]
         .into_iter()

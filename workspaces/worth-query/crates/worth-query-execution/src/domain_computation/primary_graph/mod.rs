@@ -1,3 +1,4 @@
+mod access_strategy;
 mod facade;
 pub use facade::*;
 mod aggregate_identity;

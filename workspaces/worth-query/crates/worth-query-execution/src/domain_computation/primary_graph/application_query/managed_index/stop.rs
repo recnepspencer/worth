@@ -4,6 +4,8 @@ use worth_execution::{ExecutionRequestArrayDenial, WorkCeilingDenial};
 /// Why controlled index work stopped before producing a usable answer.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexStop {
+    MembershipUnavailable,
+    IncompleteTraversal,
     Request(WorkCeilingDenial),
     Storage(ExecutionRequestArrayDenial),
     /// Original allocation/request refusal while retaining persistent Source material.

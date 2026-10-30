@@ -5,7 +5,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
 };
-use worth_query_consumer_values::{build_box_tree, query_box_tree, Box2, BoxIndexDenial, BoxNode};
+use worth_query_consumer_values::{build_box_tree, Box2, BoxIndexDenial, BoxNode};
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
 
@@ -20,6 +20,8 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const PROVIDER_VERSION: u32 = 1;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
+    const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
 }
 // compiled-example: end
 pub type Node = BoxNode<WorthQueryManagedIndexNodeId>;
@@ -28,8 +30,8 @@ pub type Stop = WorthQueryManagedIndexProviderStop<BoxIndexDenial>;
 pub struct Calls {
     capacity: AtomicUsize,
     builds: AtomicUsize,
-    queries: AtomicUsize,
-    pub navigation: AtomicUsize,
+    probe_validations: AtomicUsize,
+    pub matched_sources: AtomicUsize,
     // Consumer observation after a genuine BVH node enters framework storage.
     pub after_first_node: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     pub coordinates: Mutex<[(u32, u64, u32); 16]>,
@@ -39,7 +41,7 @@ impl Calls {
         (
             self.capacity.load(Ordering::SeqCst),
             self.builds.load(Ordering::SeqCst),
-            self.queries.load(Ordering::SeqCst),
+            self.probe_validations.load(Ordering::SeqCst),
         )
     }
 }
@@ -128,33 +130,32 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
             |work| control.checkpoint(work).map_err(Stop::Controlled),
         )
     }
-    fn query(
+    fn validate_probe(
         &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
-        nodes: &WorthQueryManagedIndexNodes<Node>,
         probe: &Coordinates,
-        candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), Stop> {
-        self.0.queries.fetch_add(1, Ordering::SeqCst);
+        self.0.probe_validations.fetch_add(1, Ordering::SeqCst);
         control.checkpoint(1)?;
+        Box2::new(probe.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
+        Ok(())
+    }
+    fn matches_source(
+        &self,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>,
+        probe: &Coordinates,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<bool, Stop> {
+        self.0.matched_sources.fetch_add(1, Ordering::SeqCst);
+        control.checkpoint(1)?;
+        let raw = row
+            .field(query::bounds())
+            .map_err(|_| Stop::Domain(BoxIndexDenial::InvalidTopology))?;
+        let bounds =
+            Box2::new(raw.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
         let probe =
             Box2::new(probe.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
-        query_box_tree(
-            nodes.root(),
-            nodes.len(),
-            probe,
-            |id| {
-                self.0.navigation.fetch_add(1, Ordering::SeqCst);
-                nodes.get(id, control).copied().map_err(Stop::Controlled)
-            },
-            |ordinal| {
-                let (slot, _) = sources.at(ordinal)?;
-                candidates.emit(slot).map_err(Stop::Controlled)
-            },
-            |work| control.checkpoint(work).map_err(Stop::Controlled),
-            || Stop::Domain(BoxIndexDenial::InvalidTopology),
-        )
+        Ok(bounds.overlaps(probe))
     }
 }
 

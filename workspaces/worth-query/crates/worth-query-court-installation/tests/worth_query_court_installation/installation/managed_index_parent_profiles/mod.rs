@@ -182,3 +182,49 @@ fn installed_source_structure_changes_canonical_meaning_and_keeps_its_typed_prof
             .unwrap()
     ));
 }
+
+#[test]
+fn installed_exhaustive_membership_binds_its_profile_without_changing_parent_meaning() {
+    type Candidates = model::ParentSchema<5>;
+    type Complete = model::ParentSchema<6>;
+    let candidates = Candidates::declaration().unwrap();
+    let complete = Complete::declaration().unwrap();
+    let normalized = complete
+        .erased()
+        .members()
+        .iter()
+        .cloned()
+        .map(|member| {
+            if let ApplicationSchemaMember::ManagedIndex { definition } = member {
+                let mut parts = definition.parts().clone();
+                parts.membership = ApplicationManagedIndexMembership::Candidates;
+                ApplicationSchemaMember::ManagedIndex {
+                    definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                        parts,
+                    ),
+                }
+            } else {
+                member
+            }
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        candidates.erased().members(),
+        normalized,
+        "membership is the only changed meaning"
+    );
+    assert_ne!(candidates.identity(), complete.identity());
+    let installed = bind::<6>().unwrap();
+    let index = installed
+        .installed_managed_index::<queries::ModelIndex<Complete>>()
+        .unwrap();
+    assert_eq!(
+        index.definition().parts().membership,
+        ApplicationManagedIndexMembership::ExhaustiveSourceTree
+    );
+    assert!(index.admits_parent(
+        &installed
+            .installed_query_binding::<queries::ParentBinding<Complete>>()
+            .unwrap()
+    ));
+}

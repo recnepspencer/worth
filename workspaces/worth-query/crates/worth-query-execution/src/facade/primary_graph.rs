@@ -1,4 +1,5 @@
 //! Primary Graph application contracts.
+mod managed_index;
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryApplicationResource, WorthQueryApplicationResourceProvider,
@@ -11,6 +12,7 @@ pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryResourceStartStop, WorthQueryResourceState, WorthQueryResourceStopKind,
     WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame,
 };
+pub use managed_index::*;
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;
 /// Original Native commit occurrence; lineage diagnostics grant no authority.
@@ -213,17 +215,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
     WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
-    WorthQueryManagedDerivedViewSnapshot, WorthQueryManagedIndex,
-    WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
-    WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
-    WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexLifecycle,
-    WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
-    WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
-    WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
-    WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
-    WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceChange,
-    WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
-    WorthQueryManagedIndexWorkDenial, WorthQueryMandatoryReview,
+    WorthQueryManagedDerivedViewSnapshot, WorthQueryMandatoryReview,
     WorthQueryMandatoryReviewAuthorizationDenial, WorthQueryMandatoryReviewOutcome,
     WorthQueryMandatoryReviewProgram, WorthQueryMarkedOutputForTest,
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,

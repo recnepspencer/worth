@@ -52,7 +52,7 @@ fn decision_index_requires_the_declared_parent_and_the_original_operation_scope(
                 .selected_commit()
                 .clone();
             let source = request.query(find("A", "sh")).execute().unwrap();
-            let calls = provider.queries.load(Ordering::SeqCst);
+            let calls = provider.probe_validations.load(Ordering::SeqCst);
             rules.records.lock().unwrap().clear();
             let result = request
                 .advanced()
@@ -93,7 +93,7 @@ fn decision_index_requires_the_declared_parent_and_the_original_operation_scope(
                 DecisionRead::Declared => unreachable!(),
             }
             assert_eq!(
-                provider.queries.load(Ordering::SeqCst),
+                provider.probe_validations.load(Ordering::SeqCst),
                 calls,
                 "binding/scope refusal precedes every provider query"
             );
