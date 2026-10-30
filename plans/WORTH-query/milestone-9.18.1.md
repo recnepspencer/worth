@@ -1716,6 +1716,24 @@ correction tests and 23 scoped Query owner tests passed, with boundary/context,
 line-cap, function-review and diff checks. Evictable optional owner detail
 and its actual loss handoff remain required before 9.10 closes.
 
+Qualified Native owner-history substrate increment (2026-10-30): successful
+Bridge conditional execution now issues a distinct optional diagnostic history
+association from the actual Signal decision. The existing shared diagnostics
+owner applies its configured record retention with a bounded FIFO. Original
+request SDK funding follows each fixed slot through eviction, surviving original
+holders and final release. Production owner eviction reports EvictedByRetention;
+owner teardown reports OwnerClosed without overwriting an earlier eviction.
+OmittedByTier and actual finite CaptureDenied remain distinct; cancellation,
+overflow and other request stops propagate. No query TTL, source/route record
+substitution, reader retention or second retention registry is introduced.
+Eighteen scoped Bridge owner tests pass, including genuine execution/eviction,
+successor-link release, original Native custody, tolerated real memory pressure,
+request cancellation, independent exact-byte retention oracles and final payer
+cleanup. Required boundary/context, line-cap, function-review and diff gates pass.
+This is the owner substrate only:
+Query's freshly admitted frozen availability and separately admitted rich
+history handoff remain required before 9.10 closes. Phase 9.11 remains open.
+
 #### Phase 9.11: Integrated Application Qualification And Consumer Handoff
 
 **Status: open. Depends on: completed 9.1-9.10.** Qualify one coherent ordinary

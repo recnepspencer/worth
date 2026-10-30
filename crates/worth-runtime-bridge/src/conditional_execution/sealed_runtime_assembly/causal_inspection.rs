@@ -14,3 +14,13 @@ impl BridgeSealedRuntimeAssembly {
         crate::diagnostics::causal_envelope::assembly::assemble_native(&self.runtime, request)
     }
 }
+
+impl BridgeSealedRuntimeAssembly {
+    #[doc(hidden)]
+    pub fn configure_conditional_history_for_test(&self, enabled: bool, limit: usize) -> bool {
+        self.runtime
+            .bridge
+            .diagnostics
+            .configure_conditional_history_for_test(enabled, limit)
+    }
+}

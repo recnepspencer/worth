@@ -22,6 +22,20 @@ impl BridgeConditionalCausalObservation {
         Self { observation }
     }
 
+    /// Reads only the actual optional history owner; immutable Native custody is separate.
+    pub fn history_availability(&self) -> crate::diagnostics::BridgeConditionalHistoryAvailability {
+        self.observation.history.availability()
+    }
+    /// Rechecks the history owner now; earlier availability is not a retention lease.
+    pub fn history_detail(
+        &self,
+    ) -> Result<
+        crate::diagnostics::BridgeConditionalHistoryDetail,
+        crate::diagnostics::BridgeConditionalHistoryAvailability,
+    > {
+        self.observation.history.detail()
+    }
+
     pub fn belongs_to(&self, owner: &BridgeOwnedSignalRuntime) -> bool {
         self.observation.bridge_runtime_key == owner.bridge.signal_runtime_key
     }

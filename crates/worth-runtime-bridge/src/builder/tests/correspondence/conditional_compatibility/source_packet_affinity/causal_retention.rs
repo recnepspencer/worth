@@ -1,6 +1,7 @@
 //! Actual Native observations outlive operational evidence without pinning readers.
 use super::*;
 mod envelope;
+mod history;
 use crate::facade::{
     BridgeConditionalDecisionReentryRequest, BridgeInstalledConditionalLowering,
     BridgeSealedRuntimeAssembly,

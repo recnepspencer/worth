@@ -2,6 +2,8 @@
 use std::sync::Arc;
 
 pub(in crate::conditional_execution) struct BridgeRetainedConditionalObservation {
+    pub(in crate::conditional_execution) history:
+        crate::diagnostics::conditional_history::ConditionalHistoryReference,
     pub(in crate::conditional_execution) bridge_runtime_key: u64,
     pub(in crate::conditional_execution) lowering_projection:
         super::super::BridgeConditionalLoweringProjectionIdentity,

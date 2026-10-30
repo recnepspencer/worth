@@ -137,6 +137,9 @@ pub use crate::diagnostics::{
     BRIDGE_CANONICAL_STRUCTURAL_BRANCH_COMPARISON_RECORD_SCHEMA_V1,
     BRIDGE_CANONICAL_STRUCTURAL_REMAP_RECORD_SCHEMA_V1,
 };
+pub use crate::diagnostics::{
+    BridgeConditionalHistoryAvailability, BridgeConditionalHistoryDetail,
+};
 pub use crate::error::{
     BridgeBuildError, BridgeBuildErrorKind, BridgeContinuityError, BridgeContinuityErrorKind,
     BridgeDeliveryError, BridgeDeliveryErrorKind, BridgeErrorContext, BridgeLineageSourceError,
