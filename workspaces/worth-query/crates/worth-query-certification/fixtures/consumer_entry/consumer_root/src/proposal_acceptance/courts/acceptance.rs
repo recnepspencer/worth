@@ -15,6 +15,7 @@ use worth_query_host::facade::{
     application_entry::*, primary_graph::*, product::*, runtime::ExecutionAllocationPolicy,
 };
 mod arbitration;
+mod disclosure;
 mod disposal;
 mod previous;
 
