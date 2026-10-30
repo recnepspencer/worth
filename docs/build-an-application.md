@@ -1856,6 +1856,17 @@ Source movement also refuses creation, and a refused candidate close retains
 the candidate with its original denial. See
 [fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
 
+To store the selected basis as application data, serialize
+`selected.describe_basis()` before releasing the selection. After loading that
+record through an ordinary READ request, deserialize it as
+`WorthQueryExpectedProductBasisDescription` and call
+`runtime.branches().select_expected(&description, &phase)`. This asks the original
+installed World and Native owners to admit that exact basis; stale, retired,
+foreign and unsupported descriptions refuse. The description retains no live
+selection and supplies no READ or mutation permission. Pass the returned
+selection to `fork_expected`, then use the same candidate/adoption lifecycle.
+See [store an expected basis](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again).
+
 Its own methods:
 
 | Method | Returns |

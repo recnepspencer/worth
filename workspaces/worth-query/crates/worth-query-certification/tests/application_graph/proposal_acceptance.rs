@@ -1,6 +1,8 @@
 //! Exact public fork admission precedes ordinary candidate requests and cleanup.
 #[path = "proposal_acceptance/adoption.rs"]
 mod adoption;
+#[path = "proposal_acceptance/stored_basis.rs"]
+mod stored_basis;
 use crate::document_retention_model::{
     host::{publish_on_first_program, SEED_RETENTION},
     presented_request::set_retention,

@@ -4,10 +4,10 @@
 //! intent. Component identities and Runtime World service ports are absent.
 
 pub use crate::basis::{
-    WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial,
-    WorthQueryProductBranchAdmissionRefusalKind, WorthQueryProductBranchCreateError,
-    WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchCreationRecoveryCause,
-    WorthQueryProductBranchCreationRecoveryFailure,
+    WorthQueryExpectedProductBasisDescription, WorthQueryProductBranch,
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
+    WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationRecovery,
+    WorthQueryProductBranchCreationRecoveryCause, WorthQueryProductBranchCreationRecoveryFailure,
     WorthQueryProductBranchCreationRecoveryInspection,
     WorthQueryProductBranchCreationRecoveryNextAction,
     WorthQueryProductBranchCreationRecoveryRelease,
@@ -36,11 +36,12 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalClockObservationOutcome,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionTerminal, WorthQueryConditionalSignalDecision,
-    WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
-    WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
-    WorthQueryExpectedProductBranchFork, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryPrincipalResolutionMode, WorthQueryProductEntry, WorthQueryProductHistory,
-    WorthQueryProductHistoryEntry, WorthQueryProductQueryControls, WorthQueryProductTransaction,
+    WorthQueryExpectedProductBasisSelectionDenial, WorthQueryExpectedProductBranch,
+    WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
+    WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+    WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
+    WorthQueryProductQueryControls, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError, WorthQuerySelectedProductOperation,
 };
 pub use worth_runtime_world::facade::{

@@ -1845,8 +1845,11 @@ close. Guarded model-head adoption is also a qualified public prerequisite:
 the candidate checks Native bases and holds World's exact source/candidate
 currentness guards across replacement of the application's actual branch slot,
 checking the same request's liveness inside the guarded section. Stored
-expected-basis readmission, proposal persistence and the complete private
-acceptance journey remain unfinished.
+expected-basis readmission is also a qualified public prerequisite:
+versioned comparison data re-enters the actual World/Native owners, including
+Native's separate exact-currentness check before application selection. The
+owner/application cases and current repository gates pass.
+Proposal persistence and the complete private acceptance journey remain unfinished.
 **Owner:** Query entry/basis admission, Native/World source-basis receivers and
 Proprietary authoring.
 **Depends on:** ordinary governed application requests and existing source
@@ -1966,20 +1969,29 @@ worth-query-execution/src/
   basis/product_branch/
     creation.rs                         E ordinary fork construction
     creation/expected_source.rs         C required admitted-selection handoff
+    expected_description.rs             C versioned non-authoritative basis data
+    expected_description/world_encoding.rs C serde encoding without World dependency
   domain_computation/primary_graph/
     product_operation/branches.rs        E application lifecycle composition
     product_operation/branches/
+      expected_basis.rs                 C fresh World/Native description admission
       expected_source.rs                C candidate and selected-source custody
       expected_source/adoption.rs       C guarded application head replacement
 worth-runtime-world/src/
+  branch/reference_description.rs       C descriptive reference coordinates
   branch/creation/lowered.rs             E expected composite source
   branch/currentness_scope.rs           E exact source/candidate reference guards
   lifecycle/service_ports/observation.rs E admission before guarded installation
   lifecycle/owner/branch_service/
+    observation.rs                      E exact stored-reference readmission
+    reference_description_tests.rs      C retirement and same-name replacement
     creation/execution/forks.rs          E component-owner fork and source recheck
 worth-relational/src/branch/
   owner_services/basis_port.rs           E owner basis readmission/comparison
   fork_source_validation.rs              E source generation/root/version recheck
+worth-query-certification/tests/application_graph/proposal_acceptance/
+  adoption.rs                           C ordinary requests and guarded adoption
+  stored_basis.rs                       C serialized basis owner readmission
 worth-query-certification/fixtures/consumer_entry/consumer_root/src/
   proposal_acceptance.rs                 C two-facade application journey
   proposal_acceptance/schema.rs          C ordinary versioned domain declarations
@@ -2011,18 +2023,18 @@ selection. Expand that same journey with the hostile sequences above and actual
 storage/close lifecycle. Commit reviewed slices; phase acceptance still requires
 the complete public and private journeys and their required repository gates.
 
-The target DX makes the freshly admitted selection explicit; final API names
-are compiled by the two-facade fixture before becoming consumer guidance:
+The compiled public basis handoff makes the freshly admitted selection explicit.
+The application must first load its proposal/model through ordinary READ admission:
 
 ```rust,ignore
-// Target API shape, not an already available consumer recipe.
-let selected = fresh_request.select_expected_basis(&proposal.model, &proposal.basis)?;
+let selected = application.branches().select_expected(&proposal.basis, &phase)?;
 let candidate = application.branches()
-    .fork_expected(selected)
+    .fork_expected(selected)?
     .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
     .create(&phase)?;
-// Run ordinary authored requests on candidate; adopt only through the guarded
-// model-head transition that still consumes this expected-source selection.
+// Run ordinary authored requests on candidate before guarded head replacement.
+let previous = candidate.adopt(&mut model.head, &phase)?;
+application.on_branch(previous).close(&phase)?;
 ```
 
 ### Continuing Documentation

@@ -35,9 +35,10 @@ pub(in crate::domain_computation::primary_graph) use security_basis::{
 };
 
 pub use branches::{
-    WorthQueryApplicationProductBranches, WorthQueryExpectedProductBranch,
-    WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
-    WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
+    WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,
+    WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
+    WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
+    WorthQueryExpectedProductBranchFork,
 };
 pub use cleanup::{
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,

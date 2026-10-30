@@ -342,3 +342,6 @@ mod contract_tests;
 
 #[cfg(test)]
 mod currentness_pair_tests;
+
+#[cfg(test)]
+mod reference_description_tests;

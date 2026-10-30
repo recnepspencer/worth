@@ -8,6 +8,22 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    /// Resolve transported coordinates through this owner's live reference.
+    /// The immutable selected commit supplies its exact component tuple.
+    pub fn readmit_product_branch_reference(
+        &self,
+        description: &crate::branch::ProductBranchReferenceDescription,
+    ) -> Result<
+        crate::branch::ProductBranchObservation,
+        super::super::RuntimeWorldServiceDenial<
+            crate::branch::ProductBranchReferenceReadmissionDenial,
+        >,
+    > {
+        self.service()?
+            .readmit_product_branch_reference(description)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
     /// Install prepared state while both exact product heads remain current.
     /// All owner admission precedes the guarded section. The callback must not
     /// call either World owner or access either product cell; return custody

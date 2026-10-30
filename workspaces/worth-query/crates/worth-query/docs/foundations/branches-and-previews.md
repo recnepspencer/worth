@@ -98,6 +98,44 @@ The [compiled adoption cases](../../../worth-query-certification/tests/applicati
 show ordinary candidate requests, head replacement, stale-source refusal and
 cleanup.
 
+### Store an expected basis and select it again
+
+Call `selected.describe_basis()` before releasing an admitted selection. Store
+the returned `WorthQueryExpectedProductBasisDescription` with ordinary versioned
+application data. It implements Serde serialization and contains comparison
+coordinates only; keeping it does not retain a snapshot or keep a branch alive.
+
+```rust,ignore
+let selected = application.on_branch(model.head).select(&phase)?;
+let bytes = serde_json::to_vec(&selected.describe_basis())?;
+drop(selected);
+
+// Load the application record under a fresh ordinary READ request first.
+let description: WorthQueryExpectedProductBasisDescription =
+    serde_json::from_slice(&bytes)?;
+let selected = application.branches().select_expected(&description, &phase)?;
+let candidate = application.branches()
+    .fork_expected(selected)?
+    .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+    .create(&phase)?;
+```
+
+`select_expected` asks the installed World and Native owners to admit the exact
+described basis. It refuses foreign owners, retired or replaced occurrences,
+movement and unsupported description versions. Returning the values to their
+previous contents does not restore the original basis. A retained historical
+Native basis also cannot substitute for the current described basis. These
+coordinates address their original live installation. Use them only within that
+installation's lifetime; they are not portable branch restoration data.
+
+Loading or editing the description grants no domain READ or mutation permission.
+Use ordinary requests for those operations. Creation and adoption still check
+the expected source, so movement after readmission can refuse either operation.
+Keep and close candidate custody as described above. The
+[compiled stored-basis cases](../../../worth-query-certification/tests/application_graph/proposal_acceptance/stored_basis.rs)
+show serialization, fresh owner admission, ordinary candidate requests, adoption
+and stale or mixed-basis refusal.
+
 ### Branch history and retirement
 
 To correct a retained operation on a branch, bind an ordinary request with
@@ -175,9 +213,8 @@ For multiple branches, call
 and then `request.on_branches(coverage, ordered_targets)`. The returned handle
 is bounded and explicitly non-atomic: inspect `progress()`, resolve a
 `NoEffect` or `ProductUnpublished` stop, and then resume, cancel, or close it.
-Later-created branches never enter previously issued coverage. This is program
-adoption, not merge or rebase; multi-parent reconciliation remains a separate
-roadmap product.
+Later-created branches never enter previously issued coverage. Handle each
+branch's program adoption outcome before resuming the remaining set.
 
 ### Workflows on a forked branch
 

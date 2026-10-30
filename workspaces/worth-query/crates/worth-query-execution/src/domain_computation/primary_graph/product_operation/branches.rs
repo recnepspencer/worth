@@ -9,6 +9,7 @@ use worth_runtime_world::facade::{
 };
 
 use super::WorthQueryApplicationProductBranchCleanup;
+mod expected_basis;
 mod expected_source;
 use super::{
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverage,
@@ -19,6 +20,7 @@ use crate::basis::{
     WorthQueryProductBranchRecoveryDenial, WorthQueryProductBranches,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+pub use expected_basis::WorthQueryExpectedProductBasisSelectionDenial;
 pub use expected_source::{
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,

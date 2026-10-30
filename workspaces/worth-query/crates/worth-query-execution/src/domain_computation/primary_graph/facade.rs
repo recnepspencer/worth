@@ -283,60 +283,7 @@ pub use super::principal_key::{
 pub use super::product_activation::{
     WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial,
 };
-pub use super::product_operation::{
-    WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedChange,
-    WorthQueryAdmittedProgramMigration, WorthQueryApplicationConditionalDefinitionAdmissionDenial,
-    WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
-    WorthQueryApplicationProductBranchCleanupFailure,
-    WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
-    WorthQueryAppliedProductTransaction, WorthQueryBranchAdoptionActivationDenial,
-    WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
-    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
-    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
-    WorthQueryBranchAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionAdvanceDenial,
-    WorthQueryBranchSetAdoptionCancellation, WorthQueryBranchSetAdoptionCloseDenial,
-    WorthQueryBranchSetAdoptionPreparationDenial, WorthQueryBranchSetAdoptionProgress,
-    WorthQueryBranchSetAdoptionRecovery, WorthQueryBranchSetAdoptionRecoveryFailure,
-    WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
-    WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
-    WorthQueryClosedBranchSetAdoption, WorthQueryCompletedGeneratedOutputReconstruction,
-    WorthQueryConditionalDefinitionPublicationDenial,
-    WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryCorrectionActionInputSelection,
-    WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,
-    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
-    WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial,
-    WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
-    WorthQueryCorrectionOutputProjectionDenial, WorthQueryCorrectionRestoredSupportDenial,
-    WorthQueryCorrectionSelectionDenial, WorthQueryExpectedProductBranch,
-    WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
-    WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
-    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputInvariantAdmissionDenial,
-    WorthQueryGeneratedOutputPublicationNoEffect,
-    WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
-    WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
-    WorthQueryGeneratedOutputRestorationFailure, WorthQueryGeneratedOutputRestorationFailureCause,
-    WorthQueryGeneratedOutputRestorationReceipt, WorthQueryGeneratedOutputRestorationRecovery,
-    WorthQueryGeneratedOutputRestorationRecoveryFailure,
-    WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryGeneratedOutputSuspensionDenial,
-    WorthQueryGeneratedOutputSuspensionFailure, WorthQueryGeneratedOutputSuspensionRecovery,
-    WorthQueryGeneratedOutputSuspensionRecoveryFailure,
-    WorthQueryGeneratedOutputSuspensionRecoveryStage, WorthQueryOrderedProgramAdoptionCoverage,
-    WorthQueryPerformedBranchAdoption, WorthQueryPerformedConditionalDefinitionPublication,
-    WorthQueryPreparedBranchAdoption, WorthQueryPreparedBranchSetAdoption,
-    WorthQueryPreparedCorrectionSource, WorthQueryPreparedProgramMigration, WorthQueryProductEntry,
-    WorthQueryProductHistory, WorthQueryProductHistoryEntry, WorthQueryProductQueryControls,
-    WorthQueryProductTransaction, WorthQueryProductTransactionCommitError,
-    WorthQueryProgramAdoptionAuthorizationDenial, WorthQueryProgramAdoptionCoverage,
-    WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
-    WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
-    WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
-    WorthQueryReconstructedOutputEntity, WorthQueryRestoredGeneratedOutput,
-    WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
-    WorthQuerySelectedProductOperation, WorthQueryStoppedBranchSetAdoption,
-    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryUnpublishedGeneratedOutputRestoration,
-};
+mod product_operation;
 pub use super::provider::{
     WorthQueryAftermathCausalityReadDenial, WorthQueryCommittedDispatchOutboxObservation,
     WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryCommittedDispatchOutboxReadWork,
@@ -377,6 +324,7 @@ pub use crate::domain_computation::{
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
 };
 pub use decision_read::*;
+pub use product_operation::*;
 
 /// Exhaustive translation of a Relational execution refusal.
 pub use super::provider::relational_execution_denial::relational_execution_kind;

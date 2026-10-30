@@ -731,6 +731,7 @@ name = "worth-query-certification"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
  "sha2",
  "worth-execution",
  "worth-foundational",
