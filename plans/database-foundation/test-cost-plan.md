@@ -525,3 +525,31 @@ readable single-line rows, preserving parsed values/order apart from the approve
 source/authority changes. It is now 300 lines. This closes that line-limit finding
 without a new registry scheme. The cohort is bounded, not a completed migration
 of the other compiler snapshots or new current whole-workspace qualification.
+
+### B4.6 first cut: compatible consumer build caches
+
+Boundary review: the consumer-docs and query-checkpoint-recovery jobs lack Cargo
+caches; the boundary job already uses `actions/cache@v4`. Reuse that action and
+existing target locations. Cache Cargo registry/Git data and direct children of
+the four existing debug output directories, excluding incremental directories.
+Do not include lane evidence, test-cost captures, gate results or qualification
+metadata. Separate job keys prevent competing saves. Keys include runner OS/arch,
+the checkout toolchain, manifests/configuration and lockfiles; restore prefixes
+retain the configuration/toolchain identity. Cargo continues checking inputs.
+
+Use the documented cache path/glob behavior from the existing action's
+[inputs](https://github.com/actions/cache/blob/main/README.md#inputs) and
+[glob exclusions](https://github.com/actions/toolkit/tree/main/packages/glob#exclude-patterns).
+Do not upgrade actions, alter compiler settings, skip qualification after a cache
+hit, change job routing or cancellation in this cut. A real cache hit/miss/size
+comparison is unrun; make no measured CI speedup claim.
+
+Write scope: `.github/workflows/ci.yml` and this plan. Root's cache-only ruling
+rejects a new mirror test that only restates YAML. Preserve the initial draft's
+checks and their capture as a one-off static inspection under `target/test-cost/`,
+without adding them to the repository test suite; no qualification claim or
+existing test is retired. Verify paths, exclusions, key inputs and unconditional
+qualification commands with available lint/static inspection; retain existing
+boundary/full/manual dispatch. Run explicit phase checks, not a Rust campaign.
+Dependency-aware CI job routing remains the next independently reviewed cut and
+must reuse the existing affected-workspace authority rather than duplicate it.

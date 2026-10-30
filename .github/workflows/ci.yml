@@ -38,6 +38,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Cache compatible consumer Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/debug/*
+            !target/debug/incremental
+            workspaces/worth-query/target/debug/*
+            !workspaces/worth-query/target/debug/incremental
+            workspaces/worth-query-bank-world/target/debug/*
+            !workspaces/worth-query-bank-world/target/debug/incremental
+            workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/target/debug/*
+            !workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/target/debug/incremental
+          key: ${{ runner.os }}-${{ runner.arch }}-consumer-debug-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.toml', '.cargo/config*', 'workspaces/worth-query/Cargo.toml', 'workspaces/worth-query/.cargo/config*', 'workspaces/worth-query-bank-world/Cargo.toml', 'workspaces/worth-query-bank-world/.cargo/config*', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/.cargo/config*') }}-${{ hashFiles('Cargo.lock', 'workspaces/worth-query/Cargo.lock', 'workspaces/worth-query-bank-world/Cargo.lock', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-consumer-debug-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.toml', '.cargo/config*', 'workspaces/worth-query/Cargo.toml', 'workspaces/worth-query/.cargo/config*', 'workspaces/worth-query-bank-world/Cargo.toml', 'workspaces/worth-query-bank-world/.cargo/config*', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/.cargo/config*') }}-
       - name: Test build identity issuance
         run: python -m unittest discover -s scripts/ci -p test_application_build.py
       - name: Compile and run configured Query and Bank doctests
@@ -83,7 +100,7 @@ jobs:
           key: ${{ runner.os }}-boundary-tools-1.99.1-${{ hashFiles('tools/boundary-check/Cargo.lock', 'tools/agent-context/Cargo.lock', 'tools/boundary-check/src/**', 'tools/agent-context/src/**') }}
           restore-keys: |
             ${{ runner.os }}-boundary-tools-1.99.1-
-      # The one constitution entrypoint the hook and the terminal also run:
+      # The explicit phase-end and landing constitution entrypoint:
       # crate boundaries, facades, facade docs and agent context.
       - name: Prepare constitution tools
         shell: pwsh
@@ -110,6 +127,23 @@ jobs:
           python-version: '3.12'
       - name: Record the audited compiler identity
         run: rustc --version --verbose
+      - name: Cache compatible consumer Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/debug/*
+            !target/debug/incremental
+            workspaces/worth-query/target/debug/*
+            !workspaces/worth-query/target/debug/incremental
+            workspaces/worth-query-bank-world/target/debug/*
+            !workspaces/worth-query-bank-world/target/debug/incremental
+            workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/target/debug/*
+            !workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/target/debug/incremental
+          key: ${{ runner.os }}-${{ runner.arch }}-consumer-debug-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.toml', '.cargo/config*', 'workspaces/worth-query/Cargo.toml', 'workspaces/worth-query/.cargo/config*', 'workspaces/worth-query-bank-world/Cargo.toml', 'workspaces/worth-query-bank-world/.cargo/config*', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/.cargo/config*') }}-${{ hashFiles('Cargo.lock', 'workspaces/worth-query/Cargo.lock', 'workspaces/worth-query-bank-world/Cargo.lock', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-consumer-debug-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.toml', '.cargo/config*', 'workspaces/worth-query/Cargo.toml', 'workspaces/worth-query/.cargo/config*', 'workspaces/worth-query-bank-world/Cargo.toml', 'workspaces/worth-query-bank-world/.cargo/config*', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml', 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/.cargo/config*') }}-
       # Isolate topology's process-wide controls while running independent courts
       # concurrently; the same runner includes owning-consumer and parameter courts.
       - name: Prove restored accepted outputs avoid producer contact
