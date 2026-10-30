@@ -17,6 +17,7 @@ use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop;
 #[derive(Clone, Copy, Debug)]
 pub enum WorthQueryApplicationInspectionResourceRefusal<'a> {
     Request(&'a WorkCeilingDenial),
+    Advancement(&'a crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     Kernel(&'a MapKernelStop),
     Native(&'a RelationalExecutionDenialCause),
     Lease(&'a LeaseDenial),
@@ -32,6 +33,12 @@ pub(super) fn cause(cause: &InspectionCause) -> Option<Refusal<'_>> {
             _ => None,
         }),
         InspectionCause::Admission(cause) => admission(cause),
+        InspectionCause::Advancement(
+            cause
+            @ crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                _,
+            ),
+        ) => Some(Refusal::Advancement(cause)),
         _ => None,
     }
 }

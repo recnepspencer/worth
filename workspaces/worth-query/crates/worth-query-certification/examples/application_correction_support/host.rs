@@ -18,6 +18,10 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        contracts
+            .producer::<super::causal_inspection::output_equivalence::calculation::Producer>()?;
+        contracts
+            .conditional::<super::causal_inspection::output_equivalence::readiness::Readiness>()?;
         contracts.producer::<super::causal_inspection::retired_outputs::calculation::Producer>()?;
         contracts
             .conditional::<super::causal_inspection::retired_outputs::readiness::Readiness>()?;
@@ -37,6 +41,14 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         setup.handler::<super::causal_inspection::distinct_subjects::grant_status::Binding, _>(
             super::causal_inspection::distinct_subjects::grant_status::Handler,
         )?;
+        setup.handler::<super::causal_inspection::output_equivalence::calculation::Binding, _>(
+            super::causal_inspection::output_equivalence::calculation::Handler,
+        )?;
+        setup.producer::<super::causal_inspection::output_equivalence::calculation::Producer>(
+            super::causal_inspection::output_equivalence::calculation::Provider,
+        )?;
+        setup
+            .conditional::<super::causal_inspection::output_equivalence::readiness::Readiness>(())?;
         setup.handler::<super::causal_inspection::retired_outputs::calculation::Binding, _>(
             super::causal_inspection::retired_outputs::calculation::Handler,
         )?;

@@ -29,7 +29,12 @@ mod execution;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
 mod output_equivalence_contract;
+mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
+pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
+pub(in crate::domain_computation::primary_graph) use output_evaluation::{
+    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+};
 mod input_reuse_contract;
 pub use input_reuse_contract::{
     WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,

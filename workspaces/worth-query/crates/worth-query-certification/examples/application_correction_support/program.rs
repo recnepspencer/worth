@@ -134,6 +134,7 @@ fn features<
         ApplicationFeatureSpec::root::<NumericSchema, NumericFeature>()
             .conditional_operation::<super::calculation::CalculateNumber>()
             .conditional_operation::<super::causal_inspection::retired_outputs::calculation::CalculateRetainedNumber>()
+            .conditional_operation::<super::causal_inspection::output_equivalence::calculation::CalculateParity>()
             .conditional_operation::<super::aspect_input::calculation::CalculateAspectNumber>()
             .conditional_operation::<super::scalar_input::calculation::CalculateScalar>()
             .action::<EditBinding, S>()

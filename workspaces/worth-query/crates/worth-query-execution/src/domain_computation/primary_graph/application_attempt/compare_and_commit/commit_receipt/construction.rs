@@ -115,6 +115,10 @@ impl WorthQueryApplicationCommitReceipt {
                 .err()
                 .map(|failed| failed.own_effect),
             committed_changes: provider.commit_evidence().committed_changes().clone(),
+            performed_output_fields: provider
+                .commit_evidence()
+                .performed_output_fields()
+                .cloned(),
             performed_input_facts: provider.commit_evidence().performed_input_facts().cloned(),
         }
     }

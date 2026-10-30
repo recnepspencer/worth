@@ -8,6 +8,7 @@ pub mod capability;
 pub mod distinct_subjects;
 pub mod independent;
 pub mod journey;
+pub mod output_equivalence;
 pub mod output_query;
 pub mod query;
 pub mod retired_outputs;
@@ -45,6 +46,7 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
     let schema = retired_outputs::calculation::declare(schema);
+    let schema = output_equivalence::calculation::declare(schema);
     distinct_subjects::grant_status::declare(capability::declare(schema))
         .application_query(distinct_subjects::query::definition())
         .application_query_binding::<distinct_subjects::query::Binding>()

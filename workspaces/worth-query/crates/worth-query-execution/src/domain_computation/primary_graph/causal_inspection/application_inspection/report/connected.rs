@@ -1,13 +1,13 @@
 //! One genuine observed report binds the independently admitted performed connection.
-use super::super::connection::WorthQueryApplicationProducerConnection;
+use super::super::connection::ProducerExplanation;
 use super::*;
 use worth_runtime_bridge::facade::BridgeIdentityEvidence;
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) struct FundedConnectedReport
 {
     pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) query:
         FundedInspectionReport,
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) connection:
-        WorthQueryApplicationProducerConnection,
+    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) explanation:
+        ProducerExplanation,
     pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) identity:
         BridgeIdentityEvidence,
     pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) retained_bytes:
@@ -16,7 +16,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn materialize_connected(
     execution: &ExecutionRequest<'_, '_>,
     query: FundedInspectionReport,
-    connection: WorthQueryApplicationProducerConnection,
+    explanation: ProducerExplanation,
     session: &WorthQueryManagedGraphWorkSession,
     memory: &mut Option<ExecutionMemoryReservation>,
 ) -> Result<FundedConnectedReport, CaptureStop<InspectionReportDenial>> {
@@ -27,11 +27,11 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
             .ok_or(MapKernelFailure::Domain(
                 InspectionReportDenial::ForeignComparison,
             ))?;
-        let identity = super::super::identity::connected_identity(
+        let identity = super::super::identity::producer_explanation_identity(
             &query.payload,
             source,
             session,
-            &connection,
+            &explanation,
             &mut |work, bytes| {
                 checkpoint(
                     context,
@@ -61,7 +61,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
             )))?;
         Ok(FundedConnectedReport {
             query,
-            connection,
+            explanation,
             identity,
             retained_bytes,
         })

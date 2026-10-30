@@ -1,9 +1,11 @@
 //! Additive admitted identities describe actual originals and their fresh session.
+mod evaluation;
 use super::WorthQueryApplicationInspectionTarget;
 use crate::domain_computation::{
     primary_graph::WorthQueryApplicationBasisSelectionIdentity,
     provider_session::WorthQueryManagedGraphWorkSession,
 };
+pub(super) use evaluation::producer_explanation_identity;
 use std::{
     alloc::Layout,
     fmt::Write,

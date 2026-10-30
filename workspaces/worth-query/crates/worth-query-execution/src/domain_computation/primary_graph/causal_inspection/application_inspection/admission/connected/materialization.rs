@@ -20,6 +20,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         query: &WorthQueryInstalledApplicationQuery<Schema, Q, P, R, S>,
         source_query: &WorthQueryInstalledApplicationQuery<Schema, SQ, SP, SR, SS>,
         source: &WorthQueryApplicationCommitReceipt,
+        purpose: super::super::super::connection::SourceInspectionPurpose,
     ) -> Result<super::super::super::report::FundedConnectedReport, InspectionAdmissionDenial> {
         drop(self.check(execution)?);
         let source_read = self
@@ -53,7 +54,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                 Ok((query_admission, source_admission))
             })
             .map_err(InspectionAdmissionDenial::DiagnosticAdmission)?;
-        let connection = super::super::super::connection::connect(
+        let explanation = super::super::super::connection::explain(
             self.runtime,
             execution,
             &self.target,
@@ -61,6 +62,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             &query_admission,
             Some(&source_admission),
             self.memory,
+            purpose,
         )
         .map_err(InspectionAdmissionDenial::Connection)?;
         drop(self.check(execution)?);
@@ -68,7 +70,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         let connected = super::super::super::report::materialize_connected(
             execution,
             report,
-            connection,
+            explanation,
             &self.session,
             self.memory,
         )

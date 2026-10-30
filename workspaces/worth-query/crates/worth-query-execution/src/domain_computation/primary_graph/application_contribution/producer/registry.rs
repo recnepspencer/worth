@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
     pub(in crate::domain_computation::primary_graph::application_contribution) output_equivalence:
         Option<super::super::native_field_contract::NativeFieldBindingExpectation>,
     pub(in crate::domain_computation::primary_graph::application_contribution) installed_output_equivalence:
-        Option<super::output_equivalence_contract::InstalledProducerOutputEquivalence>,
+        Option<Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>>,
     pub(in crate::domain_computation::primary_graph::application_contribution) input_reuse:
         Option<super::WorthQueryProducerInputReuseContract>,
     pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,
@@ -256,9 +256,16 @@ where
     ) -> Result<WorthQueryInstalledOutputProducerRoutes, WorthQueryPrimaryGraphInstallationDenial>
     {
         scheduling::install_output_producer_routes(
-            self.entries
-                .values()
-                .map(|entry| entry.declaration.identity.as_str()),
+            self.entries.values().map(|entry| {
+                (
+                    entry.declaration.identity.as_str(),
+                    entry
+                        .declaration
+                        .installed_output_equivalence
+                        .as_ref()
+                        .map(|field| (field, entry.declaration.output_role.as_str())),
+                )
+            }),
             builder,
         )
     }

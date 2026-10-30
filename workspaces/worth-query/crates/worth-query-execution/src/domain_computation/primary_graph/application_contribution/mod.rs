@@ -87,12 +87,12 @@ pub use producer::{
     WorthQueryOutputReadCloseDenial, WorthQueryProducerApplicability,
     WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
     WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
-    WorthQueryProducerDenialValue, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputEquivalence, WorthQueryProducerOutputFamily,
-    WorthQueryProjectedProducerDenial, WorthQuerySelectedApplicationProducer,
-    WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,
-    WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerDenialValue, WorthQueryProducerEvaluationIneligibility,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputEquivalence,
+    WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
+    WorthQuerySelectedApplicationProducer, WorthQueryUndeclaredProducerDenial,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
 pub use request_execution::{
@@ -132,3 +132,7 @@ pub(in crate::domain_computation::primary_graph) use request_execution::advancem
 
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
+
+pub(in crate::domain_computation::primary_graph) use producer::{
+    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+};

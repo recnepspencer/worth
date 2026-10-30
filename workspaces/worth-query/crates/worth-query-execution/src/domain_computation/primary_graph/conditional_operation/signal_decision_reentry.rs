@@ -56,6 +56,15 @@ impl WorthQueryConditionalTruthBasis {
         Ok(Self::from_selected(selected.retain_selection(execution)?))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn is_publication(
+        &self,
+        receipt: &super::super::WorthQueryApplicationCommitReceipt,
+    ) -> bool {
+        receipt
+            .committed_product_publication()
+            .is_selected_at(self.product.observation())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> &TruthSnapshotIdentity {
         &self.snapshot
     }

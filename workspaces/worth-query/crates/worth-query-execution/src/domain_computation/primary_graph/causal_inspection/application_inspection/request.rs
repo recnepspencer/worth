@@ -9,6 +9,7 @@ pub use source::{
 mod connected;
 pub use connected::{
     WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest,
+    WorthQueryEvaluatedInspectionRequest, WorthQueryEvaluatedReferenceOnlyInspectionRequest,
 };
 mod changed;
 pub use changed::{

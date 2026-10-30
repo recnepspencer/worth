@@ -1380,7 +1380,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
-| 9.8 | Genuine equivalent-output suppression explanations | In progress; native comparison and typed output-field installation qualified | Actual producer output evaluation and application explanation |
+| 9.8 | Genuine equivalent-output suppression explanations | In progress; actual performed field evaluation and admitted public report qualified | Late checkpoint retry and Stable/restored/no-compute contrasts |
 | 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
@@ -1538,7 +1538,7 @@ correction authority.
 
 #### Phase 9.8: Genuine Equivalent-Output Suppression Explanations
 
-**Status: in progress; native computed-effect handoff qualified. Depends on: 9.3-9.4 and the existing Signal evidence owner.**
+**Status: in progress; performed exact-u64 field evaluation and public report qualified. Depends on: 9.3-9.4 and the existing Signal evidence owner.**
 Expose a real producer/equivalence decision through existing inspection and
 Bridge contracts. A lawful changed source whose producer evaluates to equivalent
 output must be distinguished from zero-contact reuse, checkpoint restoration,
@@ -1594,11 +1594,52 @@ that same field-sealing authority. Installation hashes the declared comparison
 semantics, role, field binding and actual Native canonical material into the
 producer edition; missing or substituted seals refuse edition minting. Generic
 sealing shells select actual catalogs and delegate validation/encoding to concrete
-cores. This qualifies installation meaning only: performed-before/observed-after
-comparison, pre-Ready custody and independently admitted application evaluation
-reports remain unfinished. Qualification passes 26 final focused field/registry/readiness/contract
+cores. Installation qualification passed 26 focused field/registry/readiness/contract
 tests, the 195-test broader owner court, 50 public application correction tests,
-and three positive/negative construction examples.
+and three positive/negative construction examples. The following integration
+advances the runtime and independently admitted report boundary.
+
+Opt-in performed producers now retain compact completed output-field reads and
+actual postcommit Native field revisions under the original request. They join
+that before value to the exact declared role/full-generation output and the
+actual readiness field artifact at the same committed publication. The installed
+readiness dependency must match the full Native contract, physical binding and
+actual output record; fixed sibling records and replacement generations refuse.
+Missing, conflicting or absent artifacts remain typed ineligible; optional capture
+failure retains its original cause separately from Native absence. Only an
+eligible actual pair enters the installed Native comparator. The existing
+pre-effect Ready backing retains that completed comparison before Ready; no
+fallible step separates completion from the memo.
+
+Fresh `.why_observed().evaluated_by::<SourceDisclosure>(&source).reference_only()`
+admits query/source metadata, READ and diagnostics independently through the
+existing session, terminal and funding path. The original performed input must
+join the source's exact canonical occurrence. The declared field must appear in
+the original query footprint and current diagnostic projection before any retained
+evaluation state is disclosed. An admitted report describes Changed or Equivalent
+from the actual Signal pair, the declared role/field and its observed Native
+revision; it exposes no before/after business values. Strict `.caused_by(...)`
+creation remains unchanged. A generic selector delegates the concrete join body;
+no second inspection orchestration or retention registry is introduced.
+
+The ordinary parity producer qualifies source `2 -> 4` with output `0`, actual
+Equivalent and unchanged Native field provenance, followed by `4 -> 5` with output
+`1` and Changed. Old source occurrences and equal-valued siblings refuse.
+Repeated performed Ready retains the same original comparison, with zero new
+handler contact; it does not assert a new evaluation. Independent source/query
+grant withdrawal, cancellation and insufficient request funding refuse without
+evaluation details; close and denial release the fresh payer and every extra
+reader. Early advancement resource refusal is borrowed through its actual owner
+wrapper. The field-association owner court covers exact/managed records, sibling,
+partition, generation and physical-binding substitution. Current qualification
+passes all 80 affected owner tests and 52 public correction tests, plus the
+boundary, agent-context, dirty Rust size and formatting/whitespace checks.
+
+**Remaining qualification:** repeated performed Ready is not a Stable/restored
+or readiness-prevented-compute contrast. Exercise those actual meanings, and the
+Delivered late-stop/retry boundary after a completed comparison, before closing
+9.8. Its retained checkpoint path is implemented but not qualified by the new
+Ready reuse assertion. Phase 9 and 9.9-9.11 remain open.
 
 #### Phase 9.9: Optional Rich Materialization
 

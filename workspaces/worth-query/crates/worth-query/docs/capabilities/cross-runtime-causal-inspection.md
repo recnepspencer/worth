@@ -393,6 +393,58 @@ dependencies rather than adding an unused produced output to that input query.
 The producer's completed decision reads and canonical publication still establish
 any later causal connection.
 
+### Performed Producer Output Evaluation
+
+A producer may opt into exact output comparison for one Required standard `u64`
+field on its exactly-one Preserve role:
+
+```rust,ignore
+fn output_equivalence(
+) -> Option<WorthQueryProducerOutputEquivalence<Schema, Self::OutputRole>> {
+    Some(WorthQueryProducerOutputEquivalence::exact_u64(Calculated::reference()))
+}
+```
+
+The installed field seal binds the role, complete Native contract and physical
+binding. The completed handler must actually read the output field before its
+write. Query joins that read to the exact committed Native field revision and
+readiness observation, then retains the actual Signal baseline/candidate
+comparison before Ready. A missing, conflicting, absent or differently bound
+artifact cannot stand in for that comparison.
+
+Inspect the completed evaluation with independent query and source admissions:
+
+```rust,ignore
+let report = fresh.inspect::<OutputQuery>(&original)
+    .why_observed().evaluated_by::<SourceDisclosure>(&source)
+    .reference_only()
+    .execute_governed(query_metadata, query_diagnostics,
+                      source_metadata, source_diagnostics)?;
+let evaluation = report.producer_evaluation();
+let decision = evaluation.decision(); // Changed or Equivalent, from actual Signal evidence
+```
+
+`output_role()`, `output_field()` and `observed_output_revision()` describe only
+that admitted field. Equivalent output retains the Native revision it actually
+observed. Use `.caused_by(...)` when the desired claim is creation of an observed
+revision; its exact canonical publication requirement still applies.
+
+`same_evaluation_as` compares the retained owner-issued comparison occurrence.
+Reopening an existing performed Ready result can retain its original evaluation;
+this does not assert another handler execution or comparison. Stable/restored
+suppliers cannot issue a performed-evaluation report. A source receipt must still
+join the producer's actual completed input: an old equal-output occurrence or a
+same-shaped sibling cannot substitute for it.
+
+The [compiled parity journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/journey.rs)
+qualifies source `2 -> 4` with output `0` and actual equivalence, followed by source
+`4 -> 5` with output `1` and actual change. Independent permissions, original output
+projection and exact field revisions gate disclosure. Cancellation, either subject's
+grant withdrawal and insufficient request funding refuse the optional explanation;
+closing it releases its request funding without retaining another Native reader.
+`producer_evaluation_refusal()` exposes a typed refusal only after the required
+fresh admission. It exposes no before/after business values.
+
 ### Native Bridge Assembly Boundary
 
 Use Host's fresh issuer for application receipt inspection. Native backing,

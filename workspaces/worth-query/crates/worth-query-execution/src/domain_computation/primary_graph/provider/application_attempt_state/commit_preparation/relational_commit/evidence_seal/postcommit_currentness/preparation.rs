@@ -18,6 +18,19 @@ pub(super) enum Preparation {
     Selected(selected::SelectedRebase),
 }
 impl PreparedSourceFactRebase {
+    pub(in crate::domain_computation::primary_graph) fn retaining_output_field_evidence(
+        mut self,
+        requested: bool,
+    ) -> Self {
+        self.retain_output_field_evidence = requested;
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) fn retains_output_field_evidence(
+        &self,
+    ) -> bool {
+        self.retain_output_field_evidence
+    }
+
     /// Immutable pre-effect field copies retain their original producer funding.
     pub(in crate::domain_computation::primary_graph) fn performed_input_facts(
         &self,
@@ -39,6 +52,7 @@ impl PreparedSourceFactRebase {
         Ok(Self {
             preparation: Preparation::Full(FullSourceFactRebase::admit(facts, moved, control)?),
             performed_input_facts: None,
+            retain_output_field_evidence: false,
         })
     }
     pub(in crate::domain_computation::primary_graph) fn admit_output(
@@ -57,6 +71,7 @@ impl PreparedSourceFactRebase {
                     carry,
                 },
                 performed_input_facts: None,
+                retain_output_field_evidence: false,
             }),
             _ => Self::full_payload(facts, moved, control),
         }?;
@@ -72,6 +87,7 @@ impl PreparedSourceFactRebase {
         Ok(Self {
             preparation: Preparation::FullPayload { facts, moved },
             performed_input_facts: None,
+            retain_output_field_evidence: false,
         })
     }
     pub(in crate::domain_computation::primary_graph) fn prepare_candidate(
@@ -83,6 +99,7 @@ impl PreparedSourceFactRebase {
         control: StorageControl<'_, '_>,
     ) -> Result<Self, PreparedRebaseDenial> {
         let performed_input_facts = self.performed_input_facts;
+        let retain_output_field_evidence = self.retain_output_field_evidence;
         let preparation = match self.preparation {
             Preparation::FullPayload { facts, moved } => {
                 return Ok(Self {
@@ -90,6 +107,7 @@ impl PreparedSourceFactRebase {
                         facts, moved, control,
                     )?),
                     performed_input_facts,
+                    retain_output_field_evidence,
                 })
             }
             preparation => preparation,
@@ -103,6 +121,7 @@ impl PreparedSourceFactRebase {
             return Ok(Self {
                 preparation,
                 performed_input_facts,
+                retain_output_field_evidence,
             });
         };
         control.check_live()?;
@@ -116,6 +135,7 @@ impl PreparedSourceFactRebase {
                     facts, moved, control,
                 )?),
                 performed_input_facts,
+                retain_output_field_evidence,
             });
         }
         control.check_live()?;
@@ -130,6 +150,7 @@ impl PreparedSourceFactRebase {
                     facts, moved, control,
                 )?),
                 performed_input_facts,
+                retain_output_field_evidence,
             });
         };
         Ok(Self {
@@ -142,6 +163,7 @@ impl PreparedSourceFactRebase {
                 control,
             )?),
             performed_input_facts,
+            retain_output_field_evidence,
         })
     }
 }

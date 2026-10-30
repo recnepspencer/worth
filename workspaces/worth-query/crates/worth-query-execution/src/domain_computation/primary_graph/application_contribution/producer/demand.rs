@@ -15,7 +15,7 @@ type FamilySourceQuery<Schema, Family> =
 
 pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
-mod bridge_denial;
+pub(super) mod bridge_denial;
 mod checkpoint_delivery;
 mod denial_diagnostic;
 mod denial_posture;

@@ -30,8 +30,7 @@ impl<
             EntityId,
             &mut Option<ExecutionMemoryReservation>,
         ) -> Result<PendingInspectionPolicies, InspectionCause>,
-    ) -> Result<WorthQueryConnectedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
-    {
+    ) -> Result<SourceInspectionResult<'o>, WorthQueryApplicationInspectionDenial> {
         let mut memory = None;
         let result = self.request.open(|execution| {
             let query =
@@ -144,6 +143,7 @@ impl<
                                             query.query(),
                                             source_binding.query(),
                                             self.source,
+                                            self.purpose,
                                         )
                                         .map_err(InspectionCause::Admission)?;
                                     let terminal = read

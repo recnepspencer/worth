@@ -45,6 +45,7 @@ impl<Schema, Operation, Input, Scope>
         successor_of: Option<[u8; 32]>,
 
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        retain_output_field_evidence: bool,
     ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial>
     where
         OutputBinding: 'static,
@@ -94,7 +95,8 @@ impl<Schema, Operation, Input, Scope>
         self.output_currentness_facts = Some(
             complete_content_currentness_facts(dependency_facts, moved, content.reusable())
                 .with_rebase_carry(self.read_set.postcondition_carry.clone())
-                .with_performed_inputs(performed_inputs),
+                .with_performed_inputs(performed_inputs)
+                .retaining_output_field_evidence(retain_output_field_evidence),
         );
         self.read_set
             .admission

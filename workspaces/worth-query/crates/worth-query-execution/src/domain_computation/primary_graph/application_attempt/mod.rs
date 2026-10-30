@@ -1,4 +1,6 @@
+mod output_field_capture;
 pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
+pub(in crate::domain_computation::primary_graph) use output_field_capture::OutputFieldCaptureFailure;
 mod capability_revocation_program;
 mod commit_authority_binding;
 mod commit_outcome_identity;

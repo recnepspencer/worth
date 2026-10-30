@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSou
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         >,
         conditional: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
+        evaluation: Option<Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
         disclosure: Option<Arc<OriginalSourceInspectionDisclosure>>,
         original_publication: Option<Arc<super::OriginalProducingPublication>>,
     },
@@ -63,6 +64,7 @@ impl OriginalSettledProducerObservation {
                     changes: receipt.committed_changes().clone(),
                     inputs: receipt.performed_input_facts().cloned(),
                     conditional: completion.readiness.causal_observation().cloned(),
+                    evaluation: completion.readiness.output_evaluation().cloned(),
                     disclosure: receipt
                         .authority_binding()
                         .retain_original_inspection_disclosure(),

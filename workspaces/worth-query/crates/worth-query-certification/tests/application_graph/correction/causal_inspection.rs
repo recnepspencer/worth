@@ -118,3 +118,13 @@ fn distinct_original_query_subject_keeps_generation_cancellation_and_release() {
 fn retained_original_produced_output_connects_after_retirement_and_equal_replacement() {
     super::model::causal_inspection::retired_outputs::original_output_survives_retirement_and_equal_replacement();
 }
+
+#[test]
+fn actual_parity_producer_exposes_its_exact_equivalent_and_changed_field_evaluations() {
+    super::model::causal_inspection::output_equivalence::parity_source_and_output_evaluation();
+}
+
+#[test]
+fn output_evaluation_rechecks_independent_authority_cancellation_and_memory_release() {
+    super::model::causal_inspection::output_equivalence::evaluation_rechecks_each_subject_and_releases_request_funding();
+}

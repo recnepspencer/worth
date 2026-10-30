@@ -1,6 +1,21 @@
 //! Exact original source/input and producer/output joins, after fresh diagnostics.
 use super::WorthQueryApplicationInspectionTarget;
+mod evaluation;
 mod output_refusal;
+pub use evaluation::{
+    WorthQueryApplicationProducerEvaluation, WorthQueryProducerEvaluationDecision,
+    WorthQueryProducerEvaluationDenial,
+};
+#[derive(Clone, Copy)]
+pub(super) enum SourceInspectionPurpose {
+    Creation,
+    Evaluation,
+}
+pub(super) enum ProducerExplanation {
+    Creation(WorthQueryApplicationProducerConnection),
+    Evaluation(WorthQueryApplicationProducerEvaluation),
+}
+
 mod overlap;
 mod publication;
 mod source;
@@ -23,6 +38,7 @@ use worth_relational::facade::history::RelationalCommitReceipt;
 /// Original retained evidence could not establish this requested connection.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProducerConnectionDenial {
+    Evaluation(WorthQueryProducerEvaluationDenial),
     ForeignSource,
     SourceDisclosureUnavailable,
     SourceDisclosureMismatch,
@@ -181,4 +197,40 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
             output_native: output.native,
         })
     })
+}
+
+pub(super) fn explain<Schema: worth_query_installation::facade::ApplicationSchema>(
+    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+        Schema,
+    >,
+    execution: &ExecutionRequest<'_, '_>,
+    target: &WorthQueryApplicationInspectionTarget,
+    source: &WorthQueryApplicationCommitReceipt,
+    diagnostic: &DiagnosticComparisonAdmission<'_>,
+    source_diagnostic: Option<&DiagnosticComparisonAdmission<'_>>,
+    memory: &mut Option<ExecutionMemoryReservation>,
+    purpose: SourceInspectionPurpose,
+) -> Result<ProducerExplanation, CaptureStop<ConnectionRefusal>> {
+    match purpose {
+        SourceInspectionPurpose::Creation => connect(
+            runtime,
+            execution,
+            target,
+            source,
+            diagnostic,
+            source_diagnostic,
+            memory,
+        )
+        .map(ProducerExplanation::Creation),
+        SourceInspectionPurpose::Evaluation => evaluation::evaluate(
+            runtime,
+            execution,
+            target,
+            source,
+            diagnostic,
+            source_diagnostic,
+            memory,
+        )
+        .map(ProducerExplanation::Evaluation),
+    }
 }

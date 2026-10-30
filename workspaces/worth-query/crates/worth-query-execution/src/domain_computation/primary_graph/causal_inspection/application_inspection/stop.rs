@@ -44,6 +44,14 @@ impl WorthQueryApplicationInspectionDenial {
         self.connection_refusal().map(|cause| cause.kind())
     }
 
+    /// Evaluation refusal after both original source and query diagnostics were admitted.
+    pub fn producer_evaluation_refusal(&self) -> Option<super::WorthQueryProducerEvaluationDenial> {
+        match self.producer_connection_refusal()? {
+            super::WorthQueryProducerConnectionDenial::Evaluation(cause) => Some(cause),
+            _ => None,
+        }
+    }
+
     /// Output join detail after fresh diagnostic admission; no identifiers or values.
     /// With multiple disclosed candidates, reports the longest satisfied prefix,
     /// retaining the first candidate in original order when equally deep.

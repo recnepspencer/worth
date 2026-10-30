@@ -160,3 +160,5 @@ fn edition_refuses_unsealed_or_substituted_output_equivalence() {
         .is_err());
     }
 }
+
+mod association;

@@ -83,7 +83,7 @@ where
             selected,
             observed_source,
             performed_source,
-            route,
+            &route.scheduling,
             truth.signal_basis(),
             |bridge, route, signal_basis, query_identity, attempt| {
                 schedule_output_producer(
@@ -155,7 +155,7 @@ where
             selected,
             observed_source,
             performed_source,
-            route,
+            &route.scheduling,
             selected_product.product().signal_basis(),
             |bridge, route, signal_basis, query_identity, attempt| {
                 schedule_output_producer_on_selected(

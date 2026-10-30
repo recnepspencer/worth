@@ -71,6 +71,7 @@ pub struct WorthQueryApplicationCommitReceipt {
     >,
     pub(super) committed_changes: WorthQueryApplicationCommittedChanges,
     pub(super) performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
+    pub(super) performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
     pub(super) output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) exact_output_settlement: Option<std::sync::Arc<
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
@@ -112,6 +113,7 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             unrebased_own_effect: self.unrebased_own_effect,
             committed_changes: self.committed_changes.clone(),
             performed_input_facts: self.performed_input_facts.clone(),
+            performed_output_fields: self.performed_output_fields.clone(),
         }
     }
 }

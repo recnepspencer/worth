@@ -17,6 +17,7 @@ type ProducerMode =
 
 struct ReadyCell {
     completion: OnceLock<WorthQueryCompletedOutputDemand>,
+    output_evaluation: OnceLock<Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
     producer_mode: OnceLock<ProducerMode>,
     original_publication: OnceLock<Arc<super::super::OriginalProducingPublication>>,
 }
@@ -55,6 +56,7 @@ impl PreparedReadyBacking {
         Self {
             cell: Arc::new(ReadyCell {
                 completion: OnceLock::new(),
+                output_evaluation: OnceLock::new(),
                 producer_mode: OnceLock::new(),
                 original_publication: OnceLock::new(),
             }),
@@ -64,6 +66,19 @@ impl PreparedReadyBacking {
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn for_test() -> Self {
         Self::new()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn output_evaluation(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>{
+        self.cell.output_evaluation.get()
+    }
+    pub(in crate::domain_computation::primary_graph) fn retain_output_evaluation(
+        &self,
+        evaluation: Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>,
+    ) {
+        assert!(
+            self.cell.output_evaluation.set(evaluation).is_ok(),
+            "one claimed completion evaluates an output once"
+        );
     }
 
     /// Bind the mode selected for the actual producer execution before it

@@ -137,7 +137,7 @@ fn inspect<'o>(
             access(application, principal, scope, "numeric"),
         )
 }
-fn access(
+pub(super) fn access(
     application: &host::OutputHost,
     external: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
     scope: &WorthQueryRequestScope,

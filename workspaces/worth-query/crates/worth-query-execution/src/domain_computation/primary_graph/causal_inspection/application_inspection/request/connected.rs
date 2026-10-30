@@ -8,6 +8,11 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryScopeBinding,
 };
 mod action;
+mod evaluated;
+use super::super::{connection::SourceInspectionPurpose, result::SourceInspectionResult};
+pub use evaluated::{
+    WorthQueryEvaluatedInspectionRequest, WorthQueryEvaluatedReferenceOnlyInspectionRequest,
+};
 
 type QueryScope<Schema, Binding> =
     <<Binding as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<
@@ -19,6 +24,7 @@ pub struct WorthQueryConnectedInspectionRequest<'a, 'p, 'r, 'o, 's, Schema, Bind
     request: WorthQueryApplicationInspectionRequest<'a, 'p, 'r, 'o, Schema, Binding>,
     source: &'s crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     disclosure: PhantomData<fn() -> Disclosure>,
+    purpose: SourceInspectionPurpose,
 }
 pub struct WorthQueryConnectedReferenceOnlyInspectionRequest<
     'a,
@@ -45,7 +51,23 @@ impl<'a, 'p, 'r, 'o, Schema, Binding>
             request: self.0,
             source,
             disclosure: PhantomData,
+            purpose: SourceInspectionPurpose::Creation,
         }
+    }
+    /// Explain the actual declared producer field evaluation without asserting creation.
+    pub fn evaluated_by<'s, Disclosure: ApplicationSourceDisclosureBinding<Schema>>(
+        self,
+        source: &'s crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> WorthQueryEvaluatedInspectionRequest<'a, 'p, 'r, 'o, 's, Schema, Binding, Disclosure>
+    where
+        Schema: ApplicationSchema,
+    {
+        WorthQueryEvaluatedInspectionRequest(WorthQueryConnectedInspectionRequest {
+            request: self.0,
+            source,
+            disclosure: PhantomData,
+            purpose: SourceInspectionPurpose::Evaluation,
+        })
     }
 }
 impl<'a, 'p, 'r, 'o, 's, Schema, Binding, Disclosure>
@@ -105,38 +127,30 @@ impl<'a, 'p, 'r, 'o, 's, Schema, Binding, Disclosure>
             },
             source: self.0.source,
             disclosure: PhantomData,
+            purpose: self.0.purpose,
         })
     }
 }
 
 impl<'o, Schema, Binding, Disclosure>
-    WorthQueryConnectedReferenceOnlyInspectionRequest<
-        '_,
-        '_,
-        '_,
-        'o,
-        '_,
-        Schema,
-        Binding,
-        Disclosure,
-    >
+    WorthQueryConnectedInspectionRequest<'_, '_, '_, 'o, '_, Schema, Binding, Disclosure>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationQueryBinding<Schema>,
     Disclosure: ApplicationSourceDisclosureBinding<Schema>,
 {
-    pub fn execute_with_diagnostics<QDC, QDO, QDI, SDC, SDO, SDI>(
+    pub(super) fn execute_with_diagnostics_core<QDC, QDO, QDI, SDC, SDO, SDI>(
         self,
         qd: Access<Schema, QDC, QDO, QDI>,
         sd: Access<Schema, SDC, SDO, SDI>,
-    ) -> Result<WorthQueryConnectedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
+    ) -> Result<SourceInspectionResult<'o>, WorthQueryApplicationInspectionDenial>
     where
         QDI: ApplicationCapabilityRequest<Schema, QDC, Scope = QueryScope<Schema, Binding>>,
         SDI: ApplicationCapabilityRequest<Schema, SDC, Scope = SourceScope<Schema, Disclosure>>,
     {
-        let runtime = self.0.request.runtime;
-        let request = self.0.request.request;
-        self.0.execute_with(
+        let runtime = self.request.runtime;
+        let request = self.request.request;
+        self.execute_with(
             |execution, query, principal, scope, memory| {
                 let diagnostic = governed::prepare_capability(
                     runtime, request, execution, query, principal, scope, qd, memory,
@@ -157,22 +171,35 @@ where
             },
         )
     }
-    pub fn execute_governed<QMC, QMO, QMI, QDC, QDO, QDI, SMC, SMO, SMI, SDC, SDO, SDI>(
+    pub(super) fn execute_governed_core<
+        QMC,
+        QMO,
+        QMI,
+        QDC,
+        QDO,
+        QDI,
+        SMC,
+        SMO,
+        SMI,
+        SDC,
+        SDO,
+        SDI,
+    >(
         self,
         qm: Access<Schema, QMC, QMO, QMI>,
         qd: Access<Schema, QDC, QDO, QDI>,
         sm: Access<Schema, SMC, SMO, SMI>,
         sd: Access<Schema, SDC, SDO, SDI>,
-    ) -> Result<WorthQueryConnectedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
+    ) -> Result<SourceInspectionResult<'o>, WorthQueryApplicationInspectionDenial>
     where
         QMI: ApplicationCapabilityRequest<Schema, QMC, Scope = QueryScope<Schema, Binding>>,
         QDI: ApplicationCapabilityRequest<Schema, QDC, Scope = QueryScope<Schema, Binding>>,
         SMI: ApplicationCapabilityRequest<Schema, SMC, Scope = SourceScope<Schema, Disclosure>>,
         SDI: ApplicationCapabilityRequest<Schema, SDC, Scope = SourceScope<Schema, Disclosure>>,
     {
-        let runtime = self.0.request.runtime;
-        let request = self.0.request.request;
-        self.0.execute_with(
+        let runtime = self.request.runtime;
+        let request = self.request.request;
+        self.execute_with(
             |execution, query, principal, scope, memory| {
                 let metadata = governed::prepare_capability(
                     runtime, request, execution, query, principal, scope, qm, memory,
@@ -198,5 +225,52 @@ where
                 })
             },
         )
+    }
+}
+impl<'o, Schema, Binding, Disclosure>
+    WorthQueryConnectedReferenceOnlyInspectionRequest<
+        '_,
+        '_,
+        '_,
+        'o,
+        '_,
+        Schema,
+        Binding,
+        Disclosure,
+    >
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationQueryBinding<Schema>,
+    Disclosure: ApplicationSourceDisclosureBinding<Schema>,
+{
+    pub fn execute_with_diagnostics<QDC, QDO, QDI, SDC, SDO, SDI>(
+        self,
+        qd: Access<Schema, QDC, QDO, QDI>,
+        sd: Access<Schema, SDC, SDO, SDI>,
+    ) -> Result<WorthQueryConnectedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
+    where
+        QDI: ApplicationCapabilityRequest<Schema, QDC, Scope = QueryScope<Schema, Binding>>,
+        SDI: ApplicationCapabilityRequest<Schema, SDC, Scope = SourceScope<Schema, Disclosure>>,
+    {
+        self.0
+            .execute_with_diagnostics_core(qd, sd)
+            .map(SourceInspectionResult::creation)
+    }
+    pub fn execute_governed<QMC, QMO, QMI, QDC, QDO, QDI, SMC, SMO, SMI, SDC, SDO, SDI>(
+        self,
+        qm: Access<Schema, QMC, QMO, QMI>,
+        qd: Access<Schema, QDC, QDO, QDI>,
+        sm: Access<Schema, SMC, SMO, SMI>,
+        sd: Access<Schema, SDC, SDO, SDI>,
+    ) -> Result<WorthQueryConnectedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
+    where
+        QMI: ApplicationCapabilityRequest<Schema, QMC, Scope = QueryScope<Schema, Binding>>,
+        QDI: ApplicationCapabilityRequest<Schema, QDC, Scope = QueryScope<Schema, Binding>>,
+        SMI: ApplicationCapabilityRequest<Schema, SMC, Scope = SourceScope<Schema, Disclosure>>,
+        SDI: ApplicationCapabilityRequest<Schema, SDC, Scope = SourceScope<Schema, Disclosure>>,
+    {
+        self.0
+            .execute_governed_core(qm, qd, sm, sd)
+            .map(SourceInspectionResult::creation)
     }
 }

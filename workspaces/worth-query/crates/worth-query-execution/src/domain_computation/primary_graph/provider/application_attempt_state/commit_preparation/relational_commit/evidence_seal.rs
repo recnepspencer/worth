@@ -35,6 +35,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
     operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
     observed_source_facts: postcommit_currentness::RebasedSourceFacts,
     performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
+    performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
@@ -79,6 +80,7 @@ pub(super) fn seal(
     let performed_input_facts = producer_output
         .then(|| prepared_rebase.performed_input_facts())
         .flatten();
+    let retain_output_field_evidence = prepared_rebase.retains_output_field_evidence();
     let request = committed.attempt().affinity().publication_request().clone();
     let committed_result = committed.committed();
     let observed_source_facts = provider.graph.with_runtime(execution, |runtime| {
@@ -93,6 +95,20 @@ pub(super) fn seal(
             crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
         )
     });
+    // Opt-in output evaluation keeps only immutable field evidence. A failed
+    // optional capture cannot undo the already committed Native publication.
+    let performed_output_fields = if retain_output_field_evidence {
+        use crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure as Failure;
+        Some(match observed_source_facts.retained() {
+            Err(cause) => Err(Failure::Rebase { reason: cause.reason, own_effect: cause.own_effect }),
+            Ok(facts) => crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::copy_performed_field_reads(
+                &facts,
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
+            ).map_err(Failure::Retention),
+        })
+    } else {
+        None
+    };
     WorthQueryPrimaryGraphCommitEvidence {
         workflow_origin: committed.attempt().workflow_origin().cloned(),
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
@@ -106,6 +122,7 @@ pub(super) fn seal(
         operation_scope: committed.attempt().affinity().operation_scope().clone(),
         observed_source_facts,
         performed_input_facts,
+        performed_output_fields,
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     }
 }
@@ -133,6 +150,11 @@ impl WorthQueryMutationWorkCommitSeal {
 }
 
 impl WorthQueryPrimaryGraphCommitEvidence {
+    pub(in crate::domain_computation::primary_graph) fn performed_output_fields(&self)
+    -> Option<&Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>{
+        self.performed_output_fields.as_ref()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn performed_input_facts(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>

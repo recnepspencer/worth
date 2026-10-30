@@ -1,5 +1,5 @@
 //! Opt-in producer field scope; comparison and disclosure require their own evidence.
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 use worth_query_declaration::facade::application_operation::{
     application_value_identity, ApplicationValueIdentityDomain, WorthQueryApplicationOutputRole,
     WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
@@ -99,7 +99,7 @@ pub(in super::super) fn seal<Schema: schema::ApplicationSchema>(
     role: &str,
     field: &NativeFieldBindingExpectation,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<InstalledProducerOutputEquivalence, WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<Arc<InstalledProducerOutputEquivalence>, WorthQueryPrimaryGraphInstallationDenial> {
     seal_contract(
         identity,
         role,
@@ -117,7 +117,7 @@ fn seal_contract(
     declaration: &schema::ErasedApplicationSchemaDeclaration,
     values: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     contracts: &worth_query_installation::facade::WorthQueryInstalledApplicationSchemaContractCatalog,
-) -> Result<InstalledProducerOutputEquivalence, WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<Arc<InstalledProducerOutputEquivalence>, WorthQueryPrimaryGraphInstallationDenial> {
     let fail = |detail: &str| {
         WorthQueryPrimaryGraphInstallationDenial::new(
             WorthQueryPrimaryGraphInstallationDenialKind::ProducerBindingMeaningMismatch,
@@ -154,10 +154,10 @@ fn seal_contract(
     )
     .map_err(|_| fail("output equivalence meaning cannot be encoded"))?
     .identity();
-    Ok(InstalledProducerOutputEquivalence {
+    Ok(Arc::new(InstalledProducerOutputEquivalence {
         field: declared,
         meaning,
-    })
+    }))
 }
 
 fn standard_u64_meaning(

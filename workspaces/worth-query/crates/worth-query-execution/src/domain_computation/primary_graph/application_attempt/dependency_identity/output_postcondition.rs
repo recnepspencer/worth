@@ -19,12 +19,22 @@ pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     >,
     moved_by_own_effect: std::sync::Arc<[usize]>,
+    retain_output_field_evidence: bool,
     carry: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
     >,
 }
 
 impl OutputCurrentnessFacts {
+    pub(in crate::domain_computation::primary_graph) fn retains_output_field_evidence(
+        &self,
+    ) -> bool {
+        self.retain_output_field_evidence
+    }
+    pub(super) fn retaining_output_field_evidence(mut self, requested: bool) -> Self {
+        self.retain_output_field_evidence = requested;
+        self
+    }
     /// Captured from the completed pre-normalization producer read set.
     pub(super) fn with_performed_inputs(
         mut self,
@@ -60,6 +70,7 @@ impl OutputCurrentnessFacts {
             facts: builder.seal()?,
             carry: None,
             performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: std::sync::Arc::from([]),
         })
     }
@@ -103,6 +114,7 @@ impl From<crate::domain_computation::primary_graph::output_lineage::ComparableSo
             facts: facts.facts().clone(),
             carry: None,
             performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -118,6 +130,7 @@ pub(super) fn complete_content_currentness_facts(
             facts,
             carry: None,
             performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: moved.into(),
         }
     } else {
@@ -125,6 +138,7 @@ pub(super) fn complete_content_currentness_facts(
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
             carry: None,
             performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -140,6 +154,7 @@ pub(super) fn complete_output_currentness_facts(
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from(facts).into(),
             carry: None,
             performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: moved_by_own_effect.into(),
         }
     } else {
@@ -150,6 +165,7 @@ pub(super) fn complete_output_currentness_facts(
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
             carry: None,
             performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }

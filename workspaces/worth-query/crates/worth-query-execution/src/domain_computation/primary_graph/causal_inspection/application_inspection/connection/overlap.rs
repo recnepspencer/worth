@@ -143,7 +143,7 @@ impl ObservationConnection<'_, '_> {
         }
         Ok(None)
     }
-    fn projected(&self, entity: &str, aspect: &str, field: &str) -> bool {
+    pub(super) fn projected(&self, entity: &str, aspect: &str, field: &str) -> bool {
         self.diagnostic
             .graph()
             .projections()
