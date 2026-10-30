@@ -394,6 +394,11 @@ pub use crate::diagnostics::{
     FoundationalReportArtifactKind, FoundationalSummaryArtifactKind,
     FoundationalSupportReportArtifactKind,
 };
+pub use crate::durability::{
+    ApplicationHomeBinding, ApplicationHomeBindingDescriptionDenial, DurableArtifactRetention,
+    DurableIdentity, DurableOwnerFamily, HomeIdentity, HomeIdentityDenial, HomeIncarnation,
+    HomeIncarnationExhausted, HomeProgramBinding, RetentionClass, UnsupportedDurableOwnerTag,
+};
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{
     DeterminismContract, EquivalenceContractId, ExecutionBudget, ExecutionFallbackCause,

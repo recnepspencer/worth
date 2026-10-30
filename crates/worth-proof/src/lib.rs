@@ -12,6 +12,8 @@ pub mod contracts;
 mod durable_publication;
 mod dx;
 mod effect;
+mod home_binding;
+mod home_recovery;
 mod linear;
 mod phase;
 pub mod prelude;
@@ -44,6 +46,8 @@ pub use crate::dx::{
     UnresolvedRecipeDxExt,
 };
 pub use durable_publication::DurablyCommitted;
+pub use home_binding::AdmittedApplicationHomeBinding;
+pub use home_recovery::{HomeAdmitted, RelationalReadmitted, StoreRecovered};
 pub use raw::PhaseMarker;
 pub use raw::{
     admit_ready_and_execute_recipe, apply_contextual_transition, apply_transition,

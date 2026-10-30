@@ -201,7 +201,7 @@ pub mod runtime {
     pub use crate::publication::{
         PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
     };
-    pub use crate::runtime::builder::RelationalRuntimeBuilder;
+    pub use crate::runtime::builder::{RelationalRuntimeBuilder, RelationalRuntimeDefinition};
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
     pub use crate::runtime::{

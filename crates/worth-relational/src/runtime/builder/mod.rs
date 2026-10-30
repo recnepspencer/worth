@@ -1,4 +1,7 @@
+mod definition;
 mod setup_sections;
+
+pub use definition::RelationalRuntimeDefinition;
 
 #[cfg(test)]
 mod tests;
@@ -225,11 +228,15 @@ impl RelationalRuntimeBuilder {
         self,
         medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
     ) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
-        RelationalRuntime::build_from_extensions(
+        self.resolve().build_with(medium)
+    }
+
+    /// Resolve declared configuration without constructing a live runtime.
+    pub fn resolve(self) -> RelationalRuntimeDefinition {
+        RelationalRuntimeDefinition::new(
             RelationalRuntimeConfig::resolved(self.profile, self.overrides),
             RuntimeExtensions::new(self.custom_invariants, self.commit_strategy_executors)
-                .with_post_commit_consumer(self.post_commit_consumer)
-                .with_durable_medium(medium),
+                .with_post_commit_consumer(self.post_commit_consumer),
         )
     }
 }

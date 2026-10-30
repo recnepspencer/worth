@@ -175,5 +175,6 @@ reconciliation. Record exact files after tracing their current owners.
 
 That worker must not edit Store opening/manifest/close, shared substrates,
 Query installation/receipt reconstruction, or Relational's envelope version
-and association field. Root owns those integrations. Local World proofs do
+and association field. The Phase 3 implementation agent owns those integration
+edits; the main chat's Root coordinates assignment and final landing. Local World proofs do
 not certify the joint production-host lost-response/kill/reopen/retry journey.

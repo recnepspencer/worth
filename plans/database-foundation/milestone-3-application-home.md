@@ -179,11 +179,14 @@ feature outside Store is introduced.
 
 ## Ownership and handoff
 
-Root owns the new Store Application/Application Oracle crates, Store manifest
+The Phase 3 implementation agent owns the new Store Application/Application
+Oracle crates, Store manifest
 and lock membership, narrow boundary entries, StoreRelational lifecycle and
 section extraction, required Query binding/preparation ports, and later Host
 composition/docs/representative caller migrations. Shared Foundation/Proof
-contracts have one writer. B4 Python issuance/selection/compiler-reader work
+contracts have one writer. The main chat's Root coordinates worker boundaries,
+measurement windows, integration and final landing certification; it is not
+the implementation owner named above. B4 Python issuance/selection/compiler-reader work
 and unrelated physical testkit changes remain excluded.
 
 The candidate future World slice is described in the shared-contract document.
