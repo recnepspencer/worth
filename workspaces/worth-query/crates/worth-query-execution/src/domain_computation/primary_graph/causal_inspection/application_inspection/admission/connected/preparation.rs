@@ -50,6 +50,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     original: &WorthQueryApplicationQueryObservation,
     source: &SourceOriginal,
     query_prepared: PreparedConnectionQuery,
+    rich: Option<super::super::super::rich::WorthQueryApplicationMaterializationRequest>,
     policies: PendingInspectionPolicies,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 ) -> Result<InspectionRead<'a, 'storage, Schema, Scope<Schema, Binding>>, InspectionAdmissionDenial>
@@ -88,7 +89,7 @@ where
         memory,
     )
     .map_err(InspectionAdmissionDenial::Target)?;
-    let target = WorthQueryApplicationInspectionTarget::capture_connection(
+    let mut target = WorthQueryApplicationInspectionTarget::capture_connection(
         execution,
         original,
         query_contract,
@@ -96,6 +97,9 @@ where
         memory,
     )
     .map_err(InspectionAdmissionDenial::Target)?;
+    if let Some(request) = rich {
+        WorthQueryApplicationInspectionTarget::bind_rich_request(&mut target, request);
+    }
     preparation::start(
         runtime,
         execution,

@@ -526,11 +526,69 @@ not a Signal retention or expiry verdict. Owner/family references are the actual
 freshly assembled Query envelope bindings. The rich report has a distinct versioned
 identity bound to the original, policy, requested families and actual projection
 outcome. Original-query materialization currently uses the existing
-`OfflineInterpretableArtifact` policy. Rich connected-source and performed-evaluation
-views remain subsequent Phase 9.9 work.
+`OfflineInterpretableArtifact` policy. A connected request can additionally select
+canonical source effects and its actual producer evidence, as described below.
 
 Cancellation after private projection preparation refuses before any public rich
 artifact, without changing business output. Previously admitted descriptive
 results remain usable after later grant revocation; every new request rechecks
 current access. The older unadmitted generic materialization door continues to
 refuse application observation envelopes with `NativeInspectionAdmissionRequired`.
+
+
+## Rich connected source and producer evidence
+
+Both the strict creation and performed-evaluation intents accept `.materialize`.
+They use the existing independently admitted source/query connection and one
+consuming inspection session:
+
+```rust,ignore
+let detail = WorthQueryApplicationMaterializationRequest::family(
+    WorthQueryApplicationEvidenceFamily::QueryInspection,
+).with_source_effects().with_producer_evidence();
+let rich = fresh.inspect::<QueryBinding>(&original).why_observed()
+    .evaluated_by::<SourceDisclosure>(&original_source)
+    .materialize(detail)
+    .execute_governed(query_metadata, query_diagnostic,
+        source_metadata, source_diagnostic)?;
+let body = rich.materialization();
+for field in body.source_effects().into_iter().flat_map(|source| source.fields()) {
+    consume(field.output_name(), field.effect(), field.value());
+}
+let actual_comparison = body.producer_evaluation();
+rich.close();
+```
+
+`.caused_by::<SourceDisclosure>(&source)` uses the same rich route and exposes
+`producer_connection()`. Creation and output evaluation remain distinct:
+Equivalent output cannot acquire a strict creation connection. The producer
+facet carries the existing actual connection or Native output comparison, with
+its original source/producer commits, role, basis and observed revision. It does
+not synthesize a new evaluation from equal bytes or readiness. The optional
+`connection_identity()` retains the actual qualified connection identity;
+`report_identity()` additionally binds the rich request, facet outcomes and policy.
+
+`source_effects()` describes the original canonical commit's selected direct-root
+field effects, not a historical source-query result. A Present effect borrows its
+original written Native value. Unchanged, FieldCleared and AspectCleared remain
+distinct, and supply no value from the current head. The sealed value handle
+retains its original immutable envelope and exact full-generation record patch;
+Native validates the original contract and physical binding. Getter lookup does
+not allocate or open a reader; struct storage visits at most its original width.
+Exact SDK array storage for the selected fields remains charged to the fresh
+inspection request until close. Canonical payloads retain their original owners.
+
+The source graph must match the actual independently issued source scope kind,
+with only direct-root fields. Other source shapes report
+`UnsupportedSourceProjectionShape` after diagnostic admission. Source and producer
+facets have explicit `source_outcome()` and `producer_outcome()`; unrequested
+facets remain NotRequested, and plain query mode cannot supply connected detail.
+These facets do not relabel canonical patches as unrelated retained inventory
+families. A requested lower family that this observation mode does not supply
+continues to report `RequestedButNotProvidedBySelectedObservationMode`.
+
+Both subjects are freshly admitted before canonical values or their availability
+are inspected. Revoking either subject refuses a new rich request. Cancellation
+after both private bodies are prepared prevents publication, preserves committed
+business state and releases fresh request funding. Rich source-only inspection
+and remaining lifecycle/consumer qualification are subsequent milestone work.

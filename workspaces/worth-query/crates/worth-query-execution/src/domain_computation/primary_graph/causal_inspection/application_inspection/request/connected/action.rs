@@ -7,6 +7,10 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
+enum PreparedConnectedOutcome<'o> {
+    Reference(super::super::super::result::PreparedConnectedInspection<'o>),
+    Rich(super::super::super::result::PreparedRichInspection<'o>),
+}
 impl<
         'o,
         Schema: ApplicationSchema,
@@ -30,6 +34,44 @@ impl<
             EntityId,
             &mut Option<ExecutionMemoryReservation>,
         ) -> Result<PendingInspectionPolicies, InspectionCause>,
+    ) -> Result<SourceInspectionResult<'o>, WorthQueryApplicationInspectionDenial> {
+        let mut query_pending = Some(query_pending);
+        let mut source_pending = Some(source_pending);
+        self.execute_with_core(
+            &mut |execution, query, principal, scope, memory| {
+                query_pending
+                    .take()
+                    .expect("one private query policy preparation")(
+                    execution, query, principal, scope, memory,
+                )
+            },
+            &mut |execution, query, principal, scope, memory| {
+                source_pending
+                    .take()
+                    .expect("one private source policy preparation")(
+                    execution, query, principal, scope, memory,
+                )
+            },
+        )
+    }
+    fn execute_with_core(
+        self,
+        query_pending: &mut dyn FnMut(
+            &ExecutionRequest<'_, '_>,
+            &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+            EntityId,
+            EntityId,
+            &mut Option<ExecutionMemoryReservation>,
+        )
+            -> Result<PendingInspectionPolicies, InspectionCause>,
+        source_pending: &mut dyn FnMut(
+            &ExecutionRequest<'_, '_>,
+            &WorthQueryInstalledApplicationQueryBinding<Schema, Disclosure::Disclosure>,
+            EntityId,
+            EntityId,
+            &mut Option<ExecutionMemoryReservation>,
+        )
+            -> Result<PendingInspectionPolicies, InspectionCause>,
     ) -> Result<SourceInspectionResult<'o>, WorthQueryApplicationInspectionDenial> {
         let mut memory = None;
         let result = self.request.open(|execution| {
@@ -133,6 +175,7 @@ impl<
                                         self.request.original,
                                         &source,
                                         query_prepared,
+                                        self.rich,
                                         policies,
                                         &mut memory,
                                     )
@@ -169,12 +212,21 @@ impl<
             let completed = terminal
                 .complete(execution, basis.release())
                 .map_err(InspectionCause::Admission)?;
-            completed
-                .publish_connected(execution, self.request.original, report, &mut memory)
-                .map_err(InspectionCause::Admission)
+            match report {
+                admission::connected::ConnectedMaterialization::Reference(report) => completed
+                    .publish_connected(execution, self.request.original, report, &mut memory)
+                    .map(PreparedConnectedOutcome::Reference),
+                admission::connected::ConnectedMaterialization::Rich(report) => completed
+                    .publish_rich(execution, self.request.original, report, &mut memory)
+                    .map(PreparedConnectedOutcome::Rich),
+            }
+            .map_err(InspectionCause::Admission)
         });
         match result {
-            Ok(prepared) => Ok(prepared.fund(memory)),
+            Ok(PreparedConnectedOutcome::Reference(prepared)) => Ok(prepared.fund(memory)),
+            Ok(PreparedConnectedOutcome::Rich(prepared)) => {
+                Ok(SourceInspectionResult::Rich(prepared.fund(memory)))
+            }
             Err(cause) => Err(WorthQueryApplicationInspectionDenial::new(cause, memory)),
         }
     }

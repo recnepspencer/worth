@@ -23,6 +23,7 @@ pub enum WorthQueryApplicationInspectionResourceRefusal<'a> {
     Lease(&'a LeaseDenial),
     Memory(&'a MemoryLimitDenial),
     Allocation(&'a std::collections::TryReserveError),
+    Array(&'a worth_execution::ExecutionRequestArrayDenial),
 }
 type Refusal<'a> = WorthQueryApplicationInspectionResourceRefusal<'a>;
 
@@ -60,6 +61,12 @@ fn admission(cause: &InspectionAdmissionDenial) -> Option<Refusal<'_>> {
         Cause::DiagnosticAdmission(stop) => capture(stop, |_| None),
         Cause::ComparisonParameters(stop) => capture(stop, |_| None),
         Cause::Rich(stop) => capture(stop, |_| None),
+        Cause::RichSource(stop) => capture(stop, |cause| match cause {
+            super::super::rich::source::SourceMaterializationDenial::Array(cause) => {
+                Some(Refusal::Array(cause))
+            }
+            _ => None,
+        }),
         Cause::Connection(stop) => capture(stop, |_| None),
         Cause::Comparison(stop) => capture(stop, |cause| {
             match cause {

@@ -7,11 +7,41 @@ pub(in super::super) struct FundedRichInspectionReport {
     pub(in super::super) body: PreparedRichMaterialization,
     pub(in super::super) identity: BridgeIdentityEvidence,
     pub(in super::super) retained_bytes: u64,
+    pub(in super::super) connection_identity: Option<BridgeIdentityEvidence>,
 }
 pub(in super::super) fn materialize_rich(
     execution: &ExecutionRequest<'_, '_>,
     reference: FundedInspectionReport,
     body: PreparedRichMaterialization,
+    memory: &mut Option<ExecutionMemoryReservation>,
+) -> Result<FundedRichInspectionReport, CaptureStop<InspectionReportDenial>> {
+    let retained_bytes = reference.retained_bytes;
+    finish(execution, reference, body, None, retained_bytes, memory)
+}
+pub(in super::super) fn materialize_connected_rich(
+    execution: &ExecutionRequest<'_, '_>,
+    connected: super::FundedConnectedReport,
+    mut body: PreparedRichMaterialization,
+    memory: &mut Option<ExecutionMemoryReservation>,
+) -> Result<FundedRichInspectionReport, CaptureStop<InspectionReportDenial>> {
+    if body.artifact.request().requests_producer_evidence() {
+        body.artifact.producer = Some(connected.explanation);
+    }
+    finish(
+        execution,
+        connected.query,
+        body,
+        Some(connected.identity),
+        connected.retained_bytes,
+        memory,
+    )
+}
+fn finish(
+    execution: &ExecutionRequest<'_, '_>,
+    reference: FundedInspectionReport,
+    body: PreparedRichMaterialization,
+    connection_identity: Option<BridgeIdentityEvidence>,
+    retained_before: u64,
     memory: &mut Option<ExecutionMemoryReservation>,
 ) -> Result<FundedRichInspectionReport, CaptureStop<InspectionReportDenial>> {
     if !body.matches(&reference) {
@@ -40,14 +70,16 @@ pub(in super::super) fn materialize_rich(
             Ok(())
         };
         let identity = super::super::identity::rich::rich_identity(
-            &reference.payload,
+            connection_identity.as_ref().map_or_else(
+                || reference.payload.report_identity(),
+                |identity| identity.terminal_projection_for_reporting(),
+            ),
             &body.artifact,
             &mut admit,
         )
         .map_err(|cause| MapKernelFailure::Domain(InspectionReportDenial::Identity(cause)))?;
         drop(admit);
-        let retained_bytes = reference
-            .retained_bytes
+        let retained_bytes = retained_before
             .checked_add(memory.as_deref().map_or(0, |m| m.bytes()))
             .ok_or(MapKernelFailure::Domain(InspectionReportDenial::Storage(
                 RetainedStorageDenial::Overflow,
@@ -57,6 +89,7 @@ pub(in super::super) fn materialize_rich(
             body,
             identity,
             retained_bytes,
+            connection_identity,
         })
     })
 }
@@ -67,5 +100,13 @@ impl PreparedRichMaterialization {
             && Arc::ptr_eq(&self.scope.target, reference.target())
             && reference.target().rich_request() == Some(self.scope.request)
             && self.artifact.request() == self.scope.request
+            && match &self.artifact.source {
+                super::super::rich::source::SourceDetail::Provided(source) => reference
+                    .target()
+                    .connection_source()
+                    .and_then(|target| target.source())
+                    .is_some_and(|original| source.matches(original)),
+                _ => true,
+            }
     }
 }

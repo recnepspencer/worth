@@ -16,7 +16,7 @@ fn detail() -> WorthQueryApplicationMaterializationRequest {
     )
     .with_family(WorthQueryApplicationEvidenceFamily::BridgeRoute)
 }
-fn assert_original(report: &WorthQueryMaterializedApplicationInspection<'_>) {
+pub(super) fn assert_original(report: &WorthQueryMaterializedApplicationInspection<'_>) {
     use WorthQueryApplicationEvidenceFamily as Family;
     use WorthQueryMaterializedFamilyOutcome as Outcome;
     let body = report.materialization();
@@ -169,6 +169,14 @@ pub fn rich_original_query_survives_head_change_and_private_assembly_cancellatio
     assert_eq!(rich.observation_identity(), observation_identity);
     assert_ne!(rich.report_identity(), reference_identity);
     assert_original(&rich);
+    assert_eq!(
+        rich.materialization().source_outcome(),
+        WorthQueryMaterializedFamilyOutcome::NotRequested
+    );
+    assert_eq!(
+        rich.materialization().producer_outcome(),
+        WorthQueryMaterializedFamilyOutcome::NotRequested
+    );
     assert_eq!(head(&application), native_head);
     assert_eq!(readers.observe().active(), baseline);
     let (metadata, diagnostic) = (access(), access());

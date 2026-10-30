@@ -265,3 +265,6 @@ pub use field_effect::PublishedAuthoritativeFieldEffect;
 
 #[cfg(test)]
 mod tests;
+
+mod field_value;
+pub use field_value::PublishedAuthoritativeFieldValueLocation;

@@ -19,3 +19,6 @@ pub use reuse::stable_input_reuse_has_no_performed_output_evaluation;
 
 mod rich_query;
 pub use rich_query::rich_original_query_survives_head_change_and_private_assembly_cancellation;
+
+mod rich_connected;
+pub use rich_connected::rich_source_and_producer_keep_original_values_both_authorities_and_release;

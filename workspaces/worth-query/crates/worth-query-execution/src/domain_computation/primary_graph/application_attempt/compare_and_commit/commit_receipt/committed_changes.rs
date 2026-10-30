@@ -1,3 +1,5 @@
+mod materialized_field;
+pub(in crate::domain_computation::primary_graph) use materialized_field::MaterializedCommittedField;
 mod actor_observation;
 mod field_effect;
 mod output_effect;

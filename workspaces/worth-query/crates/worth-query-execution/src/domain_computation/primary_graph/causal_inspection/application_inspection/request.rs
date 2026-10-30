@@ -10,6 +10,7 @@ mod connected;
 pub use connected::{
     WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest,
     WorthQueryEvaluatedInspectionRequest, WorthQueryEvaluatedReferenceOnlyInspectionRequest,
+    WorthQueryMaterializedConnectedInspectionRequest,
 };
 mod changed;
 pub use changed::{

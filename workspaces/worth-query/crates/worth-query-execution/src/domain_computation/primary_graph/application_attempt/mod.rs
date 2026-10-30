@@ -232,3 +232,5 @@ pub(in crate::domain_computation) use fact::consult_observation;
 pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;
 
 pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScopes;
+
+pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;

@@ -147,3 +147,8 @@ fn restored_output_cannot_recreate_its_original_in_memory_evaluation() {
 fn rich_original_query_keeps_original_cells_and_rechecks_live_authority() {
     super::model::causal_inspection::output_equivalence::rich_original_query_survives_head_change_and_private_assembly_cancellation();
 }
+
+#[test]
+fn rich_connected_originals_keep_canonical_source_effects_and_exact_producer_evidence() {
+    super::model::causal_inspection::output_equivalence::rich_source_and_producer_keep_original_values_both_authorities_and_release();
+}

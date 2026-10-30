@@ -1,5 +1,6 @@
 //! Independent source policy shares one Inspection session, never query authority.
 mod materialization;
+pub(in super::super) use materialization::ConnectedMaterialization;
 mod preparation;
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) use preparation::{prepare,prepare_query};
 use super::policy::PreparedInspectionPolicy;

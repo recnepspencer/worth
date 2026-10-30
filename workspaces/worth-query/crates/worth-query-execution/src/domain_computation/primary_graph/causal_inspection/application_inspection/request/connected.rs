@@ -9,10 +9,12 @@ use worth_query_declaration::facade::{
 };
 mod action;
 mod evaluated;
+mod rich;
 use super::super::{connection::SourceInspectionPurpose, result::SourceInspectionResult};
 pub use evaluated::{
     WorthQueryEvaluatedInspectionRequest, WorthQueryEvaluatedReferenceOnlyInspectionRequest,
 };
+pub use rich::WorthQueryMaterializedConnectedInspectionRequest;
 
 type QueryScope<Schema, Binding> =
     <<Binding as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<
@@ -25,6 +27,7 @@ pub struct WorthQueryConnectedInspectionRequest<'a, 'p, 'r, 'o, 's, Schema, Bind
     source: &'s crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     disclosure: PhantomData<fn() -> Disclosure>,
     purpose: SourceInspectionPurpose,
+    rich: Option<super::super::rich::WorthQueryApplicationMaterializationRequest>,
 }
 pub struct WorthQueryConnectedReferenceOnlyInspectionRequest<
     'a,
@@ -52,6 +55,7 @@ impl<'a, 'p, 'r, 'o, Schema, Binding>
             source,
             disclosure: PhantomData,
             purpose: SourceInspectionPurpose::Creation,
+            rich: None,
         }
     }
     /// Explain the actual declared producer field evaluation without asserting creation.
@@ -67,6 +71,7 @@ impl<'a, 'p, 'r, 'o, Schema, Binding>
             source,
             disclosure: PhantomData,
             purpose: SourceInspectionPurpose::Evaluation,
+            rich: None,
         })
     }
 }
@@ -128,6 +133,7 @@ impl<'a, 'p, 'r, 'o, 's, Schema, Binding, Disclosure>
             source: self.0.source,
             disclosure: PhantomData,
             purpose: self.0.purpose,
+            rich: self.0.rich,
         })
     }
 }

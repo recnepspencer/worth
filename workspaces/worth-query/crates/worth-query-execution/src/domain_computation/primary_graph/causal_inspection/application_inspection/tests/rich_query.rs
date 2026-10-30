@@ -25,9 +25,20 @@ fn rich_retained_empty_is_provided_and_bodyless_is_not_retained() {
                 &external, &request, &original,
             )
             .why_observed()
-            .materialize(detail())
+            .materialize(detail().with_source_effects().with_producer_evidence())
             .execute_with_diagnostic(capability(&world, &external, &request))
             .unwrap();
+        assert_eq!(
+            rich.materialization().source_outcome(),
+            Outcome::RequestedButNotProvidedBySelectedObservationMode
+        );
+        assert_eq!(
+            rich.materialization().producer_outcome(),
+            Outcome::RequestedButNotProvidedBySelectedObservationMode
+        );
+        assert!(rich.materialization().source_effects().is_none());
+        assert!(rich.materialization().producer_evaluation().is_none());
+        assert!(rich.materialization().producer_connection().is_none());
         if retain {
             assert_eq!(
                 rich.materialization()

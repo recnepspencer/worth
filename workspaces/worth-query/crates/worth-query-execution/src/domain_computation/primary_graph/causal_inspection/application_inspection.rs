@@ -16,7 +16,9 @@ pub use rich::{
     WorthQueryMaterializedEvidenceReference, WorthQueryMaterializedFamilyOutcome,
     WorthQueryMaterializedFieldValue, WorthQueryMaterializedQueryField,
     WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
-    WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
+    WorthQueryMaterializedQueryRow, WorthQueryMaterializedSourceEffects,
+    WorthQueryMaterializedSourceField, WorthQueryMaterializedSourceFieldEffect,
+    WorthQueryProjectionMaterializationRefusal,
 };
 mod request;
 mod result;
@@ -25,7 +27,8 @@ pub use request::{
     WorthQueryApplicationInspectionRequest, WorthQueryChangedInspectionRequest,
     WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryConnectedInspectionRequest,
     WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryEvaluatedInspectionRequest,
-    WorthQueryEvaluatedReferenceOnlyInspectionRequest, WorthQueryMaterializedInspectionRequest,
+    WorthQueryEvaluatedReferenceOnlyInspectionRequest,
+    WorthQueryMaterializedConnectedInspectionRequest, WorthQueryMaterializedInspectionRequest,
     WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspectionRequest,
     WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest,
     WorthQuerySourceReferenceOnlyInspectionRequest,

@@ -59,10 +59,37 @@ impl AdmittedRichProjection<'_> {
             artifact: WorthQueryApplicationRichMaterialization {
                 request: self.scope.request,
                 original,
+                source: if self.scope.request.requests_source_effects() {
+                    super::super::rich::source::SourceDetail::Unselected
+                } else {
+                    super::super::rich::source::SourceDetail::NotRequested
+                },
+                producer: None,
             },
             scope: self.scope,
         })
     }
+}
+pub(in super::super) fn capture_original_query(
+    execution: &ExecutionRequest<'_, '_>,
+    memory: &mut Option<ExecutionMemoryReservation>,
+    target: &Arc<WorthQueryApplicationInspectionTarget>,
+    session: &WorthQueryManagedGraphWorkSession,
+    diagnostic: DiagnosticComparisonAdmission<'_>,
+) -> Result<PreparedRichMaterialization, InspectionAdmissionDenial> {
+    let request = target
+        .rich_request()
+        .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
+    AdmittedRichProjection {
+        diagnostic,
+        scope: RichReportScope {
+            session: session.identity(),
+            plan: session.plan_identity(),
+            target: Arc::clone(target),
+            request,
+        },
+    }
+    .assemble(execution, memory)
 }
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
     pub(in super::super) fn materialize_rich<Q, P, R, S>(
@@ -71,10 +98,6 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         query: &WorthQueryInstalledApplicationQuery<Schema, Q, P, R, S>,
     ) -> Result<FundedRichInspectionReport, InspectionAdmissionDenial> {
         drop(self.check(execution)?);
-        let request = self
-            .target
-            .rich_request()
-            .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
         let diagnostic = self
             .diagnostic
             .as_ref()
@@ -95,16 +118,8 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             },
         )
         .map_err(InspectionAdmissionDenial::DiagnosticAdmission)?;
-        let body = AdmittedRichProjection {
-            diagnostic: loan,
-            scope: RichReportScope {
-                session: self.session.identity(),
-                plan: self.session.plan_identity(),
-                target: Arc::clone(&self.target),
-                request,
-            },
-        }
-        .assemble(execution, self.memory)?;
+        let body =
+            capture_original_query(execution, self.memory, &self.target, &self.session, loan)?;
         if matches!(body.artifact.original, OriginalQueryDetail::Provided(_)) {
             self.runtime
                 .primary_provider

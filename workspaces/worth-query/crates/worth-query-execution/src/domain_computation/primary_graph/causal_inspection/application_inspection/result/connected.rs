@@ -132,9 +132,17 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     'a,
 > {
     Creation(WorthQueryConnectedApplicationInspection<'a>),
+    Rich(super::WorthQueryMaterializedApplicationInspection<'a>),
     Evaluation(WorthQueryEvaluatedApplicationInspection<'a>),
 }
 impl<'a> SourceInspectionResult<'a> {
+    pub(in super::super) fn rich(self) -> super::WorthQueryMaterializedApplicationInspection<'a> {
+        let Self::Rich(result) = self else {
+            unreachable!("private rich request produces rich result")
+        };
+        result
+    }
+
     pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn creation(
         self,
     ) -> WorthQueryConnectedApplicationInspection<'a> {

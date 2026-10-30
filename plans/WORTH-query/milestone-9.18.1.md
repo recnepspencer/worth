@@ -1381,7 +1381,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
 | 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | 9.9 optional rich materialization |
-| 9.9 | Optional rich materialization | In progress; original-query rich view qualified, connected source/evaluation views remain | Freshly admitted, demand-driven views from existing evidence owners |
+| 9.9 | Optional rich materialization | In progress; original-query and connected rich views qualified, source-only rich remains | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
 
@@ -1620,6 +1620,26 @@ checks pass. Phases 9.9-9.11 and parent Phase 9 remain open.
 
 #### Phase 9.9: Optional Rich Materialization
 
+**Connected rich slice qualified.** Strict creation and performed
+output evaluation now accept an explicit materialization request on the same
+independently admitted source/query session. Source-effects and producer-evidence
+facets remain separate from the existing retained-family inventory. Source fields
+borrow immutable canonical values through Native-issued positions coupled to the
+original envelope and exact full-generation record patch. Present, unchanged,
+field clear and aspect clear effects keep their Native meanings. Source capture
+checks the actual issued scope kind, direct-root shape, current diagnostic loan
+and request budget before lookup/allocation. Exact SDK array backing remains on
+the fresh payer; canonical payload ownership stays with the originals. The rich
+identity binds the actual connected identity, requested facets and their outcomes.
+Source-only rich inspection and remaining lifecycle/consumer qualification stay
+unfinished; this connected slice does not close Phase 9.9 or the parent phase.
+Verification: 57 public correction tests, 23 focused Query owner tests and two
+Native canonical field-effect tests pass in the existing binaries. Current-root
+topology/seals, context freshness, dirty Rust caps, function review and diff checks
+pass. The checker was built in this task's cache because the globally shared
+executable embedded another worktree's closed-caller configuration. No new runtime
+model or test binary was added; independent review cleared the slice.
+
 **First slice qualified.** The explicit original-query
 rich request consumes a fresh session-bound diagnostic loan before retained-body
 availability, shares the original disclosed projection owner, and publishes only
@@ -1629,8 +1649,9 @@ The three legacy materialization fences remain intact. Existing grouped public a
 owner courts cover earlier values after a head change, nested rows, fresh grant
 withdrawal, actual mid-assembly cancellation, empty versus unretained projections,
 Diagnostic denial before availability, scope substitution and reservation release.
-Connected-source and qualified performed-evaluation rich views remain unfinished;
-this slice does not close Phase 9.9 or the parent phase.
+This first slice qualifies only the original-query view; connected rich evidence
+is recorded separately. Source-only rich inspection remains unfinished, so Phase
+9.9 and the parent phase stay open.
 Validation: 56 existing grouped public correction tests and 23 focused owner
 tests pass, including the unchanged legacy fences; topology, context, dirty Rust
 line caps, function review and diff checks pass. The independent reviewer cleared

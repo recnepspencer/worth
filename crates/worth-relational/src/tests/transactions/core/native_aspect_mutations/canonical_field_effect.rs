@@ -51,9 +51,26 @@ fn scalar_whole_writes_use_the_actual_binding_and_original_absence_revision() {
             .unwrap()
             .unwrap()
     };
+    let value = |commit: &crate::facade::transactions::CommitResult| {
+        let patch = &commit
+            .publication()
+            .envelope
+            .patch
+            .authoritative_record_patches[0]
+            .authoritative_patch;
+        let (observed, location) = patch
+            .field_effect_with_value_location(&contract, &binding, &field, |_| Ok::<_, ()>(()))
+            .unwrap();
+        assert_eq!(observed, effect(commit));
+        location
+            .and_then(|location| patch.field_value_at(location))
+            .cloned()
+    };
     assert_eq!(effect(&created), Effect::Present);
+    assert_eq!(value(&created), Some(text("same")));
     let cleared = commit_entity_patch(execution, &runtime, entity, whole_clear(&contract));
     assert_eq!(effect(&cleared), Effect::AspectCleared);
+    assert_eq!(value(&cleared), None);
     assert_eq!(
         revision(&cleared).presence(),
         RelationalFieldPresence::Absent
@@ -66,6 +83,12 @@ fn scalar_whole_writes_use_the_actual_binding_and_original_absence_revision() {
         whole_set(&contract, text("same")),
     );
     assert_eq!(effect(&present), Effect::Present);
+    assert_eq!(value(&present), Some(text("same")));
+    assert_eq!(
+        value(&created),
+        Some(text("same")),
+        "later publications leave original scalar custody intact"
+    );
     assert_eq!(
         revision(&present).presence(),
         RelationalFieldPresence::Present
@@ -119,6 +142,31 @@ fn scalar_whole_writes_use_the_actual_binding_and_original_absence_revision() {
             .unwrap(),
         Effect::Unsupported
     );
+    let patch = &created
+        .publication()
+        .envelope
+        .patch
+        .authoritative_record_patches[0]
+        .authoritative_patch;
+    let (effect, location) = patch
+        .field_effect_with_value_location(&contract, &guessed, &field_key("optional_note"), |_| {
+            Ok::<_, ()>(())
+        })
+        .unwrap();
+    assert_eq!(effect, Effect::Unsupported);
+    assert!(location.is_none());
+    // Hostile decoded descriptive grammar is not a newly published commit.
+    // Repeated writes must never issue a value location by guessing an order.
+    let mut decoded = serde_json::to_value(patch).unwrap();
+    let operations = decoded["operations"].as_array_mut().unwrap();
+    operations.push(operations[0].clone());
+    let repeated: crate::facade::publication::PublishedAuthoritativePatch =
+        serde_json::from_value(decoded).unwrap();
+    let (effect, location) = repeated
+        .field_effect_with_value_location(&contract, &binding, &field, |_| Ok::<_, ()>(()))
+        .unwrap();
+    assert_eq!(effect, Effect::Ambiguous);
+    assert!(location.is_none());
     for commit in [&created, &cleared, &present, &cleared_again] {
         release_test_commit_snapshot(&runtime, commit);
     }
@@ -178,6 +226,20 @@ fn struct_replacement_and_field_clear_preserve_distinct_canonical_effects() {
                 .field_effect(&contract, &binding, &field, |_| Ok::<_, ()>(()))
                 .unwrap(),
             expected
+        );
+        let patch = &commit
+            .publication()
+            .envelope
+            .patch
+            .authoritative_record_patches[0]
+            .authoritative_patch;
+        let (effect, location) = patch
+            .field_effect_with_value_location(&contract, &binding, &field, |_| Ok::<_, ()>(()))
+            .unwrap();
+        assert_eq!(effect, expected);
+        assert_eq!(
+            location.and_then(|location| patch.field_value_at(location)),
+            (expected == Effect::Present).then_some(&text("open"))
         );
     }
     // Cancellation belongs to the actual caller, before reading the canonical payload.

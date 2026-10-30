@@ -45,12 +45,12 @@ pub use application_inspection::{
     WorthQueryConnectedApplicationInspection, WorthQueryConnectedInspectionRequest,
     WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryEvaluatedApplicationInspection,
     WorthQueryEvaluatedInspectionRequest, WorthQueryEvaluatedReferenceOnlyInspectionRequest,
-    WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest,
-    WorthQueryPerformedSourceInspection, WorthQueryPerformedSourceInspectionRequest,
-    WorthQueryProducerConnectionDenial, WorthQueryProducerEvaluationDecision,
-    WorthQueryProducerEvaluationDenial, WorthQueryProducerOutputConnectionDenial,
-    WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest,
-    WorthQuerySourceReferenceOnlyInspectionRequest,
+    WorthQueryMaterializedConnectedInspectionRequest, WorthQueryObservedApplicationInspection,
+    WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspection,
+    WorthQueryPerformedSourceInspectionRequest, WorthQueryProducerConnectionDenial,
+    WorthQueryProducerEvaluationDecision, WorthQueryProducerEvaluationDenial,
+    WorthQueryProducerOutputConnectionDenial, WorthQueryReferenceOnlyInspectionRequest,
+    WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
 };
 pub use application_observation::WorthQueryApplicationQueryObservation;
 pub use builder::{
@@ -182,5 +182,7 @@ pub use application_inspection::{
     WorthQueryMaterializedFamilyOutcome, WorthQueryMaterializedFieldValue,
     WorthQueryMaterializedInspectionRequest, WorthQueryMaterializedQueryField,
     WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
-    WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
+    WorthQueryMaterializedQueryRow, WorthQueryMaterializedSourceEffects,
+    WorthQueryMaterializedSourceField, WorthQueryMaterializedSourceFieldEffect,
+    WorthQueryProjectionMaterializationRefusal,
 };

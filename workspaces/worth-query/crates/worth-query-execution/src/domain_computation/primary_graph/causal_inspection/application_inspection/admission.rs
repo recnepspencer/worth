@@ -52,6 +52,7 @@ pub(super) enum InspectionAdmissionDenial {
     ComparisonParameters(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<()>),
     Connection(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::connection::ConnectionRefusal>),
     MissingOriginalProjection,
+    RichSource(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::rich::source::SourceMaterializationDenial>),
     Rich(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::WorthQueryProjectionMaterializationRefusal>),
     Comparison(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial>),
     DiagnosticContract(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial>),

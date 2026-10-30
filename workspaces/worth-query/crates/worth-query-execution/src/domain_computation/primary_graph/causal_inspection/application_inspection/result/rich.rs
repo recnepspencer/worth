@@ -10,6 +10,7 @@ pub struct WorthQueryMaterializedApplicationInspection<'o> {
     report: InspectionReportPayload,
     materialization: WorthQueryApplicationRichMaterialization,
     identity: BridgeIdentityEvidence,
+    connection_identity: Option<BridgeIdentityEvidence>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl<'o> WorthQueryMaterializedApplicationInspection<'o> {
@@ -21,6 +22,11 @@ impl<'o> WorthQueryMaterializedApplicationInspection<'o> {
     }
     pub fn report_identity(&self) -> &str {
         self.identity.terminal_projection_for_reporting()
+    }
+    pub fn connection_identity(&self) -> Option<&str> {
+        self.connection_identity
+            .as_ref()
+            .map(|identity| identity.terminal_projection_for_reporting())
     }
     pub fn materialization(&self) -> &WorthQueryApplicationRichMaterialization {
         &self.materialization
@@ -43,6 +49,7 @@ pub(in super::super) struct PreparedRichInspection<'o> {
     report: InspectionReportPayload,
     materialization: WorthQueryApplicationRichMaterialization,
     identity: BridgeIdentityEvidence,
+    connection_identity: Option<BridgeIdentityEvidence>,
 }
 impl CompletedInspection {
     pub(in super::super) fn publish_rich<'o>(
@@ -57,6 +64,7 @@ impl CompletedInspection {
             || !report.reference.target().matches_original(original)
             || report.reference.target().before().is_some()
             || report.reference.target().connection_source().is_some()
+                != report.connection_identity.is_some()
         {
             return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
         }
@@ -69,6 +77,7 @@ impl CompletedInspection {
             report: payload,
             materialization: artifact,
             identity: report.identity,
+            connection_identity: report.connection_identity,
         };
         self.finish_publication(execution, report.retained_bytes, memory)?;
         Ok(result)
@@ -84,6 +93,7 @@ impl<'o> PreparedRichInspection<'o> {
             report: self.report,
             materialization: self.materialization,
             identity: self.identity,
+            connection_identity: self.connection_identity,
             _memory: memory,
         }
     }

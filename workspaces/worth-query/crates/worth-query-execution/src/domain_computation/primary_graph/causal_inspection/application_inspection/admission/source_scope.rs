@@ -7,6 +7,7 @@ use worth_relational::facade::identity::EntityId;
 
 pub(super) trait InspectionSourceScope {
     fn entity_id(&self) -> EntityId;
+    fn entity_kind(&self) -> worth_relational::facade::identity::KindId;
     fn validate_currentness(
         &self,
         truth: &WorthQueryEntityResolutionTruth<'_>,
@@ -16,6 +17,9 @@ pub(super) trait InspectionSourceScope {
 impl<Schema, Entity> InspectionSourceScope for WorthQueryApplicationEntityIdentity<Schema, Entity> {
     fn entity_id(&self) -> EntityId {
         self.entity_id()
+    }
+    fn entity_kind(&self) -> worth_relational::facade::identity::KindId {
+        self.entity_kind()
     }
     fn validate_currentness(
         &self,
