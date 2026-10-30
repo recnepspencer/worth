@@ -98,6 +98,8 @@ class CargoCaptureTests(unittest.TestCase):
     def test_noncompiler_metadata_is_preserved_verbatim(self):
         command = ['cargo', 'metadata', '--format-version', '1', '--no-deps']
         self.assertEqual(instrument(command), command)
+        equals = ['cargo', 'nextest', 'run', '--binaries-metadata=built.json']
+        self.assertEqual(instrument(equals), equals)
 
     def test_prebuilt_nextest_reuse_receives_no_forbidden_cargo_build_flags(self):
         command = ['cargo', 'nextest', 'list', '--cargo-metadata', 'metadata.json',

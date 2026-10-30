@@ -98,7 +98,8 @@ def declarations(graph):
 def output(event):
     files = event.get('filenames', [])
     linked = ('.rlib', '.dll', '.so', '.dylib', '.a', '.lib', '.exe', '.wasm')
-    if event.get('executable') or any(path.endswith(linked) for path in files):
+    if ('custom-build' in event['target']['kind'] or event.get('executable')
+            or any(path.endswith(linked) for path in files)):
         return 'codegen'
     if any(path.endswith('.rmeta') for path in files):
         return 'check'

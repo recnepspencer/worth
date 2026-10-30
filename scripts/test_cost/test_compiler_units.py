@@ -71,6 +71,13 @@ class CompilerUnitDeclarationTests(unittest.TestCase):
         renamed['filenames'] = ['other-directory/owner-unrelated-hash.rmeta']
         self.assertEqual(first, attribute(renamed, declaration))
 
+    def test_extensionless_host_build_script_is_still_the_declared_codegen_unit(self):
+        row = unit('build-script', mode='build', kind='custom-build')
+        observed = event(row, linked=True)
+        observed.update(executable=None, filenames=['target/debug/build/owner/build-script-build'])
+        result = attribute(observed, {'units': declarations(graph(row)), 'compiler_inputs': 'flags'})
+        self.assertEqual(result['output'], 'codegen')
+
     def test_unplanned_feature_profile_or_output_drift_is_refused(self):
         row = unit('owner')
         declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}

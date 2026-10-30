@@ -20,6 +20,7 @@ class RequiredUnitPlanTests(unittest.TestCase):
     def test_prebuilt_execution_and_metadata_have_no_new_graph(self):
         self.assertIsNone(command_for(['cargo', 'metadata']))
         self.assertIsNone(command_for(['cargo', 'nextest', 'run', '--binaries-metadata', 'built.json']))
+        self.assertIsNone(command_for(['cargo', 'nextest', 'run', '--binaries-metadata=built.json']))
 
     def test_rustc_flags_are_after_the_unit_graph_options(self):
         command = ['cargo', 'rustc', '--lib', '--', '--emit=llvm-ir=observed.ll']
@@ -58,6 +59,20 @@ class RequiredUnitPlanTests(unittest.TestCase):
             for name in ('CARGO_BUILD_RUSTFLAGS', 'CARGO_ENCODED_RUSTDOCFLAGS', 'CARGO_INCREMENTAL'):
                 with self.subTest(name=name), self.assertRaises(CompilerUnitRefusal):
                     verify(plan, command, temporary, {name: 'changed'})
+
+    def test_file_valued_cli_config_content_cannot_drift_after_declaration(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            extra = root/'extra.toml'
+            extra.write_text('[build]\nrustflags=[]\n')
+            for flag in (['--config', 'extra.toml'], ['--config=' + str(extra)]):
+                extra.write_text('[build]\nrustflags=[]\n')
+                command = ['cargo', 'check', *flag]
+                plan = declare(command, root, {}, json.dumps(graph(unit('owner'))))
+                self.assertIn(str(extra.resolve()), plan['contract']['compiler_inputs']['config_files'])
+                extra.write_text('[build]\nrustflags=["--cfg", "unplanned"]\n')
+                with self.subTest(flag=flag), self.assertRaises(CompilerUnitRefusal):
+                    verify(plan, command, root, {})
 
     def test_local_dependency_manifest_or_workspace_lock_drift_refuses_before_compilation(self):
         with tempfile.TemporaryDirectory() as temporary:

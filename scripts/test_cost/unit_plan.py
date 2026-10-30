@@ -15,7 +15,7 @@ def command_for(command):
         return None
     subcommand = command[1]
     if subcommand == 'nextest':
-        if '--binaries-metadata' in command:
+        if any(flag == '--binaries-metadata' or flag.startswith('--binaries-metadata=') for flag in command):
             return None
         if command[2] != 'list':
             raise CompilerUnitRefusal('unplanned nextest compilation; prebuild through list')
@@ -44,12 +44,13 @@ def command_for(command):
     return result
 
 
-def config_inputs(cwd, environment):
+def config_inputs(cwd, environment, configurations):
     roots = list(Path(cwd).resolve().parents)
     roots.insert(0, Path(cwd).resolve())
     home = Path(environment.get('CARGO_HOME', Path.home() / '.cargo'))
     paths = [home / name for name in ('config', 'config.toml')]
     paths += [root / '.cargo' / name for root in roots for name in ('config', 'config.toml')]
+    paths += [(Path(cwd)/value).resolve() for value in configurations if '=' not in value]
     return {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in sorted(set(paths)) if path.is_file()}
 
@@ -105,9 +106,11 @@ def inputs(command, cwd, environment, manifests=()):
             flags.append(command[index + 1])
         elif argument.startswith('--config='):
             flags.append(argument.split('=', 1)[1])
+    configurations = list(flags)
     if command[1:2] == ['rustc'] and '--' in command:
         flags += command[command.index('--') + 1:]
-    compiler_inputs = {'environment': compiler_environment, 'config_files': config_inputs(cwd, environment),
+    compiler_inputs = {'environment': compiler_environment,
+                       'config_files': config_inputs(cwd, environment, configurations),
                        'command_flags': flags}
     return {'command': list(command), 'cwd': str(Path(cwd).resolve()),
             'compiler_inputs': compiler_inputs,

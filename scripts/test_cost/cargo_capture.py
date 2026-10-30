@@ -29,7 +29,8 @@ def instrument(command):
         else:
             command.insert(2, '--message-format=json')
     elif subcommand == 'nextest':
-        if '--binaries-metadata' not in command and not any(a.startswith('--cargo-message-format') for a in command):
+        if (not any(a == '--binaries-metadata' or a.startswith('--binaries-metadata=') for a in command)
+                and not any(a.startswith('--cargo-message-format') for a in command)):
             command.insert(3, '--cargo-message-format=json')
     elif subcommand not in ('metadata', 'tree', 'fmt', 'llvm-lines'):
         raise ValueError(f'uncaptured Cargo subcommand: {subcommand}')
@@ -120,6 +121,9 @@ class CargoRunner:
             marker['compiler_contract'] = plan['contract']
         if '--target-dir' in command:
             marker['target_dir'] = command[command.index('--target-dir') + 1]
+        elif any(argument.startswith('--target-dir=') for argument in command):
+            marker['target_dir'] = next(argument.split('=', 1)[1] for argument in command
+                                        if argument.startswith('--target-dir='))
         else:
             matches = [(root, target) for root, target in self.target_directories.items()
                        if cwd.is_relative_to(root)]
