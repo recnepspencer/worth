@@ -160,14 +160,14 @@ fn parse_table(
             } else {
                 cursor.expect_word("use")?;
                 let value = parse_value(cursor, aspect)?;
-                if let Some(span) = value.reference_span {
-                    if let UiAppearanceCellValue::SameAs(name) = &value.value {
-                        reference_spans.push((
-                            name.to_string(),
-                            UiAppearanceCellReferenceOrigin::OtherwiseClause,
-                            span,
-                        ));
-                    }
+                if let Some(span) = value.reference_span
+                    && let UiAppearanceCellValue::SameAs(name) = &value.value
+                {
+                    reference_spans.push((
+                        name.to_string(),
+                        UiAppearanceCellReferenceOrigin::OtherwiseClause,
+                        span,
+                    ));
                 }
                 authoring.with_otherwise(value.value)
             };
@@ -183,14 +183,14 @@ fn parse_table(
             let predicates = parse_predicates(cursor)?;
             cursor.expect_word("use")?;
             let value = parse_value(cursor, aspect)?;
-            if let Some(span) = value.reference_span {
-                if let UiAppearanceCellValue::SameAs(name) = &value.value {
-                    reference_spans.push((
-                        name.to_string(),
-                        UiAppearanceCellReferenceOrigin::NamedCell,
-                        span,
-                    ));
-                }
+            if let Some(span) = value.reference_span
+                && let UiAppearanceCellValue::SameAs(name) = &value.value
+            {
+                reference_spans.push((
+                    name.to_string(),
+                    UiAppearanceCellReferenceOrigin::NamedCell,
+                    span,
+                ));
             }
             authoring = authoring.with_cell(UiAppearanceCell::new(name, predicates, value.value));
         }

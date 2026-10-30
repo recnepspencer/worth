@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #![forbid(unsafe_code)]
 // Query's public denials are deliberately rich, so its workspace allows large
 // error variants; this consumer returns them unchanged.
@@ -42,6 +43,10 @@ worth_query_application! {
 impl TopologySchemaBinding for ConsumerSchema {}
 impl ParameterSchemaBinding for ConsumerSchema {}
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "owner-entry-bridge owner-entry-bridge=1: This public consumer entry owns its joined application thread and stack; computation retains installed Execution authority"
+)]
 fn main() {
     // Match the execution stack provisioned by the public application examples.
     std::thread::Builder::new()
