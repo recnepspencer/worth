@@ -450,3 +450,29 @@ fixtures; retain the genuine-build issuance tests. Then use one bounded warm
 compiler journey to observe repeated unchanged shared support without UUID-only
 recompilation. No broad Query/compiler campaign or new target directory. Commit
 and independently review this slice separately from the landed B4.2.
+
+### B4.5 first cut: checker execution versus self-tests
+
+Boundary review: the `boundary` command suite currently runs preparation,
+constitution validation, the boundary checker's own Rust test suite, and dirty
+line caps. The explicit constitution launcher already runs both boundary and
+generated-context validation. The affected-lane tool separately selects checker
+self-tests when their owning workspace is reached. No checker behavior changes.
+
+First independent cut: move the existing checker-test command, byte-for-byte,
+into an explicit `boundary-tests` command suite. `boundary` continues to run
+preparation, the real prepared constitution entrypoint and line caps. Prove
+command separation and unchanged failure propagation with routing tests using
+the real Gate command owner and a recorded fake process boundary. Do not rerun
+the checker's own tests merely to prove routing. Run the actual constitution
+gate at phase completion, retain full evidence and obtain independent review.
+
+The larger local-default cut remains separate. `landing_plan.py` explicitly
+requires the Root gate and Store runner defaults to cover every normal partition;
+preserve those entrypoints. The proposed generic gate default derives ordinary
+owner/integration suites from existing workspace predicates, with named risk
+categories and existing full landing paths still explicit. No new risk registry,
+scheduler or source classifier. Resolve the concrete local/default reporting
+contract before implementing that second cut. The accepted 4,408 Store membership
+proof remains scoped to its earlier HEAD; four later admission tests have exact
+targeted runtime evidence and do not retroactively enlarge that proof.

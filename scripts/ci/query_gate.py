@@ -111,9 +111,11 @@ COMMAND_SUITES = {
     "boundary": [
         ("prepare-constitution", [powershell(), "-NoProfile", "-File", "scripts/prepare-constitution-hook.ps1"]),
         ("constitution", [powershell(), "-NoProfile", "-File", "scripts/check-constitution.ps1"]),
+        ("line-caps", [bash(), "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]),
+    ],
+    "boundary-tests": [
         ("boundary-tests", ["cargo", "test", "--manifest-path", BOUNDARY,
                             "--target-dir", "target/constitution-tools"]),
-        ("line-caps", [bash(), "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]),
     ],
     "extra": [
         ("consumer-root",
