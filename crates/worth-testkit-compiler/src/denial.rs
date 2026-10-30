@@ -48,6 +48,7 @@ pub(crate) fn check_outcome(
     expected: &str,
     required: RequiredEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
+    session::validate_provenance(outcome)?;
     let environment = outcome["environment"].as_str().ok_or_else(|| {
         CompilerFixtureRefusal::InvalidPrebuild("missing compiler environment".into())
     })?;

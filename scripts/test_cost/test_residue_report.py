@@ -44,7 +44,56 @@ class ResidueEvidenceTests(unittest.TestCase):
         observed = lane('ui.log', [event(
             'owner::backend_qualification_public_boundary_compile_fail$sealed_boundary', 900)])
         result = generate('store', {}, {}, baseline_lanes=[observed])
-        self.assertEqual(result['ranked'], [])
+        self.assertEqual([row['item'] for row in result['ranked']], ['unclassified'])
+        self.assertEqual(result['ranked'][0]['binary'], 'owner::backend_qualification_public_boundary_compile_fail')
+        self.assertEqual(result['ranked'][0]['test'], 'sealed_boundary')
+        self.assertEqual(result['ranked'][0]['work_seconds'], 900)
+
+    def test_unknown_slow_cases_are_ranked_by_exact_binary_full_test_and_log_without_deduplicating_occurrences(self):
+        observed = lane('actual.log', [event('binary-a$owner::unexpected_slow_case', 4),
+            event('binary-a$owner::unexpected_slow_case', 6, 'failed'),
+            event('binary-b$owner::unexpected_slow_case', 7),
+            event('binary-a$branch_transitions_oracle::known', 3),
+            event('binary-a$owner::ignored', 999, 'ignored')])
+        result = generate('store', {}, {}, runtime_lanes=[observed])
+        self.assertEqual(len(result['ranked']), 3)
+        unknown = [row for row in result['ranked'] if row['item'] == 'unclassified']
+        self.assertEqual([(row['binary'], row['test'], row['frequency'], row['work_seconds'], row['failed'])
+                          for row in unknown], [('binary-a', 'owner::unexpected_slow_case', 2, 10, 1),
+                                                ('binary-b', 'owner::unexpected_slow_case', 1, 7, 0)])
+        self.assertEqual(len(unknown[0]['tests']), 2)
+        self.assertEqual([row['item'] for row in result['ranked']].count('branch'), 1)
+
+    def test_fallback_preserves_distinct_logs_and_does_not_rank_missing_or_invalid_terminal_costs(self):
+        first = lane('first.log', [event('court$unexpected', 4), event('court$pending', 50, 'started'),
+            event('court$negative', -1), event('court$nonfinite', float('inf')), event('court$boolean', True),
+            {'name': 'court$unknown', 'event': 'ok'}])
+        second = lane('second.log', [event('court$unexpected', 5)])
+        result = generate('query', {}, {}, runtime_lanes=[first, second])
+        self.assertEqual([(row['log'], row['frequency'], row['work_seconds']) for row in result['ranked']],
+                         [('second.log', 1, 5), ('first.log', 1, 4)])
+
+    def test_markdown_bounds_the_readable_ranking_and_json_retains_every_record(self):
+        result = generate('bank', {}, {}, runtime_lanes=[lane('actual.log',
+            [event(f'court$unexpected_{i}', i) for i in range(100)])])
+        rendered = markdown(result)
+        self.assertEqual(len(result['ranked']), 100)
+        self.assertIn('Showing 80 of 100 ranked records', rendered)
+        self.assertIn('[residue.json](residue.json)', rendered)
+        self.assertEqual(sum(line.startswith('| ') and not line.startswith('| Rank') for line in rendered.splitlines()), 80)
+        self.assertNotIn('court$unexpected_0 |', rendered)
+
+    def test_authority_prefix_family_preserves_real_charge_cut_claim_and_waits_for_terminal_observation(self):
+        name = ('worth-query-execution::worth_query_execution$domain_computation::authority_cause::tests::'
+                'authority_evidence_exposes_request_resources_by_value_through_the_commit_door')
+        pending = generate('query', {}, {}, runtime_lanes=[lane('running.log', [event(name, 800, 'started')])])
+        self.assertEqual(pending['ranked'], [])
+        self.assertIn('authority-prefix', {row['item'] for row in pending['unranked']})
+        complete = generate('query', {}, {}, runtime_lanes=[lane('finished.log', [event(name, 12)])])
+        self.assertEqual(complete['ranked'][0]['item'], 'authority-prefix')
+        self.assertEqual(complete['ranked'][0]['work_seconds'], 12)
+        self.assertIn('every unique positive charged prefix at required - 1', complete['ranked'][0]['claim'])
+        self.assertIn('installed_authorization_world(true)', complete['ranked'][0]['claim'])
 
     def test_court_relocated_home_process_names_keep_their_cost_family(self):
         observed = lane('run-process.log', [event(

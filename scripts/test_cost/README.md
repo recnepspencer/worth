@@ -36,7 +36,9 @@ compares terminal observations with the requested identities.
   read typed prebuilt manifests and refuse missing or malformed observations.
   They never silently build a fallback.
 * `compile_batch.py` runs actual fail fixtures together with
-  `cargo check --bins --keep-going`, once per required environment. It copies
+  `cargo check --workspace --bins --keep-going`, once per required environment.
+  Separate generated packages preserve each declared direct-dependency audience;
+  an unrelated fixture cannot make a forbidden dependency available. It copies
   the owning workspace lockfile, checks dependency lock consistency and
   attributes diagnostics through real compiler spans. A dependency error or
   an unattempted fixture cannot satisfy a denial.
@@ -51,7 +53,10 @@ compares terminal observations with the requested identities.
 * CPU accounting includes child processes. Generated slot reservations use
   measured CPU/wall ratios; missing CPU accounting stays unmeasured. Existing
   reservations remain until measurements exist. Committed sparse reservations
-  retain provenance in `slots/<workspace>`.
+  retain provenance in `slots/<workspace>`. Hashed sample archives preserve
+  measurements in fresh checkouts without historical `target` files. Partial
+  runs retain earlier samples and use the maximum successful observation.
+  Explicit claim resolutions change pending notes independently of CPU timing.
 * `coverage.py` proves structural selection; `complete_coverage.py` adds
   rustdoc-owned identities; `executed_coverage.py` rejects missing, repeated,
   unknown, failed or actually executed ignored cases. Harness-free programs
@@ -74,8 +79,10 @@ compares terminal observations with the requested identities.
 | Repeated construction observations | `test_telemetry.py`; Store recovery-runtime court setup recorder tests |
 | Sleep, timeout and polling census | `test_source_scan.py` |
 | Exact nonignored selection and execution | `test_coverage.py`, `test_complete_coverage.py`, `test_executed_coverage.py`, `test_doc_contracts.py` |
+| Full attempt history and selective repair provenance | `test_capture_report.py`, `test_verification_lineage.py`, `test_evidence_index.py` |
 | Independent prebuilt executables | `test_store_prebuild.py`, `test_standalone.py`, `test_prebuild.py` |
 | Real batched compiler fates and lockfile | `test_compile_batch.py`, `test_compiler_prebuild.py`, `compiler_probe.py` |
+| Isolated declared dependency audiences in one batch | `test_compiler_audiences.py`, `test_fixture_graph.py` |
 | Production certification absence | `test_compiler_prebuild.py`; `worth-testkit-compiler` production-denial tests; Store production-absence court |
 | Clean supported-program migration | `test_pass_cutover.py`, `test_supported_programs.py` |
 | Exhaustive independent sweep rewriting | `test_sweep_cutover.py`; Store sweep pool court tests |
@@ -92,3 +99,18 @@ Serial workspace testing may be removed from a landing set only after its full
 nonignored coverage, including harness-free programs and doctests, is proved
 and the selected partitions have execution evidence. The TLC script lane keeps
 its separate claim.
+
+Known-cost validation preserves counterevidence. A named sequential oracle with
+no matching whole-pool rule is reported with every searched rule; it cannot be
+claimed to reserve the pool merely because an input description says so.
+`verification_lineage.py` retains each failed attempt and every rerun separately.
+A composed repair history is never presented as one green execution.
+
+The declared-audience decision retires import-only dependency minimization from
+commit `522c480f3d`. Its `unused_testkit_is_not_a_compiler_fixture_dependency`
+assertion and the relocated-fixture expectation described the wrong graph:
+negative imports and rustc's asserted suggestions depend on names available to
+the original caller, including unreferenced declarations. Their replacements
+assert the complete producer audience, exclude unrelated court dependencies,
+and preserve target conditions. Every compiler fixture and diagnostic claim is
+retained.

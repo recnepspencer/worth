@@ -39,6 +39,13 @@ ITEMS = {
          'Measure fingerprints first; share immutable construction only, preserving each mutable fate and authority owner.'),
     ],
     'query': [
+        ('authority-prefix', 'Commit-door authority charged-prefix evidence',
+         ('authority_evidence_exposes_request_resources_by_value_through_the_commit_door',), 'remaining',
+         'Keep the successful commit_at(64_000_000) baseline and every unique positive charged prefix at required - 1; '
+         'each attempt builds installed_authorization_world(true) and enters the real compare_and_commit_application_in_advancement door. '
+         'Preserve denial at every cut, by-value DecisionReadSet execution/authorization evidence equality and reached > 0. '
+         'Source: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/'
+         'compare_and_commit/commit_outcome/denial/execution/authority_cause.rs.'),
         ('expiry', 'Signed-cutoff and authorization expiry waits', ('inbound_admission::', 'authorization::'), 'remaining',
          'Cross the actual owning clock boundary; signed correlation and accepted-slot reclamation cannot be replaced by a positive-event wait.'),
         ('application', 'Installed-operation/application graph construction', ('application_graph::', 'installed_operation::'), 'remaining',
@@ -59,7 +66,8 @@ ITEMS = {
 
 def measured(events):
     selected = [event for event in events if event.get('event') in ('ok', 'failed')
-                and isinstance(event.get('exec_time'), (int, float))
+                and isinstance(event.get('name'), str) and event['name']
+                and type(event.get('exec_time')) in (int, float)
                 and math.isfinite(event['exec_time']) and event['exec_time'] >= 0]
     if not selected:
         return {'frequency': None, 'work_seconds': None, 'failed': None, 'tests': []}
@@ -67,6 +75,11 @@ def measured(events):
             'failed': sum(event['event'] == 'failed' for event in selected),
             'tests': [{'name': event['name'], 'event': event['event'], 'seconds': event['exec_time']}
                       for event in selected]}
+
+
+def family_matches(patterns, event):
+    return any(pattern in (event['name'] if '$' in pattern else event['name'].partition('$')[2])
+               for pattern in patterns)
 
 
 def observations(items, lanes):
@@ -78,13 +91,27 @@ def observations(items, lanes):
             raise ValueError('same evidence log supplied twice: ' + path)
         seen.add(path)
         for identity, title, patterns, status, claim in items:
-            cost = measured([event for event in lane['tests'] if any(
-                pattern in (event['name'] if '$' in pattern else event['name'].partition('$')[2])
-                for pattern in patterns)])
+            cost = measured([event for event in lane['tests'] if family_matches(patterns, event)])
             if cost['frequency'] is not None:
                 rows.append(dict(item=identity, title=title, status=status, claim=claim,
                                  log=lane['log'], **cost))
-    return sorted(rows, key=lambda row: (-row['work_seconds'], row['item'], row['log']))
+        unmatched = {}
+        for event in lane['tests']:
+            if not isinstance(event.get('name'), str) or any(family_matches(item[2], event) for item in items):
+                continue
+            binary, separator, test = event['name'].partition('$')
+            key = (binary, test) if separator else (None, event['name'])
+            unmatched.setdefault(key, []).append(event)
+        for (binary, test), events in unmatched.items():
+            cost = measured(events)
+            if cost['frequency'] is not None:
+                rows.append(dict(item='unclassified', binary=binary, test=test,
+                    title=f'{binary}${test}' if binary is not None else test,
+                    classification='unclassified exact test', status='requires source review',
+                    claim='Preserve every observed invocation and its assertions; inspect the owning test before choosing an optimization.',
+                    log=lane['log'], **cost))
+    return sorted(rows, key=lambda row: (-row['work_seconds'], row['item'], row['log'],
+                                         row.get('binary') or '', row.get('test') or ''))
 
 
 def coverage_summary(proof):
@@ -197,11 +224,14 @@ def markdown(result):
              '## Ranked observed judgment work', '',
              '| Rank | Family | Executions | Work seconds | Failed | Implementation / remaining judgment | Evidence |',
              '|---:|---|---:|---:|---:|---|---|']
-    for row in result['ranked']:
+    for row in result['ranked'][:80]:
         lines.append(f'| {row["rank"]} | {row["title"]} | {row["frequency"]} | {row["work_seconds"]:.3f} | '
                      f'{row["failed"]} | {row["status"]}; {row["claim"]} | `{row["log"]}` |')
     if not result['ranked']:
         lines.append('| unranked | No measured family work supplied | unknown | unknown | unknown | Unranked; obtain real logs | none |')
+    companion = Path(result.get('inputs', {}).get('output', 'residue.md')).with_suffix('.json').name
+    lines += ['', f'Showing {min(80, len(result["ranked"]))} of {len(result["ranked"])} ranked records. '
+              f'All ranked records and per-occurrence measurements remain in [{companion}]({companion}).']
     lines += ['', '## Unranked judgment', '']
     lines += [f'- **{row["title"]}** ({row["status"]}): {row["reason"]} Claim: {row["claim"]}' for row in result['unranked']]
     telemetry = result['telemetry']

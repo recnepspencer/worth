@@ -19,6 +19,9 @@ fn synthetic_outcome(source: &Path, environment: &str) -> serde_json::Value {
     let rendered = SNAPSHOT.replace("tests/ui/private.rs", &source.display().to_string());
     json!({
         "environment": environment,
+        "environment_identity": "synthetic-batch",
+        "audience_identity": "synthetic-audience",
+        "shared_target_root": "target",
         "fate": "denied",
         "messages": [{
             "level": "error", "message": "function `private` is private",
@@ -175,7 +178,8 @@ fn source_text_containing_an_arrow_is_not_treated_as_a_location_header() {
 #[test]
 fn absent_raw_errors_or_fixture_entries_are_explicit_refusals() {
     let source = fixture();
-    let outcome = json!({"environment":"production", "fate":"denied", "messages":[]});
+    let mut outcome = synthetic_outcome(&source, "production");
+    outcome["messages"] = json!([]);
     assert!(matches!(
         check_outcome(&source, &outcome, "", RequiredEnvironment::Any),
         Err(CompilerFixtureRefusal::NoCompilerErrors(_))
@@ -185,6 +189,31 @@ fn absent_raw_errors_or_fixture_entries_are_explicit_refusals() {
         session::fixture(&document, &source),
         Err(CompilerFixtureRefusal::UnobservedFixture(_))
     ));
+}
+
+#[test]
+fn missing_empty_or_non_string_compiler_provenance_is_refused() {
+    let source = fixture();
+    for field in [
+        "environment_identity",
+        "audience_identity",
+        "shared_target_root",
+    ] {
+        for invalid in [serde_json::Value::Null, json!("  "), json!(7)] {
+            let mut outcome = synthetic_outcome(&source, "production");
+            outcome[field] = invalid;
+            let mut raw = json!({"schema":1,"fixtures":{}});
+            raw["fixtures"][paths::source_key(&source)] = outcome.clone();
+            assert!(matches!(
+                session::parse(&raw.to_string()),
+                Err(CompilerFixtureRefusal::InvalidPrebuild(_))
+            ));
+            assert!(matches!(
+                check_outcome(&source, &outcome, SNAPSHOT, RequiredEnvironment::Any),
+                Err(CompilerFixtureRefusal::InvalidPrebuild(_))
+            ));
+        }
+    }
 }
 
 #[test]

@@ -153,11 +153,12 @@ fn decode(bytes: &[u8], path: &Path) -> Result<PrebuiltCompilerOutcomes, UiRunFa
     }
     for observed in outcomes.fixtures.values() {
         if observed.environment_identity.trim().is_empty()
+            || observed.audience_identity.trim().is_empty()
             || observed.shared_target_root.trim().is_empty()
         {
             return Err(malformed(
                 path,
-                "compiler batch identity and target root must be present",
+                "compiler batch identity, audience identity and target root must be present",
             ));
         }
     }
@@ -223,6 +224,7 @@ struct PrebuiltCompilerOutcomes {
 struct PrebuiltFixtureCompilation {
     environment: UiCompilerEnvironment,
     environment_identity: String,
+    audience_identity: String,
     shared_target_root: String,
     fate: CompilerFate,
     messages: Vec<serde_json::Value>,

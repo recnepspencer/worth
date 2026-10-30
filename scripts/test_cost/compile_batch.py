@@ -13,6 +13,9 @@ from manifest_edit import toml_value
 
 from logs import json_objects
 from diagnostic_flags import arguments as diagnostic_arguments
+from compiler_audiences import source_identity, sources as fixture_sources
+from compiler_features import violations as production_feature_violations
+from fixture_graph import dependency_manifest
 
 
 class FixtureFate(Enum):
@@ -26,29 +29,36 @@ class BatchCompilationFailure(ValueError):
 
 
 def bin_name(source):
-    return 'fixture_' + hashlib.sha256(str(source).replace('\\', '/').encode()).hexdigest()[:24]
+    return 'fixture_' + hashlib.sha256(source_identity(source).replace('\\', '/').encode()).hexdigest()[:24]
 
 
-def render_manifest(environment, workspace_manifest):
-    dependencies = environment['dependency_manifest']
-    if '[dependencies]' not in dependencies:
-        raise BatchCompilationFailure('fixture environment must declare dependencies')
-    profile = tomllib.loads(Path(workspace_manifest).read_text(encoding='utf-8'))['profile']
-    name = 'compiler-fixtures-' + hashlib.sha256(environment['identity'].encode()).hexdigest()[:20]
-    lines = [f'[package]\nname={json.dumps(name)}\nversion="0.0.0"\nedition="2024"\nautobins=false\n',
-             '[workspace]\nresolver="3"\n', dependencies]
-    seen = set()
-    for source in environment['sources']:
-        source = str(Path(source).resolve()).replace('\\', '/')
-        name = bin_name(source)
-        if name in seen:
-            raise BatchCompilationFailure(f'duplicate fixture source: {source}')
-        seen.add(name)
-        lines += [f'[[bin]]\nname={json.dumps(name)}\npath={json.dumps(source)}\n']
+def render_manifests(environment, workspace_manifest):
+    try:
+        fixture_sources(environment)
+    except ValueError as error:
+        raise BatchCompilationFailure(str(error)) from error
+    profile = tomllib.loads(Path(workspace_manifest).read_text(encoding='utf-8')).get('profile', {})
+    batch = hashlib.sha256(environment['identity'].encode()).hexdigest()[:12]
+    manifests, members, names = {}, [], set()
+    for package in environment['packages']:
+        member = 'packages/' + package['identity']
+        members.append(member)
+        name = f'compiler-fixtures-{batch}-{package["identity"][:24]}'
+        if name in names:
+            raise BatchCompilationFailure(f'compiler audience package name collision: {name}')
+        names.add(name)
+        lines = [f'[package]\nname={json.dumps(name)}\nversion="0.0.0"\nedition="2024"\nautobins=false\n',
+                 dependency_manifest(package['dependencies'], package['target_dependencies'])]
+        for source in package['sources']:
+            source = str(Path(source).resolve()).replace('\\', '/')
+            lines += [f'[[bin]]\nname={json.dumps(bin_name(source))}\npath={json.dumps(source)}\n']
+        manifests[member + '/Cargo.toml'] = '\n'.join(lines)
+    lines = ['[workspace]\nresolver="3"\nmembers=' + json.dumps(members) + '\n']
     for name, value in profile.items():
         lines += [f'[profile.{json.dumps(name)}]\n' +
                   '\n'.join(f'{json.dumps(k)}={toml_value(v)}' for k, v in value.items()) + '\n']
-    return '\n'.join(lines)
+    manifests['Cargo.toml'] = '\n'.join(lines)
+    return dict(sorted(manifests.items()))
 
 
 def attribute(events, sources):
@@ -87,7 +97,11 @@ def prepare_environment(workspace_manifest, environment, output, cargo_runner):
     workspace_manifest = Path(workspace_manifest).resolve()
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
-    (output / 'Cargo.toml').write_text(render_manifest(environment, workspace_manifest), encoding='utf-8')
+    manifests = render_manifests(environment, workspace_manifest)
+    for relative, text in manifests.items():
+        path = output / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding='utf-8')
     # Resolve the generated package's own lock entry offline, starting from the
     # workspace's exact versions. No compiler is invoked by metadata.
     shutil.copyfile(workspace_manifest.with_name('Cargo.lock'), output / 'Cargo.lock')
@@ -99,14 +113,11 @@ def prepare_environment(workspace_manifest, environment, output, cargo_runner):
     verify_locked_dependencies(workspace_manifest.with_name('Cargo.lock'),
                                json.loads(resolved.stdout))
     if environment.get('reject_test_features'):
-        metadata = json.loads(resolved.stdout)
-        forbidden = [(node['id'], feature) for node in metadata['resolve']['nodes']
-                     for feature in node['features']
-                     if 'certification' in feature or 'for-test' in feature or 'for_test' in feature]
+        forbidden = production_feature_violations(workspace_manifest, json.loads(resolved.stdout))
         if forbidden:
             raise BatchCompilationFailure(f'production compiler graph enables test authority: {forbidden}')
     target = target_directory(workspace_manifest, cargo_runner)
-    command = ['cargo', 'check', '--bins', '--keep-going', '--offline', '--locked',
+    command = ['cargo', 'check', '--workspace', '--bins', '--keep-going', '--offline', '--locked',
                '--manifest-path', str(output / 'Cargo.toml'),
                '--target-dir', str(target), '--config', 'build.incremental=false',
                '--profile', environment['profile']]
@@ -114,9 +125,12 @@ def prepare_environment(workspace_manifest, environment, output, cargo_runner):
         observed = cargo_runner(command + flags, workspace_manifest.parent, output / 'check.log')
     if observed.returncode not in (0, 101):
         raise BatchCompilationFailure(f'compiler session failed to execute: {observed.returncode}')
-    outcomes = attribute(list(json_objects(observed.stdout)), environment['sources'])
+    outcomes = attribute(list(json_objects(observed.stdout)), fixture_sources(environment))
+    for package in environment['packages']:
+        for source in package['sources']:
+            outcomes[str(Path(source).resolve())]['audience_identity'] = package['identity']
     value = {'schema': 1, 'environment': environment['identity'], 'profile': environment['profile'],
-             'dependency_manifest': environment['dependency_manifest'],
+             'manifests': manifests,
              'compiler_exit': observed.returncode, 'fixtures': outcomes}
     (output / 'outcomes.json').write_text(json.dumps(value, indent=2) + '\n', encoding='utf-8')
     return value

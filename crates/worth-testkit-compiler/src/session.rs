@@ -8,6 +8,12 @@ struct CapturedOutcomes {
     document: serde_json::Value,
 }
 
+struct CompilerProvenance<'a> {
+    environment_identity: &'a str,
+    audience_identity: &'a str,
+    shared_target_root: &'a str,
+}
+
 static OUTCOMES: OnceLock<CapturedOutcomes> = OnceLock::new();
 
 pub(crate) fn outcomes() -> Result<&'static serde_json::Value, CompilerFixtureRefusal> {
@@ -46,7 +52,44 @@ pub(crate) fn parse(source: &str) -> Result<serde_json::Value, CompilerFixtureRe
             "missing fixture map".into(),
         ));
     }
+    for outcome in document["fixtures"].as_object().unwrap().values() {
+        validate_provenance(outcome)?;
+    }
     Ok(document)
+}
+
+pub(crate) fn validate_provenance(
+    outcome: &serde_json::Value,
+) -> Result<(), CompilerFixtureRefusal> {
+    let record = CompilerProvenance {
+        environment_identity: required_provenance_field(outcome, "environment_identity")?,
+        audience_identity: required_provenance_field(outcome, "audience_identity")?,
+        shared_target_root: required_provenance_field(outcome, "shared_target_root")?,
+    };
+    if [
+        record.environment_identity,
+        record.audience_identity,
+        record.shared_target_root,
+    ]
+    .iter()
+    .any(|value| value.trim().is_empty())
+    {
+        return Err(CompilerFixtureRefusal::InvalidPrebuild(
+            "compiler batch, audience and target identities must be nonempty".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn required_provenance_field<'a>(
+    outcome: &'a serde_json::Value,
+    field: &str,
+) -> Result<&'a str, CompilerFixtureRefusal> {
+    outcome[field].as_str().ok_or_else(|| {
+        CompilerFixtureRefusal::InvalidPrebuild(format!(
+            "missing compiler provenance field {field}"
+        ))
+    })
 }
 
 pub(crate) fn fixture<'a>(

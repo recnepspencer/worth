@@ -27,6 +27,19 @@ fn unsupported_or_malformed_outcomes_are_refused_before_fixture_lookup() {
 }
 
 #[test]
+fn fixture_outcomes_require_the_compiled_audience_identity() {
+    for bytes in [
+        br#"{"schema":1,"fixtures":{"fixture.rs":{"environment":"production","environment_identity":"batch","shared_target_root":"target","fate":"denied","messages":[]}}}"#.as_slice(),
+        br#"{"schema":1,"fixtures":{"fixture.rs":{"environment":"production","environment_identity":"batch","audience_identity":"","shared_target_root":"target","fate":"denied","messages":[]}}}"#,
+    ] {
+        assert!(matches!(
+            decode(bytes, Path::new("outcomes.json")),
+            Err(UiRunFailure::MalformedPrebuiltOutcomes { .. })
+        ));
+    }
+}
+
+#[test]
 fn compilation_in_a_different_environment_cannot_satisfy_a_denial() {
     let fixture = fixture();
     let observed = observation(UiCompilerEnvironment::Certification, CompilerFate::Denied);
@@ -109,6 +122,7 @@ fn observation(
     PrebuiltFixtureCompilation {
         environment,
         environment_identity: "compiler-batch".to_owned(),
+        audience_identity: "compiler-audience".to_owned(),
         shared_target_root: "target".to_owned(),
         fate,
         messages: Vec::new(),

@@ -169,3 +169,44 @@ fn parent_module_definitions_are_external_and_fixture_coordinates_stay_asserted(
     let (expected, observed) = compared(&asserted, &actual, &recovery_source()).unwrap();
     assert_ne!(expected, observed);
 }
+
+#[test]
+fn referenced_fixture_modules_hide_only_unasserted_secondary_coordinates() {
+    let module = source().parent().unwrap().join("support/walk_entry.rs");
+    let expected = "error[E0382]: use of moved value\n  --> tests/physical_runtime_authority/fixture.rs:15:35\n   |\n15 |     take(charge);\n   |          ^^^^^^ moved value\n   |\nnote: function takes ownership\n  --> tests/physical_runtime_authority/support/walk_entry.rs\n   |\n   | pub fn take(charge: Charge) {}\n   |        ----         ^^^^^^ takes ownership";
+    let actual = format!("error[E0382]: use of moved value\n  --> {}:15:35\n   |\n15 |     take(charge);\n   |          ^^^^^^ moved value\n   |\nnote: function takes ownership\n  --> {}:23:26\n   |\n23 | pub fn take(charge: Charge) {{}}\n   |        ----         ^^^^^^ takes ownership", source().display(), module.display());
+    let (normalized, observed) = compared(expected, &actual, &source()).unwrap();
+    assert_eq!(normalized, observed);
+    for changed in [
+        actual.replace(":15:35", ":16:35"),
+        actual.replace("walk_entry.rs", "another_module.rs"),
+        actual.replace("support", "another_directory"),
+        actual.replace("| pub fn take", "|  pub fn take"),
+        actual.replace("^^^^^^ moved", "^^^^^ moved"),
+        actual.replace("takes ownership", "different label"),
+        actual.replace("E0382", "E0507"),
+    ] {
+        let (expected, observed) = compared(expected, &changed, &source()).unwrap();
+        assert_ne!(expected, observed);
+    }
+    let asserted = expected.replace("walk_entry.rs", "walk_entry.rs:24:26");
+    let (expected, observed) = compared(&asserted, &actual, &source()).unwrap();
+    assert_ne!(expected, observed);
+}
+
+#[test]
+fn primary_fixture_definitions_never_use_the_secondary_module_coordinate_mask() {
+    let expected = "error: denied\n --> tests/physical_runtime_authority/fixture.rs:15:35\n  |\n15 |     take(charge);\n  |          ^^^^^^ denied\nnote: function defined here\n --> tests/physical_runtime_authority/fixture.rs\n  |\n  | fn take(charge: Charge) {}";
+    let actual = format!("error: denied\n --> {}:15:35\n  |\n15 |     take(charge);\n  |          ^^^^^^ denied\nnote: function defined here\n --> {}:4:4\n  |\n4 | fn take(charge: Charge) {{}}", source().display(), source().display());
+    let (expected, observed) = compared(expected, &actual, &source()).unwrap();
+    assert_ne!(expected, observed);
+    assert!(observed.contains("fixture.rs:4:4"));
+}
+
+#[test]
+fn support_module_coordinate_mask_requires_a_structurally_identified_fixture_tree() {
+    let expected = "error: denied\n --> tests/support/module.rs\n  |\n  | fn take() {}";
+    let observed = "error: denied\n --> tests/support/module.rs:4:4\n  |\n4 | fn take() {}";
+    let (expected, observed) = compared(expected, observed, Path::new("fixture.rs")).unwrap();
+    assert_ne!(expected, observed);
+}

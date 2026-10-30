@@ -5,7 +5,7 @@ from pathlib import Path
 
 from cargo_capture import CargoRunner
 from compile_batch import prepare_environment
-from fixture_graph import dependency_manifest
+from compiler_audiences import group
 from run_lane import child_environment
 from workspace import repository_root
 
@@ -30,9 +30,9 @@ def main():
                       output, output / 'metadata.log')
     if metadata.returncode:
         raise ValueError('probe workspace metadata failed')
-    row = dict(identity='production', profile='dev', sources=[denied, supported],
-               reject_test_features=True, dependency_manifest=dependency_manifest({
-                   'test-cost-sealed-probe': {'path': output.as_posix()}}))
+    row = dict(identity='production', profile='dev', reject_test_features=True, packages=group([{
+        'dependencies': {'test-cost-sealed-probe': {'path': output.as_posix()}},
+        'sources': [denied, supported], 'audience': 'real-compiler-probe'}]))
     observed = prepare_environment(manifest, row, output / 'batch', runner)
     fates = {Path(source).stem: value['fate'] for source, value in observed['fixtures'].items()}
     if fates != {'denied': 'denied', 'supported': 'compiled'}:

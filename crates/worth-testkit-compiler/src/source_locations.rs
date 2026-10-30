@@ -74,8 +74,14 @@ impl SourceContext {
         let start = leading + 4;
         let (path, coordinates) = split_coordinates(&line[start..]);
         let path = self.path(path);
-        let fixture = path.starts_with("tests/") || path == self.path(&self.source);
-        let external = path.starts_with("src/")
+        let primary = path == self.path(&self.source);
+        let fixture = path.starts_with("tests/") || primary;
+        // A compiler-referenced module in this structurally identified fixture
+        // tree is external to the primary input. Its complete tests/... identity
+        // still has to match before the snapshot can mask unasserted coordinates.
+        let referenced_module = self.fixtures.is_some() && fixture && !primary;
+        let external = referenced_module
+            || path.starts_with("src/")
             || ["$WORKSPACE/", "$RUST/", "$CARGO/"]
                 .iter()
                 .any(|prefix| path.starts_with(prefix));
