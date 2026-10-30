@@ -70,12 +70,8 @@ enum OwnedDerivedView {
 
 #[derive(Default)]
 struct RegistryState {
-    source_branches: im::OrdMap<
-        worth_relational::facade::history::BranchId,
-        worth_relational::facade::mvcc::CompanionBranchCellSlot<
-            worth_relational::facade::runtime::ManagedIndexBranchImage,
-        >,
-    >,
+    source_branches:
+        BTreeMap<worth_relational::facade::history::BranchId, managed_source::SourceBranchSlot>,
     next_id: u64,
     views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
     owned: Vec<(u64, OwnedDerivedView)>,

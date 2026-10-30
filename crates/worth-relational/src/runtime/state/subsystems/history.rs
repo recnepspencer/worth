@@ -130,6 +130,7 @@ impl HistorySubsystem {
             self.retention_owner.binding(),
             Arc::clone(&self.basis_registry_metrics),
             Arc::clone(&self.canonical_publication_routes),
+            self.root_identity_issuer.clone(),
         )
     }
 

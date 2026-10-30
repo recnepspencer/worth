@@ -136,6 +136,9 @@ pub(crate) struct RelationalBranchRoot {
     pub(crate) managed_source_image: std::sync::OnceLock<crate::mvcc::ManagedSourceRootImage>,
 }
 
+#[path = "root_managed_fork.rs"]
+mod managed_fork;
+
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRootState {
     pub(super) root: Arc<RelationalBranchRoot>,

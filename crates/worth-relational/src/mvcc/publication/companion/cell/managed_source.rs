@@ -20,6 +20,7 @@ pub struct ManagedIndexSourceObservation {
 pub(crate) struct ManagedSourceRootImage {
     pub(in crate::mvcc) core: Weak<CompanionBranchCellCore>,
     pub(in crate::mvcc) image: Arc<CompanionRootImage>,
+    pub(in crate::mvcc) _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 impl std::fmt::Debug for ManagedSourceRootImage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

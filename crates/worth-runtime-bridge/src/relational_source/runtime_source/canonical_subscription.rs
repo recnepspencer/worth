@@ -104,6 +104,16 @@ impl RelationalBridgeCanonicalSubscription {
 }
 
 impl RelationalPublicationCompanion for CanonicalEnvelopeDelivery {
+    fn prepare_managed_source_fork(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: &worth_relational::facade::mvcc::ManagedIndexSourceForkPreparation<'_>,
+    ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
+        if target.runtime_instance_id() != self.runtime_instance_id {
+            return Err(CompanionPreflightStop::ForeignCell);
+        }
+        self.consumer.prepare_managed_source_fork(execution, target)
+    }
     fn prepare_managed_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

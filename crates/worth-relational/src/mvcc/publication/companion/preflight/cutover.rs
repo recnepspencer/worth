@@ -32,6 +32,7 @@ impl PreparedPublicationCompanionEffect {
                 .set(super::super::cell::ManagedSourceRootImage {
                     core: std::sync::Arc::downgrade(&managed.cell),
                     image: std::sync::Arc::clone(&managed.next),
+                    _fork_memory: None,
                 })
                 .map_err(|_| CompanionPreflightStop::SelectedSourceMismatch)?;
         }

@@ -19,9 +19,9 @@ pub use publication::{
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    DiscardedRelationalCommitCandidate, ManagedIndexSourceObservation,
-    PendingCompanionRegistration, PerformedRelationalCommit, PreparedCompanionBranchCell,
-    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    DiscardedRelationalCommitCandidate, ManagedIndexSourceForkPreparation,
+    ManagedIndexSourceObservation, PendingCompanionRegistration, PerformedRelationalCommit,
+    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
     PublicationCompanionRegistrationStop, PublishRelationalCommit, RelationalPublicationCompanion,
@@ -32,9 +32,9 @@ pub use publication::{
     StaleRelationalBranchObservation,
 };
 pub(crate) use publication::{
-    ManagedSourceRootImage, PreparedIndexRefreshBasis, PreparedRelationalCandidateAdmissionStop,
-    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
-    PublicationPreparationDenial,
+    ManagedSourceRootImage, PreparedIndexRefreshBasis, PreparedManagedIndexSourceFork,
+    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
+    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
 };
 pub use publication::{
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,

@@ -47,6 +47,21 @@ pub enum CompanionPreflightStop {
 
 /// Query-owned preparation runs here, before Relational's irreversible cutover.
 pub trait RelationalPublicationCompanion: Debug + Send + Sync {
+    /// Stage only the lookup for Native's genuine uninstalled fork target.
+    /// The returned owner removes its pending metadata on refusal; it carries
+    /// no permission to admit the target or to read Source rows.
+    fn prepare_managed_source_fork(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _target: &super::ManagedIndexSourceForkPreparation<'_>,
+    ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
+        crate::authority::commit::pipeline::consult_stage_control(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Publication,
+        )
+        .map_err(|cause| CompanionPreflightStop::Execution(cause.into()))?;
+        Err(CompanionPreflightStop::ManagedSourceNotPrepared)
+    }
     /// Runs on the actual applied draft before Native's FIRST invariant. It
     /// prepares only installed derived Source roots, never validates a rule.
     /// The default consults the original request's validation stage before refusal.
@@ -126,6 +141,10 @@ impl<'a> PublicationCompanionPreflight<'a> {
 
     pub fn canonical_commit(&self) -> &CanonicalCommitEnvelope {
         self.envelope
+    }
+    /// Borrow this publication's original execution for derived backing admission.
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'_, '_> {
+        *self.execution
     }
     pub fn runtime_instance_id(&self) -> u64 {
         self.binding.runtime_instance_id

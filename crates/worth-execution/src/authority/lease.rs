@@ -19,6 +19,8 @@ mod array_backing;
 mod byte_backing;
 mod diagnostic;
 mod fixed_backing;
+#[cfg(test)]
+mod idle_backing_tests;
 mod limits;
 mod memory;
 mod process_authority;
@@ -118,6 +120,15 @@ struct Ledger {
     active_workers: usize,
     charged_memory_bytes: u64,
     nodes: HashMap<u64, NodeUsage>,
+}
+
+impl Ledger {
+    /// An idle authority owns no usage backing. Retire the table after the
+    /// complete transition and destroy it after releasing the ledger lock.
+    fn take_unused_nodes(&mut self) -> Option<HashMap<u64, NodeUsage>> {
+        (self.nodes.is_empty() && self.nodes.capacity() != 0)
+            .then(|| std::mem::take(&mut self.nodes))
+    }
 }
 
 #[derive(Debug, Default)]
@@ -319,6 +330,9 @@ impl Drop for ResourceReservation {
                 ledger.nodes.remove(id);
             }
         }
+        let retired = ledger.take_unused_nodes();
+        drop(ledger);
+        drop(retired);
     }
 }
 

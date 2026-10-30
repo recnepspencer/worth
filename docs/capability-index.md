@@ -421,6 +421,10 @@ and direct-endpoint Sources use the same maintained resource through committed
 DecisionReader and candidate invariant reads. Unsupported projection, predicate
 and ordering shapes return `UnsupportedInvariantSource` at installation. See
 [maintained Source authoring](build-an-application.md#maintain-a-provider-source-for-an-invariant).
+Native `ForkExact` creates a branch-specific managed Source association while
+sharing immutable material; `ReuseExact` reads its actual selected component.
+Sibling edits remain isolated, and cross-branch Source expectations refuse
+before provider execution.
 A retained logical Source during
 generated-output suspension does not make a current public physical read Ready.
 See the

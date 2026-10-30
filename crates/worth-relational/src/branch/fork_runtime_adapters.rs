@@ -37,6 +37,7 @@ impl RelationalRuntime {
                 self.services.instrumentation.clone(),
             ),
             self.durability.medium(),
+            self.publication_binding(),
         )
     }
 

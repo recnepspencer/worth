@@ -230,6 +230,17 @@ Failure or cancellation leaves the prior root unchanged and releases staging.
 Public committed reads still perform principal/scope/READ admission separately.
 Their complete Source condition is rebound at the real consuming candidate after
 idempotency resolution; copied program names and retained material grant no READ.
+A managed fork creates its association header through Native's actual fork
+owner before target head retention and basis issuance. It shares authoritative
+regions, schema and canonical envelope, uses the same live root identity issuer,
+and retains the selected Source's canonical position. Query stages only a
+pending branch lookup; durable target installation admits it. Refusal removes
+that exact pending registration, with participant-owned cleanup deferred beyond
+Native coordination, publication and registration guards. Actual target World
+basis custody therefore selects the target association from its first read.
+A public close releases its access attachment; invariant and retained basis
+owners can still retain the canonical material.
+
 The [compiled application examples](../../../../../../docs/build-an-application.md#maintain-a-provider-source-for-an-invariant)
 show both the committed DecisionReader and installed candidate reader audiences.
 

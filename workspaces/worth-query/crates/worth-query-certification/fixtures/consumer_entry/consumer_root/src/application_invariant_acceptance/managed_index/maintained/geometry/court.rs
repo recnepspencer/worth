@@ -16,6 +16,7 @@ use worth_query_host::facade::{
     runtime::ExecutionAllocationPolicy,
 };
 
+mod affinity;
 mod cancellation;
 mod rewiring;
 type Principal = WorthQueryAuthenticatedExternalPrincipal<Catalog>;

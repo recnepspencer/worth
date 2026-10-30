@@ -25,15 +25,15 @@ pub(crate) use candidate::{CandidatePayload, PreparedRelationalCandidateAdmissio
 pub use candidate::{DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate};
 pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
-    ManagedSourceRootImage,
+    ManagedSourceRootImage, PreparedManagedIndexSourceFork,
 };
 pub use companion::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    ManagedIndexSourceObservation, PendingCompanionRegistration, PreparedCompanionBranchCell,
-    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    ManagedIndexSourceForkPreparation, ManagedIndexSourceObservation, PendingCompanionRegistration,
+    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PublicationCompanionPreflight, PublicationCompanionRegistration,
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
     RelationalPublicationCompanion, ReservedCompanionBranchCell,

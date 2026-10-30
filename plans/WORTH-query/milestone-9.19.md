@@ -534,6 +534,18 @@ pass. Source rows and inverse postings retain individually funded immutable AVL
 cells; Source identity container grants follow their live coordinates rather than
 pinning unrelated decision-read batches. This qualifies direct unguarded endpoint
 projections and integer closed-box enclosure rules, not exact segment geometry.
+Native fork association is qualified through installed public geometry and
+prefix reads: ForkExact shares the immutable Source under the target's genuine
+basis, sibling edits stay isolated, ReuseExact retains its selected component,
+and a foreign-branch Source expectation refuses before provider callbacks.
+Native owner evidence proves durable refusal and retry with cleanup beyond its
+coordination; a Query owner court proves the actual pending lookup is removed on
+original-request cancellation before retry. These owner courts qualify custody,
+not public geometry behavior. All six public maintained courts pass; the prefix
+and both geometry allocation courts retain exact all-owner balance. The physical
+balance court also exposed an idle Execution
+ledger table; the ledger now relinquishes unused backing after its final usage
+transition, with focused worker/retained-charge owner evidence.
 Cold invariant-root eviction/reconstruction, remaining lifecycle/affinity hostile
 controls, materialization/recovery composition and the required 1,000/2,000
 whole-path growth court remain incomplete. Local algorithm checks

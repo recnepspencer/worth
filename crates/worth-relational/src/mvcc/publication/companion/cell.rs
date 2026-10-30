@@ -46,6 +46,7 @@ pub(super) struct CompanionBranchCellCore {
     pub(super) current: Mutex<Arc<CompanionRootImage>>,
     pub(super) reservation_live: AtomicBool,
     pub(super) topology_generation: AtomicU64,
+    pub(super) _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 struct DerivedCellEdit<'a>(&'a CompanionBranchCellCore);
@@ -165,7 +166,7 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         )
     }
 
-    fn at_selection(
+    pub(super) fn at_selection(
         runtime_instance_id: u64,
         branch_id: BranchId,
         root_id: u64,
@@ -188,6 +189,7 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
                 current: Mutex::new(image),
                 reservation_live: AtomicBool::new(false),
                 topology_generation: AtomicU64::new(1),
+                _fork_memory: None,
             }),
             _payload: PhantomData,
         }

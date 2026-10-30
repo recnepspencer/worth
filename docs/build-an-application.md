@@ -5531,6 +5531,16 @@ its integer unit/frame binding and delegates validation and enclosure union to
 its numerical owner. The [geometry composition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry.rs)
 uses this path with the same provider installation and both reader entrances.
 
+A branch created through `ForkExact` attaches the selected immutable managed
+Source under a fresh Native association for that branch. Subsequent edits on
+either sibling maintain their own image. `ReuseExact` continues reading the
+actual selected Native component even after sibling heads advance. Neither path
+rebuilds the provider merely to attach an unchanged Source. A retained Source
+expectation from another branch returns `ForeignBranch` before provider work;
+consume the observation only through its original branch and fresh admission.
+The [fork affinity court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/affinity.rs)
+exercises these paths through the installed public program.
+
 A validation failure's `invariant_execution_failure().and_then(|failure|
 failure.managed_source_denial())` borrows the original Source preparation cause.
 Its `provider_failure().cause()` preserves the owned provider or projection error

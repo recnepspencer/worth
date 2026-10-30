@@ -9,6 +9,31 @@ use worth_relational::facade::{
         ManagedIndexSourcePreparationDenial as Denial, PreparedManagedIndexSourceRoot,
     },
 };
+mod fork;
+
+/// This lookup is mutated only under the registry mutex; it has no persistent
+/// map clones. Its dedicated grant covers the actual key and conservative node.
+pub(super) struct SourceBranchSlot {
+    slot: worth_relational::facade::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>,
+    allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
+}
+impl SourceBranchSlot {
+    fn new(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch: &worth_relational::facade::history::BranchId,
+        slot: worth_relational::facade::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>,
+        count: usize,
+    ) -> Result<Self, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        let allocation =
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::open(
+                execution,
+            )?;
+        allocation
+            .claim_tree::<(worth_relational::facade::history::BranchId, Self)>(execution, count)?;
+        allocation.claim(execution, branch.0.len() as u64)?;
+        Ok(Self { slot, allocation })
+    }
+}
 
 impl ManagedDerivedViewRegistry {
     pub(in crate::domain_computation::primary_graph) fn prepare_sources(
@@ -27,7 +52,7 @@ impl ManagedDerivedViewRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .source_branches
             .get(selected.identity().branch_id())
-            .and_then(|slot| slot.admitted());
+            .and_then(|entry| entry.slot.admitted());
         let image = cell.as_ref().map(|cell| cell.read_image());
         if image
             .as_ref()
@@ -75,7 +100,8 @@ impl ManagedDerivedViewRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(slot) = state.source_branches.get(context.branch_id()) {
+        if let Some(entry) = state.source_branches.get(context.branch_id()) {
+            let slot = &entry.slot;
             if let Some(cell) = slot.admitted() {
                 return cell.reserve_preflight(context).map(Some);
             }
@@ -85,9 +111,23 @@ impl ManagedDerivedViewRegistry {
         }
         let cell =
             context.mint_selected_branch_cell(Arc::new(ManagedIndexBranchImage::default()))?;
-        state
-            .source_branches
-            .insert(context.branch_id().clone(), cell.lookup_slot());
-        cell.reserve_preflight(context).map(Some)
+        let entry = SourceBranchSlot::new(
+            &context.execution_request(),
+            context.branch_id(),
+            cell.lookup_slot(),
+            state.source_branches.len(),
+        )
+        .map_err(Stop::Execution)?;
+        let reserved = cell.reserve_preflight(context);
+        let retired = if reserved.is_ok() {
+            state
+                .source_branches
+                .insert(context.branch_id().clone(), entry)
+        } else {
+            Some(entry)
+        };
+        drop(state);
+        drop(retired);
+        reserved.map(Some)
     }
 }
