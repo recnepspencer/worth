@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 import time
 
-from cargo_capture import CargoRunner, capture_record
+from cargo_capture import CargoRunner
 from census import collect, markdown
 from complete_coverage import merge as complete_coverage
 from coverage import inventory
@@ -170,15 +170,12 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     (output / 'executed-coverage.json').write_text(json.dumps(executed, indent=2) + '\n', encoding='utf-8')
     if executed['status'] == 'fail':
         failures.append('executed-coverage')
-    telemetry = output / 'telemetry.jsonl'
-    with telemetry.open('w', encoding='utf-8') as sink:
-        for directory, pattern in ((accounting, '*.json'), (setup, '*.jsonl')):
-            for path in sorted(directory.glob(pattern)):
-                sink.write(path.read_text(encoding='utf-8').rstrip() + '\n')
-        sink.write(json.dumps({'type': 'test-cost-phases', 'build_seconds': build_seconds,
-                               'wall_seconds': time.perf_counter() - started}) + '\n')
+    runner([sys.executable, str(Path(__file__).with_name('phase_telemetry.py')),
+            '--cpu', str(accounting), '--setup', str(setup),
+            '--build-seconds', str(build_seconds), '--wall-seconds', str(time.perf_counter() - started)],
+           manifest.parent, output / 'telemetry.log')
+    telemetry = runner.logs[-1]
     observed = read_lane(telemetry)
-    capture_record(environment, telemetry)
     baseline = original_reservations(config, nextest_profile, discovered, lambda index, query:
         json.loads((output / 'build' / f'reservation-{index}.json').read_text(encoding='utf-8')))
     known = {row['binary'] + '\n' + row['test'] for row in inventory(discovered)}
@@ -186,7 +183,6 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
                  str(telemetry.relative_to(repository)), baseline, known)
     previous_path.write_text(json.dumps(load_slots(slot_directory), indent=2) + '\n', encoding='utf-8')
     logs = [(path.stem + '-' + str(index), path) for index, path in enumerate(runner.logs)]
-    logs.append(('telemetry', telemetry))
     result = collect(manifest, repository, logs, complete, requested)
     if documentation is None and result['coverage']['status'] == 'pass':
         result['coverage'].update(status='partial', scope='native-only',

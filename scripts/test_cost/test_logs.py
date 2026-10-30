@@ -17,6 +17,27 @@ def compiled(**changes):
 
 
 class ArtifactObservationTests(unittest.TestCase):
+    def test_plain_libtest_summaries_retain_counts_without_inventing_test_identities(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'legacy.log'
+            path.write_text('test result: ok. 3 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out\n'
+                            'test result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out\n')
+            lane = read_lane(path)
+            self.assertEqual(lane['tests'], [])
+            self.assertEqual(lane['plain_test_counts'], {'pass': 8, 'fail': 1, 'ignored': 2})
+            self.assertEqual(timing_summary(lane)['pass'], 8)
+
+    def test_aggregate_phase_wall_is_distinct_from_the_aggregation_command_duration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'phases.log'
+            path.write_text('Start: 2026-10-29T00:00:00+00:00\n' + json.dumps(dict(
+                type='test-cost-phases', build_seconds=50, wall_seconds=240)) +
+                '\nEnd: 2026-10-29T00:00:01+00:00\n')
+            lane = read_lane(path)
+            self.assertEqual(lane['telemetry']['wall_seconds'], 240)
+            self.assertEqual(lane['telemetry']['run_seconds'], 190)
+            self.assertEqual(lane['telemetry']['capture_wall_seconds'], 1)
+
     def lane(self, rows):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / 'lane.log'

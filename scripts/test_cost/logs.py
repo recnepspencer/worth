@@ -47,6 +47,10 @@ def read_lane(path):
                                        run_seconds=event['wall_seconds'] - event['build_seconds'],
                                        wall_seconds=event['wall_seconds'])
     result['compiler_progress'] = re.findall(r'^\s*(?:Compiling|Checking) (\S+) v(\S+)', text, re.M)
+    summaries = re.findall(r'^test result: (?:ok|FAILED)\. (\d+) passed; (\d+) failed; (\d+) ignored;', text, re.M)
+    result['plain_test_counts'] = ({key: sum(int(row[index]) for row in summaries)
+                                   for index, key in enumerate(('pass', 'fail', 'ignored'))}
+                                  if summaries else None)
     build = re.findall(r'^\s*Finished .+ target\(s\) in (.+)$', text, re.M)
     run = re.findall(r'^\s*Summary \[\s*([^]]+)\]', text, re.M)
     if build:
@@ -58,8 +62,9 @@ def read_lane(path):
         result['headers'][field] = found[-1].strip() if found else None
     h = result['headers']
     if h['Start'] and h['End']:
-        result['telemetry']['wall_seconds'] = (datetime.fromisoformat(h['End']) -
-                                               datetime.fromisoformat(h['Start'])).total_seconds()
+        elapsed = (datetime.fromisoformat(h['End']) - datetime.fromisoformat(h['Start'])).total_seconds()
+        result['telemetry']['capture_wall_seconds'] = elapsed
+        result['telemetry'].setdefault('wall_seconds', elapsed)
     durations = [e['exec_time'] for e in result['tests'] if 'exec_time' in e]
     result['telemetry']['test_work_seconds'] = sum(durations) if durations else None
     # A textual Compiling line has no features/profile/target or fresh bit.

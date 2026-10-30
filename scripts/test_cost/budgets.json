@@ -4,7 +4,8 @@
     "declared_cargo_profiles": [
       "dev",
       "test",
-      "ci-test"
+      "ci-test",
+      "release"
     ],
     "lanes": {
       "owner-unit": {
@@ -110,7 +111,8 @@
     "declared_cargo_profiles": [
       "dev",
       "test",
-      "ci-test"
+      "ci-test",
+      "diagnostic-test"
     ],
     "lanes": {
       "owner-unit": {

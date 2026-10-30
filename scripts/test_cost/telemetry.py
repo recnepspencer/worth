@@ -43,6 +43,8 @@ def timing_summary(lane):
     summary['slowest'] = sorted([{'name': t['name'], 'seconds': t['exec_time'],
                                  'event': t['event']} for t in tests if 'exec_time' in t],
                                 key=lambda t: (-t['seconds'], t['name']))[:40]
+    if not tests and not lane.get('suites') and lane.get('plain_test_counts') is not None:
+        summary.update(lane['plain_test_counts'])
     # Sum(exec_time) is work, never lane wall time or a build-time subtraction.
     summary.setdefault('build_seconds', None)
     summary.setdefault('run_seconds', None)
