@@ -55,6 +55,8 @@ worth-query-topology-entry.debug = false
 
 [profile.test]
 opt-level = 0
+# Keep native owner/consumer test links below the documented Windows PDB limit.
+debug = 0
 
 [profile.test.package]
 "*".opt-level = 2

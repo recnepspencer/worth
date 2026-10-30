@@ -5749,7 +5749,7 @@ milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-**Progress, 2026-10-29:** Phases 1–4 are accepted: actual-read observations,
+**Progress, 2026-10-30:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
 query closure steps, stored orbits, persistent aggregate identity/lineage and
 qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6 are
@@ -5801,8 +5801,13 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-The retained scope has seventeen implementation phases; 9, 16, 17 and 18
+The retained scope has seventeen implementation phases; 9, 16 and 18
 remain unfinished.
+Phase 17 is complete at the public application boundary: versioned domain intent
+enters fresh governed READ and mutation admission, exact selected-source creation
+and actual-head adoption. Native attempt resolution preserves frozen input and
+effect-free cached retries; publication, delivery and cleanup retain their real
+owners through typed refusals and fresh-request continuation.
 
 ### Goal
 
@@ -5815,9 +5820,10 @@ source identity, expose bounded native record/aspect history, and remove the two
 identified obsolete catalog/alias surfaces in one cleanup batch. All of it is
 domain-neutral and reached through Query declarations and ordinary governed
 requests, never through raw runtime handles or receipt-reconstructed authority.
-The retained Proprietary follow-through adds honest failure causes, measured
-cell-version/history cost, fresh proposal acceptance and current stable Rust
-qualification. The general index extension and spatial-dependent locality are
+The retained follow-through adds honest failure causes, measured
+cell-version/history cost, public proposal acceptance and current stable Rust
+qualification. Phase 17 is certified at the public application boundary without
+requiring private adoption. The general index extension and spatial-dependent locality are
 governed by 9.19 with its final integrated private cutover.
 P1 correction follow-through makes an earlier source reversible again once all
 later overlapping occurrences have been genuinely reversed; live or reapplied
@@ -5857,7 +5863,9 @@ The governing milestone spec is
   private platform workarounds; spatial-dependent locality is required in 9.19
 - proposal acceptance reissuing fresh ordinary requests from versioned domain
   intents, with exact Native/World expected-source fork/adoption and genuine
-  target occurrences; replay remains cert-only
+  target occurrences; public Decl/Host tests certify storage isolation, authority,
+  identity, retries, races and cleanup without a private consumer gate; replay
+  remains cert-only
 - mandatory exact-release Rust 1.99.x sort qualification and current qualified
   stable workspace/CI/Proprietary toolchains; the qualified workspace/CI 1.99.1/full
   `58cf8f9c35b355199727627d07ae34a4e2846d67` retains the reviewed
@@ -5886,8 +5894,12 @@ assertions. Exact caller/export inventory qualifies the single cleanup batch.
 Reuse existing grouped targets; a spec-only revision checks links and path claims.
 
 The retained installed write and compiler probes preserve their exact causes;
-proposal acceptance refuses revoked/stale authority through ordinary
-admission. Exact official Rust release/commit qualification preserves canonical
+proposal acceptance refuses revoked/stale authority through ordinary admission.
+[Phase 17's public failure matrix](milestone-9.18.1.md#public-failure-matrix)
+and operational sequence govern its complete public certification; private CAD
+integration is not a prerequisite or an implied result. Other phases retain
+their explicit private adoption obligations.
+Exact official Rust release/commit qualification preserves canonical
 ordering, work/storage bounds and versioned digest meaning; adding an allowlist
 entry or retaining Rust 1.98 alone cannot satisfy this milestone.
 

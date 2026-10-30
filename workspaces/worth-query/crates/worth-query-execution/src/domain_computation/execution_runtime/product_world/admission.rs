@@ -5,6 +5,42 @@ use super::WorthQueryProductRuntime;
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
 
 impl WorthQueryProductRuntime {
+    pub(crate) fn readmit_product_reference(
+        &self,
+        description: &worth_runtime_world::facade::ProductBranchReferenceDescription,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        use worth_runtime_world::facade::ProductBranchReferenceReadmissionDenial as DescriptionDenial;
+        let observation = self
+            .owner
+            .observation_port()
+            .readmit_product_branch_reference(description)
+            .map_err(|denial| match denial {
+                RuntimeWorldServiceDenial::OwnerUnavailable(denial) => {
+                    map_world_denial(RuntimeWorldServiceDenial::OwnerUnavailable(denial))
+                }
+                RuntimeWorldServiceDenial::Denied(DescriptionDenial::Branch(denial)) => {
+                    map_world_denial(RuntimeWorldServiceDenial::Denied(denial))
+                }
+                RuntimeWorldServiceDenial::Denied(
+                    DescriptionDenial::UnsupportedDescriptionVersion { supported, actual },
+                ) => WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ExpectedDescriptionVersionUnsupported { supported, actual },
+                ),
+                RuntimeWorldServiceDenial::Denied(DescriptionDenial::InvalidName(_)) => {
+                    WorthQueryProductBranchAdmissionDenial::Refused(
+                        AdmissionRefusal::ExpectedDescriptionNameInvalid,
+                    )
+                }
+                RuntimeWorldServiceDenial::Denied(DescriptionDenial::IncarnationChanged) => {
+                    WorthQueryProductBranchAdmissionDenial::Refused(
+                        AdmissionRefusal::IncarnationChanged,
+                    )
+                }
+            })?;
+        let gate = self.activations.gate(observation.branch_identity())?;
+        gate.with_admission(|| self.lease_from_observation(observation))
+    }
+
     pub(crate) fn admit_product_occurrence(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,

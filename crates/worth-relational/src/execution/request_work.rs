@@ -33,17 +33,14 @@ impl RequestWorkBudget {
 
     /// Native evidence settles into the same account as packet preparation.
     /// A refusal before callback entry has no work report to settle.
-    pub(crate) fn run_stage<'authority, R>(
+    pub(crate) fn run_stage<R>(
         &self,
-        lease: &ExecutionResourceLease<'authority>,
-        stage: impl FnOnce(ExecutionRequest<'_, 'authority>) -> R,
+        execution: ExecutionRequest<'_, '_>,
+        stage: impl FnOnce() -> R,
     ) -> Result<R, WorkCeilingDenial> {
-        self.run_reported(
-            lease,
-            |child| {
-                let execution = ExecutionRequest::leased(child);
-                execution.run(ExecutionWorkCeiling::new(None), |_| stage(execution))
-            },
+        self.with_remaining_work(
+            execution.work_ceiling(),
+            |remaining| execution.run(ExecutionWorkCeiling::new(remaining), |_| stage()),
             |outcome| outcome.as_ref().ok().map(|(_, report)| *report),
         )
         .map(|(value, _)| value)
@@ -59,31 +56,46 @@ impl RequestWorkBudget {
         let Some(budget) = policy.accounting() else {
             return run(lease);
         };
+        self.with_remaining_work(
+            budget.work_ceiling(),
+            |remaining| {
+                // The child copies its admitted parent's policy and only reduces
+                // remaining work; it adds no invalid limit or deadline relation.
+                let child = lease
+                    .child(LeaseRequest {
+                        policy: ExecutionRequestPolicy::new(
+                            policy.posture(),
+                            policy.determinism(),
+                            ExecutionBudget::new(
+                                budget.max_workers(),
+                                budget.charged_memory_bytes(),
+                                remaining,
+                            ),
+                        ),
+                        // None and a fresh token are safe: lease/limits.rs:58-62 retains the parent deadline and :99-108 checks parent cancellation.
+                        deadline: None,
+                        cancellation: CancellationToken::new(),
+                    })
+                    .expect("a remaining-work child preserves its parent's policy limits");
+                run(&child)
+            },
+            report,
+        )
+    }
+
+    fn with_remaining_work<R>(
+        &self,
+        ceiling: Option<u64>,
+        run: impl FnOnce(Option<u64>) -> R,
+        report: impl FnOnce(&R) -> Option<ExecutionReport>,
+    ) -> R {
         let mut charged = self
             .charged
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let remaining = budget
-            .work_ceiling()
-            .map(|ceiling| ceiling.saturating_sub(*charged));
-        let child = lease
-            .child(LeaseRequest {
-                policy: ExecutionRequestPolicy::new(
-                    policy.posture(),
-                    policy.determinism(),
-                    ExecutionBudget::new(
-                        budget.max_workers(),
-                        budget.charged_memory_bytes(),
-                        remaining,
-                    ),
-                ),
-                // None and a fresh token are safe: lease/limits.rs:58-62 retains the parent deadline and :99-108 checks parent cancellation.
-                deadline: None,
-                cancellation: CancellationToken::new(),
-            })
-            .expect(/* Proof: The child copies its already admitted parent policy and only reduces remaining work; it introduces no invalid limit or deadline relation. */ "a remaining-work child preserves its parent's policy limits");
-        let outcome = run(&child);
-        if let Some(report) = report(&outcome) {
+        let remaining = ceiling.map(|ceiling| ceiling.saturating_sub(*charged));
+        let outcome = run(remaining);
+        if let Some(report) = report(&outcome).filter(|report| report.has_accounting()) {
             #[cfg(test)]
             observation::record(report.charged_work());
             *charged = charged.saturating_add(report.charged_work());

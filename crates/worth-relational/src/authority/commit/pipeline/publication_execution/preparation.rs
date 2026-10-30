@@ -259,8 +259,8 @@ pub(super) fn prepare_publication_phase(
         super::super::request_lease(execution),
         runtime.commit_work_budget.as_ref(),
     ) {
-        (Some(lease), Some(budget)) => budget
-            .run_stage(lease, reserve_route)
+        (Some(_), Some(budget)) => budget
+            .run_stage(*execution, || reserve_route(*execution))
             .map_err(|stop| TransactionCommitError::execution(stop.into()))
             .and_then(std::convert::identity),
         _ => reserve_route(*execution),

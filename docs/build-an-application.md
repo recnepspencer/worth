@@ -1841,7 +1841,33 @@ continue to refuse publication.
 `WorthQueryProgramApplicationRuntime` dereferences to the primary-graph
 application runtime, so `request(..)`, `discovery()`, `current_world()`,
 `installed_schema()`, `branches()`, and `conditional::<T>()` are all available
-on it. Its own methods:
+on it.
+
+For an isolated branch from a selection already admitted in a host advancement,
+consume that selection with `runtime.branches().fork_expected(selected)` and
+create it with the same runtime's phase. The returned candidate retains its
+source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
+to discard it. After the requests succeed, `candidate.adopt(&mut model.head, &phase)`
+replaces the actual model-owned branch slot only while the original source is
+still current. It returns the previous branch for ordinary close. A refused
+adoption leaves the slot unchanged and returns the candidate with its typed
+denial; a later refused close of the previous branch does not undo adoption.
+Source movement also refuses creation, and a refused candidate close retains
+the candidate with its original denial. See
+[fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
+
+To store the selected basis as application data, serialize
+`selected.describe_basis()` before releasing the selection. After loading that
+record through an ordinary READ request, deserialize it as
+`WorthQueryExpectedProductBasisDescription` and call
+`runtime.branches().select_expected(&description, &phase)`. This asks the original
+installed World and Native owners to admit that exact basis; stale, retired,
+foreign and unsupported descriptions refuse. The description retains no live
+selection and supplies no READ or mutation permission. Pass the returned
+selection to `fork_expected`, then use the same candidate/adoption lifecycle.
+See [store an expected basis](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again).
+
+Its own methods:
 
 | Method | Returns |
 |---|---|
@@ -2173,8 +2199,36 @@ let cancellation = WorthQueryCancellationSource::new();
 let scope = WorthQueryRequestScope::new(Some(Instant::now() + Duration::from_secs(60)), cancellation.token());
 ```
 
-The entity an operation acts on is a different thing: the intent's *scope
-binding*, shown next.
+#### Read governed data at one observation
+
+Retain a read observation when the data and a later basis description must name
+the same committed state. A governed query at that observation uses its original
+data and freshly checks the current principal, capability and READ policy on the
+requested branch. Revoking current READ therefore also refuses an older read.
+
+This sequence uses the query and capability names from the compiled
+[model reader](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/model.rs):
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let request = runtime.request(&principal, &scope).on_branch(model_branch);
+let observation = request.retain_current_read()?;
+let rows = request.at(&observation)
+    .query(ReadModel { model: label.clone() })
+    .execute_governed(
+        ReadDomain::reference(), InspectDomain::reference(), ReadAccess { model: label },
+    )?;
+```
+
+Keep the observation private until admission succeeds. To describe that same
+basis, use `observation.select_on(&phase, runtime)?.describe_basis()` inside the
+request's `with_application_advancement` call. The description grants no further
+permission and may already be stale for `select_expected` if the head moved.
+Drop the observation when its reads are finished. Managed-index open and rebuild
+require a current request and refuse retained mode with `RequestMode`.
+
+The entity a mutation acts on is its intent's *scope binding*, shown next.
 
 ### 5.2 Mutations: intent, binding, handler
 
@@ -2240,6 +2294,15 @@ entities; required roles and cardinalities remain checked before publication. Ty
 validation, checked sizes, request cancellation and fallible effect-buffer growth
 remain with their original owners. Invariant validation and atomic commit still
 precede successful publication.
+
+When a stored reference includes the process-local Native runtime identity, compare
+it with `reader.reader().runtime_instance_id()` before using its entity coordinates.
+This readonly value describes the projection's owning runtime; it grants no access.
+The ordinary opaque `reader()` access keeps the decision's existing restriction on
+completed-decision reuse. Compare the admitted scope's full entity identity and
+observe its declared relation to the target before requesting a mutation target.
+The [compiled retention handler](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/retention/handler.rs)
+shows these checks against a stored typed edit.
 
 For an authored deletion, declare the entity read with
 `operation_read_entity(Operation::reference(), Entity::reference())` alongside
@@ -2432,6 +2495,212 @@ declared demand or assessment; it cannot replace required-output settlement.
 The runnable `ordinary_product_workflow` declares a real source-only action,
 advances its owner, observes native fresh receipt/result evidence, closes cleanup,
 and reads both current and retained product truth through the public facade.
+
+#### Execute a stored typed edit
+
+Decode the stored input through its declared field codec, then pass the typed
+value to the ordinary installed action. Register a delivery whose mode is
+`ApplicationSourceCompletion` and construct the owning operation with
+`request.mutate(input).without_source().idempotency_owned(key)` followed by
+`retain_operation::<Program, Action>(runtime)`. Supply a fresh authenticated
+request to `advance` and retain the returned owner until lawful close.
+
+READ admission for the record and mutation admission for the edit use their own
+declared policies. An operation's `assess_current_authorization(&request)` observes
+current mutation authorization without executing it. Its successful assessment
+does not authorize a later `advance`: execution checks the current grant again.
+The [compiled grant transition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/mutation_authorization.rs)
+revokes the mutation grant while both model and proposal reads remain lawful,
+then restores it and advances the same retained operation.
+
+Enforce value limits with an installed commit-boundary invariant. The
+[compiled retention action](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/mutation.rs)
+publishes ten days and refuses eleven through the installed maximum rule. The
+invariant violation returns `Terminal` with its exact commit denial and close
+custody. A domain refusal also retains its original native outcome in `Terminal`.
+Only outcomes classified by the native owner as retryable return `Progress` with
+`RetryableNoEffect` custody. An admission refusal returns `Refused` with the
+operation and typed denial. Match these variants before deciding what can be
+retried or closed.
+
+To evaluate ordered edits before selecting them as a model's state, create an
+exact-source candidate with `select_expected` and `fork_expected`. Check that
+the admitted product branch equals the model owner's actual head before
+construction: copied branches can contain the same entity occurrences. Assess
+current mutation authority on the source, then construct each ordinary execution
+owner on the candidate branch. A captured source-bound operation cannot be
+retargeted to the candidate.
+
+For that source assessment, use
+`request.advanced().mutate(input).without_source().assess_current_capability_authorization()`
+when the binding requires a capability. The raw request's
+`assess_current_authorization()` checks conventional policy. Both return an
+observation without claiming a key or running a handler; retain no execution
+permission from the result. An already retained operation's
+`assess_current_authorization(&fresh_request)` selects its binding's declared
+authorization mode itself.
+
+The [compiled staging example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/candidate.rs)
+loads a recorded three-day edit under a fresh caller, reads three on the staged
+candidate while the model still reads seven, and uses `candidate.adopt` to replace
+the model's actual mutable head. Prebuild metadata before this commit point and
+move it into the model while holding exclusive access to that model. Keep the
+returned previous branch and actual ordinary completion evidence; close the
+previous branch separately. In its two-edit case, the second request for eleven
+days receives the installed invariant refusal. The first staged edit remains
+readable as three, the model remains seven, and explicit close disposes of the
+retained candidate and operation.
+
+Handle a close refusal according to its owning posture. A refusal before
+retirement retains the candidate for a later close. `OwnerCleanupPending` means
+the candidate is already retired and carries the original cleanup owner. To
+dispose of that staged work, release its terminal evidence and retained readers,
+then retry that cleanup owner. A held reader can keep returning
+`WorldHistoryStillRetained`; keep the cleanup it returns until the reader is
+released and cleanup completes.
+
+#### Register attempts on a stable product
+
+Use an ordinary action on a separately owned, stable storage product to bind an
+attempt key to the complete selected input: proposal occurrence and revision,
+model, expected basis, and ordered typed edits. Reusing that native key resolves
+its original registration before another basis comparison. Changed parameters,
+targets, order or vector length receive ordinary `IdempotencyIntentDrift`.
+The native key includes its declared namespace and serialized caller key;
+the resolved principal and scope also bind the recorded intent. Reusing the same
+key from another principal therefore receives intent drift. A registration
+receipt proves registration; it supplies no model-adoption authority.
+
+The [compiled registration and result example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts.rs)
+uses a `LoadedProposal` to retain the originally selected domain data and its
+issuing storage product. It retains no read lease or permission. On each request,
+freshly admit proposal READ on that actual storage, current model READ, mutation
+authorization for the exact frozen edits, and result READ before filtering cached
+results. A different readable storage product cannot substitute for the issuer.
+The [storage-affinity and revocation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/disclosure.rs)
+show these checks with real grant transitions and cached results.
+
+Declare registration and result recording as `ApplicationSourceCompletion`
+actions and construct their owning operations with `retain_operation`. Advance
+with a fresh request on the original storage branch. Keep the returned owner on
+progress or refusal, and close completed or terminal custody through its native
+close method. If a write succeeds but result readback or close refuses, retain
+that completed operation alongside the original input and actual cause. A normal
+equivalent retry returns recovered evidence; it need not pass through a pending
+delivery state.
+
+Keep one pending acceptance inside the model that owns the mutable head. The
+[compiled ingress](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/ingress.rs)
+freshly admits reads and the incoming frozen edits, then attempts to resolve the native
+registration key before inspecting that slot or a cached result. Only an unseen
+key with an empty slot may start a new acceptance. A registered key with no result
+and no live continuation refuses; missing delivery is not permission to fork.
+An occupied slot retains its original input until registration has established
+a native intent binding. A different incoming input cannot replace it.
+
+Revise stored proposal intent through an ordinary observed field write. The
+[compiled revision operation](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/revision.rs)
+checks the actual proposal occurrence, membership and expected domain revision,
+then increments that revision while preserving format, model and recorded basis.
+Read the proposals collection for its current revision reference; loading the
+old reference refuses.
+An already registered attempt keeps its original frozen intent. Revised intent
+under that same attempt key receives native drift. An unregistered stale load
+cannot register against the revised record. Renew the recorded basis explicitly
+when starting from a moved model.
+
+A target's display name does not preserve its occurrence after retirement.
+The [compiled target replacement](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/target_replacement.rs)
+requires a separate management ability through actual grantor ownership, then
+unlinks, deletes, creates and links through observed native targets in one
+candidate. Retention-edit authority alone cannot perform that replacement.
+Read the replacement's actual target reference and record its fresh basis before
+accepting a new proposal. Old target references and another model incarnation's
+proposal storage refuse even when their display names are identical.
+
+If native resolution returns `ProviderUnavailable` after that same fresh
+admission, the compiled ingress can advance only the matching retained Claim
+recovery owner. Changed meaning under the same key still receives native intent
+drift. Missing or initial operation custody cannot use this recovery path or
+start a replacement attempt.
+
+Advance the retained acceptance with fresh requests. After adoption, retain the
+actual adoption owner while recording and reading back the result, then close
+the previous owned head. A result-READ refusal leaves that same adoption pending;
+restore the ordinary grant and resume it. Successful retries read the recorded
+result without adopting again. Closing the model while an acceptance is pending
+returns the whole model so its operation and branch custody remain owned.
+
+To abandon a pre-adoption attempt, use the model owner's `dispose_pending` with
+a live request scope. It closes the actual metadata or candidate owner; it does
+not execute an unexecuted edit. This owner-local cleanup works even after the
+storage object has retired, without reading business data or disclosing inputs,
+results or identifiers. The response is opaque; detailed native refusal evidence
+stays inside the attempt and requires ordinary admission to inspect.
+
+If candidate close returns `OwnerCleanupPending`, retry the retained cleanup
+owner rather than closing the retired branch again. Release external readers
+and disposed evidence receipts before expecting their retained history to clear.
+Disposing a registered attempt leaves its real Claim row committed; the same key
+with no result or continuation still refuses. After adoption, disposal retains
+the committed continuation. Use acceptance for result recording and normal
+previous-head close. Inspect retained close failures through the admitted
+`inspect_attempt` entrance.
+
+A failed preparation that created no candidate can also be disposed. This
+releases its pending slot while leaving its committed Claim intact; retrying
+that old key without a result still refuses. Record a fresh basis and use a new
+attempt key to proceed. Unpublished creation recovery, existing candidate
+custody and unresolved panicked handoffs remain retained rather than being
+discarded as owner-free refusals.
+
+For a preparation's `ProductUnpublished` creation failure, `dispose_pending`
+uses the actual creation recovery's `release_obligations`. A recovery refusal
+retains that owner. Once release transfers work to owner cleanup, further
+disposal retries that cleanup instead of releasing creation again. The
+[compiled creation cleanup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/disposal/preparation.rs)
+preserves the native failure for admitted inspection and completes with the real
+creation-release or cleanup receipt. A late request stop preserves the completed
+disposal and reports its handoff; it does not recreate a candidate.
+
+If previous-head close returns `OwnerCleanupPending`, the head has already
+retired. Keep the performed adoption evidence and stored result while transferring
+that exact failure into its cleanup owner. The
+[compiled recovery](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/candidate/adoption/retired.rs)
+retries the original cleanup with a fresh scope, retaining its actual refusal
+while readers still hold history. Release those readers and retry the same owner.
+The selected new head stays in place throughout.
+
+The example's `FinishedAdoption` distinguishes an ordinary previous-head close
+receipt from a settled retired-head cleanup receipt. Inspect the corresponding
+variant; cleanup settlement supplies its actual cleanup receipt. Keep adoption,
+retirement and cleanup handoff denials with their respective outcomes. If cleanup
+succeeds before a late handoff refusal, retain that settled outcome and deliver
+the recorded result on retry.
+
+#### Record an actual adoption result
+
+Keep canonical result data separate from the command that records it. In the
+example, the adoption owner has private construction and retains the original
+ordinary completion evidence. `RecordResult::from_adopted` checks that owner
+against the supplied claim reference and its full frozen proposal. Its command
+supports serialization for ordinary mutation identity, with no deserialization
+or construction from a stored result row. Fresh results retain their actual
+returned values; recovered completions remain explicitly recovered.
+
+If a request stops after a source write completes, keep the refused owning
+operation. Advance that same owner with a fresh request: native authorization
+and key resolution run again, and its retained Fresh result remains Fresh. The
+[compiled late-stop example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/handoff.rs)
+preserves the original returned value and input while the committed basis stays
+unchanged on retry. Close the completed owner after consuming its evidence.
+
+The [ordinary result handler](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/attempts/recording/handler.rs)
+readmits actual claim membership and full-generation identity, observes caller correspondence
+and complete result absence before creating the record. This lets publication
+validate those facts, including competing writes. Its recording receipt proves
+that write. Read the result through its declared canonical codec and current
+governed result policy; a cached row grants no permission to execute or adopt.
 
 #### Capture complete original meaning
 

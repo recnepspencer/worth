@@ -2,10 +2,10 @@ mod product_branch;
 
 pub(crate) use product_branch::WorthQuerySourceProgramResolver;
 pub use product_branch::{
-    WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial,
-    WorthQueryProductBranchAdmissionRefusalKind, WorthQueryProductBranchCreateError,
-    WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchCreationRecoveryCause,
-    WorthQueryProductBranchCreationRecoveryFailure,
+    WorthQueryExpectedProductBasisDescription, WorthQueryProductBranch,
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
+    WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationRecovery,
+    WorthQueryProductBranchCreationRecoveryCause, WorthQueryProductBranchCreationRecoveryFailure,
     WorthQueryProductBranchCreationRecoveryInspection,
     WorthQueryProductBranchCreationRecoveryNextAction,
     WorthQueryProductBranchCreationRecoveryRelease,

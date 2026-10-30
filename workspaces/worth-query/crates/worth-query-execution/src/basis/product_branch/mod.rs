@@ -2,6 +2,7 @@ mod conditional;
 mod creation;
 mod creation_recovery;
 mod denial;
+mod expected_description;
 mod lifecycle;
 mod observation;
 mod read_identity;
@@ -23,6 +24,7 @@ pub use creation_recovery::{
 pub use denial::{
     WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
 };
+pub use expected_description::WorthQueryExpectedProductBasisDescription;
 pub use lifecycle::WorthQueryProductBranches;
 pub use observation::{WorthQueryProductBranchLease, WorthQueryProductObservationLease};
 pub use read_identity::WorthQueryProductBranchReadIdentity;

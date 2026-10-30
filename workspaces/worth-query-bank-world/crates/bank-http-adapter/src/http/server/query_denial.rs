@@ -49,6 +49,10 @@ use managed_index::managed_index;
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
     use BankProductSelectionDenialKind as Selection;
     match kind {
+        Selection::ExpectedDescriptionVersionUnsupported { .. } => {
+            BankHttpDenial::new(Kind::UnsupportedProtocol, Next::CorrectRequest)
+        }
+        Selection::ExpectedDescriptionNameInvalid => malformed(),
         Selection::ReadExecution(stop) => super::mutation_application::pending_execution_stop(stop),
         Selection::ForeignPhase => internal_denied(),
         Selection::ForeignOwner

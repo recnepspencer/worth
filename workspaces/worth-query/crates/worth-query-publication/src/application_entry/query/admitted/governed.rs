@@ -44,9 +44,6 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = ScopeEntity<Schema, Intent>>
             + 'static,
     {
-        if self.retained.is_some() {
-            return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
-        }
         let parameters = self.intent.parameters();
         let scope_binding = self.intent.into_scope();
         let binding = self
@@ -69,6 +66,15 @@ where
             .on_branch(self.branch)
             .select(phase)
             .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
+        let retained = self
+            .retained
+            .as_ref()
+            .map(|observation| {
+                self.application
+                    .select_application_read_observation(phase, observation)
+                    .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)
+            })
+            .transpose()?;
         let installed_capability = self
             .application
             .installed_schema()
@@ -119,16 +125,26 @@ where
             limits.maximum_results().min(query_maximum),
             self.scope,
         );
-        let plan = selected
-            .admit_governed_application_query(
+        let plan = match retained {
+            Some(retained) => selected.admit_retained_governed_application_query(
+                phase,
+                retained,
+                binding.query(),
+                &access,
+                capability_access,
+                parameters,
+                controls,
+            ),
+            None => selected.admit_governed_application_query(
                 phase,
                 binding.query(),
                 &access,
                 capability_access,
                 parameters,
                 controls,
-            )
-            .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
+            ),
+        }
+        .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
         perform(self.application, &binding, self.principal, plan)
     }
 }

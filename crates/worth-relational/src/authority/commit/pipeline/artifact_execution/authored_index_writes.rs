@@ -33,8 +33,8 @@ pub(super) fn prepare(
         super::super::request_lease(&execution),
         runtime.commit_work_budget.as_ref(),
     ) {
-        (Some(lease), Some(budget)) => budget
-            .run_stage(lease, prepare)
+        (Some(_), Some(budget)) => budget
+            .run_stage(execution, || prepare(execution))
             .map_err(Denial::Request)
             .and_then(std::convert::identity),
         _ => prepare(execution),
