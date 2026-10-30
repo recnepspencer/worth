@@ -49,3 +49,21 @@ fn shortcut_reference_links_check_defined_targets_without_treating_definitions_a
     assert_eq!(failures[0].code, "BC8009");
     assert_eq!(failures[0].subject, "docs/a.md:1");
 }
+#[test]
+fn a_compiled_marker_requires_a_following_code_region() {
+    let mut input = Inputs::fixture(
+        &[
+            (
+                "tools/boundary-check/config/consumer-docs.toml",
+                "documents=['docs/a.md']",
+            ),
+            ("docs/a.md", "Ordinary text."),
+        ],
+        "",
+    );
+    assert!(check(&input).is_empty());
+    input
+        .files
+        .insert("docs/a.md".into(), "<!-- compiled: demo.rs -->".into());
+    assert_eq!(check(&input)[0].code, "BC8008");
+}

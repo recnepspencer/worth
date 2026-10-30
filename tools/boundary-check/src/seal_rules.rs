@@ -233,4 +233,26 @@ mod tests {
         );
         assert!(check(&input).is_empty());
     }
+    #[test]
+    fn raw_identifiers_do_not_bypass_the_closed_control_caller_set() {
+        let mut input = Inputs::fixture(
+            &[
+                (
+                    "crates/worth-signal/src/control.rs",
+                    "pub fn r#arm_for_test() {}",
+                ),
+                ("app/src/lib.rs", "arm_for_test();"),
+            ],
+            "",
+        );
+        assert_eq!(
+            check(&input).iter().filter(|d| d.code == "BC7012").count(),
+            1
+        );
+        input.files.insert(
+            format!("{CONFIG}control-callers.txt"),
+            "crates/worth-signal/ app/src/lib.rs".into(),
+        );
+        assert!(check(&input).is_empty());
+    }
 }

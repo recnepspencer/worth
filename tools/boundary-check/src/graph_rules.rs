@@ -102,6 +102,19 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 p.name.contains("-court-") || worth.is_some_and(|m| m.get("court").is_some());
             let testkit =
                 p.name.contains("-testkit") || worth.is_some_and(|m| m.get("testkit").is_some());
+            if !court
+                && !testkit
+                && p.dependencies.iter().any(|d| {
+                    d.name.starts_with(&format!("{stem}-testkit"))
+                        && d.kind.as_deref() != Some("dev")
+                })
+            {
+                out.push(diagnostic(
+                    "BC9002",
+                    &p.manifest_path,
+                    "product normal/build dependencies cannot provide testkit authority",
+                ));
+            }
             if p.dependencies.iter().any(|d| d.name.contains("-court-")) {
                 out.push(diagnostic(
                     "BC9002",

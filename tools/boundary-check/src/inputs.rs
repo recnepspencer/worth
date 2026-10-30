@@ -275,6 +275,7 @@ fn decode_metadata(bytes: &[u8]) -> Result<Metadata, String> {
                 .map(|d| {
                     Ok(Dependency {
                         name: text(d, "name")?,
+                        kind: d["kind"].as_str().map(str::to_owned),
                         req: text(d, "req")?,
                         uses_default_features: d["uses_default_features"]
                             .as_bool()

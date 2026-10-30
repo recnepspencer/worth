@@ -11,6 +11,9 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
     let mut i = 0;
     while i < b.len() {
         let start = i;
+        let raw_identifier = b[i..].starts_with(b"r#")
+            && b.get(i + 2)
+                .is_some_and(|c| c.is_ascii_alphabetic() || *c == b'_' || *c >= 128);
         if b[i].is_ascii_whitespace() {
             i += 1;
             continue;
@@ -68,6 +71,11 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
                     i += 1;
                 }
             }
+        } else if raw_identifier {
+            i += 2;
+            while i < b.len() && (b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128) {
+                i += 1;
+            }
         } else if b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128 {
             i += 1;
             while i < b.len() && (b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128) {
@@ -77,7 +85,7 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
             i += 1;
         }
         result.push(Token {
-            text: &source[start..i],
+            text: &source[start + if raw_identifier { 2 } else { 0 }..i],
             start,
             end: i,
         });

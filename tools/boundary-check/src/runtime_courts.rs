@@ -30,6 +30,11 @@ pub fn scopes(input: &Inputs) -> Scopes {
         let t = tokens(text);
         for (name, start, end) in test_modules(&t) {
             if t[start].text == "{" {
+                for i in start..end.saturating_sub(2) {
+                    if t[i].text == "mod" && t[i + 2].text == ";" {
+                        pending.extend(mounts(input, path, &t, t[i + 1].text, i + 2));
+                    }
+                }
                 let module = (0..start)
                     .filter(|i| {
                         t[*i].text == "mod"
@@ -70,13 +75,27 @@ pub fn scopes(input: &Inputs) -> Scopes {
 fn mounts(input: &Inputs, source: &str, t: &[Token<'_>], name: &str, end: usize) -> Vec<String> {
     let parent = source.rsplit_once('/').unwrap().0;
     let stem = source.trim_end_matches(".rs");
-    let directory = if source.ends_with("/lib.rs")
+    let base = if source.ends_with("/lib.rs")
         || source.ends_with("/main.rs")
         || source.ends_with("/mod.rs")
     {
         parent
     } else {
         stem
+    };
+    let enclosing = (0..end.saturating_sub(2))
+        .filter(|i| t[*i].text == "mod" && t[*i + 2].text == "{" && close(t, i + 2) > end)
+        .map(|i| t[i + 1].text)
+        .collect::<Vec<_>>();
+    let directory = if enclosing.is_empty() {
+        base.into()
+    } else {
+        format!("{base}/{}", enclosing.join("/"))
+    };
+    let explicit_parent = if enclosing.is_empty() {
+        parent
+    } else {
+        &directory
     };
     let boundary = t[..end.saturating_sub(2)]
         .iter()
@@ -93,7 +112,7 @@ fn mounts(input: &Inputs, source: &str, t: &[Token<'_>], name: &str, end: usize)
                 format!("{directory}/{name}/mod.rs"),
             ]
         },
-        |p| vec![normalize(&format!("{parent}/{p}"))],
+        |p| vec![normalize(&format!("{explicit_parent}/{p}"))],
     );
     candidates
         .into_iter()
@@ -235,6 +254,37 @@ mod tests {
         input.files.insert(
             "crates/a/src/lib.rs".into(),
             "fn product() { Root; }".into(),
+        );
+        assert!(observations(&input).is_empty());
+    }
+    #[test]
+    fn inline_test_modules_follow_all_mounted_descendants() {
+        let mut input = Inputs::fixture(
+            &[
+                ("crates/a/Cargo.toml", "[package]\nname='a'"),
+                (
+                    "crates/a/src/lib.rs",
+                    "#[cfg(test)] mod tests { mod nested; }",
+                ),
+                (
+                    "crates/a/src/tests/nested.rs",
+                    "fn case() { Root; } mod deeper { mod leaf; }",
+                ),
+                (
+                    "crates/a/src/tests/nested/deeper/leaf.rs",
+                    "fn case() { Root; }",
+                ),
+            ],
+            "",
+        );
+        input.files.insert(
+            format!("{CONFIG}runtime-roots.toml"),
+            "[[roots]]\ntype='Root'".into(),
+        );
+        assert_eq!(observations(&input).len(), 2);
+        input.files.insert(
+            "crates/a/src/lib.rs".into(),
+            "fn ordinary() { Root; }".into(),
         );
         assert!(observations(&input).is_empty());
     }

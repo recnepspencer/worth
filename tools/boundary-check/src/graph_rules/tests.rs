@@ -136,6 +136,7 @@ fn dependency_contracts_preserve_exact_versions_defaults_and_features() {
             name: "source".into(),
             dependencies: vec![Dependency {
                 name: "target".into(),
+                kind: None,
                 req: req.into(),
                 uses_default_features: defaults,
                 features: features.into_iter().map(str::to_owned).collect(),
@@ -146,5 +147,48 @@ fn dependency_contracts_preserve_exact_versions_defaults_and_features() {
             !dependencies("source_dependency_allowlists", &rule, &package).is_empty(),
             denied
         );
+    }
+}
+#[test]
+fn product_dependencies_on_testkits_are_dev_only() {
+    let manifest = "workspaces/a/crates/product/Cargo.toml";
+    let mut input = Inputs::fixture(&[(manifest, "[package]\nname='product'")], "");
+    input.files.insert(
+        format!("{CONFIG}test-workspaces.txt"),
+        "workspaces/a | a".into(),
+    );
+    input
+        .files
+        .insert(format!("{CONFIG}court-frontier-splits.toml"), "".into());
+    input.graphs.insert(
+        "workspaces/a/Cargo.toml".into(),
+        Metadata {
+            packages: vec![Package {
+                id: "product".into(),
+                name: "product".into(),
+                manifest_path: manifest.into(),
+                dependencies: vec![Dependency {
+                    name: "a-testkit".into(),
+                    kind: Some("dev".into()),
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            workspace_members: vec!["product".into()],
+            ..Default::default()
+        },
+    );
+    assert!(check(&input).is_empty());
+    for kind in [None, Some("build".into())] {
+        input
+            .graphs
+            .get_mut("workspaces/a/Cargo.toml")
+            .unwrap()
+            .packages[0]
+            .dependencies[0]
+            .kind = kind;
+        assert!(check(&input)
+            .iter()
+            .any(|d| d.message.contains("testkit authority")));
     }
 }

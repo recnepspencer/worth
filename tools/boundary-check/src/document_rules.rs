@@ -26,7 +26,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         let mut marker = None;
         let definitions: BTreeMap<_, _> = text
             .lines()
-            .filter_map(|line| line.trim().strip_prefix('[')?.split_once("]:"))
+            .filter_map(reference_definition)
             .map(|(label, dest)| (label.to_lowercase(), dest.trim()))
             .collect();
         while let Some((index, line)) = lines.next() {
@@ -80,6 +80,13 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 }
             }
         }
+        if marker.is_some() {
+            out.push(diagnostic(
+                "BC8008",
+                &document,
+                "compiled marker has no fenced region",
+            ));
+        }
     }
     out.extend(facts(input, &config));
     out
@@ -94,8 +101,12 @@ fn region_matches(source: &str, code: &str) -> bool {
             .and_then(|(_, s)| s.split_once(end))
             .is_some_and(|(region, _)| region.trim() == code.trim())
 }
+fn reference_definition(line: &str) -> Option<(&str, &str)> {
+    let (label, tail) = line.trim().strip_prefix('[')?.split_once(']')?;
+    Some((label, tail.strip_prefix(':')?.trim()))
+}
 fn destinations(line: &str, definitions: &BTreeMap<String, &str>) -> Vec<String> {
-    if line.trim().starts_with('[') && line.trim().contains("]:") {
+    if reference_definition(line).is_some() {
         return Vec::new();
     }
     let mut result = Vec::new();

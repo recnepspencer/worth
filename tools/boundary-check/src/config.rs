@@ -216,6 +216,7 @@ pub struct Package {
 #[derive(Default)]
 pub struct Dependency {
     pub name: String,
+    pub kind: Option<String>,
     pub req: String,
     pub uses_default_features: bool,
     pub features: Vec<String>,
