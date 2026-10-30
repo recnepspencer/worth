@@ -60,3 +60,11 @@ from facade source instead of reading the deleted snapshot; glob routes remain
 explicit, and the compiler owns their resolution.
 
 Coordinator rulings: BC7012 ignores visibility and cfg, searching every token reference to a named control. BC8008 checks source bytes without compilation reachability or active-cfg analysis. BC2001 workflow isolation is retired: excluding a sibling descendant requires a module reparenting beyond a three-file visibility change.
+
+Commit `89e7ec8190` retires the former inline seal tests' visibility/cfg exemptions,
+automatic cross-owner composition allowances, and exported-macro syntax checks,
+as directed by the coordinator's name-only contract. Their replacement cases
+require exact callers for private/test declarations, composed references and the
+reported cfg(test)-field bypass. The 41 existing references exposed by that
+cutover are recorded as 34 exact owner/caller pairs in `control-callers.txt`;
+they introduce no new call sites.
