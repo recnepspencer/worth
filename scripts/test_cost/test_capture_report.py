@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import unittest
 
-from capture_report import recover, retained_logs
+from capture_report import captured_selections, recover, retained_logs, telemetry_capture
 from cargo_capture import retention_name
 
 
@@ -116,6 +116,54 @@ class CaptureRecoveryTests(unittest.TestCase):
             self.assertEqual(result['build_ratchet']['violations'], [])
             self.assertEqual(result['status'], 'fail')
             self.assertEqual(len(result['capture_recovery']['execution_command_failures']), 1)
+
+
+    def test_captured_gate_suites_keep_exact_main_and_native_identities(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary)/'gate-selection.json'
+            native = [{'binary': 'owner', 'test': 'case', 'ignored': False},
+                      {'binary': 'main-owner', 'test': '<main>', 'ignored': False},
+                      {'binary': 'owner', 'test': 'scheduled', 'ignored': True}]
+            value = {'coverage': {'status': 'pass', 'selected': 2, 'ignored': 1}, 'suites': {
+                'query-execution': {'tests': [['owner', 'case']], 'ignored': [['owner', 'scheduled']]},
+                'query-rest': {'tests': [['main-owner', '<main>']], 'ignored': []}}}
+            path.write_text(json.dumps(value))
+            chosen, evidence = captured_selections(path, native)
+            self.assertEqual(chosen['query-rest'][0]['test'], '<main>')
+            self.assertEqual(set(chosen), {'query-execution', 'query-rest'})
+            self.assertEqual(evidence['kind'], 'captured-gate-selection')
+            self.assertEqual(evidence['proof']['status'], 'pass')
+            for mutation in ('duplicate', 'missing', 'ignored', 'unknown'):
+                altered = json.loads(json.dumps(value))
+                tests = altered['suites']['query-rest']['tests']
+                if mutation == 'duplicate':
+                    tests.append(['owner', 'case'])
+                elif mutation == 'missing':
+                    tests.clear()
+                elif mutation == 'ignored':
+                    tests[0] = ['owner', 'scheduled']
+                else:
+                    tests[0] = ['owner', 'invented']
+                path.write_text(json.dumps(altered))
+                with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                    captured_selections(path, native)
+
+
+    def test_explicit_telemetry_reuse_requires_exact_inputs_and_unknown_phase_clocks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            path = root/'target/recovered/telemetry.log'
+            cpu, setup = root/'cpu', root/'setup'
+            command = ['python', 'phase_telemetry.py', '--cpu', str(cpu), '--setup', str(setup),
+                       '--build-seconds', 'nan', '--wall-seconds', 'nan']
+            self.capture(root, path, command, '')
+            selected, _ = telemetry_capture(path, cpu, setup)
+            self.assertEqual(selected, path)
+            with self.assertRaisesRegex(ValueError, 'other process observation'):
+                telemetry_capture(path, root/'another-cpu', setup)
+            path.write_text(path.read_text().replace('"nan"', '"1.0"'))
+            with self.assertRaisesRegex(ValueError, 'phase clocks'):
+                telemetry_capture(path, cpu, setup)
 
 
 
