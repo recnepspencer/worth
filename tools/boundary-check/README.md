@@ -36,7 +36,7 @@ and construct no disk repositories.
 | BC2001 graph policy | `dependency_denials_and_allowlists_reject_only_disallowed_edges`, `dependency_contracts_preserve_exact_versions_defaults_and_features` |
 | BC2001 identifier denials | `identifier_denials_respect_exclusions_and_token_boundaries` |
 | BC7009 root Clippy superset | `local_clippy_configuration_carries_every_root_entry` |
-| BC7012 closed control callers | `every_control_reference_requires_its_owner_or_an_exact_caller`, `comments_and_literals_do_not_create_control_references`, `cross_owner_composition_does_not_grant_ownership` |
+| BC7012 closed control callers | `every_control_reference_requires_its_owner_or_an_exact_caller`, `comments_and_literals_do_not_create_control_references`, `cross_owner_composition_does_not_grant_ownership`, `field_initializers_and_renamed_imports_cannot_claim_a_foreign_door` |
 | BC7013 construction callers | `certification_factory_callers_are_class_and_file_exact` |
 | BC8008 source bytes and source facts | `compiled_regions_compare_exact_code_and_require_unique_delimiters`, `a_compiled_marker_requires_a_following_code_region`, `documented_enum_rows_detect_payload_changes_as_well_as_variants` |
 | BC8009 relative links | `relative_links_require_targets_and_unique_heading_anchors`, `shortcut_reference_links_check_defined_targets_without_treating_definitions_as_links` |
@@ -68,3 +68,5 @@ require exact callers for private/test declarations, composed references and the
 reported cfg(test)-field bypass. The 41 existing references exposed by that
 cutover are recorded as 34 exact owner/caller pairs in `control-callers.txt`;
 they introduce no new call sites.
+
+Literal definitions establish control-name ownership, including named fields, enum variants, renamed imports and derive registrations. Visibility and cfg never exempt a name. Struct literals and re-exports cannot adopt an existing foreign control name.

@@ -1,5 +1,9 @@
-//! Closed caller sets for exported test controls and certification factories.
-use crate::{config::*, inputs::Inputs, lexical::tokens};
+//! Closed caller sets for named test controls and certification factories.
+use crate::{
+    config::*,
+    inputs::Inputs,
+    lexical::{close, tokens, Token},
+};
 use std::collections::{BTreeMap, BTreeSet};
 const FACTORIES: &[&str] = &[
     "registered_authoritative_source",
@@ -31,39 +35,117 @@ fn permitted(path: &str, owners: &BTreeSet<String>, callers: &BTreeSet<(&str, &s
         }
     }) || owners.iter().any(|o| callers.contains(&(o.as_str(), path)))
 }
+// Definition positions establish ownership; every reference is still searched.
+fn declarations<'a>(t: &[Token<'a>]) -> (Vec<&'a str>, Vec<&'a str>) {
+    let (mut names, mut aliases) = (Vec::new(), Vec::new());
+    for (i, w) in t.windows(2).enumerate() {
+        if w[0].end - w[0].start != w[0].text.len() {
+            continue; // A raw identifier such as r#struct is not a keyword.
+        }
+        if [
+            "fn", "struct", "enum", "trait", "type", "const", "static", "mod", "union",
+        ]
+        .contains(&w[0].text)
+            || w[0].text == "!" && i > 0 && t[i - 1].text == "macro_rules"
+        {
+            names.push(w[1].text);
+        }
+        if ["struct", "enum", "union"].contains(&w[0].text) {
+            let (mut at, mut angles) = (i + 2, 0usize);
+            while at < t.len() && t[at].text != ";" {
+                match t[at].text {
+                    "<" => angles += 1,
+                    ">" => angles = angles.saturating_sub(1),
+                    "{" if angles == 0 => {
+                        members(t, at, w[0].text == "enum", &mut names);
+                        break;
+                    }
+                    "(" | "[" | "{" => at = close(t, at),
+                    _ => {}
+                }
+                at += 1;
+            }
+        }
+        if w[0].text == "use" || w[0].text == "extern" && w[1].text == "crate" {
+            let end = (i + 1..t.len())
+                .find(|j| t[*j].text == ";")
+                .unwrap_or(t.len());
+            aliases.extend(
+                t[i..end]
+                    .windows(2)
+                    .filter(|w| w[0].text == "as")
+                    .map(|w| w[1].text),
+            );
+        }
+    }
+    names.extend(
+        t.windows(5)
+            .filter(|w| {
+                w[0].text == "#"
+                    && w[1].text == "["
+                    && w[2].text == "proc_macro_derive"
+                    && w[3].text == "("
+            })
+            .map(|w| w[4].text),
+    );
+    names.retain(|n| test_name(n));
+    aliases.retain(|n| test_name(n));
+    (names, aliases)
+}
+fn members<'a>(t: &[Token<'a>], open: usize, variants: bool, names: &mut Vec<&'a str>) {
+    let (mut at, mut first) = (open + 1, true);
+    while at < close(t, open) {
+        if t[at].text == "#" && t.get(at + 1).is_some_and(|t| t.text == "[") {
+            at = close(t, at + 1) + 1;
+            continue;
+        }
+        if variants && first && t[at].text != "," {
+            names.push(t[at].text);
+            if t.get(at + 1).is_some_and(|t| t.text == "{") {
+                members(t, at + 1, false, names);
+            }
+            first = false;
+        } else if !variants
+            && t.get(at + 1).is_some_and(|t| t.text == ":")
+            && t.get(at + 2).is_none_or(|t| t.text != ":")
+        {
+            names.push(t[at].text);
+        }
+        if t[at].text == "," {
+            first = true;
+        }
+        at = close(t, at) + 1;
+    }
+}
 pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     let mut out = Vec::new();
+    let sources: Vec<_> = input
+        .files
+        .iter()
+        .filter(|(p, s)| {
+            p.ends_with(".rs")
+                && (s.contains("_for_test")
+                    || s.contains("ForTest")
+                    || FACTORIES.iter().any(|n| s.contains(n)))
+        })
+        .map(|(p, s)| (p, tokens(s)))
+        .collect();
     let mut doors: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    for (path, text) in input.files.iter().filter(|(p, _)| p.ends_with(".rs")) {
-        if !text.contains("_for_test") && !text.contains("ForTest") {
-            continue;
+    let mut renamed = Vec::new();
+    for (path, t) in &sources {
+        if let Some(owner) = owner(input, path) {
+            let (names, aliases) = declarations(t);
+            for name in names {
+                doors.entry(name.into()).or_default().insert(owner.clone());
+            }
+            renamed.extend(aliases.into_iter().map(|name| (name, owner.clone())));
         }
-        let Some(owner) = owner(input, path) else {
-            continue;
-        };
-        let t = tokens(text);
-        // Only literal declaration names establish an owner. Visibility and cfg
-        // have no bearing on the name contract; bodies are searched in full.
-        let declared = t
-            .windows(2)
-            .filter_map(|w| {
-                ([
-                    "fn", "struct", "enum", "trait", "type", "const", "static", "mod", "union",
-                ]
-                .contains(&w[0].text)
-                    && test_name(w[1].text))
-                .then_some(w[1].text)
-            })
-            .chain(t.windows(3).filter_map(|w| {
-                (w[0].text == "macro_rules" && w[1].text == "!" && test_name(w[2].text))
-                    .then_some(w[2].text)
-            }));
-        for name in declared {
-            doors
-                .entry(name.to_owned())
-                .or_default()
-                .insert(owner.clone());
-        }
+    }
+    // Re-exporting an existing name cannot adopt its original owner's door.
+    for (name, owner) in renamed {
+        doors
+            .entry(name.into())
+            .or_insert_with(|| BTreeSet::from([owner]));
     }
     let controls: BTreeSet<_> = pairs(input.text(&format!("{CONFIG}control-callers.txt")))
         .into_iter()
@@ -72,14 +154,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         pairs(input.text(&format!("{CONFIG}certification-construction-callers.txt")))
             .into_iter()
             .collect();
-    for (path, text) in input.files.iter().filter(|(p, _)| p.ends_with(".rs")) {
-        if !text.contains("_for_test")
-            && !text.contains("ForTest")
-            && !FACTORIES.iter().any(|n| text.contains(n))
-        {
-            continue;
-        }
-        let t = tokens(text);
+    for (path, t) in &sources {
         let names: BTreeSet<_> = t.iter().map(|t| t.text).collect();
         for name in &names {
             if let Some(owners) = doors.get(*name) {
@@ -87,9 +162,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     out.push(diagnostic(
                         Code::Control,
                         path,
-                        format!(
-                            "sealed control `{name}` is outside its owner and closed caller set"
-                        ),
+                        format!("control `{name}` requires its owner or an exact caller"),
                     ));
                 }
             }
@@ -106,9 +179,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     out.push(diagnostic(
                         Code::Construction,
                         path,
-                        format!(
-                            "sealed factory `{name}` is outside its owner and closed caller set"
-                        ),
+                        format!("factory `{name}` requires its owner or an exact caller"),
                     ));
                 }
             }
@@ -123,6 +194,13 @@ mod tests {
     fn every_control_reference_requires_its_owner_or_an_exact_caller() {
         for declaration in [
             "fn arm_for_test() {}",
+            "pub struct Control { #[cfg(test)] pub arm_for_test: () }",
+            "union Control { arm_for_test: () }",
+            "enum Control { arm_for_test }",
+            "enum Control { Armed { arm_for_test: () } }",
+            "pub use ordinary as arm_for_test;",
+            "extern crate ordinary as arm_for_test;",
+            "#[proc_macro_derive(arm_for_test)] fn derive() {}",
             "#[cfg(test)] impl Private { fn arm_for_test() {} }",
             "pub(in crate) fn r#arm_for_test() {}",
             "pub struct Other { #[cfg(test)] pub x: (), } pub fn arm_for_test() {}",
@@ -171,6 +249,32 @@ mod tests {
             "",
         );
         assert_eq!(check(&input).len(), 1);
+    }
+    #[test]
+    fn field_initializers_and_renamed_imports_cannot_claim_a_foreign_door() {
+        for reference in [
+            "fn build() { Control { arm_for_test: () }; }",
+            "use owner::Control as r#struct; fn build() { r#struct { arm_for_test: () }; }",
+            "use owner::arm_for_test as bridge_for_test;",
+            "use owner::arm_for_test as arm_for_test;",
+        ] {
+            let mut input = Inputs::fixture(
+                &[
+                    (
+                        "owner/src/lib.rs",
+                        "pub struct Control { pub arm_for_test: () }",
+                    ),
+                    ("app/src/lib.rs", reference),
+                ],
+                "",
+            );
+            assert_eq!(check(&input).len(), 1, "{reference}");
+            input.files.insert(
+                format!("{CONFIG}control-callers.txt"),
+                "owner/ app/src/lib.rs".into(),
+            );
+            assert!(check(&input).is_empty(), "{reference}");
+        }
     }
     #[test]
     fn certification_factory_callers_are_class_and_file_exact() {
