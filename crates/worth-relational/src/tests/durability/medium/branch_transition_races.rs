@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use super::slow_publication::{PublicationGate, SlowFirstPublication};
-use crate::branch::{PositionedBranchTransition, RelationalBranchTransitionDurableStep};
+use crate::branch::LiveBranchTransitionStep;
 use crate::facade::history::BranchId;
 use crate::facade::runtime::RelationalRuntimeApi;
 use crate::runtime::RelationalRuntime;
@@ -31,13 +31,13 @@ fn runtime() -> (
     (runtime, contents, gate)
 }
 
-fn await_condition(condition: impl Fn() -> bool, gate: &PublicationGate) {
+fn await_condition(condition: impl Fn() -> bool, release: impl FnOnce()) {
     let deadline = Instant::now() + Duration::from_secs(10);
     while !condition() && Instant::now() < deadline {
         std::thread::yield_now();
     }
     let reached = condition();
-    gate.open(); // Always release the parked publisher, including on failure.
+    release(); // Always release the parked publisher, including on failure.
     assert!(
         reached,
         "the competing publisher did not reach its synchronization boundary"
@@ -90,7 +90,7 @@ fn durable_fork_and_source_commit_complete_without_deferral() {
                 .publication_port()
                 .compare_and_publish(execution, candidate)
         });
-        await_condition(|| cell.coordination().wait_count() > waits, &gate);
+        await_condition(|| cell.coordination().wait_count() > waits, || gate.open());
         fork.join().unwrap().unwrap();
         let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
             commit.join().unwrap()
@@ -126,7 +126,7 @@ fn durable_fork_and_source_archive_complete_in_lock_order() {
                 .lifecycle_port()
                 .archive_branch(execution, &main)
         });
-        await_condition(|| cell.coordination().wait_count() > waits, &gate);
+        await_condition(|| cell.coordination().wait_count() > waits, || gate.open());
         fork.join().unwrap().unwrap();
         archive.join().unwrap().unwrap();
     });
@@ -152,7 +152,7 @@ fn durable_fork_waits_for_another_branch_commit() {
             scope.spawn(|| runtime.fork_branch(execution, BranchId("target".into()), source));
         await_condition(
             || runtime.patch_position_reservation_counters().contacts == contacts + 2,
-            &gate,
+            || gate.open(),
         );
         commit.join().unwrap();
         fork.join().unwrap().unwrap();
@@ -164,20 +164,6 @@ fn durable_fork_waits_for_another_branch_commit() {
     );
 }
 
-struct ParkedMemoryTransition(Arc<PublicationGate>);
-impl RelationalBranchTransitionDurableStep for ParkedMemoryTransition {
-    type Stop = std::convert::Infallible;
-    fn take(
-        &self,
-        positioned: PositionedBranchTransition,
-    ) -> Result<crate::branch::RelationalTransitionPublication, Self::Stop> {
-        self.0.pass();
-        Ok(crate::branch::RelationalTransitionPublication::MemoryOnly(
-            positioned,
-        ))
-    }
-}
-
 #[test]
 fn memory_commit_waits_behind_a_transition_without_consuming_its_candidate() {
     let runtime = runtime_with_test_schema();
@@ -185,9 +171,8 @@ fn memory_commit_waits_behind_a_transition_without_consuming_its_candidate() {
     let execution = &ExecutionRequest::serial(&request);
     create_entity(execution, &runtime, "source");
     create_branch_from_main(&runtime, "other");
-    let gate = Arc::new(PublicationGate::default());
-    gate.arm();
-    let step = ParkedMemoryTransition(Arc::clone(&gate));
+    let step = LiveBranchTransitionStep::new(None, execution);
+    let pause = step.pause_publication_for_test();
     let contacts = runtime.patch_position_reservation_counters().contacts;
     std::thread::scope(|scope| {
         let fork = scope.spawn(|| {
@@ -201,13 +186,13 @@ fn memory_commit_waits_behind_a_transition_without_consuming_its_candidate() {
                     &BranchId("main".into()),
                 )
         });
-        gate.await_publication();
+        pause.await_publication();
         let commit = scope.spawn(|| {
             create_entity_outcome_on_branch(execution, &runtime, "other", BranchId("other".into()))
         });
         await_condition(
             || runtime.patch_position_reservation_counters().contacts >= contacts + 2,
-            &gate,
+            || pause.release(),
         );
         fork.join().unwrap().unwrap();
         assert_eq!(commit.join().unwrap().patch_position().0, 2);

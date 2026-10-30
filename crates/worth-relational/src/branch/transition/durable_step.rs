@@ -7,9 +7,21 @@ use crate::durability::medium::{
     RelationalDurableTransitionPublication,
 };
 
+#[cfg(test)]
+#[path = "publication_pause_for_test.rs"]
+mod publication_pause_for_test;
+
+mod sealed {
+    pub trait Step {}
+}
+
 /// A transition's subject stays bound to its distinct publication authority
 /// until the stream applies it. Replay is not a new medium publication.
-pub(crate) enum RelationalTransitionPublication {
+pub(crate) struct RelationalTransitionPublication {
+    admission: TransitionAdmission,
+}
+
+enum TransitionAdmission {
     MemoryOnly(PositionedBranchTransition),
     Replayed(PositionedBranchTransition),
     Durable(DurablyCommitted<RelationalDurableTransitionPublication>),
@@ -20,9 +32,10 @@ impl RelationalTransitionPublication {
         self,
         apply: impl FnOnce(PositionedBranchTransition) -> Output,
     ) -> Output {
-        match self {
-            Self::MemoryOnly(positioned) | Self::Replayed(positioned) => apply(positioned),
-            Self::Durable(committed) => {
+        match self.admission {
+            TransitionAdmission::MemoryOnly(positioned)
+            | TransitionAdmission::Replayed(positioned) => apply(positioned),
+            TransitionAdmission::Durable(committed) => {
                 committed.consume(|publication| apply(publication.into_positioned()))
             }
         }
@@ -35,7 +48,7 @@ impl RelationalTransitionPublication {
 /// transition publishes, a replayed one proves it is the transition durable
 /// history recorded. Everything else, from preparation to cutover, is the
 /// same function in both.
-pub(crate) trait RelationalBranchTransitionDurableStep {
+pub(crate) trait RelationalBranchTransitionDurableStep: sealed::Step {
     /// Why the step did not admit the cutover.
     type Stop;
 
@@ -52,6 +65,8 @@ pub(crate) trait RelationalBranchTransitionDurableStep {
 pub(crate) struct LiveBranchTransitionStep<'request, 'authority> {
     medium: Option<Arc<RelationalDurableMediumBinding>>,
     policy: worth_execution::ExecutionAllocationPolicy<'request, 'authority>,
+    #[cfg(test)]
+    publication_pause: publication_pause_for_test::BranchTransitionPublicationControlForTest,
 }
 
 impl<'request, 'authority> LiveBranchTransitionStep<'request, 'authority> {
@@ -62,9 +77,20 @@ impl<'request, 'authority> LiveBranchTransitionStep<'request, 'authority> {
         Self {
             medium,
             policy: execution.allocation_policy(),
+            #[cfg(test)]
+            publication_pause: Default::default(),
         }
     }
+
+    #[cfg(test)]
+    pub(crate) fn pause_publication_for_test(
+        &self,
+    ) -> publication_pause_for_test::BranchTransitionPublicationPauseForTest {
+        self.publication_pause.arm()
+    }
 }
+
+impl sealed::Step for LiveBranchTransitionStep<'_, '_> {}
 
 impl RelationalBranchTransitionDurableStep for LiveBranchTransitionStep<'_, '_> {
     type Stop = RelationalDurableStepStop;
@@ -74,12 +100,15 @@ impl RelationalBranchTransitionDurableStep for LiveBranchTransitionStep<'_, '_> 
         &self,
         positioned: PositionedBranchTransition,
     ) -> Result<RelationalTransitionPublication, Self::Stop> {
-        match &self.medium {
+        #[cfg(test)]
+        self.publication_pause.pause();
+        let admission = match &self.medium {
             Some(medium) => medium
                 .publish_transition(positioned, self.policy)
-                .map(RelationalTransitionPublication::Durable),
-            None => Ok(RelationalTransitionPublication::MemoryOnly(positioned)),
-        }
+                .map(TransitionAdmission::Durable)?,
+            None => TransitionAdmission::MemoryOnly(positioned),
+        };
+        Ok(RelationalTransitionPublication { admission })
     }
 }
 
@@ -121,6 +150,8 @@ impl<'recorded> ReplayedBranchTransitionStep<'recorded> {
     }
 }
 
+impl sealed::Step for ReplayedBranchTransitionStep<'_> {}
+
 /// The transition a replay would have performed instead of the recorded one.
 #[derive(Debug, Clone)]
 pub(crate) struct ReplayedBranchTransitionDivergence {
@@ -140,7 +171,9 @@ impl RelationalBranchTransitionDurableStep for ReplayedBranchTransitionStep<'_> 
             ReplayFidelity::TransitionOnly => self.recorded.transition() == positioned.transition(),
         };
         if reproduced {
-            return Ok(RelationalTransitionPublication::Replayed(positioned));
+            return Ok(RelationalTransitionPublication {
+                admission: TransitionAdmission::Replayed(positioned),
+            });
         }
         Err(ReplayedBranchTransitionDivergence {
             performed: Box::new(positioned),

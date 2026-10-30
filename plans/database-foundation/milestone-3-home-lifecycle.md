@@ -105,6 +105,9 @@ It does not introduce a directory Query host or claim Phase 3 completion.
 4. Thread positioned branch transitions through live publication and consume
    their proof at append/cutover. Keep explicit memory-only and replay paths,
    the existing reservation, canonical ordering and pre-effect checks.
+   Seal the step to its live and fidelity-checked replay implementations;
+   publication variants stay private to that owner. The concurrency fixture
+   parks the real live step through its owned unit-test control.
 5. Update the Store medium and exact existing test/testkit consumers to the
    shared fate. The initial exact identifier search found 27 Rust files:
    Relational port/binding/facade and support, two World refusal fixtures,
