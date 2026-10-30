@@ -43,9 +43,10 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryProducerApplicability, WorthQueryProducerDenialDeclaration,
     WorthQueryProducerDenialProjection, WorthQueryProducerInputReuseContract,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial, WorthQueryReadinessFieldUse,
-    WorthQueryReductionInputDenial, WorthQueryUndeclaredProducerDenial,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerOutputEquivalence, WorthQueryProducerOutputFamily,
+    WorthQueryProjectedProducerDenial, WorthQueryReadinessFieldUse, WorthQueryReductionInputDenial,
+    WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 /// What a partitioned owner's results and denials declare to execution, the
 /// identity of a planned item, and execution's refusal before dispatch.

@@ -89,6 +89,7 @@ fn reverse_under_successor() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 19
         }]
@@ -150,6 +151,7 @@ fn changed_inverse_refuses() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -188,6 +190,7 @@ fn adoption_invalidates_prepared_correction() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -233,6 +236,7 @@ fn changed_source_meaning_refuses() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]

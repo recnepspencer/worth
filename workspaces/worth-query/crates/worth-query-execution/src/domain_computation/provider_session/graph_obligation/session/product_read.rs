@@ -1,4 +1,4 @@
-//! One admitted Product read basis shared by distinct Query and Resource intents.
+//! One admitted current Product basis shared by distinct sealed read intents.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity;
 use worth_query_installation::facade::WorthQueryInstalledResourceAccessContract;
@@ -13,6 +13,9 @@ pub(super) struct ProductReadBasis {
 
 pub(super) enum ProductReadIntent {
     Query,
+    Inspection(std::sync::Arc<
+        crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget,
+    >),
     Resource(std::sync::Arc<WorthQueryInstalledResourceAccessContract>),
 }
 

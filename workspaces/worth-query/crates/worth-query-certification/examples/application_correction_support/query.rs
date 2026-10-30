@@ -12,8 +12,11 @@ pub struct PrimarySlot;
 pub struct SecondarySlot;
 worth_query_portable_type!(PrimarySlot => "numeric-correction.primary-slot.v1");
 worth_query_portable_type!(SecondarySlot => "numeric-correction.secondary-slot.v1");
+pub struct OperandSlot;
+worth_query_portable_type!(OperandSlot => "numeric-correction.readquery-operand-slot.v1");
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Row {
+    pub operand: Option<u64>,
     pub primary: u64,
     pub secondary: u64,
 }
@@ -53,6 +56,20 @@ fn secondary_field() -> ApplicationQueryResultFieldRef<
 > {
     ApplicationQueryResultFieldRef::new("secondary", Secondary::reference())
 }
+fn operand() -> ApplicationQueryOptionalResultFieldRef<
+    ReadQuery,
+    OperandSlot,
+    NumericSchema,
+    Number,
+    NumberFacts,
+    Operand,
+    u64,
+    ReadWrite,
+    EqualityPredicate,
+    NoApplicationUnit,
+> {
+    ApplicationQueryOptionalResultFieldRef::new("operand", Operand::reference())
+}
 pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Parameters, Row, Number>
 {
     let shape = ApplicationQueryResultShapeBuilder::<
@@ -64,6 +81,7 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Para
     >::new(Number::reference())
     .field(primary_field())
     .field(secondary_field())
+    .optional_field(operand())
     .build();
     ApplicationQueryDefinitionBuilder::declare(ReadQuery::reference())
         .root(Number::reference())
@@ -89,6 +107,7 @@ impl WorthQueryApplicationProjection<NumericSchema, ReadQuery> for Row {
         row: &WorthQueryApplicationProjectionRow<'_, NumericSchema, ReadQuery>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
+            operand: row.optional_field(operand())?,
             primary: row.field(primary_field())?,
             secondary: row.field(secondary_field())?,
         })

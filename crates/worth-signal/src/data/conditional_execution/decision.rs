@@ -60,7 +60,9 @@ pub struct SignalConditionalDecisionEvidence {
     pub(crate) class: SignalConditionalDecisionClass,
     pub(crate) counters: SignalConditionalDecisionCounters,
     pub(crate) artifact_reuse_admitted: bool,
+    pub(crate) computed_evaluation: Option<crate::logic::evaluation::AppliedEffectReport>,
     pub(super) output_aspect: crate::data::aspect::Aspect,
+    pub(super) output_version_before: u64,
     pub(super) output_version: u64,
     pub(super) _dependency_versions:
         super::dependency_versions::SignalConditionalDependencyVersions,
@@ -83,11 +85,20 @@ impl SignalConditionalDecisionEvidence {
     pub const fn artifact_reuse_admitted(&self) -> bool {
         self.artifact_reuse_admitted
     }
+    /// The actual applied effect when this attempt computed an output.
+    /// Passive reuse, condition suppression and deferral have no computed effect.
+    /// This descriptive report cannot authorize execution or identify an application producer.
+    pub fn computed_evaluation(&self) -> Option<&crate::logic::evaluation::AppliedEffectReport> {
+        self.computed_evaluation.as_ref()
+    }
     pub const fn output_aspect(&self) -> crate::data::aspect::Aspect {
         self.output_aspect
     }
     pub const fn output_version(&self) -> u64 {
         self.output_version
+    }
+    pub const fn output_version_before(&self) -> u64 {
+        self.output_version_before
     }
     pub fn dependency_version_count(&self) -> usize {
         self._dependency_versions.len()

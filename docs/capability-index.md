@@ -127,6 +127,25 @@ custody and this runtime's aspect-name meanings, performs no source read, and
 returns a typed cold-pin refusal. `RelationalPinnedEntityMetadata` exposes current
 kind, aspect revision and retirement only; historical reads require Full custody.
 
+Native conditional observation owners borrow the genuine computed effect through
+`BridgeConditionalCausalObservation::computed_evaluation()` and its observed
+before/after Signal versions. The original Signal verdict, suppression reason
+and comparison survive; passive decisions have no computed report. Scheduling
+and readiness evidence describes those installed contracts and supplies no
+application output-equivalence association. See [read-only Native observation custody](../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
+`compare_exact_output` supplies a fixed baseline/candidate computation in a fresh
+private Signal partition; its paired observations do not independently establish
+Native field provenance or application permission.
+Producer bindings can declare the bounded field scope with
+`output_equivalence()` returning
+`WorthQueryProducerOutputEquivalence::exact_u64(Field::reference())`.
+The required standard u64 field belongs to the binding's exactly-one Preserve
+role. Declaration and installed Native/value contracts seal its meaning into the
+producer edition. Keep the original settled-output query observation and authored
+source receipt, then use a fresh independently admitted `evaluated_by` request to
+inspect the owner-issued Changed or Equivalent decision for that bounded role.
+See [performed producer output evaluation](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#performed-producer-output-evaluation).
+
 Native generation payload inspection uses request-aware `read_latest_generation`,
 `read_published_generation_for_commit`, `read_published_generation_for_observation`
 and `read_generations_for_version`; a deferred index image is never reported as
@@ -349,8 +368,24 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Record complete reachability as an operation decision dependency | Handler and computation readers accept `walk`, `closure` and `reaches`; the raw operation reader uses their `decision_*` forms. Original issued Native values pass through sealing and complete current-snapshot comparison. Structural computation inputs currently force a fresh run; live carried-value and checkpoint reuse remain unsupported. | [Recorded decision walks](../workspaces/worth-query/crates/worth-query/docs/foundations/invariant-walks.md#recorded-decision-walks) |
 | Select complete reachability in a declared query | Compose `ApplicationQueryRootPath::forward_closure` or `reverse_closure` over an endorelation with ordinary hops and guards. Original Native complete bodies support row/set currentness; `receipt().root_path_steps()` reports actual per-step reads. | [Declared query closure](../workspaces/worth-query/crates/worth-query/docs/foundations/declared-query-closure.md) |
 | Observe reads by a declared query | On an ordinary application result, use `result.receipt().inspect().read_work().reads()`; the lower Host query receipt exposes `receipt.reads()`. `WorthQueryInvariantProjectionWork` reports actual field, adjacency, endpoint and index reads separately from projection capacity and authorization work. These are Query boundary observations, not total CPU, heap or storage I/O. Reused computation facts add no historical reads; fallback preserves reads already performed. | [Read observations](../workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md#inspection-and-debugging) |
-| Declare original source-inspection meaning independently of correction | Implement `ApplicationSourceDisclosureBinding<Schema>` and add `inspection_disclosure Binding,` to the mutation binding. The actual source captures its genuine scope and admitted query parameters under the original execution request, without retaining business input solely for inspection. The portable `ApplicationQueryBindingReference` is descriptive and resolves against installed inventory. Output-readiness delivery privately retains the actual read-only Native conditional/invalidation observation without pinning its snapshot reader. Installing optional causal-inspection metadata refuses with `InspectionUnavailable`; there is no fresh Host inspection entrance. A source description or retained observation cannot authorize inspection. | [Source disclosure and causal inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#what-this-feature-is) |
-| Declare independent query-inspection metadata meaning | `ApplicationQueryInspectionDefinition<Schema, QueryBinding>` attaches an explicit public or complete governed six-facet contract to the full ordinary query binding. Rules cannot borrow payload visibility or transfer between changed input, scope or principal meanings. This is pure declaration/Archive support: schema installation returns typed `InspectionUnavailable` until the fresh Host issuer exists. | [Inspection metadata meaning](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#optional-query-inspection-metadata-meaning) |
+| Declare source inspection for an authored operation | Implement `ApplicationSourceDisclosureBinding<Schema>` and add `inspection_disclosure Binding,` to its mutation binding. Declare who may inspect the operation separately from who may correct it. | [Source contracts](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#prepare-the-inspection-contracts) |
+| Keep an original query for later explanation | Clone `result.receipt().inspect().observation()` before dropping the result. Inspect it with its original binding; each fresh inspection checks current permission. | [Keep originals](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#keep-the-evidence-you-will-inspect) |
+| Preserve a settled producer when reading its output | Query through `request.at(settlement.observation()).query(...)`. Save the original query observation before closing the result. Keep the earlier authored source receipt separately; a plain head query does not infer a supplier. | [Read settled output](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#original-settled-producer-custody) |
+| Save query values for later inspection | Call `retain_projection_for_inspection()` before executing each query you will compare or materialize. Capture supports complete one-shot field/relation projections, including empty results. | [Retain original values](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#original-disclosed-projection-custody) |
+| Declare who may inspect a query | Register `ApplicationQueryInspectionDefinition<Schema, Binding>`. Inspection metadata is separate from payload disclosure; comparison and materialization also require diagnostics. | [Inspection contracts](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#optional-query-inspection-metadata-meaning) |
+| Compare original query results | Use `fresh.inspect::<Binding>(&after).why_changed(&before).reference_only()` with current metadata and diagnostic access. Both originals need saved complete projections. | [Compare results](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#paired-original-comparison) |
+| Explain a query result or authored operation | Save the right originals, admit current inspection access, then choose reference, comparison, producer or materialized evidence. | [Inspection walkthrough](build-an-application.md#inspect-original-source-and-query-evidence) |
+| Inspect an authored source without a query | Use `fresh.inspect_source::<SourceDisclosure>(&receipt).why_performed().reference_only()`. Public metadata uses `execute()`; governed metadata uses `execute_governed(source_metadata)`. | [Source-only inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#source-only-inspection) |
+| Connect a source to the output it created | Use `.why_observed().caused_by::<SourceDisclosure>(&source_receipt)` with independent query/source metadata and diagnostics. Pass the authored source occurrence, not an equal rewrite or the producer publication receipt. | [Creation connection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#sourceproducer-connection) |
+| Explain output when the query omits the authored input | Give the source and query separate disclosure bindings and admit each independently. Their subjects and parameter values may differ. | [Independent bindings](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#independently-admitted-source-and-query-connection) |
+| Distinguish changed from equivalent producer output | Opt into `output_equivalence()` for one Required standard-u64 field on an exactly-one Preserve role. Inspect with `.evaluated_by::<SourceDisclosure>(&source_receipt)` and independent source/query admissions. | [Output evaluation](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#performed-producer-output-evaluation) |
+| Check what evidence was retained | Read `report.evidence_availability()` or a comparison's before/after availability. These are snapshots; missing capture does not establish expiry or producer absence. | [Availability](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#original-evidence-availability) |
+| Read optional conditional history | Select `WorthQueryApplicationMaterializationRequest::conditional_history()` or `.with_conditional_history()` on connected rich inspection. Handle eviction, omission and capacity denial explicitly. | [Conditional history](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#optional-conditional-execution-history) |
+| Read an original query's saved values | Select the `QueryInspection` evidence family with `.why_observed().materialize(...)` with metadata and diagnostics. The view reads original fields and nested rows after later state changes. | [Materialize query values](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#rich-original-query-materialization) |
+| Read source effects and the producer explanation together | On a `caused_by` or `evaluated_by` request, select `.with_source_effects().with_producer_evidence()` and admit both subjects. | [Connected values](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#rich-connected-source-and-producer-evidence) |
+| Read source values without retaining a query | Use `.inspect_source::<SourceDisclosure>(&receipt).why_performed().materialize(...)` with `WorthQueryApplicationMaterializationRequest::source_effects()` with current source metadata and diagnostics. The owned result can outlive the receipt. | [Materialize source effects](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#rich-source-only-inspection) |
+| Explain a cleared optional input | Keep the source receipt that performed the clear/removal and the producer's completed absence read. Equal None or a no-op clear does not create another absence occurrence. | [Absence evidence](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#canonical-absence-evidence) |
+| Remove an Optional struct parent without weakening field authority | Declare `OperationRemovesAspects<Operation>`, all child decision reads and `operation_remove_aspect`; call `CandidateWriter::remove_aspect` on the genuine completed target. Complete installed read closure and Optional parent authority are required. Required siblings use `optional_aspect_field` only to interpret genuine parent absence; missing Required content in a present parent refuses. | [Causal inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#public-optional-struct-removal) |
 | Declare a foreign domain value through its entry facade | `decl::application_schema::ValueSeedDelegate` supplies the root grammar via `ApplicationCanonicalValueContract::delegated`, `encode_delegated_canonical_value`, and the bounded or admitted delegated decoder. The existing canonical codec borrows the foreign value without requiring a platform trait on its pure owner. | [Typed invariant refusals](build-an-application.md#typed-refusal-from-installed-invariants) |
 | Configure World resources | Pass `RuntimeWorldBudgets`, a clock, invalidation resources and an execution policy to `host::runtime::WorthQueryProductWorldResources::new`. Use `RuntimeWorldBudgets::without_policy_limits()` for standard installation, or install deliberate finite policies. | [World resources](build-an-application.md#runtime-world-policy-ceilings) |
 | Configure Query reads and output settlement | Use `WorthQueryApplicationQueryResourceProfile::new(concurrency)` for graph-work concurrency and `WorthQueryOutputDemandResourceProfile::standard()` for settlement. Convenience settlement continues on `Progressed`, parks on `Pending`, and returns `Settled` when complete. Retain returned owners for later advancement or close. | [Query resource policies](build-an-application.md#ordinary-query-resource-policies) |
@@ -596,6 +631,37 @@ retain this law. Native producer births with absent payload require every actual
 binding to be a supported Optional EntityField struct; Required and Defaulted
 aspects do not acquire absence permission. Tracked reads retain Optional whole-aspect absence independently of field absence; another field materializing that aspect invalidates the read. See the compiled `optional_aspects.rs`
 example in [build guidance](build-an-application.md#whole-aspect-absence).
+
+For explicit scalar storage, pair `aspect` or `optional_aspect` with
+`scalar_aspect_field(entity, field)`. The aspect must contain exactly that Required
+primitive scalar field; installation refuses extra or optional children and
+structured canonical carriers. `field` continues to declare Struct storage.
+Ordinary field readers/writers and installed query projections use the exact
+scalar binding. Optional-parent reads use `ApplicationQueryOptionalAspectFieldRef`.
+For a source-connected `u64` input, use `U64ApplicationValueBinding`, an ordinary
+producer input query and a Struct output on the same full-generation subject.
+Admit the source-disclosure and output-query bindings independently; scalar
+storage alone supplies no producer connection.
+For a Scalar producer output, use the same explicit storage declaration and
+ordinary field writer/output role. Build its readiness with `for_field` and
+`field_dependency` on the actual output field, then project that Scalar field
+from the settled observation. Readiness seals the physical binding and consumes
+the Scalar `WholeAspectSet` event; a changed Struct sibling cannot supply the
+queried output's missing revision or effect.
+`producer_commit()` names current settlement; `output_publication_commit()` names
+the actual field-producing publication. A selected own-publication continuation
+can carry one publication candidate across the same admitted source occurrence.
+A canonical mutation of its output records resets the candidate; a successor's
+own eligible publication can replace it. Mixed field origins are not a history
+lookup. Connection still requires the candidate's original
+source/input occurrence, current full-generation output role and exact observed
+revision/contract/canonical effect. Currentness and admissions remain fresh.
+For an output-join refusal, `producer_connection_refusal()` preserves the coarse
+`OutputUnconnected`; `producer_output_refusal()` describes the furthest disclosed
+output-join candidate's failed revision, binding, contract or canonical-effect
+condition. It exposes no values or identifiers and returns `None` before
+diagnostic admission or for source/input and request refusals.
+See [scalar storage and source connections](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#explicit-scalar-aspect-storage).
 
 Ordinary Query reads use installed result cardinality and fresh per-read admission;
 `request.query(intent).limit_results(n).execute()` narrows that cardinality.

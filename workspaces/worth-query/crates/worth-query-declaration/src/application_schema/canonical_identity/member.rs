@@ -51,6 +51,16 @@ pub(super) fn append_member(
         ApplicationSchemaMember::ApplicationInvariant { .. } => {
             invariant::append(basis, &prefix, member)
         }
+        ApplicationSchemaMember::ScalarAspectField {
+            entity,
+            aspect,
+            field,
+        } => {
+            basis.text(format!("{prefix}.kind"), "scalar-aspect-field");
+            basis.text(format!("{prefix}.entity"), entity);
+            basis.text(format!("{prefix}.aspect"), aspect);
+            basis.text(format!("{prefix}.field"), field);
+        }
         ApplicationSchemaMember::Entity { .. }
         | ApplicationSchemaMember::Aspect { .. }
         | ApplicationSchemaMember::Field { .. }

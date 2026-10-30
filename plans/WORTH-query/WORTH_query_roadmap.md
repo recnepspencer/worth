@@ -5785,7 +5785,28 @@ unrelated prefix. Phase 8 is accepted on 2026-10-27: installed typed resources
 use the ordinary Decl/Host start, fresh inspection, progression and close path,
 with finite provider/ingress/result custody and genuine owned-effect recovery.
 Its combined workflow qualifies populated forks, burned prepared adoptions and
-sibling publications against the actual Native source. Phase 9 remains unfinished.
+sibling publications against the actual Native source. Phase 9 is accepted on
+2026-10-30 in the qualified scopes below.
+
+Phase 9 is subdivided into [capability subphases 9.1-9.11](./milestone-9.18.1.md#phase-9-subphase-plan).
+Original observation/reference reports (9.1), paired original comparison (9.2),
+performed-source/producer connections (9.3), independent admission (9.4) and
+canonical field absence/currentness proof transfer (9.5) are complete in their
+qualified bounded scopes. Optional whole-aspect removal and parent-optional reads
+(9.6) are complete.
+Remaining connection shapes (9.7), actual exact-u64 performed suppression with
+Stable/restored contrasts (9.8), original query/connected/source-only rich views
+(9.9), fresh availability and real optional-owner eviction/release (9.10), and
+integrated Decl/Host consumer qualification (9.11) are now accepted. One actual
+installed source/producer journey composes Equivalent and Changed output, original
+values, independent admissions, owner loss, cancellation and final release. The
+existing Host fixture installs through public APIs and needs only Decl/Host;
+legacy Native materialization fences remain. Final scoped evidence includes 62
+public correction tests, 4 Host runtime tests and 6 Host doctests, with required
+gates and independent QA. Query/Native owner evidence is carried in its reviewed
+scope. Parent Phase 9 is complete; generic forensic/durable archives and later
+milestone work remain separate. Later phases keep their numbers, and no
+phase-by-phase private SDK adoption is introduced.
 
 Consecutive original-source correction reverses later sources before earlier
 ones. Retain each original receipt and the required endpoint read observation;
@@ -5801,7 +5822,7 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-The retained scope has seventeen implementation phases; 9 and 18 remain unfinished.
+The retained scope has seventeen implementation phases; Phase 18 remains unfinished.
 Phase 17 is complete at the public application boundary: versioned domain intent
 enters fresh governed READ and mutation admission, exact selected-source creation
 and actual-head adoption. Native attempt resolution preserves frozen input and

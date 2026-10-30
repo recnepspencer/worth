@@ -78,6 +78,37 @@ fn conditional_application_preserves_installed_scoped_topology_through_warm_reus
             .into_parts();
         let decision = decision.unwrap();
         assert_eq!(decision.class(), expected);
+        use crate::logic::evaluation::{EvaluationVerdict, SuppressionReason};
+        match attempt {
+            1 => {
+                assert_eq!(
+                    decision.computed_evaluation().unwrap().verdict,
+                    EvaluationVerdict::Recomputed
+                );
+                assert_eq!(
+                    (decision.output_version_before(), decision.output_version()),
+                    (0, 9)
+                );
+            }
+            2 => {
+                let computed = decision.computed_evaluation().unwrap();
+                assert_eq!(
+                    computed.verdict,
+                    EvaluationVerdict::Suppressed {
+                        reason: SuppressionReason::ComparatorMatch
+                    }
+                );
+                assert_eq!(
+                    (decision.output_version_before(), decision.output_version()),
+                    (9, 9)
+                );
+            }
+            3 => assert!(
+                decision.computed_evaluation().is_none(),
+                "dependency reuse has no computed-output report"
+            ),
+            _ => unreachable!(),
+        }
         assert_eq!(decision.counters().runtime_dependency_edges_captured, 0);
         assert_eq!(decision.counters().compute_contacts, usize::from(forced));
         assert!(observation.is_ok());

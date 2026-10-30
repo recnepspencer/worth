@@ -149,6 +149,34 @@ retains neither the admitted snapshot reader nor the operational reentry core.
 It provides no source-read, execution, continuation or disclosure permission.
 The operational seed remains the only retained conditional reentry entrance.
 
+`computed_evaluation()` borrows the same Signal `AppliedEffectReport` from that
+immutable backing. It preserves the actual computed verdict, suppression reason
+and comparison; `signal_output_versions()` supplies the observed before/after
+versions. Passive decisions have no computed report. The
+[installed comparator court](src/builder/tests/correspondence/conditional_compatibility/equivalence_observation.rs)
+contrasts genuine equivalent and changed evaluations and checks original custody
+through operational evidence release. An evaluation of scheduling or readiness
+still describes that installed contract; it cannot establish equivalence of an
+application handler's output. Application producer explanation requires its
+own exact source/output association and current admission.
+
+`BridgeSealedRuntimeAssembly::compare_exact_output` evaluates a supplied u64
+baseline and candidate through a source-free, on-demand Exact contract. It creates
+one fresh private Signal session, initializes the exact baseline, then compares
+the candidate in that same partition. Neither caller nor provider receives the
+session. Other occurrences cannot replace its state, even with equal descriptive
+labels. The returned `BridgeExactOutputComparison` retains only genuine paired
+computed observations; its candidate's before version must equal its baseline's
+after version. The compute provider must produce each supplied version exactly.
+
+`BridgeOutputComparisonDenial` identifies admission, baseline or candidate failure
+and retains the original typed cause. Partial failure releases the private session
+and returns no comparison. This is fixed scratch evaluation, not an atomic Native
+publication or a rollback guarantee. The [exact-pair courts](src/builder/tests/correspondence/conditional_compatibility/equivalence_observation/exact_pair.rs)
+cover nonzero initialization, exact equivalence/change, occurrence isolation and
+release, wrong baseline, candidate failure/retry, foreign owner and cancellation.
+The pair supplies no Native-field or application source association by itself.
+
 Bridge reserves the decision and observation headers before provider callbacks.
 Signal funds its immutable invalidation backing at its existing post-execution
 receipt-preparation boundary, preserving that boundary's typed failure posture.
@@ -163,6 +191,26 @@ ordinary Decl/Host causal inspection remains unfinished in
 [milestone 9.18.1 Phase 9](../../plans/WORTH-query/milestone-9.18.1.md#phase-9-causal-inspection-from-ordinary-application-receipts).
 The [Native custody court](src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention.rs)
 checks reader release, original retention custody and the single receipt transfer.
+
+### Native Conditional Evidence Assembly
+
+`BridgeConditionalCausalEnvelopeRequest` carries the genuine readonly observation
+and a reporting summary. `BridgeSealedRuntimeAssembly::assemble_conditional_causal_envelope`
+checks the exact sealed owner before deriving references or reading evidence.
+The shared envelope assembler distinguishes this source from legacy diagnostics:
+legacy assembly still requires an actual retained Route record and cannot resolve
+a Native observation from projected strings. Native assembly retains the same
+immutable observation through the final envelope share, with no source reader,
+provider contact or new performed invalidation receipt.
+
+The Native summary binds a distinct causal-anchor identity and expected Query
+observation identity. These descriptive identities grant no fresh Query authority;
+matching digests cannot replace actual observation custody. Native binding counts
+are separate from legacy registry lookups and external-authority references.
+Original reservations continue to cover the shared observation; descriptor and
+envelope allocations retain the existing lower diagnostic assembly posture.
+Fresh ordinary Host inspection, metadata admission and diagnostic disclosure remain
+required Phase 9 work.
 
 ## One Signal Graph
 
@@ -235,3 +283,17 @@ Advanced integration:
 - [`MERGE_AND_STRUCTURAL_COMPARISON.md`](./MERGE_AND_STRUCTURAL_COMPARISON.md)
 - [`CAUSAL_BUNDLES_AND_GUARANTEES.md`](./CAUSAL_BUNDLES_AND_GUARANTEES.md)
 - [`HOST_ADAPTERS.md`](./HOST_ADAPTERS.md)
+
+### Query-owned performed-source reporting
+
+`BridgeQueryObservationReportingRequest::from_performed_source` extends the
+existing descriptive, funded reporting strategy for a Query-owned observation
+of a canonical source operation. Its performed-source shape differs from the
+completed-query-result shape, even for otherwise equal reporting associations.
+`QueryObservation` identifies the Query evidence owner/family; this source form
+does not claim that a SELECT query ran. Neither form admits READ, metadata,
+DiagnosticMask or rich Native materialization. Query's actual fresh Inspection
+session and consuming terminal retain those responsibilities. The common Bridge
+assembler reports no Native binding, evaluation or invalidation for a source-only
+reference. The performed-source reporting case and three affected Bridge controls
+pass. This does not qualify connected producer assembly or rich Native materialization.

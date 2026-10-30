@@ -227,6 +227,9 @@ fn result_field_matches(
     members: &[ApplicationSchemaMember],
     expected: &crate::application_query::ApplicationQueryResultField,
 ) -> bool {
+    if expected.presence() == crate::application_query::ApplicationQueryResultFieldPresence::OptionalAspect
+        && !members.iter().any(|m| matches!(m, ApplicationSchemaMember::Aspect { entity, aspect, absence: worth_foundational::facade::AbsenceLaw::Optional, .. }
+            if entity == expected.entity() && aspect == expected.aspect())) { return false; }
     members.iter().any(|member| {
         matches!(
             member,
@@ -243,7 +246,7 @@ fn result_field_matches(
                 && field == expected.field()
                 && *scalar_family == expected.scalar_family()
                 && value_type == expected.value_type()
-                && *presence == expected.presence()
+                && *presence == expected.presence().schema_presence()
         )
     })
 }

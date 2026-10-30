@@ -282,7 +282,8 @@ pub mod publication {
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,
         PatchStreamPosition, PatchStreamReadError, PatchStreamReadErrorClass, PatchStreamRequest,
         PublishedAspectChangePrecision, PublishedAuthoritativeAspectChange,
-        PublishedAuthoritativeFieldSet, PublishedAuthoritativePatch,
+        PublishedAuthoritativeFieldEffect, PublishedAuthoritativeFieldSet,
+        PublishedAuthoritativeFieldValueLocation, PublishedAuthoritativePatch,
         PublishedAuthoritativePatchEnvelope, PublishedAuthoritativeRecordPatch,
         PublishedRelationBirth, RecordStructuralChange,
     };

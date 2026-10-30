@@ -36,5 +36,15 @@ pub(super) fn assert_absent_required_content_is_readable(
         assert!(reads.decision_facts().iter().any(|fact| matches!(fact,
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. })),
             "Required content can be sealed as whole-aspect absence only under the installed Optional law");
+        let control = primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation, None);
+        let original = primary_graph::application_checkpoint::facts::FactPayload::copy_funded(
+            &reads.decision_facts(), control).unwrap();
+        let captured = primary_graph::application_checkpoint::facts::FactPayload::copy_performed_field_reads(
+            &original, control).unwrap();
+        drop(original);
+        assert!(captured.iter().any(|fact| matches!(fact,
+            primary_graph::WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. })),
+            "genuine completed whole-aspect absence survives field-only custody capture");
     }).unwrap();
 }

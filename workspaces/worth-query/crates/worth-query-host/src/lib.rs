@@ -347,3 +347,5 @@ mod collection_contract;
 mod logical_member_contract;
 
 mod storage_retention_contract;
+
+mod causal_inspection_contract;

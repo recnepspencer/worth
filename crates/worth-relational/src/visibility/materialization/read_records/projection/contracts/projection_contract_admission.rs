@@ -26,9 +26,23 @@ pub(crate) fn admit_declared_projection_aspects(
             .iter()
             .find(|binding| binding.aspect_key() == required.aspect_key())
             .ok_or_else(|| denied(Some(ordinal), Refusal::UndeclaredAspect))?;
+        // A scalar's sole physical field denotes the entire value. Only its
+        // installed binding may translate that field selection into a whole mask.
+        let scalar_field = !required.mask().paths().is_empty()
+            && required.mask().paths().iter().all(|path| {
+                matches!(path.fields(), [field]
+                if binding.targets_entity_scalar_field(field))
+            });
+        let whole = worth_foundational::facade::aspects()
+            .projection_mask()
+            .whole_aspect();
         binding
             .contract
-            .admits_projection_mask(required.mask())
+            .admits_projection_mask(if scalar_field {
+                &whole
+            } else {
+                required.mask()
+            })
             .map_err(|_| denied(Some(ordinal), Refusal::MaskRejected))?;
         if required.mask_basis().is_none() {
             return Err(denied(Some(ordinal), Refusal::MissingCanonicalMaskBasis));

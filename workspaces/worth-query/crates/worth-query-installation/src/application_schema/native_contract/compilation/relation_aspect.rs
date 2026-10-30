@@ -43,6 +43,7 @@ pub(super) fn collect_relation_aspects(
             identity: aspect.identity,
             revision: aspect.revision,
             absence: aspect.absence,
+            scalar_field: None,
             fields,
         };
         if aspects

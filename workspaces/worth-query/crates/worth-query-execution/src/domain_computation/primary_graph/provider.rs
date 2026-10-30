@@ -54,6 +54,7 @@ mod mutation_work;
 pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryDenial;
 pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryOutcome;
 pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryPerformed;
+mod inspection_fault;
 mod output_readiness_fault;
 mod outstanding_dispatch;
 pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::OutstandingDispatchInFlightLease;

@@ -71,3 +71,37 @@ impl std::fmt::Display for WorthQueryApplicationQueryInstallationDenial {
 }
 
 impl std::error::Error for WorthQueryApplicationQueryInstallationDenial {}
+
+use crate::graph_obligation::WorthQueryGraphObligationInstallationDenial;
+use worth_foundational::facade::CanonicalDigestDerivationDenial;
+
+pub(super) fn graph_obligation_denial(
+    subject: &str,
+    denial: WorthQueryGraphObligationInstallationDenial,
+) -> WorthQueryApplicationQueryInstallationDenial {
+    let kind = match denial {
+        WorthQueryGraphObligationInstallationDenial::InvalidContract => {
+            WorthQueryApplicationQueryInstallationDenialKind::InvalidGraphObligationContract
+        }
+        WorthQueryGraphObligationInstallationDenial::Canonical(denial) => {
+            return canonical_work_denial(subject, denial)
+        }
+    };
+    WorthQueryApplicationQueryInstallationDenial::new(kind, subject)
+}
+
+pub(super) fn canonical_work_denial(
+    subject: &str,
+    denial: CanonicalDigestDerivationDenial,
+) -> WorthQueryApplicationQueryInstallationDenial {
+    let kind = match denial {
+        CanonicalDigestDerivationDenial::EntryLimitExceeded { .. } => {
+            WorthQueryApplicationQueryInstallationDenialKind::CanonicalEntryBudgetExceeded
+        }
+        CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { .. } => {
+            WorthQueryApplicationQueryInstallationDenialKind::CanonicalEncodedByteBudgetExceeded
+        }
+        _ => WorthQueryApplicationQueryInstallationDenialKind::CanonicalDigestSlotRejected,
+    };
+    WorthQueryApplicationQueryInstallationDenial::new(kind, subject)
+}

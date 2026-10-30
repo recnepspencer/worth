@@ -79,7 +79,9 @@ impl WorthQueryOutputDemandRegistry {
             .map(|record| state.prepare_source_commit_growth(record))
             .transpose()?
             .flatten();
-        supersede_predecessors(&mut state, &requested_key)?;
+        // A semantic join keeps the selected row's lifecycle posture. An
+        // Initial lookup must not supersede the Preserve row it just joined.
+        supersede_predecessors(&mut state, &key)?;
         let custody = state
             .source_custody
             .get_mut(source_commit)

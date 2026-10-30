@@ -28,3 +28,6 @@ pub use crate::diagnostics::{
     RollbackSummary, SemanticRetentionPolicy, SnapshotRestoreKind, SnapshotRestoreLineageMode,
     TemporalCostContractSummary, TemporalDiagnosticsSummary, TemporalPerformanceFailureMode,
 };
+pub use crate::logic::evaluation::{
+    AppliedEffectReport, DeferralReason, EffectComparison, EvaluationVerdict, SuppressionReason,
+};

@@ -77,6 +77,7 @@ fn arithmetic_and_replay() {
     assert_eq!(
         host::read(&application),
         [super::query::Row {
+            operand: None,
             primary: 100 + 30 + 7 - 30,
             secondary: 19
         }]

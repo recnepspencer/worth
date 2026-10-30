@@ -1,8 +1,10 @@
 use worth_foundational::facade::ScalarAspectType;
 
 use super::{ApplicationQueryCardinality, ApplicationQueryResultTraversalDirection};
-use crate::application_schema::ApplicationFieldPresence;
+use crate::application_query::ApplicationQueryResultFieldPresence;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
+
+mod retained_backing;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationQueryResultSlotKey {
@@ -39,7 +41,7 @@ enum ApplicationQueryResultSlotContract {
         output_name: String,
         scalar_family: ScalarAspectType,
         value_type: WorthQueryPortableTypeIdentity,
-        presence: ApplicationFieldPresence,
+        presence: ApplicationQueryResultFieldPresence,
     },
     Relation {
         relation: String,
@@ -62,7 +64,7 @@ pub(super) struct ApplicationQueryResultFieldSlotContract<'contract> {
     pub output_name: &'contract str,
     pub scalar_family: ScalarAspectType,
     pub value_type: WorthQueryPortableTypeIdentity,
-    pub presence: ApplicationFieldPresence,
+    pub presence: ApplicationQueryResultFieldPresence,
 }
 
 pub(super) struct ApplicationQueryResultRelationSlotContract<'contract> {
@@ -138,6 +140,17 @@ impl ApplicationQueryResultSlotKey {
             },
         }
     }
+    /// The declared result name, when this slot carries a named result contract.
+    pub fn output_name(&self) -> Option<&str> {
+        match &self.contract {
+            ApplicationQueryResultSlotContract::Components { output_name, .. }
+            | ApplicationQueryResultSlotContract::Orbit { output_name, .. }
+            | ApplicationQueryResultSlotContract::Field { output_name, .. }
+            | ApplicationQueryResultSlotContract::Relation { output_name, .. } => Some(output_name),
+            _ => None,
+        }
+    }
+
     pub fn query_identity(&self) -> WorthQueryPortableTypeIdentity {
         self.query.clone()
     }

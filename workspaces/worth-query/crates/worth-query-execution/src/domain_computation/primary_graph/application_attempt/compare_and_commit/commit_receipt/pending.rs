@@ -98,6 +98,16 @@ impl WorthQueryPendingApplicationCommitReceipt {
             expected_retry_session: None,
             performed_product_change: Some(performed_product_change),
             committed_changes: self.provider.commit_evidence().committed_changes().clone(),
+            performed_output_fields: self
+                .provider
+                .commit_evidence()
+                .performed_output_fields()
+                .cloned(),
+            performed_input_facts: self
+                .provider
+                .commit_evidence()
+                .performed_input_facts()
+                .cloned(),
             output_correspondence: self
                 .provider
                 .commit_evidence()

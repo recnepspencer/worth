@@ -1,5 +1,5 @@
 use super::*;
-use fixture_values::{PlanarAdjustmentResult, PlanarMutationDenial};
+use fixture_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::worth_query_structured_value_binding;
 macro_rules! input {
     ($input:ident, $binding:ident, $keep:literal, $identity:literal) => {
@@ -36,8 +36,8 @@ worth_query_operation_writes!(OrdinaryProduce => [Value, Extra]);
 worth_query_operation_creates!(OrdinaryProduce => [OutputNode, PresentNode, FieldlessNode, StrictNode]);
 worth_query_operation_links!(OrdinaryProduce => [Incidence]);
 worth_query_operation!(pub(super) KeepProduce for Schema: BirthSchema, input KeepInputBinding);
-worth_query_operation_reads!(KeepProduce => [Note, Body, BodyKey, SourceContent, SourceSelection, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
-worth_query_operation_writes!(KeepProduce => [Value, Extra]);
+worth_query_operation_reads!(KeepProduce => [Value, Note, Body, BodyKey, PositionY, SourceContent, SourceSelection, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
+worth_query_operation_writes!(KeepProduce => [Value, Extra, PositionY]);
 worth_query_operation_creates!(KeepProduce => [OutputNode, PresentNode, FieldlessNode, StrictNode]);
 worth_query_operation_links!(KeepProduce => [Incidence]);
 pub(super) struct OrdinaryBinding<Schema>(PhantomData<fn() -> Schema>);
@@ -125,6 +125,23 @@ impl<Schema: BirthSchema> OperationHandler<Schema, Binding<Schema, true>> for Ha
             let node = reader.prior_output::<Binding<Schema, false>, BornNode<Schema>>()?;
             let _note = reader.field(&node, Note::reference())?;
             let present = reader.prior_output::<Binding<Schema, false>, BornPresent<Schema>>()?;
+            let source = if Schema::RENEW_OUTPUT {
+                let value = reader.field(&present, Value::reference())?;
+                assert!(matches!(
+                    value.as_deref(),
+                    Some("native-present" | "native-changed")
+                ));
+                let root = reader
+                    .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+                    .map_err(HandlerExecutionDenial::new)?;
+                let y = reader
+                    .field(&root, PositionY::reference())?
+                    .expect("the actual query input has its Required ordinate");
+                assert!(matches!(PositiveLength::get(&y), 1 | 2));
+                Some(reader.mutation_target(&root)?)
+            } else {
+                None
+            };
             let fieldless =
                 reader.prior_output::<Binding<Schema, false>, BornFieldless<Schema>>()?;
             let strict = reader.prior_output::<Binding<Schema, false>, BornStrict<Schema>>()?;
@@ -141,7 +158,7 @@ impl<Schema: BirthSchema> OperationHandler<Schema, Binding<Schema, true>> for Ha
                 "incidence retains its actual endpoint"
             );
             Ok::<_, HandlerExecutionDenial>(Decision {
-                source: None,
+                source,
                 node: Some(reader.mutation_target(&node)?),
                 present: Some(reader.mutation_target(&present)?),
                 fieldless: Some(reader.mutation_target(&fieldless)?),
@@ -161,6 +178,27 @@ impl<Schema: BirthSchema> OperationHandler<Schema, Binding<Schema, true>> for Ha
         writer: &mut CandidateWriter<'_, Schema, Binding<Schema, true>>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         let result = (|| {
+            if Schema::RENEW_OUTPUT {
+                let target = writer
+                    .projected_entity(decision.present.as_ref().unwrap())
+                    .map_err(HandlerExecutionDenial::new)?;
+                writer
+                    .write_field(&target, Value::reference(), "native-changed".to_owned())
+                    .map_err(HandlerExecutionDenial::new)?;
+                // This is an actual PlanarQuery input. Unlike a handler-only
+                // field, its original SourceFieldRevision cannot be rebased
+                // past P2's effect. P3 must read the fresh ordinary source.
+                let root = writer
+                    .projected_entity(decision.source.as_ref().unwrap())
+                    .map_err(HandlerExecutionDenial::new)?;
+                writer
+                    .write_field(
+                        &root,
+                        PositionY::reference(),
+                        PositiveLength::new(2).unwrap(),
+                    )
+                    .map_err(HandlerExecutionDenial::new)?;
+            }
             writer
                 .preserve_output::<KeptNode<Schema>>(
                     &writer
@@ -228,12 +266,20 @@ pub(super) fn declare<Schema: BirthSchema>(
                 .application_mutation_binding::<$binding>()
         }};
     }
-    declare_operation!(
+    let schema = declare_operation!(
         declare_operation!(declare_operation!(schema, OrdinaryProduce, OrdinaryBinding<Schema>), Produce, Binding<Schema, false>),
         KeepProduce,
         Binding<Schema, true>
     )
     .operation_read_field(KeepProduce::reference(), Note::reference())
     .operation_write(Produce::reference(), SourceContent::reference())
-    .operation_write(Produce::reference(), SourceSelection::reference())
+    .operation_write(Produce::reference(), SourceSelection::reference());
+    if Schema::RENEW_OUTPUT {
+        schema
+            .operation_read_field(KeepProduce::reference(), Value::reference())
+            .operation_read_field(KeepProduce::reference(), PositionY::reference())
+            .operation_write(KeepProduce::reference(), PositionY::reference())
+    } else {
+        schema
+    }
 }

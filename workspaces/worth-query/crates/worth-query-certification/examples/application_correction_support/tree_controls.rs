@@ -47,6 +47,7 @@ fn current_source_decision() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 7
         }]
@@ -111,6 +112,7 @@ fn inherited_consumption_and_foreign_sibling() {
     assert_eq!(
         host::read_on(&host, before),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -194,6 +196,7 @@ fn inherited_consumption_and_foreign_sibling() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -201,6 +204,7 @@ fn inherited_consumption_and_foreign_sibling() {
     assert_eq!(
         host::read_on(&host, before),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 7
         }]
@@ -240,6 +244,7 @@ fn stale_preparation() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 19
         }]
@@ -309,6 +314,7 @@ fn fresh_authority() {
             .unwrap()
             .rows(),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -345,6 +351,7 @@ fn changed_source_support() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 7
         }]

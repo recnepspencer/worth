@@ -10,6 +10,7 @@ use super::{
     ApplicationOperationProgramTarget, ApplicationSchemaDeclarationBuilder,
     ApplicationSchemaMember, DeclaredApplicationFieldValue,
 };
+mod aspect_removal;
 mod relation_initialization;
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {

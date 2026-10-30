@@ -53,7 +53,7 @@ impl WorthQueryInstalledManagedIndexAccessContract {
             maximum_source_results: source.limits().maximum_results().get(),
         });
         let obligations = bind_managed_index_obligations(&meaning).map_err(|cause| {
-            super::super::binding::graph_obligation_denial(&recipe.meaning().parts().name, cause)
+            super::super::denial::graph_obligation_denial(&recipe.meaning().parts().name, cause)
         })?;
         Ok(Self {
             source_obligation: source.query().graph_obligations().identity().clone(),

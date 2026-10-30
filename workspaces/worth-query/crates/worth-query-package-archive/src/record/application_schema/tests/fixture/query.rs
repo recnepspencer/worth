@@ -31,7 +31,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                     output_name: text("value"),
                     scalar_family: ScalarAspectType::UInt64,
                     value_type: type_id("u64"),
-                    presence: ApplicationFieldPresence::Required,
+                    presence: worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence::Required,
                 },
             )],
             relations: vec![ApplicationQueryResultRelation::from_untrusted_parts(

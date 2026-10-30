@@ -23,10 +23,13 @@ fn scheduling_progression_preserves_admission_stops_at_every_consult() {
         .unwrap();
     let source = observed_account_source(&world);
     let (_, route) = installation();
-    world
-        .application
-        .output_producer_routes
-        .insert("scheduling-busy".to_owned(), route);
+    world.application.output_producer_routes.insert(
+        "scheduling-busy".to_owned(),
+        super::super::super::super::scheduling::WorthQueryInstalledOutputProducerRoute {
+            scheduling: route,
+            output_comparison: None,
+        },
+    );
     let selected = WorthQuerySelectedApplicationProducer {
         identity: "scheduling-busy".to_owned(),
         applicability: WorthQueryProducerApplicability::new(

@@ -17,6 +17,14 @@ impl<'receipt> WorthQueryApplicationQueryPublicationInspection<'receipt> {
         Self { receipt }
     }
 
+    /// The actual original retained observation, when the completed lane supplied one.
+    /// This descriptive loan carries no current read or inspection permission.
+    pub fn observation(
+        &self,
+    ) -> Option<&'receipt worth_query_execution::facade::causal_inspection::WorthQueryApplicationQueryObservation>{
+        self.receipt.observation()
+    }
+
     pub const fn result_count(&self) -> usize {
         self.receipt.result_count()
     }

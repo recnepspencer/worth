@@ -12,6 +12,8 @@ use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 
+#[path = "correction/causal_inspection.rs"]
+mod causal_inspection;
 #[path = "correction/consecutive_undo.rs"]
 mod consecutive_undo;
 
@@ -70,6 +72,7 @@ fn performed_source_survives_operation_close_and_receipt_copy() {
     assert_eq!(
         host::read(&host),
         [model::query::Row {
+            operand: None,
             primary: 11,
             secondary: 19
         }]
@@ -115,6 +118,7 @@ fn changed_independent_handler_dependency_refuses_an_unchanged_afterimage() {
     assert_eq!(
         host::read(&host),
         [model::query::Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]

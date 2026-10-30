@@ -6,11 +6,12 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::indexes::DerivedIndexId;
-use worth_relational::facade::schema::RelationalSchemaRegistry;
+use worth_relational::facade::schema::{DeclaredAspectContractBinding, RelationalSchemaRegistry};
 
 use super::WorthQueryPrimaryGraphInstallationDenial;
 
 mod aggregate_identity;
+mod aspect_contract;
 pub(in crate::domain_computation::primary_graph) use aggregate_identity::ComponentSetLayout;
 mod application_layout_lowering;
 mod authorization_selectors;
@@ -18,7 +19,9 @@ mod capability_grant_join;
 mod continuation_ordering;
 mod derived_relation;
 mod equality_fields;
+mod field_coordinate;
 mod field_optionality;
+pub(in crate::domain_computation::primary_graph) use field_coordinate::InstalledFieldCoordinate;
 mod installation_primitives;
 mod kind_lookup;
 mod member_domain;
@@ -91,7 +94,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
     relation_payload: relation_payload::ApplicationRelationPayloadLayout,
     unique_fields: unique_fields::WorthQueryUniqueFieldNames,
-    aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>>,
+    aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, DeclaredAspectContractBinding>>,
     equality_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     projection_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     continuation_orderings: Vec<WorthQueryPrimaryContinuationOrderingLayout>,
@@ -134,8 +137,10 @@ impl WorthQueryPrimaryGraphLayout {
         let (entity_kinds, relation_kinds) = lower_kind_ids(schema, existing_registry)?;
         let (schema_id, schema_version_id) = relational_schema_basis(schema, existing_registry)?;
         let mut registry = RelationalSchemaRegistry::new();
-        let mut aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>> =
-            BTreeMap::new();
+        let mut aspect_contracts: BTreeMap<
+            String,
+            BTreeMap<AspectKey, DeclaredAspectContractBinding>,
+        > = BTreeMap::new();
         let lowered_contracts = lower_application_contract_bindings(native_contracts);
         let relation_payload =
             relation_payload::ApplicationRelationPayloadLayout::lower(native_contracts)?;
@@ -148,7 +153,7 @@ impl WorthQueryPrimaryGraphLayout {
                 aspect_contracts
                     .entry(entity.clone())
                     .or_default()
-                    .insert(binding.aspect_key(), binding.contract.clone());
+                    .insert(binding.aspect_key(), binding.clone());
             }
             registry = register_entity(
                 registry,
@@ -339,14 +344,6 @@ impl WorthQueryPrimaryGraphLayout {
         self.fields
             .get(&(entity.to_string(), aspect.to_string(), field.to_string()))
             .map(|layout| &layout.locator)
-    }
-
-    pub(in crate::domain_computation) fn aspect_contract(
-        &self,
-        entity: &str,
-        aspect: &AspectKey,
-    ) -> Option<&AspectContract> {
-        self.aspect_contracts.get(entity)?.get(aspect)
     }
 
     pub(super) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {

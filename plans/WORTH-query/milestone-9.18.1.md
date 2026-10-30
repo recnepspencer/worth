@@ -2,7 +2,7 @@
 
 > **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 accepted on 2026-10-27.
 > Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
-> Phase 9 remains unfinished.
+> Phase 9 and capability subphases 9.1-9.11 accepted on 2026-10-30 in their qualified scopes.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
 > Phases 13–14, 16–17 and 19 are complete. Phase 18 remains unfinished.
@@ -1078,6 +1078,7 @@ worth-query-installation/src/
   application_query/
     history/                                                N schema/disclosure binding
     inspection.rs                                           N validate exact compiled binding before issuer admission
+    binding/observation.rs                                  N opaque original compiled-binding custody
 worth-query-package-archive/src/record/
   application_schema/member/inspection.rs                   N additive member45/v1
   application_query/disclosure/inspection.rs                N additive selector8/v1
@@ -1090,6 +1091,7 @@ worth-query-execution/src/domain_computation/
     application_resource/                                   M live resource orchestration
     causal_inspection/                                      M operational inspection and application evidence binding
     application_query/history/                              N native page adapter
+    application_query/observed_source/retained_parameters.rs M original binding, parameters and exact row-meaning roster shared once
 worth-query-publication/src/application_entry/
   resource/                                                 N governed retained requests
   inspection/                                               N receipt-rooted inspection
@@ -1355,44 +1357,498 @@ from external-input capture, temporal operations and authenticated inbound effec
 
 ## Phase 9: Causal Inspection From Ordinary Application Receipts
 
+**Status: complete in the qualified scopes of 9.1-9.11; accepted 2026-10-30.**
+
 **Depends on:** existing application receipts, scoped inspection and the retained
 Bridge/Signal/Relational evidence owners. Use Phase 8 evidence when inspecting an
 async resource; ordinary query/source inspection does not depend on Phase 8 or
 unfinished graph phases.
 
-The Native observation handoff prerequisite is implemented: output-readiness
-delivery privately retains the actual immutable Bridge/Signal observation rather
-than counters alone. Read-only custody preserves the actual invalidation backing
-and its original reservation while the unique performed receipt transfers once;
-it does not retain a snapshot reader or operational reentry core. See
-[Native custody](../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
-Fresh Host admission, connected producer-chain references and the application
-inspection journey remain required below; this prerequisite does not close Phase 9.
+### Phase 9 Subphase Plan
 
-Optional inspection meaning belongs to the existing ordinary query binding:
-`ApplicationQueryInspectionDefinition<Schema, Binding>` takes an explicit metadata
-disclosure contract, and `application_query_inspection` registers that binding's
-actual descriptor. There is no separate inspection marker or string-only binding
-registry. Both the definition and every metadata selector retain the complete
-fourteen-field `ApplicationQueryBindingReference`, including input, result, scope
-and principal meaning. The six closed facets are observation identity, evidence
-links, evidence counts, evidence availability, explanation and diagnostic fields.
-Governed contracts cover every facet exactly once: evidence counts require `Count`
-influence; the other five require `Explanation`. Mixed, duplicate, partial and
-foreign-binding selectors refuse. Public metadata requires an explicit public
-contract without rules; an installed-policy placeholder is insufficient.
+Phase 9 is an umbrella for the capability boundaries below. This subdivision
+preserves its requirements and authority model; it does not renumber later
+phases, add a new milestone or turn a bounded implementation into whole-phase
+acceptance. **Complete** means the named bounded capability already has reviewed
+implementation and passing evidence. Carry that evidence within its actual
+scope. All subphases below have completed their named closure and integrated review.
 
-Metadata admission is independent of the original payload contract and never
-grants diagnostic field values. The eventual fresh Host issuer must separately
-check the current subject's `DiagnosticMask` before reading those fields, and
-must admit requested metadata before looking up family availability, links or
-counts. Installation validates every definition against the actual compiled
-query-binding catalog, after ordinary query/result, scope, principal and limits
-checks. Until the fresh issuer exists, valid inspection meaning returns typed
-`InspectionUnavailable`; malformed or foreign definitions refuse with their own
-cause before that unavailability outcome. Portable member45/v1 and selector8/v1
-are additive subgrammars and preserve unextended v18 schema identity and bytes;
-unknown versions refuse before payload fields or allocations.
+| Subphase | Capability | Current disposition | Integration/closure evidence |
+| --- | --- | --- | --- |
+| 9.1 | Original observation custody and fresh reference reports | Complete in the qualified public scope | Qualified 9.11 integration |
+| 9.2 | Paired original-result comparison | Complete for qualified one-shot shapes | Qualified 9.11 integration |
+| 9.3 | Performed-source inspection and genuine producer connections | Complete for qualified present-field paths | Extended shape coverage qualified in 9.5-9.7 |
+| 9.4 | Independent source/query bindings and permissions | Complete; qualified `21674b9dac` | Qualified 9.11 integration |
+| 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Whole-aspect/scalar journeys qualified in 9.6-9.7 |
+| 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Qualified 9.11 integration |
+| 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | Qualified suppression and 9.11 integration |
+| 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | Qualified rich and 9.11 integration |
+| 9.9 | Optional rich materialization | Complete for original-query, connected creation/evaluation and source-only rich modes | Freshly admitted, demand-driven views from existing evidence owners |
+| 9.10 | Evidence availability, expiry and retention lifecycle | Complete for qualified Native evidence modes | Qualified 9.11 integration |
+| 9.11 | Integrated application qualification and consumer handoff | Complete; independent final QA accepted | Compiled Decl/Host consumer, integrated producer journey and executable guidance |
+
+The table is the current capability summary, not an execution journal. A
+regression in a later change blocks that change through the affected tests;
+it does not reopen an earlier completed portfolio. All required subphases and
+the final 9.11 integration are qualified; parent Phase 9 is complete in those scopes.
+
+#### Phase 9.1: Original Observation Custody And Fresh Reference Reports
+
+**Status: complete in its qualified public scope.** Preserve the actual ordinary
+query's installed binding, parameters, full subject, row/set meaning and settled
+supplier custody. Fresh `why_observed().reference_only()` establishes Observed,
+not Changed or a producer cause. Original payload visibility grants no diagnostic
+permission. The existing genuine Host inspection and narrow Installation,
+Execution and Bridge courts cover original binding/runtime/generation affinity,
+current READ/metadata, cancellation, original funding and final release.
+Successors consume this descriptive custody but must freshly admit their own
+protected discovery; a retained reference never becomes authority.
+
+#### Phase 9.2: Paired Original-Result Comparison
+
+**Status: complete for qualified one-shot disclosed shapes. Depends on: 9.1.**
+`why_changed` compares actual retained before/after Native projections, including
+presence and ordered nested rows. Changed/Unchanged concerns disclosed payload
+semantics, not source revisions, producer contacts or application DTOs. The
+existing Host pair and Native comparison courts distinguish equal rewrites,
+changed values/order, empty rows, missing originals and diagnostic revocation.
+Unavailable or unsupported originals refuse before comparison. Completion does
+not imply arbitrary query-shape coverage or genuine producer suppression.
+
+#### Phase 9.3: Performed-Source Inspection And Genuine Producer Connections
+
+**Status: complete for qualified present-field paths. Depends on: 9.1-9.2.**
+`inspect_source::<Disclosure>(&receipt).why_performed()` explains a real source
+without inventing a query observation. Connected inspection joins the particular
+canonical source write, completed handler read, producer publication, declared
+output role and query-observed Native revision. Equal values, a plain head query
+or a matching descriptor cannot supply that chain. Reviewed increment
+`8396646380` supplies the source-only, coordinate-qualified connection and
+foreign/equal-write/custody controls. It establishes the real connection owner,
+not every source/query shape.
+
+#### Phase 9.4: Independent Source/Query Bindings And Permissions
+
+**Status: complete; qualified increment `21674b9dac`. Depends on: 9.3.**
+Source and query retain their own installed declarations, parameters and current
+READ, metadata and diagnostic policies. A Calculated-only output projection need
+not project the authored input. Both policy sets reach one consuming terminal;
+neither side's permission substitutes for the other. Genuine positive and hostile
+courts cover capability roles, bindings/runtime, equal rewrites, empty output,
+cancellation and revocation. The qualified same-full-subject/branch boundary
+remains explicit; cross-subject causality requires 9.7, not an affinity waiver.
+
+#### Phase 9.5: Canonical Field Absence And Mandatory Currentness Proof
+
+**Status: complete; qualified increment `70812eb0c3`. Depends on: 9.4.**
+An absent-field read must join its particular Native presence revision and
+canonical clear, not equal `None`, an old absence or a no-op clear. Genuine
+Operand authoring/producer/query courts establish present/clear/present, absence
+ABA, exact source/output lineage and release. Native owns installed contract and
+physical field interpretation. Fresh currentness returns its existing owner-issued
+proof directly; terminal construction consumes it without an optional proof slot.
+Native scalar interpretation and field-only custody of an absent parent do not
+close the stronger public whole-aspect/scalar journeys in 9.6-9.7.
+
+#### Phase 9.6: Optional Whole-Aspect Removal And Parent-Optional Reads
+
+**Status: complete. Depends on: 9.5.** The implementation carries distinct declared, installed
+and portable removal authority, complete sibling-read closure and ordinary Native
+whole removal. Required children under an Optional parent have explicit
+parent-optional result meaning: actual parent absence yields `None`; a missing
+Required child in a present parent still refuses. Genuine Decl/Host removal,
+recreation, ABA/no-op, governance, sibling and lifecycle courts cover the installed
+path. Compile-fail fences preserve removal authority and parent-optional field
+meaning. The consumer guide teaches removal, complete child reads and typed refusal.
+Do not weaken Required-child semantics or substitute scalar owner tests.
+
+#### Phase 9.7: Remaining Connection Shapes And Lifecycle Cases
+
+**Status: complete; bounded supported shapes qualified. Depends on: 9.4-9.6 for their respective meanings.** Complete
+the public Query scalar storage/binding journey, connections between distinct
+genuine subjects and connections involving retired output roles. Preserve full
+generations, installed shape/contract interpretation, actual performed reads,
+canonical source/producer correspondence and independent disclosure. Positive
+journeys and foreign/sibling/generation/no-op twins must expose incorrect joins.
+A Native scalar/removal court alone is not a Query end-to-end journey, and a
+replacement generation cannot stand in for a retired original. Required supported
+shapes must be named and qualified; unsupported shapes retain typed refusal.
+This adds no unrestricted path language, causal archive or correction authority.
+
+The bounded scalar journey installs an Optional Scalar aspect with one Required
+`u64` field, ordinary source authoring and a real producer publishing a Struct
+output. It connects the original performed input, source-created Native revision,
+declared role and settled query observation under independent admissions. Equal,
+no-op, ABA, foreign-source and reader-release controls retain their distinct
+meanings. The retired-original journey below completes the remaining 9.7 shape.
+
+The qualified Scalar-output journey extends that ordinary producer with an
+explicitly installed Optional Scalar output, Required `u64` child and Scalar-only
+query. Typed readiness seals its installed physical binding and observes its
+actual WholeAspectSet event. The ordinary Preserve-role connection carries one
+genuine immutable creator publication through selected own-publication
+continuation, independently from current settlement. Canonical output mutation
+resets that candidate; an eligible successor can replace it. The owner court
+proves P1 creation, an independently observed P2 Native revision change, and P3
+preservation of P2. Explicit refresh admits its successor source instead of
+rejoining its stale retained Ready through a selector or delivery hint.
+
+Connection still requires original source/input, the current full-generation
+role, exact Native revision, installed contract and canonical effect. The public
+Scalar-only journey covers independently expected values, ABA, no-op, equal
+Scalar output beside changed Struct output, independent admissions and reader
+release. It qualifies Preserve-to-Preserve output roles; the owner lifecycle
+court alone does not assert a public Create-to-Preserve journey. No historical
+receipt search or per-field origin archive is introduced.
+
+The qualified distinct-subject shape is a query rooted at B observing A's
+produced field through an authored reference. Source and query retain separate
+issued full-generation subjects, freshly admitted READ/metadata/diagnostic
+policies and exact membership in one original-branch inspection session. Query
+admission precedes source lookup; source capabilities prepare only under the
+actual freshly resolved source. The borrowed source identity is revalidated
+through the existing resolution owner before final proof; owned policy custody
+survives reader release. Genuine public controls cover both keys and expected
+values, a same-kind wrong nested output, swapped subject capabilities, actual
+withdrawal of either scoped grant, replacement generation, cancellation and
+release. This names nested observation support without claiming cross-entity
+producer publication or an unrestricted path language.
+
+The qualified retirement shape is a pre-retirement nested observation of B's
+produced field, rooted at surviving source A. An ordinary source action and its
+existing calculator settle first; a separately declared program output root then
+runs the installed producer reading A and publishing B under a Preserve role.
+The public program-demand path supplies the genuine receipt and retained supplier;
+the ordinary non-program demand's `ApplicationProgramRequired` refusal remains
+intact. No new publication authority or constructor is introduced.
+
+The public journey independently observes B0's Native full-generation identity
+and expected value, retains that exact nested projection, lawfully retires B0,
+and connects the original source/producer/publication after retirement. It then
+restores the same selector and equal value under genuine B1, proves the current
+nested projection names B1 while the original names B0, and connects only the
+retained original supplier. A plain replacement-head query cannot acquire that
+supplier; current grant withdrawal refuses before protected cause discovery.
+Reader counts return to baseline after success, refusal and final close. The
+existing grouped correction lane passes all 50 tests, including all 26 causal
+inspection journeys, without a new test binary. Boundary/context, formatting and
+dirty line-cap checks pass. This qualifies the named pre-retirement original;
+an empty post-retirement query establishing a Retire publication remains a typed
+unsupported shape. This slice adds no archive, arbitrary path language or
+correction authority.
+
+#### Phase 9.8: Genuine Equivalent-Output Suppression Explanations
+
+**Status: complete for the qualified Required standard-u64 field on an exactly-one
+Preserve role. Depends on: 9.3-9.4 and the existing Signal evidence owner.**
+An installed producer can opt into `output_equivalence()` for its actual output
+field. The shared field owner seals its typed declaration, installed value binding,
+complete Native aspect/physical binding, role and producer edition. Required
+standard u64 is the bounded public constructor; missing or substituted field seals
+cannot issue an installed producer edition.
+
+The completed handler's guarded before-field value and original branch basis join
+the actual postcommit Native field revision and readiness artifact at that same
+publication. The readiness dependency must bind the actual full-generation output,
+complete contract and physical field. A fixed same-shaped sibling, replacement
+generation, conflicting read, absent field or different publication cannot replace
+that evidence. Compact immutable field custody retains no additional Native reader.
+Original optional capture failure retains its exact cause separately from absent
+or ineligible Native evidence; no pre-field creation revision is invented.
+
+One installed source-free OnDemand Exact comparison initializes the actual present
+baseline and computes its candidate in a fresh private Signal session. The actual
+`AppliedEffectReport`, computed class and before/after output versions must form
+one exact pair. Its unique admission cannot escape or be replaced by equal labels.
+Only the completed pair issues private comparison evidence. Admission, baseline
+and candidate failures preserve their typed owner/stage causes and release partial
+state. Result funding is reserved before compute; no fallible step separates the
+completed comparison from its memo in the existing pre-effect Ready backing.
+Original supplier custody borrows that pair through the same checkpoint/Ready
+lifecycle, without another graph, reader or retention registry.
+
+Fresh `.why_observed().evaluated_by::<SourceDisclosure>(&source).reference_only()`
+uses the existing independent query/source READ, metadata, DiagnosticMask, session,
+consuming terminal and funding path. It first joins the source's actual canonical
+occurrence to the producer's completed input. The original query footprint and
+current diagnostic projection must admit the declared output field before retained
+evaluation state is disclosed. The report describes Changed or Equivalent from
+the actual Signal pair, its declared role/field and observed Native revision; it
+exposes no before/after business values. Strict `.caused_by(...)` still requires
+creation of the queried Native revision. Reference identities bind the distinct
+evaluation purpose and actual original evidence; identities grant no authority.
+
+The ordinary parity journey independently expects source `2 -> 4` to retain output
+`0`, reports actual Equivalent and preserves Native field provenance. Source
+`4 -> 5` yields output `1` and Changed. Old source occurrences and equal-valued
+same-kind siblings refuse. Repeated performed Ready retains the same comparison
+with zero new handler contact, rather than claiming another evaluation. Actual
+source/query grant withdrawal, request cancellation and insufficient funding refuse
+without evaluation details. Closing reports and denials releases the fresh payer;
+original custody and every extra reader return to their proper lifetime baseline.
+
+A one-shot existing fault-port control cancels a real request after a newly
+computed pair is memoized. Ordinary readiness consults the current execution again
+before Ready, preserving Delivered and the committed output on that late stop.
+Fresh-scope retry contacts no handler, allocates no new comparison pair and leaves
+the opaque committed product head unchanged. Its admitted Equivalent report keeps
+the original Native revision; Ready reopening shares that exact comparison. Pending
+control replacement refuses, and unrelated readiness cannot consume the control.
+
+The same deterministic parity binding declares actual input-reuse eligibility.
+Changing queried `Secondary` from `7 -> 8` while canonical operation input remains
+unchanged produces real `StableReused`, no performed receipt and no Native commit.
+Fresh inspection returns `NotPerformed`. A real checkpoint restored with identical
+program/roster/build/limits and no seed callback produces `RecoveredPerformed`
+without an original live receipt or in-memory evaluation. A fresh same-runtime
+no-op source and independent admission also return `NotPerformed`. These outcomes
+retain their distinct supplier meanings instead of acquiring an Equivalent claim.
+
+Native owner qualification separately produces `SuppressedBeforeCompute` and
+`DependencyUnchanged` with no computed report. Bridge's real dependency-reuse court
+checks the Signal option and retained causal option remain absent. Query's computed
+pair requirement and readiness classification preserve that distinction. This is
+compositional Native precompute protection; the public contrasts exercise actual
+performed Ready, Stable and restored suppliers.
+
+Current qualification passes all 55 affected public correction tests and the two
+focused Signal/Bridge precompute/handoff courts. The unchanged contract/comparison
+substrates retain their qualified owner evidence, including the 80-test field,
+currentness and inspection court and 17-test readiness/checkpoint court from the
+preceding slices. Boundary/context checks, dirty Rust size and formatting/whitespace
+checks pass.
+
+
+#### Phase 9.9: Optional Rich Materialization
+
+**Source-only rich slice and phase closure qualified.** A new
+source-only rich request admits actual current source READ, metadata and a scoped
+Diagnostic loan before canonical fields or availability. Its consuming terminal
+requires the exact Source reference/original and same rich scope, and rejects
+query, before, connected-target/identity and producer payloads. The owned result
+retains original canonical Arcs and fresh SDK/report funding after receipt drop;
+query/producer selections are explicitly unprovided by this mode. The existing
+public numeric court proves source4 after head5 without a query original,
+independent metadata/diagnostic refusal, actual post-body cancellation, current
+grant withdrawal, receipt drop, business preservation and final release.
+The existing Host doctest lane proves the admitted owned-result signature and
+rejects diagnostic-free execution and forged success construction.
+Validation: 58 public correction tests, 23 focused owner tests and three scoped
+Host doctests pass; current-root topology/seals, context, 19-file Rust caps,
+function review and diff checks pass. All three legacy materialization fences
+remain. Actual query-owner NotRetained versus retained empty, selected-mode
+omissions, genuine source/producer evidence and fresh permission/custody cover
+9.9's requirements. Signal tier/actual expiry availability remains 9.10; broader
+consumer/portfolio qualification remains 9.11. Parent Phase 9 stays open. Independent
+review cleared this slice and the selected-mode 9.9 closure before commit.
+
+**Connected rich slice qualified.** Strict creation and performed
+output evaluation now accept an explicit materialization request on the same
+independently admitted source/query session. Source-effects and producer-evidence
+facets remain separate from the existing retained-family inventory. Source fields
+borrow immutable canonical values through Native-issued positions coupled to the
+original envelope and exact full-generation record patch. Present, unchanged,
+field clear and aspect clear effects keep their Native meanings. Source capture
+checks the actual issued scope kind, direct-root shape, current diagnostic loan
+and request budget before lookup/allocation. Exact SDK array backing remains on
+the fresh payer; canonical payload ownership stays with the originals. The rich
+identity binds the actual connected identity, requested facets and their outcomes.
+This connected slice left source-only richness for the following implementation.
+Its qualified closure is recorded above; lifecycle/consumer work remains in
+9.10/9.11 and the parent phase stays open.
+Verification: 57 public correction tests, 23 focused Query owner tests and two
+Native canonical field-effect tests pass in the existing binaries. Current-root
+topology/seals, context freshness, dirty Rust caps, function review and diff checks
+pass. The checker was built in this task's cache because the globally shared
+executable embedded another worktree's closed-caller configuration. No new runtime
+model or test binary was added; independent review cleared the slice.
+
+**First slice qualified.** The explicit original-query
+rich request consumes a fresh session-bound diagnostic loan before retained-body
+availability, shares the original disclosed projection owner, and publishes only
+through the matching consuming inspection terminal. Requested family selection,
+actual original projection outcome and policy bind the versioned rich identity.
+The three legacy materialization fences remain intact. Existing grouped public and
+owner courts cover earlier values after a head change, nested rows, fresh grant
+withdrawal, actual mid-assembly cancellation, empty versus unretained projections,
+Diagnostic denial before availability, scope substitution and reservation release.
+This first slice qualifies only the original-query view; connected rich evidence
+is recorded separately. Source-only qualification and 9.9 closure are recorded
+above.
+Validation: 56 existing grouped public correction tests and 23 focused owner
+tests pass, including the unchanged legacy fences; topology, context, dirty Rust
+line caps, function review and diff checks pass. The independent reviewer cleared
+the slice before commit. No new test binary or runtime schema was added.
+
+**Status: complete for the selected qualified evidence modes. Depends on: 9.1 and 9.4 plus the selected qualified evidence
+mode.** Carry existing CausalInspection/Bridge/Signal materialization and omission
+meaning through Decl/Host. Admit current READ, metadata and DiagnosticMask before
+revealing fields, links, counts or family availability. Materialize only on demand
+using the existing original-request owners. Revocation, cancellation, missing
+evidence and close/release preserve the business result and its cleanup.
+Reference-only reports do not close this subphase, and generic older routes
+cannot bypass fresh application admission. No new 9.21 decision attachments or
+synchronous explanatory work on ordinary commits is required.
+
+#### Phase 9.10: Evidence Availability, Expiry And Retention Lifecycle
+
+**Status: complete for qualified Native evidence modes.
+Depends on: 9.1 and 9.4; integrate with 9.9 where materialization owns retention.**
+The qualified Host path describes actual retained projection/supplier/Native
+observation custody after fresh metadata admission and exposes optional conditional
+history loss from the actual Bridge diagnostics owner with its original typed cause. NotRetained does not prove expiry, producer absence or
+suppression; request expiry is not evidence expiry. Strong immutable originals
+have no invented TTL. Exercise actual supported expiry/release, revocation before
+availability lookup and final-holder cleanup without a parallel retention
+registry or a new durable-restart promise.
+
+Qualified immutable-custody increment (2026-10-30): fresh reference, compared,
+connected, evaluated and rich Query reports expose the actual retained projection,
+committed/stable/restored supplier and conditional Native observation owners.
+The query report anchor v2 binds these custody meanings; original observation
+identity remains unchanged. This path is allocation-free and requires the existing
+fresh EvidenceAvailability metadata facet. No retention registry or TTL is added.
+The grouped correction journeys qualify omitted capture, real supplier variants,
+operational reader release, sibling custody, current grant withdrawal, cancellation
+and original query funding through final close. Existing owner weak-reference
+proof checks actual original backing destruction. Verification: 60 scoped public
+correction tests and 23 scoped Query owner tests passed, with boundary/context,
+line-cap, function-review and diff checks. The subsequently qualified Native
+owner-history substrate and Query handoff below complete the optional loss path.
+
+Qualified Native owner-history substrate increment (2026-10-30): successful
+Bridge conditional execution now issues a distinct optional diagnostic history
+association from the actual Signal decision. The existing shared diagnostics
+owner applies its configured record retention with a bounded FIFO. Original
+request SDK funding follows each fixed slot through eviction, surviving original
+holders and final release. Production owner eviction reports EvictedByRetention;
+owner teardown reports OwnerClosed without overwriting an earlier eviction.
+OmittedByTier and actual finite CaptureDenied remain distinct; cancellation,
+overflow and other request stops propagate. No query TTL, source/route record
+substitution, reader retention or second retention registry is introduced.
+Eighteen scoped Bridge owner tests pass, including genuine execution/eviction,
+successor-link release, original Native custody, tolerated real memory pressure,
+request cancellation, independent exact-byte retention oracles and final payer
+cleanup. Required boundary/context, line-cap, function-review and diff gates pass.
+The Query handoff qualified below consumes this owner substrate through fresh
+metadata and independent diagnostic admission.
+
+Qualified Query owner-loss handoff (2026-10-30): one freshly admitted availability
+snapshot feeds both the published report and query anchor v3. Getters perform no
+later owner lookup. Connected rich requests select conditional history explicitly;
+both diagnostic loans and the exact source connection precede an independent
+owner lookup. Private publication binds the same readonly Native observation,
+while rich identity v3 binds request, typed outcome, cause and supplied facts.
+Source-only/plain query modes cannot acquire this body. This describes supplier
+readiness and remains distinct from the actual output-equivalence pair.
+The real installed parity journey qualifies Equivalent source4, available history,
+subsequent source5 Changed output with actual owner eviction, frozen earlier
+metadata/body, fresh rich OwnerUnavailable, unchanged original source/query/evaluation
+evidence, sibling release, independent diagnostic denial, history-only private
+cancellation and final request funding. Explicit owner recording policy qualifies
+omission; Minimal diagnostics tier alone does not imply omission. Current evidence:
+62 public correction tests, 23 Query owner tests and the qualified 18 Native owner
+tests pass, with boundary/context, line-cap, function-review and diff gates.
+Independent QA clears 9.10 in these supported Native modes. Generic Signal forensic
+and replay histories, legacy Bridge route records and durable archives are not
+reclassified into this facet. Parent Phase 9 remains open for 9.11.
+
+#### Phase 9.11: Integrated Application Qualification And Consumer Handoff
+
+**Status: complete; independent final QA accepted. Depends on: completed 9.1-9.10.** Qualify one coherent ordinary
+Decl/Host capability with actual query/source receipts, fresh admission,
+producer/suppression evidence, optional materialization and availability/release.
+Remove displaced older orchestration at its real consumer boundary; no second
+engine or raw Bridge/Signal/Relational handles may become application requirements.
+Finish `docs/build-an-application.md`, `docs/capability-index.md` and the existing
+`cross-runtime-causal-inspection.md` guide with executable supported workflows,
+typed failures and lifecycle. Complete the existing consumer handoff obligations:
+the real two-facade fixture is required, while an invented Proprietary CAD feature
+is not. Phases 16-17 and 9.19's private index cutover remain separate.
+Carry adequate evidence; run changed-boundary courts and required final checks
+on the integrated candidate rather than replaying all historical portfolios
+after each edit. Final capability/consumer review closes the parent Phase 9.
+
+Qualified integrated consumer handoff (2026-10-30): the existing Host runtime
+surface fixture now declares its identity/grant/query members as one actual
+contribution and installs through public Host in_memory construction, explicit
+resources and the genuine build identity. Root and child modules use only Decl
+and Host; the internal resource factory and its obsolete caller allowance are
+removed. Public rich query, independently disclosed connected history and owned
+source-only signatures compile without raw evidence constructors. The runtime
+court acquires a real retained query projection, closes its result and first
+holder, inspects the sibling through fresh ordinary admission, then releases it.
+Publication imports the narrow application_inspection contract. Source-only DX
+selects source_effects() directly, with existing admission/owner semantics.
+The integrated parity/history model carries actual source2 -> source4 Equivalent
+-> source5 Changed, original query/source effects, independent permissions,
+rich producer/history detail, real owner eviction, earlier readonly snapshots,
+cancellation, revocation and cleanup. Existing hostile grouped cases retain the
+bounded Scalar, optional-aspect, distinct-subject, retired/generation and restored
+contrasts; no duplicated runtime or speculative CAD feature was added.
+Final evidence: 62 focused correction tests, 4 Decl/Host consumer runtime tests,
+and 6 Host rustdoc checks pass. The 23 Query owner and 18 Native owner courts from
+the preceding qualified handoffs are carried within their unchanged scope.
+Boundary/context, 400-line caps, function review, diff checks and 327 local
+consumer-document links pass. Public guidance links the actual compiled consumer
+and integrated producer journey, distinguishes typed loss from request failure,
+and preserves the separately authorized legacy receipt audience. Independent
+QA-loop, QA-tests and code-quality QA clear 9.11 and parent Phase 9 in the stated
+qualified modes. Durable archives/generic forensic reconstruction and later
+milestone phases remain separate; no new restart or universal-shape promise is made.
+
+#### Shared Ownership And Destination
+
+Declaration/Installation retain binding, disclosure and result-shape meaning;
+Native retains canonical effects and revisions. The existing Query owner is
+`primary_graph/causal_inspection/application_inspection/`:
+
+```text
+application_inspection/
+  request/          E typed observed, compared, source and connected requests
+  admission/        E/S fresh policy, currentness, terminal and rich-view admission
+  connection/       E/S genuine source/input/output and additional shape joins
+  identity/         E exact original and report identities
+  report/           E/S descriptive reports and existing evidence assembly
+  result/           E/S consuming publication, reference and richer results
+  availability.rs   E/S retained-evidence metadata and owner availability
+  stop/             E/S typed denial and unavailable/expired propagation
+```
+
+`E` is existing; `S` extends that responsibility for the remaining subphases.
+No empty placeholders or parallel runtime are authorized. Public reach stays
+through Decl/Host, enforced by visibility and boundary checks. Evidence is not
+permission; results are not provenance; later stages consume owner-issued proofs.
+Existing grouped application/Host and narrow owner courts remain the proof
+destinations. Do not create a test binary or evidence registry per subphase.
+
+**Execution order.** With 9.6 complete, 9.7, 9.8 and
+reference-side 9.10 may progress independently on their named dependencies;
+9.9 and retention/materialization integration follow their actual evidence
+owners. Close 9.11 last. Keep the existing compact risk matrix focused on the
+next concrete failure boundary and real runtime feedback. Numbering does not
+require new worktrees, review ledgers, SDK pins or private qualification cycles.
+
+### Shared Inspection Contract
+The implementation uses the actual installed query binding, original parameters,
+completed row/selection footprints and immutable settled-supplier custody. Query
+observations retain no mutable runtime or Native reader. Supplier publication,
+stable input reuse and checkpoint restoration retain distinct meanings; custody
+alone never establishes a cause.
+
+Inspection metadata belongs to the complete ordinary query binding. Its six
+facets cover observation identity, links, counts, availability, explanation and
+diagnostic fields. Metadata admission is separate from payload disclosure and
+DiagnosticMask. Fresh admission must precede protected lookup, including evidence
+availability. The original payer retains evidence; the fresh request funds its
+report and any requested materialization.
+
+The current consumer API and supported shapes are documented in the
+[causal inspection guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md).
+Phase 9 remains open until all requirements and their ordinary Decl/Host evidence
+below are met, including genuine suppression, rich materialization and the actual
+consumer handoff. Native-only shape courts do not establish an installed Query
+scalar boundary or public authoring behavior.
 
 ### Requirements
 
@@ -1401,6 +1857,18 @@ unknown versions refuse before payload fields or allocations.
   Bind exact runtime, product occurrence, installed query/operation, result shape
   and retained evidence. Extend actual producers to carry genuine references when
   needed; never reconstruct authority or reference identity from display fields.
+- A single completed query establishes `Observed`, not `Changed`. Fresh
+  `why_observed` selects that meaning. Paired `why_changed` compares genuine
+  original before/after Native disclosed projections with exact binding,
+  parameters, full subject, result shape/order and disclosure interpretation.
+  Field revisions or producer contacts cannot stand in for payload equality.
+  This means declared Native cells/presence and ordered nested rows, not arbitrary
+  application DTOs or private predicate/dependency provenance. The existing
+  explicit one-shot `retain_projection_for_inspection` custody supplies complete
+  bound field/relation trees and original effective disclosure decisions under
+  original-request funding; unbound, unsupported and partial capture refuses.
+  Missing older bodies stay explicitly comparison-unavailable. Fresh read,
+  metadata and current DiagnosticMask admission precede body traversal.
 - Migrate/reuse `CausalInspection`'s anchoring, reference resolution, typed
   admission, Bridge assembly, materialization and omission contracts. A receipt
   supplies observation evidence only. Current principal, purpose, scope and field
@@ -1423,8 +1891,9 @@ unknown versions refuse before payload fields or allocations.
 
 ### Tests That Prove It
 
-Use the causal courtroom above through current application receipts and two
-facades, with independent source/evaluation observations. A sibling/foreign receipt
+Use an ordinary source edit, actual installed producer and settled query through
+current application receipts and the two facades. Independently retain the source,
+performed input, canonical output role and original query revision. A sibling/foreign receipt
 or matching-looking display digest cannot substitute. A revoked inspection cannot
 expose retained fields; expired evidence returns its actual availability posture.
 Cancelling optional materialization leaves the business result and its cleanup
@@ -1435,20 +1904,26 @@ proof that the new receipt acquisition and authorization path is complete.
 ### Target DX
 
 ```rust,ignore
-// Planned syntax; receipt is returned by an actual ordinary application query.
-let explanation = request.inspections()
-    .for_observation::<InstalledQueryBinding>(result.receipt())?
-    .why_changed()
+// The ordinary bound query supplies this actual retained receipt observation.
+let original = result.receipt().inspect().observation()
+    .ok_or(ApplicationError::ObservationUnavailable)?;
+let explanation = request.inspect::<InstalledQueryBinding>(original)
+    .why_observed()
     .reference_only()
     .execute()?;
+explanation.close();
 ```
 
-The explicit installed binding preserves the original source's query, parameter,
-scope and result interpretation during fresh admission. This remains planned DX
-until the ordinary and governed Host entrances compile. Moving the operational
-core and retaining an opaque native observation in Publication receipts do not
-complete this phase: genuine producer-chain references, fresh disclosure,
-availability, materialization controls and release evidence remain required.
+This syntax is exercised by the linked Host court; the binding and error are
+application-defined. Governed metadata supplies its actual newly admitted
+capability to `execute_governed`. The receipt loan carries no current permission.
+Paired comparison uses `inspect::<Binding>(after).why_changed(before)` and a
+separate actual diagnostic capability through `execute_with_diagnostic`, or both
+metadata and diagnostic capabilities through `execute_governed`. Both ordinary
+executions must have requested `retain_projection_for_inspection()`. The
+[capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#fresh-application-inspection)
+describes custody, refusal views, source/producer connections and the supported
+[paired comparison](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#paired-original-comparison).
 
 ### How We Know It's Done
 

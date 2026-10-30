@@ -21,6 +21,42 @@ pub mod causal_inspection {
     pub use crate::domain_computation::primary_graph::causal_inspection::*;
 }
 
+/// Fresh application inspection; only its supported result and request vocabulary.
+pub mod application_inspection {
+    pub use crate::domain_computation::primary_graph::causal_inspection::{
+        CausalInspectionReason, CausalObservationMissingReferencePosture,
+        WorthQueryApplicationEvidenceFamily, WorthQueryApplicationInspectionCanonicalRefusal,
+        WorthQueryApplicationInspectionDenial, WorthQueryApplicationInspectionRequest,
+        WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStopKind,
+        WorthQueryApplicationMaterializationPolicy, WorthQueryApplicationMaterializationRequest,
+        WorthQueryApplicationProducerConnection, WorthQueryApplicationProducerEvaluation,
+        WorthQueryApplicationQueryObservation, WorthQueryApplicationRichMaterialization,
+        WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,
+        WorthQueryComparedApplicationInspection, WorthQueryConditionalHistoryAvailability,
+        WorthQueryConditionalHistoryDecisionClass, WorthQueryConditionalHistoryOutcome,
+        WorthQueryConnectedApplicationInspection, WorthQueryConnectedInspectionRequest,
+        WorthQueryConnectedReferenceOnlyInspectionRequest,
+        WorthQueryEvaluatedApplicationInspection, WorthQueryEvaluatedInspectionRequest,
+        WorthQueryEvaluatedReferenceOnlyInspectionRequest,
+        WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionRetainedEvidence,
+        WorthQueryInspectionSupplierEvidence, WorthQueryMaterializedApplicationInspection,
+        WorthQueryMaterializedConditionalHistory, WorthQueryMaterializedConnectedInspectionRequest,
+        WorthQueryMaterializedEvidenceReference, WorthQueryMaterializedFamilyOutcome,
+        WorthQueryMaterializedFieldValue, WorthQueryMaterializedInspectionRequest,
+        WorthQueryMaterializedPerformedSourceInspection, WorthQueryMaterializedQueryField,
+        WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
+        WorthQueryMaterializedQueryRow, WorthQueryMaterializedSourceEffects,
+        WorthQueryMaterializedSourceField, WorthQueryMaterializedSourceFieldEffect,
+        WorthQueryMaterializedSourceInspectionRequest, WorthQueryObservedApplicationInspection,
+        WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspection,
+        WorthQueryPerformedSourceInspectionRequest, WorthQueryProducerConnectionDenial,
+        WorthQueryProducerEvaluationDecision, WorthQueryProducerEvaluationDenial,
+        WorthQueryProducerEvaluationIneligibility, WorthQueryProducerOutputConnectionDenial,
+        WorthQueryProjectionMaterializationRefusal, WorthQueryReferenceOnlyInspectionRequest,
+        WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
+    };
+}
+
 /// Directional integration for retained legacy request occurrences.
 #[doc(hidden)]
 pub mod resource_custody {
@@ -79,7 +115,9 @@ pub mod runtime {
         LeaseDenial, LeaseRequest, MapKernelStop, MemoryLimitDenial, MemoryLimitLevel,
         WorkCeilingDenial,
     };
-    pub use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+    pub use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,
         ProductUnpublishedCause, RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,

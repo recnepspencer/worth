@@ -22,6 +22,18 @@ program-owned actions (`retain_operation`, then fresh-request `advance`), instal
 and publish, start, and advance workflows, and adopt a new program on a
 branch. This README covers the host's deeper contracts.
 
+## Explain a query result or source operation
+
+Start with `request.inspect::<ReadBinding>(&original)` for a completed query or
+`request.inspect_source::<SourceDisclosure>(&source_receipt)` for an authored
+operation. Choose reference inspection, comparison, a producer connection, or
+materialized original values through `facade::causal_inspection`.
+
+[Inspect original evidence](../worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+shows how to keep the right receipts, query a producer settlement and admit the
+current metadata/diagnostic access each request needs. Use it for audit and
+debugging views that must describe the original work after later state changes.
+
 ## Contribution-Composed Applications
 
 Pure domain value crates own their values and validation without importing Query.

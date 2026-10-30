@@ -228,7 +228,10 @@ pub(super) fn candidate(
             }
             // Native body declarations do not emit or delete. Do not silently
             // omit opaque retained payloads or future effect kinds from signing.
-            Effect::DeleteEntity { .. } | Effect::DeleteRelation { .. } | Effect::Emit(_) => {
+            Effect::DeleteEntity { .. }
+            | Effect::DeleteRelation { .. }
+            | Effect::Emit(_)
+            | Effect::RemoveAspect { .. } => {
                 return Err(
                     super::sealing::WorthQuerySignedCreationPreparationDenial::Canonicalization,
                 )

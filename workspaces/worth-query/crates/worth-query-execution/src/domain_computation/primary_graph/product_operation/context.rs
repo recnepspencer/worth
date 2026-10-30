@@ -18,6 +18,9 @@ pub struct WorthQuerySelectedProductOperation<'runtime, Schema> {
         super::super::WorthQuerySelectedProgramInspection,
         super::super::WorthQuerySelectedProgramInspectionDenial,
     >,
+    producer: Option<
+        std::sync::Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
+    >,
 }
 
 /// Public application entry naming one product occurrence. It performs no
@@ -112,6 +115,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             product,
             application_basis,
             selected_program,
+            producer: None,
         })
     }
 
@@ -140,6 +144,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             product,
             application_basis,
             selected_program,
+            producer: None,
         })
     }
 }
@@ -229,6 +234,16 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         &self.application_basis
     }
 
+    pub(in crate::domain_computation::primary_graph) fn original_settled_producer(
+        &self,
+    ) -> Option<
+        &std::sync::Arc<
+            super::super::application_output_demand::OriginalSettledProducerObservation,
+        >,
+    > {
+        self.producer.as_ref()
+    }
+
     pub(super) fn application_basis_mut(
         &mut self,
     ) -> &mut super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease
@@ -248,11 +263,25 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    pub(in crate::domain_computation::primary_graph) fn with_original_settled_producer(
+        mut self,
+        producer: Option<
+            std::sync::Arc<
+                super::super::application_output_demand::OriginalSettledProducerObservation,
+            >,
+        >,
+    ) -> Self {
+        self.producer =
+            producer.filter(|origin| origin.matches(self.application, self.product.observation()));
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retain_selection(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
         self.application
             .on_product(execution, self.product.retained_clone())
+            .map(|selected| selected.with_original_settled_producer(self.producer.clone()))
     }
 }

@@ -2,8 +2,11 @@
 
 #[path = "authorization_world_installation/publication.rs"]
 mod publication;
+#[path = "authorization_world_installation/reclaiming.rs"]
+mod reclaiming;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use publication::publish_authorization_world;
+pub(super) use reclaiming::install_reclaiming_authorization_world;
 #[path = "authorization_world_installation/preparation.rs"]
 mod preparation;
 use preparation::prepare_authorization_world;

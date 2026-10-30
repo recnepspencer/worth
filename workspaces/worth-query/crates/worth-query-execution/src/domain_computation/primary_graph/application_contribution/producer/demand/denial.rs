@@ -2,6 +2,7 @@ pub(super) mod cleanup_custody;
 mod diagnostic_copy;
 mod invariant_refusal;
 mod kind;
+mod output_comparison;
 mod producer_value;
 mod publication_stale;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
@@ -28,6 +29,7 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    output_comparison: Option<worth_runtime_bridge::facade::BridgeOutputComparisonDenial>,
     custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
     producer_requirement: Option<
         crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,

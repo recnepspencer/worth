@@ -8,6 +8,7 @@ use worth_query_installation::facade::{
 enum DisclosureSubject {
     Query(WorthQueryInstalledApplicationQueryIdentity),
     Resource(Arc<WorthQueryInstalledResourceAccessContract>),
+    Inspection(Arc<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>),
 }
 
 pub(in crate::domain_computation) struct WorthQueryApplicationGovernanceBinding {
@@ -66,6 +67,70 @@ impl WorthQueryApplicationGovernanceBinding {
             scope,
             basis.clone(),
         ))
+    }
+
+    pub(in crate::domain_computation) fn inspection_backing_bytes(
+        graph_work: &WorthQueryManagedGraphWorkSession,
+    ) -> Option<u64> {
+        let (_, basis) = graph_work.inspection_binding()?;
+        let names = graph_work
+            .branch()
+            .relational()
+            .0
+            .len()
+            .checked_add(graph_work.provider().len())?;
+        basis
+            .retained_clone_heap_bytes()?
+            .checked_add(u64::try_from(names).ok()?)
+    }
+
+    pub(in crate::domain_computation) fn from_inspection_session(
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        target: &Arc<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>,
+        parameters: CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> Option<Self> {
+        let (actual, basis) = graph_work.inspection_binding()?;
+        if !actual.admits_member_subject(target, scope)
+            || graph_work.principal() != principal
+            || graph_work.entity_access_context() != Some(actual.original_subject())
+        {
+            return None;
+        }
+        Some(Self::bound(
+            graph_work,
+            DisclosureSubject::Inspection(Arc::clone(target)),
+            parameters,
+            principal,
+            scope,
+            basis.clone(),
+        ))
+    }
+
+    pub(super) fn is_inspection(&self) -> bool {
+        matches!(&self.subject, DisclosureSubject::Inspection(_))
+    }
+
+    pub(super) fn matches_inspection(
+        &self,
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        target: &Arc<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>,
+        parameters: &CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> bool {
+        let Some((actual, basis)) = graph_work.inspection_binding() else {
+            return false;
+        };
+        matches!(&self.subject, DisclosureSubject::Inspection(retained) if Arc::ptr_eq(retained, target))
+            && actual.admits_member_subject(target, scope)
+            && graph_work.entity_access_context() == Some(actual.original_subject())
+            && basis == &self.basis
+            && self.matches_session(graph_work)
+            && &self.parameters == parameters
+            && self.principal == principal
+            && self.scope == scope
     }
 
     fn bound(

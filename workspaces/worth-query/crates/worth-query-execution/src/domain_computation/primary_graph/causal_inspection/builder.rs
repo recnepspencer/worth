@@ -161,6 +161,11 @@ impl CausalInspection {
         }
     }
 
+    /// Select the evidence for a completed observation without claiming change.
+    pub fn why_observed(self) -> Self {
+        self.because(CausalInspectionReason::ObservedResult)
+    }
+
     pub fn why_changed(self) -> Self {
         self.because(CausalInspectionReason::ChangedResult)
     }

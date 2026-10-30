@@ -49,6 +49,7 @@ struct WorthQueryApplicationLiveOpenRequest<
     product: crate::basis::WorthQueryProductBranchLease,
     application_basis: super::super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
     pending_governance: Option<WorthQueryPendingApplicationQueryGovernance>,
+    producer: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::OriginalSettledProducerObservation>>,
 }
 
 impl<'runtime, Schema>
@@ -98,6 +99,7 @@ where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
     {
+        let producer = self.original_settled_producer().cloned();
         let (application, product, application_basis) = self.into_parts();
         application.open_application_query_live_with_governance::<
             Query,
@@ -117,6 +119,7 @@ where
             product,
             application_basis,
             pending_governance: None,
+            producer,
         })
     }
 
@@ -172,6 +175,7 @@ where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
+        let producer = self.original_settled_producer().cloned();
         let (application, product, application_basis) = self.into_parts();
         let execution = phase
             .execution_request_for(&application.product_runtime)
@@ -194,7 +198,8 @@ where
                 })?,
             controls.maximum_materialized_record_count(),
             controls.request(),
-        );
+        )
+        .with_original_settled_producer(producer.clone());
         let pending = prepare_governed_access(
             application,
             &query,
@@ -222,6 +227,7 @@ where
             product,
             application_basis,
             pending_governance: Some(pending),
+            producer,
         })
     }
 }
@@ -293,7 +299,8 @@ where
             request.application_basis,
             request.controls.maximum_materialized_record_count(),
             request.controls.request(),
-        );
+        )
+        .with_original_settled_producer(request.producer);
         let (admitted_parameters, query_controls) = self
             .prepare_application_query_admission(
                 &request.query,

@@ -1,3 +1,7 @@
+pub(crate) mod conditional_history;
+pub use conditional_history::{
+    BridgeConditionalHistoryAvailability, BridgeConditionalHistoryDetail,
+};
 mod bulk;
 pub(crate) mod causal_envelope;
 mod continuity;
@@ -28,6 +32,8 @@ pub use causal_envelope::{
     BridgeCausalEvidenceOwner, BridgeCausalEvidenceReference,
     BridgeCausalEvidenceReferenceIdentity, BridgeCausalExplanationEnvelope,
     BridgeCausalInspectionAdmissionSummary, BridgeCausalInspectionAdmissionSummaryKind,
+    BridgeConditionalCausalEnvelopeRequest, BridgeQueryObservationReportingInputDenial,
+    BridgeQueryObservationReportingRequest, BridgeQueryObservationReportingStop,
 };
 pub use continuity::{
     BridgeCanonicalContinuityRecord, BridgeContinuityExplanation, BridgeContinuityReplaySummary,

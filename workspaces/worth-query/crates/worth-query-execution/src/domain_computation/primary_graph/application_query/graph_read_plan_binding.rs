@@ -36,6 +36,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
 > {
     pub(super) planned_batch_item: Option<super::batch::PlannedBatchItem>,
     pub(super) retain_expression_context: bool,
+    pub(super) retain_projection_for_inspection: bool,
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     pub(super) graph_authority_identity: String,
     pub(super) provider_identity: String,
@@ -86,6 +87,15 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
     /// and does not replace query admission or mutation source validation.
     pub fn retain_expression_context(mut self) -> Self {
         self.retain_expression_context = true;
+        self
+    }
+
+    /// Retains the actual disclosed Native projection under the original
+    /// execution request. This descriptive backing grants no inspection
+    /// permission and does not capture application DTOs. Unsupported shapes
+    /// are refused by one-shot completion.
+    pub fn retain_projection_for_inspection(mut self) -> Self {
+        self.retain_projection_for_inspection = true;
         self
     }
 

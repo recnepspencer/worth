@@ -47,7 +47,7 @@ mod settlement_identity;
 
 pub(in crate::domain_computation) use invalidation::SourceInvalidationOwner;
 #[cfg(test)]
-mod ownership_oracle;
+pub(in crate::domain_computation::primary_graph) mod ownership_oracle;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) mod registry_fixture;
 #[cfg(test)]

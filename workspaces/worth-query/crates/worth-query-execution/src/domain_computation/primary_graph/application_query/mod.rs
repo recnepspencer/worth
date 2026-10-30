@@ -4,7 +4,7 @@ mod admission;
 pub(in crate::domain_computation::primary_graph) use admission::capture_parameters;
 pub(in crate::domain_computation) use admission::CapturedApplicationQueryParameters;
 pub(in crate::domain_computation::primary_graph) use admission::{
-    FreshQueryPermissionStop, PreparedApplicationQueryPermission,
+    FreshQueryPermissionStop, PreparedApplicationQueryPermission, SelectedIssuedAccessRoot,
 };
 mod admission_preparation;
 mod admitted_result;
@@ -69,6 +69,9 @@ pub(in crate::domain_computation::primary_graph) use output_source_observation::
     SourceQueryReaderAccess,
 };
 mod projection;
+pub(in crate::domain_computation::primary_graph) use projection::retained_projection::{
+    compare_original_projections, ProjectionComparisonDenial,
+};
 mod read_execution;
 pub use read_execution::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
@@ -168,3 +171,10 @@ pub use observed_source::retained_dependencies::{
 
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_execution::component_native_acquisitions_on_this_thread_for_test;
+
+pub(in crate::domain_computation::primary_graph) use projection::retained_projection::materialize_original_projection;
+pub use projection::retained_projection::{
+    WorthQueryMaterializedFieldValue, WorthQueryMaterializedQueryField,
+    WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
+    WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
+};

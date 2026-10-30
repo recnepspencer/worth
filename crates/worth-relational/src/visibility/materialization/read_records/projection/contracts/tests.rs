@@ -10,7 +10,7 @@ use worth_foundational::facade::{
 };
 
 #[test]
-fn projection_contract_admission_rejects_field_mask_denied_by_scalar_contract() {
+fn projection_contract_admission_resolves_only_the_installed_scalar_field() {
     let aspect_key = AspectKey::new("counter").unwrap();
     let field_key = FieldKey::new("value").unwrap();
     let projection_scope = ProjectionAspectScope::fields(aspect_key.clone(), [field_key.clone()]);
@@ -19,7 +19,7 @@ fn projection_contract_admission_rejects_field_mask_denied_by_scalar_contract() 
         plan_revision: AspectContractPlanRevision(1),
         executable_bindings: smallvec![LoweredAspectContractBinding {
             contract: AspectContract::scalar(
-                aspect_key,
+                aspect_key.clone(),
                 AspectIdentity(1),
                 AspectContractRevision(1),
                 ScalarAspectType::Int64,
@@ -28,8 +28,23 @@ fn projection_contract_admission_rejects_field_mask_denied_by_scalar_contract() 
         }],
     };
 
-    let denial = admit_declared_projection_aspects(
+    assert_eq!(
+        plan.executable_bindings[0]
+            .contract
+            .admits_projection_mask(projection_scope.requirements()[0].mask()),
+        Err(worth_foundational::facade::MaskAdmissibilityDenial::FieldMaskRequiresStruct),
+        "the foundational Scalar contract does not invent a field-mask interpretation"
+    );
+    admit_declared_projection_aspects(
         &projection_scope,
+        Some(&plan),
+        ProjectionRecordDomain::Entity,
+        KindId(1),
+    )
+    .expect("only the installed physical binding lowers the field to its scalar value");
+    let wrong = ProjectionAspectScope::fields(aspect_key, [FieldKey::new("counter").unwrap()]);
+    let denial = admit_declared_projection_aspects(
+        &wrong,
         Some(&plan),
         ProjectionRecordDomain::Entity,
         KindId(1),

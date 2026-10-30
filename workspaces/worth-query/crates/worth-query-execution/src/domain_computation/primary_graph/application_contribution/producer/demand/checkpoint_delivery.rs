@@ -79,6 +79,7 @@ where
                     producer_identity,
                     &receipt,
                     delivery.as_ref(),
+                    &ready_backing,
                 ) {
                     Ok(readiness) => readiness,
                     Err(cause) => {

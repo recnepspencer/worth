@@ -27,7 +27,7 @@ pub use invariant::{
     WorthQueryInstalledApplicationInvariantDescriptor,
 };
 pub use native_contract::{
-    declared_application_aspect_contract, WorthQueryApplicationSchemaContractCatalogDenial,
+    declared_application_aspect, WorthQueryApplicationSchemaContractCatalogDenial,
     WorthQueryApplicationSchemaContractCatalogDenialKind,
     WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,
     WorthQueryInstalledApplicationSchemaContractCatalog,

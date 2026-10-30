@@ -7,6 +7,11 @@ to project schema members, feature specs, runtime configuration, contracts and
 delivery roots from one member body. Applications import only `worth-query-decl`
 and `worth-query-host`.
 
+To explain an original query result or authored operation, use
+[`request.inspect` and `request.inspect_source`](crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md).
+The guide shows how to save originals, read a settled producer output, admit
+current inspection access and handle missing detail.
+
 For numerical or domain computation inside a handler, use the installed owner's
 [`decision_plan`](../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
 Query carries the original request through preparation, computation and completion;

@@ -62,6 +62,7 @@ pub(crate) fn install_portable_graph_reads(
                         entity.clone(),
                         aspect.clone(),
                         projection,
+                        installed.binding().clone(),
                     ),
                 )
             }

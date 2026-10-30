@@ -8,7 +8,10 @@ use crate::domain_computation::primary_graph::application_query::{
 /// Construction uses the completed source owner's pairing, rather than
 /// accepting a receipt and an independently supplied source. The original
 /// parameters, scope selector and source meaning remain owner-retained. This
-/// retains no native snapshot or read permission; inspection must freshly
+/// includes the exact compiled binding when the query had a bound issuer;
+/// an unbound query never acquires a binding from matching query identity.
+/// The shared parameter capsule retains this interpretation once per invocation.
+/// It retains no native snapshot or read permission; inspection must freshly
 /// admit the installed binding, principal, scope and disclosure.
 #[derive(Clone)]
 pub struct WorthQueryApplicationQueryObservation {
@@ -58,3 +61,6 @@ impl std::fmt::Debug for WorthQueryApplicationQueryObservation {
             .finish_non_exhaustive()
     }
 }
+
+#[cfg(test)]
+mod tests;

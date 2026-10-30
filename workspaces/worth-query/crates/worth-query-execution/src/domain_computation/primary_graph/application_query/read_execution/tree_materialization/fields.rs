@@ -1,7 +1,6 @@
 //! Installed field selection, Native scope and admitted managed-source copies.
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
-use worth_query_installation::facade::ApplicationFieldPresence;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 
 pub(super) fn project_fields(
@@ -12,13 +11,13 @@ pub(super) fn project_fields(
 ) -> Result<Vec<WorthQueryApplicationProjectedField>, WorthQueryApplicationReadExecutionDenial> {
     for projection in fields {
         work.reads.record_fields(1);
-        let Some(value) =
-            record.aspect_field_value(projection.aspect_key(), projection.field_key())
+        let Some(value) = field_presence::value(
+            record.observe_aspect_field(projection.aspect_key(), projection.field_key()),
+            projection.presence(),
+            projection.result_path(),
+        )?
         else {
-            if projection.presence() == ApplicationFieldPresence::Optional {
-                continue;
-            }
-            return Err(projection_denial(projection.result_path()));
+            continue;
         };
         if value.value_family() != projection.scalar_family() {
             return Err(projection_denial(projection.result_path()));

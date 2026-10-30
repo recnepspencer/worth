@@ -60,6 +60,12 @@ type Scope = ApplicationMutationFieldScope<
     NoApplicationUnit,
 >;
 impl ApplicationMutationBinding<NumericSchema> for EditBinding {
+    fn visit_source_disclosure<Visitor: ApplicationSourceDisclosureVisitor<NumericSchema, Self>>(
+        visitor: Visitor,
+    ) -> Visitor::Output {
+        visitor.declared::<super::causal_inspection::SourceDisclosure>()
+    }
+
     type Input = Edit;
     type InputBinding = InputBinding;
     type Result = Edited;

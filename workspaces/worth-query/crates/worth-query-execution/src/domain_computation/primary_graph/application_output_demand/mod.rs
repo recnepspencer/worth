@@ -9,6 +9,7 @@ mod registry;
 pub(in crate::domain_computation::primary_graph) use registry::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedRequiredInputs;
 mod settlement;
+pub(in crate::domain_computation::primary_graph) use settlement::OriginalProducingPublication;
 
 pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
 pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
@@ -56,6 +57,9 @@ pub(super) use registry::WorthQueryPerformedOutputDemandSource;
 pub(super) use registry::WorthQueryReadmittedAcceptedOutput;
 pub(super) use registry::WorthQueryRequiredOutputSourcePreparation;
 pub(super) use registry::WorthQueryRestoredAcceptedOutput;
+pub(in crate::domain_computation::primary_graph) use settlement::observation::{
+    OriginalSettledProducerObservation, OriginalSettledProducerSource,
+};
 pub use settlement::WorthQueryOutputDemandSettlement;
 pub use settlement::WorthQueryOutputSettlementPosture;
 

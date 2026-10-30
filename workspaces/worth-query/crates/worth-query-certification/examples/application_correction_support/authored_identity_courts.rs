@@ -109,6 +109,7 @@ fn create_retire_and_restore() {
     assert_eq!(
         read(&application, "authored-a"),
         vec![query::Row {
+            operand: None,
             primary: 41,
             secondary: 3
         }]
@@ -163,6 +164,7 @@ fn create_retire_and_restore() {
     assert_eq!(
         read(&application, "authored-a"),
         vec![query::Row {
+            operand: None,
             primary: 41,
             secondary: 3
         }]

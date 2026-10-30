@@ -9,6 +9,7 @@ use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionAccess;
 use crate::tests::support::*;
 use worth_foundational::facade::ContractValidatedAspectValueView;
+mod scalar_fields;
 
 #[test]
 fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_payload() {

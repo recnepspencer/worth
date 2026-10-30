@@ -18,7 +18,18 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        contracts
+            .producer::<super::causal_inspection::output_equivalence::calculation::Producer>()?;
+        contracts
+            .conditional::<super::causal_inspection::output_equivalence::readiness::Readiness>()?;
+        contracts.producer::<super::causal_inspection::retired_outputs::calculation::Producer>()?;
+        contracts
+            .conditional::<super::causal_inspection::retired_outputs::readiness::Readiness>()?;
         contracts.producer::<super::calculation::Producer>()?;
+        contracts.producer::<super::aspect_input::calculation::Producer>()?;
+        contracts.producer::<super::scalar_input::calculation::Producer>()?;
+        contracts.conditional::<super::scalar_input::readiness::Readiness>()?;
+        contracts.conditional::<super::aspect_input::readiness::Readiness>()?;
         contracts.conditional::<super::calculation_readiness::Readiness>()?;
         contracts.conditional::<super::composite_definition_runtime::Conditional>()?;
         Ok(())
@@ -27,7 +38,45 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         (): (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<super::causal_inspection::distinct_subjects::grant_status::Binding, _>(
+            super::causal_inspection::distinct_subjects::grant_status::Handler,
+        )?;
+        setup.handler::<super::causal_inspection::output_equivalence::calculation::Binding, _>(
+            super::causal_inspection::output_equivalence::calculation::Handler,
+        )?;
+        setup.producer::<super::causal_inspection::output_equivalence::calculation::Producer>(
+            super::causal_inspection::output_equivalence::calculation::Provider,
+        )?;
+        setup
+            .conditional::<super::causal_inspection::output_equivalence::readiness::Readiness>(())?;
+        setup.handler::<super::causal_inspection::retired_outputs::calculation::Binding, _>(
+            super::causal_inspection::retired_outputs::calculation::Handler,
+        )?;
+        setup.producer::<super::causal_inspection::retired_outputs::calculation::Producer>(
+            super::causal_inspection::retired_outputs::calculation::Provider,
+        )?;
+        setup.conditional::<super::causal_inspection::retired_outputs::readiness::Readiness>(())?;
         setup.handler::<super::calculation::Binding, _>(super::calculation::Handler)?;
+        setup.handler::<super::scalar_input::authoring::Binding, _>(
+            super::scalar_input::authoring::Handler,
+        )?;
+        setup.handler::<super::scalar_input::calculation::Binding, _>(
+            super::scalar_input::calculation::Handler,
+        )?;
+        setup.producer::<super::scalar_input::calculation::Producer>(
+            super::scalar_input::calculation::Provider,
+        )?;
+        setup.conditional::<super::scalar_input::readiness::Readiness>(())?;
+        setup.handler::<super::aspect_input::authoring::Binding, _>(
+            super::aspect_input::authoring::Handler,
+        )?;
+        setup.handler::<super::aspect_input::calculation::Binding, _>(
+            super::aspect_input::calculation::Handler,
+        )?;
+        setup.producer::<super::aspect_input::calculation::Producer>(
+            super::aspect_input::calculation::Provider,
+        )?;
+        setup.conditional::<super::aspect_input::readiness::Readiness>(())?;
         setup.producer::<super::calculation::Producer>(super::calculation::Provider)?;
         setup.conditional::<super::calculation_readiness::Readiness>(())?;
         setup.conditional::<super::composite_definition_runtime::Conditional>(())?;
@@ -35,6 +84,7 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
             super::composite_definition_handler::Handler,
         )?;
         setup.handler::<edit::EditBinding, _>(edit::Handler)?;
+        setup.handler::<super::operand_edit::OperandBinding, _>(super::operand_edit::Handler)?;
         setup.handler::<super::observed_clone::Binding, _>(
             super::authored_identity_handlers::Handler,
         )?;
@@ -96,19 +146,26 @@ where
     P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,
     P::Outputs: WorthQueryApplicationProgramRoots<NumericSchema>,
 {
+    install_program_with_seed(program, roster, |_| Ok(()))
+}
+pub(super) fn install_program_with_seed<P>(
+    program: ValidatedApplicationProgram<NumericSchema, P>,
+    roster: WorthQueryApplicationProgramRoster<'_, NumericSchema>,
+    seed: impl FnOnce(
+        &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+) -> WorthQueryProgramApplicationRuntime<NumericSchema, P>
+where
+    P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<NumericSchema>,
+{
     in_memory_rostered_program(
         program,
         roster,
         NumericSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
-            world_resources::world_resources(256, 4 * 1024 * 1024, 256),
-            runtime::WorthQueryApplicationQueryResourceProfile::new(
-                std::num::NonZeroUsize::new(128).unwrap(),
-            ),
-            SignalConditionalEvaluationBudget::development(),
-        ),
+        installation_limits(),
         |_, graph, installed| {
             let binding = installed
                 .principal_binding(ActorBinding::reference())
@@ -140,7 +197,8 @@ where
                 .field(Calculated::reference(), 0_u64),
             )?;
             super::adoption::seed(graph);
-            Ok(())
+            super::causal_inspection::capability::seed(graph);
+            seed(graph)
         },
     )
     .unwrap()
@@ -242,4 +300,14 @@ pub fn read_on<P: ApplicationProgramDefinition<NumericSchema>>(
         .unwrap()
         .rows()
         .to_vec()
+}
+
+pub(super) fn installation_limits() -> WorthQueryInMemoryApplicationLimits {
+    WorthQueryInMemoryApplicationLimits::new(
+        world_resources::world_resources(256, 4 * 1024 * 1024, 256),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).unwrap(),
+        ),
+        SignalConditionalEvaluationBudget::development(),
+    )
 }

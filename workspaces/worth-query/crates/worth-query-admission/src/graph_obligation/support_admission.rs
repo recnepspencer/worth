@@ -1,6 +1,8 @@
+mod inspection_read;
 mod managed_index_read;
 mod prepared_operation;
 mod resource_read;
+pub use inspection_read::admit_application_inspection_graph_work;
 pub use managed_index_read::{
     admit_prepared_managed_index_read_graph_work, prepare_managed_index_read_graph_work,
     WorthQueryPreparedManagedIndexReadGraphWork,
@@ -267,6 +269,7 @@ fn operation_resource_contract(
             }
             WorthQueryInstalledGraphObligationResourcePosture::ApplicationQuery { .. }
             | WorthQueryInstalledGraphObligationResourcePosture::ApplicationResource { .. }
+            | WorthQueryInstalledGraphObligationResourcePosture::ApplicationInspection { .. }
             | WorthQueryInstalledGraphObligationResourcePosture::ApplicationManagedIndex {
                 ..
             } => None,

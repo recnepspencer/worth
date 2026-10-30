@@ -149,6 +149,7 @@ fn validate_bridge_summary(
     expected_kind: BridgeCausalInspectionAdmissionSummaryKind,
     envelope: &BridgeCausalExplanationEnvelope,
 ) -> Result<CausalBridgeReadmissionProof, CausalInspectionMaterializationError> {
+    contract::require_legacy_materialization_source(envelope)?;
     if envelope.admission_summary_kind() != expected_kind {
         return Err(CausalInspectionMaterializationError::new(
             CausalInspectionMaterializationErrorKind::AdmissionSummaryKindMismatch,

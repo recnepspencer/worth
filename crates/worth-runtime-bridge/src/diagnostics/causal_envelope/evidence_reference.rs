@@ -94,6 +94,18 @@ pub struct BridgeCausalEvidenceReference {
 }
 
 impl BridgeCausalEvidenceReference {
+    pub(super) fn query_observation_reporting(
+        observation: &BridgeIdentityEvidence,
+        reference_digest_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            owner: BridgeCausalEvidenceOwner::Query,
+            family: BridgeCausalEvidenceFamily::QueryObservation,
+            reference_digest_identity,
+            reference_identity: observation.clone(),
+        }
+    }
+
     pub fn new(
         owner: BridgeCausalEvidenceOwner,
         family: BridgeCausalEvidenceFamily,

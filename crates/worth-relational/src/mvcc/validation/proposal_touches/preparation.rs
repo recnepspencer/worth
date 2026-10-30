@@ -86,7 +86,7 @@ fn run<'p>(
             work.validated_intents_examined += 1;
             match intent {
                 MutationIntent::Entity(intent @ EntityMutationIntent::ApplyAspectPatch(_)) => {
-                    super::struct_aspect::project(proposal, intent, &mut sink, &mut work)?
+                    super::aspect_patch::project(proposal, intent, &mut sink, &mut work)?
                 }
                 _ => super::intent_projection::project_intent(
                     intent,

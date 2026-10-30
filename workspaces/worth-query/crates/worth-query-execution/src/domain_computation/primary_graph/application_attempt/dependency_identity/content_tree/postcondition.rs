@@ -6,6 +6,21 @@ use super::super::super::{
 use super::*;
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectValue;
+#[derive(Clone, Copy)]
+enum FieldPostcondition<'a> {
+    Present(&'a AspectValue),
+    FieldAbsent,
+    AspectAbsent,
+    ParentAbsent,
+}
+impl FieldPostcondition<'_> {
+    fn value_capacity(self) -> usize {
+        match self {
+            Self::Present(value) => value.owned_allocation_capacity_bytes(),
+            Self::FieldAbsent | Self::AspectAbsent | Self::ParentAbsent => 0,
+        }
+    }
+}
 
 impl FactContent {
     // Whole-aspect absence must reach the committed native presence probe,
@@ -23,6 +38,31 @@ impl FactContent {
             .filter(|ordinal| !matches!(self.0.body[*ordinal], Fact::OptionalAspectAbsent { .. }))
     }
 
+    // Only the new parent-removal path visits explicit presence observations.
+    // No retained index or history is added; every visited fact polls the request.
+    fn each_removed_presence(
+        &self,
+        effect: &Effect,
+        control: StorageControl<'_, '_>,
+        mut visit: impl FnMut(usize),
+    ) -> Result<(), StoreDenial> {
+        let Effect::RemoveAspect {
+            entity_id: target,
+            contract,
+            ..
+        } = effect
+        else {
+            return Ok(());
+        };
+        for (ordinal, fact) in self.0.body.iter().enumerate() {
+            control.check_live()?;
+            if matches!(fact, Fact::AspectPresence { entity_id, aspect, .. } if entity_id == target && aspect == contract.key())
+            {
+                visit(ordinal);
+            }
+        }
+        Ok(())
+    }
     pub(in crate::domain_computation::primary_graph) fn postcondition(
         &self,
         effects: &[Effect],
@@ -36,6 +76,11 @@ impl FactContent {
                     count.checked_add(self.normalizable_field_ordinals(entity, locator).count())
                 });
             });
+        }
+        for effect in effects {
+            self.each_removed_presence(effect, control, |_| {
+                count = count.and_then(|n| n.checked_add(1));
+            })?;
         }
         let quote = count
             .and_then(|count| u64::try_from(count).ok()?.checked_mul(2_048))
@@ -53,6 +98,13 @@ impl FactContent {
                 }
             });
         }
+        for effect in effects {
+            self.each_removed_presence(effect, control, |ordinal| {
+                writes
+                    .entry(ordinal)
+                    .or_insert(FieldPostcondition::ParentAbsent);
+            })?;
+        }
         if writes.is_empty() {
             return Ok((self.0.body.clone(), self.clone(), Vec::new(), Work::zero()));
         }
@@ -62,6 +114,33 @@ impl FactContent {
         for (ordinal, value) in writes {
             control.check_live()?;
             let original = &self.0.body[ordinal];
+            if let (
+                FieldPostcondition::ParentAbsent,
+                Fact::AspectPresence {
+                    entity_id,
+                    kind,
+                    aspect,
+                    ..
+                },
+            ) = (value, original)
+            {
+                let held = control
+                    .policy()
+                    .reserve_memory(original.additional_charged_bytes());
+                control.check_live()?;
+                let _held = held?;
+                let next = Fact::AspectPresence {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    aspect: aspect.clone(),
+                    present: false,
+                };
+                if original != &next && computation_ordinals.binary_search(&ordinal).is_ok() {
+                    moved.push(ordinal);
+                }
+                patch.replace(ordinal, &next, control)?;
+                continue;
+            }
             let (entity_id, kind, locator) = match original {
                 Fact::Field {
                     entity_id,
@@ -80,20 +159,26 @@ impl FactContent {
             // its own admission; patch.replace funds the surviving clone.
             let quote = locator
                 .owned_allocation_capacity_bytes()
-                .checked_add(value.map_or(0, AspectValue::owned_allocation_capacity_bytes))
+                .checked_add(value.value_capacity())
                 .and_then(|bytes| u64::try_from(bytes).ok())
                 .ok_or(StoreDenial::Representability)?;
             let held = control.policy().reserve_memory(quote);
             control.check_live()?;
             let _held = held?;
             let next = match value {
-                Some(value) => Fact::Field {
+                FieldPostcondition::Present(value) => Fact::Field {
                     entity_id,
                     kind,
                     locator: locator.clone(),
                     value: value.clone(),
                 },
-                None => Fact::AbsentField {
+                FieldPostcondition::AspectAbsent => Fact::OptionalAspectAbsent {
+                    entity_id,
+                    kind,
+                    locator: locator.clone(),
+                },
+                FieldPostcondition::ParentAbsent => return Err(StoreDenial::ConflictingBody),
+                FieldPostcondition::FieldAbsent => Fact::AbsentField {
                     entity_id,
                     kind,
                     locator: locator.clone(),
@@ -115,7 +200,7 @@ fn each_write<'a>(
     mut write: impl FnMut(
         worth_relational::facade::identity::EntityId,
         &worth_foundational::facade::AspectFieldLocator,
-        Option<&'a AspectValue>,
+        FieldPostcondition<'a>,
     ),
 ) {
     match effect {
@@ -123,14 +208,28 @@ fn each_write<'a>(
             entity_id, fields, ..
         } => {
             for (locator, value) in fields {
-                write(*entity_id, locator, Some(value));
+                write(*entity_id, locator, FieldPostcondition::Present(value));
             }
         }
         Effect::PatchOptionalEntityFields {
             entity_id, fields, ..
         } => {
             for (locator, value) in fields {
-                write(*entity_id, locator, value.value.as_ref());
+                write(
+                    *entity_id,
+                    locator,
+                    value
+                        .value
+                        .as_ref()
+                        .map_or(FieldPostcondition::FieldAbsent, FieldPostcondition::Present),
+                );
+            }
+        }
+        Effect::RemoveAspect {
+            entity_id, fields, ..
+        } => {
+            for locator in fields {
+                write(*entity_id, locator, FieldPostcondition::AspectAbsent);
             }
         }
         _ => {}

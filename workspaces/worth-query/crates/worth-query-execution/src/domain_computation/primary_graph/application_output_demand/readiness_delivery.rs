@@ -16,14 +16,28 @@ pub struct WorthQueryOutputReadinessDeliveryEvidence {
     semantic_observation_reads: usize,
     // The native owner issued this handle during the actual readiness evaluation.
     // Counters and test fixtures cannot construct it or grant inspection access.
-    #[expect(
-        dead_code,
-        reason = "native-issued evidence stays retained; inspection requires separate native access"
-    )]
     causal_observation: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
+    output_evaluation: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
 }
 
 impl WorthQueryOutputReadinessDeliveryEvidence {
+    pub(in crate::domain_computation::primary_graph) fn with_output_evaluation(
+        mut self,
+        value: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
+    ) -> Self {
+        self.output_evaluation = value;
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) fn output_evaluation(&self) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>{
+        self.output_evaluation.as_ref()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn causal_observation(
+        &self,
+    ) -> Option<&worth_runtime_bridge::facade::BridgeConditionalCausalObservation> {
+        self.causal_observation.as_ref()
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn without_execution() -> Self {
         Self {
             producer_contacts: 0,
@@ -35,6 +49,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
             semantic_observation_reads: 0,
             causal_observation: None,
+            output_evaluation: None,
         }
     }
 
@@ -50,6 +65,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
             semantic_observation_reads: 1,
             causal_observation: None,
+            output_evaluation: None,
         }
     }
 
@@ -67,6 +83,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             signal_decision: crate::domain_computation::primary_graph::conditional_operation::classify_bridge_signal(execution),
             semantic_observation_reads: execution.semantic_observation_reads(),
             causal_observation: Some(execution.retain_causal_observation()),
+            output_evaluation: None,
         }
     }
 
