@@ -134,6 +134,10 @@ pub fn expiry_report(
     )
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "stream-reader thread-spawn=1: Testkit child-stream readers prevent pipe backpressure while the bounded process owner retains termination custody."
+)]
 pub fn capture(
     mut pipe: impl Read + Send + 'static,
     finished: mpsc::Sender<io::Result<()>>,

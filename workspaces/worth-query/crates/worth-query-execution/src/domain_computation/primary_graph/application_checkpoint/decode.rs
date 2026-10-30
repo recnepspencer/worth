@@ -2,6 +2,10 @@
 use super::*;
 
 impl WorthQueryApplicationCheckpoint {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn decode_current_body(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -242,6 +242,10 @@ pub struct PublishedAuthoritativeFieldSet {
     pub value: AspectValue,
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn published_operation_order(
     left: &PublishedAuthoritativePatchOperation,
     right: &PublishedAuthoritativePatchOperation,

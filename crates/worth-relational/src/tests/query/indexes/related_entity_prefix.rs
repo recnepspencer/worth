@@ -218,13 +218,17 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
             Err(Denial::Allocation(cause)) if stage == 1 => {
                 assert_eq!(cause.requested_payload_bytes(), Some(id_bytes));
                 assert!(matches!(
-                    cause.kind(),
-                    worth_execution::ExecutionAllocationDenialKind::Lease(
-                        worth_execution::LeaseDenial::MemoryExhausted(
-                            worth_execution::MemoryLimitDenial::Capacity {
-                                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-                                ..
-                            }
+                    cause.classify(),
+                    worth_execution::ExecutionAllocationDenialClass::Request(
+                        worth_execution::WorkCeilingDenial::Admission(
+                            worth_execution::LeaseDenial::MemoryExhausted(
+                                worth_execution::MemoryLimitDenial::Capacity {
+                                    level: worth_execution::MemoryLimitLevel::Policy {
+                                        ancestor: 0
+                                    },
+                                    ..
+                                }
+                            )
                         )
                     )
                 ));
@@ -291,6 +295,6 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
         .execute_bounded_related_entity_prefix_lookup(Prefix::new(ordered(), &[], None), &request)
         .unwrap_err();
     assert!(matches!(refused, Denial::Lookup(cause)
-        if cause.kind() == crate::facade::indexes::BoundedRelatedEntityOrderedLookupDenialKind::CorruptIndexEntries));
+        if cause.classify() == crate::facade::indexes::BoundedRelatedEntityOrderedLookupDenialKind::CorruptIndexEntries));
     assert_eq!(funded.charged_memory_bytes(), 0);
 }

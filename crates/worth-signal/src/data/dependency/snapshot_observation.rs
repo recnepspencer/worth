@@ -21,6 +21,10 @@ pub struct DependencySnapshotEntry {
 }
 
 impl DependencySnapshotEntry {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn compare_key(&self, other: &Self) -> std::cmp::Ordering {
         (
             self.source.index(),
@@ -36,6 +40,10 @@ impl DependencySnapshotEntry {
             ))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn compare_dependency(&self, other: &super::DependencyEdge) -> std::cmp::Ordering {
         (
             self.source.index(),
@@ -285,6 +293,10 @@ impl VersionOnlySnapshotUpdate {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn is_strict_snapshot_entry_order(entries: &[DependencySnapshotEntry]) -> bool {
     entries.windows(2).all(|pair| {
         pair[0]

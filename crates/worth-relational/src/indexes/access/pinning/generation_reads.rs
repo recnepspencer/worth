@@ -94,6 +94,10 @@ impl IndexAccess<'_> {
         ))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn read_generations_for_version(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

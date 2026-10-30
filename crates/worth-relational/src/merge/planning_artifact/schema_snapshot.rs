@@ -121,6 +121,10 @@ fn collect_target_schema_kinds(
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn materialize_touched_schema_kind_snapshots(
     registry: &RelationalSchemaRegistry,
     touched_kind_sets: TouchedSchemaKindSets,

@@ -48,6 +48,10 @@ pub const BANK_PUBLIC_KEY: [u8; 32] = [
     107, 19, 197, 142, 215, 2, 234, 200, 53, 233, 246, 24,
 ];
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-runtime=1; certification-harness thread-builder=1: Testkit current-thread event loop drives real endpoint I/O for consumer courts; it is not a production computation pool."
+)]
 pub async fn install_identity(
     configuration: BankHttpProcessConfiguration,
 ) -> bank_http_adapter::AuthentikBankIdentity {

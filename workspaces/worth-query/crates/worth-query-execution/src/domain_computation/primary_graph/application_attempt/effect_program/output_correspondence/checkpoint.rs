@@ -10,6 +10,10 @@ use crate::domain_computation::primary_graph::application_checkpoint::{
 use worth_execution::ExecutionRequest;
 
 impl WorthQueryApplicationOutputCorrespondence {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(in crate::domain_computation::primary_graph) fn from_checkpoint_roles<'a>(
         binding_type: TypeId,
         contract_type: TypeId,

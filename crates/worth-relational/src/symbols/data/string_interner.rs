@@ -163,6 +163,10 @@ impl StringInterner {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn snapshot(&self) -> SymbolTableSnapshot {
         let mut entries = self
             .by_value

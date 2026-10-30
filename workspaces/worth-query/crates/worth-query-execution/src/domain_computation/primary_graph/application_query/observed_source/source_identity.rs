@@ -191,6 +191,10 @@ impl WorthQueryObservedSourceEpoch {
         self.same_occurrence(other) && self.meaning.identity() == other.meaning.identity()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(in crate::domain_computation::primary_graph) fn replacement_order(
         &self,
         other: &Self,

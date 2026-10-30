@@ -16,6 +16,10 @@ pub struct HostComputedDependencyPatch {
 }
 
 impl HostComputedDependencyPatch {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn between(
         node: NodeId,
         previous: &[DependencyEdge],

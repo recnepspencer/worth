@@ -34,6 +34,10 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
         CheckpointOutputSlot::new(&self.producer, self.scope, self.source_partition)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(in crate::domain_computation::primary_graph) fn canonical_cmp(
         &self,
         other: &Self,
@@ -83,17 +87,29 @@ impl<'a> CheckpointOutputSlot<'a> {
 
 // Resource custody is not semantic checkpoint identity.
 impl PartialEq for WorthQueryAcceptedOutputCheckpointIdentity {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other).is_eq()
     }
 }
 impl Eq for WorthQueryAcceptedOutputCheckpointIdentity {}
 impl PartialOrd for WorthQueryAcceptedOutputCheckpointIdentity {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 impl Ord for WorthQueryAcceptedOutputCheckpointIdentity {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.canonical_cmp(other)
             .then_with(|| self.producer_facts.cmp(&other.producer_facts))

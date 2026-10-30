@@ -1,0 +1,41 @@
+# WORTH uses explicit semantic inputs for proof construction and typed outcome
+# topologies whose variants intentionally carry complete recovery evidence.
+# Keep these generic Clippy heuristics bounded above the largest reviewed
+# ordinary surface; repository-specific function scrutiny and the 400-line
+# guard remain the composition enforcement.
+too-many-arguments-threshold = 32
+enum-variant-size-threshold = 32768
+type-complexity-threshold = 512
+# Geometry mints carry reviewed expectations at their owning call sites.
+disallowed-methods = [
+  { path = "std::thread::spawn", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },
+  { path = "std::thread::scope", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },
+  { path = "std::thread::Builder::new", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },
+  { path = "std::thread::Builder::spawn", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },
+  { path = "std::thread::Builder::spawn_scoped", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },
+  { path = "std::thread::Scope::spawn", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },
+  { path = "tokio::spawn", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution", allow-invalid = true },
+  { path = "tokio::task::spawn", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution", allow-invalid = true },
+  { path = "tokio::task::spawn_blocking", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution", allow-invalid = true },
+  { path = "tokio::task::spawn_local", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution", allow-invalid = true },
+  { path = "tokio::runtime::Builder::new_current_thread", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution", allow-invalid = true },
+  { path = "tokio::runtime::Builder::new_multi_thread", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution", allow-invalid = true },
+  { path = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", reason = "published geometry is shifted only for a Portal entrance start, a Portal's content anchor, or a nested Portal's anchor; construct published truth through truth_geometry" },
+  { path = "worth_ui_runtime::mounting::projection::placement::spaces::UiLaidOut::in_place", reason = "only an occurrence no Portal presents is shown where it is laid out; present laid-out geometry through its UiMountedPlacement" },
+  { path = "worth_ui_runtime::mounting::projection::placement::spaces::UiPresented::map", reason = "presented geometry changes only where the change cannot move it; present laid-out geometry through its UiMountedPlacement" },
+  { path = "worth_ui_host_contract::mounted_frame::presentation::UiMountedFrameConsumptionView::acknowledge_presented", reason = "only a presentation host acknowledges presented work; the runtime admits it as the presented-frame witness" },
+  { path = "worth_ui_host_contract::mounted_frame::presentation::UiHostPresentationCompletionToken::acknowledge_presented", reason = "only a presentation host acknowledges presented work; the runtime admits it as the presented-frame witness" },
+]
+
+# StructuralWalkKey::identity/Eq/Ord use only immutable query parameters.
+# Its retained allocation ticket carries a mutable ledger, never key meaning.
+# Keep the default Bytes exception and scope the additional exception to this
+# exact private key; key_ordering_tests proves lookup while that ledger changes.
+# https://clippy.rust-lang.org/rust-1.94.0/index.html#mutable_key_type
+ignore-interior-mutability = [
+  "bytes::Bytes",
+  "worth_query_execution::domain_computation::primary_graph::structural_walk::key::StructuralWalkKey",
+  # ordering_coordinates/Hash inspect fixed coordinates and meaning identity,
+  # never retained footprint custody or its shared owner/ledger state.
+  "worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch",
+]

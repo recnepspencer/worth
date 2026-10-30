@@ -48,6 +48,10 @@ impl<K: Ord + Copy, V: Clone> MapNode<K, V> {
             + self.right.as_ref().map_or(0, |node| node.len);
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn get_mut<'a>(root: &'a mut Option<Arc<Self>>, key: &K) -> Option<&'a mut V> {
         let node = Arc::make_mut(root.as_mut()?);
         match key.cmp(&node.key) {
@@ -57,6 +61,10 @@ impl<K: Ord + Copy, V: Clone> MapNode<K, V> {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn insert(
         root: &mut Option<Arc<Self>>,
         key: K,
@@ -84,6 +92,10 @@ impl<K: Ord + Copy, V: Clone> MapNode<K, V> {
         previous
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn remove(
         root: &mut Option<Arc<Self>>,
         key: &K,

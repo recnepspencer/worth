@@ -195,6 +195,10 @@ fn expected_family_counts(
     Ok(counts)
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn canonical_native_records(
     package: &WorthQueryValidatedPortableDomainPackage,
 ) -> Vec<WorthQueryPortableNativeAspectContractRecord> {
@@ -212,6 +216,10 @@ fn canonical_native_records(
     records
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn canonical_operation_records(
     package: &WorthQueryValidatedPortableDomainPackage,
 ) -> Vec<WorthQueryPortableApplicationOperationContractRecord> {

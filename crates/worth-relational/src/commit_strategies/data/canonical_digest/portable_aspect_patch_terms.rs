@@ -14,6 +14,10 @@ pub(super) fn write_portable_aspect_patch(
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn write_operation(bytes: &mut StrategyDigestBytes, operation: &PortableAspectPatchOperation) {
     match operation {
         PortableAspectPatchOperation::SetWhole { basis, value } => {

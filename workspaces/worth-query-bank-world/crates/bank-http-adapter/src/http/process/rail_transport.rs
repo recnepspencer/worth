@@ -21,6 +21,10 @@ impl BankProcessRailTransport {
 }
 
 impl WorthQueryExternalEffectTransport for BankProcessRailTransport {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "async-runtime async-runtime=1; async-runtime thread-scope=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+    )]
     fn dispatch(
         &self,
         request: WorthQueryExternalDispatchRequest<'_>,

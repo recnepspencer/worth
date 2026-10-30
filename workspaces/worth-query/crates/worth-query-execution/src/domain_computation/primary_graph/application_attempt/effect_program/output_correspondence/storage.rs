@@ -27,6 +27,10 @@ impl CorrespondenceStorage {
             _funding: None,
         }
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn binding(&self, name: &str) -> Option<&CommittedOutputBinding> {
         self.roles
             .binary_search_by(|(role, _)| role.as_str().cmp(name))

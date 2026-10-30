@@ -60,6 +60,10 @@ mod registration;
 /// Called by the actual performed/stable settlement registration, on its
 /// prepared companion state. Only watchers of this native source partition
 /// are visited; source-epoch or geometry equality never suppresses completion.
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn record_completion(
     state: &mut MarkState,
     identity: &Arc<RecordedSettlementIdentity>,

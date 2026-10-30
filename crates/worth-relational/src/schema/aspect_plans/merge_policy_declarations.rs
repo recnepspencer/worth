@@ -5,6 +5,10 @@ use worth_foundational::{AspectShape, ScalarAspectType};
 use crate::merge::data::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 use crate::schema::data::{AspectBinding, DeclaredAspectContractBinding, SchemaRegistryError};
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn canonicalize_merge_policy_declarations(
     kind_id: crate::identity::data::KindId,
     mut declarations: Vec<AspectMergePolicyDeclaration>,

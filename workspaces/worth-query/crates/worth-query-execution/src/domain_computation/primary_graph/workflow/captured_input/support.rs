@@ -30,6 +30,10 @@ impl WorkflowCapturedInputSupport {
             targets: targets.into_boxed_slice(),
         })
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(in crate::domain_computation::primary_graph) fn target(
         &self,
         proposal_identity: &str,

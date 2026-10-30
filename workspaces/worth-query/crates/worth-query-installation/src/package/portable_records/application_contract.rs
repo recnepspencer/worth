@@ -192,6 +192,10 @@ impl WorthQueryPortableOperationTouchScope {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn canonical_order(left: &Self, right: &Self) -> Ordering {
         portable_touch_rank(left)
             .cmp(&portable_touch_rank(right))

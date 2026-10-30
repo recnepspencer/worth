@@ -138,6 +138,10 @@ impl FrozenMappingRegistry {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn canonical_registration_order(
     left: &BridgeMappingRegistration,
     right: &BridgeMappingRegistration,

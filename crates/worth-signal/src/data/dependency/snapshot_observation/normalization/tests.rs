@@ -68,6 +68,10 @@ fn snapshot_store_reuses_canonical_backing_and_retains_unique_shape_handles() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn borrowed_key_comparison_matches_owned_key_order_independently_of_version() {
     for left in 0..32 {
         for right in 0..32 {

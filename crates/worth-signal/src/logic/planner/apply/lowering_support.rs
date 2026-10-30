@@ -114,6 +114,10 @@ pub(super) fn rewiring_summary_from_lowered_edges(
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn compare_dependency_edges(left: &DependencyEdge, right: &DependencyEdge) -> std::cmp::Ordering {
     (
         left.source().index(),

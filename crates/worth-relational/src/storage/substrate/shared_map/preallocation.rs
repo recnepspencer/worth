@@ -18,6 +18,10 @@ impl<K: Ord + Copy, V: Copy> SharedMap<K, V> {
     /// Every insertion creates a value owner. A shared ancestor's copy makes
     /// its selected children shared too. Rotation pivots are on that same path;
     /// rotating uniquely admitted nodes does not create another allocation.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn insertion_allocation_bytes(&self, key: &K) -> Option<u64> {
         let node_bytes = StorageAllocation::<MapNode<K, V>>::layout_bytes();
         let mut bytes = StorageAllocation::<V>::layout_bytes();

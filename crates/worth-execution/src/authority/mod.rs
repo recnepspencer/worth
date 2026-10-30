@@ -12,11 +12,11 @@ pub(crate) use lease::ResourceReservation;
 pub(crate) use lease::SlotRefusal;
 pub use lease::{
     ConstructionDenial, ExecutionAllocationDenial, ExecutionAllocationDenialClass,
-    ExecutionAllocationDenialKind, ExecutionAllocationPolicy, ExecutionArray,
-    ExecutionArrayBuilder, ExecutionArrayIntoIter, ExecutionAuthority, ExecutionAuthorityConfig,
-    ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionLeaseStatus,
-    ExecutionPhysicalAllocationDenialKind, ExecutionPolicyDenial, ExecutionRequestArrayBuilder,
-    ExecutionRequestArrayDenial, ExecutionResourceLease, LeaseDenial, LeaseRequest,
+    ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter,
+    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes,
+    ExecutionLeaseStatus, ExecutionPhysicalAllocationDenialKind, ExecutionPolicyDenial,
+    ExecutionRequestArrayBuilder, ExecutionRequestArrayDenial, ExecutionResourceLease, LeaseDenial,
+    LeaseRequest,
 };
 pub use memory::{
     ExecutionMemoryReservation, ExecutionResultMemory, MemoryLimitDenial, MemoryLimitLevel,
@@ -26,3 +26,5 @@ pub use request::ExecutionRequest;
 pub use serial::SerialRequest;
 
 pub(crate) use request::consult_observation;
+
+pub(crate) use lease::ExecutionAllocationDenialKind;

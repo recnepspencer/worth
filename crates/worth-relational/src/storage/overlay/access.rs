@@ -160,6 +160,10 @@ impl<S: super::CurrentPartitionAccess> crate::storage::overlay::CurrentPartition
         memory::merge_partition_ids(base, staged, memory)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partition_ids(&self) -> Vec<PartitionId> {
         let base_ids = self.base_partitions.partition_ids();
         let staged_ids = self.staged.partition_ids();
@@ -208,6 +212,10 @@ impl<S: super::CurrentPartitionAccess> crate::storage::overlay::CurrentPartition
         merged
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         let mut base = self.base_partitions.partition_ids_iter().peekable();
         let mut staged = self.staged.partition_ids_iter().peekable();

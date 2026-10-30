@@ -57,6 +57,10 @@ impl<'a> WorthQueryInstalledApplicationContributionCatalog<'a> {
         self.declaration.contributions().is_empty()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn get(&self, identity: &str) -> Option<WorthQueryInstalledApplicationContribution<'a>> {
         self.declaration
             .contributions()

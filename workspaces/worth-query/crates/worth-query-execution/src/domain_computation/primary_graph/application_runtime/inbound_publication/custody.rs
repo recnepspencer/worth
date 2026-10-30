@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPendingR
     PublicationRetryRequired,
     AllocationDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     StagingCardinalityOverflow,

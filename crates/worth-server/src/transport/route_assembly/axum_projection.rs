@@ -43,6 +43,10 @@ pub(crate) fn project_axum_router(
         .with_state(operation_router)
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-blocking=1: Tokio runs the synchronous semantic route on its blocking executor."
+)]
 async fn semantic_route_handler(
     method: Method,
     uri: Uri,

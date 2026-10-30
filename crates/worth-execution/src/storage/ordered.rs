@@ -66,6 +66,10 @@ impl<K, V> ExecutionOrderedMap<K, V> {
 }
 impl<K: Ord, V> ExecutionOrderedMap<K, V> {
     /// Canonical zero-based position, without enumerating preceding entries.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn rank_of(&self, key: &K) -> Option<usize> {
         let (mut next, mut before) = (self.root.as_deref(), 0_usize);
         while let Some(node) = next {
@@ -82,6 +86,10 @@ impl<K: Ord, V> ExecutionOrderedMap<K, V> {
         None
     }
     /// Entry at a canonical position. Missing positions allocate nothing.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn entry_at(&self, mut rank: usize) -> Option<(&K, &V)> {
         let mut next = self.root.as_deref();
         while let Some(node) = next {
@@ -116,6 +124,10 @@ impl<K: Ord, V> ExecutionOrderedMap<K, V> {
     pub fn contains_key(&self, key: &K) -> bool {
         self.get(key).is_some()
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn get_key_value(&self, key: &K) -> Option<(&K, &V)> {
         let mut next = self.root.as_deref();
         while let Some(node) = next {

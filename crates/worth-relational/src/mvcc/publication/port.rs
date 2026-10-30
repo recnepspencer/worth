@@ -103,7 +103,7 @@ impl RelationalPublicationPort {
                 },
             );
         }
-        if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
+        if let Err(stop) = crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Publication,
         ) {

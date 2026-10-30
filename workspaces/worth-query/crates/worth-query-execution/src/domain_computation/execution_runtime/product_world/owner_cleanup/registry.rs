@@ -190,6 +190,10 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         record.record_mut().release_retired_history(runtime)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn pending_application_retired_product_occurrences(
         &self,
     ) -> Vec<WorthQueryRetiredProductOccurrence> {

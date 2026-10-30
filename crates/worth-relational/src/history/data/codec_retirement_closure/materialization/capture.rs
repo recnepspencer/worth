@@ -15,6 +15,10 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWor
 
 mod selection;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(crate) fn capture_materialization_producers(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,

@@ -54,6 +54,10 @@ fn empty_partition_pins() -> SnapshotPartitionPins {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn assemble_snapshot_state_with_memory(
     handle: SnapshotHandle,
     basis: SnapshotStateBasis,

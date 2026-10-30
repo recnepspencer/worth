@@ -48,6 +48,10 @@ pub(crate) enum AggregateTransitionDenial {
     SizeOverflow,
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(crate) fn transition<E: From<AggregateTransitionDenial>>(
     definition: AggregateDefinitionIdentity,
     occurrence: CommitId,

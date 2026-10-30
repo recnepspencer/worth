@@ -207,6 +207,10 @@ fn newest_matching_key<'keys, R>(
 /// How `row` orders against `other` among the rows of one occurrence. A
 /// refreshed Stable alias keeps its semantic source and takes the newer
 /// observation, so two rows of one semantic source order by generation.
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn refresh_order(
     row: &WorthQueryOutputDemandKey,
     other: &WorthQueryOutputDemandKey,

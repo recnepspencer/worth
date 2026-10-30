@@ -38,6 +38,10 @@ pub(crate) fn commit_strategy_descriptor_digest(
     ))
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(crate) fn commit_strategy_registry_digest(descriptors: &[CommitStrategyDescriptor]) -> String {
     let mut canonical_descriptors = descriptors.to_vec();
     canonical_descriptors.sort_by(|left, right| {

@@ -59,6 +59,10 @@ pub struct RailControl {
 }
 
 impl BankEstateRailTransport {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "async-runtime async-runtime=1: Testkit current-thread event loop drives real endpoint I/O for consumer courts; it is not a production computation pool."
+    )]
     pub fn connected_to(address: SocketAddr, test_control_address: SocketAddr) -> Self {
         Self {
             address,

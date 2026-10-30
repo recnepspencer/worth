@@ -31,6 +31,10 @@ impl WorkflowCapturedInputs {
             facts: Vec::new(),
         }
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn prepare<S: ApplicationSchema, B: ApplicationMutationBinding<S>, C>(
         access: &WorthQueryProgramPublicationAccess,
         selected: &WorthQuerySelectedProductOperation<'_, S>,
@@ -83,6 +87,10 @@ impl WorkflowCapturedInputs {
     ) -> WorthQueryApplicationIdempotencyBinding {
         binding.bind_workflow_captured_inputs(self.identity)
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(in crate::domain_computation::primary_graph) fn validate(
         &self,
         compiled: &CompiledWorkflowDefinition,

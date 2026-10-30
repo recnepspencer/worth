@@ -88,6 +88,10 @@ fn sift_down(
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn compare_rows(
     left: &WorthQueryApplicationProjectionNode,
     right: &WorthQueryApplicationProjectionNode,

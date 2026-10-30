@@ -5,6 +5,10 @@ use bank_external_rail::{
 };
 
 #[tokio::main]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+)]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut server = RailServer::bind_with_protocol_support(
         "127.0.0.1:0".parse()?,

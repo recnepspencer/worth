@@ -90,13 +90,17 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
         .requested_payload_bytes()
         .expect("checked read-set quote");
     assert_eq!(
-        cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                requested: read_set_bytes,
-                admitted: 0,
-                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+        cause.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(
+                worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                    requested: read_set_bytes,
+                    admitted: 0,
+                    level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy {
+                        ancestor: 0
+                    }
+                }
+            )
         ))
     );
     assert_eq!(cause.requested_payload_bytes(), Some(read_set_bytes));
@@ -151,13 +155,15 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
         let cause = denial.allocation_denial().unwrap_or_else(|| {
             panic!("expected a checked preparation allocation quote: {denial:?}")
         });
-        let ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                requested,
-                admitted,
-                ..
-            },
-        )) = cause.kind()
+        let ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(
+                worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                    requested,
+                    admitted,
+                    ..
+                },
+            ),
+        )) = cause.classify()
         else {
             panic!("physical preparation refusal: {cause:?}");
         };
@@ -183,13 +189,15 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
         panic!("expected native physical admission, got {native:?}");
     };
     assert_eq!(failure.allocation_denial(), Some(native_cause));
-    let ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-        worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-            requested,
-            admitted,
-            ..
-        },
-    )) = native_cause.kind()
+    let ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+        LeaseDenial::MemoryExhausted(
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                requested,
+                admitted,
+                ..
+            },
+        ),
+    )) = native_cause.classify()
     else {
         panic!("native staging must preserve the physical refusal: {native_cause:?}");
     };

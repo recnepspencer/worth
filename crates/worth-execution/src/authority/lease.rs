@@ -36,8 +36,8 @@ pub use array_backing::{
 };
 pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
 pub use fixed_backing::{
-    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationDenialKind,
-    ExecutionAllocationPolicy, ExecutionPhysicalAllocationDenialKind,
+    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationPolicy,
+    ExecutionPhysicalAllocationDenialKind,
 };
 pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;
@@ -332,3 +332,5 @@ impl AuthorityInner {
         ledger.next_id
     }
 }
+
+pub(crate) use fixed_backing::ExecutionAllocationDenialKind;

@@ -6,6 +6,10 @@ use crate::{
 
 use super::member_identities::{bulk_continuity_member_identity, bulk_truth_view_member_identity};
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn plan_packet_set(
     workload_identity: BridgeWorkloadIdentity,
     planned_routes: &[BridgePlannedRoute],

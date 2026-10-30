@@ -62,6 +62,10 @@ pub struct AdmittedStructuralRegistry {
 }
 
 impl AdmittedStructuralRegistry {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn freeze(
         mut declarations: Vec<StructuralIdentityDeclaration>,
     ) -> Result<Self, BridgeBuildError> {

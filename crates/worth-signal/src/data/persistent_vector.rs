@@ -213,6 +213,10 @@ impl<T: Clone, const PAGE_LEN: usize> PersistentVector<T, PAGE_LEN> {
         self.make_exclusive().insert(index, value);
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn binary_search_by_key<B, F>(&self, key: &B, mut key_of: F) -> Result<usize, usize>
     where
         B: Ord,

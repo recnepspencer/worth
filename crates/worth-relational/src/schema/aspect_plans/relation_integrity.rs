@@ -7,6 +7,10 @@ use crate::schema::data::{
     PartitionIsolationMode, RelationIntegrityDeclarations, SchemaRegistryError,
 };
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn canonicalize_relation_integrity_declarations(
     kind_id: crate::identity::data::KindId,
     declarations: RelationIntegrityDeclarations,

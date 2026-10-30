@@ -173,6 +173,10 @@ pub(in crate::domain_computation::primary_graph) fn derive_workflow_proposal(
     )
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(in crate::domain_computation::primary_graph) fn derive_captured_workflow_proposal(
     transition_identity: &str,
     operation: &str,

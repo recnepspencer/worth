@@ -39,6 +39,10 @@ pub(super) fn normalize(
     Ok(())
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn compare(left: &DependencySnapshotEntry, right: &DependencySnapshotEntry) -> std::cmp::Ordering {
     left.compare_key(right)
         .then(left.cached_version.cmp(&right.cached_version))

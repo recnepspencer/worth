@@ -329,6 +329,10 @@ impl SignalDeliveryStrategyIdentity {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(crate) fn aspect_policy_inventory(
     aspect_policy_plan: &super::plan::LoweredAspectMergePolicyPlan,
 ) -> Vec<SignalAspectPolicyInventoryEntry> {

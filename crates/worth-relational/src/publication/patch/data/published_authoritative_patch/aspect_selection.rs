@@ -5,6 +5,10 @@ use super::{operation_rank, PublishedAuthoritativePatch};
 impl PublishedAuthoritativePatch {
     /// Canonical operations are ordered by grammar rank, then aspect key.
     /// Search each existing rank without scanning unrelated aspect operations.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn changes_aspect(&self, aspect: &AspectKey) -> bool {
         (0..=2).any(|rank| {
             self.operations

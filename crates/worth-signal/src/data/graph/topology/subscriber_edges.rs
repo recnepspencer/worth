@@ -129,6 +129,10 @@ impl SignalGraph {
         )
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn reconcile_dependency_subscribers_sorted_unique(
         &mut self,
         node: NodeId,
@@ -255,6 +259,10 @@ impl SignalGraph {
         self.apply_ordered_subscriber_batch_ops(canonicalize_unordered_subscriber_ops(ops))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn apply_ordered_subscriber_batch_ops(
         &mut self,
         ops: LocallyOrderedShard<SubscriberBatchOp>,

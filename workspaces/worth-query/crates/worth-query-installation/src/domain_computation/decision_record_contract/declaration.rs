@@ -158,6 +158,10 @@ impl WorthQueryDecisionRecordContract {
         Self::NotRequired
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn declared(schemas: impl IntoIterator<Item = WorthQueryDecisionSchema>) -> Self {
         let mut schemas = schemas.into_iter().collect::<Vec<_>>();
         schemas.sort_by(|left, right| left.kind.cmp(&right.kind));

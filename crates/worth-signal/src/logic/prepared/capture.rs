@@ -89,6 +89,10 @@ pub struct PreparedDependencyEdge {
     pub scope: Option<PartitionSubscription>,
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(crate) fn compare_prepared_dependency_edges(
     left: &PreparedDependencyEdge,
     right: &PreparedDependencyEdge,

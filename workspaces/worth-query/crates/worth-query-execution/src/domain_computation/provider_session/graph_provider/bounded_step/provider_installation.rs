@@ -20,6 +20,10 @@ static NEXT_GRAPH_PROVIDER_GENERATION: AtomicU64 = AtomicU64::new(1);
 
 impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn install<G: 'static, P: WorthQueryGraphParticipationProvider<G>>(provider: P) -> Self {
         let provider = Arc::new(provider);
         let resource_support = provider.execution_resource_support();
@@ -40,6 +44,10 @@ impl WorthQueryGraphProviderAnchor {
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn install_convergent<
         G: 'static,
         P: WorthQueryGraphParticipationProvider<G>
@@ -66,6 +74,10 @@ impl WorthQueryGraphProviderAnchor {
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn install_session_capable<
         G: 'static,
         P: WorthQueryGraphParticipationProvider<G> + WorthQueryProviderSessionLifecycle,
@@ -89,6 +101,10 @@ impl WorthQueryGraphProviderAnchor {
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn install_decision_capable<
         G: 'static,
         P: WorthQueryGraphParticipationProvider<G>
@@ -116,6 +132,10 @@ impl WorthQueryGraphProviderAnchor {
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn install_provisional_capable<
         G: 'static,
         P: WorthQueryGraphParticipationProvider<G>
@@ -146,6 +166,10 @@ impl WorthQueryGraphProviderAnchor {
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn install_invariant_capable<
         G: 'static,
         P: WorthQueryGraphParticipationProvider<G>
@@ -179,6 +203,10 @@ impl WorthQueryGraphProviderAnchor {
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn install_convergent_invariant_capable<
         G: 'static,
         P: WorthQueryGraphParticipationProvider<G>

@@ -145,6 +145,10 @@ fn expiry_report(
     )
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "stream-reader thread-spawn=1: Test child stdout and stderr are drained independently while execution and cleanup remain bounded."
+)]
 fn capture(
     mut pipe: impl Read + Send + 'static,
     finished: mpsc::Sender<io::Result<()>>,

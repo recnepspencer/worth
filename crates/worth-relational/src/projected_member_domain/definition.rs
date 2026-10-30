@@ -61,6 +61,10 @@ impl ProjectedMemberDomainHandle {
         &self.entry.parts
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn case(&self, name: &str) -> Option<ProjectedMemberCaseHandle> {
         self.parts()
             .cases

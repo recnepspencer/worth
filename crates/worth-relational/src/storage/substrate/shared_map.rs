@@ -50,6 +50,10 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
         self.root.is_none()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn get(&self, key: &K) -> Option<&V> {
         let mut current = self.root.as_deref();
         while let Some(node) = current {
@@ -64,6 +68,10 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
 
     /// Borrow the first entry at or above a key without allocating traversal
     /// backing. The existing navigation bound covers this single AVL path.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn lower_bound(&self, key: &K) -> Option<(&K, &V)> {
         let mut current = self.root.as_deref();
         let mut selected = None;

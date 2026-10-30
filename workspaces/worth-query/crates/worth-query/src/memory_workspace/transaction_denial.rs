@@ -171,7 +171,7 @@ fn allocation_kind(
 ) -> WorthQueryWorkspaceErrorKind {
     allocation_control_stop(denial.classify()).unwrap_or(
         WorthQueryWorkspaceErrorKind::TransactionAllocationDenied {
-            kind: denial.kind(),
+            kind: denial.classify(),
             requested_payload_bytes: denial.requested_payload_bytes(),
         },
     )
@@ -258,8 +258,10 @@ mod tests {
         assert!(matches!(
             allocation_kind(&denial),
             WorthQueryWorkspaceErrorKind::TransactionAllocationDenied {
-                kind: worth_execution::ExecutionAllocationDenialKind::Lease(
-                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                kind: worth_execution::ExecutionAllocationDenialClass::Request(
+                    worth_execution::WorkCeilingDenial::Admission(
+                        worth_execution::LeaseDenial::MemoryExhausted(_)
+                    )
                 ),
                 requested_payload_bytes: Some(65),
             }

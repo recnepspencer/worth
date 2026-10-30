@@ -163,6 +163,10 @@ impl<D, O, F> WorthQueryDomainOperationDefinition<D, O, F> {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn canonicalize_semantics(semantics: &mut WorthQueryDomainOperationSemanticClosure) {
     semantics.required_capabilities.sort();
     semantics.required_capabilities.dedup();

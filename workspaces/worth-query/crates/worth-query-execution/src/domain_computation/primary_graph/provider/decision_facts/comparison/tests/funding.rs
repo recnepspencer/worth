@@ -1,6 +1,6 @@
 //! An uncharged resident table still needs a genuine metered capture grant.
 use super::*;
-use worth_execution::{ExecutionAllocationDenialKind, LeaseDenial};
+use worth_execution::{ExecutionAllocationDenialClass, LeaseDenial};
 
 pub(super) fn assert_full_capture_funding(
     provider: &WorthQueryPrimaryGraphProvider,
@@ -26,8 +26,10 @@ pub(super) fn assert_full_capture_funding(
     let refusal = refused.allocation_denial().unwrap();
     assert_eq!(refusal.requested_payload_bytes(), Some(bytes));
     assert!(matches!(
-        refusal.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(_))
+        refusal.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(_)
+        ))
     ));
     assert_eq!(tight.charged_memory_bytes(), 0);
 

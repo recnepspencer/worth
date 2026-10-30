@@ -17,8 +17,13 @@ fn every_fresh_preparing_lane_replays_a_recorded_key_before_the_funded_opening()
         .unwrap();
     stopping.cancel();
     assert_eq!(
-        Policy::Execution(&stopped).check_live().unwrap_err().kind(),
-        ExecutionAllocationDenialKind::Cancelled
+        Policy::Execution(&stopped)
+            .check_live()
+            .unwrap_err()
+            .classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::Cancelled
+        ))
     );
     let host = publish_on_first_program();
     let runtime = host.runtime();

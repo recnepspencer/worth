@@ -5,6 +5,10 @@ use crate::merge::data::{
     MergePlanningDecisionLog, MergePlanningDecisionLogDigestBasis,
 };
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn build_decision_log(
     lowered_records: &[LoweredMergePlanRecord],
 ) -> MergePlanningDecisionLog {

@@ -10,7 +10,7 @@ pub use worth_query_host::facade::{
         WorthQueryApplicationCommitDenialStage as Stage, WorthQueryApplicationUncommitted,
         WorthQueryInvariantExecutionDenialKind as InvariantKind,
     },
-    runtime::{ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, LeaseDenial},
+    runtime::{ExecutionAllocationDenialClass, ExecutionAllocationPolicy as Policy, LeaseDenial},
 };
 pub use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as NativeDenial;
 

@@ -62,6 +62,10 @@ pub struct BridgeMergeOntologyMappingSurface {
 }
 
 impl BridgeMergeOntologyMappingSurface {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn new(
         ontology_version: impl Into<Arc<str>>,
         mut entries: Vec<BridgeMergeOntologyMappingEntry>,

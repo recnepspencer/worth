@@ -17,6 +17,10 @@ thread_local! {
 struct CountedKey(u64);
 
 impl Ord for CountedKey {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> Ordering {
         KEY_COMPARISONS.set(KEY_COMPARISONS.get() + 1);
         self.0.cmp(&other.0)
@@ -24,6 +28,10 @@ impl Ord for CountedKey {
 }
 
 impl PartialOrd for CountedKey {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }

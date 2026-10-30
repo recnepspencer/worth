@@ -213,6 +213,10 @@ impl WorthQueryOutputReadinessContractBuilder {
         Ok(self)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn build_typed<D, O, F>(
         mut self,
     ) -> Result<WorthQueryOutputReadinessContract<D, O, F>, WorthQueryOutputReadinessContractDenial>

@@ -3,7 +3,7 @@ use super::{
     collection::{self, Extent, TouchCollection},
     *,
 };
-use crate::authority::commit::pipeline::{consult_stage_control, CommitStage};
+use crate::authority::commit::pipeline::{consult_stage, CommitStage};
 use crate::transactions::data::{EntityMutationIntent, MutationIntent};
 type Error = ValidatedMutationTouchProjectionError;
 
@@ -20,10 +20,10 @@ fn project_in_scope<'p>(
     request: &ExecutionRequest<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<ValidatedMutationTouches<'p>, Error> {
-    consult_stage_control(request, CommitStage::Validation)
+    consult_stage(request, CommitStage::Validation)
         .map_err(|stop| collection::execution(stop.into()))?;
     let (extent, _, _) = run(proposal, request, None)?;
-    consult_stage_control(request, CommitStage::Validation)
+    consult_stage(request, CommitStage::Validation)
         .map_err(|stop| collection::execution(stop.into()))?;
     let bytes = extent.bytes()?;
     let memory = match lease {
@@ -36,7 +36,7 @@ fn project_in_scope<'p>(
             })?,
         ),
     };
-    consult_stage_control(request, CommitStage::Validation)
+    consult_stage(request, CommitStage::Validation)
         .map_err(|stop| collection::execution(stop.into()))?;
     let backing = extent.allocate(memory)?;
     let (_, backing, mut work) = run(proposal, request, Some(backing))?;
@@ -53,7 +53,7 @@ fn project_in_scope<'p>(
     canonicalize_structs(&mut backing.structs, &mut backing.touches);
     backing.touches.sort_unstable();
     backing.touches.dedup();
-    consult_stage_control(request, CommitStage::Validation)
+    consult_stage(request, CommitStage::Validation)
         .map_err(|stop| collection::execution(stop.into()))?;
     work.mutation_targets_materialized = backing.touches.len() + backing.structs.len();
     Ok(ValidatedMutationTouches {
@@ -129,7 +129,7 @@ fn metered<T>(
                 worth_execution::ExecutionWorkCeiling::new(request.work_ceiling())
                     .run_with_checkpoint(None, None, |context| {
                         run(&mut |units| {
-                            consult_stage_control(request, CommitStage::Validation)
+                            consult_stage(request, CommitStage::Validation)
                                 .map_err(|stop| collection::execution(stop.into()))?;
                             context
                                 .checkpoint(units)
@@ -147,6 +147,10 @@ fn metered<T>(
 // is unsupported only when the entire group has no prior or supplied fields.
 // Duplicate operations for one aspect and duplicate entity intents remain refused
 // upstream; this projection never supplies sequence admission authority.
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn canonicalize_structs(
     touches: &mut Vec<ValidatedEntityStructTouch<'_>>,
     unrepresentable: &mut Vec<ValidatedMutationTouch>,

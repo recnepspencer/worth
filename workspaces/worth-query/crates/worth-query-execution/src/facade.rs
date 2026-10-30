@@ -73,8 +73,8 @@ pub mod runtime {
     };
     pub use worth_execution::{
         CancellationSource, CancellationToken, ConstructionDenial, ExecutionAllocationDenial,
-        ExecutionAllocationDenialClass, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
-        ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMemoryReservation,
+        ExecutionAllocationDenialClass, ExecutionAllocationPolicy, ExecutionAuthority,
+        ExecutionAuthorityConfig, ExecutionMemoryReservation,
         ExecutionPhysicalAllocationDenialKind, ExecutionResourceLease, LeaseDenial, LeaseRequest,
         MapKernelStop, MemoryLimitDenial, MemoryLimitLevel, WorkCeilingDenial,
     };

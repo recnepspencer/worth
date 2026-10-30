@@ -200,6 +200,10 @@ fn fragment_partition_count(fragments: &[FoundationalPatchFragment]) -> usize {
         .len()
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn direct_diff_record_order(
     authoritative_record_patches: Vec<PublishedAuthoritativeRecordPatch>,
 ) -> Vec<PublishedAuthoritativeRecordPatch> {
@@ -245,6 +249,10 @@ fn diff_packet_stream(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn diff_slice_stream(
     packet_index_floor: usize,
     records: &[PublishedAuthoritativeRecordPatch],

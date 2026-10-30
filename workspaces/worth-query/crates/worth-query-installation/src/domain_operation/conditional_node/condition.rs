@@ -164,6 +164,10 @@ impl WorthQueryConditionalEvaluationCondition {
         Self(ConditionalEvaluationConditionKind::Temporal(condition))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn domain_specific<Family: WorthQueryDomainConditionFamily>(
         parameters: impl IntoIterator<Item = WorthQueryPortableConditionParameter>,
     ) -> Result<Self, &'static str> {
@@ -185,6 +189,10 @@ impl WorthQueryConditionalEvaluationCondition {
         }))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn canonicalize(&mut self) {
         match &mut self.0 {
             ConditionalEvaluationConditionKind::AspectFiltered(dependencies) => {

@@ -102,6 +102,10 @@ fn sift_down(coordinates: &mut [Coordinate], mut root: usize) {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn compare(left: &Coordinate, right: &Coordinate) -> Ordering {
     (left.0.index(), left.0.generation(), left.1.index(), &left.2).cmp(&(
         right.0.index(),

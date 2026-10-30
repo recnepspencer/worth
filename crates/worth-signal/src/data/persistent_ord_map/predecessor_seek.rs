@@ -45,17 +45,29 @@ impl<K: Borrow<Q>, Q: Ord + ?Sized> SeekKey<K, Q> for Query<'_, K, Q> {
 }
 
 impl<K, Q: Ord + ?Sized> PartialEq for dyn SeekKey<K, Q> + '_ {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other).is_eq()
     }
 }
 impl<K, Q: Ord + ?Sized> Eq for dyn SeekKey<K, Q> + '_ {}
 impl<K, Q: Ord + ?Sized> PartialOrd for dyn SeekKey<K, Q> + '_ {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl<K, Q: Ord + ?Sized> Ord for dyn SeekKey<K, Q> + '_ {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> Ordering {
         let ordering = self.borrowed().cmp(other.borrowed());
         if let Some(key) = self.shared() {

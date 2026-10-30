@@ -67,6 +67,10 @@ pub struct AdmittedMergeRegistry {
 }
 
 impl AdmittedMergeRegistry {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn freeze(
         mut declarations: Vec<MergeHistoryDeclaration>,
     ) -> Result<Self, BridgeBuildError> {

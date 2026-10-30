@@ -4,6 +4,10 @@ use crate::data::handle::NodeId;
 use crate::data::proof::SubscriberRepairBatch;
 
 impl SignalGraph {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn subscriber_repair_check_scope(
         &self,
         sources: &[NodeId],

@@ -121,6 +121,10 @@ where
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn bind<Schema, Spec>(
     installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     definition: ValidatedWorkflowDefinition<Spec>,

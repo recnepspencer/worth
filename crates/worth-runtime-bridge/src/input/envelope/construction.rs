@@ -114,6 +114,10 @@ pub(super) fn construct_committed_patch_envelope_with_record_changes(
     ))
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn canonical_patch_item_order(
     left: &BridgeCommittedPatchItem,
     right: &BridgeCommittedPatchItem,

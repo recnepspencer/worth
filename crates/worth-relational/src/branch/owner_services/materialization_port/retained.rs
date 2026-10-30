@@ -7,6 +7,10 @@ impl RelationalMaterializationPort {
     /// Requires the owner-admitted suspension basis and sealed custody. This does
     /// not expose payload, authorize ordinary reads, or admit rematerialization
     /// of the retained entity.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn retained_entity_kind(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

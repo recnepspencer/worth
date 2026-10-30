@@ -21,6 +21,10 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn node_for(&self, key: &K) -> Option<&StorageAllocation<MapNode<K, V>>> {
         let mut current = self.root.as_ref()?;
         loop {

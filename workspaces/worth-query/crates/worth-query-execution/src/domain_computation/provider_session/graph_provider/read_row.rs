@@ -83,6 +83,10 @@ pub enum WorthQueryGraphReadRowConstructionDenial {
     EmptyEntityIdentity,
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn value_by_key<'a, K: Ord, V>(values: &'a [(K, V)], key: &K) -> Option<&'a V> {
     values
         .binary_search_by(|(candidate, _)| candidate.cmp(key))

@@ -46,6 +46,10 @@ impl Hash for OutputSourceAddress {
 }
 
 impl Ord for OutputSourceAddress {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> Ordering {
         let prefix = |address: &Self| {
             (
@@ -66,6 +70,10 @@ impl Ord for OutputSourceAddress {
 }
 
 impl PartialOrd for OutputSourceAddress {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }

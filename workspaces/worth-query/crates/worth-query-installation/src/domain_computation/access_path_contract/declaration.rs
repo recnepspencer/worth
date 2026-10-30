@@ -37,6 +37,10 @@ pub struct WorthQueryArtifactNativeAccessContract {
 }
 
 impl WorthQueryArtifactNativeAccessContract {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn new(
         layout: WorthQueryArtifactNativeLayoutContract,
         row_batch: WorthQueryArtifactRowBatchPosture,

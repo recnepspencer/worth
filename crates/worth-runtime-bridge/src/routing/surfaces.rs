@@ -26,12 +26,20 @@ pub struct TruthDeltaSurface {
 }
 
 impl PartialOrd for TruthDeltaSurface {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for TruthDeltaSurface {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.surface_identity.cmp(&other.surface_identity)
     }

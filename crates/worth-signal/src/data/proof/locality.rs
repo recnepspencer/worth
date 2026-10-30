@@ -169,6 +169,10 @@ impl PartitionScopeSet {
         self.0.iter()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn intersects(&self, other: &Self) -> bool {
         let mut left = 0usize;
         let mut right = 0usize;

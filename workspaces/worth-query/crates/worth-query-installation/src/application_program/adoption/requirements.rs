@@ -158,6 +158,10 @@ impl WorthQueryProgramAdoptionRequirements {
         self.changed_workflow_dependency(action.program_names())
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn changed_workflow_dependency<'a>(
         &self,
         mut names: impl Iterator<Item = &'a str>,

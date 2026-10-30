@@ -9,6 +9,10 @@ pub(crate) struct BoundedProcessOutput {
     pub timed_out: bool,
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "stream-reader thread-spawn=2: A process stream is read concurrently to prevent pipe backpressure."
+)]
 pub(crate) fn run(
     command: &mut Command,
     timeout: Duration,

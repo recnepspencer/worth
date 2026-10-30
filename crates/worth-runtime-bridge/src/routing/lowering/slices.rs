@@ -173,12 +173,20 @@ impl BridgeSubscriptionSlice {
 }
 
 impl PartialOrd for BridgeSubscriptionSlice {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for BridgeSubscriptionSlice {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.canonical_basis.cmp(&other.canonical_basis)
     }

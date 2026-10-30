@@ -266,8 +266,10 @@ fn growing_replacement_is_admitted_before_copy_and_keeps_funding_until_final_vie
         };
         assert!(matches!(
             denial.kind(),
-            worth_execution::ExecutionAllocationDenialKind::Lease(
-                worth_execution::LeaseDenial::MemoryExhausted(_)
+            worth_execution::ExecutionAllocationDenialClass::Request(
+                worth_execution::WorkCeilingDenial::Admission(
+                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                )
             )
         ));
         assert_eq!(denial.requested_payload_bytes(), Some(quote));

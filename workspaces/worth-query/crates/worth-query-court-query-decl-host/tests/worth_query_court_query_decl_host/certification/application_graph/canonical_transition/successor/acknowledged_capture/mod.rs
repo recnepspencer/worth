@@ -50,13 +50,13 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
         .expect("native capture supplies its exact payload quote");
     assert!(requested > 0);
     assert_eq!(
-        cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial::Capacity {
+        cause.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested,
                 admitted: 0,
                 level: MemoryLimitLevel::Policy { ancestor: 0 },
-            }
+            })
         ))
     );
     assert_eq!(

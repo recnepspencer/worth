@@ -58,12 +58,20 @@ impl<Q: Ord + ?Sized> PartialEq for dyn KeyOrder<Q> + '_ {
 impl<Q: Ord + ?Sized> Eq for dyn KeyOrder<Q> + '_ {}
 
 impl<Q: Ord + ?Sized> PartialOrd for dyn KeyOrder<Q> + '_ {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl<Q: Ord + ?Sized> Ord for dyn KeyOrder<Q> + '_ {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.borrowed().cmp(other.borrowed())
     }

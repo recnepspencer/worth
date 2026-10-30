@@ -50,7 +50,7 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     /// once a pending completion publication resolves or the index is repaired.
     CompletionAllocationDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     CompletionStagingCardinalityOverflow,

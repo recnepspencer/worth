@@ -2,6 +2,10 @@ use std::cmp::Ordering;
 
 use super::normalized_transition::CanonicalSchemaDiffDetail;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn compare_detail_canonically(
     left: &CanonicalSchemaDiffDetail<'_>,
     right: &CanonicalSchemaDiffDetail<'_>,
@@ -24,6 +28,10 @@ pub(super) fn detail_sort_key(detail: &CanonicalSchemaDiffDetail<'_>) -> u8 {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn compare_detail_terms(
     left: &CanonicalSchemaDiffDetail<'_>,
     right: &CanonicalSchemaDiffDetail<'_>,

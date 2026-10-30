@@ -33,6 +33,10 @@ pub struct WorthQueryAdmittedInvariantStateLoadPlan {
 }
 
 impl WorthQueryAdmittedInvariantStateLoadPlan {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn admit(
         identity: impl Into<Arc<str>>,
         locators: impl IntoIterator<Item = WorthQueryInvariantStateLocator>,

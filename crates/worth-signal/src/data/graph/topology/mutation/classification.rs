@@ -170,6 +170,10 @@ impl SignalGraph {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn compare_dependency_edges(left: &DependencyEdge, right: &DependencyEdge) -> Ordering {
     left.sort_key().cmp(&right.sort_key())
 }
@@ -356,6 +360,10 @@ fn diff_dependency_topology(
     analyze_dependency_reconciliation(current, desired).delta
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn compare_dependency_identity(left: NodeId, right: NodeId) -> Ordering {
     (left.index(), left.generation()).cmp(&(right.index(), right.generation()))
 }

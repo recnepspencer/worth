@@ -19,6 +19,10 @@ struct ProcessPosture<'a> {
     address: String,
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+)]
 pub async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     let binding =
         BankHttpServerBinding::bind(BankHttpServerConfiguration::local_ephemeral()).await?;
@@ -54,6 +58,10 @@ pub async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     Ok(())
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-runtime=1; async-runtime thread-builder=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+)]
 async fn install_identity_on_dedicated_stack(
     configuration: BankHttpProcessConfiguration,
 ) -> Result<AuthentikBankIdentity, Box<dyn Error + Send + Sync>> {

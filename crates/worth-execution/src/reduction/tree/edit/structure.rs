@@ -49,6 +49,10 @@ pub(in super::super) fn insert<S: Structure>(
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(in super::super) fn delete<S: Structure>(
     root: &S::Link,
     id: PartitionIdentity,

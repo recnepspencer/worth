@@ -21,6 +21,10 @@ struct UiNativeMotionReadinessSchedule {
 }
 
 impl UiNativeMotionReadinessLane {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "event-loop-watcher thread-builder=1: UI readiness, source, theme or event-loop observation runs independently of computation."
+    )]
     pub(super) fn start(
         port: worth_ui_host_native::UiNativeApplicationReadinessPort,
     ) -> Result<Self, ()> {

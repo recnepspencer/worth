@@ -48,7 +48,7 @@ pub enum WorthQueryPublishedExternalEffectFailure {
     },
     CompletionAllocationDenied {
         stage: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialKind,
+        kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     CompletionStagingCardinalityOverflow,
@@ -305,11 +305,11 @@ mod tests {
         let cases = [
             (
                 WorthQueryExternalDispatchPreparationDenial::CompletionAllocationDenied {
-                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialKind::Allocator,
+                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator),
                     requested_payload_bytes: Some(17),
                 },
                 WorthQueryPublishedExternalEffectFailure::CompletionAllocationDenied {
-                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialKind::Allocator,
+                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator),
                     requested_payload_bytes: Some(17),
                 },
             ),

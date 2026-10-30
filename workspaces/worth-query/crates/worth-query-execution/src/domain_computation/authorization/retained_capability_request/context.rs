@@ -9,6 +9,10 @@ pub(in crate::domain_computation::authorization) enum RetainedContext {
     Decoded(Vec<Entry>),
 }
 impl RetainedContext {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn decoded(mut entries: Vec<Entry>) -> Result<Self, ()> {
         entries.sort_unstable_by(|left, right| left.0.cmp(&right.0));
         if entries.windows(2).any(|pair| pair[0].0 == pair[1].0) {
@@ -22,6 +26,10 @@ impl RetainedContext {
             Self::Decoded(entries) => ContextEntries::Decoded(entries.iter()),
         }
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(in crate::domain_computation::authorization) fn get(
         &self,
         key: &WorthQueryCapabilityContextKey,

@@ -140,7 +140,7 @@ impl PreparedCanonicalBranchMovement {
                 let prepared = participant.prepare(&mut context);
                 // A companion cannot hide an original request stop behind
                 // either a successful preparation or its own refusal.
-                crate::authority::commit::pipeline::consult_stage_control(
+                crate::authority::commit::pipeline::consult_stage(
                     execution,
                     crate::authority::commit::pipeline::CommitStage::Publication,
                 )

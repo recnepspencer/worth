@@ -30,11 +30,19 @@ impl<T: Ord> PartialEq for StoredRow<T> {
 }
 impl<T: Ord> Eq for StoredRow<T> {}
 impl<T: Ord> PartialOrd for StoredRow<T> {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl<T: Ord> Ord for StoredRow<T> {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.value().cmp(other.value())
     }

@@ -1,5 +1,9 @@
 use super::*;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(crate) fn canonicalize_conditional_nodes(
     nodes: &mut [WorthQueryPortableConditionalNodeDeclaration],
 ) {

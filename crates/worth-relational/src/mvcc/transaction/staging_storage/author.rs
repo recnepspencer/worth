@@ -39,6 +39,10 @@ impl<'scope, 'authority, T: Ord> Author<'scope, 'authority, T> {
             policy,
         })
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn insert(&mut self, value: T) -> Result<(), Denial> {
         self.policy.check_live()?;
         if self

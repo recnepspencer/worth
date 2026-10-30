@@ -5,6 +5,10 @@ use std::sync::{Arc, OnceLock};
 use super::{CourtroomWorld, QueryWork};
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1: Fixture-owned actors retain exact Application and World populations while native cutovers advance one at a time; computation remains under installed runtime authority."
+)]
 pub(super) fn with_parked_writers(
     world: &CourtroomWorld,
     branches: &[WorthQueryProductBranch],

@@ -63,6 +63,10 @@ impl WorthQueryOutputDemandKey {
             && self.source.same_semantic_source(&other.source)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(super) fn replacement_order(&self, other: &Self) -> Option<Ordering> {
         if self.family != other.family {
             return None;

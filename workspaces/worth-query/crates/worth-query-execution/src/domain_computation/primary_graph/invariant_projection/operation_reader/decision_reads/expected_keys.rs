@@ -87,6 +87,10 @@ impl ExpectedFactKeys {
         &self.computation
     }
 }
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn union<'a>(
     left: impl Iterator<Item = &'a Key> + 'a,
     right: impl Iterator<Item = &'a Key> + 'a,

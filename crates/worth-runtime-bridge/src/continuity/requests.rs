@@ -77,6 +77,10 @@ pub struct BridgePlannedContinuityRequestSet {
 }
 
 impl BridgePlannedContinuityRequestSet {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn from_route_record(
         route_record: &BridgeRouteRecord,
     ) -> Result<Self, BridgeContinuityError> {
@@ -168,6 +172,10 @@ impl BridgePlannedContinuityRequestSet {
         })
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn from_planned_route(
         planned_route: &BridgePlannedRoute,
     ) -> Result<Self, BridgeContinuityError> {

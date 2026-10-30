@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryInvariantProjectionDenialKind,
 };
 use worth_execution::{
-    ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, LeaseDenial,
+    ExecutionAllocationDenialClass, ExecutionAllocationPolicy as Policy, LeaseDenial,
 };
 
 #[test]
@@ -89,13 +89,13 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     assert_eq!(retained.projection_work().unwrap().equality_lookups(), 1);
     let allocation = retained.allocation_denial().unwrap();
     assert_eq!(
-        allocation.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial::Capacity {
+        allocation.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
                 requested: allocation.requested_payload_bytes().unwrap(),
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert!(allocation.requested_payload_bytes().unwrap() > 0);

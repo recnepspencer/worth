@@ -218,6 +218,10 @@ fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn pricing_shock_ml_pipeline_export_simulation_summaries_match_iteration_traces() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);

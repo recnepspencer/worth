@@ -5,6 +5,10 @@ pub enum WorthQueryOperationWorkflowContract {
 }
 
 impl WorthQueryOperationWorkflowContract {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn canonicalize(&mut self) {
         if let Self::Declared(workflow) = self {
             for stage in &mut workflow.stages {

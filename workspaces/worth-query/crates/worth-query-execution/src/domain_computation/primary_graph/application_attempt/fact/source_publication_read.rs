@@ -40,6 +40,10 @@ impl SourcePublicationRead {
 // Keys identify the original read, not its result. A second read cannot replace
 // the first observation whose expected value the original attempt must validate.
 impl Ord for SourcePublicationRead {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.admission
             .cmp(&other.admission)
@@ -47,11 +51,19 @@ impl Ord for SourcePublicationRead {
     }
 }
 impl PartialOrd for SourcePublicationRead {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl PartialEq for SourcePublicationRead {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal
     }

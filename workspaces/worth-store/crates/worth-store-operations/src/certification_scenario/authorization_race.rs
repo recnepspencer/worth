@@ -22,6 +22,10 @@ pub struct ScenarioAuthorizationRaceReceipt {
     evidence_identity: [u8; 32],
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-spawn=2: Certification drives independent actors to expose concurrency behavior."
+)]
 pub fn certify_scenario_authorization_race(case: &str) -> ScenarioAuthorizationRaceReceipt {
     let scenario = OwnerBackedBackupScenario::materialize(case);
     let control = scenario.control_store();

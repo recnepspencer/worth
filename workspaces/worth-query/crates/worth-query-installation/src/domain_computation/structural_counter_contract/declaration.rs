@@ -117,6 +117,10 @@ impl WorthQueryStructuralCounterContract {
         ])
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn declare(rows: impl IntoIterator<Item = WorthQueryStructuralCounterSchema>) -> Self {
         let mut rows = rows.into_iter().collect::<Vec<_>>();
         for row in &mut rows {
@@ -130,6 +134,10 @@ impl WorthQueryStructuralCounterContract {
         &self.rows
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub fn row(
         &self,
         name: &FoundationalPerformanceCounterName,

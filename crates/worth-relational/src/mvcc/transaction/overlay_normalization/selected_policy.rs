@@ -3,7 +3,7 @@ use crate::transactions::data::{CreateIntent, MutationIntent};
 use crate::{facade::mvcc::RelationalTransactionIntent, tests::support::*};
 use std::num::NonZeroUsize;
 use worth_execution::{
-    CancellationSource, CancellationToken, ExecutionAllocationDenialKind,
+    CancellationSource, CancellationToken, ExecutionAllocationDenialClass,
     ExecutionAllocationPolicy as Policy, ExecutionAuthority, ExecutionAuthorityConfig, LeaseDenial,
     LeaseRequest, MemoryLimitDenial, MemoryLimitLevel,
 };
@@ -99,13 +99,13 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
             std::cell::RefCell<Option<crate::facade::mvcc::RelationalTransactionWriteLocus>>,
         >()) as u64;
     assert_eq!(
-        cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial::Capacity {
+        cause.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested: normalization_bytes,
                 admitted: 1,
                 level: MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert!(cause
@@ -184,13 +184,13 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
             std::cell::RefCell<Option<crate::facade::mvcc::RelationalTransactionReadLocus>>,
         >()) as u64;
     assert_eq!(
-        denial.allocation_denial().unwrap().kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial::Capacity {
+        denial.allocation_denial().unwrap().classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested: validation_bytes,
                 admitted: 1,
                 level: MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert!(denial

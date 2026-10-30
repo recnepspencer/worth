@@ -92,7 +92,7 @@ fn every_refusal() -> Vec<Redispatch> {
         },
         Redispatch::CompletionAllocationDenied {
             stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit,
-            kind: worth_execution::ExecutionAllocationDenialKind::Allocator,
+            kind: worth_execution::ExecutionAllocationDenialClass::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator),
             requested_payload_bytes: Some(17),
         },
         Redispatch::CompletionStagingCardinalityOverflow,

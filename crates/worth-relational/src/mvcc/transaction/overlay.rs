@@ -69,6 +69,10 @@ impl DetachedRelationalTransactionOverlay {
         self.index = index;
         drained
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn entity_mutations(
         &self,
         entity: EntityId,
@@ -83,6 +87,10 @@ impl DetachedRelationalTransactionOverlay {
                 _ => unreachable!(/* Proof: The private mutation index is populated only in the corresponding entity/relation/create insertion branch; its immutable index points to that discriminant. */ "entity index points only to entity mutations"),
             })
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn relation_mutations(
         &self,
         relation: RelationId,
@@ -98,6 +106,10 @@ impl DetachedRelationalTransactionOverlay {
                 _ => unreachable!(/* Proof: The private mutation index is populated only in the corresponding entity/relation/create insertion branch; its immutable index points to that discriminant. */ "relation index points only to relation mutations"),
             })
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn entity_creates(
         &self,
         entity: &CreatedEntityRef,
@@ -108,6 +120,10 @@ impl DetachedRelationalTransactionOverlay {
             _ => std::cmp::Ordering::Greater,
         })
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     fn relation_creates(
         &self,
         relation: &CreatedRelationRef,

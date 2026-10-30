@@ -94,7 +94,7 @@ pub enum BankRecoveryDenialKind {
     },
     CompletionAllocationDenied {
         stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: worth_query_host::facade::runtime::ExecutionAllocationDenialKind,
+        kind: worth_query_host::facade::runtime::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     CompletionStagingCardinalityOverflow,

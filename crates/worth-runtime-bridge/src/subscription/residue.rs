@@ -201,6 +201,10 @@ pub struct BridgeSubscriptionPreviewResidueScopeIndex {
 }
 
 impl BridgeSubscriptionPreviewResidueScopeIndex {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+    )]
     pub(crate) fn build(
         preview_active: &BridgePreviewActiveSubscription,
         artifact_inputs: Vec<BridgeSubscriptionPreviewResidueArtifactInput>,

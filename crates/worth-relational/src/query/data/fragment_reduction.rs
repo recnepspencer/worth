@@ -170,6 +170,10 @@ fn reduce_traversal_fragments(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn reduce_traversal_entities(
     mut keyed_entities: Vec<(TraversalEntityVisitKey, EntityReadRecord)>,
     unkeyed_entities: Vec<EntityReadRecord>,
@@ -196,6 +200,10 @@ fn reduce_traversal_entities(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 fn reduce_traversal_relations(
     mut keyed_relations: Vec<(TraversalRelationVisitKey, RelationReadRecord)>,
     unkeyed_relations: Vec<RelationReadRecord>,

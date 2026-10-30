@@ -84,7 +84,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// Native checkpoint recovery's allocation owner refused the backing.
     /// The checked quote is absent when layout could not be represented.
     NativeAllocation {
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     /// Commit or index preparation was canceled or exceeded its deadline before publication.

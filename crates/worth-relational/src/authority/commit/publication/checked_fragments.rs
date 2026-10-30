@@ -5,6 +5,10 @@ use crate::execution::{PacketBudgetDenial, PacketKernelContext};
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
 use worth_execution::MapKernelFailure;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+)]
 pub(super) fn diff_fragment_slice_stream(
     packet_index_floor: usize,
     fragments: &[FoundationalPatchFragment],
