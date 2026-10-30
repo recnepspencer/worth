@@ -324,6 +324,11 @@ fn dependencies(key: &str, rule: &toml::Value, p: &Package) -> Vec<Diagnostic> {
     out
 }
 fn category_valid(path: &str) -> bool {
+    // Codemod copies compile-fail inputs and data under sources/ with their
+    // original paths. Their categories belong to the mounted court wrapper.
+    if path.starts_with("sources/") {
+        return true;
+    }
     let segments: Vec<_> = path
         .trim_end_matches(".rs")
         .split('/')

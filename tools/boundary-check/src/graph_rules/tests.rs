@@ -135,6 +135,7 @@ fn dependency_denials_and_allowlists_reject_only_disallowed_edges() {
 #[test]
 fn categories_follow_top_level_directory_segments() {
     assert!(category_valid("process/serial/settlement.rs"));
+    assert!(category_valid("sources/original/compile_fail/binding.rs"));
     assert!(!category_valid("settlement/process/actor.rs"));
     assert!(!category_valid("fast/settlement.rs"));
 }
