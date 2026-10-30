@@ -38,7 +38,7 @@ def environments(repository, workspace):
         rows = configured_inputs(repository, registry)
         contracts = snapshot_audiences(repository, registry)
     else:
-        rows = {'production': {'identity': 'production', 'profile': 'test', 'packages': []}}
+        rows = {'production': {'identity': 'production', 'profile': 'dev', 'packages': []}}
         contracts = {}
     records = {name: declared_audiences(row['packages']) for name, row in rows.items()}
     for snapshot in snapshots:

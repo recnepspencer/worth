@@ -13,6 +13,17 @@ def target(source, kind='bin', name=None):
 
 
 class BatchedCompilerTests(unittest.TestCase):
+    def test_test_harness_profiles_are_refused_before_any_compiler_or_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'output'
+            for profile in ('test', 'bench'):
+                with self.subTest(profile=profile), self.assertRaisesRegex(
+                        BatchCompilationFailure, 'require normal binaries'):
+                    prepare_environment(root / 'Cargo.toml', {'profile': profile}, output,
+                                        lambda *_: self.fail('compiler called for a test harness'))
+                self.assertFalse(output.exists())
+
     def test_gate_owned_target_directory_is_used_without_creating_a_fixture_target(self):
         from types import SimpleNamespace
         with tempfile.TemporaryDirectory() as temporary:
@@ -79,7 +90,7 @@ class BatchedCompilerTests(unittest.TestCase):
             (root / 'src/lib.rs').write_text('pub struct Owner;')
             lock = root / 'Cargo.lock'
             lock.write_text('version=4\n')
-            env = dict(identity='production', profile='test', reject_test_features=True, packages=group([
+            env = dict(identity='production', profile='dev', reject_test_features=True, packages=group([
                 {'dependencies': {'format': {'version': '1'}}, 'sources': [root / 'forbidden.rs']},
                 {'dependencies': {'format': {'version': '1'}, 'backend': {'version': '1'}},
                  'sources': [root / 'allowed.rs']}]))
@@ -128,7 +139,7 @@ class BatchedCompilerTests(unittest.TestCase):
             (root / 'src').mkdir()
             (root / 'src/lib.rs').write_text('pub struct Owner;')
             (root / 'Cargo.lock').write_text('version=4\n')
-            environment = dict(identity='production', profile='test', reject_test_features=True,
+            environment = dict(identity='production', profile='dev', reject_test_features=True,
                                packages=group([{'dependencies': {}, 'sources': [root / 'one.rs']}]))
             for feature in ('certification-authority', 'test-support'):
                 with self.subTest(feature=feature):

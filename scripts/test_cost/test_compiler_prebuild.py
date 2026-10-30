@@ -61,6 +61,14 @@ class CompilerPrebuildInputTests(unittest.TestCase):
         self.assertNotIn('features', absence[0]['dependencies']['worth-store'])
         self.assertTrue(rows['production']['reject_test_features'])
 
+    def test_production_fixture_graphs_do_not_compile_a_test_harness(self):
+        root = repository_root(Path(__file__).parent)
+        for workspace in ('root', 'query', 'bank', 'store'):
+            with self.subTest(workspace=workspace):
+                rows, _ = environments(root, workspace)
+                self.assertNotIn(rows['production']['profile'], ('test', 'bench'))
+        self.assertEqual(environments(root, 'root')[0]['production']['profile'], 'dev')
+
     def test_every_governed_production_fixture_environment_audits_test_features(self):
         root = repository_root(Path(__file__).parent)
         for workspace in ('root', 'query', 'bank', 'store'):

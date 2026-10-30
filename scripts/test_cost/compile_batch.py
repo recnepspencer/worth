@@ -128,6 +128,8 @@ def attribute(events, sources):
 
 
 def prepare_environment(workspace_manifest, environment, output, cargo_runner):
+    if environment['profile'] in ('test', 'bench'):
+        raise BatchCompilationFailure('compiler fixtures require normal binaries, not a test or bench profile')
     workspace_manifest = Path(workspace_manifest).resolve()
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
