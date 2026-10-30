@@ -23,7 +23,41 @@ pub(super) fn managed_index(
         Cause::QueryRead(cause) => query_denial(BankApplicationQueryDenial::from_request_query(
             worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Execution(cause.clone()))),
         Cause::Work(cause) => work(cause),
-        Cause::Refused(_) | Cause::GraphWork(_) | Cause::Source(_) => unavailable(),
+        Cause::Source(cause) => source(cause),
+        Cause::Refused(_) | Cause::GraphWork(_) => unavailable(),
+    }
+}
+
+fn source(
+    cause: &worth_query_host::facade::primary_graph::WorthQuerySourceExpectationDenial,
+) -> BankHttpDenial {
+    use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestInterruption;
+
+    if let Some(stop) = cause.retention_interruption() {
+        return match stop {
+            WorthQueryRequestInterruption::Cancelled => cancelled(),
+            WorthQueryRequestInterruption::DeadlineExceeded => deadline(),
+        };
+    }
+    if let Some(stop) = cause.execution_denial() {
+        return crate::http::server::advancement_denial::request(*stop);
+    }
+    match cause.allocation_denial() {
+        Some(cause) => allocation(cause),
+        None => unavailable(),
+    }
+}
+
+fn allocation(
+    cause: &worth_query_host::facade::runtime::ExecutionAllocationDenial,
+) -> BankHttpDenial {
+    match cause.classify() {
+        worth_query_host::facade::runtime::ExecutionAllocationDenialClass::Request(cause) => {
+            crate::http::server::advancement_denial::request(cause)
+        }
+        worth_query_host::facade::runtime::ExecutionAllocationDenialClass::Physical(cause) => {
+            crate::http::server::advancement_denial::physical_allocation(cause)
+        }
     }
 }
 
@@ -40,14 +74,7 @@ fn work(
         Work::Controlled(Stop::Request(stop) | Stop::Storage(Storage::Request(stop))) => {
             crate::http::server::advancement_denial::request(*stop)
         }
-        Work::Controlled(Stop::Storage(Storage::Allocation(cause))) => match cause.classify() {
-            worth_query_host::facade::runtime::ExecutionAllocationDenialClass::Request(cause) => {
-                crate::http::server::advancement_denial::request(cause)
-            }
-            worth_query_host::facade::runtime::ExecutionAllocationDenialClass::Physical(cause) => {
-                crate::http::server::advancement_denial::physical_allocation(cause)
-            }
-        },
+        Work::Controlled(Stop::Storage(Storage::Allocation(cause))) => allocation(cause),
         Work::Controlled(Stop::ValueDecode(cause)) => value_decode(*cause),
         Work::Controlled(Stop::NodeCapacityExceeded) => exhausted(),
         Work::Controlled(
