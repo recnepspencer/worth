@@ -4,7 +4,7 @@ use super::{
         host::{self, Host},
         live_at,
     },
-    measurement,
+    measurement, reconstruction,
 };
 use std::time::Instant;
 use worth_query_host::facade::{
@@ -49,7 +49,7 @@ impl CellHistory {
         }
     }
 
-    pub fn measure(&self) -> measurement::WarmPublication {
+    pub fn measure(self) -> measurement::WarmPublication {
         let before = measurement::capture(&self.host);
         let mut micros = Vec::new();
         let mut decision_facts = 0;
@@ -90,15 +90,17 @@ impl CellHistory {
         }
         let mut current = self.initial.clone();
         current.last_mut().unwrap().1 = 200_000 + SAMPLES - 1;
+        let current_rows = live_at::current(&self.host, 1);
         assert_eq!(
-            live_at::current(&self.host, 1)
+            current_rows
                 .iter()
                 .map(|row| (row.key, row.value))
                 .collect::<Vec<_>>(),
             current
         );
+        let untouched_rows = live_at::current(&self.host, 2);
         assert_eq!(
-            live_at::current(&self.host, 2)
+            untouched_rows
                 .iter()
                 .map(|row| (row.key, row.value))
                 .collect::<Vec<_>>(),
@@ -107,6 +109,15 @@ impl CellHistory {
         // Explicit owner walk after warm measurement and answer checks. Its
         // allocation and elapsed work are diagnostic, never publication work.
         super::super::storage::observe(&self.host);
+        let start = Instant::now();
+        let bytes = super::super::checkpoint::capture(&self.host);
+        println!("cell cold capture_transport_samples=1 capture_transport_us={} live={} retained_steps={} checkpoint_payload_bytes={}",
+            start.elapsed().as_micros(), self.live, self.receipts.len(), bytes.len());
+        let history = self.receipts.len() as u64;
+        let Self { host, receipts, .. } = self;
+        drop(receipts);
+        drop(host);
+        reconstruction::measure(bytes, history + SAMPLES, &current_rows, &untouched_rows);
         warm
     }
 }

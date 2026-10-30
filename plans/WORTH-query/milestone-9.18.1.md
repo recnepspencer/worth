@@ -1908,6 +1908,16 @@ machine environment in the run output. Run small functional cases ordinarily;
 place timing and scale qualification under the existing `cost` category and
 schedule the maximum-scale cases. Setup and cold work remain measured even when
 excluded from warm-edit results.
+Cold qualification must drop the source application and all original receipts
+before reconstructing from copied opaque public checkpoint bytes. Preserve only
+independently checked weak expected rows. Report capture/transport, fresh
+readmission constructors and complete first-query materialization separately;
+constructor latency alone does not measure the first cold answer. State the
+actual repetition count and returned rows/read work, including zero truncation.
+Keep stdout formatting and reporting outside measured intervals. The first
+public-answer interval includes fresh request scope/authentication, Query
+execution and owned row extraction; name that boundary rather than attributing
+its entire cost to Native materialization.
 
 Separate current authoritative storage, held historical roots/artifacts,
 derived/index storage, reclaimable queued storage, transient/peak allocation and

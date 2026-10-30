@@ -1,6 +1,8 @@
 //! Independent retained-history and live-body axes through ordinary cell edits.
 #[path = "cost/measurement.rs"]
 mod measurement;
+#[path = "cost/reconstruction.rs"]
+mod reconstruction;
 #[path = "cost/workload.rs"]
 mod workload;
 
