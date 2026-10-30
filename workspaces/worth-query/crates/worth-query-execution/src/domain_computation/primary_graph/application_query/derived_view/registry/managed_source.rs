@@ -76,9 +76,14 @@ impl ManagedDerivedViewRegistry {
             })?;
             let retained = image
                 .as_ref()
-                .and_then(|image| image.payload().retained(source.program(), scope.scope()))
-                .map(|entry| entry.payload());
-            roots.push(service.prepare(execution, scope, retained)?);
+                .map(|image| image.payload().retained(source.program(), scope.scope()))
+                .transpose()?
+                .flatten();
+            roots.push(service.prepare(
+                execution,
+                scope,
+                retained.as_ref().and_then(|entry| entry.payload()),
+            )?);
         }
         execution.consult().map_err(|cause| {
             Denial::Source(
@@ -109,8 +114,7 @@ impl ManagedDerivedViewRegistry {
                 return cell.reserve_preflight(context).map(Some);
             }
         }
-        let cell =
-            context.mint_selected_branch_cell(Arc::new(ManagedIndexBranchImage::default()))?;
+        let cell = context.mint_managed_index_source_cell()?;
         let entry = SourceBranchSlot::new(
             &context.execution_request(),
             context.branch_id(),

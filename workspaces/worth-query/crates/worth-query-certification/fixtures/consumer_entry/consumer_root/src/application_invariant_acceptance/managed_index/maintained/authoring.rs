@@ -43,7 +43,7 @@ worth_query_operation_reads!(AuthorCatalog => [Directory, DirectoryIdentity, Ite
 worth_query_operation_creates!(AuthorCatalog => [Directory, Item]);
 worth_query_operation_links!(AuthorCatalog => [Contains]);
 worth_query_operation_deletes!(AuthorCatalog => [Item]);
-worth_query_operation_writes!(AuthorCatalog => [DirectoryIdentity, ItemIdentity, ItemName, ItemEnabled, bounds::ItemBounds]);
+worth_query_operation_writes!(AuthorCatalog => [DirectoryIdentity, DirectoryNote, ItemIdentity, ItemName, ItemEnabled, bounds::ItemBounds]);
 
 fn scope(_: &Edit) -> String {
     "catalog".into()
@@ -79,6 +79,7 @@ pub(super) fn declare(
         .operation_link(op, Contains::reference())
         .operation_delete(op, Item::reference())
         .operation_write(op, DirectoryIdentity::reference())
+        .operation_write(op, DirectoryNote::reference())
         .operation_write(op, ItemIdentity::reference())
         .operation_write(op, ItemName::reference())
         .operation_write(op, ItemEnabled::reference())

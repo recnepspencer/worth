@@ -33,6 +33,7 @@ pub(super) fn declare(
             )
             .field(Principal::reference(), PrincipalIdentityField::reference())
             .field(Directory::reference(), DirectoryIdentity::reference())
+            .field(Directory::reference(), DirectoryNote::reference())
             .field(Item::reference(), ItemIdentity::reference())
             .field(Item::reference(), ItemName::reference())
             .field(Item::reference(), ItemEnabled::reference())
@@ -72,6 +73,7 @@ worth_query_field!(pub ExternalIdentityField for Catalog, ExternalMapping, Exter
 worth_query_field!(pub MappingStatusField for Catalog, ExternalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
 worth_query_field!(pub PrincipalIdentityField for Catalog, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_field!(pub DirectoryIdentity for Catalog, Directory, DirectoryFacts: String => StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub DirectoryNote for Catalog, Directory, DirectoryFacts: String => StringApplicationValueBinding, read_write, equality);
 worth_query_field!(pub ItemIdentity for Catalog, Item, ItemFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_value_binding!(pub NameBinding for String {
     identity: "managed-catalog.name.v1", scalar: String,

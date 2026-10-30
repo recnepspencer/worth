@@ -546,9 +546,21 @@ and both geometry allocation courts retain exact all-owner balance. The physical
 balance court also exposed an idle Execution
 ledger table; the ledger now relinquishes unused backing after its final usage
 transition, with focused worker/retained-charge owner evidence.
-Cold invariant-root eviction/reconstruction, remaining lifecycle/affinity hostile
-controls, materialization/recovery composition and the required 1,000/2,000
-whole-path growth court remain incomplete. Local algorithm checks
+Selected-image eviction and admitted candidate cold reconstruction are now
+qualified through the public geometry program. Fresh Parent cleanup makes B cold
+before provider callbacks; a warm-A edit reconstructs B before its refusing rule.
+The real Directory metadata action consumes the same retained Source expectation
+both while cold and after refill, proving unchanged association through Native
+publication. Original cold-build cancellation leaves B cold, releases original
+staging immediately, and retries successfully. The selected older ReuseExact
+component can be evicted while main and fork remain warm and isolated. All seven
+maintained courts pass; the prefix and three geometry allocation courts retain
+exact all-owner balance. Native owner probes verify final opaque destruction
+beyond directory/registration guards, and request-owner controls prove completed
+cleanup survives the actual outer final poll while pre-effect cancellation refuses.
+Public maintained rebuild and its honest Refuse bootstrap twin, remaining
+lifecycle/affinity hostile controls, materialization/recovery composition and the
+required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication
 and final-owner release across that path.
 

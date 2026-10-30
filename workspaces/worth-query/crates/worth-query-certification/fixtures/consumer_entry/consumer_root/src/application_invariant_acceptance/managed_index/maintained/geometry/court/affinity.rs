@@ -185,6 +185,40 @@ fn journey() {
         ),
         before
     );
+    // This is a fresh CURRENT World request selecting its genuine older
+    // Native component. The Native head must not replace that selection.
+    reused_request
+        .query(all("A"))
+        .evict_index(&reused_index)
+        .unwrap();
+    let queries = calls.queries.load(Ordering::SeqCst);
+    let cold = reused_request.query(all("A")).execute();
+    let Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(denial)) = cold else {
+        panic!("the reused selected image must become cold")
+    };
+    assert!(
+        matches!(
+            denial.cause(),
+            WorthQueryManagedIndexDenialCause::Refused(
+                WorthQueryManagedIndexRefusal::RootUnavailable
+            )
+        ),
+        "{denial:?}"
+    );
+    assert_eq!(calls.queries.load(Ordering::SeqCst), queries);
+    assert_eq!(
+        values(request.query(all("A")).execute().unwrap().rows()),
+        expected("A", 20, all("A").probe)
+    );
+    assert_eq!(
+        values(sibling.query(all("A")).execute().unwrap().rows()),
+        expected("A", 30, all("A").probe)
+    );
+    assert_eq!(
+        calls.builds.load(Ordering::SeqCst),
+        builds,
+        "eviction and warm sibling reads reconstruct nothing"
+    );
     index.close();
     sibling_index.close();
     reused_index.close();

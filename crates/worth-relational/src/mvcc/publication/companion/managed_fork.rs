@@ -64,7 +64,7 @@ impl PreparedManagedIndexSourceFork {
         {
             return Err(denied(Stop::SelectedSourceMismatch));
         }
-        let payload = Arc::clone(&original.image.payload)
+        let source_payload = Arc::clone(&original.image.payload)
             .downcast::<ManagedIndexBranchImage>()
             .map_err(|_| denied(Stop::ForeignCell))?;
         // Pay before constructing the header, core, image, admission and grant
@@ -75,6 +75,10 @@ impl PreparedManagedIndexSourceFork {
             .reserve_retained_memory(bytes)
             .map_err(|cause| denied(Stop::Execution(cause.into())))?
             .map(Arc::new);
+        // Fresh cache slot for the branch; immutable directory cells and their
+        // payloads remain O(1) temporal shares until either image edits its slot.
+        let payload = ManagedIndexBranchImage::retain_header(execution, (*source_payload).clone())
+            .map_err(denied)?;
         let header = source
             .prepare_managed_fork_header(issuer)
             .map_err(|_| RelationalForkDenial::RootIdentityExhausted)?;

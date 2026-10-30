@@ -33,6 +33,8 @@ pub enum WorthQueryManagedIndexRefusal {
     EpochExhausted,
     StaleImage,
     NotReady,
+    /// The selected physical Source has no retained managed material.
+    RootUnavailable,
     InvariantOwned,
     RegistrationCapacityExceeded,
     RegistrationIdentityExhausted,
@@ -80,6 +82,9 @@ use WorthQueryManagedIndexRefusal as Refusal;
 
 pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
     match cause {
+        ProviderExecutionDenial::NativeSource(
+            worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::RootUnavailable,
+        ) => Cause::Refused(Refusal::RootUnavailable),
         ProviderExecutionDenial::NativeSource(cause) => Cause::NativeSource(cause),
         ProviderExecutionDenial::NativeAdmission(cause) => Cause::NativeAdmission(cause),
         ProviderExecutionDenial::Product(cause) => Cause::Product(cause),

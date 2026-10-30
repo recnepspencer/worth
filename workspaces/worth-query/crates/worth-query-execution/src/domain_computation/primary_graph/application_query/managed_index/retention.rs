@@ -19,6 +19,7 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{identity::EntityId, transactions::RelationalExecutionDenialCause};
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIncarnation};
 
+mod eviction;
 mod maintained;
 mod publication;
 mod transitions;

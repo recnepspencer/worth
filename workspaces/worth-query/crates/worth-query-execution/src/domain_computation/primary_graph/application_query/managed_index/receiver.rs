@@ -26,6 +26,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 mod context;
+mod eviction;
 mod lifecycle;
 
 pub(super) type ResultValue<S, B> =

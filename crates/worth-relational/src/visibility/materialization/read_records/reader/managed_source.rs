@@ -35,6 +35,40 @@ impl VisibilityReadContext<'_> {
             .observe(selected, program, scope, memory, generation)
     }
 
+    /// Evict only the selected current image's derived material. Retained
+    /// historical images remain temporal shares; this grants no Source READ.
+    pub fn evict_managed_index_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        handle: &SnapshotHandle,
+        program: &ManagedIndexSourceProgram,
+        scope: EntityId,
+    ) -> Result<
+        Option<crate::validation::candidate_source::ManagedIndexSourceCacheRetirement>,
+        Denial,
+    > {
+        let (selected, _memory) = self.managed_source_position(execution, handle)?;
+        let basis =
+            crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
+                .ok_or(Denial::RootUnavailable)?;
+        let publication = self.runtime.publication_binding();
+        let epoch = publication
+            .companion_epoch()
+            .map_err(Denial::Registration)?;
+        let (generation, _) = epoch
+            .active()
+            .map_err(Denial::Registration)?
+            .ok_or(Denial::MissingParticipant)?;
+        let retired = basis
+            .root()
+            .managed_source_image
+            .get()
+            .ok_or(Denial::RootUnavailable)?
+            .evict_selected(execution, &selected, program, scope, generation)?;
+        drop(epoch);
+        Ok(retired)
+    }
+
     /// Currentness reborrows the consuming request, never the original READ.
     pub fn managed_index_source_is_current(
         &self,

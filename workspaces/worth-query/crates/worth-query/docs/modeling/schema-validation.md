@@ -241,6 +241,29 @@ basis custody therefore selects the target association from its first read.
 A public close releases its access attachment; invariant and retained basis
 owners can still retain the canonical material.
 
+The exact selected image owns a disposable material directory separately from
+its immutable Source conditions. Cache eviction retains the condition and its
+revision; a cold reconstruction with Native's complete unchanged disposition
+reuses that condition even when its provider payload is new. Cold material is
+independent of physical Source suspension. Historical Native/World images can
+retain temporal material, and fresh selection never substitutes the Native head
+for a lawful older `ReuseExact` component.
+
+Directory cells use Execution's individually funded immutable ordered backing.
+Their storage key is the declared index-specific Source path identity plus full
+scope generation. Every access still checks the genuine live Program binding;
+equal descriptive keys from independent registries refuse. A weak binding memo
+belongs to the actual registered path owner, so clones and composition preserve
+that audience while independently registered paths remain distinct. Memoization
+contributes no descriptive schema or wire meaning.
+
+Admitted eviction uses the original request and retains replaced backing in an
+owned retirement value until runtime, directory and registration guards end.
+Query prechecks cleanup status before the effect and completes it infallibly;
+its actual completed result survives a later outer request interruption. A
+concurrent attachment close does not turn completed Native cleanup into a
+no-effect refusal. This cleanup supplies neither Source READ nor currentness.
+
 The [compiled application examples](../../../../../../docs/build-an-application.md#maintain-a-provider-source-for-an-invariant)
 show both the committed DecisionReader and installed candidate reader audiences.
 

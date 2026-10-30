@@ -425,6 +425,11 @@ Native `ForkExact` creates a branch-specific managed Source association while
 sharing immutable material; `ReuseExact` reads its actual selected component.
 Sibling edits remain isolated, and cross-branch Source expectations refuse
 before provider execution.
+Use the freshly admitted Parent's `evict_index(&handle)` (or its governed/approved
+variant) for selected maintained cache cleanup. Cold content returns typed
+`RootUnavailable`; admitted candidate reconstruction preserves unchanged Source
+conditions. Retained historical images remain valid shares. The request-free
+handle eviction and explicit maintained public rebuild retain `InvariantOwned`.
 A retained logical Source during
 generated-output suspension does not make a current public physical read Ready.
 See the

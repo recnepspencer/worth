@@ -2,14 +2,15 @@
 use super::*;
 use crate::identity::data::EntityId;
 use crate::validation::candidate_source::{
-    ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
+    ManagedIndexBranchImage, ManagedIndexSourceAssociation, ManagedIndexSourceAvailability,
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
 };
 use std::sync::Weak;
 
 pub struct ManagedIndexSourceObservation {
     pub(in crate::mvcc) core: Arc<CompanionBranchCellCore>,
-    pub(in crate::mvcc) record: Arc<ManagedIndexPublishedSourceRoot>,
+    pub(in crate::mvcc) record: Arc<ManagedIndexSourceAssociation>,
+    payload: Arc<dyn Any + Send + Sync>,
     selected: PositionedRelationalSnapshot,
     _metadata_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -30,6 +31,50 @@ impl std::fmt::Debug for ManagedSourceRootImage {
     }
 }
 impl ManagedSourceRootImage {
+    /// Cleanup uses the genuine selected image and current registration; it
+    /// cannot manufacture an association or borrow Source content.
+    pub(crate) fn evict_selected(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        selected: &PositionedRelationalSnapshot,
+        program: &ManagedIndexSourceProgram,
+        scope: EntityId,
+        registration_generation: u64,
+    ) -> Result<
+        Option<crate::validation::candidate_source::ManagedIndexSourceCacheRetirement>,
+        Denial,
+    > {
+        let core = self.core.upgrade().ok_or(Denial::RootUnavailable)?;
+        if core.registration_generation != registration_generation {
+            return Err(Denial::Publication(
+                CompanionPreflightStop::RegistrationChanged,
+            ));
+        }
+        if core.runtime_instance_id != selected.runtime_instance_id()
+            || core.branch_id != *selected.branch_id()
+        {
+            return Err(Denial::ForeignSource);
+        }
+        // A current World product may lawfully select an older Native
+        // component (ReuseExact or a pending coordinated successor). Its held
+        // Native root names this cache; the latest core is not that authority.
+        if self.image.root_id != selected.root_id()
+            || self.image.commit_id != selected.commit_id()
+            || self.image.position() != selected.position()
+        {
+            return Err(Denial::ForeignSource);
+        }
+        let image = self
+            .image
+            .payload
+            .downcast_ref::<ManagedIndexBranchImage>()
+            .ok_or(Denial::ForeignSource)?;
+        let retired = image
+            .evict_source(execution, program, scope)
+            .map_err(Denial::Publication)?;
+        Ok(retired)
+    }
+
     pub(crate) fn observe(
         &self,
         selected: PositionedRelationalSnapshot,
@@ -61,14 +106,16 @@ impl ManagedSourceRootImage {
             .downcast_ref::<ManagedIndexBranchImage>()
             .ok_or(Denial::ForeignSource)?;
         let record = image
-            .retained(program, scope)
+            .retained(program, scope)?
             .ok_or(Denial::RootUnavailable)?;
-        if record.availability != ManagedIndexSourceAvailability::Available {
+        if record.physical_availability() != ManagedIndexSourceAvailability::Available {
             return Err(Denial::RootUnavailable);
         }
+        let payload = record.payload().cloned().ok_or(Denial::RootUnavailable)?;
         Ok(ManagedIndexSourceObservation {
             core,
-            record: Arc::clone(record),
+            record: Arc::clone(&record.association),
+            payload,
             selected,
             _metadata_memory: memory,
         })
@@ -76,7 +123,7 @@ impl ManagedSourceRootImage {
 }
 impl ManagedIndexSourceObservation {
     pub fn payload(&self) -> &Arc<dyn Any + Send + Sync> {
-        &self.record.payload
+        &self.payload
     }
     /// Metadata affinity only. The receiving Query session still admits READ.
     pub fn matches_snapshot(&self, selected: &PositionedRelationalSnapshot) -> bool {
@@ -118,9 +165,12 @@ impl ManagedIndexSourceObservation {
                 .is_some_and(|image| {
                     image
                         .retained(&self.record.program, self.record.scope)
+                        .ok()
+                        .flatten()
                         .is_some_and(|record| {
-                            Arc::ptr_eq(record, &self.record)
-                                && record.availability == ManagedIndexSourceAvailability::Available
+                            Arc::ptr_eq(&record.association, &self.record)
+                                && record.physical_availability()
+                                    == ManagedIndexSourceAvailability::Available
                         })
                 })
     }
@@ -155,7 +205,8 @@ impl ManagedSourceReadConditions {
             .ok_or(CompanionPreflightStop::ForeignCell)?;
         if !source
             .retained(&observation.record.program, observation.record.scope)
-            .is_some_and(|actual| Arc::ptr_eq(actual, &observation.record))
+            .map_err(|_| CompanionPreflightStop::ForeignCell)?
+            .is_some_and(|actual| Arc::ptr_eq(&actual.association, &observation.record))
         {
             return Err(CompanionPreflightStop::ManagedSourceChanged);
         }
@@ -181,3 +232,6 @@ impl ManagedSourceReadConditions {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod cache_retirement;

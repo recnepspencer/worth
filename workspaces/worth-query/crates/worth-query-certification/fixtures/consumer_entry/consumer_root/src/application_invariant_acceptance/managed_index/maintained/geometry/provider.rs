@@ -32,6 +32,7 @@ pub struct Calls {
     pub source_bounds: AtomicUsize,
     pub navigation: AtomicUsize,
     pub after_node_write: Mutex<Option<Box<dyn FnOnce() + Send>>>,
+    pub after_build_node_write: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     pub last_decision: Mutex<Option<Vec<query::Row>>>,
 }
 pub struct Provider(pub Arc<Calls>);
@@ -93,6 +94,7 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
                     nodes,
                     control,
                     calls: &self.0,
+                    observer: &self.0.after_build_node_write,
                 },
             )?);
         }
@@ -113,6 +115,7 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
                 nodes,
                 control,
                 calls: &self.0,
+                observer: &self.0.after_node_write,
             };
             match (change.before(), change.after()) {
                 (Some(before), Some(after_slot)) if before == after_slot => {

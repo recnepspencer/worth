@@ -2,12 +2,21 @@
 use super::{
     CompanionPreflightStop as Stop, PublicationCompanionPreflight, ReservedCompanionBranchCell,
 };
-use crate::validation::candidate_source::{
-    ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot,
-};
+use crate::validation::candidate_source::ManagedIndexBranchImage;
 use std::sync::Arc;
 
 impl PublicationCompanionPreflight<'_> {
+    /// Initial managed directory backing is paid before its owning Arc exists.
+    pub fn mint_managed_index_source_cell(
+        &mut self,
+    ) -> Result<super::super::PreparedCompanionBranchCell<ManagedIndexBranchImage>, Stop> {
+        let image = ManagedIndexBranchImage::retain_header(
+            self.execution,
+            ManagedIndexBranchImage::default(),
+        )?;
+        self.mint_selected_branch_cell(image)
+    }
+
     pub fn prepare_managed_source_image(
         &self,
         selected: &ReservedCompanionBranchCell<ManagedIndexBranchImage>,
@@ -27,43 +36,17 @@ impl PublicationCompanionPreflight<'_> {
             )
             .map_err(|cause| Stop::Execution(cause.into()))?;
             self.checkpoint()?;
-            let key = (root.program().clone(), root.scope());
-            let Some(payload) = root.proposed() else {
-                next.roots.remove(&key);
-                continue;
-            };
-            // Reuse requires this actual Native preparation's unchanged Source
-            // disposition, not equal row values or a caller's old root number.
-            if !root.source_changed()
-                && next.roots.get(&key).is_some_and(|previous| {
-                    previous.availability == root.physical_availability()
-                        && Arc::ptr_eq(&previous.payload, payload)
-                })
-            {
-                continue;
-            }
-            let bytes = std::alloc::Layout::new::<[usize; 2]>()
-                .extend(std::alloc::Layout::new::<ManagedIndexPublishedSourceRoot>())
-                .ok()
-                .and_then(|(layout, _)| u64::try_from(layout.pad_to_align().size()).ok())
-                .ok_or(Stop::PreparationMemoryCounterOverflow)?;
-            let memory = self
-                .execution
-                .reserve_retained_memory(bytes)
-                .map_err(|cause| Stop::Execution(cause.into()))?;
-            next.roots.insert(
-                key,
-                Arc::new(ManagedIndexPublishedSourceRoot {
-                    program: root.program().clone(),
-                    scope: root.scope(),
-                    payload: Arc::clone(payload),
-                    availability: root.physical_availability(),
-                    revision: self.binding.next_commit_id,
-                    _memory: memory,
-                }),
-            );
+            next.prepare_source(
+                self.execution,
+                root.program(),
+                root.scope(),
+                root.physical_availability(),
+                self.binding.next_commit_id,
+                root.source_changed(),
+                root.proposed(),
+            )?;
         }
         self.checkpoint()?;
-        Ok(Arc::new(next))
+        ManagedIndexBranchImage::retain_header(self.execution, next)
     }
 }

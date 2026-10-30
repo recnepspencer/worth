@@ -8,12 +8,14 @@ use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::data::CustomInvariantAccessContract;
 
+mod bindings;
+pub(crate) use bindings::SourceBindingCache;
 mod projection_routes;
 pub use projection_routes::ManagedIndexSourceProjectionRoute;
 
 /// A scalar field on the entity endpoint selected by the installed path.
 /// Codec and required/optional meaning remain with the Query compiler.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ManagedIndexSourceField {
     pub locator: AspectFieldLocator,
 }
@@ -72,15 +74,7 @@ impl RelationalSchemaRegistry {
                 return Err(Denial::InvalidExpression);
             }
         }
-        let issuer = ManagedIndexSourceAudienceIssuer::fresh();
-        let authority = issuer.authority();
-        Ok(ManagedIndexSourceProgram(Arc::new(SourceProgram {
-            path: path.clone(),
-            fields: fields.into(),
-            routes: routes.into(),
-            issuer,
-            authority,
-        })))
+        path.entry.managed_source_binding.bind(path, fields, routes)
     }
 }
 

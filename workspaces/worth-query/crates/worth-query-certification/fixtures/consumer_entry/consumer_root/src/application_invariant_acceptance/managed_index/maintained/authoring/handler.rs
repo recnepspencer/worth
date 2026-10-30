@@ -66,6 +66,9 @@ impl OperationHandler<Catalog, Binding> for Handler {
                             identity.clone(),
                         )
                         .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .initialize_field(&created, DirectoryNote::reference(), String::new())
+                        .map_err(HandlerExecutionDenial::new)?;
                 }
                 Edit::Item {
                     directory: key,

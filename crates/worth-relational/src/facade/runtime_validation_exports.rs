@@ -31,13 +31,13 @@ pub use crate::validation::engine::InvariantExecutionResult;
 pub use crate::mvcc::ManagedIndexSourceObservation;
 pub use crate::validation::candidate_source::{
     ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
-    ManagedIndexSourceField, ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
-    ManagedIndexSourcePreparationDenial, ManagedIndexSourceProgram, ManagedIndexSourceProjection,
-    ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceProjectionRoute,
-    ManagedIndexSourceProviderFailure, ManagedIndexSourcePublication,
-    ManagedIndexSourcePublicationRoot, ManagedIndexSourceRead, ManagedIndexSourceRows,
-    ManagedIndexSourceScope, PreparedManagedIndexProjectionRead, PreparedManagedIndexSourceRead,
-    PreparedManagedIndexSourceRoot,
+    ManagedIndexSourceCacheRetirement, ManagedIndexSourceField, ManagedIndexSourceOccurrence,
+    ManagedIndexSourcePreparation, ManagedIndexSourcePreparationDenial, ManagedIndexSourceProgram,
+    ManagedIndexSourceProjection, ManagedIndexSourceProjectionOccurrence,
+    ManagedIndexSourceProjectionRoute, ManagedIndexSourceProviderFailure,
+    ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot, ManagedIndexSourceRead,
+    ManagedIndexSourceRows, ManagedIndexSourceScope, PreparedManagedIndexProjectionRead,
+    PreparedManagedIndexSourceRead, PreparedManagedIndexSourceRoot,
 };
 pub use crate::validation::DuplicateCustomInvariantRegistration;
 

@@ -6,13 +6,14 @@ pub(super) struct Edit<'call, 'node, 'control> {
     pub nodes: &'call mut WorthQueryManagedIndexNodeWriter<'node, Node>,
     pub control: &'call WorthQueryManagedIndexControl<'control>,
     pub calls: &'call Calls,
+    pub observer: &'call Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
 pub(super) fn invalid() -> Stop {
     Stop::Domain(BoxIndexDenial::InvalidTopology)
 }
 impl Edit<'_, '_, '_> {
     fn observe_write(&self) {
-        let observer = self.calls.after_node_write.lock().unwrap().take();
+        let observer = self.observer.lock().unwrap().take();
         if let Some(observer) = observer {
             observer();
         }

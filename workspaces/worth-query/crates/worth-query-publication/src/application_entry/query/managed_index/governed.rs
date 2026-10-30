@@ -5,7 +5,7 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
 use worth_query_execution::facade::primary_graph::WorthQueryApprovedElevation;
-type Scope<S, I> = <<<I as ApplicationQueryIntent<S>>::Binding as ApplicationQueryBinding<S>>::ScopeBinding as worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding<S>>::Scope;
+pub(super) type Scope<S, I> = <<<I as ApplicationQueryIntent<S>>::Binding as ApplicationQueryBinding<S>>::ScopeBinding as worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding<S>>::Scope;
 
 impl<Schema, Intent> WorthQueryApplicationQueryRequest<'_, '_, '_, Schema, Intent>
 where

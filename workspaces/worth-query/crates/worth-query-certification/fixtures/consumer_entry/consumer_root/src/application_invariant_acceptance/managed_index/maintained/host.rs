@@ -85,6 +85,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
             .finish_action()
             .native_action::<geometry::authoring::Binding>()
             .finish_action()
+            .native_action::<geometry::refresh::Binding>()
+            .finish_action()
             .finish()]
     }
 }
@@ -141,7 +143,8 @@ fn install_root(
                 worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
             graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),
                 WorthQueryApplicationEntityKey::new("catalog").unwrap())
-                .field(DirectoryIdentity::reference(), "catalog".to_owned()))?;
+                .field(DirectoryIdentity::reference(), "catalog".to_owned())
+                .field(DirectoryNote::reference(), String::new()))?;
             Ok(())
         },
     ).expect("the genuine maintained catalog installs before public use")

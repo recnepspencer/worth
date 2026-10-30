@@ -5,7 +5,7 @@ use crate::derived_relation::DerivedRelationNode;
 /// One direct result-relation route from a Source row to a projected endpoint.
 /// Binding checks the actual schema-owned path; its name only joins compiled
 /// projection slots and cannot admit any observation or child entity.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ManagedIndexSourceProjectionRoute {
     name: String,
     pub(in crate::validation::candidate_source) path: DerivedRelationHandle,

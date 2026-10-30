@@ -5516,8 +5516,30 @@ call the provider's cold build. A current read still performs fresh Source READ.
 The standalone explicit-rebuild registration described above retains its own
 Created/Ready lifecycle. Closing a public attachment does not remove material
 still owned by an installed invariant or a retained Native/World basis.
-`evict` and explicit public `rebuild_index` return `InvariantOwned` for such an
-attachment; they cannot replace the invariant's matching committed image.
+The handle's request-free `evict` and explicit public `rebuild_index` return
+`InvariantOwned` for such an attachment. To make its selected material cold, use
+`request.query(parent).evict_index(&index)`. This entrance freshly admits the
+Parent, validates the handle's runtime, installation, principal, scope and branch
+incarnation, and funds copied cache paths through that request. Governed and
+approved Parents use `evict_index_governed` and `evict_index_approved` with their
+usual capability arguments. Cleanup performs no Source content read or provider
+callback. A completed cleanup remains successful if cancellation arrives at the
+outer request's final poll; pre-effect interruption still refuses.
+
+A fresh content read of that cold image returns the typed
+`WorthQueryManagedIndexRefusal::RootUnavailable` before provider query callbacks.
+The installed invariant's `AdmitRebuild` policy permits the next affected candidate
+to reconstruct from its actual Native committed Source before validation; it
+still has to satisfy the original request and every rule. Public explicit
+reconstruction of maintained material remains unavailable through `rebuild_index`.
+Eviction and reconstruction do not change a complete Source condition when its
+actual support stays unchanged.
+
+Cleanup follows the current World product's genuine selected Native component.
+A `ReuseExact` product can therefore evict its selected older image while newer
+main and fork images remain warm. Earlier Native/World images and observations
+may retain their immutable temporal shares; eviction does not erase historical
+material. Physical backing releases after its last relevant owner closes.
 
 See the [authored maintained catalog](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs)
 and [its installed rule](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs).

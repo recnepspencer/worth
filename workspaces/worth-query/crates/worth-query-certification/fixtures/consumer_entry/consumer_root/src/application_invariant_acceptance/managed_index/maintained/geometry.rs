@@ -4,6 +4,7 @@ pub(super) mod authoring;
 mod court;
 pub(super) mod provider;
 pub(super) mod query;
+pub(super) mod refresh;
 pub(super) mod rule;
 mod schema;
 use super::schema::Catalog;
@@ -36,7 +37,7 @@ impl Default for Configuration {
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
-    authoring::declare(
+    refresh::declare(authoring::declare(
         schema::declare(schema)
             .application_query(query::source_definition())
             .application_query_binding::<query::SourceBinding>()
@@ -47,7 +48,7 @@ pub(super) fn declare(
                 provider::BoxIndex,
             >::new())
             .invariant(rule::definition()),
-    )
+    ))
 }
 pub(super) fn configure(
     configuration: Configuration,
@@ -57,6 +58,7 @@ pub(super) fn configure(
         &configuration.provider,
     )))?;
     setup.handler::<authoring::Binding, _>(authoring::Handler(configuration.provider))?;
+    setup.handler::<refresh::Binding, _>(refresh::Handler)?;
     setup.invariant(
         rule::ProbeContact::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,

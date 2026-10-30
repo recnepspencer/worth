@@ -3,6 +3,7 @@ use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_execution::facade::primary_graph::WorthQueryManagedIndex;
 
+mod eviction;
 mod governed;
 
 impl<'application, 'principal, 'scope, Schema, Intent>
