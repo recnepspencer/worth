@@ -1,5 +1,6 @@
 mod actor_observation;
 mod field_effect;
+mod output_effect;
 use std::{collections::BTreeMap, sync::Arc};
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};

@@ -160,7 +160,7 @@ pub(super) fn comparison_identity<Stop>(
 ) -> Result<BridgeIdentityEvidence, InspectionIdentityStop<Stop>> {
     if let Some(connection) = connection {
         return compose(
-            "query.application-inspection.connected-comparison.v1",
+            "query.application-inspection.connected-comparison.v2",
             &[
                 Part::Text(before.report_identity()),
                 Part::Text(after.report_identity()),
@@ -169,6 +169,8 @@ pub(super) fn comparison_identity<Stop>(
                 Part::Number(connection.source_commit().version_id.0),
                 Part::Number(connection.producer_commit().commit_id.0),
                 Part::Number(connection.producer_commit().version_id.0),
+                Part::Number(connection.output_publication_commit().commit_id.0),
+                Part::Number(connection.output_publication_commit().version_id.0),
                 Part::Text(connection.output_role()),
                 Part::Text(
                     connection
@@ -179,6 +181,25 @@ pub(super) fn comparison_identity<Stop>(
                 Part::Text(connection.native_observation().signal_projection().label()),
                 Part::Number(connection.native_observation().attempt()),
                 Part::Number(u64::from(connection.has_performed_invalidation())),
+                Part::Text(
+                    connection
+                        .output_native_observation()
+                        .lowering_projection()
+                        .label(),
+                ),
+                Part::Text(
+                    connection
+                        .output_native_observation()
+                        .signal_projection()
+                        .label(),
+                ),
+                Part::Number(connection.output_native_observation().attempt()),
+                Part::Number(u64::from(
+                    connection
+                        .output_native_observation()
+                        .performed_signal_invalidation()
+                        .is_some(),
+                )),
             ],
             admit,
         );
@@ -206,7 +227,7 @@ pub(super) fn connected_identity<Stop>(
 ) -> Result<BridgeIdentityEvidence, InspectionIdentityStop<Stop>> {
     let source = identities(source, session, InspectionOriginalReference::Source, admit)?;
     compose(
-        "query.application-inspection.connected-observation.v1",
+        "query.application-inspection.connected-observation.v2",
         &[
             Part::Text(query.report_identity()),
             Part::Text(source.observation.terminal_projection_for_reporting()),
@@ -215,6 +236,8 @@ pub(super) fn connected_identity<Stop>(
             Part::Number(connection.source_commit().version_id.0),
             Part::Number(connection.producer_commit().commit_id.0),
             Part::Number(connection.producer_commit().version_id.0),
+            Part::Number(connection.output_publication_commit().commit_id.0),
+            Part::Number(connection.output_publication_commit().version_id.0),
             Part::Text(connection.output_role()),
             Part::Text(
                 connection
@@ -225,6 +248,25 @@ pub(super) fn connected_identity<Stop>(
             Part::Text(connection.native_observation().signal_projection().label()),
             Part::Number(connection.native_observation().attempt()),
             Part::Number(u64::from(connection.has_performed_invalidation())),
+            Part::Text(
+                connection
+                    .output_native_observation()
+                    .lowering_projection()
+                    .label(),
+            ),
+            Part::Text(
+                connection
+                    .output_native_observation()
+                    .signal_projection()
+                    .label(),
+            ),
+            Part::Number(connection.output_native_observation().attempt()),
+            Part::Number(u64::from(
+                connection
+                    .output_native_observation()
+                    .performed_signal_invalidation()
+                    .is_some(),
+            )),
         ],
         admit,
     )

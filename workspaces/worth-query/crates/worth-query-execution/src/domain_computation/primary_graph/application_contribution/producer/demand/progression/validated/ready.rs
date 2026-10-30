@@ -66,12 +66,12 @@ where
             )));
         }
 
-        self.refresh_output_demand(
+        self.refresh_ready_output_demand(
             execution,
             demand,
             disclosure.value(),
             disclosure.source().clone(),
-            Some(&completion.authority),
+            &completion,
         )?;
         // Carry source custody unchanged; no executable seal crosses refresh.
         Ok(OwnStages::Refreshed(disclosure))

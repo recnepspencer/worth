@@ -1,6 +1,6 @@
 //! The installed producer consumes the actual scalar query and performs its read.
 use super::super::schema::*;
-use super::{queries::data, Value};
+use super::{queries::data, Total, Value};
 use worth_query_host::facade::{
     application_contribution::*,
     declaration::{application_operation::*, application_schema::*},
@@ -21,8 +21,8 @@ worth_query_structured_value_binding!(pub InputBinding for Calculate { identity:
 worth_query_structured_value_binding!(pub ResultBinding for Published { identity: "numeric-scalar.calculate-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for SourceChanged { identity: "numeric-scalar.calculate-denial.v1" });
 worth_query_operation!(pub CalculateScalar for NumericSchema, input InputBinding);
-worth_query_operation_reads!(CalculateScalar => [Key, Primary, Calculated, Value]);
-worth_query_operation_writes!(CalculateScalar => [Calculated]);
+worth_query_operation_reads!(CalculateScalar => [Key, Primary, Calculated, Value, Total]);
+worth_query_operation_writes!(CalculateScalar => [Calculated, Total]);
 pub struct Outputs;
 pub struct NumberOutput;
 impl WorthQueryApplicationOutputRole for NumberOutput {
@@ -129,6 +129,9 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
             Ok(None) => return HandlerResult::DomainDenied(SourceChanged),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         }
+        if let Err(cause) = reader.field(&target, Total::reference()) {
+            return HandlerResult::ExecutionDenied(cause);
+        }
         match reader.mutation_target(&target) {
             Ok(target) => HandlerResult::Completed(target),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
@@ -145,6 +148,11 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
                 &target,
                 Calculated::reference(),
                 input.primary * 2 + 1 + input.scalar.unwrap_or(0),
+            )?;
+            writer.write_field(
+                &target,
+                Total::reference(),
+                input.primary * 3 + 2 + 7 * (input.scalar.unwrap_or(0) % 4),
             )?;
             writer.preserve_output::<NumberOutput>(&target)
         });
@@ -228,6 +236,8 @@ pub fn declare(
         .operation_read_field(CalculateScalar::reference(), Primary::reference())
         .operation_read_field(CalculateScalar::reference(), Value::reference())
         .operation_read_field(CalculateScalar::reference(), Calculated::reference())
+        .operation_read_field(CalculateScalar::reference(), Total::reference())
         .operation_write(CalculateScalar::reference(), Calculated::reference())
+        .operation_write(CalculateScalar::reference(), Total::reference())
         .application_mutation_binding::<Binding>()
 }

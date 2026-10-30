@@ -29,13 +29,13 @@ enum Expected {
     Materialized,
     RequiredAdmission,
 }
-pub(super) fn materializing_demand(
-    runtime: &Application<own_effect::MaterializingSchema>,
+pub(super) fn materializing_demand<Schema: BirthSchema>(
+    runtime: &Application<Schema>,
 ) -> Arc<WorthQueryOutputDemandSettlement> {
     demand_expected(
         runtime,
         true,
-        2,
+        if Schema::RENEW_OUTPUT { 3 } else { 2 },
         WorthQueryOutputSettlementPosture::Performed,
         Expected::Materialized,
     )
@@ -141,11 +141,15 @@ fn demand_expected<Schema: BirthSchema>(
                 disclosure,
             )?;
             let mut original_roster = None;
+            let mut original_output_revision = None;
             if matches!(expected, Expected::Materialized | Expected::RequiredAdmission) {
                 assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed), "the original born-stale publication progressed without settling current");
                 let locator = runtime.primary_provider.graph.layout.field_locator("Body", "SourceNotes", "SourceSelection").unwrap();
                 demand.assert_born_stale_absence_for_test(runtime, &phase, &execution, root, locator, |receipt| {
                     original_roster = Some(court::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Create));
+                    if matches!(expected, Expected::Materialized) {
+                        original_output_revision = Some(court::output_revision::created(runtime, &phase, receipt));
+                    }
                 }, matches!(expected, Expected::RequiredAdmission).then(|| (read_source(), &external, &scope)));
                 if matches!(expected, Expected::RequiredAdmission) { return Ok(None); }
                 // This is a new authenticated current disclosure on the SAME demand,
@@ -153,14 +157,33 @@ fn demand_expected<Schema: BirthSchema>(
                 advanced = runtime.advance_program_output_demand(
                     &execution, &phase, &mut demand, &external, &scope, branch, read_source(),
                 )?;
+                if Schema::RENEW_OUTPUT {
+                    assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed),
+                        "P2's change to the actual query input needs fresh source disclosure before P3");
+                    demand.assert_changed_successor_for_test(runtime, &phase, &execution, root, |receipt| {
+                        let p2 = court::output_revision::created(runtime, &phase, receipt);
+                        let p1 = original_output_revision.expect("independently observed P1 creator");
+                        assert_eq!(p2.0, p1.0, "same original full-GEN output");
+                        assert_ne!(p2.1, p1.1, "P2 actually created a newer Native field revision");
+                        let p2_roster = court::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Preserve);
+                        assert_eq!(&p2_roster, original_roster.as_ref().unwrap());
+                        original_output_revision = Some(p2);
+                    });
+                    advanced = runtime.advance_program_output_demand(
+                        &execution, &phase, &mut demand, &external, &scope, branch, read_source(),
+                    )?;
+                }
             }
             let WorthQueryOutputDemandAdvance::Settled(settlement) = advanced else {
                 panic!("the synchronous real MODE2 handler must settle")
             };
             if let Some(original) = original_roster {
-                demand.assert_preserve_successor_for_test(runtime, root);
+                demand.assert_preserve_successor_for_test(runtime, root, contacts);
                 assert_eq!(settlement.producer_identity(), <Preserve<Schema> as WorthQueryApplicationProducerBinding<Schema>>::IDENTITY);
                 assert_eq!(court::observe_performed_receipt(runtime, &phase, settlement.application_commit_receipt().expect("real successor receipt"), WorthQueryApplicationOutputPosture::Preserve), original, "all four native IDs/generations and real incidence survive the executed Preserve");
+            }
+            if let Some(original) = original_output_revision {
+                court::output_revision::preserved(runtime, &phase, &settlement, original);
             }
             assert_eq!(settlement.producer_contacts_in_this_demand(), contacts);
             assert_eq!(settlement.posture(), posture);

@@ -6,6 +6,7 @@ use worth_relational::facade::{
     transactions::EntityReference,
 };
 mod ordinary;
+pub(super) mod output_revision;
 mod own_effect;
 mod publication_state;
 pub(super) use ordinary::assert_ordinary;

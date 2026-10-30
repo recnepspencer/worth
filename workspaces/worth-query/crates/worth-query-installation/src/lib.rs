@@ -244,8 +244,8 @@ pub mod facade {
         WorthQueryRetainedApplicationQueryGraphObligations,
     };
     pub use crate::application_schema::{
-        declared_application_aspect_contract, AdmittedFieldBindingStop,
-        InstalledInboundOccurrenceContract, WorthQueryApplicationSchemaContractCatalogDenial,
+        declared_application_aspect, AdmittedFieldBindingStop, InstalledInboundOccurrenceContract,
+        WorthQueryApplicationSchemaContractCatalogDenial,
         WorthQueryApplicationSchemaContractCatalogDenialKind,
         WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,
         WorthQueryInstalledApplicationContribution,

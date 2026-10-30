@@ -6,14 +6,13 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputPosture, WorthQueryPrimaryGraphLayout,
 };
 use worth_execution::MapKernelContext;
-use worth_relational::facade::runtime::RelationalFieldPresence;
 mod input;
+mod output;
 mod performed_input;
 use performed_input::PerformedInput;
-use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as FieldEffect;
 
 type Denial = WorthQueryProducerConnectionDenial;
-type Stop = MapKernelFailure<Denial>;
+type Stop = MapKernelFailure<ConnectionRefusal>;
 pub(super) struct ObservationConnection<'a, 'governance> {
     pub(super) original: &'a WorthQueryApplicationQueryObservation,
     pub(super) diagnostic: &'a DiagnosticComparisonAdmission<'governance>,
@@ -111,63 +110,9 @@ impl ObservationConnection<'_, '_> {
                 }
             }
         }
-        Err(MapKernelFailure::Domain(Denial::SourceInputUnconnected))
-    }
-    /// Diagnostic O(roles × observed fields × (installed fields + producer patches)).
-    pub(super) fn output_role(
-        &self,
-        context: &mut MapKernelContext<'_, '_>,
-        changes: &WorthQueryApplicationCommittedChanges,
-        correspondence: &WorthQueryApplicationOutputCorrespondence,
-    ) -> Result<usize, Stop> {
-        for (role, (_, posture, entity_name, entity)) in
-            correspondence.native_witness_roles().enumerate()
-        {
-            checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
-            if posture == WorthQueryApplicationOutputPosture::Retire {
-                continue;
-            }
-            for row in self.original.source.original_row_footprints() {
-                for field in &row.aspects {
-                    checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
-                    if !row.complete
-                        || field.entity != entity
-                        || field.entity_name != entity_name
-                        || !field.native_revision.is_some_and(|revision| {
-                            revision.version() == changes.commit_reference().version_id
-                                && revision.presence() == RelationalFieldPresence::Present
-                        })
-                        || !self.projected(entity_name, field.aspect.as_str(), field.field.as_str())
-                    {
-                        continue;
-                    }
-                    let Some(coordinate) = self
-                        .layout
-                        .resolve_declared_field_coordinate(
-                            self.contracts,
-                            entity_name,
-                            &field.aspect,
-                            &field.field,
-                            |work| checkpoint(context, work),
-                        )
-                        .map_err(MapKernelFailure::Stop)?
-                    else {
-                        continue;
-                    };
-                    if coordinate.contract_revision() != field.contract_revision {
-                        continue;
-                    }
-                    if changes
-                        .field_effect(context, entity, coordinate)
-                        .map_err(MapKernelFailure::Stop)?
-                        == FieldEffect::Present
-                    {
-                        return Ok(role);
-                    }
-                }
-            }
-        }
-        Err(MapKernelFailure::Domain(Denial::OutputUnconnected))
+        Err(MapKernelFailure::Domain(
+            Denial::SourceInputUnconnected.into(),
+        ))
     }
     /// Only a completed handler read of this full entity and installed field counts.
     fn handler_read<'a>(

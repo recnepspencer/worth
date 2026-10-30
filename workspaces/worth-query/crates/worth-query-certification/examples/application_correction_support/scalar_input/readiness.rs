@@ -1,6 +1,7 @@
-//! Actual conditional readiness of the declared Calculated output field.
+//! Readiness observes the actual Scalar result, independently of its Struct sibling.
 use super::super::schema::*;
 use super::calculation::{Calculate, CalculateScalar, Producer};
+use super::Total;
 use worth_query_host::facade::{
     application_contribution::*,
     declaration::{
@@ -38,7 +39,7 @@ fn contract(
 ) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
     WorthQueryOutputReadinessContractBuilder::for_field(
         declaration,
-        Calculated::reference(),
+        Total::reference(),
         domain::WorthQueryDomainOperationIdentity::new("numeric-scalar-readiness", 1),
         "numeric-scalar-ready",
         canonical_query(),
@@ -48,8 +49,13 @@ fn contract(
     )?
     .field_dependency(
         declaration,
-        Calculated::reference(),
+        Total::reference(),
         WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )?
+    .field_dependency(
+        declaration,
+        Calculated::reference(),
+        WorthQueryReadinessFieldUse::Eligibility,
     )?
     .build_typed()
 }
@@ -93,7 +99,7 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Readiness {
             .delivery_ordinal(
                 installation.installed_schema(),
                 node.declaration(),
-                Calculated::reference(),
+                Total::reference(),
             )
             .unwrap();
         installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
@@ -102,15 +108,12 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Readiness {
 fn canonical_query() -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle
 {
     let query = DetailQueryBuilder::new(RootEntityKey::new("Number").unwrap())
-        .project(AspectFieldSelector::new("NumberFacts", "Calculated").unwrap())
+        .project(AspectFieldSelector::new("ScalarResult", "Total").unwrap())
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
-        .field(
-            AuthoredResultShapeField::new("NumberFacts", "Calculated", "scalar_calculated_number")
-                .unwrap(),
-        )
+        .field(AuthoredResultShapeField::new("ScalarResult", "Total", "scalar_total").unwrap())
         .build()
         .unwrap()
         .into_raw();

@@ -607,6 +607,25 @@ For a source-connected `u64` input, use `U64ApplicationValueBinding`, an ordinar
 producer input query and a Struct output on the same full-generation subject.
 Admit the source-disclosure and output-query bindings independently; scalar
 storage alone supplies no producer connection.
+For a Scalar producer output, use the same explicit storage declaration and
+ordinary field writer/output role. Build its readiness with `for_field` and
+`field_dependency` on the actual output field, then project that Scalar field
+from the settled observation. Readiness seals the physical binding and consumes
+the Scalar `WholeAspectSet` event; a changed Struct sibling cannot supply the
+queried output's missing revision or effect.
+`producer_commit()` names current settlement; `output_publication_commit()` names
+the actual field-producing publication. A selected own-publication continuation
+can carry one publication candidate across the same admitted source occurrence.
+A canonical mutation of its output records resets the candidate; a successor's
+own eligible publication can replace it. Mixed field origins are not a history
+lookup. Connection still requires the candidate's original
+source/input occurrence, current full-generation output role and exact observed
+revision/contract/canonical effect. Currentness and admissions remain fresh.
+For an output-join refusal, `producer_connection_refusal()` preserves the coarse
+`OutputUnconnected`; `producer_output_refusal()` describes the furthest disclosed
+output-join candidate's failed revision, binding, contract or canonical-effect
+condition. It exposes no values or identifiers and returns `None` before
+diagnostic admission or for source/input and request refusals.
 See [scalar storage and source connections](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#explicit-scalar-aspect-storage).
 
 Ordinary Query reads use installed result cardinality and fresh per-read admission;

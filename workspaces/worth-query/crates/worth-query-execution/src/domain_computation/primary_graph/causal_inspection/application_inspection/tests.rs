@@ -165,6 +165,7 @@ fn fresh_inspection_refuses_wrong_binding_foreign_runtime_and_original_cancellat
         .execute()
         .err()
         .unwrap();
+    assert!(wrong.producer_output_refusal().is_none());
     assert!(matches!(
         wrong.cause,
         stop::InspectionCause::Admission(admission::InspectionAdmissionDenial::ForeignIssuedAccess)
@@ -178,6 +179,7 @@ fn fresh_inspection_refuses_wrong_binding_foreign_runtime_and_original_cancellat
         .execute()
         .err()
         .unwrap();
+    assert!(denied.producer_output_refusal().is_none());
     assert!(matches!(
         denied.cause,
         stop::InspectionCause::Admission(admission::InspectionAdmissionDenial::ForeignIssuedAccess)
@@ -197,6 +199,7 @@ fn fresh_inspection_refuses_wrong_binding_foreign_runtime_and_original_cancellat
         cause.kind(),
         WorthQueryApplicationInspectionStopKind::Request
     );
+    assert!(cause.producer_output_refusal().is_none());
     let lawful = world
         .application
         .inspect_application_observation::<TestAccountSourceBinding>(&external, &request, &original)
@@ -226,6 +229,7 @@ fn governed_inspection_requires_fresh_actual_capability_independent_of_public_qu
         .execute()
         .err()
         .unwrap();
+    assert!(missing.producer_output_refusal().is_none());
     assert!(matches!(
         missing.cause,
         stop::InspectionCause::Admission(admission::InspectionAdmissionDenial::Governance(
@@ -299,6 +303,7 @@ fn governed_inspection_requires_fresh_actual_capability_independent_of_public_qu
         .execute_governed(retained_capability)
         .err()
         .unwrap();
+    assert!(revoked.producer_output_refusal().is_none());
     let stop::InspectionCause::Admission(admission::InspectionAdmissionDenial::Capability(cause)) =
         &revoked.cause
     else {

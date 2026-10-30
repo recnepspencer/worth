@@ -1,6 +1,8 @@
 //! Exact original source/input and producer/output joins, after fresh diagnostics.
 use super::WorthQueryApplicationInspectionTarget;
+mod output_refusal;
 mod overlap;
+mod publication;
 mod source;
 use crate::domain_computation::{
     authorization::application_disclosure::DiagnosticComparisonAdmission,
@@ -13,6 +15,7 @@ use crate::domain_computation::{
         WorthQueryApplicationCommittedChanges, WorthQueryApplicationOutputCorrespondence,
     },
 };
+pub use output_refusal::WorthQueryProducerOutputConnectionDenial;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 use worth_relational::facade::history::RelationalCommitReceipt;
@@ -29,16 +32,37 @@ pub enum WorthQueryProducerConnectionDenial {
     OutputUnconnected,
 }
 
+/// Only the connection owner can attach output evidence after diagnostic admission.
+pub(super) enum ConnectionRefusal {
+    General(WorthQueryProducerConnectionDenial),
+    Output(WorthQueryProducerOutputConnectionDenial),
+}
+impl From<WorthQueryProducerConnectionDenial> for ConnectionRefusal {
+    fn from(cause: WorthQueryProducerConnectionDenial) -> Self {
+        Self::General(cause)
+    }
+}
+impl ConnectionRefusal {
+    pub(super) fn kind(&self) -> WorthQueryProducerConnectionDenial {
+        match self {
+            Self::General(cause) => *cause,
+            Self::Output(_) => WorthQueryProducerConnectionDenial::OutputUnconnected,
+        }
+    }
+}
+
 /// A source field was actually read by this producer, whose declared output
 /// field was actually read by the query. This grants no execution authority.
 pub struct WorthQueryApplicationProducerConnection {
     source: WorthQueryApplicationCommittedChanges,
     producer: WorthQueryApplicationCommittedChanges,
+    output_publication: WorthQueryApplicationCommittedChanges,
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     role: usize,
     _inputs: FactPayload,
     _disclosure: Arc<OriginalSourceInspectionDisclosure>,
     native: worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
+    output_native: worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
 }
 
 impl WorthQueryApplicationProducerConnection {
@@ -48,11 +72,23 @@ impl WorthQueryApplicationProducerConnection {
         &self.native
     }
 
+    pub(super) fn output_native_observation(
+        &self,
+    ) -> &worth_runtime_bridge::facade::BridgeConditionalCausalObservation {
+        &self.output_native
+    }
+
     pub fn source_commit(&self) -> &RelationalCommitReceipt {
         self.source.commit_reference()
     }
+    /// Current settled producer publication; this remains the currentness owner.
     pub fn producer_commit(&self) -> &RelationalCommitReceipt {
         self.producer.commit_reference()
+    }
+    /// The actual publication joined to the queried field's Native revision.
+    /// It may precede the current settlement returned by `producer_commit()`.
+    pub fn output_publication_commit(&self) -> &RelationalCommitReceipt {
+        self.output_publication.commit_reference()
     }
     /// Visits the original declared role roster up to the connected role.
     pub fn output_role(&self) -> &str {
@@ -62,7 +98,7 @@ impl WorthQueryApplicationProducerConnection {
             .expect("connected original role")
             .0
     }
-    /// Actual readiness decision, distinct from producer execution or suppression.
+    /// Current settlement's actual readiness, distinct from execution or suppression.
     pub fn readiness_decision(
         &self,
     ) -> crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision {
@@ -83,22 +119,21 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
     diagnostic: &DiagnosticComparisonAdmission<'_>,
     source_diagnostic: Option<&DiagnosticComparisonAdmission<'_>>,
     memory: &mut Option<ExecutionMemoryReservation>,
-) -> Result<WorthQueryApplicationProducerConnection, CaptureStop<WorthQueryProducerConnectionDenial>>
-{
+) -> Result<WorthQueryApplicationProducerConnection, CaptureStop<ConnectionRefusal>> {
     use WorthQueryProducerConnectionDenial as Denial;
     run_retained_stage(execution, memory, |context, _| {
         let disclosure = source::validate(context, target, source)?;
         let original = target
             .original()
-            .ok_or(MapKernelFailure::Domain(Denial::ForeignSource))?;
+            .ok_or(MapKernelFailure::Domain(Denial::ForeignSource.into()))?;
         let supplier = original
             .source
             .original_settled_producer()
-            .ok_or(MapKernelFailure::Domain(Denial::ProducerUnavailable))?;
+            .ok_or(MapKernelFailure::Domain(Denial::ProducerUnavailable.into()))?;
         if !matches!(&original.source.selection,
             WorthQueryApplicationBasisSelectionIdentity::Product(read) if supplier.read() == read)
         {
-            return Err(MapKernelFailure::Domain(Denial::ProducerUnavailable));
+            return Err(MapKernelFailure::Domain(Denial::ProducerUnavailable.into()));
         }
         let OriginalSettledProducerSource::Committed {
             changes,
@@ -107,43 +142,43 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
             ..
         } = supplier.source()
         else {
-            return Err(MapKernelFailure::Domain(Denial::ProducerUnavailable));
+            return Err(MapKernelFailure::Domain(Denial::ProducerUnavailable.into()));
         };
-        let inputs = inputs
-            .as_ref()
-            .ok_or(MapKernelFailure::Domain(Denial::PerformedInputsUnavailable))?;
+        let inputs = inputs.as_ref().ok_or(MapKernelFailure::Domain(
+            Denial::PerformedInputsUnavailable.into(),
+        ))?;
         let observed = overlap::ObservationConnection {
             original,
             diagnostic,
             layout: &runtime.primary_provider.graph.layout,
             contracts: runtime.installed_schema().native_contracts(),
         };
-        if let Some(source_diagnostic) = source_diagnostic {
-            observed.require_independent_input(
-                context,
-                source.committed_changes(),
-                inputs,
-                source_diagnostic,
-                target
-                    .connection_source()
-                    .and_then(|target| target.source())
-                    .ok_or(MapKernelFailure::Domain(Denial::SourceDisclosureMismatch))?
-                    .disclosure
-                    .scope()
-                    .subject(),
-            )?;
-        } else {
-            observed.require_input(context, source.committed_changes(), inputs)?;
-        }
-        let role = observed.output_role(context, changes, supplier.correspondence())?;
+        source::require_input(
+            &observed,
+            context,
+            target,
+            source.committed_changes(),
+            inputs,
+            source_diagnostic,
+        )?;
+        let output = publication::select(
+            &observed,
+            context,
+            target,
+            source,
+            supplier,
+            source_diagnostic,
+        )?;
         Ok(WorthQueryApplicationProducerConnection {
             source: source.committed_changes().clone(),
             producer: changes.clone(),
+            output_publication: output.changes,
             correspondence: supplier.retain_correspondence(),
-            role,
-            _inputs: inputs.clone(),
+            role: output.role,
+            _inputs: output.inputs,
             _disclosure: disclosure,
             native: native.clone(),
+            output_native: output.native,
         })
     })
 }

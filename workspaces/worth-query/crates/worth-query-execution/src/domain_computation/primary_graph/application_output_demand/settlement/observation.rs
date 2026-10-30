@@ -18,6 +18,7 @@ pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSou
         >,
         conditional: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
         disclosure: Option<Arc<OriginalSourceInspectionDisclosure>>,
+        original_publication: Option<Arc<super::OriginalProducingPublication>>,
     },
     StableReused {
         settlement: Arc<RecordedSettlementIdentity>,
@@ -65,6 +66,7 @@ impl OriginalSettledProducerObservation {
                     disclosure: receipt
                         .authority_binding()
                         .retain_original_inspection_disclosure(),
+                    original_publication: completion.original_producing_publication().cloned(),
                 },
                 receipt.retain_output_correspondence(),
             ),

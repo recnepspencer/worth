@@ -48,7 +48,7 @@ pub(super) enum InspectionAdmissionDenial {
     FacetDenied,
     DiagnosticAdmission(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonDenial>),
     ComparisonParameters(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<()>),
-    Connection(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::WorthQueryProducerConnectionDenial>),
+    Connection(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::connection::ConnectionRefusal>),
     MissingOriginalProjection,
     Comparison(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial>),
     DiagnosticContract(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial>),

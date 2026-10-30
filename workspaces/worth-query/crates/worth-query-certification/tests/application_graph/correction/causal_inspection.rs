@@ -75,6 +75,10 @@ fn installed_scalar_source_producer_query_reject_equal_noop_aba_and_foreign_sour
     super::model::scalar_input::courts::scalar_storage_connects_only_the_actual_performed_occurrence();
 }
 #[test]
+fn scalar_output_connection_requires_its_own_native_effect_not_the_struct_sibling() {
+    super::model::scalar_input::output::scalar_output_uses_its_own_performed_revision();
+}
+#[test]
 fn optional_whole_aspect_noop_cannot_create_an_absence_revision() {
     super::model::aspect_input::courts::no_op_clear_is_not_the_source_that_created_the_absent_revision();
 }

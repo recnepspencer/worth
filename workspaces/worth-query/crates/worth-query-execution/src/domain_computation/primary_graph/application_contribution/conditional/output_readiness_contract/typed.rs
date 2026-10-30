@@ -24,6 +24,7 @@ pub(in super::super) struct FieldExpectation {
     frame: Option<schema::ApplicationFrameIdentity>,
     canonical: Option<schema::ApplicationCanonicalValueContract>,
     aspect: domain::AspectContract,
+    native_binding: domain::AspectBinding,
 }
 
 impl FieldExpectation {
@@ -75,12 +76,9 @@ impl FieldExpectation {
                 "readiness field binding differs from its actual declaration",
             ));
         }
-        let aspect = domain::declared_application_aspect_contract(
-            declaration,
-            locus.entity(),
-            locus.aspect(),
-        )
-        .map_err(|_| fail("readiness aspect cannot form its complete native contract"))?;
+        let aspect =
+            domain::declared_application_aspect(declaration, locus.entity(), locus.aspect())
+                .map_err(|_| fail("readiness aspect cannot form its complete native contract"))?;
         Ok(Self {
             locus,
             binding: TypeId::of::<F::Binding>(),
@@ -90,7 +88,8 @@ impl FieldExpectation {
             unit: F::Binding::UNIT,
             frame: F::Binding::FRAME,
             canonical,
-            aspect,
+            native_binding: aspect.binding().clone(),
+            aspect: aspect.contract().clone(),
         })
     }
 
@@ -118,7 +117,9 @@ impl FieldExpectation {
         if installed
             .native_contracts()
             .aspect(self.locus.entity(), self.locus.aspect())
-            .is_none_or(|aspect| aspect.contract() != &self.aspect)
+            .is_none_or(|aspect| {
+                aspect.contract() != &self.aspect || aspect.binding() != &self.native_binding
+            })
         {
             return Err(fail(
                 "readiness field differs from its complete installed aspect",
@@ -137,6 +138,12 @@ impl FieldExpectation {
             .map_err(|_| field_denial(self.locus.clone(), "readiness field projection is invalid"))
     }
     fn mask(&self) -> domain::AspectMask<domain::ProjectionMask> {
+        if matches!(
+            self.aspect.shape(),
+            worth_foundational::facade::AspectShape::Scalar(_)
+        ) {
+            return domain::AspectMask::whole_aspect();
+        }
         domain::AspectMask::new([domain::CanonicalFieldPath::single(
             domain::FieldKey::new(self.locus.field()).expect("declared field key"),
         )])
@@ -145,15 +152,21 @@ impl FieldExpectation {
         &self,
     ) -> Result<domain::WorthQuerySemanticTruthDependency, WorthQueryOutputReadinessContractDenial>
     {
+        let change = if matches!(
+            self.aspect.shape(),
+            worth_foundational::facade::AspectShape::Scalar(_)
+        ) {
+            domain::AuthoritativeAspectChangeKind::WholeAspectSet
+        } else {
+            domain::AuthoritativeAspectChangeKind::FieldSet
+        };
         domain::WorthQuerySemanticTruthDependency::new(
             domain::WorthQueryConditionalGraphReadRole::new("primary").expect("static role"),
             self.aspect.clone(),
             self.mask(),
-            domain::AspectBinding::EntityField {
-                field: domain::FieldKey::new(self.locus.aspect()).expect("declared aspect key"),
-            },
+            self.native_binding.clone(),
             domain::WorthQuerySemanticLocality::SourceRecord,
-            [domain::AuthoritativeAspectChangeKind::FieldSet],
+            [change],
         )
         .map_err(|_| field_denial(self.locus.clone(), "readiness field dependency is invalid"))
     }

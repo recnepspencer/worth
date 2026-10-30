@@ -34,8 +34,8 @@ pub mod application_inspection {
         WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryObservedApplicationInspection,
         WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspection,
         WorthQueryPerformedSourceInspectionRequest, WorthQueryProducerConnectionDenial,
-        WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest,
-        WorthQuerySourceReferenceOnlyInspectionRequest,
+        WorthQueryProducerOutputConnectionDenial, WorthQueryReferenceOnlyInspectionRequest,
+        WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
     };
 }
 

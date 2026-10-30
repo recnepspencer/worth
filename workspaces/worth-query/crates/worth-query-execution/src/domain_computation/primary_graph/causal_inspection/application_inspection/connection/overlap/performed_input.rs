@@ -4,6 +4,7 @@ use worth_foundational::facade::AspectFieldLocator;
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     publication::PublishedAuthoritativeFieldEffect as Effect,
+    runtime::RelationalFieldPresence,
 };
 
 pub(super) struct PerformedInput<'a> {

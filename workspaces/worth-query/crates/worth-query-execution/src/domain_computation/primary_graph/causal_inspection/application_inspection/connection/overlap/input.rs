@@ -81,6 +81,8 @@ impl ObservationConnection<'_, '_> {
                 }
             }
         }
-        Err(MapKernelFailure::Domain(Denial::SourceInputUnconnected))
+        Err(MapKernelFailure::Domain(
+            Denial::SourceInputUnconnected.into(),
+        ))
     }
 }

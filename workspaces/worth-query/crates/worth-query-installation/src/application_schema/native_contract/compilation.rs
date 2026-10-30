@@ -224,7 +224,7 @@ pub(super) fn collect_declared_fields(
     scalar_aspect::collect(schema, aspects)
 }
 
-fn compile_portable_aspect_record(
+pub(super) fn compile_portable_aspect_record(
     schema: &str,
     owner: ApplicationFieldBindingOwnerKind,
     entity: String,

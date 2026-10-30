@@ -18,6 +18,7 @@ type ProducerMode =
 struct ReadyCell {
     completion: OnceLock<WorthQueryCompletedOutputDemand>,
     producer_mode: OnceLock<ProducerMode>,
+    original_publication: OnceLock<Arc<super::super::OriginalProducingPublication>>,
 }
 
 /// Prepared before an output effect. It cannot be read as a Ready completion.
@@ -55,6 +56,7 @@ impl PreparedReadyBacking {
             cell: Arc::new(ReadyCell {
                 completion: OnceLock::new(),
                 producer_mode: OnceLock::new(),
+                original_publication: OnceLock::new(),
             }),
         }
     }
@@ -71,6 +73,16 @@ impl PreparedReadyBacking {
         mode: ProducerMode,
     ) -> Self {
         assert!(self.cell.producer_mode.set(mode).is_ok());
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn bind_original_producing_publication(
+        self,
+        original: Option<Arc<super::super::OriginalProducingPublication>>,
+    ) -> Self {
+        if let Some(original) = original {
+            assert!(self.cell.original_publication.set(original).is_ok());
+        }
         self
     }
 
@@ -95,6 +107,12 @@ impl Deref for ReadyCompletion {
 }
 
 impl ReadyCompletion {
+    pub(in crate::domain_computation::primary_graph) fn original_producing_publication(
+        &self,
+    ) -> Option<&Arc<super::super::OriginalProducingPublication>> {
+        self.0.original_publication.get()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn same_cell(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }

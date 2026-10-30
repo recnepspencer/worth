@@ -10,6 +10,8 @@ mod resource;
 pub use resource::WorthQueryApplicationInspectionResourceRefusal;
 mod canonical;
 pub use canonical::WorthQueryApplicationInspectionCanonicalRefusal;
+#[cfg(test)]
+mod output_tests;
 
 pub(super) enum InspectionCause {
     Unavailable,
@@ -39,12 +41,28 @@ pub struct WorthQueryApplicationInspectionDenial {
 impl WorthQueryApplicationInspectionDenial {
     /// A requested source/producer join refused after fresh diagnostic admission.
     pub fn producer_connection_refusal(&self) -> Option<super::WorthQueryProducerConnectionDenial> {
+        self.connection_refusal().map(|cause| cause.kind())
+    }
+
+    /// Output join detail after fresh diagnostic admission; no identifiers or values.
+    /// With multiple disclosed candidates, reports the longest satisfied prefix,
+    /// retaining the first candidate in original order when equally deep.
+    pub fn producer_output_refusal(
+        &self,
+    ) -> Option<super::WorthQueryProducerOutputConnectionDenial> {
+        match self.connection_refusal()? {
+            super::connection::ConnectionRefusal::Output(cause) => Some(*cause),
+            _ => None,
+        }
+    }
+
+    fn connection_refusal(&self) -> Option<&super::connection::ConnectionRefusal> {
         match &self.cause {
             InspectionCause::Admission(InspectionAdmissionDenial::Connection(
                 CaptureStop::Kernel(worth_execution::ScopeStop::Failure(
                     worth_execution::MapKernelFailure::Domain(cause),
                 )),
-            )) => Some(*cause),
+            )) => Some(cause),
             _ => None,
         }
     }

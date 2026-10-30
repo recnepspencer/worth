@@ -290,6 +290,7 @@ where
             limits,
 
             producer_contacts_in_this_demand: 0,
+            original_producing_publication: None,
             settled: false,
             admission_kind: DemandAdmissionKind::Ordinary,
             retained_program_basis: None,

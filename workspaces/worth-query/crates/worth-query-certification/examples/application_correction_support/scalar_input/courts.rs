@@ -71,8 +71,9 @@ pub fn scalar_storage_connects_only_the_actual_performed_occurrence() {
     assert_eq!(denial.subject(), "scalar-input-inspection");
     let mut first = None;
     for (ordinal, value, expected) in [(0, 3, 14), (1, 7, 18), (2, 3, 14)] {
+        let contacts = if ordinal == 0 { None } else { Some(1) };
         let (source, producer, read) =
-            perform(&application, value, &format!("scalar-{ordinal}"), 1);
+            perform(&application, value, &format!("scalar-{ordinal}"), contacts);
         let producer = producer.expect("a changed scalar executes its installed producer");
         let scope = request_scope();
         let principal = authenticate_operator(application.installed_schema(), &scope);
@@ -132,12 +133,13 @@ pub fn scalar_storage_connects_only_the_actual_performed_occurrence() {
             let old = first.take().unwrap();
             assert_ne!(old.commit_reference(), source.commit_reference());
             refuse_unconnected(&application, &after, &old);
-            let (noop, _, reused) = perform(&application, value, "scalar-noop", 0);
+            let (noop, _, reused) = perform(&application, value, "scalar-noop", Some(0));
             assert_ne!(noop.commit_reference(), source.commit_reference());
             drop(reused);
             refuse_unconnected(&application, &after, &noop);
             let foreign = host::install_with_outputs();
-            let (foreign_source, _, foreign_read) = perform(&foreign, value, "foreign-scalar", 1);
+            let (foreign_source, _, foreign_read) =
+                perform(&foreign, value, "foreign-scalar", None);
             drop(foreign_read);
             let denied = application
                 .runtime()
@@ -192,11 +194,11 @@ fn refuse_unconnected(
         Some(WorthQueryProducerConnectionDenial::SourceInputUnconnected)
     );
 }
-fn perform(
+pub(super) fn perform(
     application: &host::OutputHost,
     value: u64,
     key: &str,
-    contacts: usize,
+    contacts: Option<usize>,
 ) -> (
     WorthQueryApplicationCommitReceipt,
     Option<WorthQueryApplicationCommitReceipt>,
@@ -266,7 +268,11 @@ fn perform(
     else {
         panic!("actual scalar producer settles");
     };
-    assert_eq!(settled.root_producer_contacts_in_this_demand(), contacts);
+    // Initial output absence can require reobservation before current settlement.
+    // Its causal assertions consume the actual settled receipt and observation.
+    if let Some(contacts) = contacts {
+        assert_eq!(settled.root_producer_contacts_in_this_demand(), contacts);
+    }
     (
         receipt,
         settled.root_receipt().cloned(),

@@ -2,7 +2,10 @@
 mod admission;
 mod connection;
 mod source_original;
-pub use connection::{WorthQueryApplicationProducerConnection, WorthQueryProducerConnectionDenial};
+pub use connection::{
+    WorthQueryApplicationProducerConnection, WorthQueryProducerConnectionDenial,
+    WorthQueryProducerOutputConnectionDenial,
+};
 mod identity;
 mod report;
 mod request;

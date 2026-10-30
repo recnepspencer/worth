@@ -175,6 +175,14 @@ A later head query cannot infer it from equal values. Committed publication and
 settled read remain distinct. Immutable custody shares the actual publication,
 performed inputs, output correspondence and optional Native observation, without
 retaining a commit receipt, Ready cell or operational snapshot reader.
+An unsettled own-publication continuation may carry one publication candidate
+across its admitted source occurrence. It preserves that candidate only when
+the successor keeps the full-generation output roster without canonical output
+mutation. A changed output resets it, and the successor's own eligible Ready
+publication can become the new candidate. This is deliberately conservative for
+mixed field origins: there is no per-field history lookup. A connection still
+requires the exact observed Native field revision, installed contract, declared
+role and canonical field effect; candidate retention alone proves none of them.
 
 ### Canonical Absence Evidence
 
@@ -222,6 +230,77 @@ supply missing revision or effect evidence. An ABA rewrite does not make a later
 occurrence identical to an earlier one. Read, metadata and
 diagnostic admission remain independent for source and query subjects. Scalar
 storage grants no parent-removal authority or retired-output interpretation.
+
+### Scalar Producer Outputs
+
+Declare a `u64` output with `scalar_aspect_field` and
+`U64ApplicationValueBinding`, then use the ordinary producer's completed reads,
+`CandidateWriter::write_field` and declared output role. Keep the producer-input
+query limited to its actual inputs; projecting the produced output there would
+make it part of the source identity.
+
+Build readiness from the completed declaration and the actual output field:
+
+```rust,ignore
+let contract = WorthQueryOutputReadinessContractBuilder::for_field(
+    declaration, Total::reference(), operation_identity, "total-ready",
+    canonical_query, projection_role, strategy, "total-readiness",
+)?
+.field_dependency(
+    declaration, Total::reference(),
+    WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+)?
+.build_typed::<Domain, Operation, Family>()?;
+```
+
+The builder retains the declared physical binding and seals it against the
+installed catalog. Scalar readiness uses the whole Scalar projection and its
+`WholeAspectSet` event. Struct child readiness keeps its field projection and
+`FieldSet` event. Do not construct a raw field mask for a Scalar contract or
+substitute an aspect name for its bound field.
+
+Bind the resulting node to the producer with its declared delivery ordinal.
+Read the Scalar output through the settled observation, using
+`ApplicationQueryOptionalAspectFieldRef` for a Required child under an Optional
+parent. The source-disclosure and output-query bindings still require independent
+current admissions. The connection must find the queried Scalar field's own
+Native revision and effect in the producer publication. A changed Struct sibling
+or equal Scalar value supplies no missing output evidence. When that revision and
+effect intersection is missing, the connection refuses `OutputUnconnected`.
+
+`connection.producer_commit()` identifies the current settled producer publication.
+Use `connection.output_publication_commit()` for the publication that actually
+created the queried field revision. They may differ when an unsettled producer
+has to reobserve its own publication. Only immutable evidence carried through that
+same installed producer's selected own-publication continuation is eligible. It
+must independently join the original source occurrence and completed input read,
+the current output role and full-generation entity, the installed field/contract,
+and the observed Native revision and canonical effect. An unrelated source change
+or equal output cannot acquire that earlier publication's cause. Current settlement
+and fresh admissions still govern use; this descriptive connection owns no reader.
+
+On an inspection denial, `producer_connection_refusal()` gives the coarse
+connection refusal. For `OutputUnconnected`, `producer_output_refusal()` also
+returns a `WorthQueryProducerOutputConnectionDenial` after current diagnostic
+admission. It distinguishes output kind/entity affinity, incomplete observation,
+missing or absent Native revision, a revision not created by the selected producer
+publication, unavailable installed field, contract revision mismatch, and the
+canonical effect (unchanged, cleared, unsupported or ambiguous).
+
+The detail describes the first failed condition after the longest satisfied join
+prefix among disclosed candidates. Equally deep failures retain original
+role/footprint order; it does not identify every failed candidate. No field names,
+entity IDs, versions or business values are returned. Earlier admission, request
+and source/input refusals return `None` from `producer_output_refusal()`. For
+example, `NativeRevisionNotCreatedByProducer` says the observed field revision
+differs from the selected producer publication; it does not identify a different
+creator or authorize substituting another receipt. Preserve the refusal and the
+original operation's cleanup custody.
+
+The [compiled Scalar-output journey](../../../worth-query-certification/examples/application_correction_support/scalar_input/output.rs)
+uses an Optional Scalar with a Required `u64` child and ordinary Preserve output
+roles. It exercises changed values, ABA, no-op, independent governance and an
+equal Scalar beside a changed Struct sibling through the same Decl/Host route.
 
 ### Public Optional Struct Removal
 

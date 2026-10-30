@@ -4,6 +4,8 @@ mod current_commit;
 use current_commit::reacquire_current_committed_output;
 mod current_accepted;
 pub(super) mod observation;
+mod producing_publication;
+pub(in crate::domain_computation::primary_graph) use producing_publication::OriginalProducingPublication;
 mod receipt_custody;
 mod reused;
 use receipt_custody::SettlementReceiptCustody;
