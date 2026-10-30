@@ -820,6 +820,7 @@ dependencies = [
 name = "worth-query-court-installation"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "worth-foundational",
  "worth-query-declaration",
  "worth-query-installation",

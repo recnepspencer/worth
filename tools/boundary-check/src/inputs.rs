@@ -218,18 +218,7 @@ impl Inputs {
             .collect()
     }
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn metadata_decoding_requires_a_resolved_graph_and_named_packages() {
-        let bytes = br#"{"packages":[{"id":"one","name":"package","manifest_path":"Cargo.toml","dependencies":[],"targets":[]}],"workspace_members":["one"],"resolve":{"nodes":[{"id":"one","deps":[]}]}}"#;
-        let graph = decode_metadata(bytes).unwrap();
-        assert_eq!(graph.packages[0].name, "package");
-        assert_eq!(graph.workspace_members, vec!["one"]);
-        assert!(decode_metadata(b"{}").is_err());
-    }
-}
+
 fn relative(root: &Path, name: &str) -> String {
     let root = root
         .to_string_lossy()
@@ -352,5 +341,18 @@ impl Inputs {
             graphs: BTreeMap::new(),
             config: toml::from_str(config).unwrap(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn metadata_decoding_requires_a_resolved_graph_and_named_packages() {
+        let bytes = br#"{"packages":[{"id":"one","name":"package","manifest_path":"Cargo.toml","dependencies":[],"targets":[]}],"workspace_members":["one"],"resolve":{"nodes":[{"id":"one","deps":[]}]}}"#;
+        let graph = decode_metadata(bytes).unwrap();
+        assert_eq!(graph.packages[0].name, "package");
+        assert_eq!(graph.workspace_members, vec!["one"]);
+        assert!(decode_metadata(b"{}").is_err());
     }
 }

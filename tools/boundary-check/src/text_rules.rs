@@ -78,7 +78,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         }
         if path.ends_with("/clippy.toml") {
             match (&root_clippy, toml::from_str::<toml::Value>(text)) {
-                (Ok(root), Ok(local)) if superset(&root, &local) => {}
+                (Ok(root), Ok(local)) if superset(root, &local) => {}
                 _ => out.push(diagnostic(
                     Code::Clippy,
                     path,
@@ -118,14 +118,14 @@ pub fn manifest_features(
     if !governed(path) {
         return out;
     }
-    if let Some(features) = value.get("features").and_then(toml::Value::as_table) {
-        if features.is_empty() || features.keys().any(|n| !feature_allowed(path, n)) {
-            out.push(diagnostic(
-                Code::OneBuild,
-                path,
-                "one build forbids this features table",
-            ));
-        }
+    if let Some(features) = value.get("features").and_then(toml::Value::as_table)
+        && (features.is_empty() || features.keys().any(|n| !feature_allowed(path, n)))
+    {
+        out.push(diagnostic(
+            Code::OneBuild,
+            path,
+            "one build forbids this features table",
+        ));
     }
     let explicit: BTreeSet<_> = value
         .get("features")
@@ -149,27 +149,23 @@ pub fn manifest_features(
                 for (key, v) in t {
                     if ["dependencies", "dev-dependencies", "build-dependencies"]
                         .contains(&key.as_str())
+                        && let Some(deps) = v.as_table()
                     {
-                        if let Some(deps) = v.as_table() {
-                            for (name, d) in deps {
-                                let package = d
-                                    .get("package")
-                                    .and_then(toml::Value::as_str)
-                                    .unwrap_or(name);
-                                if d.get("features").is_some() && owned.contains(package)
-                                    || d.get("optional").and_then(toml::Value::as_bool)
-                                        == Some(true)
-                                        && !feature_allowed(path, name)
-                                        && !explicit.contains(name.as_str())
-                                {
-                                    out.push(diagnostic(
-                                        Code::OneBuild,
-                                        path,
-                                        format!(
-                                            "one build forbids dependency features on `{name}`"
-                                        ),
-                                    ));
-                                }
+                        for (name, d) in deps {
+                            let package = d
+                                .get("package")
+                                .and_then(toml::Value::as_str)
+                                .unwrap_or(name);
+                            if d.get("features").is_some() && owned.contains(package)
+                                || d.get("optional").and_then(toml::Value::as_bool) == Some(true)
+                                    && !feature_allowed(path, name)
+                                    && !explicit.contains(name.as_str())
+                            {
+                                out.push(diagnostic(
+                                    Code::OneBuild,
+                                    path,
+                                    format!("one build forbids dependency features on `{name}`"),
+                                ));
                             }
                         }
                     }

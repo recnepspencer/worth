@@ -126,13 +126,13 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
                 openings.push(at);
             }
             ")" | "]" | "}" => {
-                if let Some(open) = openings.pop() {
-                    if matches!(
+                if let Some(open) = openings.pop()
+                    && matches!(
                         (result[open].text, result[at].text),
                         ("(", ")") | ("[", "]") | ("{", "}")
-                    ) {
-                        result[open].matching = at;
-                    }
+                    )
+                {
+                    result[open].matching = at;
                 }
             }
             _ => {}

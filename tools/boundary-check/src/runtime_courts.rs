@@ -221,6 +221,17 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         })
         .collect()
 }
+
+impl Serialize for Finding {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut state = serializer.serialize_struct("Finding", 3)?;
+        state.serialize_field("source", &self.source)?;
+        state.serialize_field("module", &self.module)?;
+        state.serialize_field("roots", &self.roots)?;
+        state.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -287,15 +298,5 @@ mod tests {
             "fn ordinary() { Root; }".into(),
         );
         assert!(observations(&input).is_empty());
-    }
-}
-
-impl Serialize for Finding {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut state = serializer.serialize_struct("Finding", 3)?;
-        state.serialize_field("source", &self.source)?;
-        state.serialize_field("module", &self.module)?;
-        state.serialize_field("roots", &self.roots)?;
-        state.end()
     }
 }

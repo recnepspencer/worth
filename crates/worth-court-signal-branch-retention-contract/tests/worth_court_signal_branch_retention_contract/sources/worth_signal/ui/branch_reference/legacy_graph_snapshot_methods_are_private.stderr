@@ -1,14 +1,14 @@
-error[E0599]: no function or associated item named `capture_snapshot` found for struct `SignalGraph` in the current scope
+error[E0599]: no associated function or constant named `capture_snapshot` found for struct `SignalGraph` in the current scope
  --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/legacy_graph_snapshot_methods_are_private.rs:7:75
   |
 7 |     let _capture: fn(&mut SignalGraph) -> SignalSnapshotV1 = SignalGraph::capture_snapshot;
-  |                                                                           ^^^^^^^^^^^^^^^^ function or associated item not found in `SignalGraph`
+  |                                                                           ^^^^^^^^^^^^^^^^ associated function or constant not found in `SignalGraph`
 
-error[E0599]: no function or associated item named `restore_snapshot` found for struct `SignalGraph` in the current scope
+error[E0599]: no associated function or constant named `restore_snapshot` found for struct `SignalGraph` in the current scope
  --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/legacy_graph_snapshot_methods_are_private.rs:8:79
   |
 8 |     let _restore: fn(&mut SignalGraph, &SignalSnapshotV1) -> _ = SignalGraph::restore_snapshot;
-  |                                                                               ^^^^^^^^^^^^^^^^ function or associated item not found in `SignalGraph`
+  |                                                                               ^^^^^^^^^^^^^^^^ associated function or constant not found in `SignalGraph`
 
 error[E0624]: method `restore_snapshot_with_intent` is private
   --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/legacy_graph_snapshot_methods_are_private.rs:10:22

@@ -2,10 +2,8 @@ error[E0432]: unresolved imports `worth_signal::facade::runtime::BranchTargetedT
  --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/legacy_branch_authority_is_not_public.rs:2:5
   |
 2 |     BranchTargetedTransactionRequest, SignalBranchForkRequest, SignalBranchRetirementRequest,
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |     |                                 |                        |
-  |     |                                 |                        no `SignalBranchRetirementRequest` in `facade::runtime`
-  |     |                                 |                        help: a similar name exists in the module: `SignalBranchRetirementReceipt`
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `SignalBranchRetirementRequest` in `facade::runtime`
+  |     |                                 |
   |     |                                 no `SignalBranchForkRequest` in `facade::runtime`
   |     no `BranchTargetedTransactionRequest` in `facade::runtime`
 3 |     SignalBranchTransactionHead,
@@ -35,3 +33,8 @@ note: found an item that was configured out
 ...
   |     SignalBranchHeadPosture, SignalBranchRestorePosture, SignalBranchTransactionHead,
   |                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a similar name exists in the module
+  |
+2 -     BranchTargetedTransactionRequest, SignalBranchForkRequest, SignalBranchRetirementRequest,
+2 +     BranchTargetedTransactionRequest, SignalBranchForkRequest, SignalBranchRetirementReceipt,
+  |

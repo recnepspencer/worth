@@ -25,20 +25,18 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                         || under(path, p.trim_end_matches("/Cargo.toml")))
             })
             .max_by_key(|(p, _)| p.len())
-        {
-            if let Some(aliases) = workspace["workspace"]
+            && let Some(aliases) = workspace["workspace"]
                 .get("dependencies")
                 .and_then(toml::Value::as_table)
-            {
-                for (alias, dependency) in aliases {
-                    if owned.contains(
-                        dependency
-                            .get("package")
-                            .and_then(toml::Value::as_str)
-                            .unwrap_or(alias),
-                    ) {
-                        names.insert(alias.clone());
-                    }
+        {
+            for (alias, dependency) in aliases {
+                if owned.contains(
+                    dependency
+                        .get("package")
+                        .and_then(toml::Value::as_str)
+                        .unwrap_or(alias),
+                ) {
+                    names.insert(alias.clone());
                 }
             }
         }
@@ -324,6 +322,11 @@ fn dependencies(key: &str, rule: &toml::Value, p: &Package) -> Vec<Diagnostic> {
     out
 }
 fn category_valid(path: &str) -> bool {
+    // Codemod copies compile-fail inputs and data under sources/ with their
+    // original paths. Their categories belong to the mounted court wrapper.
+    if path.starts_with("sources/") {
+        return true;
+    }
     let segments: Vec<_> = path
         .trim_end_matches(".rs")
         .split('/')

@@ -21,6 +21,140 @@ fn closure(id: &str, dev: bool, nodes: &BTreeMap<&str, &Node>) -> BTreeSet<Strin
     }
     seen
 }
+
+pub(super) fn frontiers(graph: &Metadata) -> BTreeMap<String, Vec<String>> {
+    let nodes: BTreeMap<_, _> = graph
+        .resolve
+        .iter()
+        .flat_map(|r| &r.nodes)
+        .map(|n| (n.id.as_str(), n))
+        .collect();
+    let products: Vec<_> = graph
+        .packages
+        .iter()
+        .filter(|p| {
+            graph.workspace_members.contains(&p.id)
+                && !p.name.contains("-court-")
+                && !p.name.contains("-testkit")
+                && !p.manifest_path.split('/').any(|s| s == "fixtures")
+        })
+        .collect();
+    // Keep the combined court convention: traverse infrastructure, and retain
+    // established leaf APIs while pruning incidental clients from the frontier.
+    let established: BTreeSet<_> = select(graph, &products, &nodes)
+        .into_iter()
+        .filter(|(id, frontier)| {
+            let court = graph.packages.iter().find(|p| &p.id == id).unwrap();
+            let (stem, label) = court.name.split_once("-court-").unwrap();
+            let surface = surface(stem, frontier);
+            label == surface || label.starts_with(&format!("{surface}-"))
+        })
+        .flat_map(|(_, frontier)| frontier)
+        .collect();
+    let mut products = products;
+    products.retain(|p| {
+        !p.manifest_path.split('/').any(|s| s == "tools")
+            && !(p.name.ends_with("-runner")
+                && !p
+                    .targets
+                    .iter()
+                    .any(|t| t.kind.iter().any(|k| k == "lib" || k == "rlib")))
+            && !["-test-support", "-certification", "-formal-models"]
+                .iter()
+                .any(|part| p.name.contains(part))
+            && !p.name.ends_with("-harness")
+    });
+    let mut incoming: BTreeMap<&str, Vec<(&str, &Edge)>> = BTreeMap::new();
+    for node in nodes.values() {
+        for edge in &node.deps {
+            incoming
+                .entry(&edge.pkg)
+                .or_default()
+                .push((&node.id, edge));
+        }
+    }
+    loop {
+        let ids: BTreeSet<_> = products.iter().map(|p| p.id.as_str()).collect();
+        let incidental: BTreeSet<_> = products
+            .iter()
+            .filter(|p| !established.contains(&p.name))
+            .filter(|p| {
+                incoming.get(p.id.as_str()).is_some_and(|edges| {
+                    edges.iter().all(|(caller, edge)| {
+                        (graph
+                            .workspace_members
+                            .iter()
+                            .any(|id| id.as_str() == *caller)
+                            && !ids.contains(caller))
+                            || edge
+                                .dep_kinds
+                                .iter()
+                                .all(|k| k.kind.as_deref() == Some("dev"))
+                    })
+                })
+            })
+            .map(|p| p.id.clone())
+            .collect();
+        if incidental.is_empty() {
+            break;
+        }
+        products.retain(|p| !incidental.contains(&p.id));
+    }
+    select(graph, &products, &nodes)
+}
+fn select(
+    graph: &Metadata,
+    products: &[&Package],
+    nodes: &BTreeMap<&str, &Node>,
+) -> BTreeMap<String, Vec<String>> {
+    let dependencies: BTreeMap<_, _> = products
+        .iter()
+        .map(|p| (&p.id, closure(&p.id, false, nodes)))
+        .collect();
+    graph
+        .packages
+        .iter()
+        .filter(|p| p.name.contains("-court-") && graph.workspace_members.contains(&p.id))
+        .map(|court| {
+            let reached = closure(&court.id, true, nodes);
+            let selected: Vec<_> = products
+                .iter()
+                .filter(|p| reached.contains(&p.id))
+                .collect();
+            let mut frontier: Vec<_> = selected
+                .iter()
+                .filter(|p| {
+                    !selected
+                        .iter()
+                        .any(|other| other.id != p.id && dependencies[&other.id].contains(&p.id))
+                })
+                .map(|p| p.name.clone())
+                .collect();
+            frontier.sort();
+            (court.id.clone(), frontier)
+        })
+        .collect()
+}
+pub(super) fn surface(stem: &str, frontier: &[String]) -> String {
+    if frontier.is_empty() {
+        return "source".into();
+    }
+    let prefix = stem.strip_prefix("worth-query-").unwrap_or(stem);
+    frontier
+        .iter()
+        .map(|p| {
+            p.strip_prefix(&format!("{prefix}-")).unwrap_or_else(|| {
+                if p == prefix {
+                    p.rsplit('-').next().unwrap()
+                } else {
+                    p
+                }
+            })
+        })
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,136 +290,4 @@ mod tests {
             .manifest_path = "fixtures/host/Cargo.toml".into();
         assert_eq!(frontiers(&graph)["a-court-host"], vec!["engine"]);
     }
-}
-pub(super) fn frontiers(graph: &Metadata) -> BTreeMap<String, Vec<String>> {
-    let nodes: BTreeMap<_, _> = graph
-        .resolve
-        .iter()
-        .flat_map(|r| &r.nodes)
-        .map(|n| (n.id.as_str(), n))
-        .collect();
-    let products: Vec<_> = graph
-        .packages
-        .iter()
-        .filter(|p| {
-            graph.workspace_members.contains(&p.id)
-                && !p.name.contains("-court-")
-                && !p.name.contains("-testkit")
-                && !p.manifest_path.contains("/fixtures/")
-        })
-        .collect();
-    // Keep the combined court convention: traverse infrastructure, and retain
-    // established leaf APIs while pruning incidental clients from the frontier.
-    let established: BTreeSet<_> = select(graph, &products, &nodes)
-        .into_iter()
-        .filter(|(id, frontier)| {
-            let court = graph.packages.iter().find(|p| &p.id == id).unwrap();
-            let (stem, label) = court.name.split_once("-court-").unwrap();
-            let surface = surface(stem, frontier);
-            label == surface || label.starts_with(&format!("{surface}-"))
-        })
-        .flat_map(|(_, frontier)| frontier)
-        .collect();
-    let mut products = products;
-    products.retain(|p| {
-        !p.manifest_path.split('/').any(|s| s == "tools")
-            && !(p.name.ends_with("-runner")
-                && !p
-                    .targets
-                    .iter()
-                    .any(|t| t.kind.iter().any(|k| k == "lib" || k == "rlib")))
-            && !["-test-support", "-certification", "-formal-models"]
-                .iter()
-                .any(|part| p.name.contains(part))
-            && !p.name.ends_with("-harness")
-    });
-    let mut incoming: BTreeMap<&str, Vec<(&str, &Edge)>> = BTreeMap::new();
-    for node in nodes.values() {
-        for edge in &node.deps {
-            incoming
-                .entry(&edge.pkg)
-                .or_default()
-                .push((&node.id, edge));
-        }
-    }
-    loop {
-        let ids: BTreeSet<_> = products.iter().map(|p| p.id.as_str()).collect();
-        let incidental: BTreeSet<_> = products
-            .iter()
-            .filter(|p| !established.contains(&p.name))
-            .filter(|p| {
-                incoming.get(p.id.as_str()).is_some_and(|edges| {
-                    edges.iter().all(|(caller, edge)| {
-                        (graph
-                            .workspace_members
-                            .iter()
-                            .any(|id| id.as_str() == *caller)
-                            && !ids.contains(caller))
-                            || edge
-                                .dep_kinds
-                                .iter()
-                                .all(|k| k.kind.as_deref() == Some("dev"))
-                    })
-                })
-            })
-            .map(|p| p.id.clone())
-            .collect();
-        if incidental.is_empty() {
-            break;
-        }
-        products.retain(|p| !incidental.contains(&p.id));
-    }
-    select(graph, &products, &nodes)
-}
-fn select(
-    graph: &Metadata,
-    products: &[&Package],
-    nodes: &BTreeMap<&str, &Node>,
-) -> BTreeMap<String, Vec<String>> {
-    let dependencies: BTreeMap<_, _> = products
-        .iter()
-        .map(|p| (&p.id, closure(&p.id, false, nodes)))
-        .collect();
-    graph
-        .packages
-        .iter()
-        .filter(|p| p.name.contains("-court-") && graph.workspace_members.contains(&p.id))
-        .map(|court| {
-            let reached = closure(&court.id, true, nodes);
-            let selected: Vec<_> = products
-                .iter()
-                .filter(|p| reached.contains(&p.id))
-                .collect();
-            let mut frontier: Vec<_> = selected
-                .iter()
-                .filter(|p| {
-                    !selected
-                        .iter()
-                        .any(|other| other.id != p.id && dependencies[&other.id].contains(&p.id))
-                })
-                .map(|p| p.name.clone())
-                .collect();
-            frontier.sort();
-            (court.id.clone(), frontier)
-        })
-        .collect()
-}
-pub(super) fn surface(stem: &str, frontier: &[String]) -> String {
-    if frontier.is_empty() {
-        return "source".into();
-    }
-    let prefix = stem.strip_prefix("worth-query-").unwrap_or(stem);
-    frontier
-        .iter()
-        .map(|p| {
-            p.strip_prefix(&format!("{prefix}-")).unwrap_or_else(|| {
-                if p == prefix {
-                    p.rsplit('-').next().unwrap()
-                } else {
-                    p
-                }
-            })
-        })
-        .collect::<Vec<_>>()
-        .join("-")
 }

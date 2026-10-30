@@ -4,7 +4,7 @@ error[E0308]: mismatched types
 7 | ) -> SignalConditionalDecisionEvidence {
   |      --------------------------------- expected `SignalConditionalDecisionEvidence` because of return type
 8 |     projection
-  |     ^^^^^^^^^^ expected `SignalConditionalDecisionEvidence`, found `FoundationalProjectionIdentity<..., ...>`
+  |     ^^^^^^^^^^ expected `SignalConditionalDecisionEvidence`, found `FoundationalProjectionIdentity<_, _>`
   |
   = note: expected struct `SignalConditionalDecisionEvidence`
              found struct `worth_foundational::identities::authority_identity::derived::FoundationalProjectionIdentity<Arc<str>, SignalConditionalDecisionIdentityKind>`
