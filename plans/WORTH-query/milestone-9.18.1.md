@@ -2118,6 +2118,14 @@ Its private application-state inspection is read-only; all business execution,
 admission and recovery still use the ordinary Decl/Host application paths. Keep
 both control-owner caller entries exact and closed.
 
+The exact `application/candidate/publication_tests.rs` consumer court may use the
+same installed World compare pause during a genuine candidate edit. It retains
+the actual ordinary operation across cancellation and native recovery, then
+observes its Recovered completion and independently reads candidate state before
+adopting the application's unchanged source slot. Its private staging inspection
+is read-only and occurs through the freshly admitted attempt view; keep both
+control-owner caller entries exact and closed.
+
 The [existing expected-source cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance.rs),
 [adoption cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/adoption.rs)
 and [stored-basis cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/stored_basis.rs)
