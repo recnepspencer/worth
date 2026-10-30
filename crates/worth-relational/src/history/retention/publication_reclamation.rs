@@ -31,7 +31,7 @@ impl RelationalRuntime {
         let retired = self
             .history
             .canonical_checkpoint_gate()
-            .with_quiescent_index_reclamation(|| {
+            .with_settled_publication_snapshot(|| {
                 let publication = committed.envelope();
                 let mut previous_commits: BTreeSet<_> =
                     publication.commit.parents.iter().copied().collect();

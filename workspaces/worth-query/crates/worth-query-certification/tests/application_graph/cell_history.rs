@@ -20,6 +20,8 @@ mod live_at;
 mod query;
 #[path = "cell_history/schema.rs"]
 mod schema;
+#[path = "cell_history/storage.rs"]
+mod storage;
 
 use query::CellRow;
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;

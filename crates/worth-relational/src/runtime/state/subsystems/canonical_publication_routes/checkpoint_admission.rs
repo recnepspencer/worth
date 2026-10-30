@@ -8,7 +8,7 @@ use super::{
 };
 
 impl RelationalCanonicalPublicationRoutes {
-    pub(crate) fn with_quiescent_index_reclamation<R>(
+    pub(crate) fn with_settled_publication_snapshot<R>(
         &self,
         reclaim: impl FnOnce() -> R,
     ) -> Option<R> {

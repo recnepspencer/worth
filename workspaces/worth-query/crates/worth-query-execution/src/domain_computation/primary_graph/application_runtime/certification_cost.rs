@@ -4,7 +4,9 @@ use std::sync::atomic::Ordering;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::inspection::{
-    RelationalBranchSharingInspectionDenial, RelationalMvccCostObservation, RelationalMvccCostScope,
+    RelationalBranchSharingInspectionDenial, RelationalMvccCostObservation,
+    RelationalMvccCostScope, RelationalRetainedStorageInspectionDenial,
+    RelationalRetainedStorageObservation,
 };
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
@@ -91,6 +93,12 @@ pub struct WorthQueryCertificationWorldHistory {
 /// Capture a scope before the work, then observe the cost after it. Neither
 /// call changes runtime state.
 pub trait WorthQueryCertificationCostRuntimeExt<Schema: ApplicationSchema> {
+    /// Explicit cold diagnostic work, separate from interval counters and
+    /// selected-head sharing. Never called by ordinary publication or capture.
+    fn observe_certification_retained_storage(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<RelationalRetainedStorageObservation, WorthQueryCertificationCostDenial>;
     /// Captures the cost baseline for a product branch. Refused when the branch
     /// cannot be admitted.
     fn capture_certification_cost_scope(
@@ -111,6 +119,17 @@ pub trait WorthQueryCertificationCostRuntimeExt<Schema: ApplicationSchema> {
 impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
     for WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
+    fn observe_certification_retained_storage(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<RelationalRetainedStorageObservation, WorthQueryCertificationCostDenial> {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
+        self.primary_provider
+            .graph
+            .with_runtime(&execution, |runtime| runtime.observe_retained_storage())
+            .map_err(WorthQueryCertificationCostDenial::RetainedStorage)
+    }
+
     fn capture_certification_cost_scope(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
@@ -285,6 +304,7 @@ impl From<WorthQueryApplicationAttemptWorkSnapshot> for WorthQueryCertificationA
 pub enum WorthQueryCertificationCostDenial {
     Branch(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Sharing(RelationalBranchSharingInspectionDenial),
+    RetainedStorage(RelationalRetainedStorageInspectionDenial),
     ForeignPhase(crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase),
 }
 impl From<crate::basis::WorthQueryProductBranchAdmissionDenial>

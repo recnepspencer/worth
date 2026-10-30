@@ -104,6 +104,9 @@ impl CellHistory {
                 .collect::<Vec<_>>(),
             [(30_000, 29)]
         );
+        // Explicit owner walk after warm measurement and answer checks. Its
+        // allocation and elapsed work are diagnostic, never publication work.
+        super::super::storage::observe(&self.host);
         warm
     }
 }

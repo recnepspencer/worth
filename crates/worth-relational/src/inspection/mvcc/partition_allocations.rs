@@ -13,25 +13,26 @@ use crate::storage::{
 pub(super) fn authoritative_partition_allocations(
     runtime_instance_id: u64,
     partition: &PartitionState,
+    seen: &mut std::collections::BTreeSet<u64>,
 ) -> Vec<RelationalAuthoritativeAllocationObservation> {
     let mut walk = PartitionAllocationWalk {
         runtime_instance_id,
         partition_id: partition.partition_id,
-        seen: Default::default(),
+        seen,
         allocations: Vec::new(),
     };
     partition.visit_authoritative_allocations(false, &mut walk);
     walk.allocations
 }
 
-struct PartitionAllocationWalk {
+struct PartitionAllocationWalk<'a> {
     runtime_instance_id: u64,
     partition_id: PartitionId,
-    seen: std::collections::BTreeSet<u64>,
+    seen: &'a mut std::collections::BTreeSet<u64>,
     allocations: Vec<RelationalAuthoritativeAllocationObservation>,
 }
 
-impl StorageAllocationVisitor for PartitionAllocationWalk {
+impl StorageAllocationVisitor for PartitionAllocationWalk<'_> {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
         if !self.seen.insert(allocation.id) {
             return false;
@@ -54,13 +55,14 @@ impl StorageAllocationVisitor for PartitionAllocationWalk {
 pub(super) fn excluded_partition_allocations(
     partition: &PartitionState,
     root: &crate::branch::RelationalBranchRoot,
+    seen: &mut std::collections::BTreeSet<u64>,
 ) -> Vec<(
     RelationalExcludedAllocationLane,
     StorageAllocationObservation,
 )> {
     let mut walk = ExcludedAllocationWalk {
         lane: RelationalExcludedAllocationLane::Diagnostics,
-        seen: Default::default(),
+        seen,
         allocations: Vec::new(),
     };
     partition.visit_diagnostic_allocations(&mut walk);
@@ -72,15 +74,15 @@ pub(super) fn excluded_partition_allocations(
     walk.allocations
 }
 
-struct ExcludedAllocationWalk {
+struct ExcludedAllocationWalk<'a> {
     lane: RelationalExcludedAllocationLane,
-    seen: std::collections::BTreeSet<u64>,
+    seen: &'a mut std::collections::BTreeSet<u64>,
     allocations: Vec<(
         RelationalExcludedAllocationLane,
         StorageAllocationObservation,
     )>,
 }
-impl StorageAllocationVisitor for ExcludedAllocationWalk {
+impl StorageAllocationVisitor for ExcludedAllocationWalk<'_> {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
         if !self.seen.insert(allocation.id) {
             return false;

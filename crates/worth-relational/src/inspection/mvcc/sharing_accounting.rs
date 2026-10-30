@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
     RelationalAuthoritativeAllocationKind, RelationalAuthoritativeAllocationLocator,
@@ -8,7 +8,7 @@ use crate::branch::{RelationalBranchRoot, RelationalRootAuthoritativeAllocationK
 use crate::history::{RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind};
 
 #[derive(Debug, Default)]
-pub(super) struct RelationalAuthoritativeAllocationAccounting {
+pub(in crate::inspection::mvcc) struct RelationalAuthoritativeAllocationAccounting {
     allocations: BTreeMap<RelationalAuthoritativeAllocationLocator, u64>,
     pub(super) logical_partition_bytes: u64,
     logical_region_object_bytes: u64,
@@ -16,6 +16,8 @@ pub(super) struct RelationalAuthoritativeAllocationAccounting {
     pub(super) logical_root_reachability_bytes: u64,
     pub(super) logical_canonical_commit_bytes: u64,
     excluded_allocations: BTreeMap<(u8, u64), RelationalExcludedAllocationBytes>,
+    seen_payload: BTreeSet<u64>,
+    seen_excluded: BTreeSet<u64>,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -34,9 +36,18 @@ impl RelationalAuthoritativeAllocationAccounting {
         artifact: &RelationalCommitArtifact,
         derived_cache_bytes: u64,
     ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
+        self.observe_root(runtime_instance_id, root)?;
+        self.observe_commit_allocation(runtime_instance_id, artifact, derived_cache_bytes);
+        Ok(())
+    }
+
+    pub(in crate::inspection::mvcc) fn observe_root(
+        &mut self,
+        runtime_instance_id: u64,
+        root: &RelationalBranchRoot,
+    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
         self.observe_partition_allocations(runtime_instance_id, root)?;
         self.observe_root_allocations(runtime_instance_id, root);
-        self.observe_commit_allocation(runtime_instance_id, artifact, derived_cache_bytes);
         Ok(())
     }
 
@@ -49,7 +60,7 @@ impl RelationalAuthoritativeAllocationAccounting {
             .collect()
     }
 
-    pub(super) fn unique_bytes(&self) -> u64 {
+    pub(in crate::inspection::mvcc) fn unique_bytes(&self) -> u64 {
         self.allocations.values().copied().sum()
     }
 
@@ -127,6 +138,7 @@ impl RelationalAuthoritativeAllocationAccounting {
                 crate::inspection::mvcc::partition_allocations::authoritative_partition_allocations(
                     runtime_instance_id,
                     partition,
+                    &mut self.seen_payload,
                 )
             {
                 self.insert(allocation.locator(), allocation.authoritative_bytes());
@@ -153,7 +165,9 @@ impl RelationalAuthoritativeAllocationAccounting {
             );
             for (lane, allocation) in
                 crate::inspection::mvcc::partition_allocations::excluded_partition_allocations(
-                    partition, root,
+                    partition,
+                    root,
+                    &mut self.seen_excluded,
                 )
             {
                 use crate::inspection::mvcc::allocation_ledger::RelationalExcludedAllocationLane;
@@ -232,7 +246,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         }
     }
 
-    fn observe_commit_allocation(
+    pub(in crate::inspection::mvcc) fn observe_commit_allocation(
         &mut self,
         runtime_instance_id: u64,
         artifact: &RelationalCommitArtifact,

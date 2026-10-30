@@ -55,9 +55,6 @@ unchanged. Component source declarations have a distinct object grammar and
 canonical domain. See the
 [Native component courts](src/tests/transactions/core/aggregate_identity/components.rs)
 and [source/encoding controls](src/tests/transactions/core/aggregate_identity/components/registration.rs).
-Query declaration/read/count/footprint and scoped visibility, topology examples,
-and CAD shell integration remain unfinished in
-[milestone 9.18.1 Phase 5](../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
 
 ## Main doors
 
@@ -120,6 +117,32 @@ an absent branch, `None`, or the string `"main"` as authority.
 
 - `runtime.inspect_what_happened()`
 - `runtime.publication()`
+
+### Retained owner footprints
+
+Call `runtime.observe_retained_storage()` outside ordinary operation timing to
+inspect live branch roots, actual retired-owner rows and the resident canonical
+catalog. `PublicationBusy` defers an in-flight or unsettled publication;
+`OwnerInventory` preserves cold-payload or physical root/catalog linkage refusal.
+An error returns no partial census and never loads cold storage.
+
+`current_root_authoritative_bytes`, `held_history_only_authoritative_bytes` and
+`reclaimable_only_authoritative_bytes` are disjoint allocation unions in that
+order. Shared persistent backing counts once. Held rows include reservations and
+other actual custody. Queued eligibility uses the reclaimer's retired,
+no-reservations, sole-Arc predicate before diagnostic clones; it promises no
+specific reclamation effect. `catalog_owner_footprint_bytes` remains separate and
+append-only after reader release. Its nested optional authority records use
+their existing canonical encoded footprint convention.
+
+`authoritative_owner_footprint_bytes` combines those owner categories; it is not
+physical heap or peak allocation. Optional-index estimates, allocator-private
+headers, diagnostics, inspector backing, unpublished candidate roots and
+transaction working sets are excluded. Concurrent reader release and lazy
+residency remain observations made during the owner walk, not an atomic heap
+snapshot. For application certification, import
+`WorthQueryCertificationCostRuntimeExt` from `worth-query-replay::facade` and call
+`runtime.observe_certification_retained_storage(&phase)` in a fresh advancement.
 
 ### Publish semantic aspect changes
 

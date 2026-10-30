@@ -10,6 +10,21 @@ use crate::history::retention::{
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn retired_root_storage_inventory(
+        &self,
+    ) -> Vec<crate::history::retention::RelationalRetiredRootStorageSnapshot> {
+        self.retention_owner.storage_inventory()
+    }
+
+    pub(crate) fn current_root_storage_inventory(&self) -> Vec<Arc<RelationalBranchRoot>> {
+        self.record_branch_population_scan();
+        self.branch_cells
+            .values()
+            .into_iter()
+            .filter_map(|cell| cell.root())
+            .collect()
+    }
+
     pub(crate) fn index_generation_basis_is_held(
         &self,
         generation: &crate::indexes::data::DerivedIndexGeneration,

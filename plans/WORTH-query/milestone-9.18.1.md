@@ -1923,6 +1923,23 @@ does not authorize allocation deduplication. Version the inspection contract
 when correcting its locator meaning. It must not become a second ledger or an ordinary publication
 pre-admission requirement. Charged request allocation, copied-byte counters and
 owner-reported retained allocations keep their distinct meanings and exclusions.
+The explicit Native census visits current roots, actual retired-owner rows and
+the complete immutable catalog under settled-publication exclusion. Reclaimer
+eligibility uses the existing retired/reservation/sole-Arc predicate before any
+diagnostic root clones. Report disjoint current-root allocation bytes, held-only
+bytes beyond current roots, queued-only bytes beyond both, and separate resident
+catalog owner-footprint bytes. The catalog remains append-only after reader
+release; optional nested authority records retain their existing canonical
+encoded-size footprint convention, which is not allocator-exact heap usage.
+Validate physical root/envelope/catalog linkage, prune already visited actual
+persistent allocation subtrees across all cohorts, and refuse cold/unavailable
+payloads rather than loading them to manufacture a complete total. Concurrent
+reader Drop and lazy residency remain owner-walk observations, not an atomic heap
+snapshot. Optional-index reachable-payload estimates, allocator-private headers,
+diagnostics, inspection backing, unpublished candidate roots and transaction
+working sets are outside this authoritative-owner scope. Noncurrent held rows
+include reservations and other real custody, not only user reads;
+do not label the census total heap or peak allocation.
 
 The decisive public sequence retains an early feature-step basis, performs
 later local edits, reads both old and current cells, and compares independently

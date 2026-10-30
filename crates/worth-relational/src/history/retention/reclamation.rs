@@ -103,7 +103,7 @@ impl crate::runtime::RelationalRuntime {
     pub fn run_index_generation_reclamation_pass(&self) -> Option<usize> {
         self.history
             .canonical_checkpoint_gate()
-            .with_quiescent_index_reclamation(|| {
+            .with_settled_publication_snapshot(|| {
                 // The owner inventory, rather than Arc payload counts, decides
                 // which historical versions still have live obligations.
                 self.history
