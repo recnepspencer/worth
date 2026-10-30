@@ -2,11 +2,18 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from llvm_measure import targets
+from llvm_measure import measurement_name, targets
 from logs import llvm_lines
 
 
 class CompileSizeOwnershipTests(unittest.TestCase):
+    def test_long_court_names_have_bounded_distinct_measurement_filenames(self):
+        prefix = 'worth-store-court-' + 'production-frontier-' * 15
+        first, second = measurement_name(prefix + 'one'), measurement_name(prefix + 'two')
+        self.assertLessEqual(len(first), 80)
+        self.assertNotEqual(first, second)
+        self.assertEqual(first, measurement_name(prefix + 'one'))
+
     def test_only_real_court_and_testkit_targets_enter_compile_size_measurement(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
