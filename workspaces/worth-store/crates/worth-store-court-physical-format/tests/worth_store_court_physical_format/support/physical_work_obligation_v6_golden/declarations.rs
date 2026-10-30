@@ -14,7 +14,9 @@ pub(crate) const OPERATION_4_SHA: &str =
 
 pub(crate) fn literal(hex: &str) -> Vec<u8> {
     hex.as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).expect("literal hex byte")
         })

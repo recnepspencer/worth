@@ -46,7 +46,12 @@ pub(crate) fn read_page_frame(
     shape(directory_end <= payload.len(), 64, 2)?;
     let mut identities = BTreeSet::new();
     let mut preceding_start = payload.len();
-    for (index, slot) in payload[24..directory_end].chunks_exact(40).enumerate() {
+    for (index, slot) in payload[24..directory_end]
+        .as_chunks::<40>()
+        .0
+        .iter()
+        .enumerate()
+    {
         let offset = read_u32(slot, 24) as usize;
         let length = read_u32(slot, 28) as usize;
         let end = offset.checked_add(length);

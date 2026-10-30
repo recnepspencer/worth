@@ -211,7 +211,7 @@ fn final_required_segment(
             range.start() < durable_end && durable_end <= range.end_exclusive()
         })
         .map(|offset| first + offset)
-        .or(Some(first).filter(|_| entries[first].lsn_range().end_exclusive() == durable_end))
+        .or((entries[first].lsn_range().end_exclusive() == durable_end).then_some(first))
 }
 
 fn require_boundary(

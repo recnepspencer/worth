@@ -100,10 +100,7 @@ pub fn first_with_segment_bytes(
     PendingWalWorld {
         root,
         first,
-        objects: objects
-            .chunks_exact(16)
-            .map(|object| object.try_into().unwrap())
-            .collect(),
+        objects: objects.as_chunks::<16>().0.to_vec(),
         _marker: marker_dir,
         next_descriptor: std::cell::Cell::new(0),
     }

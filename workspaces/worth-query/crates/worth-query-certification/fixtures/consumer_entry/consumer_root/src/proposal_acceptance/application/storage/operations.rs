@@ -50,7 +50,6 @@ pub type ResultTerminal = WorthQueryTerminalSourceOperation<
     ResultAction,
     ApplicationSourceCompletion,
 >;
-pub type ResultCompletion = WorthQuerySourceCompletion<recording::Recorded>;
 #[derive(Debug)]
 pub enum ConstructionFailure {
     Capture(WorthQueryOperationInputCaptureDenial),

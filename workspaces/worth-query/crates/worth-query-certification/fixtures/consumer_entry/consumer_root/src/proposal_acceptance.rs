@@ -24,6 +24,18 @@ mod application {
     pub(super) mod storage;
 }
 
+// Application entry points and their typed inputs are available to host callers.
+pub use application::{
+    acceptance::{DisposalClass, DisposalEvent, DisposalView},
+    model::Model,
+    storage::{ClaimFailure, RegisteredClaim, ResultFailure, Storage},
+};
+pub use authentication::{authenticate, request_scope, Actor, Caller};
+pub use host::{install, Host};
+pub use schema::data::{
+    AuthoredIntent, Coordinates, ModelReference, ProposalReference, RetentionEdit, TargetReference,
+};
+
 #[cfg(test)]
 mod courts {
     mod acceptance;

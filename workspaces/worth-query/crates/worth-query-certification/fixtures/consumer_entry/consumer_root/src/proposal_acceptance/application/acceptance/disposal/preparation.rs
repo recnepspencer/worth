@@ -3,7 +3,7 @@ use super::*;
 use crate::proposal_acceptance::application::candidate::{PreparationFailure, PreparationRefusal};
 use WorthQueryProductBranchCreationRecoveryReleaseFailure as ReleaseFailure;
 
-pub(super) struct Owner {
+pub(in crate::proposal_acceptance::application::acceptance) struct Owner {
     stage: Stage,
     creation_handoff: Option<WorthQueryAdvancementDenial>,
 }

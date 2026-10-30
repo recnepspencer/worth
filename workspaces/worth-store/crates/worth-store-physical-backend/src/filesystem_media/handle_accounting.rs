@@ -52,19 +52,66 @@ impl Drop for MediaDirectoryHandleAccounting {
 }
 
 fn acquire_live_handle(live: &AtomicU64, peak: &AtomicU64) {
-    let current = live
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
-            Some(value.saturating_add(1))
-        })
-        .unwrap_or(u64::MAX)
-        .saturating_add(1);
-    let _ = peak.fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
-        (current > value).then_some(current)
-    });
+    let current = {
+        let update_counter = live;
+        let mut value = update_counter.load(Ordering::Acquire);
+        loop {
+            let next_value = Some(value.saturating_add(1));
+            let Some(updated_value) = next_value else {
+                break Err(value);
+            };
+            match update_counter.compare_exchange_weak(
+                value,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => value = reloaded_value,
+            }
+        }
+    }
+    .unwrap_or(u64::MAX)
+    .saturating_add(1);
+    let _ = {
+        let update_counter = peak;
+        let mut value = update_counter.load(Ordering::Acquire);
+        loop {
+            let next_value = (current > value).then_some(current);
+            let Some(updated_value) = next_value else {
+                break Err(value);
+            };
+            match update_counter.compare_exchange_weak(
+                value,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => value = reloaded_value,
+            }
+        }
+    };
 }
 
 fn release_live_handle(live: &AtomicU64) {
-    let _ = live.fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
-        value.checked_sub(1)
-    });
+    let _ = {
+        let update_counter = live;
+        let mut value = update_counter.load(Ordering::Acquire);
+        loop {
+            let next_value = value.checked_sub(1);
+            let Some(updated_value) = next_value else {
+                break Err(value);
+            };
+            match update_counter.compare_exchange_weak(
+                value,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => value = reloaded_value,
+            }
+        }
+    };
 }

@@ -41,7 +41,7 @@ pub(crate) fn read_root_routing(
     let mut children = Vec::new();
     let mut placements = BTreeSet::new();
     let mut previous = None;
-    for (index, entry) in frame.body.chunks_exact(88).enumerate() {
+    for (index, entry) in frame.body.as_chunks::<88>().0.iter().enumerate() {
         let start = 88 + index * 88;
         scope(
             record_key(entry).is_some()

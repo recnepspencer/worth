@@ -42,7 +42,7 @@ impl<'a> DropSetManifestV1View<'a> {
         hash.update(DROPPED_DIGEST_DOMAIN);
         hash.update(count.to_le_bytes());
         let mut prior = None;
-        for chunk in dropped.chunks_exact(24) {
+        for chunk in dropped.as_chunks::<24>().0.iter() {
             let record = read_record(chunk)?;
             if prior.is_some_and(|previous| previous >= record)
                 || record == source_basis.declaration_record()
@@ -104,7 +104,9 @@ impl<'a> DropSetManifestV1View<'a> {
 
     pub(super) fn collect_owned(self) -> Vec<PersistedRecordIdentity> {
         self.dropped
-            .chunks_exact(24)
+            .as_chunks::<24>()
+            .0
+            .iter()
             .map(|chunk| read_record(chunk).expect("validated dropped identity"))
             .collect()
     }
