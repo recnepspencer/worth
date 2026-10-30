@@ -1,4 +1,3 @@
-pub(crate) mod bounded_process;
 mod declaration;
 mod diagnostics;
 mod prebuilt_environment;

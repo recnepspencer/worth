@@ -6,8 +6,7 @@ use worth_store::physical_runtime::{
     PhysicalRecordResidencyPolicy, PhysicalSpeculativeWorkKind as Speculation,
 };
 
-#[path = "support/durability.rs"]
-mod durability;
+use crate::admitted_durability as durability;
 
 pub(crate) fn main() {
     let format = AdmittedPhysicalRecordFormat::admit(

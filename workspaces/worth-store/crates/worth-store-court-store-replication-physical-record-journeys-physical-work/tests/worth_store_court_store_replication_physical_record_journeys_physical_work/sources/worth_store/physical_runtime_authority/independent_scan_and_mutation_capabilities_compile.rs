@@ -7,8 +7,7 @@ use worth_store::physical_runtime::{
 };
 use worth_store_physical_backend::FilesystemAccessPosture;
 
-#[path = "support/durability.rs"]
-mod durability;
+use crate::admitted_durability as durability;
 
 #[allow(dead_code)]
 fn capabilities_typecheck() {

@@ -67,6 +67,10 @@ pub(crate) fn real_example(
     let request =
         PhysicalRecordOpen::new(format, access, durability).with_residency_policy(residency);
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn inspect_residency(serving: &ServingPhysicalRuntime) {
         let observation = serving.residency_observation();
         let metadata = observation.allocations().for_dimension(
@@ -80,6 +84,10 @@ pub(crate) fn real_example(
         );
     }
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn inspect_read_pressure(error: &RecordReadError) {
         if let Some(pressure) = error.pressure() {
             eprintln!(
@@ -101,6 +109,10 @@ pub(crate) fn protected_reader_example() {
         worth_store::physical_runtime::ServingPhysicalRuntime,
     };
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn read_across_publication(
         serving: &ServingPhysicalRuntime,
         record: PhysicalRecordId,
@@ -121,6 +133,10 @@ pub(crate) fn borrowed_chunk_example() {
         worth_store::physical_runtime::RecordStreamFailure,
     };
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn consume(mut session: RecordReadSession) -> Result<(), RecordStreamFailure> {
         while let Some(chunk) = session.next_chunk()? {
             let basis = chunk.basis();
@@ -141,6 +157,10 @@ pub(crate) fn bounded_copy_example() {
         worth_store::physical_runtime::RecordStreamFailure,
     };
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn copy_bounded(
         mut session: RecordReadSession,
         target: &mut [u8],
@@ -168,6 +188,10 @@ pub(crate) fn successor_physical_allocation_example() {
         worth_store::physical_runtime::ServingPhysicalRuntime,
     };
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn admit_recovery_bytes<'runtime>(
         runtime: &'runtime ServingPhysicalRuntime,
         bytes: NonZeroU64,
@@ -176,8 +200,16 @@ pub(crate) fn successor_physical_allocation_example() {
     }
 }
 
+#[expect(
+    dead_code,
+    reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+)]
 pub(crate) fn consume_payload<A, B, C, D>(_: A, _: B, _: C, _: D) {}
 
+#[expect(
+    dead_code,
+    reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+)]
 pub(crate) fn consume_copy(_: &[u8]) {}
 
 pub(crate) fn run_configuration_examples() {

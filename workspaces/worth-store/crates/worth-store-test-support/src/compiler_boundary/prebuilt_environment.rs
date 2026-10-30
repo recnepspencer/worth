@@ -52,7 +52,7 @@ fn read_declared_suite(
         let observed = outcomes
             .fixtures
             .get(&source_key)
-            .ok_or_else(|| UiRunFailure::UnobservedFixture(source_key))?;
+            .ok_or(UiRunFailure::UnobservedFixture(source_key))?;
         validate_observation(declaration.environment(), fixture, observed)?;
         if result.fixtures.is_empty() {
             result.environment_identity = observed.environment_identity.clone();

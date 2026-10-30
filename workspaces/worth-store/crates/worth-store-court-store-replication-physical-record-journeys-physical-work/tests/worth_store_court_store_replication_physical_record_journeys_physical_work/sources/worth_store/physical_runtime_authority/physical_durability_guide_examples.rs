@@ -7,6 +7,10 @@ mod mutation_example {
         ServingPhysicalRuntime,
     };
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn submit_platform_durable_mutation(
         runtime: &ServingPhysicalRuntime,
         batch: RecordAppendBatch,
@@ -52,6 +56,10 @@ mod mutation_example {
         }
     }
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn observe_mutation(handle: PhysicalMutationHandle) {
         match handle.wait() {
             PhysicalMutationOutcome::Completed(completed) => {
@@ -67,6 +75,10 @@ mod mutation_example {
         }
     }
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn main() {}
 }
 
@@ -77,6 +89,10 @@ mod checkpoint_example {
         PhysicalCheckpointRequest, ServingPhysicalRuntime,
     };
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn publish_fuzzy_checkpoint(runtime: &ServingPhysicalRuntime, idempotency_key: [u8; 32]) {
         let deadline = PhysicalCheckpointDeadline::after_milliseconds(5_000)
             .expect("the deadline must be nonzero");
@@ -104,6 +120,10 @@ mod checkpoint_example {
         }
     }
 
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+    )]
     fn main() {}
 }
 

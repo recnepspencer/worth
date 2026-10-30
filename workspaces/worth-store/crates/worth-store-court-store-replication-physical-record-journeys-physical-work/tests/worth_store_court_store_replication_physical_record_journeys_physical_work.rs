@@ -20,3 +20,6 @@ pub(crate) mod process;
 pub(crate) mod cost;
 #[path = "worth_store_court_store_replication_physical_record_journeys_physical_work/supported_programs/mod.rs"]
 mod supported_programs;
+
+#[path = "worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/support/durability.rs"]
+mod admitted_durability;

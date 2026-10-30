@@ -3,6 +3,10 @@ use worth_store::physical_runtime::{
     ServingPhysicalRuntime,
 };
 
+#[expect(
+    dead_code,
+    reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+)]
 fn detached_session(
     serving: &ServingPhysicalRuntime,
     record: PhysicalRecordId,

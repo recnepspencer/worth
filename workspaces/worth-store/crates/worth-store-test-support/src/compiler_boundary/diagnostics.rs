@@ -16,16 +16,15 @@ pub(super) fn checked_diagnostics(
 ) -> Vec<CheckedCompilerDiagnostic> {
     messages
         .iter()
-        .filter_map(|message| {
-            (message["level"].as_str() == Some("error")).then(|| CheckedCompilerDiagnostic {
-                level: "error".to_owned(),
-                code: message["code"]["code"].as_str().map(str::to_owned),
-                message: normalize(&semantic_message_text(message), workspace_root),
-                rendered: normalize(
-                    message["rendered"].as_str().unwrap_or_default(),
-                    workspace_root,
-                ),
-            })
+        .filter(|message| message["level"].as_str() == Some("error"))
+        .map(|message| CheckedCompilerDiagnostic {
+            level: "error".to_owned(),
+            code: message["code"]["code"].as_str().map(str::to_owned),
+            message: normalize(&semantic_message_text(message), workspace_root),
+            rendered: normalize(
+                message["rendered"].as_str().unwrap_or_default(),
+                workspace_root,
+            ),
         })
         .collect()
 }

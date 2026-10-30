@@ -4,6 +4,10 @@ use worth_store_physical_backend::{
 };
 use worth_store_physical_format::RecordArtifactFile;
 
+#[expect(
+    dead_code,
+    reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+)]
 fn addressed_read<D: LimitDimension, S: ArtifactTreeReadAllocator>(
     media: &QualifiedFilesystemMedia,
     grant: ReadGrant<D>,

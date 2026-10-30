@@ -7,13 +7,37 @@ use worth_store::physical_runtime::{
     SealedPhysicalDurabilityGroupMembers, WalAppendedPhysicalMutation,
 };
 enum WalGroupAppendDecision {
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive outcome projection retains each typed payload without fabricating a runtime value."
+    )]
     Appended(SealedPhysicalDurabilityGroupMembers),
     NotAdmitted {
+        #[expect(
+            dead_code,
+            reason = "Compile-only positive outcome projection retains each typed payload without fabricating a runtime value."
+        )]
         members: NonEmpty<PreparedPhysicalMutation>,
+        #[expect(
+            dead_code,
+            reason = "Compile-only positive outcome projection retains its typed cause without fabricating a runtime value."
+        )]
         cause: PhysicalWalGroupAppendFailureCause,
     },
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive outcome projection retains each typed payload without fabricating a runtime value."
+    )]
     AdmissionRejected(RejectedPhysicalDurabilityGroup),
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive outcome projection retains each typed payload without fabricating a runtime value."
+    )]
     Continue(PhysicalWalGroupAppendContinuation),
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive outcome projection retains each typed payload without fabricating a runtime value."
+    )]
     Inspect(IndeterminatePhysicalWalGroupAppend),
 }
 
@@ -47,11 +71,27 @@ use worth_store::physical_runtime::{
 };
 
 enum WalGroupBarrierDecision {
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive outcome projection retains each typed payload without fabricating a runtime value."
+    )]
     Durable(WalDurablePhysicalMutationMembers),
     Retry {
+        #[expect(
+            dead_code,
+            reason = "Compile-only positive outcome projection retains each typed payload without fabricating a runtime value."
+        )]
         appended: SealedPhysicalDurabilityGroupMembers,
+        #[expect(
+            dead_code,
+            reason = "Compile-only positive outcome projection retains its typed cause without fabricating a runtime value."
+        )]
         cause: PhysicalWalGroupBarrierFailureCause,
     },
+    #[expect(
+        dead_code,
+        reason = "Compile-only positive outcome projection retains each typed payload without fabricating a runtime value."
+    )]
     Inspect(IndeterminatePhysicalWalGroupBarrier),
 }
 

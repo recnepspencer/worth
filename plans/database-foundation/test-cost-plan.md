@@ -211,3 +211,24 @@ ruling permits function-local dead-code expectations on 15 compile-only consumer
 witnesses. No signatures, bodies, barriers, joins, limits, assertions, selectors
 or main behavior change. These are distinct from the independent-case sweep;
 shared-state race proofs retain their original physical coordination.
+
+The positive-program cutover also gives the durability specimen and bounded
+record declarations one physical court mount. Ordinary positive tests call that
+same owner; no program entry, compiler claim or runtime assertion is removed.
+Compile-only consumer functions and outcome payload fields carry local
+`expect(dead_code)` declarations where they intentionally accept values that
+the positive program cannot fabricate. Their original signatures, bodies and
+typed payloads remain checked. This does not confer runtime evidence on them.
+
+The outer-prebuild decision retires the unreachable
+`compiler_boundary/bounded_process.rs` execution implementation. Repository
+search of Store and `scripts/test_cost` found only its own declarations and its
+module mount; it contained no tests. Delete that dead implementation rather
+than retaining an unused second compiler-process owner. The result reader
+continues to check every attributed denial from the real outer compiler batch.
+
+Prebuilt nextest runs stream result events into their existing evidence log.
+`test_result_is_flushed_while_the_child_is_alive_and_is_not_duplicated` uses a
+real child that cannot finish until its first result is visible in the log.
+The normal exit footer remains the only indication of a completed lane; an
+interrupted capture is never rewritten into a completed capture.

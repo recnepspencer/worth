@@ -3,6 +3,10 @@ use worth_store::physical_runtime::{
     PhysicalMutationOutcome, PhysicalMutationPreparationOutcome, PhysicalMutationPreparationSuccess,
 };
 
+#[expect(
+    dead_code,
+    reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+)]
 fn consume_preparation(outcome: PhysicalMutationPreparationOutcome) {
     match outcome.into_raw() {
         TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
@@ -38,6 +42,10 @@ fn consume_preparation(outcome: PhysicalMutationPreparationOutcome) {
     }
 }
 
+#[expect(
+    dead_code,
+    reason = "Compile-only positive consumer witness; its signature and body are checked without fabricating admitted runtime inputs."
+)]
 fn consume_terminal(outcome: PhysicalMutationOutcome) {
     match outcome {
         PhysicalMutationOutcome::Completed(completed) => {
