@@ -13,6 +13,23 @@ from unit_plan import declare
 
 
 class CargoCaptureTests(unittest.TestCase):
+    def test_prebuilt_runtime_streams_once_and_retains_a_failed_exit_footer(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'runtime.log'
+            command = ['cargo', 'nextest', 'run', '--binaries-metadata', 'built.json']
+            def execute(actual, cwd, environment, log):
+                log.write('completed-result\n')
+                log.flush()
+                return subprocess.CompletedProcess(actual, 100, 'completed-result\n', '')
+            with patch('runtime_capture.execute', side_effect=execute), \
+                 patch('cargo_capture.subprocess.check_output', side_effect=['head\n', '']):
+                observed = CargoRunner(Path.cwd())(command, Path.cwd(), path)
+            captured = path.read_text()
+            self.assertEqual(observed.returncode, 100)
+            self.assertEqual(captured.count('completed-result'), 1)
+            self.assertIn('"capture": "ordered"', captured)
+            self.assertIn('Exit code: 100', captured)
+
     def test_unattributed_unsuccessful_compiler_process_refuses_without_inventing_a_target(self):
         for finished in (False, None):
             with self.subTest(finished=finished), tempfile.TemporaryDirectory() as temporary:

@@ -110,7 +110,8 @@ class CargoRunner:
         head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.repository, text=True).strip()
         clean = not subprocess.check_output(['git', 'status', '--short'], cwd=self.repository, text=True).strip()
         start = datetime.now(timezone.utc).isoformat()
-        ordered = command[:2] == ['cargo', 'test'] and '--doc' in command
+        streaming = command[:3] == ['cargo', 'nextest', 'run']
+        ordered = streaming or (command[:2] == ['cargo', 'test'] and '--doc' in command)
         marker = {'type': 'cargo-invocation', 'command': command, 'cwd': str(cwd),
                   'capture': 'ordered' if ordered else 'separate',
                   'mode': 'check' if command[1:2] in (['check'], ['clippy']) else 'build',
@@ -139,16 +140,21 @@ class CargoRunner:
             try:
                 if plan is not None:
                     verify(plan, command, cwd, self.environment)
-                result = subprocess.run(command, cwd=cwd, env=self.environment, stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT if ordered else subprocess.PIPE,
-                                        text=True, encoding='utf-8', errors='replace')
+                if streaming:
+                    from runtime_capture import execute
+                    result = execute(command, cwd, self.environment, log)
+                else:
+                    result = subprocess.run(command, cwd=cwd, env=self.environment, stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT if ordered else subprocess.PIPE,
+                                            text=True, encoding='utf-8', errors='replace')
                 result.stderr = result.stderr or ''
             except CompilerUnitRefusal as error:
                 refusal = error
                 result = subprocess.CompletedProcess(command, 125, '', str(error))
             except OSError as error:
                 result = subprocess.CompletedProcess(command, 127, '', str(error))
-            log.write(result.stdout)
+            if not streaming:
+                log.write(result.stdout)
             log.write('\n' + result.stderr)
             log.write('\n' + json.dumps({'type': 'cargo-result', 'exit_code': result.returncode}) + '\n')
             log.write(f'\nEnd: {datetime.now(timezone.utc).isoformat()}\nExit code: {result.returncode}\n')
