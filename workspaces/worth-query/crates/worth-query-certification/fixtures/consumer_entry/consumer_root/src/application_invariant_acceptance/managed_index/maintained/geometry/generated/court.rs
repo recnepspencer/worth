@@ -12,6 +12,7 @@ use worth_query_host::facade::{
 };
 mod cancellation;
 mod cold_history;
+mod interference;
 mod pending;
 mod population;
 mod reconstruction;

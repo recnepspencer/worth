@@ -684,9 +684,22 @@ the images after restoration. Both actual attempt obligations return to zero,
 and the warmed complete journey balances all final physical owners. All 30
 public managed-index controls pass. See
 [the pending recovery slice](milestone-9.19-phase2-generated-pending-plan.md).
-Cancellation after successful World movement, competing-winner interference,
-remaining hostile controls and whole-path growth remain open. This process-local
-pending court does not qualify crash/network persistence or a publication race.
+A genuine competing-winner interference court now prepares an independent
+Signal-only owner publication from the same available World head, parks generated
+suspension after its actual Native effect and lets Signal win the product CAS.
+The consumed winner retains the exact Relational admission and moves the actual
+Signal basis. The loser retains one Native effect with exact ProductPublicationLost
+and live World custody. Fresh current Source/Parent and fresh retained ordinary
+Source queries still answer endpoint 10 from the winning immutable image.
+Two fresh recovery continuations return exact StaleOccurrence with their carrier;
+the same catalog record, winner, answers and provider/rule work remain unchanged.
+Warmed final runtime shutdown balances all physical owners; it does not claim
+successful adoption or Native rollback. All 31 public managed-index controls pass.
+See [the Source interference slice](milestone-9.19-phase2-source-interference-plan.md).
+Adoption across an independent Signal winner remains an unfinished owner contract.
+Cancellation after successful World movement, remaining hostile controls and
+whole-path growth remain open. These process-local courts do not qualify
+crash/network persistence.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication
