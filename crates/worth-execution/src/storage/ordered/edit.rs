@@ -5,10 +5,6 @@ use super::{
 };
 use crate::ExecutionAllocationPolicy as Policy;
 use std::{cmp::Ordering, sync::Arc};
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn insert<K: Ord, V>(
     root: &Link<K, V>,
     entry: Arc<Entry<K, V>>,
@@ -33,10 +29,6 @@ pub(super) fn insert<K: Ord, V>(
         ),
     }
 }
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn remove<K: Ord, V>(
     root: &Link<K, V>,
     key: &K,

@@ -133,10 +133,6 @@ struct RelationTopologyNode {
     rewired: bool,
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn relation_topology_component(
     seed_index: usize,
     nodes: &[RelationTopologyNode],

@@ -24,6 +24,10 @@ pub(super) struct ClockCorrespondence {
 }
 
 impl ClockCorrespondence {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(super) fn of<Clock, Source>(source: &Arc<Source>) -> Self
     where
         Clock: WorthQueryNamedClock,

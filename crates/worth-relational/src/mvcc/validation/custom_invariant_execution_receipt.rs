@@ -54,10 +54,6 @@ impl CustomInvariantExecutionReceipt {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(crate) fn collect_custom_invariant_execution_receipts(
     executions: [&InvariantExecutionResult; 3],
     registry: &crate::validation::FrozenCustomInvariantRegistry,

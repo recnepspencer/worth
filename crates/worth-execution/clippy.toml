@@ -8,12 +8,13 @@ enum-variant-size-threshold = 32768
 type-complexity-threshold = 512
 # Geometry mints carry reviewed expectations at their owning call sites.
 disallowed-methods = [
-  { path = "std::cmp::PartialOrd::lt", reason = "Compare declared semantic identity" },
-  { path = "std::cmp::PartialOrd::le", reason = "Compare declared semantic identity" },
-  { path = "std::cmp::PartialOrd::gt", reason = "Compare declared semantic identity" },
-  { path = "std::cmp::PartialOrd::ge", reason = "Compare declared semantic identity" },
-  { path = "std::cmp::Ord::cmp", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
-  { path = "std::cmp::PartialOrd::partial_cmp", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
+  { path = "std::any::TypeId::of", reason = "Type identity is for point lookup; canonical order uses declared identity" },
+  { path = "std::ptr::from_ref", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::ptr::from_mut", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::ptr::NonNull::as_ptr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::ptr::NonNull::addr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::sync::Arc::as_ptr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::rc::Rc::as_ptr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
   { path = "std::any::type_name", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::any::type_name_of_val", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::thread::available_parallelism", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
@@ -56,5 +57,3 @@ ignore-interior-mutability = [
 ]
 
 # Operator-based pointer ordering is outside disallowed-methods coverage (owner ruling).
-# Trait comparison methods are banned broadly because Clippy resolves their trait DefId,
-# not a receiver-specific TypeId path; semantic comparisons carry local expectations.

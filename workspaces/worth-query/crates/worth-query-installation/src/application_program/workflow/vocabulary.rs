@@ -1,6 +1,5 @@
 use std::any::TypeId;
 use std::marker::PhantomData;
-
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationProgramRevision, ApplicationWorkflowApprovalRef,
@@ -272,6 +271,10 @@ where
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn advance_binding_matches<Capability, Operation>(&self) -> bool
     where
         Capability: worth_query_declaration::facade::application_capability::ApplicationCapabilityMarkerIdentity<
@@ -296,6 +299,10 @@ where
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn operation_binding_matches<Operation>(&self) -> bool
     where
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
@@ -312,6 +319,10 @@ where
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn instance_start_binding_matches<Capability, Operation>(&self) -> bool
     where
         Capability: worth_query_declaration::facade::application_capability::ApplicationCapabilityMarkerIdentity<
@@ -336,6 +347,10 @@ where
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn authoring_binding_matches<Capability, Operation>(&self) -> bool
     where
         Capability: worth_query_declaration::facade::application_capability::ApplicationCapabilityMarkerIdentity<

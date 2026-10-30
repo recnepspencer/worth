@@ -87,6 +87,10 @@ impl SignalGraph {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn replacement_clone_local_observation(&self) -> SignalGraphCloneLocalObservation {
         SignalGraphCloneLocalObservation {
             lifecycle_token_identity: Arc::as_ptr(&self.lifecycle_token) as usize,

@@ -11,6 +11,10 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() {
     let world = installed_authorization_world(true);
     let selected = world

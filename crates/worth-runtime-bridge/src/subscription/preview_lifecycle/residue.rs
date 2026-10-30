@@ -223,10 +223,6 @@ pub struct BridgeSubscriptionPreviewLifecycleResidueEnvelope {
 }
 
 impl BridgeSubscriptionPreviewLifecycleResidueEnvelope {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn capture(
         preview_active: &BridgePreviewActiveSubscription,
         preview_work_trace: &BridgeSubscriptionPreviewWorkTrace,

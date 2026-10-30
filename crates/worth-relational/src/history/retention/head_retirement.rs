@@ -54,6 +54,10 @@ impl RelationalBranchRetentionBinding {
             .bind_current_head()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn reserve_head_retirement_capacity(
         &self,
         identity: &RelationalBranchIdentity,

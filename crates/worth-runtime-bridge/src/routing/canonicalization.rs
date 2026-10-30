@@ -9,10 +9,6 @@ use crate::routing::lowering::{BridgeInvalidationTarget, BridgeSubscriptionSlice
 use crate::routing::planning::BridgeRouteIdentity;
 use crate::snapshot::SnapshotReadRequest;
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(crate) fn canonical_route_entry_order(
     left: &EligibleRouteEntry,
     right: &EligibleRouteEntry,
@@ -37,10 +33,6 @@ pub(crate) fn canonical_route_entry_order(
         })
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(crate) fn canonical_snapshot_request_order(
     left: &SnapshotReadRequest,
     right: &SnapshotReadRequest,

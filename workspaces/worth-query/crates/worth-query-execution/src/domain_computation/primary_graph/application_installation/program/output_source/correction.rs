@@ -17,6 +17,10 @@ where
     Program: ApplicationProgramDefinition<Schema>,
 {
     /// Publishes the sealed inverse and reserves its ordinary required-output custody.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn commit_required_output_correction<Root, Source>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

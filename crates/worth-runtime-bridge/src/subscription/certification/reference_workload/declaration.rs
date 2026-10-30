@@ -19,10 +19,6 @@ pub struct BridgeSubscriptionReferenceWorkloadDeclaration {
 }
 
 impl BridgeSubscriptionReferenceWorkloadDeclaration {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn plan(
         manifest: &BridgeSubscriptionReferenceWorkloadManifestSealed,
         lane_requests: Vec<BridgeSubscriptionReferenceWorkloadLaneRequest>,

@@ -12,10 +12,6 @@ struct ObservedKey {
 }
 
 impl PartialEq for ObservedKey {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other).is_eq()
     }
@@ -24,20 +20,12 @@ impl PartialEq for ObservedKey {
 impl Eq for ObservedKey {}
 
 impl PartialOrd for ObservedKey {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for ObservedKey {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.comparisons.set(self.comparisons.get() + 1);
         self.value.cmp(&other.value)

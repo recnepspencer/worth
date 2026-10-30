@@ -173,6 +173,10 @@ impl SignalOwnerAdmissionTable {
         Ok(((), self.records.len()))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn unpublish(&self, slot_index: usize, record: &SignalOwnerAdmissionRecord) -> usize {
         let _publication = self.lock_publication();
         let published = self.records[slot_index].load_full();

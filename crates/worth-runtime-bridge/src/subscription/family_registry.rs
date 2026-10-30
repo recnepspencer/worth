@@ -216,10 +216,6 @@ pub(crate) fn phase_one_subscription_families(
     ])
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn canonical_family_order(
     left: &BridgeSubscriptionDeclarationFamily,
     right: &BridgeSubscriptionDeclarationFamily,

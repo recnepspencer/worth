@@ -187,6 +187,10 @@ impl<'a> ExecutionResourceLease<'a> {
         self.reserve_entry_with(None)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn reserve_entry_with(
         &self,
         memory_bytes: Option<u64>,

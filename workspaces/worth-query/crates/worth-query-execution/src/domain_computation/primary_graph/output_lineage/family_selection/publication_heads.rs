@@ -19,10 +19,6 @@ pub(in crate::domain_computation::primary_graph::output_lineage) struct Publicat
 }
 
 impl<'a> PublicationHeads<'a> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(in crate::domain_computation::primary_graph::output_lineage) fn insert(
         &mut self,
         partition: Option<[u8; 32]>,

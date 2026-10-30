@@ -155,10 +155,6 @@ impl RecoveredSchemaBasis {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn canonical_authority_snapshot(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<SchemaAuthoritySnapshot, DurabilityError> {

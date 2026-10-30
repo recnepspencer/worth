@@ -118,10 +118,6 @@ pub struct PlannedStructuralMatchPacketSet {
 }
 
 impl PlannedStructuralMatchPacketSet {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn new(
         contract: AdmittedStructuralComparisonContract,
         validated_declaration: ValidatedStructuralIdentityDeclaration,

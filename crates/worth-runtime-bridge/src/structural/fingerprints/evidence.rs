@@ -11,10 +11,6 @@ pub struct StructuralFingerprintRecordValueEvidenceSet {
 }
 
 impl StructuralFingerprintRecordValueEvidenceSet {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(super) fn from_validated_records(records: &[ValidatedSnapshotReadRecord]) -> Self {
         let mut evidence = records
             .iter()

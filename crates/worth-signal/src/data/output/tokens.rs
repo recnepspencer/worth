@@ -67,14 +67,12 @@ macro_rules! define_string_token {
         impl Eq for $name {}
 
         impl PartialOrd for $name {
-            #[expect(clippy::disallowed_methods, reason = "Comparison uses declared semantic keys; type names label diagnostics only")]
             fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
                 Some(self.cmp(other))
             }
         }
 
         impl Ord for $name {
-            #[expect(clippy::disallowed_methods, reason = "Comparison uses declared semantic keys; type names label diagnostics only")]
             fn cmp(&self, other: &Self) -> std::cmp::Ordering {
                 self.value.cmp(&other.value)
             }

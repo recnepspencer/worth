@@ -36,10 +36,6 @@ pub(in crate::domain_computation) struct WorthQueryBoundMutationPreconditions {
     expected_fact_count: usize,
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(in crate::domain_computation) fn bind_mutation_preconditions<Schema, Operation, Scope>(
     requested: impl std::borrow::Borrow<TypedMutationPreconditions<Schema, Operation, Scope>>,
     contracts: &WorthQueryCompiledApplicationOperationContracts,

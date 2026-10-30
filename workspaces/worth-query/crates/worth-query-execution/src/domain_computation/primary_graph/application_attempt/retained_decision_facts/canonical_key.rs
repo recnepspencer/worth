@@ -47,10 +47,6 @@ impl AdmittedFactKey {
             .as_ref()
             .map(|(bytes, limit)| (bytes.bytes(), *limit))
     }
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(in crate::domain_computation::primary_graph) fn compare(
         &self,
         other: &Self,
@@ -72,10 +68,6 @@ impl AdmittedFactKey {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn compare_bytes(
     left: &[u8],
     right: &[u8],
@@ -96,10 +88,6 @@ fn compare_bytes(
 }
 
 impl Ord for AdmittedFactKey {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.locator
             .bytes()
@@ -116,19 +104,11 @@ impl Ord for AdmittedFactKey {
     }
 }
 impl PartialOrd for AdmittedFactKey {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl PartialEq for AdmittedFactKey {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other).is_eq()
     }

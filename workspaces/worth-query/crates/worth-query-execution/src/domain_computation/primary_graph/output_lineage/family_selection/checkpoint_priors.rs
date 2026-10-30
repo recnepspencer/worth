@@ -59,10 +59,6 @@ pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointIde
 }
 
 impl WorthQueryApplicationOutputLineage {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(in crate::domain_computation::primary_graph) fn checkpoint_prior_outputs(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

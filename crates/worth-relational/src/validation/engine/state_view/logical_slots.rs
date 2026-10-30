@@ -51,10 +51,6 @@ impl InvariantStateView<'_> {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn merge_slots(
     visible: impl Iterator<Item = usize>,
     base: impl Iterator<Item = usize>,

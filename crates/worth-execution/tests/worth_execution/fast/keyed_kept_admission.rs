@@ -19,19 +19,11 @@ impl PartialEq for Key {
 }
 impl Eq for Key {}
 impl PartialOrd for Key {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl Ord for Key {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
     }

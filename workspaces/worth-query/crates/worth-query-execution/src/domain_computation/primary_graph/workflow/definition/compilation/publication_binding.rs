@@ -171,10 +171,6 @@ impl WorkflowDefinitionPublicationBinding {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn separate_compiled_definition(
     compiled: ColdCompiledWorkflowDefinition,
 ) -> Result<

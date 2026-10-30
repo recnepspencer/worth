@@ -112,10 +112,6 @@ impl RelationalBranchReferenceRegistry {
         self.write().cells = cells.into_iter().collect();
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn checkpoints(&self) -> Vec<RelationalBranchCellCheckpoint> {
         let mut checkpoints = self
             .values()
@@ -127,10 +123,6 @@ impl RelationalBranchReferenceRegistry {
     }
 
     /// Every branch's lifecycle posture, in branch order.
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn lifecycle_postures(
         &self,
     ) -> Vec<crate::durability::data::DurableBranchLifecycleImage> {

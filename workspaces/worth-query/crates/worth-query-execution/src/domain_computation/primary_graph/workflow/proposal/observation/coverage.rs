@@ -116,10 +116,6 @@ fn observe_proposal_scope(
     .with_captured(captured_identity.map(|profile| profile.0)))
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn observe_coverages(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

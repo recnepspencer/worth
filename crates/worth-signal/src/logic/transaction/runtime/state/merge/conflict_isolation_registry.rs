@@ -215,10 +215,6 @@ fn descriptor_digest(
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn registry_digest(descriptors: &[ConflictIsolationPolicyDescriptor]) -> String {
     let mut canonical = descriptors.to_vec();
     canonical.sort_by(|left, right| {

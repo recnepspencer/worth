@@ -113,20 +113,12 @@ impl PartialEq for BridgeIdentityEvidence {
 impl Eq for BridgeIdentityEvidence {}
 
 impl PartialOrd for BridgeIdentityEvidence {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for BridgeIdentityEvidence {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.payload
             .cmp(&other.payload)

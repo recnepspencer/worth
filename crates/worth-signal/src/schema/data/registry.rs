@@ -121,10 +121,6 @@ impl SignalSchemaRegistry {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn registry_digest(descriptors: &[SignalSchemaDescriptor]) -> String {
     let mut canonical_descriptors = descriptors.to_vec();
     canonical_descriptors.sort_by(|left, right| {

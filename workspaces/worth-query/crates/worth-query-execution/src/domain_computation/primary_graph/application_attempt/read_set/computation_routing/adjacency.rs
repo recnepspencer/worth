@@ -27,10 +27,6 @@ fn set_allowance(key: &mut Key, value: usize) {
         *maximum_work_units = value;
     }
 }
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn locus_order(left: &Key, right: &Key) -> Ordering {
     match (left, right) {
         (

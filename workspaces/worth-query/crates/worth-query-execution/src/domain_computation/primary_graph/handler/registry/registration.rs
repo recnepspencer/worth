@@ -8,6 +8,10 @@ pub(super) enum HandlerOrigin {
 }
 
 impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(super) fn register_resolved<Binding, Handler>(
         &mut self,
         binding_identity: &ApplicationSchemaBindingIdentity,

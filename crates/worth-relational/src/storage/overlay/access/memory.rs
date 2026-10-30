@@ -66,10 +66,6 @@ pub(crate) fn release_ids(ids: Vec<PartitionId>, memory: &mut dyn PartitionIdMem
     memory.release(bytes);
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn merge_partition_ids(
     base: Vec<PartitionId>,
     staged: Vec<PartitionId>,

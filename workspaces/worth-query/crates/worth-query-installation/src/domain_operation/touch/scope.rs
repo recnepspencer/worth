@@ -16,10 +16,6 @@ pub enum WorthQueryOperationTouchScope {
 }
 
 impl WorthQueryOperationTouchScope {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn canonical_order(left: &Self, right: &Self) -> Ordering {
         touch_rank(left)
             .cmp(&touch_rank(right))
@@ -73,10 +69,6 @@ fn touch_rank(scope: &WorthQueryOperationTouchScope) -> u8 {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn compare_binding(
     left: &ApplicationSchemaBindingIdentity,
     right: &ApplicationSchemaBindingIdentity,

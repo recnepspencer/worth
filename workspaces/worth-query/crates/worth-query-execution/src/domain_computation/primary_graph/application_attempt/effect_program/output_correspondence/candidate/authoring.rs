@@ -20,6 +20,10 @@ impl<Schema, Operation, Input, Scope>
             .prepare_test_contract::<Schema, Contract>();
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph) fn prepare_output_contract<Binding>(
         &mut self,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>

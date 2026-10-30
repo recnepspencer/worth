@@ -11,6 +11,10 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::transactions::CreatedEntityRef;
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph::application_attempt) fn birth_subject<
         Schema,
         Binding,

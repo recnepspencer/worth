@@ -147,10 +147,6 @@ fn metered<T>(
 // is unsupported only when the entire group has no prior or supplied fields.
 // Duplicate operations for one aspect and duplicate entity intents remain refused
 // upstream; this projection never supplies sequence admission authority.
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn canonicalize_structs(
     touches: &mut Vec<ValidatedEntityStructTouch<'_>>,
     unrepresentable: &mut Vec<ValidatedMutationTouch>,

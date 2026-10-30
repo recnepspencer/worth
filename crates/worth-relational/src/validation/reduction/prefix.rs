@@ -168,10 +168,6 @@ impl ReducedInvariantPrefix {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn compare_envelopes(
     left: &InvariantWorkerEnvelope,
     right: &InvariantWorkerEnvelope,

@@ -12,10 +12,6 @@ use crate::{
     package_requirements::WorthQueryInstallationContributionCategory,
 };
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn validate_package_members(
     package: &mut WorthQueryPortableDomainPackage,
 ) -> Result<(), WorthQueryPortablePackageValidationDenial> {
@@ -40,10 +36,6 @@ pub(super) fn validate_package_members(
     validate_workflow_artifact_closure(&package.domain_operations, &package.artifact_contracts)
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn validate_artifact_contracts(
     package: &mut WorthQueryPortableDomainPackage,
 ) -> Result<(), WorthQueryPortablePackageValidationDenial> {

@@ -82,10 +82,6 @@ pub(super) fn collect_source_footprints(
     Ok(footprints)
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) {
     footprint.aspects.sort_by(|left, right| {
         (left.entity, &left.aspect, &left.field).cmp(&(right.entity, &right.aspect, &right.field))

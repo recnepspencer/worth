@@ -107,10 +107,6 @@ impl WorthQueryEvidenceIdentity {
         }
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn compare_same_scheme(
         &self,
         other: &Self,

@@ -43,6 +43,10 @@ pub struct WorthQueryPreparedCorrectionSource {
 }
 
 impl WorthQueryPreparedCorrectionSource {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(super) fn retain<
         Schema: ApplicationSchema,
         C: ApplicationCorrectionBinding<Schema>,
@@ -166,6 +170,10 @@ impl WorthQueryPreparedCorrectionSource {
     pub(crate) fn target_branch(&self) -> &BranchId {
         &self.target_branch
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(crate) fn is_action_binding<Binding: 'static>(&self) -> bool {
         self.action_binding == std::any::TypeId::of::<Binding>()
     }

@@ -24,6 +24,10 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
     /// execution posture the owner's binding serves: the declared posture must
     /// be that one. A declared equivalence predicate is refused because no
     /// installed predicate is visible here.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph) fn record_computation_owner<
         Feature,
         Computation,

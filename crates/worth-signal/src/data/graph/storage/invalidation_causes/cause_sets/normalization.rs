@@ -68,10 +68,6 @@ impl NormalizedCauseSet {
         self.0
     }
 }
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn less(left: &(usize, Cause), right: &(usize, Cause)) -> bool {
     left.1
         .key

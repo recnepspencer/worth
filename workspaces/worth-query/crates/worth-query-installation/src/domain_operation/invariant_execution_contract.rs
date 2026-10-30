@@ -181,10 +181,6 @@ pub enum WorthQueryInvariantExecutionContract {
 }
 
 impl WorthQueryInvariantExecutionContract {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn declared(
         requirements: impl IntoIterator<Item = WorthQueryInstalledInvariantExecutionRequirement>,
     ) -> Result<Self, &'static str> {

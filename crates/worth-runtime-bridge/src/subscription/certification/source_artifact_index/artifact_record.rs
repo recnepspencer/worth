@@ -76,10 +76,6 @@ impl BridgeSubscriptionSourceArtifactRecord {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn source_artifact_record_ordering(
     left: &BridgeSubscriptionSourceArtifactRecord,
     right: &BridgeSubscriptionSourceArtifactRecord,

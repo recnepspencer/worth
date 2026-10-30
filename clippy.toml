@@ -6,6 +6,7 @@
 too-many-arguments-threshold = 32
 enum-variant-size-threshold = 32768
 type-complexity-threshold = 512
+# Ordering by TypeId, type name or address is banned at source functions; comparison traits are unrestricted.
 # Geometry mints carry reviewed expectations at their owning call sites.
 disallowed-methods = [
   { path = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", reason = "published geometry is shifted only for a Portal entrance start, a Portal's content anchor, or a nested Portal's anchor; construct published truth through truth_geometry" },

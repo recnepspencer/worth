@@ -29,10 +29,6 @@ impl SymbolTableSnapshot {
             .map_err(super::field_text_recovery_stop)
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn merge_new_entries(&mut self, mut new_entries: Vec<(Symbol, StoredSymbolText)>) {
         if new_entries.is_empty() {
             return;

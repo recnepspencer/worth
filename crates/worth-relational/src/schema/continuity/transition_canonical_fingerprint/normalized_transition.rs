@@ -139,10 +139,6 @@ impl<'a> CanonicalSchemaDiffDetail<'a> {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn compare_atoms_canonically(
     left: &CanonicalSchemaDiffAtom<'_>,
     right: &CanonicalSchemaDiffAtom<'_>,

@@ -1,6 +1,10 @@
 //! Guard observations over a genuine installed source and prepared input.
 use super::*;
 impl<Query: 'static, Value: 'static> PreparedProducerInput<Query, Value> {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn assert_transport_guards(
         self,
         foreign: InstalledProducerEdition,

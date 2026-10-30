@@ -14,10 +14,6 @@ pub(in crate::domain_computation::primary_graph) struct RecordedSettlementIdenti
 }
 
 impl Ord for RecordedSettlementIdentity {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.source
             .cmp(&other.source)
@@ -28,10 +24,6 @@ impl Ord for RecordedSettlementIdentity {
 }
 
 impl PartialOrd for RecordedSettlementIdentity {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }

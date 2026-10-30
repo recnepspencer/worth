@@ -18,10 +18,6 @@ impl LineageDecisionLog {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn canonical_decision_cmp(
     left: &LineageDecisionRecord,
     right: &LineageDecisionRecord,

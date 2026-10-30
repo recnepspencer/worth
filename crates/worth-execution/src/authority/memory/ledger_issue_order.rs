@@ -48,10 +48,6 @@ impl LedgerIssueOrder {
 }
 
 impl Ord for LedgerIssueOrder {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         match (&self.0, &other.0) {
             (Digits::Small(a), Digits::Small(b)) => a.cmp(b),
@@ -63,10 +59,6 @@ impl Ord for LedgerIssueOrder {
 }
 
 impl PartialOrd for LedgerIssueOrder {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }

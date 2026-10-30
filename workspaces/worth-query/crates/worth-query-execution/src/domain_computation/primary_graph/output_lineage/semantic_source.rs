@@ -11,10 +11,6 @@ pub(in crate::domain_computation::primary_graph) struct SemanticSource {
 }
 
 impl Ord for SemanticSource {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         let prefix = |source: &Self| {
             (
@@ -33,10 +29,6 @@ impl Ord for SemanticSource {
 }
 
 impl PartialOrd for SemanticSource {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }

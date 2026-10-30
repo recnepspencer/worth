@@ -10,10 +10,6 @@ use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::data::StructuralRelationRecord;
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(in crate::derived_relation) fn acquire(
     registry: &RelationalSchemaRegistry,
     definition: &Handle,

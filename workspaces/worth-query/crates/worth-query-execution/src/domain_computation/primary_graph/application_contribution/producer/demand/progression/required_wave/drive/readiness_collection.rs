@@ -18,10 +18,6 @@ pub(super) enum CollectedRequiredWave<'owner, 'custody, Schema: ApplicationSchem
 }
 
 #[allow(clippy::too_many_arguments)]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn collect<'owner, 'custody, 'collection, Schema, Family>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,

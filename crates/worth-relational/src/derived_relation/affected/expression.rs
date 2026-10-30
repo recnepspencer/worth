@@ -34,19 +34,11 @@ impl PartialEq for Position {
 }
 impl Eq for Position {}
 impl PartialOrd for Position {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 impl Ord for Position {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.order().cmp(&other.order())
     }

@@ -134,10 +134,6 @@ pub struct BridgeSubscriptionOfflineAuditPlan {
 }
 
 impl BridgeSubscriptionOfflineAuditPlan {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn admit(
         bundle_index: &BridgeSubscriptionOfflineAuditBundleIndex,
         comparison_reports: Vec<&BridgeSubscriptionCertificationComparisonReport>,

@@ -20,10 +20,6 @@ pub(super) fn contains<T>(root: &Link<T>, partition: PartitionIdentity) -> bool 
     leaf(root, partition).is_some()
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn leaf<T>(root: &Link<T>, partition: PartitionIdentity) -> Option<&T> {
     let mut current = root.as_deref();
     while let Some(node) = current {
@@ -36,10 +32,6 @@ pub(super) fn leaf<T>(root: &Link<T>, partition: PartitionIdentity) -> Option<&T
     None
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn search_depth<T>(root: &Link<T>, partition: PartitionIdentity) -> (usize, bool) {
     let mut depth = 0;
     let mut current = root.as_deref();
@@ -54,10 +46,6 @@ pub(super) fn search_depth<T>(root: &Link<T>, partition: PartitionIdentity) -> (
     (depth, false)
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn deletion_depth<T>(root: &Link<T>, partition: PartitionIdentity) -> Option<usize> {
     let mut depth = 0;
     let mut current = root.as_deref();
@@ -101,10 +89,6 @@ pub(super) fn insert<T: Clone, E>(
     )
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn update<T, E>(
     root: &Link<T>,
     partition: PartitionIdentity,

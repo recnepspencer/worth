@@ -22,10 +22,6 @@ pub(super) fn family_declarations() -> [[(TypeId, &'static str); 2]; 2] {
 }
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn family_key_order_follows_declared_identity() {
     for families in family_declarations() {
         assert_ne!(families[0].0, families[1].0);

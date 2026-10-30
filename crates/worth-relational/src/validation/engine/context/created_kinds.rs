@@ -8,10 +8,6 @@ type CreatedKey<'a> = (PartitionId, KindId, &'a ClientKey);
 pub(super) type CreatedKinds<'a> = Vec<CreatedKey<'a>>;
 
 impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn created_entity_kind(&self, created: &CreatedEntityRef) -> Option<KindId> {
         let rows = self
             .created_kinds

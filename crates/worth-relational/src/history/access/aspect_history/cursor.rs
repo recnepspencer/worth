@@ -234,10 +234,6 @@ impl RelationalCanonicalRecordHistoryCursor {
 }
 
 impl RetainedCanonicalRecordHistory {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn includes(
         &self,
         patch: &crate::publication::patch::data::PublishedAuthoritativeRecordPatch,

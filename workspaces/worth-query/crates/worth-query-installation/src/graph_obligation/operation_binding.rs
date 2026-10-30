@@ -102,10 +102,6 @@ pub(crate) fn bind_capability_operation_obligations(
     .map_err(Into::into)
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn graph_read_obligations(
     contract: &WorthQueryOperationGraphReadContract,
 ) -> Result<Vec<WorthQueryInstalledGraphObligationContract>, Denial> {

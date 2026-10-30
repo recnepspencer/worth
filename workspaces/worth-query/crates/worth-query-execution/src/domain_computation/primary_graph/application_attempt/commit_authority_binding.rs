@@ -34,7 +34,7 @@ pub(crate) struct WorthQueryRetainedGovernedInput {
 impl WorthQueryRetainedGovernedInput {
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     fn from_admission<Input>(
         input: &ApplicationSharedInput<Input>,
@@ -101,7 +101,7 @@ impl WorthQueryRetainedGovernedInput {
     #[cfg(test)]
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     pub(crate) fn axis_probe(governed_identity: [u8; 32]) -> Self {
         Self {

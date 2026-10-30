@@ -60,10 +60,6 @@ impl PartialEq<usize> for HistoryLimit {
 }
 
 impl PartialOrd<usize> for HistoryLimit {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &usize) -> Option<std::cmp::Ordering> {
         self.0.partial_cmp(other)
     }
@@ -76,10 +72,6 @@ impl PartialEq<HistoryLimit> for usize {
 }
 
 impl PartialOrd<HistoryLimit> for usize {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &HistoryLimit) -> Option<std::cmp::Ordering> {
         self.partial_cmp(&other.0)
     }
@@ -115,10 +107,6 @@ impl PartialEq<usize> for DetailLimit {
 }
 
 impl PartialOrd<usize> for DetailLimit {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &usize) -> Option<std::cmp::Ordering> {
         self.0.partial_cmp(other)
     }
@@ -131,10 +119,6 @@ impl PartialEq<DetailLimit> for usize {
 }
 
 impl PartialOrd<DetailLimit> for usize {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &DetailLimit) -> Option<std::cmp::Ordering> {
         self.partial_cmp(&other.0)
     }

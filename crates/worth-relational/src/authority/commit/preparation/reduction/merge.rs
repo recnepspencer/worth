@@ -59,20 +59,12 @@ impl<K: Ord> PartialEq for MergeHead<K> {
 impl<K: Ord> Eq for MergeHead<K> {}
 
 impl<K: Ord> PartialOrd for MergeHead<K> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl<K: Ord> Ord for MergeHead<K> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.key
             .cmp(&other.key)

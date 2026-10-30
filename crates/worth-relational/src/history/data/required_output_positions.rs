@@ -155,10 +155,6 @@ fn insert(
     )
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn compare(
     route: &PublicationRoute,
     meaning: &Meaning,

@@ -19,6 +19,10 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         self.owned_runtime()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn contains_action<Binding: 'static>(&self) -> bool {
         self.owns_action(TypeId::of::<Binding>().into_external())
     }

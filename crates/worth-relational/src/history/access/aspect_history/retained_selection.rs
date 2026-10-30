@@ -40,10 +40,6 @@ impl RelationalRecordHistorySelection {
 
 impl RelationalRuntime {
     /// Limits are checked before walking, copying, or canonicalizing the input.
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn retain_record_history_selection(
         &self,
         execution: ExecutionRequest<'_, '_>,

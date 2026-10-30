@@ -239,10 +239,6 @@ impl FrozenMergeStrategyRegistry {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn registry_digest(descriptors: &[MergeStrategyDescriptor]) -> String {
     let mut canonical = descriptors.to_vec();
     canonical.sort_by(|left, right| {

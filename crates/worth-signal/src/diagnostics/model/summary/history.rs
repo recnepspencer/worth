@@ -49,10 +49,6 @@ impl ExecutionHistorySummary {
         cloned
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn from_graph(
         graph: &SignalGraph,
         profile: DiagnosticsTier,
@@ -319,10 +315,6 @@ fn retain_newest_fact<'a>(
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn compare_explanation_fact_recency(left: &&ExplanationFact, right: &&ExplanationFact) -> Ordering {
     right
         .explanation

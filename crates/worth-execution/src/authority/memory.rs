@@ -230,10 +230,6 @@ impl SerialMemoryBudget {
         Ok(())
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn lock_order(&self) -> Vec<(usize, &Arc<SerialLedger>)> {
         let mut order: Vec<_> = self.ledgers.iter().enumerate().collect();
         order.sort_unstable_by(|(_, a), (_, b)| a.issue_order.cmp(&b.issue_order));

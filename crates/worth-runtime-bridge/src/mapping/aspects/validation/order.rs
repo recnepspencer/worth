@@ -1,9 +1,5 @@
 use super::super::registration::BridgeAspectRegistration;
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(crate) fn canonical_aspect_registration_order(
     left: &BridgeAspectRegistration,
     right: &BridgeAspectRegistration,

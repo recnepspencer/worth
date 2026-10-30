@@ -19,10 +19,6 @@ struct Reader {
     control: Arc<Control>,
 }
 impl Reader {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn check(&self, view: &StructuralRelationView<'_>, proofs: &[PreparedDerivedRelationRead]) {
         let members = self.control.members.lock().unwrap();
         let adjacency = DerivedRelationReadShape::Adjacency { reverse: false };

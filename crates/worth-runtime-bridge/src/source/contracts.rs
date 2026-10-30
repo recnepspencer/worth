@@ -65,10 +65,6 @@ pub struct AdmittedSourceRegistry {
 }
 
 impl AdmittedSourceRegistry {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn freeze(mut declarations: Vec<SourceDeclaration>) -> Result<Self, BridgeBuildError> {
         declarations.sort_by(|left, right| {
             left.declaration_identity()

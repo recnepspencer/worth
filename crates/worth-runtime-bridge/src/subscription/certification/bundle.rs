@@ -32,10 +32,6 @@ pub struct BridgeSubscriptionCertificationBundleDraft {
 }
 
 impl BridgeSubscriptionCertificationBundleDraft {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn assemble(
         assembly_plan: BridgeSubscriptionCertificationAssemblyPlan,
         cost_profile: BridgeSubscriptionCertificationCostProfile,

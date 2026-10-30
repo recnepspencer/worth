@@ -231,20 +231,12 @@ impl<Tag> PartialEq for BridgeIdentity<Tag> {
 impl<Tag> Eq for BridgeIdentity<Tag> {}
 
 impl<Tag> PartialOrd for BridgeIdentity<Tag> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl<Tag> Ord for BridgeIdentity<Tag> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         match (&self.payload, &other.payload) {
             (BridgeIdentityPayload::OpaqueText, BridgeIdentityPayload::OpaqueText) => {

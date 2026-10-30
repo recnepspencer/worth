@@ -5,10 +5,6 @@ use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let world = installed_authorization_world(true);
     let request = live_scope();
@@ -140,10 +136,6 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
 }
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
     let mut world = installed_authorization_world(true);
     assert!(!world
@@ -226,10 +218,6 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
 }
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn program_output_producer_names_an_operation_not_installed_as_conditional() {
     {
         let mut world = installed_authorization_world(true);

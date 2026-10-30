@@ -34,20 +34,12 @@ macro_rules! causal_identity_type {
         }
 
         impl Ord for $name {
-            #[expect(
-                clippy::disallowed_methods,
-                reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-            )]
             fn cmp(&self, other: &Self) -> Ordering {
                 self.as_str().cmp(other.as_str())
             }
         }
 
         impl PartialOrd for $name {
-            #[expect(
-                clippy::disallowed_methods,
-                reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-            )]
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 Some(self.cmp(other))
             }
@@ -83,20 +75,12 @@ macro_rules! causal_label_identity_type {
         }
 
         impl Ord for $name {
-            #[expect(
-                clippy::disallowed_methods,
-                reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-            )]
             fn cmp(&self, other: &Self) -> Ordering {
                 self.as_str().cmp(other.as_str())
             }
         }
 
         impl PartialOrd for $name {
-            #[expect(
-                clippy::disallowed_methods,
-                reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-            )]
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 Some(self.cmp(other))
             }
@@ -164,20 +148,12 @@ impl From<WorthQueryEvidenceIdentity> for CausalEvidenceReferenceDigest {
 }
 
 impl Ord for CausalEvidenceReferenceDigest {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         self.as_str().cmp(other.as_str())
     }
 }
 
 impl PartialOrd for CausalEvidenceReferenceDigest {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }

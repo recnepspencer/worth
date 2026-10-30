@@ -113,10 +113,6 @@ fn subscription_slice_digest_inputs_consume_slice_canonical_basis_not_target_bas
 }
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn route_entry_order_consumes_frozen_registration_identity_after_surface_proof() {
     let target = BridgeCommittedPatchTarget::entity_field_path(
         aspect_locator("profile"),
@@ -143,10 +139,6 @@ fn route_entry_order_consumes_frozen_registration_identity_after_surface_proof()
 }
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn snapshot_read_order_consumes_target_identity_not_native_target_basis() {
     let left = SnapshotReadRequest::for_native_subscription_slice(
         "entity-1",

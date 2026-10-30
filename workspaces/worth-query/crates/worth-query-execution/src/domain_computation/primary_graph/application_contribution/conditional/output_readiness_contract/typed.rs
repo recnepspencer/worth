@@ -27,6 +27,10 @@ pub(in super::super) struct FieldExpectation {
 }
 
 impl FieldExpectation {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn declared<S, E, A, F, V: 'static, W, Q, U>(
         declaration: &schema::ErasedApplicationSchemaDeclaration,
         field: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
@@ -213,10 +217,6 @@ impl WorthQueryOutputReadinessContractBuilder {
         Ok(self)
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn build_typed<D, O, F>(
         mut self,
     ) -> Result<WorthQueryOutputReadinessContract<D, O, F>, WorthQueryOutputReadinessContractDenial>

@@ -59,10 +59,6 @@ pub(super) fn validate_receipt_closure(
     close(&receipts, &requirements, semantic_work)
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn close(
     receipts: &[ReceiptFact<'_>],
     requirements: &[RequirementFact<'_>],
@@ -105,10 +101,6 @@ pub(super) fn requirement_work(
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn matched_receipt_work(
     evidence: &RelationalMutationInvariantEvidence,
     descriptor: &WorthQueryInstalledApplicationInvariantDescriptor,

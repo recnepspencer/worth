@@ -28,10 +28,6 @@ pub(crate) fn plan_bulk_workload_with_route_policy(
     plan_bulk_workload_internal(runtime, request, Some(route_policy), execution)
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn plan_bulk_workload_internal(
     runtime: &RuntimeBridge,
     request: BridgeBulkWorkloadRequest,

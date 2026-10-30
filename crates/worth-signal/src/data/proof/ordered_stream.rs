@@ -76,10 +76,6 @@ fn assert_strict_order<T: OrderedStreamItem>(items: &[T]) {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn merge_ordered_streams<T: OrderedStreamItem>(
     left: Vec<T>,
     right: Vec<T>,

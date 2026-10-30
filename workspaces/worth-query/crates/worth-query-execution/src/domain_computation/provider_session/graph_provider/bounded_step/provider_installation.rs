@@ -22,7 +22,7 @@ impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     pub fn install<G: 'static, P: WorthQueryGraphParticipationProvider<G>>(provider: P) -> Self {
         let provider = Arc::new(provider);
@@ -46,7 +46,7 @@ impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     pub fn install_convergent<
         G: 'static,
@@ -76,7 +76,7 @@ impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     pub fn install_session_capable<
         G: 'static,
@@ -103,7 +103,7 @@ impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     pub fn install_decision_capable<
         G: 'static,
@@ -134,7 +134,7 @@ impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     pub fn install_provisional_capable<
         G: 'static,
@@ -168,7 +168,7 @@ impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     pub fn install_invariant_capable<
         G: 'static,
@@ -205,7 +205,7 @@ impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     #[expect(
         clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
     pub fn install_convergent_invariant_capable<
         G: 'static,

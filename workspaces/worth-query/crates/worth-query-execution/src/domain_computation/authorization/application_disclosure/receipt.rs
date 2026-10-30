@@ -65,10 +65,6 @@ impl WorthQueryApplicationDisclosureReceipt {
         }
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(in crate::domain_computation) fn governed(
         classification: impl Into<String>,
         disclosed: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,

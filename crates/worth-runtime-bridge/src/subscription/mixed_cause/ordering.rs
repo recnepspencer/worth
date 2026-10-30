@@ -90,10 +90,6 @@ pub struct BridgeMixedCauseOrdering {
 }
 
 impl BridgeMixedCauseOrdering {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn order(request: &BridgeMixedCauseOrderingRequest) -> Self {
         let mut candidates = request
             .inputs()

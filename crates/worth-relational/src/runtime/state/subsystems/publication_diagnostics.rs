@@ -35,6 +35,10 @@ impl RelationalDiagnosticArtifactStore {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn begin_operation_capture(&self) -> RelationalDiagnosticOperationCapture {
         let thread_id = std::thread::current().id();
         let mut state = self.lock();

@@ -77,10 +77,6 @@ impl PartialEq for StructuralWalkKey {
 }
 impl Eq for StructuralWalkKey {}
 impl Ord for StructuralWalkKey {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         if Arc::ptr_eq(&self.0, &other.0) {
             Ordering::Equal
@@ -90,10 +86,6 @@ impl Ord for StructuralWalkKey {
     }
 }
 impl PartialOrd for StructuralWalkKey {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }

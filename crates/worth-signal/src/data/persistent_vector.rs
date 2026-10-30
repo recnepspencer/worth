@@ -213,10 +213,6 @@ impl<T: Clone, const PAGE_LEN: usize> PersistentVector<T, PAGE_LEN> {
         self.make_exclusive().insert(index, value);
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn binary_search_by_key<B, F>(&self, key: &B, mut key_of: F) -> Result<usize, usize>
     where
         B: Ord,
@@ -295,6 +291,10 @@ impl<T: Clone, const PAGE_LEN: usize> PersistentVector<T, PAGE_LEN> {
     }
 
     #[cfg(test)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn page_identities(&self) -> Vec<usize> {
         match &self.storage {
             PersistentVectorStorage::Exclusive(values) => values

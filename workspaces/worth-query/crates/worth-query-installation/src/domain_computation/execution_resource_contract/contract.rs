@@ -13,10 +13,6 @@ pub enum WorthQueryExecutionResourceContract {
 }
 
 impl WorthQueryExecutionResourceContract {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub fn declared(
         strategies: impl IntoIterator<Item = WorthQueryExecutionStrategyContract>,
     ) -> Result<Self, &'static str> {

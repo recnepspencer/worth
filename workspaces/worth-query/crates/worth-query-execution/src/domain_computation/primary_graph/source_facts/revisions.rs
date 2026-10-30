@@ -57,10 +57,6 @@ impl WorthQueryObservedAdjacencyRevision {
 }
 
 impl Ord for WorthQueryObservedAdjacencyRevision {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         (
             self.anchor,
@@ -82,10 +78,6 @@ impl Ord for WorthQueryObservedAdjacencyRevision {
 }
 
 impl PartialOrd for WorthQueryObservedAdjacencyRevision {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }

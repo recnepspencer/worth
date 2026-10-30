@@ -87,6 +87,10 @@ where
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn authoring_binding_matches<Capability, Operation>(&self) -> bool
     where
         Capability: worth_query_declaration::facade::application_capability::ApplicationCapabilityMarkerIdentity<
@@ -121,10 +125,6 @@ where
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn bind<Schema, Spec>(
     installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     definition: ValidatedWorkflowDefinition<Spec>,

@@ -5,6 +5,10 @@ use worth_query_declaration::facade::{
     application_program::{ApplicationWorkflowOperationRef, ApplicationWorkflowSpec},
 };
 impl InstalledWorkflowOperation {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(super) fn declared<Spec, Binding>(supports_local_workflow_action: bool) -> Self
     where
         Spec: ApplicationWorkflowSpec,

@@ -14,10 +14,6 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn active_program_names_an_operation_missing_from_its_declared_routes() {
     let mut world = installed_authorization_world(true);
     world.application.program_support = Some(installed_program_support(

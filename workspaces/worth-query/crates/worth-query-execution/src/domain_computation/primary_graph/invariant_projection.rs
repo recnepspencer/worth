@@ -327,20 +327,12 @@ impl<Schema, Entity> PartialEq for WorthQueryInvariantEntityIdentity<Schema, Ent
 impl<Schema, Entity> Eq for WorthQueryInvariantEntityIdentity<Schema, Entity> {}
 
 impl<Schema, Entity> PartialOrd for WorthQueryInvariantEntityIdentity<Schema, Entity> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl<Schema, Entity> Ord for WorthQueryInvariantEntityIdentity<Schema, Entity> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     fn cmp(&self, other: &Self) -> Ordering {
         (
             self.authority_identity,

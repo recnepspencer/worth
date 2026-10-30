@@ -86,6 +86,10 @@ where
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn assessment<Binding>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
@@ -113,6 +117,10 @@ where
 
     /// Installs a query whose result condition expressions may read as an
     /// operand.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn condition_operand<Binding>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
@@ -140,6 +148,10 @@ where
         Ok(self)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn approval<Capability, Operation, Input>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
@@ -161,6 +173,10 @@ where
         Ok(self)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn authoring_capability<Capability, Operation, Input>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
@@ -213,6 +229,10 @@ where
         Ok(self)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn instance_start_capability<Capability, Operation, Input>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
@@ -261,6 +281,10 @@ where
         Ok(self)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn advance_capability<Capability, Operation, Input>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>

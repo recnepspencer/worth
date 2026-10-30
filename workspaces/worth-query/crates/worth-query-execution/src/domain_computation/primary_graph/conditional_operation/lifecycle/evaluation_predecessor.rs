@@ -5,10 +5,6 @@ use super::{
 };
 use std::collections::BTreeMap;
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn select<Clock, Input>(
     active_affinity: Option<&WorthQueryConditionalEvaluationAffinity>,
     active_cursor: Option<worth_relational::facade::publication::PatchStreamPosition>,

@@ -207,10 +207,6 @@ impl RecordContentIndex {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn resolve_aspect_versions<'a>(
     versions: &BTreeMap<Symbol, u64>,
     symbols: &'a StringInterner,

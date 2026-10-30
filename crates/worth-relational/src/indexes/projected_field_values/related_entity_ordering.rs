@@ -203,10 +203,6 @@ pub(in crate::indexes) fn build_related_entity_ordering_index(
     Ok(entries)
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(in crate::indexes) fn compare_related_entries(
     left: &RelatedEntityOrderingEntry,
     right: &RelatedEntityOrderingEntry,
@@ -229,10 +225,6 @@ pub(in crate::indexes) fn compare_related_entries(
 }
 
 /// The same scalar ordering governs full entries and leading-value range bounds.
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(in crate::indexes) fn compare_ordering_value(
     left: &worth_foundational::facade::AspectValue,
     right: &worth_foundational::facade::AspectValue,

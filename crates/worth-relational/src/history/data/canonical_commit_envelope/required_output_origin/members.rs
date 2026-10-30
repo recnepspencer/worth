@@ -10,10 +10,6 @@ use crate::transactions::data::{CommitCreatedEntityBindings, EntityReference, Re
 use worth_execution::MapKernelContext;
 
 #[allow(clippy::too_many_arguments)]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 pub(super) fn capture(
     envelope: &CanonicalCommitEnvelope,
     history: &crate::runtime::RelationalPreparationHistory,

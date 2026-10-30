@@ -92,10 +92,6 @@ moved_payload_module!(original_location);
 moved_payload_module!(moved_location);
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn rust_module_move_cannot_change_installed_or_outbox_protocol_identity() {
     let original_contract = installed_contract::<
         original_location::ProtocolSchema,

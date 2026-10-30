@@ -17,10 +17,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedBodySelections<S
     pub(in crate::domain_computation::primary_graph) _memory: Option<QueryMemoryReservation>,
 }
 impl<Schema> PreparedBodySelections<Schema> {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(in crate::domain_computation::primary_graph) fn selected(
         &self,
         relation: &str,

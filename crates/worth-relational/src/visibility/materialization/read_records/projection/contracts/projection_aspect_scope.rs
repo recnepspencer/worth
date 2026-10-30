@@ -213,10 +213,6 @@ impl From<ProjectionAspectScopeWire> for ProjectionAspectScope {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn projection_requirement_order(
     left: &ProjectionAspectRequirement,
     right: &ProjectionAspectRequirement,

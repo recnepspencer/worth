@@ -20,6 +20,10 @@ where
         self.successor.producer_contacts()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph) fn is_family<Family>(&self) -> bool
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,

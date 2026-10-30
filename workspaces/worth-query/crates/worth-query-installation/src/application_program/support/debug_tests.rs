@@ -5,6 +5,10 @@ use super::super::program_support_fixture::{validated, BoundedProgram};
 use super::WorthQueryProgramSupportEntry;
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "The test checks type membership by equality; canonical order uses declared identity"
+)]
 fn debug_reports_inventory_sizes_without_type_identity() {
     let program = validated::<BoundedProgram>();
     let declarations = [TypeId::of::<u8>(), TypeId::of::<u16>()];

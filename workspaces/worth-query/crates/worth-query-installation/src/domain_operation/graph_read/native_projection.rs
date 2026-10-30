@@ -135,10 +135,6 @@ impl WorthQueryOperationNativeProjectionContract {
         self.canonical_contract_material.as_ref()
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-    )]
     pub(crate) fn canonical_order(&self, candidate: &Self) -> Ordering {
         self.canonical_contract_material
             .cmp(&candidate.canonical_contract_material)
@@ -151,10 +147,6 @@ impl WorthQueryOperationNativeProjectionContract {
     }
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "Comparison uses declared semantic keys; type names label diagnostics only"
-)]
 fn compare_mask_paths(
     left: &AspectMask<ProjectionMask>,
     right: &AspectMask<ProjectionMask>,

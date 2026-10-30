@@ -8,6 +8,10 @@ use super::{
 };
 
 impl PreparedCanonicalBranchMovement {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(super) fn preflight(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         parts: PreparedRelationalPublicationParts,

@@ -38,6 +38,10 @@ impl RequiredWorkflowBirth {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 pub(super) fn subject_in_receipt<Schema, Binding, Role>(
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> Result<worth_relational::facade::identity::EntityId, WorthQueryApplicationAttemptDenial>
