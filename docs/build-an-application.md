@@ -2621,6 +2621,15 @@ attempt key to proceed. Unpublished creation recovery, existing candidate
 custody and unresolved panicked handoffs remain retained rather than being
 discarded as owner-free refusals.
 
+For a preparation's `ProductUnpublished` creation failure, `dispose_pending`
+uses the actual creation recovery's `release_obligations`. A recovery refusal
+retains that owner. Once release transfers work to owner cleanup, further
+disposal retries that cleanup instead of releasing creation again. The
+[compiled creation cleanup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/disposal/preparation.rs)
+preserves the native failure for admitted inspection and completes with the real
+creation-release or cleanup receipt. A late request stop preserves the completed
+disposal and reports its handoff; it does not recreate a candidate.
+
 If previous-head close returns `OwnerCleanupPending`, the head has already
 retired. Keep the performed adoption evidence and stored result while transferring
 that exact failure into its cleanup owner. The

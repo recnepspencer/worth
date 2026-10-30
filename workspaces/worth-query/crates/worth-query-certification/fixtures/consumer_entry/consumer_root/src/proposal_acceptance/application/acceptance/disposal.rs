@@ -4,6 +4,7 @@ use crate::proposal_acceptance::{application::branch::Closed, host::Host};
 use worth_query_host::facade::{application_contribution::WorthQueryAdvancementDenial, product::*};
 mod candidate;
 mod metadata;
+mod preparation;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum DisposalClass {
@@ -11,6 +12,7 @@ pub enum DisposalClass {
     Candidate,
     RetiredCleanup,
     PreparationRetained,
+    CreationRecovery,
     CommittedContinuationRetained,
 }
 #[derive(Debug)]
@@ -47,8 +49,13 @@ enum Receipt {
         _receipt: WorthQueryProductBranchOwnerCleanupReceipt,
         _retirement_handoff: Option<WorthQueryAdvancementDenial>,
     },
+    Creation {
+        _receipt: preparation::Released,
+        _creation_handoff: Option<WorthQueryAdvancementDenial>,
+    },
 }
 pub(super) enum State<'host> {
+    Creation(preparation::Owner),
     Metadata {
         owner: metadata::Owner,
         cause: WorthQueryOperationCloseDenial,
@@ -64,6 +71,8 @@ pub(super) enum State<'host> {
     },
 }
 pub enum DisposalView<'a> {
+    CreationRecovery(&'a WorthQueryProductBranchCreationRecovery),
+    CreationFailure(&'a WorthQueryProductBranchCreationRecoveryReleaseFailure),
     Operation(&'a WorthQueryOperationCloseDenial),
     Candidate(&'a super::candidate::lifecycle::CloseRefusal),
     CleanupPending,
@@ -72,6 +81,7 @@ pub enum DisposalView<'a> {
 impl State<'_> {
     pub(super) fn view(&self) -> DisposalView<'_> {
         match self {
+            Self::Creation(owner) => owner.view(),
             Self::Metadata { cause, .. } => DisposalView::Operation(cause),
             Self::Candidate(failure) => DisposalView::Candidate(&failure.cause),
             Self::Cleanup { .. } => DisposalView::CleanupPending,
@@ -133,17 +143,9 @@ fn dispose<'host>(
         Phase::PreparingFailed {
             registration,
             failure,
-        } => match failure.try_discard_uncreated() {
-            Ok(()) => registered(registration),
-            Err(failure) => (
-                Some(Phase::PreparingFailed {
-                    registration,
-                    failure,
-                }),
-                Ok(DisposalEvent::Retained(DisposalClass::PreparationRetained)),
-            ),
-        },
+        } => preparation::dispose(registration, failure, host, caller),
         Phase::Disposing(state) => match state {
+            State::Creation(owner) => preparation::release(owner, host, caller),
             State::Metadata { owner, .. } => metadata::close(owner, host, caller, loaded),
             State::Candidate(failure) => candidate::retry(failure, host, caller),
             State::Cleanup {
