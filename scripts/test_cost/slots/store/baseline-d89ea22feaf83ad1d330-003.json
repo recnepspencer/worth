@@ -1,0 +1,13 @@
+{
+  "binary": "worth-store-physical-format",
+  "tests": {
+    "store_namespace::tests::identity_canonical_basis::canonical_mismatches_are_localized_by_semantic_locus": 1,
+    "store_namespace::tests::identity_canonical_basis::digest_equivalence_is_not_identity_equivalence": 1,
+    "store_namespace::tests::identity_canonical_basis::equivalent_decoded_identities_lower_to_the_same_canonical_basis": 1,
+    "store_namespace::tests::identity_record::identity_is_unavailable_after_every_structural_or_integrity_violation": 1,
+    "store_namespace::tests::identity_record::identity_record_round_trips_exact_golden_bytes_at_identity_extremes": 1,
+    "store_namespace::tests::namespace_roles::canonical_roles_have_one_complete_unambiguous_grammar": 1,
+    "store_namespace::tests::staged_name::staged_name_grammar_rejects_ambiguous_spellings": 1,
+    "tier_epoch_activation::tests::activation_intent_and_completion_roundtrip_without_receipt_substitution": 1
+  }
+}

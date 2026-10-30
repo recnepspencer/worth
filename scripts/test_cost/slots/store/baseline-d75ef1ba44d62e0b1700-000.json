@@ -1,0 +1,7 @@
+{
+  "binary": "worth-store-court-branch-deltas::worth_store_court_branch_deltas",
+  "tests": {
+    "branch_deltas::layout_scenarios::branch_layout::branch_delta_family_binds_layers_to_admitted_lineage_support": 1,
+    "branch_deltas::layout_scenarios::continuation_layout::stable_basis_and_continuation_families_bind_support_to_admitted_windows": 1
+  }
+}

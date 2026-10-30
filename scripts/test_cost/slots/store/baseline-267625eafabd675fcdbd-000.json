@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-aspect-native",
+  "tests": {
+    "canonical_basis::physical_mutation_request::tests::request_source_requires_unique_security_bases_and_freezes_field_order": 1
+  }
+}

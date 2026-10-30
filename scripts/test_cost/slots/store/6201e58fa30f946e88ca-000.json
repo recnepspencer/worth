@@ -1,0 +1,8 @@
+{
+  "binary": "worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal::worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal",
+  "tests": {
+    "process::recovery_runtime::production_entry::anchored_record_members::oracle::every_media_operation_of_a_member_carrying_replacement_recovers_to_one_whole_value": 10,
+    "process::recovery_runtime::production_entry::ordered_journals::branch_transitions_oracle::every_media_operation_of_a_branch_transition_recovers_to_the_old_or_new_head": 4,
+    "process::recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::every_media_operation_of_a_publication_recovers_to_a_reference_prefix": 4
+  }
+}

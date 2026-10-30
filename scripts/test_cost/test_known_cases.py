@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from known_cases import diagnostic_hits, markdown, pool_match, validate
+from known_cases import diagnostic_hits, markdown, pool_match, pool_search, validate
 from logs import read_lane
 
 
@@ -114,6 +114,15 @@ class KnownDiscoveryTests(unittest.TestCase):
         self.assertEqual(get(validate({}, {}, observations, {}), 'formal-build-dominates-run')['status'], 'found')
         observations['formal']['telemetry'] = {'test_work_seconds': .3}
         self.assertEqual(len(get(validate({}, {}, observations, {}), 'formal-build-dominates-run')['missing']), 2)
+
+    def test_pool_counterevidence_is_distinct_from_an_unsupported_filter(self):
+        observed = [event('pkg::court$branch_transitions_oracle::all_points')]
+        rules = [('default', {'filter': 'test(other_case)'})]
+        self.assertEqual(pool_search(rules, observed)[0]['status'], 'no-matching-whole-pool-rule')
+        rules.append(('ci', {'filter': 'not test(other_case)'}))
+        self.assertEqual(pool_search(rules, observed)[0]['status'], 'unknown')
+        rules.append(('ci', {'filter': 'test(branch_transitions_oracle)'}))
+        self.assertEqual(pool_search(rules, observed)[0]['status'], 'matched')
 
     def test_serial_overlap_uses_complete_module_names(self):
         observations = {'workspace': lane(log='workspace.log'),

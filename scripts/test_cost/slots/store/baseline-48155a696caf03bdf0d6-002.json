@@ -1,0 +1,26 @@
+{
+  "binary": "worth-store-recovery-runtime",
+  "tests": {
+    "progression::planned::basis::derivation::closeout::manifest_cleanup_tests::root_only_cleanup_requires_exact_candidate_generation_and_digest": 1,
+    "progression::planned::basis::derivation::layout::base_image::manifest_cleanup_tests::manifest_cleanup_unroutes_exactly_one_id_and_keeps_manifest_payload_records": 1,
+    "progression::planned::basis::derivation::layout::derived_binding::tests::replay_drops_stale_latest_and_embedded_directory_watermark": 1,
+    "progression::planned::basis::derivation::materialization::tests::duplicate_record_and_segment_update_keep_last_encounter": 1,
+    "progression::planned::basis::derivation::selector_closeout::tests::noncanonical_staged_selector_retains_typed_publication_denial": 1,
+    "progression::planned::basis::identity::page_source::tests::sealed_source_coordinate_and_routing_identity_are_plan_identity_causal": 1,
+    "progression::planned::basis::identity::tests::generation_zero_basis_never_shares_the_first_checkpoints_sequence": 1,
+    "progression::planned::basis::publication_candidate::historical_result::tests::a_check_past_its_scratch_names_that_limit_with_both_counts": 1,
+    "progression::planned::basis::publication_candidate::historical_result::tests::a_transition_the_media_does_not_hold_names_no_bound": 1,
+    "progression::planned::basis::publication_candidate::historical_result::tests::exact_historical_result_rejects_same_count_route_and_free_substitutions": 1,
+    "progression::planned::basis::publication_candidate::historical_result::tests::exact_historical_result_requires_maintenance_and_drop_filtered_root_hints": 1,
+    "progression::planned::basis::publication_candidate::inventory::tests::repeated_segment_update_keeps_last_ordinal_and_exhausted_inline_is_removed": 1,
+    "progression::planned::basis::publication_candidate::inventory::tests::two_ranges_split_one_arena_without_changing_untouched_generation": 1,
+    "progression::planned::basis::staging_cost::tests::duplicate_frame_identity_accepts_equal_frame_but_denies_different_bytes": 1,
+    "progression::planned::basis::staging_cost::tests::duplicate_manifest_coordinate_denies_even_equal_payloads": 1,
+    "progression::planned::basis::staging_cost::tests::staging_cost_admits_exact_limits_without_double_charging_one_target": 1,
+    "progression::planned::basis::staging_cost::tests::staging_cost_rejects_before_retaining_a_crossing_frame_or_byte_claim": 1,
+    "progression::planned::resident_memory::tests::allocator_capacity_rejection_preserves_cause_without_fabricating_budget_exhaustion": 1,
+    "progression::planned::resident_memory::tests::carried_peak_survives_scratch_drop_and_is_not_a_fresh_budget": 1,
+    "progression::planned::resident_memory::tests::growth_admits_old_and_new_backing_before_mutating_the_vector": 1,
+    "progression::selected::freshness_sampling_tests::selected_checkpoint_and_wal_sampling_denies_live_recovery_pressure_before_copying": 1
+  }
+}

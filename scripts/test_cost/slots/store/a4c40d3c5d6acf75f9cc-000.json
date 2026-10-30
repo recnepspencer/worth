@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-court-store-physical-blob-journeys::worth_store_court_store_physical_blob_journeys",
+  "tests": {
+    "process::store::physical_record_journeys::residency_pressure_processes::bounded_residency_survives_pressure_across_three_processes": 2
+  }
+}

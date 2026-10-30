@@ -1,0 +1,7 @@
+{
+  "binary": "worth-store-offline-integrity-observer",
+  "tests": {
+    "integrity_observation::blob_record::quarantine::tests::encoder_golden_is_the_literal_layout_and_parses_as_a_whole_frame": 2,
+    "integrity_observation::families::physical_fields::tests::route_metadata_admits_only_declared_classes_tiers_and_zero_reserve": 2
+  }
+}

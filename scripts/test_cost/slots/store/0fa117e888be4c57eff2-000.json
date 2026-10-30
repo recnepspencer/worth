@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-offline-verifier",
+  "tests": {
+    "backup_verification::checkpoint_backup_tests::rehashed_second_page_frontier_mutations_are_denied": 2
+  }
+}

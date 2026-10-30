@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-layout-indexes",
+  "tests": {
+    "strategy::registry::tests::registry_requires_real_coverage_when_exact_materialization_is_requested": 2
+  }
+}

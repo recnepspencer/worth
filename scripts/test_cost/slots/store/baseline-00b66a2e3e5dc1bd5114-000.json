@@ -1,0 +1,14 @@
+{
+  "binary": "worth-store-court-layout-indexes-replication::worth_store_court_layout_indexes_replication",
+  "tests": {
+    "offline_verifier::offline_reconstruction_boundary::physical_format_has_no_offline_walk_or_reconstruction_exports": 1,
+    "offline_verifier::offline_reconstruction_boundary::structural_observation_is_owned_by_verifier_without_validation_authority": 1,
+    "offline_verifier::phase_five_checkpoint_observer::real_observer_entry_admits_a_complete_checkpoint_stream": 1,
+    "offline_verifier::phase_five_checkpoint_observer::real_observer_entry_rejects_checksum_valid_binding_mutation_with_stale_aggregate": 1,
+    "offline_verifier::phase_five_checkpoint_observer::real_observer_entry_rejects_checksum_valid_dirty_mutation_with_stale_aggregate": 1,
+    "process::offline_verifier::phase_eight_observer_cli::observer_reports_content_based_selector_links_and_mutation": 1,
+    "process::offline_verifier::phase_eight_observer_cli::observer_v1_literal_fixture_rejects_every_optional_flag_and_every_truncation": 1,
+    "process::offline_verifier::phase_eight_observer_cli::shipped_observer_process_emits_the_version_one_bounded_report": 1,
+    "process::offline_verifier::phase_eight_observer_cli::shipped_observer_report_rejects_invalid_future_malformed_and_tampered_wire_inputs": 1
+  }
+}

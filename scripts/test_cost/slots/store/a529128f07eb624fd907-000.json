@@ -1,0 +1,13 @@
+{
+  "binary": "worth-store",
+  "tests": {
+    "physical_runtime::anchored_records::frame::tests::a_damaged_frame_or_table_refuses": 2,
+    "physical_runtime::blob::ingest::terminal::selection::tests::a_selected_release_of_another_generation_is_not_this_sessions_fate": 2,
+    "physical_runtime::blob::reclaim::selection::frontier_tests::selected_reuse_claim_protects_its_original_chunk_edge": 2,
+    "physical_runtime::durability::mutation::request_fingerprint::tests::v1_golden_vector_changes_every_effect_relevant_field": 2,
+    "physical_runtime::durability::wal::inventory::publication_roster::tests::split_segment_duplicate_ordinal_and_lsn_gap_are_rejected": 2,
+    "physical_runtime::ordered_journal::frame::tests::records_round_trip_and_bind_their_payload": 2,
+    "physical_runtime::recovery_construction::selected_rejoin::pending_wal_release::lineage::tests::checkpoint_head_is_the_exact_predecessor_of_the_first_batch_above_it": 2,
+    "physical_runtime::recovery_construction::selected_rejoin::tier::no_release_frame::tests::valid_many_chunk_extent_denies_before_excess_slice_allocation": 2
+  }
+}

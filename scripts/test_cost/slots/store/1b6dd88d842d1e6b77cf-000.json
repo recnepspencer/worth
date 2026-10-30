@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-wal",
+  "tests": {
+    "append::frame_plan::tests::planning_is_path_free_and_advances_only_the_returned_frontier": 2
+  }
+}

@@ -18,6 +18,18 @@ def measurement_name(identity):
     return identity if len(identity) <= 80 else identity[:48] + '-' + hashlib.sha256(identity.encode()).hexdigest()[:24]
 
 
+def publish(output, measured):
+    """Attach measured IR to the existing census, preserving every other observation."""
+    from census import markdown
+    path = Path(output) / 'census.json'
+    result = json.loads(path.read_text(encoding='utf-8'))
+    result.setdefault('llvm_lines', {}).update({name: value['rows'] for name, value in measured.items()})
+    result.setdefault('llvm_measurements', {}).update({name: {key: value for key, value in row.items() if key != 'rows'}
+                                                     for name, row in measured.items()})
+    path.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+    path.with_suffix('.md').write_text(markdown(result), encoding='utf-8')
+
+
 def targets(manifest):
     rows = []
     for package in members(manifest):
@@ -56,7 +68,8 @@ def measure(manifest, output, runner, profile='dev', selection=None):
         if observed.returncode:
             raise ValueError(f'cargo llvm-lines failed for {identity}')
         rows = llvm_lines(observed.stdout)
-        measured[identity] = {'compiler_command': command, 'profile': profile, 'rows': rows}
+        measured[identity] = {'compiler_command': command, 'profile': profile, 'rows': rows,
+                             'compiler_log': str(runner.logs[-2]), 'llvm_lines_log': str(runner.logs[-1])}
         (output / 'measurements.json').write_text(json.dumps(measured, indent=2) + '\n', encoding='utf-8')
     return measured
 
@@ -68,8 +81,10 @@ def main():
     parser.add_argument('--package', action='append')
     args = parser.parse_args()
     root = repository_root(Path.cwd())
-    measure(root / WORKSPACES[args.workspace], root / 'target/test-cost' / args.workspace / 'llvm',
-            CargoRunner(root, child_environment()), args.cargo_profile, args.package)
+    output = root / 'target/test-cost' / args.workspace
+    measured = measure(root / WORKSPACES[args.workspace], output / 'llvm',
+                       CargoRunner(root, child_environment()), args.cargo_profile, args.package)
+    publish(output, measured)
 
 
 if __name__ == '__main__':

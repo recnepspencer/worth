@@ -1,0 +1,7 @@
+{
+  "binary": "worth-store-physical-backend",
+  "tests": {
+    "filesystem_media::tests::filesystem_effects::range_operations::peak_operation_bytes_track_the_largest_causal_boundary_request": 2,
+    "io_capability::tests::independent_admissions_with_same_basis_produce_equivalent_witnesses": 2
+  }
+}

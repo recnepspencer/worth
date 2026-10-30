@@ -76,6 +76,19 @@ def diagnostic_hits(raw_logs, identity, expression):
     return result
 
 
+def pool_search(overrides, observed):
+    """Preserve counterevidence separately from unsupported filter grammar."""
+    result = []
+    for event in observed:
+        rules = [dict(profile=profile, filter=rule['filter'],
+                      matches=pool_match(rule['filter'], event)) for profile, rule in overrides]
+        verdicts = [row['matches'] for row in rules]
+        state = ('matched' if True in verdicts else 'unknown' if None in verdicts
+                 else 'no-matching-whole-pool-rule')
+        result.append({'test': event['name'], 'status': state, 'rules': rules})
+    return result
+
+
 def verified_environment(environment, documents):
     """Resolve the two named parameterized helper forms present in this corpus.
 
@@ -198,10 +211,12 @@ def validate(before, documents, lanes, raw_logs, environments=None, configuratio
                          'tests': sorted({event['name'] for event in observed if pool_match(rule['filter'], event) is True})}
                         for profile, rule in overrides]
         reservations = [row for row in reservations if row['tests']]
-        rows.append(case('sequential-pool:' + name, [check('named execution', observed),
+        row = case('sequential-pool:' + name, [check('named execution', observed),
             check('source serial loop', loops, 'Lexical serial enumeration; CPU parallelism is unmeasured.'),
             check('matching whole-pool reservation', reservations,
-                  'No reservation is inferred from duration or from the task description.')]))
+                  'No reservation is inferred from duration or from the task description.')])
+        row['reservation_search'] = pool_search(overrides, observed)
+        rows.append(row)
     workspace = [(name, lane) for name, lane in lanes.items() if 'workspace' in name]
     serial = [{'log': lane['log'], 'command': text.splitlines()[0] if text else ''}
               for name, lane in workspace for text in [raw_logs.get(lane['log'], '')]
@@ -245,6 +260,10 @@ def markdown(result):
     lines += [f'| {row["case"]} | {row["status"]} | {", ".join(row["missing"]) or "none"} |' for row in result['cases']]
     for row in result['cases']:
         lines += ['', '## ' + row['case'], '']
+        if row.get('reservation_search'):
+            states = sorted({search['status'] for search in row['reservation_search']})
+            lines += ['Whole-pool config search: **' + ', '.join(states) + '**. '
+                      'Every examined filter and its result is retained in JSON.', '']
         for check_row in row['checks']:
             lines += [f'- {check_row["name"]}: **{check_row["status"]}**. {check_row["detail"]}']
             for evidence in check_row['evidence'][:12]:

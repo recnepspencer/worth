@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-tiering",
+  "tests": {
+    "layout_projection::tests::tiering_layout_reports_preserve_budget_and_owner_identity_basis": 1
+  }
+}

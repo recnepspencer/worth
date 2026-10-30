@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-court-physical-isolation::worth_store_court_physical_isolation",
+  "tests": {
+    "physical_isolation::layout_scenarios::placement_layout::unsupported_hardware_placement_claim_is_denied_by_owner_api": 1
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "binary": "worth-store-claim-boundaries",
+  "tests": {
+    "claim_request::tests::legacy_file_platform_grade_claim_is_forbidden": 1,
+    "claim_request::tests::legacy_heap_platform_grade_claim_is_forbidden": 1,
+    "claim_request::tests::legacy_sqlite_platform_grade_claim_is_forbidden": 1,
+    "forbidden_claim::tests::legacy_classification_admits_non_platform_tier": 1,
+    "forbidden_claim::tests::legacy_classification_rejects_platform_grade_tier": 1,
+    "promotion::tests::heap_facade_evidence_cannot_promote_during_physical_reconstruction": 1,
+    "promotion::tests::platform_grade_witness_rejects_incomplete_facade_evidence": 1
+  }
+}

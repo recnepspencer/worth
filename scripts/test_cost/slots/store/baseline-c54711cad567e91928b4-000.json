@@ -1,0 +1,12 @@
+{
+  "binary": "worth-store-authority",
+  "tests": {
+    "primary_serving::tests::every_serving_operation_fails_closed_at_the_lease_expiry_boundary": 1,
+    "primary_serving::tests::external_fence_is_idempotent_and_recovers_with_exact_lease_binding": 1,
+    "primary_serving::tests::recovered_fence_rejects_provider_substitution": 1,
+    "recovery_authority_admission_policy::tests::fully_trusted_policy_rejects_residual_policy_construction": 1,
+    "recovery_authority_admission_policy::tests::residual_posture_requires_an_exact_explicit_decision": 1,
+    "recovery_cutover::tests::fence_release_is_bound_to_the_established_plan": 1,
+    "recovery_cutover::tests::provider_must_confirm_quiescence_was_released": 1
+  }
+}

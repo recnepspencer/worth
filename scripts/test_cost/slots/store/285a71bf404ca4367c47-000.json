@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-court-recovery-runtime-replication-production-entry-certified-release-serving::worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving",
+  "tests": {
+    "process::recovery_runtime::production_entry::anchored_records_oracle::every_media_operation_of_an_anchored_publication_recovers_to_the_old_or_new_value": 1
+  }
+}

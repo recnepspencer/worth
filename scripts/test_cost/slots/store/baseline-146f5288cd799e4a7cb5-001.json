@@ -1,0 +1,28 @@
+{
+  "binary": "worth-store-layout-indexes",
+  "tests": {
+    "planning::request_identity_tests::concrete_request_identity_changes_plan_binding_for_equal_shaped_wal_reads": 1,
+    "planning::request_identity_tests::ordinary_catalog_materialization_retains_its_exact_source_identity": 1,
+    "planning::request_identity_tests::request_admission_distinguishes_family_service_lane_from_operation_lane": 1,
+    "planning::request_identity_tests::request_admission_rejects_key_domain_from_another_artifact_family": 1,
+    "planning::request_identity_tests::request_admission_rejects_materialization_from_another_artifact_family": 1,
+    "planning::request_identity_tests::request_admission_rejects_same_family_from_another_security_authority": 1,
+    "planning::request_identity_tests::shape_declaration_cannot_substitute_admitted_materialization_coverage": 1,
+    "planning::selection_tests::btree_planning_denies_without_store_observed_cost_basis": 1,
+    "planning::selection_tests::degraded_exact_scan_uses_explicit_rule_and_plan_bound_budget_receipt": 1,
+    "planning::selection_tests::deterministic_selection_denies_when_budget_is_exceeded_before_execution": 1,
+    "planning::selection_tests::deterministic_selection_denies_when_no_strategy_is_eligible": 1,
+    "planning::selection_tests::deterministic_selection_selects_lsm_for_exact_wal_point_paths": 1,
+    "strategy::btree::tests::btree_invariants_cover_lookup_mutation_integrity_and_recovery": 1,
+    "strategy::btree::tests::btree_separator_corruption_is_denied": 1,
+    "strategy::registry::tests::registry_admits_supported_requests_to_stable_owner_snapshots": 1,
+    "strategy::registry::tests::registry_denial_case_inventory_is_exhaustive_and_unique": 1,
+    "strategy::registry::tests::registry_denies_mode_and_mutation_mismatches": 1,
+    "strategy::registry::tests::registry_denies_unsupported_capability_and_scope_mismatch": 1,
+    "strategy::registry::tests::registry_requires_real_coverage_when_exact_materialization_is_requested": 1,
+    "strategy::tests::admission_binds_counter_profiles_and_posture_to_strategy_families": 1,
+    "strategy::tests::btree_strategy_does_not_claim_unobserved_lookup_work": 1,
+    "strategy::tests::denies_unsupported_or_incomplete_strategy_claims_before_declaration": 1,
+    "strategy::tests::strategy_identity_preserves_family_and_lane_posture": 1
+  }
+}

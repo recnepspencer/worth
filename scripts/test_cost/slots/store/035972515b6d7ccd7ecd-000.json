@@ -1,0 +1,7 @@
+{
+  "binary": "store-test-runner",
+  "tests": {
+    "execution::tests::child_failure_is_returned_with_the_unit_identity": 2,
+    "plan::tests::fresh_process_recovery_keeps_its_direct_phase_eight_dispatcher": 2
+  }
+}

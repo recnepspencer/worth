@@ -1,0 +1,12 @@
+{
+  "binary": "worth-store-budgets",
+  "tests": {
+    "allocation_envelope_tests::allocation_envelope_declaration_requires_every_scope": 1,
+    "allocation_envelope_tests::zero_allocation_budgets_and_fixed_metadata_are_denied": 1,
+    "counter_strength_tests::counter_strength_substitution_matrix_is_explicit": 1,
+    "pre_execution_tests::admitted_resource_grants_preserve_scope_without_claiming_operation_authority": 1,
+    "pre_execution_tests::budget_admission_issues_resource_authority_without_plan_identity": 1,
+    "pre_execution_tests::budget_admission_rejects_scope_and_exact_resource_overages": 1,
+    "pre_execution_tests::budget_receipt_retains_the_exact_admitted_demand": 1
+  }
+}

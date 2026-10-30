@@ -1,0 +1,10 @@
+{
+  "binary": "worth-store-io-scheduler",
+  "tests": {
+    "queue_execution::tests::grouping::grouped_backpressure_preserves_grouping_speculation_and_adaptation_counters": 1,
+    "queue_execution::tests::grouping::grouped_ready_execution_proves_and_counts_both_plans": 1,
+    "queue_execution::tests::grouping::grouping_denies_backend_capability_mismatch": 1,
+    "queue_execution::tests::grouping::ready_queue_grouping_is_typed_and_replay_visible": 1,
+    "queue_execution::tests::physical_work_declaration::physical_foreground_declarations_derive_security_and_fixed_posture": 1
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "binary": "worth-store-court-store-physical-record-journeys-durability-admission::worth_store_court_store_physical_record_journeys_durability_admission",
+  "tests": {
+    "process::store::physical_media_journeys::mutation_contention::mutation_contention_confinement_and_readmission": 2,
+    "process::store::physical_record_journeys::durability_admission::checkpoint_pressure::whole_store_checkpoint_stays_bounded_during_32x_foreground_mutation": 2
+  }
+}

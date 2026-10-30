@@ -1,0 +1,24 @@
+{
+  "binary": "worth-store-physical-isolation",
+  "tests": {
+    "backup_cut::cut_manifest::tests::cut_cardinality_cannot_exceed_the_canonical_bundle_reader": 1,
+    "backup_cut::cut_recovery_codec::tests::hostile_source_count_is_denied_before_source_allocation": 1,
+    "backup_cut::lease_persistence::tests::high_cardinality_lease_recovery_keeps_duplicate_detection_scalable": 1,
+    "backup_cut::lease_persistence::tests::malformed_or_duplicated_physical_ownership_fails_closed": 1,
+    "backup_cut::lease_persistence::tests::noncanonical_wire_order_fails_closed_instead_of_rewriting_history": 1,
+    "backup_cut::lease_persistence::tests::sealed_lease_round_trips_exact_physical_ownership": 1,
+    "backup_cut::lease_persistence::tests::top_level_record_extent_round_trips_without_segment_ownership": 1,
+    "backup_cut::lease_release::tests::malformed_release_record_is_not_owner_authority": 1,
+    "backup_cut::storage_posture::tests::adversarial_backend_profile_cannot_back_a_backup_cut": 1,
+    "backup_cut::storage_posture::tests::storage_posture_requires_three_certified_supported_capabilities": 1,
+    "executed_isolation_evidence::interference_snapshot::tests::io_qos_handoff_interference_snapshot_declares_exact_store_counter_strength": 1,
+    "physical_read_plan::completion_tests::completion_preserves_the_admitted_plan_without_claiming_byte_execution": 1,
+    "physical_read_plan::footprint_ranges::tests::top_level_record_extent_range_never_collapses_into_segment_owned_extent_range": 1,
+    "publication::successor::tests::successor_advances_both_epochs_and_binds_the_requested_generation": 1,
+    "publication::successor::tests::successor_rejects_exhausted_root_or_manifest_epoch": 1,
+    "recovery_source_lease::bootstrap_source::tests::a_digest_complete_set_without_blob_reachability_is_rejected": 1,
+    "recovery_source_lease::bootstrap_source::tests::bounded_real_media_resolution_issues_an_exact_isolation_owned_cut": 1,
+    "recovery_source_lease::bootstrap_source::tests::same_length_source_substitution_after_open_cannot_resolve": 1,
+    "recovery_source_lease::tests::exact_source_lease_recovers_then_releases_durably_and_idempotently": 1
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "binary": "worth-store-relational",
+  "tests": {
+    "cold_source::member_custody::tests::selection_fence_excludes_custody_mutation_until_membership_is_selected": 1,
+    "cold_source::member_custody_tests::checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops": 1,
+    "cold_source::tests::cold_port_reads_current_members_carried_members_and_bounded_journal_payloads": 1,
+    "home::checkpoint::scope_tests::forked_cells_checkpoint_into_two_homes_without_foreign_carried_locators": 1,
+    "home::checkpoint::tests::a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership": 1,
+    "home::construction_tests::duplicate_strategy_refuses_open_with_its_cause_and_releases_the_home": 1
+  }
+}

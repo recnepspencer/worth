@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-court-recovery-runtime-replication-production-entry-certified-release-serving::worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving",
+  "tests": {
+    "recovery_runtime::production_entry::release_reopen::shared_reuse_custody::publication_budget::low_maintenance_scope_preserves_durable_publication_without_catalog_validation": 1
+  }
+}

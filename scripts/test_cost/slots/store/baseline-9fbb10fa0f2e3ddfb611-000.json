@@ -1,0 +1,7 @@
+{
+  "binary": "worth-store::bin/physical_store_c8_writer",
+  "tests": {
+    "durability_profile::tests::cleanup_rotation_has_distinct_smaller_segments": 1,
+    "durability_profile::tests::profiles_are_explicit_and_stable": 1
+  }
+}

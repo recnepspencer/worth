@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-court-snapshots::worth_store_court_snapshots",
+  "tests": {
+    "snapshots::layout_scenarios::snapshot_layout::snapshot_family_binds_snapshot_reads_to_admitted_image_authority": 1
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "binary": "worth-store-court-aspect-native::worth_store_court_aspect_native",
+  "tests": {
+    "aspect_native::c9_registry_ownership::registry_has_one_owner_per_live_family_and_rejects_projection_inputs": 1,
+    "aspect_native::c9_registry_ownership::retired_generic_integrity_routes_have_no_enum_domain_or_registry_alias": 1,
+    "aspect_native::c9_registry_ownership::sources_follow_declaration_observation_and_runtime_owners": 1
+  }
+}

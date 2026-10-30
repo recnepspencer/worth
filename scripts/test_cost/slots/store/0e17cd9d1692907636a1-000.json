@@ -1,0 +1,7 @@
+{
+  "binary": "worth-store-court-physical-integrity::worth_store_court_physical_integrity",
+  "tests": {
+    "oracle::root_tree_family_validation_bootstrap_catalog::catalog_literal_vector_is_independent_of_writer_and_validates_directly": 2,
+    "physical_integrity::checkpoint_validation::scrub_streaming::healthy_omitted_or_other_checkpoint_context_is_unknown_not_damage": 2
+  }
+}

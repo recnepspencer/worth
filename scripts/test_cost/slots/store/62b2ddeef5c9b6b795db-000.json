@@ -1,0 +1,7 @@
+{
+  "binary": "worth-store-court-store-physical-record-journeys-physical-work::worth_store_court_store_physical_record_journeys_physical_work",
+  "tests": {
+    "process::store::physical_record_journeys::maintenance_interference::held::held_readers_block_retirement_without_scanning_every_root": 1,
+    "process::store::physical_record_journeys::physical_work::profile::profile_identity_is_canonical_across_contract_input_order": 2
+  }
+}

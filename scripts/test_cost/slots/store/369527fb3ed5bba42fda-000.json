@@ -1,0 +1,7 @@
+{
+  "binary": "worth-store-buffer-pool",
+  "tests": {
+    "physical_residency::tests::dirty_generation_capture::exhausted_generation_denies_before_dirty_bytes_become_resident": 2,
+    "physical_residency::tests::operation_allocation::candidate_dirty_posture_and_operation_allocations_are_exact": 2
+  }
+}

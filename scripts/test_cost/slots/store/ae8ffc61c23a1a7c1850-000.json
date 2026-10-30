@@ -1,0 +1,6 @@
+{
+  "binary": "worth-store-court-physical-format::worth_store_court_physical_format",
+  "tests": {
+    "offline_integrity_observer::observation_contracts::comparison_protocol::runtime_partial_source_range_is_preserved_and_validated_in_version_one": 2
+  }
+}
