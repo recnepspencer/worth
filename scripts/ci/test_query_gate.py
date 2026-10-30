@@ -209,6 +209,27 @@ class CourtSelection(unittest.TestCase):
         self.assertIn('root-doc', root_gate.ROOT_SUITES)
         self.assertIn('root-cost', root_gate.ROOT_SUITES)
 
+    def test_landing_aliases_are_listed_and_documented_without_constructing_a_gate(self):
+        for arguments in (['--list'], ['--help']):
+            output = io.StringIO()
+            with patch.object(query_gate, 'Gate') as gate, contextlib.redirect_stdout(output):
+                if arguments == ['--help']:
+                    with self.assertRaises(SystemExit) as raised:
+                        query_gate.main(arguments)
+                    self.assertEqual(raised.exception.code, 0)
+                else:
+                    self.assertEqual(query_gate.main(arguments), 0)
+            gate.assert_not_called()
+            self.assertIn('query-landing', output.getvalue())
+            self.assertIn('bank-landing', output.getvalue())
+
+    def test_duplicate_alias_expansion_refuses_before_any_gate_or_rust_process(self):
+        with patch.object(query_gate, 'Gate') as gate, contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as raised:
+                query_gate.main(['query-landing,query-doc'])
+        self.assertEqual(raised.exception.code, 2)
+        gate.assert_not_called()
+
     def test_category_suites_do_not_repeat_harness_free_product_examples(self):
         with tempfile.TemporaryDirectory() as temporary:
             discovered = {"rust-suites": {"owning-example::example/main": {

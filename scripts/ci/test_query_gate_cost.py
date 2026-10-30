@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 
 from query_gate_cost import (CostGate, GateSelectionFailure, SuiteQueries, executed_observations,
-                             DOC_SUITES, expand_suites)
+                             DOC_SUITES, expand_suites, landing_suites)
 from run_lane import LaneExecutionFailure
 
 
@@ -93,6 +93,15 @@ class SharedGateSelectionTests(unittest.TestCase):
     def test_documentation_aliases_select_each_canonical_workspace_without_example_commands(self):
         self.assertEqual(expand_suites(['doc']), ['root-doc', 'query-doc', 'bank-doc'])
         self.assertEqual(set(DOC_SUITES.values()), {'root', 'query', 'bank'})
+
+    def test_workspace_landing_aliases_derive_every_normal_category_and_own_docs(self):
+        for workspace in ('query', 'bank'):
+            expanded = expand_suites([workspace+'-landing'])
+            self.assertEqual(expanded, [*landing_suites(workspace), workspace+'-doc'])
+            self.assertEqual(len(expanded), len(set(expanded)))
+            self.assertFalse(any(name.endswith('-scale') for name in expanded))
+            self.assertIn(workspace+'-cost', expanded)
+            self.assertNotIn('doc', expanded)
 
     def test_docs_share_the_native_execution_and_preserve_actual_ignored_observations(self):
         with tempfile.TemporaryDirectory() as temporary:

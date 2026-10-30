@@ -3,6 +3,8 @@
 
     python scripts/ci/query_gate.py                  every non-UI suite
     python scripts/ci/query_gate.py relational,bank  the named suites
+    python scripts/ci/query_gate.py query-landing    all normal Query suites and docs
+    python scripts/ci/query_gate.py bank-landing     all normal Bank suites and docs
     python scripts/ci/query_gate.py --list           suite names
 
 Governed workspaces use one census/prebuild execution for every selected suite.
@@ -26,7 +28,7 @@ from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment
 from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
-from query_gate_cost import CostGate, DOC_ALIASES, DOC_SUITES, expand_suites, governed
+from query_gate_cost import CostGate, DOC_SUITES, SUITE_ALIASES, expand_suites, governed
 from cargo_capture import CargoRunner
 
 from query_gate_courts import (
@@ -301,13 +303,13 @@ class Gate:
 def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("suites", nargs="?", default=",".join(default_suites or ORDER),
-                        help="comma-separated suite names (default: all)")
+                        help="suite names or query-landing, bank-landing, doc")
     parser.add_argument("--out", type=Path, default=default_out or ROOT / "target" / "query-gate")
     parser.add_argument("--list", action="store_true", help="print suite names")
     parser.add_argument("--census", action="store_true", help="refuse scheduled scale suites")
     args = parser.parse_args(argv)
     if args.list:
-        print("\n".join(allowed_suites or dict.fromkeys([*ORDER, *TEST_SUITES, *DOC_ALIASES, *COMMAND_SUITES])))
+        print("\n".join(allowed_suites or dict.fromkeys([*ORDER, *TEST_SUITES, *SUITE_ALIASES, *COMMAND_SUITES])))
         return 0
     suites = expand_suites(args.suites.split(","))
     unknown = [name for name in suites if name not in TEST_SUITES and name not in COMMAND_SUITES and name not in DOC_SUITES]
