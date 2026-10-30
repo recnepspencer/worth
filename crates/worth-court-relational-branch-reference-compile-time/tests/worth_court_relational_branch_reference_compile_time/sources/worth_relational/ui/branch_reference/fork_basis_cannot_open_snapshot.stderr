@@ -19,7 +19,7 @@ error[E0308]: mismatched types
   = note: expected reference `&RelationalBranchObservation`
              found reference `&AdmittedRelationalForkSourceBasis`
 note: method defined here
- --> src/visibility/snapshot_admission.rs
+ --> $WORKSPACE/crates/worth-relational/src/visibility/snapshot_admission.rs
   |
   |     pub fn snapshot_for_observation(
   |            ^^^^^^^^^^^^^^^^^^^^^^^^

@@ -4,7 +4,7 @@ error[E0599]: the method `bridge_trust_boundary` exists for struct `worth_runtim
 5 |     let _ = projection.bridge_trust_boundary();
   |                        ^^^^^^^^^^^^^^^^^^^^^ method cannot be called due to unsatisfied trait bounds
   |
- ::: src/identity.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
   |
   |         $(pub enum $tag {})+
   |           ---------------- doesn't satisfy `_: BridgeIdentityAuthorityKind`

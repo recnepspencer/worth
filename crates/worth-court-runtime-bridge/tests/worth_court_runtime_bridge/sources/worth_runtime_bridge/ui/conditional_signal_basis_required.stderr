@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeConditionalSignalBasisBinding`
               found reference `&BridgeInstalledConditionalLowering`
 note: associated function defined here
-  --> src/conditional_execution/evaluation_session.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/conditional_execution/evaluation_session.rs
    |
    |     pub fn source_present_at_signal_basis(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -25,7 +25,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeConditionalSignalBasisBinding`
               found reference `&BridgeInstalledConditionalLowering`
 note: method defined here
-  --> src/conditional_execution/sealed_runtime_assembly/conditional_dispatch.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/conditional_execution/sealed_runtime_assembly/conditional_dispatch.rs
    |
    |     pub fn deliver_authoritative_change(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

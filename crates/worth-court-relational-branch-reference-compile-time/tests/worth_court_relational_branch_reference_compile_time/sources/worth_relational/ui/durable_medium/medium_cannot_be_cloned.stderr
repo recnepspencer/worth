@@ -4,7 +4,7 @@ error[E0599]: the method `clone` exists for struct `Box<dyn worth_relational::fa
 9 |     let _first = RelationalRuntimeApi::builder().build_durable(medium.clone()).expect("valid native runtime configuration");
   |                                                                       ^^^^^ method cannot be called due to unsatisfied trait bounds
   |
- ::: src/durability/medium.rs
+ ::: $WORKSPACE/crates/worth-relational/src/durability/medium.rs
   |
   | pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
   | ---------------------------------------------------------------- doesn't satisfy `_: Clone` or `_: Sized`

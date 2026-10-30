@@ -8,7 +8,7 @@ error[E0277]: the trait bound `Proof<Disjointness, SecondAuthority>: ProofSetAut
    |
 help: the trait `ProofSetAuthorizedBy<FirstAuthority>` is not implemented for `Proof<Disjointness, SecondAuthority>`
       but trait `ProofSetAuthorizedBy<SecondAuthority>` is implemented for it
-  --> src/proof/sets.rs
+  --> $WORKSPACE/crates/worth-proof/src/proof/sets.rs
    |
    | / impl<P, Auth> ProofSetAuthorizedBy<Auth> for Proof<P, Auth>
    | | where
@@ -18,7 +18,7 @@ help: the trait `ProofSetAuthorizedBy<FirstAuthority>` is not implemented for `P
    = help: for that trait implementation, expected `SecondAuthority`, found `FirstAuthority`
    = note: required for `ProofSetCons<Proof<CanonicalOrder, FirstAuthority>, Proof<Disjointness, SecondAuthority>>` to implement `ProofSetAuthorizedBy<FirstAuthority>`
 note: required by a bound in `worth_proof::artifact::constructors::<impl Artifact<P, T, S, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<B>>>>::with_proofs_and_current_basis`
-  --> src/artifact/constructors.rs
+  --> $WORKSPACE/crates/worth-proof/src/artifact/constructors.rs
    |
    |     pub fn with_proofs_and_current_basis<Auth>(
    |            ----------------------------- required by a bound in this associated function

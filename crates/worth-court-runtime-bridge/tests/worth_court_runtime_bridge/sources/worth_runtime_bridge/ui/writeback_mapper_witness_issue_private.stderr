@@ -4,7 +4,7 @@ error[E0624]: associated function `issue` is private
 4 |     let _ctor = BridgeWritebackMapperWitness::issue;
   |                                               ^^^^^ private associated function
   |
- ::: src/writeback/mapper/witness.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/writeback/mapper/witness.rs
   |
   |     pub(crate) fn issue(mapped_input: &BridgeMappedWritebackFamilyInput) -> Self {
   |     ---------------------------------------------------------------------------- private associated function defined here

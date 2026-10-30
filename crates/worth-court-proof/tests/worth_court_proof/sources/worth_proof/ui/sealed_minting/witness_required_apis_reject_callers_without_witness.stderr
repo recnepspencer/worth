@@ -5,7 +5,7 @@ error[E0061]: this method takes 2 arguments but 1 argument was supplied
    |                                                   ^^^^^^^^^^^^^^^^^^^^^^------ argument #2 of type `AuthorityWitness<_>` is missing
    |
 note: method defined here
-  --> src/recipe/minting.rs
+  --> $WORKSPACE/crates/worth-proof/src/recipe/minting.rs
    |
    |     pub fn resolve_with_authority<Auth, B>(
    |            ^^^^^^^^^^^^^^^^^^^^^^
@@ -21,7 +21,7 @@ error[E0061]: this method takes 1 argument but 0 arguments were supplied
    |                                   ^^^^^^^^^^^^^^^^^^^^^-- argument #1 of type `CapabilityWitness<_>` is missing
    |
 note: method defined here
-  --> src/recipe/minting.rs
+  --> $WORKSPACE/crates/worth-proof/src/recipe/minting.rs
    |
    |     pub fn lower_with_capability<C>(
    |            ^^^^^^^^^^^^^^^^^^^^^
@@ -37,7 +37,7 @@ error[E0061]: this method takes 1 argument but 0 arguments were supplied
    |                                  ^^^^^^^^^^^^^^^^^^^^-- argument #1 of type `AuthorityWitness<_>` is missing
    |
 note: method defined here
-  --> src/recipe/minting.rs
+  --> $WORKSPACE/crates/worth-proof/src/recipe/minting.rs
    |
    |     pub fn admit_with_authority<Auth>(
    |            ^^^^^^^^^^^^^^^^^^^^

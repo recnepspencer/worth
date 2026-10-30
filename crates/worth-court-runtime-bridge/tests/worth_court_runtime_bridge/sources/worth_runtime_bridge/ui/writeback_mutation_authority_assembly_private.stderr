@@ -4,7 +4,7 @@ error[E0624]: associated function `from_successful_writeback_artifacts` is priva
 4 |       let _ = BridgeMutationAuthorityBundle::from_successful_writeback_artifacts;
   |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
   |
- ::: src/writeback/mutation_evidence/authority.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/writeback/mutation_evidence/authority.rs
   |
   | /     pub(crate) fn from_successful_writeback_artifacts(
   | |         artifacts: SuccessfulWritebackArtifactChain<'_>,

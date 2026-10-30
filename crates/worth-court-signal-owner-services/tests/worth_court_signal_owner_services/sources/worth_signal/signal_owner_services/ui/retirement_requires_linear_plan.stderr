@@ -7,7 +7,7 @@ error[E0308]: mismatched types
    |          arguments to this method are incorrect
    |
 note: method defined here
-  --> src/branch/owner_services/lifecycle_port.rs
+  --> $WORKSPACE/crates/worth-signal/src/branch/owner_services/lifecycle_port.rs
    |
    |     pub fn retire_exact(
    |            ^^^^^^^^^^^^

@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected struct `Recipe<worth_proof::Unresolved, _>`
               found struct `Recipe<worth_proof::Resolved, &'static str>`
 note: function defined here
-  --> src/transition/checked_recipe.rs
+  --> $WORKSPACE/crates/worth-proof/src/transition/checked_recipe.rs
    |
    | pub fn resolve_lower_and_admit_recipe<T, B, ResolutionAuth, LoweringCap, AdmissionAuth, D, De>(
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

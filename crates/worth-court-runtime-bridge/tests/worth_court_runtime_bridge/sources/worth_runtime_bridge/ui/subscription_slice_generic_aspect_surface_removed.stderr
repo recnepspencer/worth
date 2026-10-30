@@ -10,7 +10,7 @@ note: if you're trying to build a new `NormalizedSubscriptionSliceIntent` consid
       NormalizedSubscriptionSliceIntent::try_new_entity_region
       NormalizedSubscriptionSliceIntent::try_new_entity_partition
       and $N others
- --> src/subscription/declaration/slice_intent.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/subscription/declaration/slice_intent.rs
   |
   | /     pub fn try_new_entity_field(
   | |         entity_identity: impl Into<Arc<str>>,

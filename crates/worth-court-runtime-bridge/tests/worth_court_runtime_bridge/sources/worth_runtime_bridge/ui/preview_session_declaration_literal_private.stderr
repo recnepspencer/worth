@@ -4,7 +4,7 @@ error[E0624]: associated function `new` is private
 13 |               TruthBranchIdentity::new("truth"),
    |                                    ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -22,7 +22,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -33,7 +33,7 @@ error[E0624]: associated function `new` is private
 14 |               TruthSnapshotIdentity::new("snapshot"),
    |                                      ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -51,7 +51,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -62,7 +62,7 @@ error[E0624]: associated function `new` is private
 21 |           declaration_identity: BridgePreviewSessionDeclarationIdentity::new("preview"),
    |                                                                          ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -80,7 +80,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -91,7 +91,7 @@ error[E0624]: associated function `new` is private
 24 |               BridgeSpeculativeBranchBindingIdentity::new("binding"),
    |                                                       ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -109,7 +109,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -120,7 +120,7 @@ error[E0624]: associated function `new` is private
 25 |               TruthBranchIdentity::new("truth"),
    |                                    ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -138,7 +138,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -149,7 +149,7 @@ error[E0624]: associated function `new` is private
 26 |               BridgeSignalBranchIdentity::new("signal"),
    |                                           ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -167,7 +167,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^

@@ -19,7 +19,7 @@ error[E0308]: mismatched types
   = note: expected reference `&AdmittedRelationalBranchBasis`
              found reference `&AdmittedRelationalForkSourceBasis`
 note: method defined here
- --> src/mvcc/transaction/admission.rs
+ --> $WORKSPACE/crates/worth-relational/src/mvcc/transaction/admission.rs
   |
   |     pub fn begin_branch_transaction(
   |            ^^^^^^^^^^^^^^^^^^^^^^^^

@@ -4,7 +4,7 @@ error[E0624]: associated function `validate` is private
 4 |       let _constructor = BridgeSubscriptionFanoutProjectionValidation::validate;
   |                                                                        ^^^^^^^^ private associated function
   |
- ::: src/subscription/fanout/validation.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/fanout/validation.rs
   |
   | /     pub(crate) fn validate(
   | |         layout: &BridgeSubscriptionFanoutLayout,

@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::WritebackReplayRecordIdentityTag>`
              found reference `&str`
 note: method defined here
- --> src/diagnostics/facade/query/writeback.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/diagnostics/facade/query/writeback.rs
   |
   |     pub fn writeback_replay_record_for_identity(
   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -21,7 +21,7 @@ help: the return type of this call is `Recipe<worth_proof::Resolved, &str, Fresh
 24 | |     );
    | |_____^
 note: function defined here
-  --> src/transition/contract.rs
+  --> $WORKSPACE/crates/worth-proof/src/transition/contract.rs
    |
    | pub fn apply_contextual_transition<T, Input, Context>(
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -4,7 +4,7 @@ error[E0624]: associated function `prepare` is private
 4 |       let _constructor = BridgeSubscriptionActivationReady::prepare;
   |                                                             ^^^^^^^ private associated function
   |
- ::: src/subscription/lifecycle.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/lifecycle.rs
   |
   | /     pub(crate) fn prepare(
   | |         registry_identity: &super::BridgeSubscriptionFamilyRegistryIdentity,

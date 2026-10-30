@@ -7,7 +7,7 @@ error[E0308]: mismatched types
    |          arguments to this method are incorrect
    |
 note: method defined here
-  --> src/history/authority/replay_retention.rs
+  --> $WORKSPACE/crates/worth-relational/src/history/authority/replay_retention.rs
    |
    |     pub fn retain_version_for_replay(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^

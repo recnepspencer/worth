@@ -4,7 +4,7 @@ error[E0624]: associated function `replay` is private
 4 |       let _constructor = BridgeSubscriptionReplaySummary::replay;
   |                                                           ^^^^^^ private associated function
   |
- ::: src/subscription/replay.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/replay.rs
   |
   | /     pub(crate) fn replay(
   | |         current_registry_identity: &super::BridgeSubscriptionFamilyRegistryIdentity,

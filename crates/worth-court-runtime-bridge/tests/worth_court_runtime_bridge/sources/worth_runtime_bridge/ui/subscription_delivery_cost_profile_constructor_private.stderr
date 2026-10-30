@@ -4,7 +4,7 @@ error[E0624]: associated function `admit` is private
 4 |       let _constructor = BridgeSubscriptionDeliveryCostProfile::admit;
   |                                                                 ^^^^^ private associated function
   |
- ::: src/subscription/delivery_cost.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/delivery_cost.rs
   |
   | /     pub(crate) fn admit(
   | |         density_posture: BridgeSubscriptionDeliveryDensityPosture,

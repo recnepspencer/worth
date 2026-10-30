@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected struct `JoinInputs2<Artifact<_, u8, _, _>, Artifact<_, u8, _, _>>`
               found struct `Vec<Artifact<LoweredPhase, u8>>`
 note: function defined here
-  --> src/composition/join.rs
+  --> $WORKSPACE/crates/worth-proof/src/composition/join.rs
    |
    | pub fn join_artifact_pair<P, L, R, LS, RS, LA, RA, T, S, A>(
    |        ^^^^^^^^^^^^^^^^^^

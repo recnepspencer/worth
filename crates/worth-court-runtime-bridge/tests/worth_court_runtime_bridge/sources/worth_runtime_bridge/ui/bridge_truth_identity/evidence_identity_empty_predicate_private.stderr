@@ -4,7 +4,7 @@ error[E0624]: method `is_empty` is private
 10 |     let _empty = evidence.is_empty();
    |                           ^^^^^^^^ private method
    |
-  ::: src/identity/evidence.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity/evidence.rs
    |
    |     pub(crate) fn is_empty(&self) -> bool {
    |     ------------------------------------- private method defined here

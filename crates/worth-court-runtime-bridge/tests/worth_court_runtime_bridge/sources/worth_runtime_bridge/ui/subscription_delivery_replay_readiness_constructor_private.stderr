@@ -4,7 +4,7 @@ error[E0624]: associated function `inspect` is private
 4 |     let _constructor = BridgeSubscriptionDeliveryWindowReplayReadiness::inspect;
   |                                                                         ^^^^^^^ private associated function
   |
- ::: src/subscription/retained_delivery/readiness.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/retained_delivery/readiness.rs
   |
   |     pub(crate) fn inspect(sealed_window: &BridgeSubscriptionDeliveryWindowSealed) -> Self {
   |     ------------------------------------------------------------------------------------- private associated function defined here

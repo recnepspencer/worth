@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&AdmittedSignalBranchBasis`
              found reference `&SignalBranchBasisDescriptor`
 note: method defined here
- --> src/logic/transaction/runtime/state/branching/canonical_fork.rs
+ --> $WORKSPACE/crates/worth-signal/src/logic/transaction/runtime/state/branching/canonical_fork.rs
   |
   |     pub fn fork_signal_branch(
   |            ^^^^^^^^^^^^^^^^^^

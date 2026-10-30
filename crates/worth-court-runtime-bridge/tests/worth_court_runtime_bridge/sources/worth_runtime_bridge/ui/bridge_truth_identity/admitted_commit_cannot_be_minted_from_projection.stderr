@@ -4,7 +4,7 @@ error[E0624]: associated function `admit` is private
 7 |     let _ = BridgeAdmittedTruthCommitIdentity::admit(projection);
   |                                                ^^^^^ private associated function
   |
- ::: src/correspondence/admitted_truth_identity.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/correspondence/admitted_truth_identity.rs
   |
   |     pub(crate) fn admit(projection: TruthCommitIdentity) -> Self {
   |     ------------------------------------------------------------ private associated function defined here

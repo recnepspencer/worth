@@ -4,7 +4,7 @@ error[E0624]: associated function `promote` is private
 4 |       let _constructor = BridgeSubscriptionPreviewPromotionRecord::promote;
   |                                                                    ^^^^^^^ private associated function
   |
- ::: src/subscription/promotion.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/promotion.rs
   |
   | /     pub(crate) fn promote(
   | |         preview_active: BridgePreviewActiveSubscription,

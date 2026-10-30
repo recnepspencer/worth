@@ -4,7 +4,7 @@ error[E0624]: associated function `from_commit_receipt` is private
 6 |       let _ = RelationalBranchTarget::from_commit_receipt(
   |                                       ^^^^^^^^^^^^^^^^^^^ private associated function
   |
- ::: src/branch/target.rs
+ ::: $WORKSPACE/crates/worth-relational/src/branch/target.rs
   |
   | /     pub(crate) fn from_commit_receipt(
   | |         runtime_instance_id: u64,

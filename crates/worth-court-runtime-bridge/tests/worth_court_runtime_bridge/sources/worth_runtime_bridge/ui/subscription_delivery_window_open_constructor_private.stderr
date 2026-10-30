@@ -4,7 +4,7 @@ error[E0624]: associated function `open` is private
 4 |       let _constructor = BridgeSubscriptionDeliveryWindowOpen::open;
   |                                                                ^^^^ private associated function
   |
- ::: src/subscription/active_delivery.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/active_delivery.rs
   |
   | /     pub(crate) fn open(
   | |         active_subscription: &BridgeActiveSubscription,

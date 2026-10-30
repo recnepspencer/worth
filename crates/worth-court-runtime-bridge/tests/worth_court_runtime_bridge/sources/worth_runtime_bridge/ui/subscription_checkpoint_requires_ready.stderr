@@ -7,7 +7,7 @@ error[E0308]: mismatched types
    |         ^^^^^^^^ expected `BridgeSubscriptionCheckpointReady`, found `BridgeSubscriptionAcknowledgementFrontier`
    |
 note: method defined here
-  --> src/facade/runtime/subscription.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription.rs
    |
    |     pub fn publish_subscription_checkpoint(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

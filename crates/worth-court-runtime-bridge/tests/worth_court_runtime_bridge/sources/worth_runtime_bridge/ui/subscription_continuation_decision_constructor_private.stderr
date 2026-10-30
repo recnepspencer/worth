@@ -4,7 +4,7 @@ error[E0624]: associated function `plan` is private
 4 |       let _constructor = BridgeSubscriptionContinuationDecision::plan;
   |                                                                  ^^^^ private associated function
   |
- ::: src/subscription/continuation/decision.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/continuation/decision.rs
   |
   | /     pub(crate) fn plan(
   | |         active_subscription: &BridgeActiveSubscription,

@@ -4,7 +4,7 @@ error[E0624]: associated function `passing` is private
 10 |       let _forged = ResourceCertificationRecord::passing(
    |                                                  ^^^^^^^ private associated function
    |
-  ::: src/data/resource/certification/family/contract.rs
+  ::: $WORKSPACE/crates/worth-signal/src/data/resource/certification/family/contract.rs
    |
    | /     pub(crate) fn passing(
    | |         family: ResourceCertificationFamily,

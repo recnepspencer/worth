@@ -5,7 +5,7 @@ error[E0599]: no method named `begin_transaction` found for struct `RelationalRu
    |                     ^^^^^^^^^^^^^^^^^
    |
 help: there is a method `begin_branch_transaction` with a similar name, but with different arguments
-  --> src/mvcc/transaction/admission.rs
+  --> $WORKSPACE/crates/worth-relational/src/mvcc/transaction/admission.rs
    |
    | /     pub fn begin_branch_transaction(
    | |         &self,

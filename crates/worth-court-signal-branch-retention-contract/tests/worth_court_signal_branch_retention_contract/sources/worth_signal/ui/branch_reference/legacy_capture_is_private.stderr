@@ -4,7 +4,7 @@ error[E0624]: method `capture_snapshot` is private
 4 |     let _ = runtime.capture_snapshot();
   |                     ^^^^^^^^^^^^^^^^ private method
   |
- ::: src/logic/transaction/runtime/state/branching/snapshotting/capture.rs
+ ::: $WORKSPACE/crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting/capture.rs
   |
   |     pub(crate) fn capture_snapshot(&mut self) -> Result<SignalSnapshotV1, SignalError> {
   |     ---------------------------------------------------------------------------------- private method defined here
@@ -15,7 +15,7 @@ error[E0624]: method `capture_branch_snapshot` is private
 5 |       let _ = runtime.capture_branch_snapshot(runtime.current_branch());
   |                       ^^^^^^^^^^^^^^^^^^^^^^^ private method
   |
- ::: src/logic/transaction/runtime/state/branching/snapshotting/capture.rs
+ ::: $WORKSPACE/crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting/capture.rs
   |
   | /     pub(crate) fn capture_branch_snapshot(
   | |         &mut self,

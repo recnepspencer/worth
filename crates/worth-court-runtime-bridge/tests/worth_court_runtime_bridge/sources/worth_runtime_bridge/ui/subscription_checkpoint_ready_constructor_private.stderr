@@ -4,7 +4,7 @@ error[E0624]: associated function `prepare` is private
 4 |     let _constructor = BridgeSubscriptionCheckpointReady::prepare;
   |                                                           ^^^^^^^ private associated function
   |
- ::: src/subscription/checkpoint/ready.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/checkpoint/ready.rs
   |
   |     pub(crate) fn prepare(frontier: BridgeSubscriptionAcknowledgementFrontier) -> Self {
   |     ---------------------------------------------------------------------------------- private associated function defined here

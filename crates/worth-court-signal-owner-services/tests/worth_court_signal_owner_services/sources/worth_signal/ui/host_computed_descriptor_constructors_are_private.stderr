@@ -4,7 +4,7 @@ error[E0624]: associated function `new` is private
 6 |     let id = HostComputedDescriptorId::new(1);
   |                                        ^^^ private associated function
   |
- ::: src/data/host_computed/descriptor.rs
+ ::: $WORKSPACE/crates/worth-signal/src/data/host_computed/descriptor.rs
   |
   |     pub(crate) fn new(value: u64) -> Self {
   |     ------------------------------------- private associated function defined here
@@ -15,7 +15,7 @@ error[E0624]: associated function `new` is private
 7 |       let _ = HostComputedDescriptor::new(id, NodeId::new(1, 0), HostComputedApiFamily::EasyClosure);
   |                                       ^^^ private associated function
   |
- ::: src/data/host_computed/descriptor.rs
+ ::: $WORKSPACE/crates/worth-signal/src/data/host_computed/descriptor.rs
   |
   | /     pub(crate) fn new(
   | |         descriptor_id: HostComputedDescriptorId,

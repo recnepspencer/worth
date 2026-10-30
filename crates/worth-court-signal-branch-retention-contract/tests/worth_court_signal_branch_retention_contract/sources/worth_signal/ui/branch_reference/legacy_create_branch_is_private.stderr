@@ -5,7 +5,7 @@ error[E0599]: no method named `create_branch` found for mutable reference `&mut 
   |                     ^^^^^^^^^^^^^
   |
 help: there is a method `current_branch` with a similar name, but with different arguments
- --> src/logic/transaction/runtime/state/branching/lifecycle.rs
+ --> $WORKSPACE/crates/worth-signal/src/logic/transaction/runtime/state/branching/lifecycle.rs
   |
   |     pub fn current_branch(&self) -> SignalBranchHandle {
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

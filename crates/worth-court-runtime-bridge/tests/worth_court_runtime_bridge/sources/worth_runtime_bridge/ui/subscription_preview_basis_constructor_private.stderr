@@ -4,7 +4,7 @@ error[E0624]: associated function `admit` is private
 4 |       let _constructor = BridgeSubscriptionPreviewBasisBinding::admit;
   |                                                                 ^^^^^ private associated function
   |
- ::: src/subscription/preview/basis.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/preview/basis.rs
   |
   | /     pub(crate) fn admit(
   | |         active_preview_session: &BridgePreviewSession<PreviewActive>,

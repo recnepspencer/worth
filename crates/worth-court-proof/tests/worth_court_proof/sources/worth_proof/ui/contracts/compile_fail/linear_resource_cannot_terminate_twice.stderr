@@ -10,7 +10,7 @@ error[E0382]: use of moved value: `resource`
    |                   ^^^^^^^^ value used here after move
    |
 note: `LinearResource::<Id, Terminal, Authority>::terminate` takes ownership of the receiver `self`, which moves `resource`
-  --> src/linear.rs
+  --> $WORKSPACE/crates/worth-proof/src/linear.rs
    |
    |     pub fn terminate(self, terminal: Terminal) -> TerminalReceipt<Id, Terminal, Authority> {
    |                      ^^^^

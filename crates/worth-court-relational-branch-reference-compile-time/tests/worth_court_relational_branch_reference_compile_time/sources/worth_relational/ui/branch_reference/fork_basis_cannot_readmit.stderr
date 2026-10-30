@@ -19,7 +19,7 @@ error[E0308]: mismatched types
   = note: expected reference `&BranchId`
              found reference `&AdmittedRelationalForkSourceBasis`
 note: method defined here
- --> src/runtime/state/runtime_state/branch_authority.rs
+ --> $WORKSPACE/crates/worth-relational/src/runtime/state/runtime_state/branch_authority.rs
   |
   |     pub fn branch_reference_state(
   |            ^^^^^^^^^^^^^^^^^^^^^^

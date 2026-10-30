@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeSharedConsumerDeliveryBundleSealed`
               found reference `&BridgeSharedConsumerDeliveryBundleDraft`
 note: method defined here
-  --> src/facade/runtime/subscription/shared_delivery.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription/shared_delivery.rs
    |
    |     pub fn project_shared_delivery_consumer(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

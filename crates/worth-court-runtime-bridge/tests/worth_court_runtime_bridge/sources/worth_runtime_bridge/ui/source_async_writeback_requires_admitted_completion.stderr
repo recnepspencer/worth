@@ -4,7 +4,7 @@ error[E0624]: associated function `new` is private
 18 |           TruthBranchIdentity::new("truth-main"),
    |                                ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -22,7 +22,7 @@ error[E0308]: mismatched types
    = note: expected struct `FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -33,7 +33,7 @@ error[E0624]: associated function `new` is private
 19 |           TruthCommitIdentity::new("commit"),
    |                                ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -51,7 +51,7 @@ error[E0308]: mismatched types
    = note: expected struct `FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -62,7 +62,7 @@ error[E0624]: associated function `new` is private
 20 |           TruthSnapshotIdentity::new("snapshot"),
    |                                  ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -80,7 +80,7 @@ error[E0308]: mismatched types
    = note: expected struct `FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -96,7 +96,7 @@ error[E0308]: mismatched types
    = note: expected reference `&AdmittedBridgeAsyncCompletion`
               found reference `&BridgeAsyncCompletionAdmissionReport`
 note: associated function defined here
-  --> src/source/async_declaration/writeback/admission.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/source/async_declaration/writeback/admission.rs
    |
    |     pub fn authoritative_commit(
    |            ^^^^^^^^^^^^^^^^^^^^

@@ -4,7 +4,7 @@ error[E0624]: associated function `build` is private
 4 |       let _constructor = BridgeSubscriptionPreviewResidueScopeIndex::build;
   |                                                                      ^^^^^ private associated function
   |
- ::: src/subscription/residue.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/residue.rs
   |
   | /     pub(crate) fn build(
   | |         preview_active: &BridgePreviewActiveSubscription,

@@ -7,7 +7,7 @@ error[E0603]: module `validation` is private
   |                       private module
   |
 note: the module `validation` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-relational/src/lib.rs
   |
   | mod validation;
   | ^^^^^^^^^^^^^^

@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected struct `BridgeSubscriptionFanoutPlan`
               found struct `Vec<BridgeSubscriptionConsumerContract>`
 note: method defined here
-  --> src/facade/runtime/subscription.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription.rs
    |
    |     pub fn build_subscription_fanout_layout(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

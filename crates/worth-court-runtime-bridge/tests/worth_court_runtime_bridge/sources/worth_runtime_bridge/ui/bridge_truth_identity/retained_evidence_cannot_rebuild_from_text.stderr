@@ -19,7 +19,7 @@ note: expected `FoundationalDigestIdentityEvidence<..., ..., ...>`, found `&str`
   = note: expected struct `worth_foundational::identities::authority_identity::derived::FoundationalDigestIdentityEvidence<BridgeCanonicalDigestIdentityBasis, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
           found reference `&'static str`
 note: associated function defined here
- --> src/identity/evidence.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/identity/evidence.rs
   |
   |     pub fn from_query_evidence_identity(
   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

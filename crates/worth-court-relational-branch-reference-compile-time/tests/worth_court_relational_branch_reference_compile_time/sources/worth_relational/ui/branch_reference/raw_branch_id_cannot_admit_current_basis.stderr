@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&RelationalBranchIdentity`
              found reference `&BranchId`
 note: method defined here
- --> src/runtime/state/runtime_state/branch_authority.rs
+ --> $WORKSPACE/crates/worth-relational/src/runtime/state/runtime_state/branch_authority.rs
   |
   |     pub fn admit_branch_basis(
   |            ^^^^^^^^^^^^^^^^^^

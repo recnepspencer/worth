@@ -4,7 +4,7 @@ error[E0624]: associated function `issued` is private
 8 |       CompositeBasisKey::issued(
   |                          ^^^^^^ private associated function
   |
- ::: src/identity/basis_key.rs
+ ::: $WORKSPACE/crates/worth-runtime-world/src/identity/basis_key.rs
   |
   | /     pub(super) fn issued(
   | |         owner: RuntimeWorldOwnerIdentity,

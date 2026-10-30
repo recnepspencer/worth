@@ -21,7 +21,7 @@ error[E0277]: `std::cell::Cell<()>` cannot be shared between threads safely
 note: required because it appears within the type `PhantomData<std::cell::Cell<()>>`
  --> $RUST/core/src/marker.rs
 note: required because it appears within the type `PreparedRelationalCommitCandidate`
- --> src/mvcc/publication/candidate.rs
+ --> $WORKSPACE/crates/worth-relational/src/mvcc/publication/candidate.rs
   |
   | pub struct PreparedRelationalCommitCandidate {
   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

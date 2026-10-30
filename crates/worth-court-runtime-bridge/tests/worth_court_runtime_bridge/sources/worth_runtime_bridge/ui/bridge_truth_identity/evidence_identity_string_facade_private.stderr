@@ -4,7 +4,7 @@ error[E0624]: method `as_str` is private
 10 |     let _text = evidence.as_str();
    |                          ^^^^^^ private method
    |
-  ::: src/identity/evidence.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity/evidence.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here

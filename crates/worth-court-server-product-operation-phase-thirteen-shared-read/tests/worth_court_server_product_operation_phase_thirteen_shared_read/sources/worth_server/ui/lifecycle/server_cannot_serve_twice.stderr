@@ -10,7 +10,7 @@ error[E0382]: use of moved value: `server`
    |                         ^^^^^^ value used here after move
    |
 note: `WorthServer::serve` takes ownership of the receiver `self`, which moves `server`
-  --> src/facade/server.rs
+  --> $WORKSPACE/crates/worth-server/src/facade/server.rs
    |
    |     pub async fn serve(self) -> io::Result<()> {
    |                        ^^^^

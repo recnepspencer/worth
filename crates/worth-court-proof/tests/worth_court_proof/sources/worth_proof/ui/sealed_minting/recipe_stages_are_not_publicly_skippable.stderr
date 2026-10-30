@@ -5,7 +5,7 @@ error[E0599]: no method named `admit_with_authority` found for struct `Recipe<wo
    |                               ^^^^^^^^^^^^^^^^^^^^
    |
 help: there is a method `resolve_with_authority` with a similar name, but with different arguments
-  --> src/recipe/minting.rs
+  --> $WORKSPACE/crates/worth-proof/src/recipe/minting.rs
    |
    | /     pub fn resolve_with_authority<Auth, B>(
    | |         self,
@@ -31,7 +31,7 @@ error[E0624]: associated function `with_stage` is private
 28 |         Recipe::<Resolved, _, _>::with_stage("payload", AssumptionBasis::new(1_u8));
    |                                   ^^^^^^^^^^ private associated function
    |
-  ::: src/recipe/stages.rs
+  ::: $WORKSPACE/crates/worth-proof/src/recipe/stages.rs
    |
    |     pub(crate) fn with_stage(payload: T, basis: A) -> Self {
    |     ------------------------------------------------------ private associated function defined here
@@ -42,7 +42,7 @@ error[E0624]: associated function `with_stage` is private
 30 |         Recipe::<Lowered, _, _>::with_stage("payload", AssumptionBasis::new(1_u8));
    |                                  ^^^^^^^^^^ private associated function
    |
-  ::: src/recipe/stages.rs
+  ::: $WORKSPACE/crates/worth-proof/src/recipe/stages.rs
    |
    |     pub(crate) fn with_stage(payload: T, basis: A) -> Self {
    |     ------------------------------------------------------ private associated function defined here
@@ -53,7 +53,7 @@ error[E0624]: associated function `with_stage` is private
 32 |         Recipe::<Admitted, _, _>::with_stage("payload", AssumptionBasis::new(1_u8));
    |                                   ^^^^^^^^^^ private associated function
    |
-  ::: src/recipe/stages.rs
+  ::: $WORKSPACE/crates/worth-proof/src/recipe/stages.rs
    |
    |     pub(crate) fn with_stage(payload: T, basis: A) -> Self {
    |     ------------------------------------------------------ private associated function defined here

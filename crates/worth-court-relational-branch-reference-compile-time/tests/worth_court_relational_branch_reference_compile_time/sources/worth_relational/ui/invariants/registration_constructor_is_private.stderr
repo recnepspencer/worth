@@ -4,7 +4,7 @@ error[E0624]: associated function `for_rule` is private
 6 |       let _ = InvariantRegistration::for_rule(
   |                                      ^^^^^^^^ private associated function
   |
- ::: src/validation/data/catalog/mod.rs
+ ::: $WORKSPACE/crates/worth-relational/src/validation/data/catalog/mod.rs
   |
   | /     pub(crate) fn for_rule(
   | |         rule: InvariantRule,

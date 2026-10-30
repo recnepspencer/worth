@@ -11,7 +11,7 @@ error[E0308]: arguments to this method are incorrect
    = note: expected reference `&BridgeSubscriptionCertificationBundleSealed`
               found reference `&&BridgeSubscriptionCertificationBundleDraft`
 note: method defined here
-  --> src/facade/runtime/subscription/certification/bundle_comparison.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription/certification/bundle_comparison.rs
    |
    |     pub fn compare_subscription_certification_bundles(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

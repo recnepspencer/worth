@@ -5,7 +5,7 @@ error[E0603]: module `builder` is private
   |                           ^^^^^^^ private module
   |
 note: the module `builder` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/lib.rs
   |
   | mod builder;
   | ^^^^^^^^^^^

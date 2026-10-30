@@ -10,7 +10,7 @@ note: constructor is not visible here due to private fields
   |         $vis struct $name(::core::marker::PhantomData<()>);
   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
   |
- ::: src/branch/authority.rs
+ ::: $WORKSPACE/crates/worth-signal/src/branch/authority.rs
   |
   | worth_proof::authority_marker!(pub SignalBranchBasisAuthorityMarker);
   | -------------------------------------------------------------------- in this macro invocation

@@ -4,7 +4,7 @@ error[E0624]: associated function `record` is private
 4 |       let _constructor = BridgeSubscriptionPreviewWorkTrace::record;
   |                                                              ^^^^^^ private associated function
   |
- ::: src/subscription/preview_work/records.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/preview_work/records.rs
   |
   | /     pub(crate) fn record(
   | |         preview_active: &BridgePreviewActiveSubscription,

@@ -14,7 +14,7 @@ note: the tuple struct constructor `SealedAuthority` is defined here
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `worth_proof::authority_marker` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: consider making the field publicly accessible
-  --> src/proof/marker_authoring.rs
+  --> $WORKSPACE/crates/worth-proof/src/proof/marker_authoring.rs
    |
    |         $vis struct $name(pub ::core::marker::PhantomData<()>);
    |                           +++
@@ -35,7 +35,7 @@ note: the tuple struct constructor `SealedCapability` is defined here
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `worth_proof::capability_marker` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: consider making the field publicly accessible
-  --> src/proof/marker_authoring.rs
+  --> $WORKSPACE/crates/worth-proof/src/proof/marker_authoring.rs
    |
    |         $vis struct $name(pub ::core::marker::PhantomData<()>);
    |                           +++

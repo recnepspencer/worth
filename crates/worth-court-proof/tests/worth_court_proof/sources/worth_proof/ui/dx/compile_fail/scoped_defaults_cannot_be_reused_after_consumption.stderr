@@ -11,7 +11,7 @@ error[E0382]: use of moved value: `flow`
    |                   ^^^^ value used here after move
    |
 note: `ProofFlow::<R, L, Ready>::recipe` takes ownership of the receiver `self`, which moves `flow`
-  --> src/dx/scoped_flow.rs
+  --> $WORKSPACE/crates/worth-proof/src/dx/scoped_flow.rs
    |
    |     pub fn recipe<T>(self, payload: T) -> ScopedUnresolvedRecipeFlow<T, R, L, Ready> {
    |                      ^^^^

@@ -4,7 +4,7 @@ error[E0624]: associated function `select` is private
 4 |     let _constructor = BridgeSubscriptionDuplicateReplayPolicy::select;
   |                                                                 ^^^^^^ private associated function
   |
- ::: src/subscription/checkpoint/duplicate_policy.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/checkpoint/duplicate_policy.rs
   |
   |     pub(crate) fn select(policy_kind: BridgeSubscriptionDuplicateReplayPolicyKind) -> Self {
   |     -------------------------------------------------------------------------------------- private associated function defined here

@@ -19,7 +19,7 @@ note: expected `ExecutionReadyRecipe<_, _>`, found `Recipe<Lowered, &str, ...>`
    = note: expected struct `ExecutionReadyRecipe<_, _>`
               found struct `Recipe<worth_proof::Lowered, &'static str, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<u8>>>`
 note: associated function defined here
-  --> src/composition/join.rs
+  --> $WORKSPACE/crates/worth-proof/src/composition/join.rs
    |
    |     pub fn new(left: L, right: R) -> Self {
    |            ^^^

@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeSubscriptionContinuationIndex`
               found reference `&BridgeSubscriptionContinuationCandidateInput`
 note: method defined here
-  --> src/facade/runtime/subscription.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription.rs
    |
    |     pub fn plan_subscription_continuation(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

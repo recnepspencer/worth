@@ -4,7 +4,7 @@ error[E0624]: associated function `retain` is private
 4 |     let _constructor = BridgeSubscriptionRetainedDeliveryReplaySeed::retain;
   |                                                                      ^^^^^^ private associated function
   |
- ::: src/subscription/retained_delivery/replay_seed.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/retained_delivery/replay_seed.rs
   |
   |     pub(crate) fn retain(projection_set: &BridgeSubscriptionFanoutDeliveryProjectionSet) -> Self {
   |     -------------------------------------------------------------------------------------------- private associated function defined here

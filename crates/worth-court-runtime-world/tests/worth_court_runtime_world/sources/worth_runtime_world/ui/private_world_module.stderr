@@ -11,7 +11,7 @@ error[E0603]: module `identity` is private
   |                                  ^^^^^^^^ private module
   |
 note: the module `identity` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-runtime-world/src/lib.rs
   |
   | mod identity;
   | ^^^^^^^^^^^^

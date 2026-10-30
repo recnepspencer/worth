@@ -4,7 +4,7 @@ error[E0624]: associated function `new` is private
 4 |     let _constructor = BridgeSubscriptionSharingEligibilityWitness::new;
   |                                                                     ^^^ private associated function
   |
- ::: src/subscription/consumer_contract.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/consumer_contract.rs
   |
   |     fn new(canonical_basis: Arc<str>) -> Self {
   |     ----------------------------------------- private associated function defined here

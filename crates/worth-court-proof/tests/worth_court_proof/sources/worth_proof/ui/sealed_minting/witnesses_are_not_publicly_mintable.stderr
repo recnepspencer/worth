@@ -5,7 +5,7 @@ error[E0599]: no function or associated item named `mint` found for struct `Auth
    |                                                               ^^^^ function or associated item not found in `AuthorityWitness<DeploymentAuthority>`
    |
 note: if you're trying to build a new `AuthorityWitness<DeploymentAuthority>`, consider using `AuthorityWitness::<A>::from_authority_marker` which returns `AuthorityWitness<_>`
-  --> src/proof/witnesses.rs
+  --> $WORKSPACE/crates/worth-proof/src/proof/witnesses.rs
    |
    |     pub fn from_authority_marker(_marker: A) -> Self {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -17,7 +17,7 @@ error[E0599]: no function or associated item named `mint` found for struct `Capa
    |                                                                        ^^^^ function or associated item not found in `CapabilityWitness<CanonicalizationCapability>`
    |
 note: if you're trying to build a new `CapabilityWitness<CanonicalizationCapability>`, consider using `CapabilityWitness::<C>::from_capability_marker` which returns `CapabilityWitness<_>`
-  --> src/proof/witnesses.rs
+  --> $WORKSPACE/crates/worth-proof/src/proof/witnesses.rs
    |
    |     pub fn from_capability_marker(_marker: C) -> Self {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

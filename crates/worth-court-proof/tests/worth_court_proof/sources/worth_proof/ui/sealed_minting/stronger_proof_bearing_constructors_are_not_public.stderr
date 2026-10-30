@@ -4,7 +4,7 @@ error[E0624]: associated function `mint` is private
 10 |     let proof = Proof::<CanonicalOrder, StructuralProofAuthority>::mint();
    |                                                                    ^^^^ private associated function
    |
-  ::: src/proof/sets.rs
+  ::: $WORKSPACE/crates/worth-proof/src/proof/sets.rs
    |
    |     pub(crate) fn mint() -> Self {
    |     ---------------------------- private associated function defined here
@@ -15,7 +15,7 @@ error[E0624]: associated function `with_state` is private
 12 |     let _artifact = Artifact::<RawPhase, _, _, _>::with_state(
    |                                                    ^^^^^^^^^^ private associated function
    |
-  ::: src/artifact/constructors.rs
+  ::: $WORKSPACE/crates/worth-proof/src/artifact/constructors.rs
    |
    |     pub(crate) fn with_state(payload: T, proofs: S, basis: A) -> Self {
    |     ----------------------------------------------------------------- private associated function defined here
@@ -26,7 +26,7 @@ error[E0624]: associated function `new` is private
 18 |     let _canonical = CanonicalVec::new(
    |                                    ^^^ private associated function
    |
-  ::: src/collections/proven_vec.rs
+  ::: $WORKSPACE/crates/worth-proof/src/collections/proven_vec.rs
    |
    |     pub(crate) fn new(items: Vec<T>, proof: CanonicalOrderProof) -> Self {
    |     -------------------------------------------------------------------- private associated function defined here
@@ -37,7 +37,7 @@ error[E0624]: associated function `mint` is private
 20 |         Proof::<CanonicalOrder, StructuralProofAuthority>::mint(),
    |                                                            ^^^^ private associated function
    |
-  ::: src/proof/sets.rs
+  ::: $WORKSPACE/crates/worth-proof/src/proof/sets.rs
    |
    |     pub(crate) fn mint() -> Self {
    |     ---------------------------- private associated function defined here
@@ -48,7 +48,7 @@ error[E0624]: associated function `new` is private
 22 |     let _unique = UniqueVec::new(
    |                              ^^^ private associated function
    |
-  ::: src/collections/proven_vec.rs
+  ::: $WORKSPACE/crates/worth-proof/src/collections/proven_vec.rs
    |
    |     pub(crate) fn new(items: Vec<T>, proof: UniquenessProof) -> Self {
    |     ---------------------------------------------------------------- private associated function defined here
@@ -59,7 +59,7 @@ error[E0624]: associated function `mint` is private
 24 |         Proof::<Uniqueness, StructuralProofAuthority>::mint(),
    |                                                        ^^^^ private associated function
    |
-  ::: src/proof/sets.rs
+  ::: $WORKSPACE/crates/worth-proof/src/proof/sets.rs
    |
    |     pub(crate) fn mint() -> Self {
    |     ---------------------------- private associated function defined here
@@ -70,7 +70,7 @@ error[E0624]: associated function `new` is private
 26 |       let _disjoint = DisjointPair::new(
    |                                     ^^^ private associated function
    |
-  ::: src/collections/disjoint_pair.rs
+  ::: $WORKSPACE/crates/worth-proof/src/collections/disjoint_pair.rs
    |
    | /     pub(crate) fn new(
    | |         left: T,
@@ -85,7 +85,7 @@ error[E0624]: associated function `mint` is private
 29 |         Proof::<Disjointness, StructuralProofAuthority>::mint(),
    |                                                          ^^^^ private associated function
    |
-  ::: src/proof/sets.rs
+  ::: $WORKSPACE/crates/worth-proof/src/proof/sets.rs
    |
    |     pub(crate) fn mint() -> Self {
    |     ---------------------------- private associated function defined here

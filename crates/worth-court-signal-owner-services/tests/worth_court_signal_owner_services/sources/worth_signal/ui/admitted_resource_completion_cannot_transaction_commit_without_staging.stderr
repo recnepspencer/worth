@@ -7,7 +7,7 @@ error[E0308]: mismatched types
   |                arguments to this method are incorrect
   |
 note: method defined here
- --> src/logic/transaction/runtime/transaction/transaction_resource.rs
+ --> $WORKSPACE/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_resource.rs
   |
   |     pub fn commit_staged_resource_completion(
   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

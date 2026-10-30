@@ -5,7 +5,7 @@ error[E0603]: module `subscription` is private
   |                           ^^^^^^^^^^^^ private module
   |
 note: the module `subscription` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/lib.rs
   |
   | mod subscription;
   | ^^^^^^^^^^^^^^^^

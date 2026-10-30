@@ -4,7 +4,7 @@ error[E0624]: associated function `new` is private
 4 |       let _constructor = BridgeSubscriptionContinuationChild::new;
   |                                                               ^^^ private associated function
   |
- ::: src/subscription/continuation/decision.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/continuation/decision.rs
   |
   | /     pub(super) fn new(
   | |         decision_identity: &BridgeSubscriptionContinuationDecisionIdentity,

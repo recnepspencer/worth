@@ -4,7 +4,7 @@ error[E0624]: associated function `new` is private
 4 |     let _ = AsyncNodeRequestIntent::new(NodeId::new(1, 0));
   |                                     ^^^ private associated function
   |
- ::: src/data/async_node/request.rs
+ ::: $WORKSPACE/crates/worth-signal/src/data/async_node/request.rs
   |
   |     pub(crate) fn new(node: NodeId) -> Self {
   |     --------------------------------------- private associated function defined here

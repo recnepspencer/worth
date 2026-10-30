@@ -7,7 +7,7 @@ error[E0308]: mismatched types
   |          arguments to this method are incorrect
   |
 note: method defined here
- --> src/lifecycle/service_ports/publication.rs
+ --> $WORKSPACE/crates/worth-runtime-world/src/lifecycle/service_ports/publication.rs
   |
   |     pub fn execute_without_signal(
   |            ^^^^^^^^^^^^^^^^^^^^^^

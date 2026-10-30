@@ -96,7 +96,7 @@ error[E0624]: associated function `new` is private
 26 |       let commit_identity = TruthCommitIdentity::new("commit-1");
    |                                                  ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -114,7 +114,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -125,7 +125,7 @@ error[E0624]: method `as_str` is private
 27 |     let _text = commit_identity.as_str();
    |                                 ^^^^^^ private method
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here
@@ -136,7 +136,7 @@ error[E0624]: associated function `new` is private
 30 |       let snapshot_identity = TruthSnapshotIdentity::new("snapshot-1");
    |                                                      ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -154,7 +154,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -165,7 +165,7 @@ error[E0624]: method `as_str` is private
 31 |     let _text = snapshot_identity.as_str();
    |                                   ^^^^^^ private method
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here
@@ -176,7 +176,7 @@ error[E0624]: associated function `new` is private
 34 |       let patch_identity = TruthPatchIdentity::new("patch-1");
    |                                                ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -194,7 +194,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -205,7 +205,7 @@ error[E0624]: method `as_str` is private
 35 |     let _text = patch_identity.as_str();
    |                                ^^^^^^ private method
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here
@@ -216,7 +216,7 @@ error[E0624]: associated function `new` is private
 38 |       let branch_identity = TruthBranchIdentity::new("branch-main");
    |                                                  ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -234,7 +234,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
@@ -245,7 +245,7 @@ error[E0624]: method `as_str` is private
 39 |     let _text = branch_identity.as_str();
    |                                 ^^^^^^ private method
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here

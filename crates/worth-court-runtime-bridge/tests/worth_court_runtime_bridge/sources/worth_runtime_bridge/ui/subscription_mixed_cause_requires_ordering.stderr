@@ -4,7 +4,7 @@ error[E0624]: associated function `plan` is private
 11 |       let _ = BridgeMixedCauseDeliveryWindowPlan::plan(
    |                                                   ^^^^ private associated function
    |
-  ::: src/subscription/mixed_cause/window.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/mixed_cause/window.rs
    |
    | /     pub(crate) fn plan(
    | |         ordering: &BridgeMixedCauseOrdering,
@@ -23,7 +23,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeMixedCauseOrdering`
               found reference `&BridgeMixedCauseOrderingRequest`
 note: associated function defined here
-  --> src/subscription/mixed_cause/window.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/subscription/mixed_cause/window.rs
    |
    |     pub(crate) fn plan(
    |                   ^^^^

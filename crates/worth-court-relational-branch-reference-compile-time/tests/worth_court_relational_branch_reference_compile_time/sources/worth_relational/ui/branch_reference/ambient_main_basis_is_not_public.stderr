@@ -5,7 +5,7 @@ error[E0599]: no method named `admit_main_branch_basis` found for struct `Relati
    |                     ^^^^^^^^^^^^^^^^^^^^^^^
    |
 help: there is a method `admit_branch_basis` with a similar name, but with different arguments
-  --> src/runtime/state/runtime_state/branch_authority.rs
+  --> $WORKSPACE/crates/worth-relational/src/runtime/state/runtime_state/branch_authority.rs
    |
    | /     pub fn admit_branch_basis(
    | |         &self,

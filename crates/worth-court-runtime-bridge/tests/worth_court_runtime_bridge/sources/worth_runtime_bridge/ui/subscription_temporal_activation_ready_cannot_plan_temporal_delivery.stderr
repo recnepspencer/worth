@@ -4,7 +4,7 @@ error[E0624]: associated function `plan` is private
 12 |       let _ = BridgeTemporalDeliveryWindowPlan::plan(
    |                                                 ^^^^ private associated function
    |
-  ::: src/subscription/temporal/window.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/temporal/window.rs
    |
    | /     pub(crate) fn plan(
    | |         cause_record: &BridgeTemporalCauseRecord,
@@ -23,7 +23,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeTemporalCauseRecord`
               found reference `&BridgeTemporalSubscriptionActivationReady`
 note: associated function defined here
-  --> src/subscription/temporal/window.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/subscription/temporal/window.rs
    |
    |     pub(crate) fn plan(
    |                   ^^^^

@@ -4,7 +4,7 @@ error[E0624]: associated function `new` is private
 4 |       let _ = BridgeWritebackMapperEnvelope::new();
   |                                              ^^^ private associated function
   |
- ::: src/writeback/mapper/envelope.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/writeback/mapper/envelope.rs
   |
   | /     pub(crate) fn new(
   | |         contract: &AdmittedBridgeWritebackContract,
@@ -20,7 +20,7 @@ error[E0061]: this function takes 3 arguments but 0 arguments were supplied
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-- three arguments of type `&AdmittedBridgeWritebackContract`, `&BridgeWritebackNativeCausalityInputs`, and `BridgeWritebackEffectIntent` are missing
   |
 note: associated function defined here
- --> src/writeback/mapper/envelope.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/writeback/mapper/envelope.rs
   |
   |     pub(crate) fn new(
   |                   ^^^

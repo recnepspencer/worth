@@ -7,7 +7,7 @@ error[E0308]: mismatched types
   |                     arguments to this method are incorrect
   |
 note: method defined here
- --> src/change_source/receipt_minting.rs
+ --> $WORKSPACE/crates/worth-relational/src/change_source/receipt_minting.rs
   |
   |     pub fn mint_change_receipt(
   |            ^^^^^^^^^^^^^^^^^^^

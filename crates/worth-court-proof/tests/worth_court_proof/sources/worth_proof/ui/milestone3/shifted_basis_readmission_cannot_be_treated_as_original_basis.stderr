@@ -14,7 +14,7 @@ help: the return type of this call is `u16` due to the type of the argument pass
    |                                        |
    |                                        this argument influences the return type of `readmit_with_authority`
 note: method defined here
-  --> src/assumption/readmission.rs
+  --> $WORKSPACE/crates/worth-proof/src/assumption/readmission.rs
    |
    |     pub fn readmit_with_authority<Auth, NextB>(
    |            ^^^^^^^^^^^^^^^^^^^^^^

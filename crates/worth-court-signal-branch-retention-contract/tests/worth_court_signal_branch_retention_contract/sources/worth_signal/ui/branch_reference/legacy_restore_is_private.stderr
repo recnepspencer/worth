@@ -10,7 +10,7 @@ error[E0624]: method `restore_branch_snapshot` is private
 8 |       let _ = runtime.restore_branch_snapshot(runtime.current_branch(), snapshot);
   |                       ^^^^^^^^^^^^^^^^^^^^^^^ private method
   |
- ::: src/logic/transaction/runtime/state/branching/snapshotting.rs
+ ::: $WORKSPACE/crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting.rs
   |
   | /     pub(crate) fn restore_branch_snapshot(
   | |         &mut self,

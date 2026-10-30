@@ -4,7 +4,7 @@ error[E0624]: associated function `admit` is private
 4 |       let _constructor = BridgeSubscriptionConsumerContract::admit;
   |                                                              ^^^^^ private associated function
   |
- ::: src/subscription/consumer_contract.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/consumer_contract.rs
   |
   | /     pub(crate) fn admit(
   | |         family: BridgeSubscriptionConsumerContractFamily,

@@ -10,7 +10,7 @@ error[E0599]: no method named `resolve` found for struct `worth_proof::dx::scope
    | |_________-^^^^^^^
    |
 help: there is a method `resolve_with` with a similar name, but with different arguments
-  --> src/dx/scoped_flow.rs
+  --> $WORKSPACE/crates/worth-proof/src/dx/scoped_flow.rs
    |
    | /     pub fn resolve_with<B, Auth>(
    | |         self,
@@ -34,7 +34,7 @@ error[E0599]: no method named `lower` found for struct `worth_proof::dx::scoped_
    | |_________-^^^^^
    |
 help: there is a method `lower_with` with a similar name, but with different arguments
-  --> src/dx/scoped_flow.rs
+  --> $WORKSPACE/crates/worth-proof/src/dx/scoped_flow.rs
    |
    | /     pub fn lower_with<Cap>(
    | |         self,
@@ -58,7 +58,7 @@ error[E0599]: no method named `ready` found for struct `worth_proof::dx::scoped_
    | |_________-^^^^^
    |
 help: there is a method `ready_with` with a similar name, but with different arguments
-  --> src/dx/scoped_flow.rs
+  --> $WORKSPACE/crates/worth-proof/src/dx/scoped_flow.rs
    |
    | /     pub fn ready_with<Rt, Auth>(
    | |         self,

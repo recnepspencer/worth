@@ -4,7 +4,7 @@ error[E0624]: associated function `activate` is private
 4 |       let _constructor = BridgePreviewActiveSubscription::activate;
   |                                                           ^^^^^^^^ private associated function
   |
- ::: src/subscription/preview/activation.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/preview/activation.rs
   |
   | /     pub(crate) fn activate(
   | |         activation_ready: BridgeSubscriptionActivationReady,

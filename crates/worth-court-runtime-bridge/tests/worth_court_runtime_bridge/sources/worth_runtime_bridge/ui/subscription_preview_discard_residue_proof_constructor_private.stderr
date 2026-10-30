@@ -4,7 +4,7 @@ error[E0624]: associated function `prove` is private
 4 |       let _constructor = BridgeSubscriptionPreviewDiscardResidueProof::prove;
   |                                                                        ^^^^^ private associated function
   |
- ::: src/subscription/residue/proof.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/residue/proof.rs
   |
   | /     pub(crate) fn prove(
   | |         preview_active: BridgePreviewActiveSubscription,

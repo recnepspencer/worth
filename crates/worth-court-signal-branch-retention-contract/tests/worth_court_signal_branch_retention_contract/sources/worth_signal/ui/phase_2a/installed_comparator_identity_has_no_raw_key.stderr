@@ -4,7 +4,7 @@ error[E0624]: method `graph_instance_id` is private
 4 |     identity.graph_instance_id()
   |              ^^^^^^^^^^^^^^^^^ private method
   |
- ::: src/data/comparator.rs
+ ::: $WORKSPACE/crates/worth-signal/src/data/comparator.rs
   |
   |     pub(crate) const fn graph_instance_id(&self) -> u64 {
   |     --------------------------------------------------- private method defined here

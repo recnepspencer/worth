@@ -4,7 +4,7 @@ error[E0624]: associated function `new_with_authoritative_lowering` is private
 7 |       let _envelope = BridgeCommittedPatchEnvelope::new_with_authoritative_lowering(
   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
   |
- ::: src/input/envelope/canonical.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/input/envelope/canonical.rs
   |
   | /     pub(crate) fn new_with_authoritative_lowering(
   | |         envelope_identity: BridgeCommittedPatchEnvelopeIdentity,
@@ -20,7 +20,7 @@ error[E0624]: associated function `with_relational_semantic_change` is private
 13 |       let _item = BridgeCommittedPatchItem::with_relational_semantic_change(
    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
    |
-  ::: src/relational_source/identity_parts.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/relational_source/identity_parts.rs
    |
    | /     pub(crate) fn with_relational_semantic_change(
    | |         record_identity: RelationalBridgeRecordIdentityParts,
@@ -35,7 +35,7 @@ error[E0624]: associated function `new` is private
 18 |       let _claimed = BridgeProducerMetadata::new(
    |                                              ^^^ private associated function
    |
-  ::: src/input/envelope/core.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/input/envelope/core.rs
    |
    | /     pub(crate) fn new(
    | |         authority_kind: BridgeProducerAuthorityKind,

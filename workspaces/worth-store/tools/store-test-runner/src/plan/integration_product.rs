@@ -81,7 +81,7 @@ const COURTS: &[(&str, &str, &[&str])] = &[
     ("worth-store-court-source", "worth_store_court_source", &["process"]),
     ("worth-store-court-store", "worth_store_court_store", &["compile_fail", "ordinary", "process"]),
     ("worth-store-court-store-replication-physical-record-journeys-durability-admission", "worth_store_court_store_replication_physical_record_journeys_durability_admission", &["ordinary", "process"]),
-    ("worth-store-court-store-replication-physical-record-journeys-physical-work", "worth_store_court_store_replication_physical_record_journeys_physical_work", &["compile_fail", "process"]),
+    ("worth-store-court-store-replication-physical-record-journeys-physical-work", "worth_store_court_store_replication_physical_record_journeys_physical_work", &["compile_fail", "cost", "process"]),
     ("worth-store-court-store-replication-physical-blob-journeys", "worth_store_court_store_replication_physical_blob_journeys", &["compile_fail", "process"]),
     ("worth-store-court-store-replication", "worth_store_court_store_replication", &["process"]),
     ("worth-store-court-aspect-native", "worth_store_court_aspect_native", &["ordinary"]),

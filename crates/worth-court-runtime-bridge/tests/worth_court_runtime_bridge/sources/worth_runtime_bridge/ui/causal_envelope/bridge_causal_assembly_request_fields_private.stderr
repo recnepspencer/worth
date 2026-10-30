@@ -7,7 +7,7 @@ error[E0308]: arguments to this function are incorrect
   |                                                          expected `BridgeIdentityEvidence`, found `&str`
   |
 note: associated function defined here
- --> src/diagnostics/causal_envelope/assembly/request.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/diagnostics/causal_envelope/assembly/request.rs
   |
   |     pub fn admitted(
   |            ^^^^^^^^

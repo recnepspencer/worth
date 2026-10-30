@@ -4,7 +4,7 @@ error[E0624]: associated function `publish` is private
 4 |       let _constructor = BridgeSubscriptionCheckpoint::publish;
   |                                                        ^^^^^^^ private associated function
   |
- ::: src/subscription/checkpoint/checkpoint.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/checkpoint/checkpoint.rs
   |
   | /     pub(crate) fn publish(
   | |         ready: BridgeSubscriptionCheckpointReady,

@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected struct `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>`
           found reference `&str`
 note: associated function defined here
- --> src/facade/request.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/request.rs
   |
   |     pub fn for_commit(commit_identity: crate::input::envelope::TruthCommitIdentity) -> Self {
   |            ^^^^^^^^^^
@@ -23,7 +23,7 @@ error[E0277]: the trait bound `BridgeRouteRequest: From<&str>` is not satisfied
    |                     required by a bound introduced by this call
    |
 help: the following other types implement trait `From<T>`
-  --> src/facade/request.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/request.rs
    |
    | impl From<crate::adapter::RelationalCommittedPatchRequest> for BridgeRouteRequest {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `BridgeRouteRequest` implements `From<RelationalCommittedPatchRequest>`
@@ -32,7 +32,7 @@ help: the following other types implement trait `From<T>`
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `BridgeRouteRequest` implements `From<worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>>`
    = note: required for `&str` to implement `Into<BridgeRouteRequest>`
 note: required by a bound in `facade::runtime::execution_entries::<impl worth_runtime_bridge::facade::RuntimeBridge>::route`
-  --> src/facade/runtime/execution_entries.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/execution_entries.rs
    |
    |     pub fn route(
    |            ----- required by a bound in this associated function
