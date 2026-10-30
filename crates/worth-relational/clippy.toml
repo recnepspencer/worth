@@ -26,7 +26,6 @@ disallowed-methods = [
   { path = "tokio::runtime::Builder::new_multi_thread", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners", allow-invalid = true },
   { path = "std::cmp::Ord::cmp", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::cmp::PartialOrd::partial_cmp", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
-  { path = "std::ptr::cmp", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::thread::available_parallelism", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", reason = "published geometry is shifted only for a Portal entrance start, a Portal's content anchor, or a nested Portal's anchor; construct published truth through truth_geometry" },
   { path = "worth_ui_runtime::mounting::projection::placement::spaces::UiLaidOut::in_place", reason = "only an occurrence no Portal presents is shown where it is laid out; present laid-out geometry through its UiMountedPlacement" },

@@ -16,7 +16,6 @@ disallowed-methods = [
   { path = "std::cmp::PartialOrd::partial_cmp", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::any::type_name", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::any::type_name_of_val", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
-  { path = "std::ptr::cmp", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::thread::available_parallelism", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::collections::HashMap::iter", reason = "canonical order: hash containers are for point lookup only" },
   { path = "std::collections::HashMap::iter_mut", reason = "canonical order: hash containers are for point lookup only" },
