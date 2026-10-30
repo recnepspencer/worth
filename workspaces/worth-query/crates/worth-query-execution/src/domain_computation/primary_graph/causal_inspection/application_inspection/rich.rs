@@ -24,6 +24,7 @@ pub struct WorthQueryApplicationMaterializationRequest {
     families: u64,
     source_effects: bool,
     producer_evidence: bool,
+    conditional_history: bool,
 }
 impl WorthQueryApplicationMaterializationRequest {
     pub const fn family(family: CausalEvidenceFamily) -> Self {
@@ -31,7 +32,24 @@ impl WorthQueryApplicationMaterializationRequest {
             families: 1 << (family as u32),
             source_effects: false,
             producer_evidence: false,
+            conditional_history: false,
         }
+    }
+    /// Select only optional conditional history; connected mode still requires both diagnostics.
+    pub const fn conditional_history() -> Self {
+        Self {
+            families: 0,
+            source_effects: false,
+            producer_evidence: false,
+            conditional_history: true,
+        }
+    }
+    pub const fn with_conditional_history(mut self) -> Self {
+        self.conditional_history = true;
+        self
+    }
+    pub const fn requests_conditional_history(self) -> bool {
+        self.conditional_history
     }
     pub const fn with_family(mut self, family: CausalEvidenceFamily) -> Self {
         self.families |= 1 << (family as u32);
@@ -82,8 +100,23 @@ pub struct WorthQueryApplicationRichMaterialization {
     pub(super) original: OriginalQueryDetail,
     pub(super) source: SourceDetail,
     pub(super) producer: Option<ProducerExplanation>,
+    pub(super) history: super::history::HistoryDetail,
 }
 impl WorthQueryApplicationRichMaterialization {
+    pub fn conditional_history_outcome(
+        &self,
+    ) -> super::history::WorthQueryConditionalHistoryOutcome {
+        self.history.outcome()
+    }
+    pub fn conditional_history(
+        &self,
+    ) -> Option<&super::history::WorthQueryMaterializedConditionalHistory> {
+        match &self.history {
+            super::history::HistoryDetail::Provided(view) => Some(view),
+            _ => None,
+        }
+    }
+
     pub fn request(&self) -> WorthQueryApplicationMaterializationRequest {
         self.request
     }

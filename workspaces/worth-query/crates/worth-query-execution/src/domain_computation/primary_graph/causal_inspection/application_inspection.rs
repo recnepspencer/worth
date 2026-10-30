@@ -1,4 +1,9 @@
 //! Fresh application inspection owns admission, original target and its terminal.
+mod history;
+pub use history::{
+    WorthQueryConditionalHistoryAvailability, WorthQueryConditionalHistoryDecisionClass,
+    WorthQueryConditionalHistoryOutcome, WorthQueryMaterializedConditionalHistory,
+};
 mod availability;
 pub use availability::{
     WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionRetainedEvidence,

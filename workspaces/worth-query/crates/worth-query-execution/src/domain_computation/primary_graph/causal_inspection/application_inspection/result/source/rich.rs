@@ -74,6 +74,11 @@ impl CompletedInspection {
             || report.connection_identity.is_some()
             || report.body.artifact.producer.is_some()
             || !matches!(
+                report.body.artifact.history,
+                super::super::super::history::HistoryDetail::NotRequested
+                    | super::super::super::history::HistoryDetail::Unselected
+            )
+            || !matches!(
                 report.body.artifact.original,
                 OriginalQueryDetail::NotRequested | OriginalQueryDetail::Unselected
             )

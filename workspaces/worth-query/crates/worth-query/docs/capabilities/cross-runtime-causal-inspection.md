@@ -591,8 +591,8 @@ Both subjects are freshly admitted before canonical values or their availability
 are inspected. Revoking either subject refuses a new rich request. Cancellation
 after both private bodies are prepared prevents publication, preserves committed
 business state and releases fresh request funding. Source-only richness uses the
-same source effect owner through the separate request described below. Evidence
-availability/expiry and broader consumer qualification remain subsequent phases.
+same source effect owner through the separate request described below. Optional history availability and owner loss use the separate facet below;
+broader consumer qualification remains Phase 9.11.
 
 
 ## Rich source-only inspection
@@ -637,9 +637,10 @@ producer absence or a Signal evaluation verdict. Unrequested facets remain
 NotRequested. Source-only mode performs no query or producer/Signal discovery.
 Owner/family references come from the actual admitted Source reporting envelope.
 The existing Host doctest lane checks the admitted signature, absence of a
-capability-free execution method, and private success construction. Signal tier
-availability, actual owner expiry and integrated consumer handoff remain Phases
-9.10 and 9.11.
+capability-free execution method, and private success construction. Optional
+conditional history is unavailable in source-only mode. Generic Signal forensic
+materialization remains outside the selected observation modes; integrated
+consumer handoff remains Phase 9.11.
 
 
 ## Original evidence availability
@@ -647,7 +648,8 @@ availability, actual owner expiry and integrated consumer handoff remain Phases
 A freshly admitted query report exposes `evidence_availability()`. Compared
 reports expose `before_evidence_availability()` and `after_evidence_availability()`.
 The same metadata is available on connected, evaluated and rich query reports.
-It describes the immutable original owners, with no allocation or body traversal:
+The report freezes one admitted lookup for its payload and identity. Later getter
+calls perform no owner lookup, allocation or body traversal. It includes:
 
 - `projection()` distinguishes Retained from NotRetained; an intentionally
   captured empty projection is Retained.
@@ -665,13 +667,71 @@ request reservations. A later rich request must independently admit diagnostics.
 Cancelling a request or withdrawing metadata access refuses that request and
 cannot turn retained evidence into expired evidence.
 
-The query report anchor uses `query.application-inspection.observation-anchor.v2`
-to bind the actual custody states. The underlying observation identity is
+The query report anchor uses `query.application-inspection.observation-anchor.v3`
+to bind the actual custody and optional history availability states, including
+original typed capacity causes. The underlying observation identity is
 unchanged. The compiled availability and sibling-release journeys live in
 [the existing correction model](../../../worth-query-certification/examples/application_correction_support/causal_inspection/journey/availability.rs); their grouped court is
 `application_graph::correction::causal_inspection`.
 
-This metadata does not query evictable Signal diagnostic history or retained
-Bridge record stores. Their omitted/inactive/unavailable outcomes and actual
-owner-loss handoff remain separate 9.10 work; NotRetained must not stand in for
-those states.
+`conditional_history()` on availability returns the actual optional conditional
+history owner state, or None when no original conditional observation was captured.
+This is distinct from evictable Signal forensic histories and legacy Bridge route
+records. Those lower families remain unsupported by this selected observation
+mode; their empty inventories do not establish omission or expiry.
+
+## Optional conditional execution history
+
+Select this facet on a connected rich request with both current query/source
+metadata and diagnostic admissions:
+
+```rust,ignore
+let detail = WorthQueryApplicationMaterializationRequest::conditional_history()
+    .with_source_effects().with_producer_evidence();
+let report = fresh.inspect::<ReadBinding>(&original)
+    .why_observed().evaluated_by::<SourceDisclosure>(&source)
+    .materialize(detail)
+    .execute_governed(query_metadata, query_diagnostic,
+        source_metadata, source_diagnostic)?;
+match report.materialization().conditional_history_outcome() {
+    WorthQueryConditionalHistoryOutcome::Provided => {
+        let history = report.materialization().conditional_history().unwrap();
+        consume(history.attempt(), history.decision_class());
+    }
+    WorthQueryConditionalHistoryOutcome::OwnerUnavailable(cause) => consume_loss(cause),
+    other => consume_omission(other),
+}
+report.close();
+```
+
+The history describes the supplier's actual conditional/readiness execution;
+it is separate from `producer_evaluation()` and its Changed/Equivalent pair.
+Both diagnostic loans and the exact performed source connection precede history
+body lookup. A plain query or source-only rich request reports
+RequestedButNotProvidedBySelectedObservationMode for this facet. No unrelated
+inventory family must be selected merely to request history.
+
+The Bridge diagnostics owner issues the record at successful conditional
+execution, funds the fixed slot from that original execution request, and applies
+its actual bounded retention policy. The operational Host records history under
+its installed artifact policy, even at Minimal diagnostics tier. A policy that
+disables record retention reports OmittedByTier. A retaining owner can report
+RetainedAvailable, EvictedByRetention or OwnerClosed. Finite optional memory capacity denial preserves its actual
+CaptureDenied cause; request cancellation, deadline and overflow remain request
+stops. None of these is producer absence, output suppression or receipt expiry.
+
+Earlier availability grants no retention lease. A later rich request rechecks
+this exact original's history; a new execution can evict it in between. That
+request reports the owner's actual loss while other original evidence remains
+valid. A previously successful rich result owns a readonly snapshot that remains
+usable after eviction. Closing one original cannot invalidate its sibling;
+final close releases their original funding. History eviction detaches successor
+links, so an old original cannot retain later entries.
+
+The query anchor v3 binds the frozen metadata snapshot. Rich materialization v3
+also binds the requested history facet, actual outcome, original Native
+association and supplied fixed facts. Existing older identity domains retain
+their prior meanings. The executable
+[owner-loss journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/history.rs)
+uses real source/producer executions and owner retention control, with preserved
+old snapshots, independent diagnostics, cancellation and final release.

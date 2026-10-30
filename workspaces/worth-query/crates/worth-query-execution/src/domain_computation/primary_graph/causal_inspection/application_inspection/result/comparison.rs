@@ -16,16 +16,12 @@ impl<'original> WorthQueryComparedApplicationInspection<'original> {
     pub fn before_evidence_availability(
         &self,
     ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
-        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
-            self.before,
-        )
+        self.report.before_availability()
     }
     pub fn after_evidence_availability(
         &self,
     ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
-        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
-            self.after,
-        )
+        self.report.after_availability()
     }
     pub fn before(&self) -> &'original WorthQueryApplicationQueryObservation {
         self.before

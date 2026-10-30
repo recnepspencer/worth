@@ -61,6 +61,11 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                 request,
                 source,
                 producer: None,
+                history: if request.requests_conditional_history() {
+                    super::super::super::history::HistoryDetail::Unselected
+                } else {
+                    super::super::super::history::HistoryDetail::NotRequested
+                },
                 original: if request.requests(
                     super::super::super::super::inventory::CausalEvidenceFamily::QueryInspection,
                 ) {

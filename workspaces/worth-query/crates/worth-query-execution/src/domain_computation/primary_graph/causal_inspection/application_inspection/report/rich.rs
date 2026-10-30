@@ -100,6 +100,21 @@ impl PreparedRichMaterialization {
             && Arc::ptr_eq(&self.scope.target, reference.target())
             && reference.target().rich_request() == Some(self.scope.request)
             && self.artifact.request() == self.scope.request
+            && self.artifact.request().requests_conditional_history()
+                == !matches!(
+                    self.artifact.history,
+                    super::super::history::HistoryDetail::NotRequested
+                )
+            && match &self.artifact.history {
+                super::super::history::HistoryDetail::Provided(view) => {
+                    reference.target().connection_source().is_some()
+                        && reference
+                            .target()
+                            .original()
+                            .is_some_and(|original| view.matches(original))
+                }
+                _ => true,
+            }
             && match &self.artifact.source {
                 super::super::rich::source::SourceDetail::Provided(source) => reference
                     .target()

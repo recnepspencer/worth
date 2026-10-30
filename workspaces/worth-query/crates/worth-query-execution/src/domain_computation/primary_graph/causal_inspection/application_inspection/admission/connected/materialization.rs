@@ -1,8 +1,10 @@
 //! Both diagnostic loans precede original performed-input and output discovery.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    admitted_capture::run_retained_stage, WorthQueryApplicationCommitReceipt,
+    admitted_capture::{checkpoint, run_retained_stage, RetainedStorageDenial},
+    WorthQueryApplicationCommitReceipt,
 };
+use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 pub(in super::super::super) enum ConnectedMaterialization {
     Reference(super::super::super::report::FundedConnectedReport),
@@ -27,6 +29,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         purpose: super::super::super::connection::SourceInspectionPurpose,
     ) -> Result<ConnectedMaterialization, InspectionAdmissionDenial> {
         drop(self.check(execution)?);
+        let report = self.materialize(execution)?;
         let source_read = self
             .source
             .as_ref()
@@ -70,6 +73,27 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         )
         .map_err(InspectionAdmissionDenial::Connection)?;
         let body = if self.target.rich_request().is_some() {
+            let history = if self
+                .target
+                .rich_request()
+                .is_some_and(|request| request.requests_conditional_history())
+            {
+                run_retained_stage(
+                    execution,
+                    self.memory,
+                    |context, _| -> Result<_, MapKernelFailure<RetainedStorageDenial>> {
+                        checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
+                        Ok(super::super::super::history::HistoryDetail::capture(
+                            self.target.original().expect("connected query target"),
+                            &query_admission,
+                            &source_admission,
+                        ))
+                    },
+                )
+                .map_err(InspectionAdmissionDenial::Storage)?
+            } else {
+                super::super::super::history::HistoryDetail::NotRequested
+            };
             let mut body = super::super::rich::capture_original_query(
                 execution,
                 self.memory,
@@ -77,6 +101,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                 &self.session,
                 query_admission,
             )?;
+            body.artifact.history = history;
             if body.artifact.request().requests_source_effects() {
                 let source = source_read
                     .policy
@@ -99,6 +124,9 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             ) || matches!(
                 body.artifact.source,
                 super::super::super::rich::source::SourceDetail::Provided(_)
+            ) || matches!(
+                body.artifact.history,
+                super::super::super::history::HistoryDetail::Provided(_)
             ) || body.artifact.request().requests_producer_evidence()
             {
                 self.runtime
@@ -110,7 +138,6 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             None
         };
         drop(self.check(execution)?);
-        let report = self.materialize(execution)?;
         let connected = super::super::super::report::materialize_connected(
             execution,
             report,

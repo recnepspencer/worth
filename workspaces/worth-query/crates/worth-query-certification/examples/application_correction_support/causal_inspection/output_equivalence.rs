@@ -25,3 +25,9 @@ pub use rich_connected::rich_source_and_producer_keep_original_values_both_autho
 
 mod rich_source;
 pub use rich_source::source_only_rich_survives_receipt_drop_and_rechecks_diagnostics_cancellation_and_release;
+
+mod history;
+pub use history::{
+    history_omission_diagnostics_and_actual_private_cancellation_remain_distinct,
+    real_history_eviction_preserves_original_projection_source_and_evaluation,
+};

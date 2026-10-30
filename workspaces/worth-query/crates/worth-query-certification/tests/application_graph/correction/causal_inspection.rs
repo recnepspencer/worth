@@ -167,3 +167,12 @@ fn original_evidence_availability_requires_fresh_metadata_and_keeps_actual_custo
 fn availability_closes_siblings_independently_and_releases_original_query_funding() {
     journey::availability_keeps_sibling_custody_and_releases_final_funding();
 }
+
+#[test]
+fn actual_conditional_history_loss_preserves_immutable_source_query_and_equivalence() {
+    super::model::causal_inspection::output_equivalence::real_history_eviction_preserves_original_projection_source_and_evaluation();
+}
+#[test]
+fn history_omission_cannot_replace_diagnostic_admission_or_hide_request_cancellation() {
+    super::model::causal_inspection::output_equivalence::history_omission_diagnostics_and_actual_private_cancellation_remain_distinct();
+}

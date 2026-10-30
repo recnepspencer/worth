@@ -42,6 +42,7 @@ pub(super) enum InspectionReportDenial {
 pub(super) struct InspectionReportPayload {
     envelope: BridgeCausalExplanationEnvelope,
     identities: InspectionReferenceIdentities,
+    availability: Option<super::availability::WorthQueryInspectionEvidenceAvailability>,
 }
 
 pub(super) struct FundedInspectionReport {
@@ -77,8 +78,21 @@ pub(super) fn materialize(
             }
             Ok(())
         };
-        let identities = identities(target, session, reference, &mut admit)
-            .map_err(|cause| MapKernelFailure::Domain(InspectionReportDenial::Identity(cause)))?;
+        let original = match reference {
+            InspectionOriginalReference::Before => target.before(),
+            InspectionOriginalReference::After => target.original(),
+            InspectionOriginalReference::Source => None,
+        };
+        let availability = original
+            .map(super::availability::WorthQueryInspectionEvidenceAvailability::from_original);
+        let identities = identities(
+            target,
+            session,
+            reference,
+            availability.as_ref(),
+            &mut admit,
+        )
+        .map_err(|cause| MapKernelFailure::Domain(InspectionReportDenial::Identity(cause)))?;
         let request = if reference == InspectionOriginalReference::Source {
             BridgeQueryObservationReportingRequest::from_performed_source(
                 BridgeCausalInspectionAdmissionSummaryKind::Admitted,
@@ -107,6 +121,7 @@ pub(super) fn materialize(
             payload: InspectionReportPayload {
                 envelope,
                 identities,
+                availability,
             },
             session: session.identity(),
             plan: session.plan_identity(),
@@ -137,6 +152,13 @@ impl FundedInspectionReport {
 }
 
 impl InspectionReportPayload {
+    pub(super) fn availability(
+        &self,
+    ) -> super::availability::WorthQueryInspectionEvidenceAvailability {
+        self.availability
+            .expect("only a published original Query report exposes Query availability")
+    }
+
     pub(super) fn envelope(&self) -> &BridgeCausalExplanationEnvelope {
         &self.envelope
     }

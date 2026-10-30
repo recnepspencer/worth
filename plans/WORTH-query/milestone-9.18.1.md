@@ -1382,7 +1382,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
 | 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | 9.9 optional rich materialization |
 | 9.9 | Optional rich materialization | Complete for original-query, connected creation/evaluation and source-only rich modes | Freshly admitted, demand-driven views from existing evidence owners |
-| 9.10 | Evidence availability, expiry and retention lifecycle | In progress; immutable original custody qualified | Optional owner detail and actual loss handoff |
+| 9.10 | Evidence availability, expiry and retention lifecycle | Complete for qualified Native evidence modes | Integrated regression protection in 9.11 |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
 
 The table is the current capability summary, not an execution journal. A
@@ -1691,12 +1691,11 @@ synchronous explanatory work on ordinary commits is required.
 
 #### Phase 9.10: Evidence Availability, Expiry And Retention Lifecycle
 
-**Status: in progress; immutable original custody qualified; optional owner loss remains open.
+**Status: complete for qualified Native evidence modes.
 Depends on: 9.1 and 9.4; integrate with 9.9 where materialization owns retention.**
-The separately held unqualified candidate describes actual retained projection/supplier/Native
-observation custody after fresh metadata admission. Qualify that real Host path,
-then expose unavailable/expired optional evidence from the existing owner with
-its original typed cause. NotRetained does not prove expiry, producer absence or
+The qualified Host path describes actual retained projection/supplier/Native
+observation custody after fresh metadata admission and exposes optional conditional
+history loss from the actual Bridge diagnostics owner with its original typed cause. NotRetained does not prove expiry, producer absence or
 suppression; request expiry is not evidence expiry. Strong immutable originals
 have no invented TTL. Exercise actual supported expiry/release, revocation before
 availability lookup and final-holder cleanup without a parallel retention
@@ -1713,8 +1712,8 @@ operational reader release, sibling custody, current grant withdrawal, cancellat
 and original query funding through final close. Existing owner weak-reference
 proof checks actual original backing destruction. Verification: 60 scoped public
 correction tests and 23 scoped Query owner tests passed, with boundary/context,
-line-cap, function-review and diff checks. Evictable optional owner detail
-and its actual loss handoff remain required before 9.10 closes.
+line-cap, function-review and diff checks. The subsequently qualified Native
+owner-history substrate and Query handoff below complete the optional loss path.
 
 Qualified Native owner-history substrate increment (2026-10-30): successful
 Bridge conditional execution now issues a distinct optional diagnostic history
@@ -1730,9 +1729,28 @@ Eighteen scoped Bridge owner tests pass, including genuine execution/eviction,
 successor-link release, original Native custody, tolerated real memory pressure,
 request cancellation, independent exact-byte retention oracles and final payer
 cleanup. Required boundary/context, line-cap, function-review and diff gates pass.
-This is the owner substrate only:
-Query's freshly admitted frozen availability and separately admitted rich
-history handoff remain required before 9.10 closes. Phase 9.11 remains open.
+The Query handoff qualified below consumes this owner substrate through fresh
+metadata and independent diagnostic admission. Phase 9.11 remains open.
+
+Qualified Query owner-loss handoff (2026-10-30): one freshly admitted availability
+snapshot feeds both the published report and query anchor v3. Getters perform no
+later owner lookup. Connected rich requests select conditional history explicitly;
+both diagnostic loans and the exact source connection precede an independent
+owner lookup. Private publication binds the same readonly Native observation,
+while rich identity v3 binds request, typed outcome, cause and supplied facts.
+Source-only/plain query modes cannot acquire this body. This describes supplier
+readiness and remains distinct from the actual output-equivalence pair.
+The real installed parity journey qualifies Equivalent source4, available history,
+subsequent source5 Changed output with actual owner eviction, frozen earlier
+metadata/body, fresh rich OwnerUnavailable, unchanged original source/query/evaluation
+evidence, sibling release, independent diagnostic denial, history-only private
+cancellation and final request funding. Explicit owner recording policy qualifies
+omission; Minimal diagnostics tier alone does not imply omission. Current evidence:
+62 public correction tests, 23 Query owner tests and the qualified 18 Native owner
+tests pass, with boundary/context, line-cap, function-review and diff gates.
+Independent QA clears 9.10 in these supported Native modes. Generic Signal forensic
+and replay histories, legacy Bridge route records and durable archives are not
+reclassified into this facet. Parent Phase 9 remains open for 9.11.
 
 #### Phase 9.11: Integrated Application Qualification And Consumer Handoff
 

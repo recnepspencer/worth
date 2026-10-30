@@ -423,3 +423,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/rich_connected.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/rich_source.rs
+
+# Actual optional conditional history retention; policy control supplies no evidence.
+crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/inspection_materialization.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/history.rs

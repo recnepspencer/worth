@@ -122,6 +122,17 @@ impl FundedComparisonReport {
 }
 
 impl ComparisonReportPayload {
+    pub(in super::super) fn before_availability(
+        &self,
+    ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
+        self.before.availability()
+    }
+    pub(in super::super) fn after_availability(
+        &self,
+    ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
+        self.after.availability()
+    }
+
     pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn connection(
         &self,
     ) -> Option<&super::super::connection::WorthQueryApplicationProducerConnection> {

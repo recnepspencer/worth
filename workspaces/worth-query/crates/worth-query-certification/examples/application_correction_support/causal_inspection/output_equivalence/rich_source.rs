@@ -12,12 +12,18 @@ fn detail() -> WorthQueryApplicationMaterializationRequest {
     )
     .with_family(WorthQueryApplicationEvidenceFamily::SignalEvaluation)
     .with_source_effects()
+    .with_conditional_history()
     .with_producer_evidence()
 }
 fn assert_original(report: &WorthQueryMaterializedPerformedSourceInspection) {
     use WorthQueryMaterializedFamilyOutcome as Outcome;
     use WorthQueryMaterializedSourceFieldEffect as Effect;
     let body = report.materialization();
+    assert_eq!(
+        body.conditional_history_outcome(),
+        WorthQueryConditionalHistoryOutcome::RequestedButNotProvidedBySelectedObservationMode
+    );
+    assert!(body.conditional_history().is_none());
     assert_eq!(
         body.family_outcome(WorthQueryApplicationEvidenceFamily::QueryInspection),
         Outcome::RequestedButNotProvidedBySelectedObservationMode

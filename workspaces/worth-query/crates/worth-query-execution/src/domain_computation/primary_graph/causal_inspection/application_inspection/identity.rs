@@ -1,5 +1,6 @@
 //! Additive admitted identities describe actual originals and their fresh session.
 mod evaluation;
+pub(super) mod history;
 use super::WorthQueryApplicationInspectionTarget;
 use crate::domain_computation::{
     primary_graph::WorthQueryApplicationBasisSelectionIdentity,
@@ -56,6 +57,7 @@ pub(super) fn identities<Stop>(
     target: &Arc<WorthQueryApplicationInspectionTarget>,
     session: &WorthQueryManagedGraphWorkSession,
     reference: InspectionOriginalReference,
+    availability: Option<&super::availability::WorthQueryInspectionEvidenceAvailability>,
     admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
 ) -> Result<InspectionReferenceIdentities, InspectionIdentityStop<Stop>> {
     let (actual, current) = session
@@ -136,11 +138,11 @@ pub(super) fn identities<Stop>(
         ],
         admit,
     )?;
-    let availability =
-        super::availability::WorthQueryInspectionEvidenceAvailability::from_original(original);
+    let availability = availability.ok_or(InspectionIdentityStop::ForeignSession)?;
     let [projection, supplier, native] = availability.canonical_labels();
+    let history = history::availability_parts(availability.conditional_history());
     let anchor = compose(
-        "query.application-inspection.observation-anchor.v2",
+        "query.application-inspection.observation-anchor.v3",
         &[
             Part::Text(observation.terminal_projection_for_reporting()),
             Part::Text(admission.terminal_projection_for_reporting()),
@@ -149,6 +151,11 @@ pub(super) fn identities<Stop>(
             Part::Text(projection),
             Part::Text(supplier),
             Part::Text(native),
+            Part::Text(history.label),
+            Part::Number(history.first),
+            Part::Number(history.second),
+            Part::Text(history.level),
+            Part::Number(history.ancestor),
         ],
         admit,
     )?;
@@ -233,7 +240,13 @@ pub(super) fn connected_identity<Stop>(
     connection: &super::connection::WorthQueryApplicationProducerConnection,
     admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
 ) -> Result<BridgeIdentityEvidence, InspectionIdentityStop<Stop>> {
-    let source = identities(source, session, InspectionOriginalReference::Source, admit)?;
+    let source = identities(
+        source,
+        session,
+        InspectionOriginalReference::Source,
+        None,
+        admit,
+    )?;
     compose(
         "query.application-inspection.connected-observation.v2",
         &[

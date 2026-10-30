@@ -42,7 +42,7 @@ impl<'original> WorthQueryObservedApplicationInspection<'original> {
     pub fn evidence_availability(
         &self,
     ) -> super::availability::WorthQueryInspectionEvidenceAvailability {
-        super::availability::WorthQueryInspectionEvidenceAvailability::from_original(self.original)
+        self.report.availability()
     }
     /// The actual original immutable observation; it supplies no read authority.
     pub fn observation(&self) -> &'original WorthQueryApplicationQueryObservation {

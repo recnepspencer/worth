@@ -46,7 +46,7 @@ fn rich<'o>(
             distinct_subjects::access(application, principal, scope, "numeric"),
         )
 }
-fn assert_source(
+pub(super) fn assert_source(
     report: &WorthQueryMaterializedApplicationInspection<'_>,
     expected: u64,
     source: &WorthQueryApplicationCommitReceipt,

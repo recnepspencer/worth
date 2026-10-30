@@ -19,9 +19,7 @@ impl<'o> WorthQueryMaterializedApplicationInspection<'o> {
     pub fn evidence_availability(
         &self,
     ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
-        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
-            self.original,
-        )
+        self.report.availability()
     }
     pub fn observation(&self) -> &'o WorthQueryApplicationQueryObservation {
         self.original

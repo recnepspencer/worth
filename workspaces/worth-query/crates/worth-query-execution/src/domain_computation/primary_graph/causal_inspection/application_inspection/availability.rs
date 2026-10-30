@@ -28,6 +28,7 @@ pub struct WorthQueryInspectionEvidenceAvailability {
     projection: WorthQueryInspectionRetainedEvidence,
     supplier: WorthQueryInspectionSupplierEvidence,
     native_observation: WorthQueryInspectionRetainedEvidence,
+    history: Option<super::history::WorthQueryConditionalHistoryAvailability>,
 }
 
 impl WorthQueryInspectionEvidenceAvailability {
@@ -39,6 +40,14 @@ impl WorthQueryInspectionEvidenceAvailability {
     }
     pub fn native_observation(&self) -> WorthQueryInspectionRetainedEvidence {
         self.native_observation
+    }
+
+    /// The actual optional history owner at this report's admitted lookup.
+    /// None means this original retains no conditional Native observation.
+    pub fn conditional_history(
+        &self,
+    ) -> Option<super::history::WorthQueryConditionalHistoryAvailability> {
+        self.history
     }
 
     pub(super) fn canonical_labels(&self) -> [&'static str; 3] {
@@ -95,6 +104,8 @@ impl WorthQueryInspectionEvidenceAvailability {
             projection,
             supplier,
             native_observation,
+            history: super::history::original_native(original)
+                .map(|native| native.history_availability()),
         }
     }
 }

@@ -14,7 +14,13 @@ pub(in super::super) fn producer_explanation_identity<Stop>(
         };
         return super::connected_identity(query, source, session, connection, admit);
     };
-    let source = identities(source, session, InspectionOriginalReference::Source, admit)?;
+    let source = identities(
+        source,
+        session,
+        InspectionOriginalReference::Source,
+        None,
+        admit,
+    )?;
     let field = evaluation.output_field();
     compose(
         "query.application-inspection.producer-output-evaluation.v1",

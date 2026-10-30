@@ -66,6 +66,11 @@ impl AdmittedRichProjection<'_> {
                     super::super::rich::source::SourceDetail::NotRequested
                 },
                 producer: None,
+                history: if self.scope.request.requests_conditional_history() {
+                    super::super::history::HistoryDetail::Unselected
+                } else {
+                    super::super::history::HistoryDetail::NotRequested
+                },
             },
             scope: self.scope,
         })

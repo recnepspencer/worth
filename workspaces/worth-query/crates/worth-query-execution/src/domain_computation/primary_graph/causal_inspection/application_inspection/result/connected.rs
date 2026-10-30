@@ -22,9 +22,7 @@ impl<'a> WorthQueryConnectedApplicationInspection<'a> {
     pub fn evidence_availability(
         &self,
     ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
-        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
-            self.original,
-        )
+        self.report.availability()
     }
     pub fn observation(&self) -> &'a WorthQueryApplicationQueryObservation {
         self.original
@@ -123,9 +121,7 @@ impl<'a> WorthQueryEvaluatedApplicationInspection<'a> {
     pub fn evidence_availability(
         &self,
     ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
-        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
-            self.original,
-        )
+        self.report.availability()
     }
     pub fn observation(&self) -> &'a WorthQueryApplicationQueryObservation {
         self.original

@@ -32,6 +32,10 @@ pub(super) fn assert_original(report: &WorthQueryMaterializedApplicationInspecti
         body.family_outcome(Family::SignalEvaluation),
         Outcome::NotRequested
     );
+    assert_original_projection(report);
+}
+pub(super) fn assert_original_projection(report: &WorthQueryMaterializedApplicationInspection<'_>) {
+    let body = report.materialization();
     let projection = body
         .original_query()
         .expect("retained original is provided");

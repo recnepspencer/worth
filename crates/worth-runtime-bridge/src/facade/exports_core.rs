@@ -375,6 +375,7 @@ pub use crate::temporal::{
     BridgeTemporalCdcCursorIdentity, BridgeTemporalSignalBasis, BridgeTemporalSignalBasisDenial,
     BridgeTemporalTruthBasisDenial, BridgeTemporalTruthViewBasis, BridgeTemporalWakeEvidence,
 };
+pub use worth_signal::facade::SignalConditionalDecisionClass as BridgeConditionalHistoryDecisionClass;
 
 pub use crate::conditional_execution::BridgePreparedConditionalReconstitution;
 
