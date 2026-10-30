@@ -48,12 +48,15 @@ def event_commands(settings, event, tool):
 
 def prepared_tool(name):
     suffix = '.exe' if os.name == 'nt' else ''
-    paths = (ROOT / 'tools' / name / 'target/debug' / (name + suffix),
-             ROOT / 'target/constitution-tools/debug' / (name + suffix))
+    owner = ROOT / 'tools' / name
+    inputs = [owner / 'Cargo.toml', *(path for path in (owner / 'src').rglob('*') if path.is_file())]
+    newest_input = max(path.stat().st_mtime_ns for path in inputs)
+    paths = (ROOT / 'target/constitution-tools/debug' / (name + suffix),
+             owner / 'target/debug' / (name + suffix))
     for path in paths:
-        if path.is_file():
+        if path.is_file() and path.stat().st_mtime_ns >= newest_input:
             return path
-    raise RuntimeError('prepare the existing constitution tools before this focused test')
+    raise RuntimeError('prepare current constitution tools before this focused test; existing candidates are missing or stale')
 
 
 class ExplicitFixture:
@@ -124,6 +127,30 @@ class ExplicitFixture:
 
 
 class ConstitutionCadenceTests(unittest.TestCase):
+    def test_prepared_tool_selection_prefers_current_session_tools_and_refuses_stale_candidates(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            owner = root / 'tools/boundary-check'
+            (owner / 'src').mkdir(parents=True)
+            for source in (owner / 'Cargo.toml', owner / 'src/main.rs'):
+                source.write_text('fixture input', encoding='utf-8')
+                os.utime(source, (200, 200))
+            suffix = '.exe' if os.name == 'nt' else ''
+            session = root / 'target/constitution-tools/debug' / ('boundary-check' + suffix)
+            legacy = owner / 'target/debug' / ('boundary-check' + suffix)
+            for path in (session, legacy):
+                path.parent.mkdir(parents=True)
+                path.write_text('fixture executable', encoding='utf-8')
+                os.utime(path, (300, 300))
+            with patch(__name__ + '.ROOT', root):
+                self.assertEqual(prepared_tool('boundary-check'), session)
+                os.utime(session, (100, 100))
+                self.assertEqual(prepared_tool('boundary-check'), legacy)
+                os.utime(legacy, (100, 100))
+                with self.assertRaisesRegex(RuntimeError, 'missing or stale'):
+                    prepared_tool('boundary-check')
+
     def test_edit_events_select_no_automatic_constitution_command(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'source.rs'
