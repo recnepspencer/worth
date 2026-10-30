@@ -1,5 +1,9 @@
 //! A single declared schema/program installs every ordinary application handler.
-use super::{access, authentication::Actor, creation, recording, resources, schema::*};
+use super::{
+    access, authentication::Actor, creation, mutation_access, recording, resources, retention,
+    schema::*,
+};
+use worth_query_decl::facade::application_schema::ApplicationInvariantMarkerIdentity;
 use worth_query_decl::facade::{application_program::*, authentication::*};
 use worth_query_host::facade::{
     application_contribution::*, application_installation::*, primary_graph::*,
@@ -7,6 +11,18 @@ use worth_query_host::facade::{
 
 pub struct Program;
 pub struct Feature;
+pub struct RetentionDelivery;
+impl ApplicationActionDelivery<Schema, retention::Binding> for RetentionDelivery {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "proposal-application.retention.delivery.v1";
+}
+pub type RetentionAction = ApplicationActionReference<
+    Schema,
+    ApplicationRootComposition,
+    Feature,
+    retention::Binding,
+    RetentionDelivery,
+>;
 impl ApplicationFeature<Schema> for Feature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "proposal-application.feature.v1";
@@ -14,7 +30,13 @@ impl ApplicationFeature<Schema> for Feature {
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = ApplicationRuleLeaf;
+    type Rules = ApplicationRuleList<
+        ApplicationRuleAt<
+            ApplicationLocalRuleRef<Schema, Feature, retention::rule::MaximumRetention>,
+            ApplicationCommitBoundary,
+        >,
+        ApplicationRuleLeaf,
+    >;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("proposal-application.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
@@ -24,6 +46,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .native_action::<recording::Binding>()
             .finish_action()
             .native_action::<access::status::Binding>()
+            .finish_action()
+            .native_action::<mutation_access::status::Binding>()
+            .finish_action()
+            .action::<retention::Binding, RetentionDelivery>()
             .finish_action()
             .operation::<access::InspectDomain>()
             .finish()]
@@ -37,7 +63,11 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<creation::Binding, _>(creation::Handler)?;
         setup.handler::<recording::Binding, _>(recording::Handler)?;
-        setup.handler::<access::status::Binding, _>(access::status::Handler)
+        setup.handler::<access::status::Binding, _>(access::status::Handler)?;
+        setup.handler::<mutation_access::status::Binding, _>(mutation_access::status::Handler)?;
+        setup.invariant(retention::rule::MaximumRetention::reference(),
+            worth_query_decl::facade::application_schema::ApplicationInvariantExecutionPoint::CommitBoundary,retention::rule::resolve)?;
+        setup.handler::<retention::Binding, _>(retention::Handler)
     }
 }
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;

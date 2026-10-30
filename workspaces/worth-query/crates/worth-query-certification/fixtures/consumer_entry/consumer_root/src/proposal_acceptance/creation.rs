@@ -3,6 +3,7 @@ use super::schema::*;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
 mod authorization;
+mod mutation_authorization;
 
 pub struct CreationTargets {
     registry: WorthQueryInvariantMutationTarget<Schema, Registry>,
@@ -115,7 +116,8 @@ impl OperationHandler<Schema, Binding> for Handler {
                     &target,
                 )
                 .map_err(HandlerExecutionDenial::new)?;
-            authorization::issue(input, &registry, &model, &decision.principals, writer)
+            authorization::issue(input, &registry, &model, &decision.principals, writer)?;
+            mutation_authorization::issue(input, &registry, &model, &decision.principals, writer)
         })();
         match applied {
             Ok(()) => HandlerResult::Completed(Created),
@@ -128,7 +130,7 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let op = Create::reference();
-    authorization::declare(
+    mutation_authorization::declare(authorization::declare(
         schema
             .operation(op.definition().no_external_effect().no_aftermath().finish())
             .operation_projection_work_budget(op, 16)
@@ -141,5 +143,5 @@ pub fn declare(
             .operation_write(op, Retention::reference())
             .operation_link(op, ModelTarget::reference())
             .application_mutation_binding::<Binding>(),
-    )
+    ))
 }

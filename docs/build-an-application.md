@@ -2282,6 +2282,15 @@ validation, checked sizes, request cancellation and fallible effect-buffer growt
 remain with their original owners. Invariant validation and atomic commit still
 precede successful publication.
 
+When a stored reference includes the process-local Native runtime identity, compare
+it with `reader.reader().runtime_instance_id()` before using its entity coordinates.
+This readonly value describes the projection's owning runtime; it grants no access.
+The ordinary opaque `reader()` access keeps the decision's existing restriction on
+completed-decision reuse. Compare the admitted scope's full entity identity and
+observe its declared relation to the target before requesting a mutation target.
+The [compiled retention handler](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/retention/handler.rs)
+shows these checks against a stored typed edit.
+
 For an authored deletion, declare the entity read with
 `operation_read_entity(Operation::reference(), Entity::reference())` alongside
 the delete grant. In `decide`, resolve the target, call
@@ -2473,6 +2482,33 @@ declared demand or assessment; it cannot replace required-output settlement.
 The runnable `ordinary_product_workflow` declares a real source-only action,
 advances its owner, observes native fresh receipt/result evidence, closes cleanup,
 and reads both current and retained product truth through the public facade.
+
+#### Execute a stored typed edit
+
+Decode the stored input through its declared field codec, then pass the typed
+value to the ordinary installed action. Register a delivery whose mode is
+`ApplicationSourceCompletion` and construct the owning operation with
+`request.mutate(input).without_source().idempotency_owned(key)` followed by
+`retain_operation::<Program, Action>(runtime)`. Supply a fresh authenticated
+request to `advance` and retain the returned owner until lawful close.
+
+READ admission for the record and mutation admission for the edit use their own
+declared policies. An operation's `assess_current_authorization(&request)` observes
+current mutation authorization without executing it. Its successful assessment
+does not authorize a later `advance`: execution checks the current grant again.
+The [compiled grant transition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/mutation_authorization.rs)
+revokes the mutation grant while both model and proposal reads remain lawful,
+then restores it and advances the same retained operation.
+
+Enforce value limits with an installed commit-boundary invariant. The
+[compiled retention action](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/mutation.rs)
+publishes ten days and refuses eleven through the installed maximum rule. The
+invariant violation returns `Terminal` with its exact commit denial and close
+custody. A domain refusal also retains its original native outcome in `Terminal`.
+Only outcomes classified by the native owner as retryable return `Progress` with
+`RetryableNoEffect` custody. An admission refusal returns `Refused` with the
+operation and typed denial. Match these variants before deciding what can be
+retried or closed.
 
 #### Capture complete original meaning
 

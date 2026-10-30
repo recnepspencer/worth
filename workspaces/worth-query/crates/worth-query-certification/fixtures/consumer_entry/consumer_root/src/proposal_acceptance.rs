@@ -5,8 +5,10 @@ mod creation;
 mod failure;
 mod host;
 mod model_query;
+mod mutation_access;
 mod recording;
 mod resources;
+mod retention;
 mod schema;
 mod storage_query;
 
@@ -19,5 +21,8 @@ mod application {
 #[cfg(test)]
 mod courts {
     mod disclosure;
+    mod mutation;
+    mod mutation_authorization;
+    mod retention_action;
     mod storage;
 }
