@@ -1,5 +1,5 @@
 error[E0560]: struct `BridgeRouteRequest` has no field named `_private`
- --> tests/ui/private_route_request_fields.rs:4:34
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/private_route_request_fields.rs:4:34
   |
 4 |     let _ = BridgeRouteRequest { _private: () };
   |                                  ^^^^^^^^ `BridgeRouteRequest` does not have this field

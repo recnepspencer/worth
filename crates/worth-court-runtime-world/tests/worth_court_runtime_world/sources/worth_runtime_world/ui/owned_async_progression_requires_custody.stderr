@@ -1,5 +1,5 @@
 error[E0599]: no method named `admit_owned_async_request` found for reference `&SignalConditionalExecutionPort<u32, u32, u32>` in the current scope
-  --> tests/ui/owned_async_progression_requires_custody.rs:10:18
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/owned_async_progression_requires_custody.rs:10:18
    |
 10 |     let _ = port.admit_owned_async_request(source);
    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -15,7 +15,7 @@ help: there is a method `admit_managed_owned_async_request` with a similar name,
    | |__________________________________________________________________________________________^
 
 error[E0599]: no method named `advance_owned_async_request_to_timeout` found for reference `&SignalConditionalExecutionPort<u32, u32, u32>` in the current scope
-  --> tests/ui/owned_async_progression_requires_custody.rs:11:18
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/owned_async_progression_requires_custody.rs:11:18
    |
 11 |     let _ = port.advance_owned_async_request_to_timeout(source, handle, 5);
    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -31,7 +31,7 @@ help: there is a method `advance_managed_owned_async_request_to_timeout` with a 
    | |_____________________________________________________________________________^
 
 error[E0599]: no method named `schedule_owned_async_retry` found for reference `&SignalConditionalExecutionPort<u32, u32, u32>` in the current scope
-  --> tests/ui/owned_async_progression_requires_custody.rs:12:18
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/owned_async_progression_requires_custody.rs:12:18
    |
 12 |     let _ = port.schedule_owned_async_retry(source, handle);
    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -46,7 +46,7 @@ help: there is a method `schedule_managed_owned_async_retry` with a similar name
    | |___________________________________________________________________________^
 
 error[E0599]: no method named `revalidate_owned_async_request` found for reference `&SignalConditionalExecutionPort<u32, u32, u32>` in the current scope
-  --> tests/ui/owned_async_progression_requires_custody.rs:13:18
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/owned_async_progression_requires_custody.rs:13:18
    |
 13 |     let _ = port.revalidate_owned_async_request(source, intent);
    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

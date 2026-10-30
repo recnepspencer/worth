@@ -1,6 +1,6 @@
 // Caller-level contracts for the bounded workflows worth-proof promises to support.
 
-pub(crate) use {worth_proof::prelude::*};
+pub(crate) use worth_proof::prelude::*;
 pub(crate) use {worth_proof::with_brand, worth_proof::DisjointPair};
 
 pub(crate) struct ResolutionAuthority;

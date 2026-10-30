@@ -1,5 +1,16 @@
 pub use {worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationRegistration, worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationRegistration,
+    worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent,
+    worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextInput,
+    worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily,
+    worth_server::WorthServerTransportClass,
+};
 
 pub fn operation_request_test_server() -> WorthServer {
     operation_request_test_server_with_operations(
@@ -16,7 +27,9 @@ pub fn operation_request_test_server_with_operations(
                 .with_bind_address(([127, 0, 0, 1], 8080).into())
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .with_preview_targeting_enabled(true)
                         .build()
                         .expect("request context config should validate"),
@@ -118,10 +131,12 @@ pub fn worth_native_admission(
     diagnostics_profile: Option<DiagnosticRichnessProfile>,
     operation_name: &str,
 ) -> worth_server::WorthServerAdmission {
-    match server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-        worth_native_resolved_context(server, diagnostics_profile),
-        worth_server::WorthServerPipelineIntent::query_mutation(operation_name),
-    )) {
+    match server
+        .middleware()
+        .admit(worth_server::WorthServerPipelineInput::new(
+            worth_native_resolved_context(server, diagnostics_profile),
+            worth_server::WorthServerPipelineIntent::query_mutation(operation_name),
+        )) {
         worth_proof::TransitionOutcome::Success(admission) => admission,
         other => panic!("expected admitted Worth-native operation, got {other:?}"),
     }

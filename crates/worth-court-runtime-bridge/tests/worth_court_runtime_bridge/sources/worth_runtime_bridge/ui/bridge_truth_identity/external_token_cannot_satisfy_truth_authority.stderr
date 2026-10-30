@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/bridge_truth_identity/external_token_cannot_satisfy_truth_authority.rs:8:74
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/external_token_cannot_satisfy_truth_authority.rs:8:74
   |
 8 |     let _evidence = BridgeIdentityEvidence::from_query_evidence_identity(token, todo!());
   |                     ---------------------------------------------------- ^^^^^ expected `FoundationalProjectionIdentity<..., ...>`, found `FoundationalExternalIdentityToken<..., ...>`
@@ -9,13 +9,13 @@ error[E0308]: mismatched types
   = note: expected struct `worth_foundational::identities::authority_identity::derived::FoundationalProjectionIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>`
              found struct `worth_foundational::identities::authority_identity::external::FoundationalExternalIdentityToken<Arc<str>, BridgeEvidenceReferenceIdentityKind>`
 note: associated function defined here
- --> src/identity/evidence.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/identity/evidence.rs
   |
   |     pub fn from_query_evidence_identity(
   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: unreachable call
- --> tests/ui/bridge_truth_identity/external_token_cannot_satisfy_truth_authority.rs:8:21
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/external_token_cannot_satisfy_truth_authority.rs:8:21
   |
 8 |     let _evidence = BridgeIdentityEvidence::from_query_evidence_identity(token, todo!());
   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ------- any code following this expression is unreachable

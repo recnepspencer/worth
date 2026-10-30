@@ -1,7 +1,8 @@
-use {worth_proof::TransitionOutcome};
-use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServerDirectDeclaration, worth_server::WorthServerDirectDeclarationDenialCode};
-
-use {worth_testkit_server::shared_support_worth_native_runtime::build_server, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_failing_workspace_provider, worth_testkit_server::shared_support_worth_native_runtime::worth_native_session_input_builder};
+use {
+    worth_testkit_server::shared_support_worth_native_runtime::build_server,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_failing_workspace_provider,
+    worth_testkit_server::shared_support_worth_native_runtime::worth_native_session_input_builder,
+};
 
 #[test]
 fn direct_workspace_binding_failure_fails_before_support_snapshot_and_preserves_diagnostics() {
@@ -11,7 +12,9 @@ fn direct_workspace_binding_failure_fails_before_support_snapshot_and_preserves_
     let session = match server.worth_native().session(
         worth_native_session_input_builder()
             .with_branch_id("branch-9")
-            .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .build()
             .expect("Worth-native session input should validate"),
     ) {
@@ -21,7 +24,9 @@ fn direct_workspace_binding_failure_fails_before_support_snapshot_and_preserves_
 
     let denial = session
         .declarations()
-        .read(worth_server::WorthServerDirectDeclaration::named_read("users.profile"))
+        .read(worth_server::WorthServerDirectDeclaration::named_read(
+            "users.profile",
+        ))
         .expect_err("workspace binding failure must deny before support posture exists");
 
     assert_eq!(
@@ -45,7 +50,9 @@ fn direct_source_not_admitted_denial_preserves_requested_diagnostics_profile() {
     let session = match server.worth_native().session(
         worth_native_session_input_builder()
             .with_branch_id("branch-9")
-            .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .build()
             .expect("Worth-native session input should validate"),
     ) {

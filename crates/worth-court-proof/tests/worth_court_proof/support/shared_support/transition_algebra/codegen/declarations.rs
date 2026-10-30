@@ -1,9 +1,20 @@
 pub(crate) use {std::mem::align_of, std::mem::needs_drop};
 
-pub(crate) use {worth_proof::AssumptionBasis, worth_proof::CheckedAdmitRecipeTransition, worth_proof::CheckedLowerRecipeTransition, worth_proof::CurrentValidity, worth_proof::DeferredTransitionOutcome, worth_proof::DenialTransitionOutcome, worth_proof::FreshnessScopedBasis, worth_proof::FreshnessTransitionOutcome, worth_proof::Recipe, worth_proof::RecipeResolutionContext, worth_proof::RecipeResolutionGate, worth_proof::Resolved, worth_proof::SuccessfulTransitionOutcome, worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
+pub(crate) use {
+    worth_proof::AssumptionBasis, worth_proof::CheckedAdmitRecipeTransition,
+    worth_proof::CheckedLowerRecipeTransition, worth_proof::CurrentValidity,
+    worth_proof::DeferredTransitionOutcome, worth_proof::DenialTransitionOutcome,
+    worth_proof::FreshnessScopedBasis, worth_proof::FreshnessTransitionOutcome,
+    worth_proof::Recipe, worth_proof::RecipeResolutionContext, worth_proof::RecipeResolutionGate,
+    worth_proof::Resolved, worth_proof::SuccessfulTransitionOutcome,
+    worth_proof::TransitionOutcome, worth_proof::TransitionReadiness,
+};
 
-pub(crate) use {crate::shared_support::type_shapes::codegen::CodegenHonestyReport, crate::shared_support::type_shapes::codegen::CodegenShapeCheck};
-pub(crate) use {crate::shared_support::transition_algebra::representatives::RepresentativeAuthority};
+pub(crate) use crate::shared_support::transition_algebra::representatives::RepresentativeAuthority;
+pub(crate) use {
+    crate::shared_support::type_shapes::codegen::CodegenHonestyReport,
+    crate::shared_support::type_shapes::codegen::CodegenShapeCheck,
+};
 
 pub(crate) fn codegen_honesty_report() -> CodegenHonestyReport {
     crate::shared_support::type_shapes::codegen::CodegenHonestyReport::size_layout_and_drop_certified(

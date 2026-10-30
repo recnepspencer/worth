@@ -21,10 +21,7 @@ pub fn assert_counter(
     assert_eq!(receipt.counter(name), Some(expected));
 }
 
-pub fn assert_metadata_parity(
-    left: &WorthServerBinaryDownload,
-    right: &WorthServerBinaryDownload,
-) {
+pub fn assert_metadata_parity(left: &WorthServerBinaryDownload, right: &WorthServerBinaryDownload) {
     assert_eq!(
         left.read().canonical_digest(),
         right.read().canonical_digest()

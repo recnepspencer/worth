@@ -1,9 +1,28 @@
 // Bounded suspension and nested budgets: where slices end never changes an
 // evaluation's outcome, reads, or logical cost, and no slice, call, or
 // supplied profile resets or widens the admitted limits.
-pub(crate) use {worth_foundational::expression_api::expressions, worth_foundational::expression_api::ExpressionCost, worth_foundational::expression_api::ExpressionDenialDetail, worth_foundational::expression_api::ExpressionEvaluation, worth_foundational::expression_api::ExpressionFunctionCatalog, worth_foundational::expression_api::ExpressionInputs, worth_foundational::expression_api::ExpressionProfile, worth_foundational::expression_api::ExpressionResource, worth_foundational::expression_api::ExpressionSchema, worth_foundational::expression_api::ExpressionStep, worth_foundational::expression_api::ExpressionType, worth_foundational::expression_api::ExpressionValue, worth_foundational::expression_api::MAX_SLICE_QUANTUM};
+pub(crate) use {
+    worth_foundational::expression_api::expressions,
+    worth_foundational::expression_api::ExpressionCost,
+    worth_foundational::expression_api::ExpressionDenialDetail,
+    worth_foundational::expression_api::ExpressionEvaluation,
+    worth_foundational::expression_api::ExpressionFunctionCatalog,
+    worth_foundational::expression_api::ExpressionInputs,
+    worth_foundational::expression_api::ExpressionProfile,
+    worth_foundational::expression_api::ExpressionResource,
+    worth_foundational::expression_api::ExpressionSchema,
+    worth_foundational::expression_api::ExpressionStep,
+    worth_foundational::expression_api::ExpressionType,
+    worth_foundational::expression_api::ExpressionValue,
+    worth_foundational::expression_api::MAX_SLICE_QUANTUM,
+};
 
-pub(crate) use {crate::expressions::ordinary_context::admit, crate::expressions::ordinary_context::empty_catalog, crate::expressions::ordinary_context::evaluate, crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::inputs, crate::expressions::ordinary_context::schema};
+pub(crate) use {
+    crate::expressions::ordinary_context::admit,
+    crate::expressions::ordinary_context::empty_catalog,
+    crate::expressions::ordinary_context::evaluate, crate::expressions::ordinary_context::function,
+    crate::expressions::ordinary_context::inputs, crate::expressions::ordinary_context::schema,
+};
 
 pub(crate) const CORPUS: [&str; 16] = [
     "width * 2.0 - depth",
@@ -54,13 +73,20 @@ pub(crate) fn counters(cost: &ExpressionCost) -> Vec<u64> {
 pub(crate) fn stepped(source: &str, quantum: u64) -> ExpressionEvaluation {
     let compiled = admit(source).expect("corpus sources admit").compile();
     let mut continuation = compiled
-        .start(&inputs(), &worth_foundational::expression_api::ExpressionProfile::interactive())
+        .start(
+            &inputs(),
+            &worth_foundational::expression_api::ExpressionProfile::interactive(),
+        )
         .expect("fixture inputs bind");
     loop {
         match continuation.step(quantum) {
-            worth_foundational::expression_api::ExpressionStep::Complete(evaluation) => return evaluation,
+            worth_foundational::expression_api::ExpressionStep::Complete(evaluation) => {
+                return evaluation
+            }
             worth_foundational::expression_api::ExpressionStep::Suspended(next) => {
-                let used = next.cost().used(worth_foundational::expression_api::ExpressionResource::SemanticWork);
+                let used = next
+                    .cost()
+                    .used(worth_foundational::expression_api::ExpressionResource::SemanticWork);
                 assert!(used <= 1_000_000, "{source}: suspension keeps the meter");
                 continuation = next;
             }
@@ -76,7 +102,10 @@ pub(crate) fn narrowed(resource: ExpressionResource, limit: u64) -> ExpressionPr
 
 pub(crate) fn exceeded(evaluation: &ExpressionEvaluation) -> (ExpressionResource, u64) {
     match evaluation.result().map_err(|denial| denial.detail()) {
-        Err(worth_foundational::expression_api::ExpressionDenialDetail::ResourceExceeded { resource, limit }) => (*resource, *limit),
+        Err(worth_foundational::expression_api::ExpressionDenialDetail::ResourceExceeded {
+            resource,
+            limit,
+        }) => (*resource, *limit),
         other => panic!("expected a resource denial, got {other:?}"),
     }
 }

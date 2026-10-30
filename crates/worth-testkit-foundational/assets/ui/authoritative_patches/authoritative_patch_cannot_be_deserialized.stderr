@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `AuthoritativeRecordAspectPatch: serde::Deserialize<'de>` is not satisfied
- --> tests/ui/authoritative_patches/authoritative_patch_cannot_be_deserialized.rs:4:45
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/authoritative_patches/authoritative_patch_cannot_be_deserialized.rs
   |
-4 |     let _: AuthoritativeRecordAspectPatch = serde_json::from_str("{}").unwrap();
+  |     let _: AuthoritativeRecordAspectPatch = serde_json::from_str("{}").unwrap();
   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `serde_core::de::Deserialize<'_>` is not implemented for `AuthoritativeRecordAspectPatch`
   |
   = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `AuthoritativeRecordAspectPatch` type

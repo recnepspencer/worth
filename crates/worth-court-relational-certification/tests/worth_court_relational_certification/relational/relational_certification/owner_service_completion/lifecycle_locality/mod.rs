@@ -1,11 +1,7 @@
 #[allow(unused_imports)] use crate::relational_certification::ordinary_context::owner_service_completion::lifecycle_locality::*;
 pub(crate) use {std::sync::mpsc::sync_channel};
-pub(crate) use {std::sync::Arc, std::sync::Barrier};
-pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {crate::relational_certification::ordinary_context::owner_service_completion::world::committed_fork};
-pub(crate) use {worth_relational::facade::mvcc::RelationalOperationControl, worth_relational::facade::mvcc::RelationalPublicationOutcome, worth_relational::facade::mvcc::RelationalTransactionIntent};
-pub(crate) use {worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use crate::relational_certification::ordinary_context::owner_service_completion::world::committed_fork;
 
 #[test]
 fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
@@ -22,7 +18,10 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
     let reached = std::sync::Arc::new(std::sync::Barrier::new(2));
     let release = std::sync::Arc::new(std::sync::Barrier::new(2));
     let control = worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted()
-        .with_critical_section_pause_for_test(std::sync::Arc::clone(&reached), std::sync::Arc::clone(&release));
+        .with_critical_section_pause_for_test(
+            std::sync::Arc::clone(&reached),
+            std::sync::Arc::clone(&release),
+        );
     let mut transaction = runtime
         .begin_branch_transaction_with_control(
             &parked_basis,
@@ -32,7 +31,9 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
         .expect("the exact parked basis opens a controlled transaction");
     transaction
         .push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new("park-lifecycle-coordination"),
+            worth_relational::facade::transactions::WorkerIntentBatch::new(
+                "park-lifecycle-coordination",
+            ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the locality batch remains within its declared budget");
@@ -49,7 +50,10 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
             publication_port.compare_and_publish(execution, candidate)
         }
     });
-    assert_pause_reached(std::sync::Arc::clone(&reached), std::sync::Arc::clone(&release));
+    assert_pause_reached(
+        std::sync::Arc::clone(&reached),
+        std::sync::Arc::clone(&release),
+    );
 
     let waits_before = coordination_waits(&runtime, &parked_identity);
     let lifecycle_port = services.lifecycle_port();
@@ -101,7 +105,9 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
     );
     archived.expect("archive completes after the exact branch cell is released");
     let performed = match publication {
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
+            performed
+        }
         outcome => panic!("parked canonical publication did not perform: {outcome:?}"),
     };
     services

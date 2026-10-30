@@ -1,5 +1,5 @@
 error[E0451]: fields `supersession_ordinal`, `winner`, `coalesced_request`, `intent_digest`, `policy_decision_digest` and `lifecycle_transition` of struct `ResourceIntentEquivalenceCoalescing` are private
-  --> tests/ui/resource_intent_equivalence_coalescing_fields_are_private.rs:29:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_intent_equivalence_coalescing_fields_are_private.rs:29:9
    |
 28 |     let _ = ResourceIntentEquivalenceCoalescing {
    |             ----------------------------------- in this type

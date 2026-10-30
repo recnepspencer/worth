@@ -1,7 +1,24 @@
 pub(crate) use {std::sync::Arc, std::sync::Mutex};
 
-pub(crate) use {worth_relational::facade::identity::EntityId};
-pub(crate) use {worth_relational::facade::runtime::CustomInvariantDescriptor, worth_relational::facade::runtime::CustomInvariantExecutionContext, worth_relational::facade::runtime::CustomInvariantExecutionError, worth_relational::facade::runtime::CustomInvariantOperationalMetadata, worth_relational::facade::runtime::CustomInvariantPreparationError, worth_relational::facade::runtime::CustomInvariantRefusal, worth_relational::facade::runtime::CustomInvariantRegistration, worth_relational::facade::runtime::CustomInvariantRule, worth_relational::facade::runtime::CustomInvariantScopePlanner, worth_relational::facade::runtime::CustomInvariantSemanticIdentity, worth_relational::facade::runtime::CustomInvariantSemanticVersion, worth_relational::facade::runtime::CustomInvariantVerdict, worth_relational::facade::runtime::InvariantCostClass, worth_relational::facade::runtime::InvariantExecutionPoint, worth_relational::facade::runtime::InvariantFailureEffect, worth_relational::facade::runtime::InvariantGroupSet};
+pub(crate) use worth_relational::facade::identity::EntityId;
+pub(crate) use {
+    worth_relational::facade::runtime::CustomInvariantDescriptor,
+    worth_relational::facade::runtime::CustomInvariantExecutionContext,
+    worth_relational::facade::runtime::CustomInvariantExecutionError,
+    worth_relational::facade::runtime::CustomInvariantOperationalMetadata,
+    worth_relational::facade::runtime::CustomInvariantPreparationError,
+    worth_relational::facade::runtime::CustomInvariantRefusal,
+    worth_relational::facade::runtime::CustomInvariantRegistration,
+    worth_relational::facade::runtime::CustomInvariantRule,
+    worth_relational::facade::runtime::CustomInvariantScopePlanner,
+    worth_relational::facade::runtime::CustomInvariantSemanticIdentity,
+    worth_relational::facade::runtime::CustomInvariantSemanticVersion,
+    worth_relational::facade::runtime::CustomInvariantVerdict,
+    worth_relational::facade::runtime::InvariantCostClass,
+    worth_relational::facade::runtime::InvariantExecutionPoint,
+    worth_relational::facade::runtime::InvariantFailureEffect,
+    worth_relational::facade::runtime::InvariantGroupSet,
+};
 
 pub(crate) const RULE_ID: &str = "supply-chain.graph-selected-state";
 
@@ -24,9 +41,11 @@ impl GraphSelectedStateExpectation {
 
 pub(crate) fn registration() -> GraphSelectedStateProbeRegistration {
     let forbidden_entity = std::sync::Arc::new(std::sync::Mutex::new(None));
-    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(GraphSelectedStateProbe {
-        forbidden_entity: std::sync::Arc::clone(&forbidden_entity),
-    })
+    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(
+        GraphSelectedStateProbe {
+            forbidden_entity: std::sync::Arc::clone(&forbidden_entity),
+        },
+    )
     .expect("graph selected-state probe registers");
     GraphSelectedStateProbeRegistration {
         registration,
@@ -99,7 +118,9 @@ impl CustomInvariantRule for GraphSelectedStateProbe {
                 .is_ok()
         });
         Ok(if forbidden_is_visible {
-            worth_relational::facade::runtime::CustomInvariantVerdict::Violation(worth_relational::facade::runtime::CustomInvariantRefusal::Empty)
+            worth_relational::facade::runtime::CustomInvariantVerdict::Violation(
+                worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+            )
         } else {
             worth_relational::facade::runtime::CustomInvariantVerdict::Pass
         })

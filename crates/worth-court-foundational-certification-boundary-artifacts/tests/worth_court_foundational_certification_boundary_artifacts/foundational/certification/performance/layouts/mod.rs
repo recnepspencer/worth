@@ -1,5 +1,4 @@
-use {worth_foundational::performance};
-use {worth_foundational::FoundationalLayoutAnnotatedClaimConstructionDenial, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceAllocationPosture, worth_foundational::FoundationalPerformanceLayoutIntent, worth_foundational::FoundationalPerformanceWorkClass};
+use worth_foundational::performance;
 
 #[test]
 fn layout_intent_claim_preserves_declarative_representation_and_allocation_meaning() {

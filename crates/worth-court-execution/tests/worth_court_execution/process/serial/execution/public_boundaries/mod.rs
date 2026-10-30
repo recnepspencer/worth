@@ -7,8 +7,11 @@ fn dropped_authority_cannot_be_reconstructed() {
         return;
     }
 
-    use {std::num::NonZeroUsize};
-    use {worth_execution::ConstructionDenial, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig};
+    use std::num::NonZeroUsize;
+    use {
+        worth_execution::ConstructionDenial, worth_execution::ExecutionAuthority,
+        worth_execution::ExecutionAuthorityConfig,
+    };
 
     let config = ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(1).unwrap(),

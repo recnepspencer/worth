@@ -23,9 +23,6 @@ pub(crate) mod operation_control;
 #[path = "operations/mod.rs"]
 pub(crate) mod operations;
 #[allow(dead_code, unused_imports)]
-#[path = "oracle/mod.rs"]
-pub(crate) mod oracle;
-#[allow(dead_code, unused_imports)]
 #[path = "record_history/mod.rs"]
 pub(crate) mod record_history;
 #[allow(dead_code, unused_imports)]

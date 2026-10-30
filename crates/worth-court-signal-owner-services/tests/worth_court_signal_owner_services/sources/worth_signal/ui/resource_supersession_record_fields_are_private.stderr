@@ -1,5 +1,5 @@
 error: cannot construct `ResourceSupersessionRecord` with struct literal syntax due to private fields
-  --> tests/ui/resource_supersession_record_fields_are_private.rs:15:13
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_supersession_record_fields_are_private.rs:15:13
    |
 15 |     let _ = ResourceSupersessionRecord {
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^

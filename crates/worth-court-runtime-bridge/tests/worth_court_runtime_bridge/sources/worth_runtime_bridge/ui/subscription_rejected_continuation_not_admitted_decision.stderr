@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_rejected_continuation_not_admitted_decision.rs:10:73
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_rejected_continuation_not_admitted_decision.rs:10:73
    |
 10 |     let _ = runtime.plan_subscription_continuation(active_subscription, rejected_continuation, 0);
    |                     ------------------------------                      ^^^^^^^^^^^^^^^^^^^^^ expected `&BridgeSubscriptionContinuationIndex`, found `&BridgeSubscriptionContinuationRejection`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeSubscriptionContinuationIndex`
               found reference `&BridgeSubscriptionContinuationRejection`
 note: method defined here
-  --> src/facade/runtime/subscription.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription.rs
    |
    |     pub fn plan_subscription_continuation(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

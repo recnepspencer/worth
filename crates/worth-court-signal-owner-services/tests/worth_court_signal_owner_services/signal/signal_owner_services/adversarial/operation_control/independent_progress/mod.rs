@@ -1,18 +1,15 @@
 #[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::adversarial::operation_control::independent_progress::*;
-use {crate::signal_owner_services::ordinary_context::execution_custody};
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
 
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest};
-
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND;
 
 #[test]
 fn unrelated_branch_advances_before_a_parked_branch_is_released() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = control(&world);
-    let pause = control
-        .arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let before = world
         .basis
         .owner_service_cost_snapshot()
@@ -84,5 +81,7 @@ fn unrelated_branch_advances_before_a_parked_branch_is_released() {
 
 #[test]
 fn outcome_construction_pause_holds_only_the_completed_branch() {
-    exercise_advance_boundary(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
+    exercise_advance_boundary(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
+    );
 }

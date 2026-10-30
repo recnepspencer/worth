@@ -1,6 +1,10 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::export::export_ready_fixtures::*;
-use {worth_foundational::bridge_canonical_export_trust_boundary, worth_foundational::compare_canonical_exports, worth_foundational::prepare_canonical_basis_bundle, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::prepare_canonical_export_bundle, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalBundleReadyArtifact, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalExportComparisonOutcome, worth_foundational::CanonicalExportDebt, worth_foundational::CanonicalExportManifestMismatchKind, worth_foundational::CanonicalExportReadinessProofs, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalProducerShape, worth_foundational::CanonicalizationRuleVersion};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::canonicalization::export::export_ready_fixtures::*;
+use {
+    worth_foundational::bridge_canonical_export_trust_boundary,
+    worth_foundational::compare_canonical_exports,
+    worth_foundational::prepare_canonical_export_bundle,
+};
 
 #[test]
 fn export_ready_bundle_carries_complete_manifest_and_cost_evidence() {
@@ -25,8 +29,10 @@ fn export_ready_bundle_carries_complete_manifest_and_cost_evidence() {
     assert_eq!(ready.payload().manifest().rows().len(), 2);
     assert!(ready.payload().manifest().rows().iter().all(|row| {
         row.rule_version().as_str() == "m2.phase4"
-            && row.producer_shape() == worth_foundational::CanonicalProducerShape::NativeFoundational
-            && row.equivalence_basis() == worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis
+            && row.producer_shape()
+                == worth_foundational::CanonicalProducerShape::NativeFoundational
+            && row.equivalence_basis()
+                == worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis
             && row.expected_entry_count() == row.expected_cost().entry_count()
     }));
     assert_eq!(
@@ -95,14 +101,21 @@ fn export_fixture_comparison_reports_first_canonical_mismatch_locus() {
 
     match compare_canonical_exports(&left, &right) {
         worth_foundational::CanonicalExportComparisonOutcome::Mismatched(mismatch) => {
-            assert_eq!(mismatch.kind(), worth_foundational::CanonicalMismatchKind::ValueMismatch);
+            assert_eq!(
+                mismatch.kind(),
+                worth_foundational::CanonicalMismatchKind::ValueMismatch
+            );
             assert_eq!(
                 mismatch.left_locus(),
-                Some(&worth_foundational::CanonicalBasisLocus::Named("alpha".into()))
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "alpha".into()
+                ))
             );
             assert_eq!(
                 mismatch.right_locus(),
-                Some(&worth_foundational::CanonicalBasisLocus::Named("alpha".into()))
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "alpha".into()
+                ))
             );
         }
         _ => panic!("semantic fixture mismatch should report canonical mismatch evidence"),
@@ -136,8 +149,14 @@ fn export_manifest_mismatch_is_separate_from_basis_mismatch() {
                 mismatch.kind(),
                 worth_foundational::CanonicalExportManifestMismatchKind::ProducerShapeMismatch
             );
-            assert_eq!(mismatch.left_domain(), Some(worth_foundational::CanonicalBasisDomain::Value));
-            assert_eq!(mismatch.right_domain(), Some(worth_foundational::CanonicalBasisDomain::Value));
+            assert_eq!(
+                mismatch.left_domain(),
+                Some(worth_foundational::CanonicalBasisDomain::Value)
+            );
+            assert_eq!(
+                mismatch.right_domain(),
+                Some(worth_foundational::CanonicalBasisDomain::Value)
+            );
         }
         _ => panic!("producer-shape drift should be a manifest mismatch"),
     }
@@ -173,8 +192,14 @@ fn export_manifest_comparison_treats_rule_version_as_evidence() {
                 mismatch.kind(),
                 worth_foundational::CanonicalExportManifestMismatchKind::RuleVersionMismatch
             );
-            assert_eq!(mismatch.left_domain(), Some(worth_foundational::CanonicalBasisDomain::Value));
-            assert_eq!(mismatch.right_domain(), Some(worth_foundational::CanonicalBasisDomain::Value));
+            assert_eq!(
+                mismatch.left_domain(),
+                Some(worth_foundational::CanonicalBasisDomain::Value)
+            );
+            assert_eq!(
+                mismatch.right_domain(),
+                Some(worth_foundational::CanonicalBasisDomain::Value)
+            );
         }
         _ => panic!("rule-version drift should be a manifest mismatch"),
     }

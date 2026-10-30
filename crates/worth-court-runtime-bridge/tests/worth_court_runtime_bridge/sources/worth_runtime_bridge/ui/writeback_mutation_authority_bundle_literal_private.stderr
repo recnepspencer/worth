@@ -1,5 +1,5 @@
 error: cannot construct `BridgeMutationCausalityBundle` with struct literal syntax due to private fields
-  --> tests/ui/writeback_mutation_authority_bundle_literal_private.rs:7:21
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mutation_authority_bundle_literal_private.rs:7:21
    |
  7 |     let causality = BridgeMutationCausalityBundle {
    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -28,7 +28,7 @@ help: you might have meant to use the `from_writeback_causality` associated func
    |
 
 error: cannot construct `BridgeMutationAuthorityBundle` with struct literal syntax due to private fields
-  --> tests/ui/writeback_mutation_authority_bundle_literal_private.rs:29:13
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mutation_authority_bundle_literal_private.rs:29:13
    |
 29 |     let _ = BridgeMutationAuthorityBundle {
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -40,7 +40,7 @@ error: cannot construct `BridgeMutationAuthorityBundle` with struct literal synt
    = note: ...and other private fields `existing_truth_binding`, `symbolic_target_reference`, `naming_mutation` and `continuity_mutation` that were not provided
 
 error: cannot construct `BridgeBatchMutationAuthorityBundle` with struct literal syntax due to private fields
-  --> tests/ui/writeback_mutation_authority_bundle_literal_private.rs:33:13
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mutation_authority_bundle_literal_private.rs:33:13
    |
 33 |     let _ = BridgeBatchMutationAuthorityBundle {
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

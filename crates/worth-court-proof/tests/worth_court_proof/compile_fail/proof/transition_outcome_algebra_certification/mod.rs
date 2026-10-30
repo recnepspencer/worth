@@ -1,10 +1,13 @@
 #[allow(unused_imports)]
-use {crate::shared_support as support};
+use crate::shared_support as support;
 
-use {crate::shared_support::compile_fail::run_compile_fail_bundle};
-use {crate::shared_support::compile_pass::run_compile_pass_bundle};
-use {crate::shared_support::transition_algebra};
-use {worth_proof::DeferredTransitionOutcome, worth_proof::DenialTransitionOutcome, worth_proof::FreshnessTransitionOutcome, worth_proof::PreConstructionGate, worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
+use crate::compile_fail::harness::run_compile_fail_bundle;
+use crate::shared_support::compile_pass::run_compile_pass_bundle;
+use {
+    worth_proof::DeferredTransitionOutcome, worth_proof::DenialTransitionOutcome,
+    worth_proof::FreshnessTransitionOutcome, worth_proof::PreConstructionGate,
+    worth_proof::TransitionOutcome, worth_proof::TransitionReadiness,
+};
 
 #[test]
 fn transition_outcome_algebra_certification() {
@@ -12,7 +15,8 @@ fn transition_outcome_algebra_certification() {
     let compile_pass_bundle = crate::shared_support::transition_algebra::compile_pass_bundle();
     let transition_digest = crate::shared_support::transition_algebra::transition_digest();
     let failure_digest = crate::shared_support::transition_algebra::failure_digest();
-    let codegen_honesty_report = crate::shared_support::transition_algebra::codegen_honesty_report();
+    let codegen_honesty_report =
+        crate::shared_support::transition_algebra::codegen_honesty_report();
     let residual_debt_report = crate::shared_support::transition_algebra::residual_debt_report();
 
     run_compile_fail_bundle(&compile_fail_bundle);
@@ -80,7 +84,8 @@ fn transition_outcome_algebra_certification() {
         "representative_scope"
     );
 
-    let denied: DenialTransitionOutcome<u64, &'static str> = worth_proof::TransitionOutcome::denied("denied");
+    let denied: DenialTransitionOutcome<u64, &'static str> =
+        worth_proof::TransitionOutcome::denied("denied");
     let deferred: DeferredTransitionOutcome<u64, &'static str, &'static str> =
         worth_proof::TransitionOutcome::deferred("deferred");
     let stale: FreshnessTransitionOutcome<u64, &'static str, &'static str, &'static str> =
@@ -122,12 +127,27 @@ fn transition_outcome_algebra_certification() {
         &'static str,
     >::failed("failed");
 
-    assert!(matches!(denied, worth_proof::TransitionOutcome::Denied("denied")));
-    assert!(matches!(deferred, worth_proof::TransitionOutcome::Deferred("deferred")));
+    assert!(matches!(
+        denied,
+        worth_proof::TransitionOutcome::Denied("denied")
+    ));
+    assert!(matches!(
+        deferred,
+        worth_proof::TransitionOutcome::Deferred("deferred")
+    ));
     assert!(matches!(stale, worth_proof::TransitionOutcome::Stale(_)));
-    assert!(matches!(rebind, worth_proof::TransitionOutcome::RebindRequired(_)));
-    assert!(matches!(failed, worth_proof::TransitionOutcome::Failed("failed")));
-    assert!(matches!(denied_gate, worth_proof::PreConstructionGate::Denied("denied")));
+    assert!(matches!(
+        rebind,
+        worth_proof::TransitionOutcome::RebindRequired(_)
+    ));
+    assert!(matches!(
+        failed,
+        worth_proof::TransitionOutcome::Failed("failed")
+    ));
+    assert!(matches!(
+        denied_gate,
+        worth_proof::PreConstructionGate::Denied("denied")
+    ));
     assert!(matches!(
         deferred_gate,
         worth_proof::PreConstructionGate::Deferred("deferred")

@@ -1,11 +1,12 @@
-#[allow(unused_imports)] use crate::branch_basis_contract::ordinary_context::*;
-use {std::ptr};
+#[allow(unused_imports)]
+use crate::branch_basis_contract::ordinary_context::*;
 
-use {worth_foundational::FoundationalBranchReferenceMismatchAxis, worth_foundational::FoundationalBranchTarget};
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchBasisCompatibilityDenial, worth_signal::facade::branch::SignalBranchBasisReadmissionDenial, worth_signal::facade::branch::SignalBranchForkOperationDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalBranchTarget, worth_signal::facade::branch::SignalOwnerServiceCostSnapshot, worth_signal::facade::branch::SignalOwnerUnavailable, worth_signal::facade::branch::SIGNAL_BRANCH_BASIS_DESCRIPTOR_SCHEMA_VERSION};
-use {worth_signal::facade::runtime::SignalBranchRetirementDenial};
-use {worth_signal::facade::SignalBranchId, worth_signal::facade::SignalBranchRetirementReason, worth_signal::facade::SignalError, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime, worth_signal::facade::TransactionOutcome};
+use worth_signal::facade::SignalBranchId;
+use {
+    worth_signal::facade::branch::SignalOwnerServiceCostSnapshot,
+    worth_signal::facade::branch::SignalOwnerUnavailable,
+    worth_signal::facade::branch::SIGNAL_BRANCH_BASIS_DESCRIPTOR_SCHEMA_VERSION,
+};
 
 #[test]
 fn admitted_basis_clones_share_one_owner_admission() {
@@ -99,7 +100,9 @@ fn foreign_owner_and_definition_substitutions_are_distinct() {
         serde_json::from_value(transported).expect("altered descriptor remains structural");
     assert!(matches!(
         first.readmit_signal_branch_basis(altered),
-        Err(worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::DefinitionMismatch { .. })
+        Err(
+            worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::DefinitionMismatch { .. }
+        )
     ));
 }
 
@@ -135,7 +138,9 @@ fn unavailable_snapshot_is_distinct_from_reference_drift() {
 
     assert!(matches!(
         runtime.readmit_signal_branch_basis(unavailable),
-        Err(worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::UnavailableSnapshot { .. })
+        Err(
+            worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::UnavailableSnapshot { .. }
+        )
     ));
 }
 
@@ -160,13 +165,18 @@ fn advance_moves_generation_and_stales_the_previous_descriptor() {
     let advance = runtime
         .advance_signal_branch(request_execution, &mut (), &before, |_| Ok(()))
         .expect("owner advance should return a new admitted basis");
-    assert_eq!(advance.transaction().outcome, worth_signal::facade::TransactionOutcome::Committed);
+    assert_eq!(
+        advance.transaction().outcome,
+        worth_signal::facade::TransactionOutcome::Committed
+    );
     let after = advance.into_basis();
 
     assert_eq!(after.observation().generation().get(), 1);
     assert!(matches!(
         runtime.readmit_signal_branch_basis(descriptor),
-        Err(worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::ReferenceMismatch { .. })
+        Err(
+            worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::ReferenceMismatch { .. }
+        )
     ));
 
     // Ordinary readmission is a statement about the branch's current state, so
@@ -267,9 +277,13 @@ fn stale_fork_and_failed_advance_are_typed_no_movement_outcomes() {
 
     assert!(matches!(
         runtime.advance_signal_branch(request_execution, &mut (), &current, |_| {
-            Err(worth_signal::facade::SignalError::invalid_input("injected mutation failure"))
+            Err(worth_signal::facade::SignalError::invalid_input(
+                "injected mutation failure",
+            ))
         }),
-        Err(worth_signal::facade::branch::SignalBranchAdvanceDenial::MutationFailedNoMovement { .. })
+        Err(
+            worth_signal::facade::branch::SignalBranchAdvanceDenial::MutationFailedNoMovement { .. }
+        )
     ));
     let after_failed_advance = runtime
         .observe_signal_branch_basis(branch)
@@ -324,10 +338,12 @@ fn retention_lease_blocks_retirement_until_exact_release() {
     );
     assert!(matches!(
         denied,
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::RetainedComponentBasis {
-            active_leases: 1,
-            ..
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::RetainedComponentBasis {
+                active_leases: 1,
+                ..
+            }
+        )
     ));
 
     assert!(matches!(

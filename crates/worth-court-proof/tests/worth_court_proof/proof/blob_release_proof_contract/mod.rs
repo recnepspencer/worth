@@ -1,5 +1,5 @@
 #[cfg(any())]
-pub(crate) use {worth_proof::AdmittedBlobReleaseProof};
+pub(crate) use worth_proof::AdmittedBlobReleaseProof;
 
 #[cfg(any())]
 #[test]

@@ -1,4 +1,4 @@
-#[path = "../durable_medium_journal.rs"]
+#[path = "../../../../../../../worth-testkit-relational/assets/ui/durable_medium_journal.rs"]
 mod journal;
 use journal::Journal;
 use worth_relational::facade::durability::RelationalDurableMedium;

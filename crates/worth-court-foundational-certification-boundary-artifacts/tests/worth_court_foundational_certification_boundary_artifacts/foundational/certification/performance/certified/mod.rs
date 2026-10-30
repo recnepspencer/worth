@@ -1,8 +1,7 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::performance::certified::*;
-use {worth_foundational::performance_api::common_path, worth_foundational::performance_api::lower_lane::basis, worth_foundational::performance_api::lower_lane::receipts, worth_foundational::performance_api::lower_lane::reports, worth_foundational::performance_api::stronger_lane::certified, worth_foundational::profiles, worth_foundational::CertificationPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalCertifiedPerformanceAttachmentDenial, worth_foundational::FoundationalCertifiedPerformanceClass, worth_foundational::FoundationalCertifiedPerformanceSourceKind, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceAttachmentTargetKind, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceCounterName, worth_foundational::FoundationalPerformanceCounterRow, worth_foundational::FoundationalPerformanceCounterSpec, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformanceLayoutIntent, worth_foundational::FoundationalPerformanceSupportingEvidenceCode, worth_foundational::FoundationalPerformanceSupportingEvidenceRow, worth_foundational::FoundationalPerformanceWorkClass, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::performance::certified::*;
 
-use {crate::certification::ordinary_context::performance::basis_support::exact_compare};
+use crate::certification::ordinary_context::performance::basis_support::exact_compare;
 
 #[test]
 fn certified_performance_bundle_reuses_proof_lane_for_hot_path_receipts_and_support_reports() {

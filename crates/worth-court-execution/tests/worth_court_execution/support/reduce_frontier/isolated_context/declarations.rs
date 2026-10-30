@@ -1,12 +1,26 @@
 #[allow(unused_imports)]
-pub(crate) use {crate::test_serialization};
+pub(crate) use crate::test_serialization;
 
 #[allow(unused_imports)]
-pub(crate) use {crate::reducer_overlap};
-pub(crate) use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Mutex, std::sync::OnceLock};
+pub(crate) use crate::reducer_overlap;
+pub(crate) use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    std::sync::Mutex, std::sync::OnceLock,
+};
 
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapPartition, worth_execution::ReduceInputDenial, worth_execution::ReductionPlan, worth_execution::ReductionRunStop, worth_execution::ReductionTree};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
+    worth_execution::MapPartition, worth_execution::ReduceInputDenial,
+    worth_execution::ReductionPlan, worth_execution::ReductionRunStop,
+    worth_execution::ReductionTree,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 pub(crate) static AUTHORITY: OnceLock<ExecutionAuthority> = std::sync::OnceLock::new();
 pub(crate) static TEST_LOCK: Mutex<()> = std::sync::Mutex::new(());
@@ -47,7 +61,9 @@ pub(crate) fn lease_with_ceiling(
 }
 
 pub(crate) fn map(count: u64) -> ExecutionMap<u64, u64> {
-    let ids: Vec<_> = (1..=count).map(worth_foundational::PartitionIdentity::new).collect();
+    let ids: Vec<_> = (1..=count)
+        .map(worth_foundational::PartitionIdentity::new)
+        .collect();
     let partitions = ids
         .iter()
         .copied()
@@ -135,7 +151,11 @@ pub(crate) fn prove_frontier(count: u64, workers: usize, expected_overlap: usize
     );
 }
 
-pub(crate) fn assert_ceiling_width_invariant(input: &ExecutionMap<u64, u64>, count: u64, ceiling: u64) {
+pub(crate) fn assert_ceiling_width_invariant(
+    input: &ExecutionMap<u64, u64>,
+    count: u64,
+    ceiling: u64,
+) {
     let run = |workers| {
         input.run_reduce(
             Some(&lease_with_ceiling(workers, ceiling)),
@@ -161,7 +181,9 @@ pub(crate) fn assert_ceiling_width_invariant(input: &ExecutionMap<u64, u64>, cou
         ) => {
             assert_eq!(
                 left.reason,
-                worth_execution::ReductionRunStop::Hook(worth_execution::MapKernelStop::WorkCeiling),
+                worth_execution::ReductionRunStop::Hook(
+                    worth_execution::MapKernelStop::WorkCeiling
+                ),
                 "count {count}, ceiling {ceiling}"
             );
             assert_eq!(

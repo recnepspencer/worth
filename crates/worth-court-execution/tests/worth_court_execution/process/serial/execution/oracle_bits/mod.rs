@@ -1,5 +1,15 @@
 #[allow(unused_imports)]
-pub(crate) use {std::sync::atomic::AtomicUsize, worth_execution::CancellationToken, crate::oracle_bits::ordinary_context::DeclaredBits, worth_foundational::DeterminismContract, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_foundational::ExecutionBudget, worth_execution::ExecutionMap, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop, std::num::NonZeroUsize, worth_execution::OracleMismatch, std::sync::atomic::Ordering, worth_foundational::PartitionIdentity, crate::oracle_bits::ordinary_context::bits};
+pub(crate) use {
+    crate::oracle_bits::ordinary_context::bits, crate::oracle_bits::ordinary_context::DeclaredBits,
+    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome,
+    worth_execution::MapPartition, worth_execution::MapStop, worth_execution::OracleMismatch,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn oracle_certifies_identical_nan_bits_and_rejects_different_value_bits() {
@@ -17,7 +27,11 @@ fn oracle_certifies_identical_nan_bits_and_rejects_different_value_bits() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(2).unwrap(), Some(1024), Some(10)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(2).unwrap(),
+                    Some(1024),
+                    Some(10),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),
@@ -87,7 +101,11 @@ fn oracle_certifies_identical_nan_bits_and_rejects_different_value_bits() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(2).unwrap(), Some(1), Some(10)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(2).unwrap(),
+                    Some(1),
+                    Some(10),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),
@@ -147,7 +165,9 @@ fn oracle_certifies_identical_nan_bits_and_rejects_different_value_bits() {
             } else {
                 nan_bits + 1
             };
-            Err::<f64, _>(worth_execution::MapKernelFailure::Domain(f64::from_bits(bits)))
+            Err::<f64, _>(worth_execution::MapKernelFailure::Domain(f64::from_bits(
+                bits,
+            )))
         }),
         Err(worth_execution::OracleMismatch::Stop)
     ));

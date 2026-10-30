@@ -1,11 +1,3 @@
-use worth_proof::TransitionOutcome;
-use {
-    worth_server::surfaces::CompatHttpSurface, worth_server::WorthServer,
-    worth_server::WorthServerCompatHttpRouteFamily,
-    worth_server::WorthServerCompatibilityDenialCode,
-    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
-};
-
 use {
     crate::compat_http_entry::ordinary_context::compat_http_entry_runtime::compat_http_entry_test_server,
     crate::compat_http_entry::ordinary_context::compat_http_entry_runtime::compat_http_prepared_request,

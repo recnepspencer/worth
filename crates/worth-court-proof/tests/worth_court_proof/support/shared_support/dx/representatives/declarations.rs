@@ -1,4 +1,7 @@
-pub(crate) use {worth_proof::AssumptionBasis, worth_proof::AuthorityMarker, worth_proof::CapabilityMarker, worth_proof::CurrentValidity, worth_proof::FreshnessScopedBasis};
+pub(crate) use {
+    worth_proof::AssumptionBasis, worth_proof::AuthorityMarker, worth_proof::CapabilityMarker,
+    worth_proof::CurrentValidity, worth_proof::FreshnessScopedBasis,
+};
 
 pub(crate) type CurrentBasis<B> = FreshnessScopedBasis<CurrentValidity, AssumptionBasis<B>>;
 

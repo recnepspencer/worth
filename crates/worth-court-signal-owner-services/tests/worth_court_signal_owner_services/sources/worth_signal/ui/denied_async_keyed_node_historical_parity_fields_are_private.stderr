@@ -1,5 +1,5 @@
 error[E0616]: field `denial_class` of struct `DeniedAsyncKeyedNodeHistoricalParity` is private
- --> tests/ui/denied_async_keyed_node_historical_parity_fields_are_private.rs:9:20
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_keyed_node_historical_parity_fields_are_private.rs:9:20
   |
 9 |     let _ = denial.denial_class;
   |                    ^^^^^^^^^^^^ private field

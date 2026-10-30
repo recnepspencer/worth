@@ -1,5 +1,5 @@
 error[E0599]: no method named `strong_basis` found for struct `Recipe<worth_proof::Admitted, &str, BoundaryBridged<FreshnessScopedBasis<worth_proof::AuthorityRevalidationRequired, AssumptionBasis<u8>>>>` in the current scope
-  --> tests/ui/milestone3/boundary_bridged_recipe_rejects_strong_basis_api.rs:23:26
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone3/boundary_bridged_recipe_rejects_strong_basis_api.rs:23:26
    |
 23 |     let _basis = bridged.strong_basis();
    |                          ^^^^^^^^^^^^

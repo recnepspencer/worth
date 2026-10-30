@@ -1,14 +1,31 @@
 pub use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
 
-pub use {serde_json::json};
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerProductApplicationAdapter, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductOperationSupportSnapshot, worth_server::WorthServerProductSessionClock, worth_server::WorthServerProductSessionTerminationObserver, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerWorthNativeSession, worth_server::WorthServerWorthNativeSessionInput};
+pub use serde_json::json;
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerProductApplicationAdapter,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerProductOperationBasisKind,
+    worth_server::WorthServerProductOperationDeclaration,
+    worth_server::WorthServerProductOperationErrorMaps,
+    worth_server::WorthServerProductOperationPayload,
+    worth_server::WorthServerProductOperationSuccess,
+    worth_server::WorthServerProductOperationSupportSnapshot,
+    worth_server::WorthServerProductSessionClock,
+    worth_server::WorthServerProductSessionTerminationObserver,
+    worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerRequestContextConfig,
+    worth_server::WorthServerWorthNativeSession, worth_server::WorthServerWorthNativeSessionInput,
+};
 
 #[allow(unused_imports)]
-pub use {crate::shared_support_product_result_schema_bound_json as schema_bound_json};
+pub use crate::shared_support_product_result_schema_bound_json as schema_bound_json;
 
-
-pub use {crate::shared_support_product_session_phase_ten_fixture::manual_clock::ManualProductSessionClock};
+pub use crate::shared_support_product_session_phase_ten_fixture::manual_clock::ManualProductSessionClock;
 
 pub fn build_server(
     registrations: Vec<WorthServerProductApplicationAdapterRegistration>,
@@ -160,7 +177,10 @@ pub fn apply_payload() -> WorthServerProductOperationPayload {
 }
 
 pub fn apply_payload_with_title(title: &str) -> WorthServerProductOperationPayload {
-    worth_server::WorthServerProductOperationPayload::json("product-editor.apply.v1", json!({ "title": title }))
+    worth_server::WorthServerProductOperationPayload::json(
+        "product-editor.apply.v1",
+        json!({ "title": title }),
+    )
 }
 
 pub fn prepared_product_mutation_request_with_basis_and_header(
@@ -206,7 +226,9 @@ pub fn session_backed_editor_registration(
             "product-editor.render-preview.v1",
             result_contract("product-editor.render-preview.result.v1"),
             worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
-            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("preview-session"),
+            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                "preview-session",
+            ),
         ),
     ))
     .with_operation(declared(
@@ -215,7 +237,9 @@ pub fn session_backed_editor_registration(
             "product-editor.apply.v1",
             result_contract("product-editor.apply.result.v1"),
             worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
-            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("apply-session"),
+            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                "apply-session",
+            ),
             "draft",
         ),
     ))
@@ -226,7 +250,9 @@ pub fn base_config() -> WorthServerConfig {
         .with_bind_address(([127, 0, 0, 1], 8080).into())
         .with_request_context_config(
             worth_server::WorthServerRequestContextConfig::builder()
-                .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                .with_default_diagnostics_profile(
+                    worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                )
                 .build()
                 .expect("request context config should validate"),
         )
@@ -280,7 +306,8 @@ impl WorthServerProductApplicationAdapter for SessionBackedEditorAdapter {
         WorthServerProductOperationSuccess,
         worth_server::WorthServerProductAdapterExecutionError,
     > {
-        self.calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.calls
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         crate::shared_support_product_result_schema_bound_json::publish_schema_bound_json(
             operation.plan().declaration().operation_name(),
             operation.plan().declaration().result_contract(),

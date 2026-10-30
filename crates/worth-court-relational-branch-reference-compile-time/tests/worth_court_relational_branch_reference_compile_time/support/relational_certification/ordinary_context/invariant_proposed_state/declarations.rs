@@ -1,4 +1,4 @@
-pub(crate) use {std::collections::BTreeMap};
+pub(crate) use std::collections::BTreeMap;
 pub(crate) use {std::sync::Arc, std::sync::Mutex};
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_custom_invariant, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::snapshot_for_supply_chain_identity, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition};
@@ -142,9 +142,11 @@ pub(crate) fn assert_status(
     let state = state.expect("custom view resolves the existing target");
     let aspect = worth_foundational::facade::AspectKey::new("status").expect("status aspect");
     let value = state.get(&aspect).expect("status aspect exists").view();
-    let worth_foundational::facade::ContractValidatedAspectValueView::Scalar(worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw(
-        observed,
-    ))) = value
+    let worth_foundational::facade::ContractValidatedAspectValueView::Scalar(
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw(observed),
+        ),
+    ) = value
     else {
         panic!("status aspect must be a scalar string");
     };
@@ -197,10 +199,14 @@ pub(crate) fn validate_status_update(
         worth_foundational::facade::AspectKey::new("status").expect("status aspect"),
         worth_foundational::facade::FieldKey::new("status").expect("status field"),
     );
-    let fields = worth_relational::facade::transactions::AspectFieldPatch::new(std::collections::BTreeMap::from([(
-        locator,
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw("Held".to_owned())),
-    )]));
+    let fields = worth_relational::facade::transactions::AspectFieldPatch::new(
+        std::collections::BTreeMap::from([(
+            locator,
+            worth_foundational::facade::AspectValue::String(
+                worth_foundational::facade::InternedString::Raw("Held".to_owned()),
+            ),
+        )]),
+    );
     let mut transaction = runtime
         .begin_branch_transaction(
             &options,
@@ -209,9 +215,16 @@ pub(crate) fn validate_status_update(
         .expect("owner-admitted transaction context");
     transaction
         .push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new("phase5-proposed-status").push(worth_relational::facade::transactions::MutationIntent::Entity(
-                worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
-            )),
+            worth_relational::facade::transactions::WorkerIntentBatch::new(
+                "phase5-proposed-status",
+            )
+            .push(
+                worth_relational::facade::transactions::MutationIntent::Entity(
+                    worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
+                        UpdateEntityFieldsIntent { entity_id, fields },
+                    ),
+                ),
+            ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();

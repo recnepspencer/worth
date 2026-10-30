@@ -1,5 +1,5 @@
 error[E0451]: fields `family`, `outcome`, `symbol`, `resolved_entity_identity` and `target_collection` of struct `BridgeSymbolicTargetReferenceBundle` are private
- --> tests/ui/writeback_symbolic_target_reference_bundle_literal_private.rs:5:9
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_symbolic_target_reference_bundle_literal_private.rs:5:9
   |
 4 |     let _ = BridgeSymbolicTargetReferenceBundle {
   |             ----------------------------------- in this type

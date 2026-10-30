@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/compile_fail/worth_proof_progression/unresolved_recipe_is_not_readmitted.rs:8:43
+ --> tests/worth_court_signal_wasm/sources/worth_signal_wasm/compile_fail/worth_proof_progression/unresolved_recipe_is_not_readmitted.rs:8:43
   |
 8 |     requires_readmitted_boundary_envelope(bridged_but_unreadmitted_envelope);
   |     ------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Recipe<Admitted, &str>`, found `Recipe<Unresolved, &str>`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected struct `Recipe<worth_proof::Admitted, &'static str>`
              found struct `Recipe<worth_proof::Unresolved, &str>`
 note: function defined here
- --> tests/compile_fail/worth_proof_progression/unresolved_recipe_is_not_readmitted.rs:3:4
+ --> tests/worth_court_signal_wasm/sources/worth_signal_wasm/compile_fail/worth_proof_progression/unresolved_recipe_is_not_readmitted.rs:3:4
   |
 3 | fn requires_readmitted_boundary_envelope(_: Recipe<Admitted, &'static str>) {}
   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ---------------------------------

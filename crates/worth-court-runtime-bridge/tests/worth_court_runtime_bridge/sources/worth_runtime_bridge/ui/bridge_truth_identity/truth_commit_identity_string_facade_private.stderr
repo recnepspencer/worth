@@ -1,5 +1,5 @@
 error[E0277]: `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>` doesn't implement `std::fmt::Display`
- --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:6:36
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:6:36
   |
 6 |     let _formatted = format!("{}", commit_identity);
   |                               --   ^^^^^^^^^^^^^^^ `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>` cannot be formatted with the default formatter
@@ -11,7 +11,7 @@ error[E0277]: `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_brid
   = note: this error originates in the macro `$crate::__export::format_args` which comes from the expansion of the macro `format` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0308]: mismatched types
- --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:7:40
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:7:40
   |
 7 |     let _compared = commit_identity == "commit-1";
   |                     ---------------    ^^^^^^^^^^ expected `BridgeIdentity<TruthCommitTag>`, found `&str`
@@ -22,7 +22,7 @@ error[E0308]: mismatched types
           found reference `&'static str`
 
 error[E0277]: `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthSnapshotTag>` doesn't implement `std::fmt::Display`
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:11:36
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:11:36
    |
 11 |     let _formatted = format!("{}", snapshot_identity);
    |                               --   ^^^^^^^^^^^^^^^^^ `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthSnapshotTag>` cannot be formatted with the default formatter
@@ -34,7 +34,7 @@ error[E0277]: `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_brid
    = note: this error originates in the macro `$crate::__export::format_args` which comes from the expansion of the macro `format` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:12:42
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:12:42
    |
 12 |     let _compared = snapshot_identity == "snapshot-1";
    |                     -----------------    ^^^^^^^^^^^^ expected `BridgeIdentity<TruthSnapshotTag>`, found `&str`
@@ -45,7 +45,7 @@ error[E0308]: mismatched types
            found reference `&'static str`
 
 error[E0277]: `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthPatchTag>` doesn't implement `std::fmt::Display`
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:16:36
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:16:36
    |
 16 |     let _formatted = format!("{}", patch_identity);
    |                               --   ^^^^^^^^^^^^^^ `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthPatchTag>` cannot be formatted with the default formatter
@@ -57,7 +57,7 @@ error[E0277]: `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_brid
    = note: this error originates in the macro `$crate::__export::format_args` which comes from the expansion of the macro `format` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:17:39
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:17:39
    |
 17 |     let _compared = patch_identity == "patch-1";
    |                     --------------    ^^^^^^^^^ expected `BridgeIdentity<TruthPatchTag>`, found `&str`
@@ -68,7 +68,7 @@ error[E0308]: mismatched types
            found reference `&'static str`
 
 error[E0277]: `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthBranchTag>` doesn't implement `std::fmt::Display`
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:21:36
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:21:36
    |
 21 |     let _formatted = format!("{}", branch_identity);
    |                               --   ^^^^^^^^^^^^^^^ `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthBranchTag>` cannot be formatted with the default formatter
@@ -80,7 +80,7 @@ error[E0277]: `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_brid
    = note: this error originates in the macro `$crate::__export::format_args` which comes from the expansion of the macro `format` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:22:40
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:22:40
    |
 22 |     let _compared = branch_identity == "branch-main";
    |                     ---------------    ^^^^^^^^^^^^^ expected `BridgeIdentity<TruthBranchTag>`, found `&str`
@@ -91,12 +91,12 @@ error[E0308]: mismatched types
            found reference `&'static str`
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:26:48
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:26:48
    |
 26 |       let commit_identity = TruthCommitIdentity::new("commit-1");
    |                                                  ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -104,7 +104,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:26:52
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:26:52
    |
 26 |     let commit_identity = TruthCommitIdentity::new("commit-1");
    |                           ------------------------ ^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
@@ -114,29 +114,29 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
 
 error[E0624]: method `as_str` is private
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:27:33
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:27:33
    |
 27 |     let _text = commit_identity.as_str();
    |                                 ^^^^^^ private method
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:30:52
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:30:52
    |
 30 |       let snapshot_identity = TruthSnapshotIdentity::new("snapshot-1");
    |                                                      ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -144,7 +144,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:30:56
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:30:56
    |
 30 |     let snapshot_identity = TruthSnapshotIdentity::new("snapshot-1");
    |                             -------------------------- ^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
@@ -154,29 +154,29 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
 
 error[E0624]: method `as_str` is private
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:31:35
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:31:35
    |
 31 |     let _text = snapshot_identity.as_str();
    |                                   ^^^^^^ private method
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:34:46
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:34:46
    |
 34 |       let patch_identity = TruthPatchIdentity::new("patch-1");
    |                                                ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -184,7 +184,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:34:50
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:34:50
    |
 34 |     let patch_identity = TruthPatchIdentity::new("patch-1");
    |                          ----------------------- ^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
@@ -194,29 +194,29 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
 
 error[E0624]: method `as_str` is private
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:35:32
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:35:32
    |
 35 |     let _text = patch_identity.as_str();
    |                                ^^^^^^ private method
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:38:48
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:38:48
    |
 38 |       let branch_identity = TruthBranchIdentity::new("branch-main");
    |                                                  ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -224,7 +224,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:38:52
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:38:52
    |
 38 |     let branch_identity = TruthBranchIdentity::new("branch-main");
    |                           ------------------------ ^^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
@@ -234,18 +234,18 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
 
 error[E0624]: method `as_str` is private
-  --> tests/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:39:33
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/truth_commit_identity_string_facade_private.rs:39:33
    |
 39 |     let _text = branch_identity.as_str();
    |                                 ^^^^^^ private method
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn as_str(&self) -> &str {
    |     ----------------------------------- private method defined here

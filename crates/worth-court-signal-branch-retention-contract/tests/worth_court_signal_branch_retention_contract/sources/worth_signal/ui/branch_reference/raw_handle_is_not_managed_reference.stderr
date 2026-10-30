@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `ManagedSignalBranchReference: From<RuntimeBranch>` is not satisfied
-  --> tests/ui/branch_reference/raw_handle_is_not_managed_reference.rs:13:12
+  --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/raw_handle_is_not_managed_reference.rs:13:12
    |
 13 |     handle.into()
    |            ^^^^ the trait `From<RuntimeBranch>` is not implemented for `ManagedSignalBranchReference`

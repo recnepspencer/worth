@@ -1,8 +1,10 @@
-#[allow(unused_imports)] use crate::charged_bytes_derive::isolated_context::admission::*;
-pub(crate) use {crate::charged_bytes_derive::ordinary_context::model::combine, crate::charged_bytes_derive::ordinary_context::model::ResidentValue};
-pub(crate) use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::OnceLock};
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ChargedBytes, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+#[allow(unused_imports)]
+use crate::charged_bytes_derive::isolated_context::admission::*;
+pub(crate) use {
+    crate::charged_bytes_derive::ordinary_context::model::combine,
+    crate::charged_bytes_derive::ordinary_context::model::ResidentValue,
+};
+pub(crate) use {worth_execution::ChargedBytes, worth_execution::MapKernelFailure};
 
 #[test]
 fn derived_input_storage_refuses_before_kernel_and_oversized_output_refuses_publication() {
@@ -12,14 +14,20 @@ fn derived_input_storage_refuses_before_kernel_and_oversized_output_refuses_publ
 
     let lease = lease();
     let entered = std::sync::atomic::AtomicUsize::new(0);
-    let input = map(crate::charged_bytes_derive::ordinary_context::model::ResidentValue::with_notes(2 << 20), 64);
+    let input = map(
+        crate::charged_bytes_derive::ordinary_context::model::ResidentValue::with_notes(2 << 20),
+        64,
+    );
     match input.run(Some(&lease), |_, _| {
         entered.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         Ok::<_, MapKernelFailure<()>>(0_u64)
     }) {
         worth_execution::MapOutcome::Stopped {
             completed_prefix,
-            reason: worth_execution::MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(denial)),
+            reason:
+                worth_execution::MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(
+                    denial,
+                )),
             ..
         } => {
             assert!(completed_prefix.is_empty());
@@ -30,10 +38,15 @@ fn derived_input_storage_refuses_before_kernel_and_oversized_output_refuses_publ
         _ => panic!("nested input allocation must refuse admission"),
     }
     assert_eq!(entered.load(std::sync::atomic::Ordering::SeqCst), 0);
-    let input = map(crate::charged_bytes_derive::ordinary_context::model::ResidentValue::empty(), 64);
+    let input = map(
+        crate::charged_bytes_derive::ordinary_context::model::ResidentValue::empty(),
+        64,
+    );
     match input.run(Some(&lease), |_, context| {
         context.checkpoint(1)?;
-        Ok::<_, MapKernelFailure<()>>(crate::charged_bytes_derive::ordinary_context::model::ResidentValue::with_notes(4096))
+        Ok::<_, MapKernelFailure<()>>(
+            crate::charged_bytes_derive::ordinary_context::model::ResidentValue::with_notes(4096),
+        )
     }) {
         worth_execution::MapOutcome::Stopped {
             completed_prefix,
@@ -55,7 +68,8 @@ fn funded_nested_work_stops_and_fresh_retry_hands_tree_charge_to_callers_hold() 
     }
 
     let lease = lease();
-    let mut value = crate::charged_bytes_derive::ordinary_context::model::ResidentValue::with_notes(128);
+    let mut value =
+        crate::charged_bytes_derive::ordinary_context::model::ResidentValue::with_notes(128);
     value.labels = ["north", "south", "east"]
         .into_iter()
         .map(String::from)

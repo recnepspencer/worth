@@ -1,6 +1,12 @@
 // Actual World source/parent backing follows serial and inherited request custody.
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt};
-pub(crate) use {worth_execution::CancellationSource, worth_execution::ExecutionRequest, worth_execution::LeaseDenial, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest, worth_execution::WorkCeilingDenial};
+pub(crate) use {
+    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+};
+pub(crate) use {
+    worth_execution::CancellationSource, worth_execution::ExecutionRequest,
+    worth_execution::LeaseDenial, worth_execution::SerialMemoryBudget,
+    worth_execution::SerialRequest, worth_execution::WorkCeilingDenial,
+};
 
 pub(crate) fn assert_retained_memory(
     court: &CompositeSupplyChainCourt,
@@ -8,8 +14,11 @@ pub(crate) fn assert_retained_memory(
 ) {
     for inherited in [false, true] {
         let budget = worth_execution::SerialMemoryBudget::new(Some(1_000_000));
-        let parent =
-            worth_execution::SerialRequest::from_memory(budget.clone(), worth_execution::CancellationSource::new().token(), None);
+        let parent = worth_execution::SerialRequest::from_memory(
+            budget.clone(),
+            worth_execution::CancellationSource::new().token(),
+            None,
+        );
         let worker = worth_execution::SerialRequest::from_policy(
             &worth_foundational::ExecutionRequestPolicy::for_workers(
                 worth_foundational::ExecutionPosture::Serial,
@@ -23,12 +32,22 @@ pub(crate) fn assert_retained_memory(
             assert!(!worth_execution::ExecutionRequest::serial(&worker).has_accounting());
             worth_execution::ExecutionRequest::serial(&parent)
                 .run_native(|_| {
-                    retain_page(court, target, &budget, worth_execution::ExecutionRequest::serial(&worker))
+                    retain_page(
+                        court,
+                        target,
+                        &budget,
+                        worth_execution::ExecutionRequest::serial(&worker),
+                    )
                 })
                 .unwrap()
                 .0
         } else {
-            retain_page(court, target, &budget, worth_execution::ExecutionRequest::serial(&parent))
+            retain_page(
+                court,
+                target,
+                &budget,
+                worth_execution::ExecutionRequest::serial(&parent),
+            )
         };
         assert!(
             budget.charged_memory_bytes() > 0,
@@ -43,7 +62,11 @@ pub(crate) fn assert_retained_memory(
         );
     }
     let budget = worth_execution::SerialMemoryBudget::new(Some(0));
-    let host = worth_execution::SerialRequest::from_memory(budget.clone(), worth_execution::CancellationSource::new().token(), None);
+    let host = worth_execution::SerialRequest::from_memory(
+        budget.clone(),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
     let refused = court
         .world
         .observation_port()
@@ -97,9 +120,13 @@ pub(crate) fn assert_cancelled_successor(
     let port = court.world.observation_port();
     let source_charge = budget.charged_memory_bytes();
     let cancellation = worth_execution::CancellationSource::new();
-    let host = worth_execution::SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
+    let host =
+        worth_execution::SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
     let prepared = port
-        .prepare_exact_product_history_page(worth_execution::ExecutionRequest::serial(&host), cursor)
+        .prepare_exact_product_history_page(
+            worth_execution::ExecutionRequest::serial(&host),
+            cursor,
+        )
         .unwrap();
     assert!(
         !prepared.is_complete(),

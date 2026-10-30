@@ -1,4 +1,4 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::invariant_oracle_expectations::expected_supply_chain_branch};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_supply_chain_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison::compare, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::observation::observe_snapshot as observe_supply_chain_snapshot, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::snapshot_for_supply_chain_identity, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles};
@@ -57,9 +57,18 @@ pub(crate) fn prove_named_delta_cow(
         })
         .map(|allocation| allocation.authoritative_bytes())
         .sum::<u64>();
-    let selected_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![selected.clone()]);
-    let main_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![main]);
-    let sibling_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![sibling]);
+    let selected_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![selected.clone()],
+    );
+    let main_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![main],
+    );
+    let sibling_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![sibling],
+    );
     let batch = lower_supply_chain_production_delta(
         execution,
         &world.runtime,

@@ -1,8 +1,14 @@
-pub(crate) use {worth_execution::DecomposeFailure, crate::decompose_pattern::ordinary_context::EDITIONS, crate::decompose_pattern::ordinary_context::back, crate::decompose_pattern::ordinary_context::base_subdomains, crate::decompose_pattern::ordinary_context::decomposer, crate::decompose_pattern::ordinary_context::interface, crate::decompose_pattern::ordinary_context::interior, crate::decompose_pattern::ordinary_context::subdomain_map};
-pub(crate) use {std::num::NonZeroUsize};
+pub(crate) use {
+    crate::decompose_pattern::ordinary_context::back,
+    crate::decompose_pattern::ordinary_context::base_subdomains,
+    crate::decompose_pattern::ordinary_context::decomposer,
+    crate::decompose_pattern::ordinary_context::interface,
+    crate::decompose_pattern::ordinary_context::interior,
+    crate::decompose_pattern::ordinary_context::subdomain_map,
+    crate::decompose_pattern::ordinary_context::EDITIONS,
+};
 
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::LeaseRequest};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionFallbackCause, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy};
+pub(crate) use {worth_execution::ExecutionAuthorityConfig, worth_execution::LeaseRequest};
 
 #[test]
 fn one_scope_enforces_total_work_and_preserves_snapshot_after_stop() {
@@ -42,7 +48,10 @@ fn one_scope_enforces_total_work_and_preserves_snapshot_after_stop() {
         Ok(_) => panic!("work ceiling should stop back-substitution"),
         Err(stopped) => stopped,
     };
-    assert!(matches!(stopped.cause, worth_execution::DecomposeFailure::Back { .. }));
+    assert!(matches!(
+        stopped.cause,
+        worth_execution::DecomposeFailure::Back { .. }
+    ));
     assert_eq!(stopped.total_report.charged_work(), 19);
     assert_eq!(
         stopped.total_report.fallback(),

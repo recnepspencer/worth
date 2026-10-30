@@ -1,10 +1,14 @@
-pub(crate) use {std::sync::mpsc::sync_channel};
+pub(crate) use std::sync::mpsc::sync_channel;
 pub(crate) use {std::sync::Arc, std::sync::Barrier};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {crate::relational_certification::ordinary_context::owner_service_completion::world::committed_fork};
-pub(crate) use {worth_relational::facade::mvcc::RelationalOperationControl, worth_relational::facade::mvcc::RelationalPublicationOutcome, worth_relational::facade::mvcc::RelationalTransactionIntent};
-pub(crate) use {worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use crate::relational_certification::ordinary_context::owner_service_completion::world::committed_fork;
+pub(crate) use worth_relational::facade::transactions::WorkerIntentBatch;
+pub(crate) use {
+    worth_relational::facade::mvcc::RelationalOperationControl,
+    worth_relational::facade::mvcc::RelationalPublicationOutcome,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+};
 
 pub(crate) const LOCALITY_TIMEOUT: Duration = std::time::Duration::from_secs(2);
 

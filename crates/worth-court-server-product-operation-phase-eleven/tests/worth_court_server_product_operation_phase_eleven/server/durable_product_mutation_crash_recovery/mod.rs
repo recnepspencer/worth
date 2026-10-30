@@ -1,14 +1,21 @@
-#[allow(unused_imports)] use crate::durable_product_mutation_crash_recovery::ordinary_context::*;
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use crate::durable_product_mutation_crash_recovery::ordinary_context::*;
+#[allow(unused_imports)]
+pub(crate) use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-pub(crate) use {serde_json::json, serde_json::Value};
-pub(crate) use {worth_server::WorthServerCompletedProductOperation, worth_server::WorthServerDurableProductMutationConclusion, worth_server::WorthServerOperationAuthorizationPolicy, worth_server::WorthServerProductOperationOutcome, worth_server::WorthServerProductOperationSurfaceDenialCode};
+pub(crate) use serde_json::json;
 
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_durable_product_mutation as durable_support};
+pub(crate) use worth_testkit_server::shared_support_durable_product_mutation as durable_support;
 
-pub(crate) use {worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server, worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server_with_mutation_policy, worth_testkit_server::shared_support_durable_product_mutation::driver::execute, worth_testkit_server::shared_support_durable_product_mutation::runtime::prepared_mutation_request, worth_testkit_server::shared_support_durable_product_mutation::runtime::session, worth_testkit_server::shared_support_durable_product_mutation::runtime::session_with_principal, worth_testkit_server::shared_support_durable_product_mutation::executor::DurableMutationCrashPoint, worth_testkit_server::shared_support_durable_product_mutation::executor::TestDurableProductExecutor};
+pub(crate) use {
+    worth_testkit_server::shared_support_durable_product_mutation::driver::execute,
+    worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server,
+    worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server_with_mutation_policy,
+    worth_testkit_server::shared_support_durable_product_mutation::runtime::prepared_mutation_request,
+    worth_testkit_server::shared_support_durable_product_mutation::runtime::session,
+    worth_testkit_server::shared_support_durable_product_mutation::runtime::session_with_principal,
+};
 
 #[test]
 fn recovery_rechecks_current_operation_authorization() {
@@ -33,7 +40,9 @@ fn recovery_rechecks_current_operation_authorization() {
 
     let rebuilt_server = build_server_with_mutation_policy(
         &executor,
-        worth_server::WorthServerOperationAuthorizationPolicy::require_principal("recovery-operator"),
+        worth_server::WorthServerOperationAuthorizationPolicy::require_principal(
+            "recovery-operator",
+        ),
     );
     let no_longer_authorized =
         session_with_principal(&rebuilt_server, "tenant-a", "workspace-42", "principal-7")
@@ -144,7 +153,9 @@ fn recovery_is_tenant_scoped_and_provider_completion_is_revalidated() {
         .resolve_durable_mutation(&recovery)
         .expect("owning tenant should resolve the handle")
     {
-        worth_server::WorthServerDurableProductMutationConclusion::PreviouslyCommitted(completion) => {
+        worth_server::WorthServerDurableProductMutationConclusion::PreviouslyCommitted(
+            completion,
+        ) => {
             assert_eq!(completion.next_basis().value(), "basis:1");
         }
         other => panic!("expected previously committed recovery, got {other:?}"),

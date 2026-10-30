@@ -1,8 +1,5 @@
-#[allow(unused_imports)] use crate::branch_retention_contract::ordinary_context::*;
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome};
-use {worth_signal::facade::runtime::SignalBranchRetirementDenial};
-use {worth_signal::facade::SignalBranchRetirementReason, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
+#[allow(unused_imports)]
+use crate::branch_retention_contract::ordinary_context::*;
 
 #[test]
 fn retention_capacity_denies_before_unbounded_growth() {
@@ -105,10 +102,12 @@ fn admitted_snapshot_blocks_retirement_until_every_clone_is_released() {
     );
     assert!(matches!(
         denied,
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::RetainedAdmittedBasis {
-            active_leases: 2,
-            ..
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::RetainedAdmittedBasis {
+                active_leases: 2,
+                ..
+            }
+        )
     ));
 
     drop(snapshot_clone);

@@ -1,4 +1,7 @@
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::SignalBranchBasisLifecyclePosture};
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::SignalBranchBasisLifecyclePosture,
+};
 
 /// A neutral, test-local view of owner-issued branch truth.
 ///

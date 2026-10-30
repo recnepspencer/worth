@@ -1,5 +1,5 @@
 error: cannot construct `ResourceTimeoutDecisionPlan` with struct literal syntax due to private fields
-  --> tests/ui/resource_timeout_decision_plan_fields_are_private.rs:8:17
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_decision_plan_fields_are_private.rs:8:17
    |
  8 |     let _plan = ResourceTimeoutDecisionPlan {
    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

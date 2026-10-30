@@ -1,13 +1,16 @@
-#[allow(unused_imports)] use crate::compat_http_phase_six::ordinary_context::cleanup_receipts::*;
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
+#[allow(unused_imports)]
+use crate::compat_http_phase_six::ordinary_context::cleanup_receipts::*;
 
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerUploadCleanupReason};
-
-use {crate::compat_http_phase_six::ordinary_context::compat_http_phase_six_assertions::assert_cleanup_receipt, crate::compat_http_phase_six::ordinary_context::compat_http_phase_six_assertions::assert_counter, crate::compat_http_phase_six::ordinary_context::compat_http_phase_six_assertions::assert_upload_denial};
-use {worth_testkit_server::shared_support_compat_http_phase_six_runtime::build_phase_six_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_six_runtime::prepared_request, worth_testkit_server::shared_support_compat_http_phase_six_runtime::prepared_upload, worth_testkit_server::shared_support_compat_http_phase_six_runtime::upload_input};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledCountingTestWorkspaceProvider};
-use {crate::compat_http_phase_six::ordinary_context::upload_fixtures::single_insert_body};
+use {
+    crate::compat_http_phase_six::ordinary_context::compat_http_phase_six_assertions::assert_cleanup_receipt,
+    crate::compat_http_phase_six::ordinary_context::compat_http_phase_six_assertions::assert_counter,
+    crate::compat_http_phase_six::ordinary_context::compat_http_phase_six_assertions::assert_upload_denial,
+};
+use {
+    worth_testkit_server::shared_support_compat_http_phase_six_runtime::build_phase_six_server_with_workspace_provider,
+    worth_testkit_server::shared_support_compat_http_phase_six_runtime::prepared_request,
+    worth_testkit_server::shared_support_compat_http_phase_six_runtime::upload_input,
+};
 
 #[test]
 fn compat_http_staged_upload_cleanup_receipts_prevent_authoritative_truth_drift() {
@@ -82,10 +85,22 @@ fn compat_http_staged_upload_cleanup_receipts_prevent_authoritative_truth_drift(
         other => panic!("expected inactive-session denial, got {other:?}"),
     };
 
-    assert_cleanup_receipt(&interrupted, worth_server::WorthServerUploadCleanupReason::Interrupted);
-    assert_cleanup_receipt(&expired, worth_server::WorthServerUploadCleanupReason::Expired);
-    assert_cleanup_receipt(&abandoned, worth_server::WorthServerUploadCleanupReason::Abandoned);
-    assert_cleanup_receipt(&mismatch, worth_server::WorthServerUploadCleanupReason::OwnershipMismatch);
+    assert_cleanup_receipt(
+        &interrupted,
+        worth_server::WorthServerUploadCleanupReason::Interrupted,
+    );
+    assert_cleanup_receipt(
+        &expired,
+        worth_server::WorthServerUploadCleanupReason::Expired,
+    );
+    assert_cleanup_receipt(
+        &abandoned,
+        worth_server::WorthServerUploadCleanupReason::Abandoned,
+    );
+    assert_cleanup_receipt(
+        &mismatch,
+        worth_server::WorthServerUploadCleanupReason::OwnershipMismatch,
+    );
     assert_counter(
         interrupted.performance_receipt(),
         "compat_http.upload.cleanup_operations",

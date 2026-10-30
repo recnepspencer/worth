@@ -1,15 +1,30 @@
 #[allow(unused_imports)]
-pub(crate) use {crate::work_ceiling::isolated_context::retained_run};
+pub(crate) use crate::work_ceiling::isolated_context::retained_run;
 
 pub(crate) use {std::num::NonZeroUsize, std::panic::catch_unwind, std::panic::AssertUnwindSafe};
 
-pub(crate) use {worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapKernelStop, worth_execution::MapPartition, worth_execution::MapStop, worth_execution::ReduceInputDenial, worth_execution::ReductionRunStop, worth_execution::SerialRequest, worth_execution::WorkCeilingDenial};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionReport, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::CancellationSource, worth_execution::CancellationToken,
+    worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
+    worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease,
+    worth_execution::ExecutionWorkCeiling, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::MapKernelStop,
+    worth_execution::MapPartition, worth_execution::MapStop, worth_execution::ReduceInputDenial,
+    worth_execution::ReductionRunStop, worth_execution::SerialRequest,
+    worth_execution::WorkCeilingDenial,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionReport,
+    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
+};
 
 pub(crate) const PARTITION_WORK: u64 = 3;
 
 pub(crate) fn map(count: u64) -> ExecutionMap<u64, u64> {
-    let ids: Vec<_> = (1..=count).map(worth_foundational::PartitionIdentity::new).collect();
+    let ids: Vec<_> = (1..=count)
+        .map(worth_foundational::PartitionIdentity::new)
+        .collect();
     let partitions = ids
         .iter()
         .map(|identity| MapPartition {
@@ -57,11 +72,17 @@ pub(crate) fn reduce(
 
 pub(crate) fn funded_serial_request() -> SerialRequest {
     worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::from_policy(&worth_foundational::ExecutionRequestPolicy::new(
-            worth_foundational::ExecutionPosture::Serial,
-            worth_foundational::DeterminismContract::CanonicalBitwise,
-            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(10_000)),
-        )),
+        worth_execution::SerialMemoryBudget::from_policy(
+            &worth_foundational::ExecutionRequestPolicy::new(
+                worth_foundational::ExecutionPosture::Serial,
+                worth_foundational::DeterminismContract::CanonicalBitwise,
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    None,
+                    Some(10_000),
+                ),
+            ),
+        ),
         worth_execution::CancellationToken::new(),
         None,
     )

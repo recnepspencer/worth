@@ -1,10 +1,20 @@
-#[allow(unused_imports)] use crate::worth_native_facade_entry::ordinary_context::direct_composition::*;
-use {std::sync::atomic::Ordering};
-use {worth_proof::TransitionOutcome};
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerDirectDeclaration, worth_server::WorthServerDirectProjectionOutcome, worth_server::WorthServerDirectProjectionRequest, worth_server::WorthServerDirectReadOutcome, worth_server::WorthServerDirectStateOutcome, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerSuccessKind, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+#[allow(unused_imports)]
+use crate::worth_native_facade_entry::ordinary_context::direct_composition::*;
 
-use {worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider, worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::success, worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read, worth_testkit_server::shared_support_worth_native_assertions::direct_provenance_digest, worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest, worth_testkit_server::shared_support_worth_native_assertions::response_provenance_digest, worth_testkit_server::shared_support_worth_native_assertions::worth_native_session, worth_testkit_server::shared_support_worth_native_runtime::build_server, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_counting_workspace, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_workspace_provider};
+use {
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::request_input,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::success,
+    worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read,
+    worth_testkit_server::shared_support_worth_native_assertions::direct_provenance_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::response_provenance_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::worth_native_session,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_counting_workspace,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_workspace_provider,
+};
 
 #[test]
 fn direct_product_flow_matches_lower_direct_path_without_endpoint_glue() {
@@ -60,23 +70,21 @@ fn direct_product_flow_preserves_compatibility_overlap_without_semantic_drift() 
         .expect("product flow should prepare and admit");
 
     let product_read = direct_read_success(product.read());
-    let compatibility = success(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admit_read_posture(
+    let compatibility = success(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
                     &server,
-                    resolve_request_context(
-                        &server,
-                        request_input(
-                            worth_server::WorthServerSurfaceFamily::CompatHttp,
-                            worth_server::WorthServerTransportClass::CompatHttp,
-                        ),
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::CompatHttp,
+                        worth_server::WorthServerTransportClass::CompatHttp,
                     ),
                 ),
-                worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
-            )),
-    );
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ),
+    ));
 
     assert_eq!(
         product.declaration_snapshot().family_contract_digest(),

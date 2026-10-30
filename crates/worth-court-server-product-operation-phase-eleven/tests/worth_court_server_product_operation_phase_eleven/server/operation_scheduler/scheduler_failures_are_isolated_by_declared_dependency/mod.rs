@@ -1,5 +1,9 @@
 // scheduler failures are isolated by declared dependency.
-use {worth_server::request_context::DiagnosticRichnessProfile, crate::operation_scheduler::ordinary_context::operation_scheduler_runtime::SelectiveSharedReadWorkspaceProvider, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerSchedulerFailurePosture, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass, crate::operation_scheduler::ordinary_context::lower_shared_read_plan, worth_testkit_server::shared_support_query_handoff_fixture::test_server};
+use {
+    crate::operation_scheduler::ordinary_context::lower_shared_read_plan,
+    crate::operation_scheduler::ordinary_context::operation_scheduler_runtime::SelectiveSharedReadWorkspaceProvider,
+    worth_testkit_server::shared_support_query_handoff_fixture::test_server,
+};
 
 #[test]
 fn scheduler_failures_are_isolated_by_declared_dependency() {
@@ -42,7 +46,9 @@ fn scheduler_failures_are_isolated_by_declared_dependency() {
         .failure_posture()
         .expect("first slot should fail in isolation")
     {
-        worth_server::WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure { runtime_failure } => {
+        worth_server::WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure {
+            runtime_failure,
+        } => {
             assert!(runtime_failure.detail().contains("shared-read"));
         }
         other => panic!("expected isolated runtime failure, got {other:?}"),

@@ -1,13 +1,13 @@
 error[E0308]: mismatched types
- --> tests/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs:9:16
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs
   |
-9 |     needs_code(scope);
+  |     needs_code(scope);
   |     ---------- ^^^^^ expected `FoundationalDiagnosticCodeId`, found `FoundationalDiagnosticScopeId`
   |     |
   |     arguments to this function are incorrect
   |
 note: function defined here
- --> tests/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs:3:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs
   |
-3 | fn needs_code(_code: FoundationalDiagnosticCodeId) {}
+  | fn needs_code(_code: FoundationalDiagnosticCodeId) {}
   |    ^^^^^^^^^^ -----------------------------------

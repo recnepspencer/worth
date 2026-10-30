@@ -1,18 +1,37 @@
 // Seeded property generation over the parser and codec. Every generated
 // input denies or round-trips exactly, and source and decoded drafts agree
 // on admission; failures reproduce from the fixed seeds.
-pub(crate) use {worth_foundational::expression_api::expressions, worth_foundational::expression_api::ExpressionFunctionCatalog, worth_foundational::expression_api::ExpressionProfile, worth_foundational::expression_api::ExpressionSchema, worth_foundational::expression_api::ExpressionType};
+pub(crate) use {
+    worth_foundational::expression_api::expressions,
+    worth_foundational::expression_api::ExpressionFunctionCatalog,
+    worth_foundational::expression_api::ExpressionProfile,
+    worth_foundational::expression_api::ExpressionSchema,
+    worth_foundational::expression_api::ExpressionType,
+};
 
-pub(crate) use {crate::expressions::ordinary_context::draft, crate::expressions::ordinary_context::empty_catalog, crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema};
+pub(crate) use {
+    crate::expressions::ordinary_context::draft,
+    crate::expressions::ordinary_context::empty_catalog,
+    crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema,
+};
 
 /// One installed overload, so generated calls exercise installed resolution.
 pub(crate) fn catalog(schema: &ExpressionSchema) -> ExpressionFunctionCatalog {
-    let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(schema, worth_foundational::expression_api::ExpressionProfile::interactive());
+    let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(
+        schema,
+        worth_foundational::expression_api::ExpressionProfile::interactive(),
+    );
     let area = function(
         "geometry::area",
         &[
-            ("w", worth_foundational::expression_api::ExpressionType::Float64),
-            ("h", worth_foundational::expression_api::ExpressionType::Float64),
+            (
+                "w",
+                worth_foundational::expression_api::ExpressionType::Float64,
+            ),
+            (
+                "h",
+                worth_foundational::expression_api::ExpressionType::Float64,
+            ),
         ],
         worth_foundational::expression_api::ExpressionType::Float64,
         "w * h",

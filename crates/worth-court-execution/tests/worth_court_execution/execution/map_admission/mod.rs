@@ -1,13 +1,15 @@
-#[allow(unused_imports)] use crate::map_admission::ordinary_context::*;
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
+#[allow(unused_imports)]
+use crate::map_admission::ordinary_context::*;
 
-use {worth_execution::ExecutionMap, worth_execution::MapDenial, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition};
-use {worth_foundational::PartitionIdentity};
+use worth_execution::MapKernelFailure;
 
 #[test]
 fn exact_coverage_and_access_proof_bind_the_dispatched_values() {
     let map = worth_execution::ExecutionMap::try_from_declared_partitions(
-        vec![worth_foundational::PartitionIdentity::new(2), worth_foundational::PartitionIdentity::new(7)],
+        vec![
+            worth_foundational::PartitionIdentity::new(2),
+            worth_foundational::PartitionIdentity::new(7),
+        ],
         vec![partition(2, 11, &[3], &[5]), partition(7, 13, &[5], &[8])],
     );
     assert_eq!(
@@ -20,7 +22,10 @@ fn exact_coverage_and_access_proof_bind_the_dispatched_values() {
     );
 
     let map = worth_execution::ExecutionMap::try_from_declared_partitions(
-        vec![worth_foundational::PartitionIdentity::new(2), worth_foundational::PartitionIdentity::new(7)],
+        vec![
+            worth_foundational::PartitionIdentity::new(2),
+            worth_foundational::PartitionIdentity::new(7),
+        ],
         vec![partition(2, 11, &[5], &[5]), partition(7, 13, &[6], &[8])],
     )
     .unwrap_or_else(|reason| panic!("valid declaration denied: {reason:?}"));
@@ -35,7 +40,9 @@ fn exact_coverage_and_access_proof_bind_the_dispatched_values() {
             assert_eq!(values, vec![11, 13]);
             assert_eq!(report.charged_work(), 2);
         }
-        worth_execution::MapOutcome::Stopped { reason, .. } => panic!("admitted map stopped: {reason:?}"),
+        worth_execution::MapOutcome::Stopped { reason, .. } => {
+            panic!("admitted map stopped: {reason:?}")
+        }
     }
     assert_eq!(calls.load(std::sync::atomic::Ordering::Relaxed), 2);
 }
@@ -44,17 +51,26 @@ fn exact_coverage_and_access_proof_bind_the_dispatched_values() {
 fn missing_duplicate_or_reordered_coverage_is_denied() {
     let cases = [
         (
-            vec![worth_foundational::PartitionIdentity::new(1), worth_foundational::PartitionIdentity::new(2)],
+            vec![
+                worth_foundational::PartitionIdentity::new(1),
+                worth_foundational::PartitionIdentity::new(2),
+            ],
             vec![partition(1, 10, &[], &[])],
             worth_execution::MapDenial::CoverageMismatch,
         ),
         (
-            vec![worth_foundational::PartitionIdentity::new(1), worth_foundational::PartitionIdentity::new(1)],
+            vec![
+                worth_foundational::PartitionIdentity::new(1),
+                worth_foundational::PartitionIdentity::new(1),
+            ],
             vec![partition(1, 10, &[], &[]), partition(1, 20, &[], &[])],
             worth_execution::MapDenial::ExpectedIdentitiesNotCanonical,
         ),
         (
-            vec![worth_foundational::PartitionIdentity::new(1), worth_foundational::PartitionIdentity::new(2)],
+            vec![
+                worth_foundational::PartitionIdentity::new(1),
+                worth_foundational::PartitionIdentity::new(2),
+            ],
             vec![partition(2, 20, &[], &[]), partition(1, 10, &[], &[])],
             worth_execution::MapDenial::CoverageMismatch,
         ),
@@ -71,7 +87,10 @@ fn missing_duplicate_or_reordered_coverage_is_denied() {
 fn overlapping_writes_and_noncanonical_access_are_denied_before_dispatch() {
     assert_eq!(
         worth_execution::ExecutionMap::try_from_declared_partitions(
-            vec![worth_foundational::PartitionIdentity::new(1), worth_foundational::PartitionIdentity::new(2)],
+            vec![
+                worth_foundational::PartitionIdentity::new(1),
+                worth_foundational::PartitionIdentity::new(2)
+            ],
             vec![partition(1, 10, &[], &[4]), partition(2, 20, &[], &[4])],
         )
         .err(),
@@ -115,7 +134,10 @@ fn declared_scratch_overflow_is_denied_during_admission() {
     second.kernel_scratch_bytes = 1;
     assert_eq!(
         worth_execution::ExecutionMap::try_from_declared_partitions(
-            vec![worth_foundational::PartitionIdentity::new(1), worth_foundational::PartitionIdentity::new(2)],
+            vec![
+                worth_foundational::PartitionIdentity::new(1),
+                worth_foundational::PartitionIdentity::new(2)
+            ],
             vec![entry, second],
         )
         .err(),

@@ -1,5 +1,13 @@
 pub(crate) use {worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
-pub(crate) use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextDenial, worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+pub(crate) use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatibilityRequestInput,
+    worth_server::WorthServerConfig, worth_server::WorthServerRequestContextConfig,
+    worth_server::WorthServerRequestContextDenial, worth_server::WorthServerRequestContextInput,
+    worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily,
+    worth_server::WorthServerTransportClass,
+};
 
 pub(crate) fn compat_http_entry_test_server() -> WorthServer {
     worth_server::WorthServer::builder()
@@ -9,7 +17,9 @@ pub(crate) fn compat_http_entry_test_server() -> WorthServer {
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )

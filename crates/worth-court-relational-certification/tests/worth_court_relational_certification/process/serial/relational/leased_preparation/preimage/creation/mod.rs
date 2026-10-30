@@ -1,7 +1,18 @@
 // A known empty existing-entity selection retains sparse creation and old graph data.
-pub(crate) use {worth_relational::facade::transactions::AspectFieldPatch, worth_foundational::facade::AspectValue, worth_execution::CancellationToken, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::EntitySpec, worth_relational::facade::identity::KindId, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::identity::PartitionId, worth_relational::facade::mvcc::RelationalTransactionIntent, crate::leased_preparation::isolated_context::preimage::source::Source, worth_relational::facade::transactions::WorkerIntentBatch, crate::leased_preparation::ordinary_context::authority, crate::leased_preparation::isolated_context::preimage::check_snapshot, crate::leased_preparation::isolated_context::preimage::check_source, crate::leased_preparation::ordinary_context::lease_request, crate::leased_preparation::ordinary_context::serial, crate::leased_preparation::isolated_context::preimage::source, crate::leased_preparation::ordinary_context::support};
-pub(crate) use {crate::leased_preparation::isolated_context::preimage::source::facts};
-pub(crate) use {worth_relational::facade::transactions::CreatedEntityRef, worth_relational::facade::transactions::EntityReference, worth_relational::facade::transactions::RelationSpec};
+pub(crate) use crate::leased_preparation::isolated_context::preimage::source::facts;
+pub(crate) use {
+    crate::leased_preparation::isolated_context::preimage::check_snapshot,
+    crate::leased_preparation::isolated_context::preimage::check_source,
+    crate::leased_preparation::ordinary_context::authority,
+    crate::leased_preparation::ordinary_context::lease_request,
+    crate::leased_preparation::ordinary_context::serial,
+    worth_relational::facade::identity::KindId, worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::transactions::EntitySpec,
+};
+pub(crate) use {
+    worth_relational::facade::transactions::CreatedEntityRef,
+    worth_relational::facade::transactions::RelationSpec,
+};
 
 #[test]
 fn preimage_creation_only_graph_keeps_sparse_admission() {
@@ -12,9 +23,16 @@ fn preimage_creation_only_graph_keeps_sparse_admission() {
     let _serial = serial();
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let seed_execution = worth_execution::ExecutionRequest::serial(&host);
-    let source = crate::leased_preparation::isolated_context::preimage::source::Source::seed(&seed_execution, 1, 2);
+    let source = crate::leased_preparation::isolated_context::preimage::source::Source::seed(
+        &seed_execution,
+        1,
+        2,
+    );
     let lease = authority()
-        .request_lease(lease_request(32 * 1024 * 1024, worth_execution::CancellationToken::new()))
+        .request_lease(lease_request(
+            32 * 1024 * 1024,
+            worth_execution::CancellationToken::new(),
+        ))
         .unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let (_, basis) = source
@@ -23,7 +41,10 @@ fn preimage_creation_only_graph_keeps_sparse_admission() {
         .unwrap();
     let mut transaction = source
         .runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .unwrap();
     let refs = ["created-a", "created-b"].map(|key| CreatedEntityRef {
         partition_id: PartitionId(1),
@@ -32,26 +53,38 @@ fn preimage_creation_only_graph_keeps_sparse_admission() {
     });
     let mut batch = worth_relational::facade::transactions::WorkerIntentBatch::new("creation-only");
     for reference in &refs {
-        batch = batch.push(worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
-            partition_id: reference.partition_id,
-            kind_id: reference.kind_id,
-            client_key: reference.client_key.clone(),
-            fields: facts("created", true),
-        })));
-    }
-    batch = batch.push(worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Relation(
-        RelationSpec {
-            partition_id: worth_relational::facade::identity::PartitionId::main(),
-            kind_id: KindId(2),
-            client_key: worth_relational::facade::symbols::ClientKey::raw("new-edge"),
-            source: worth_relational::facade::transactions::EntityReference::Created(refs[0].clone()),
-            target: worth_relational::facade::transactions::EntityReference::Created(refs[1].clone()),
-            fields: worth_relational::facade::transactions::AspectFieldPatch::from_locator(
-                crate::leased_preparation::ordinary_context::support::aspect_field_locator("label"),
-                worth_foundational::facade::AspectValue::String("new".into()),
+        batch = batch.push(
+            worth_relational::facade::transactions::MutationIntent::Create(
+                worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
+                    partition_id: reference.partition_id,
+                    kind_id: reference.kind_id,
+                    client_key: reference.client_key.clone(),
+                    fields: facts("created", true),
+                }),
             ),
-        },
-    )));
+        );
+    }
+    batch = batch.push(
+        worth_relational::facade::transactions::MutationIntent::Create(
+            worth_relational::facade::transactions::CreateIntent::Relation(RelationSpec {
+                partition_id: worth_relational::facade::identity::PartitionId::main(),
+                kind_id: KindId(2),
+                client_key: worth_relational::facade::symbols::ClientKey::raw("new-edge"),
+                source: worth_relational::facade::transactions::EntityReference::Created(
+                    refs[0].clone(),
+                ),
+                target: worth_relational::facade::transactions::EntityReference::Created(
+                    refs[1].clone(),
+                ),
+                fields: worth_relational::facade::transactions::AspectFieldPatch::from_locator(
+                    crate::leased_preparation::ordinary_context::support::aspect_field_locator(
+                        "label",
+                    ),
+                    worth_foundational::facade::AspectValue::String("new".into()),
+                ),
+            }),
+        ),
+    );
     transaction
         .push_batch(batch, execution.allocation_policy())
         .unwrap();

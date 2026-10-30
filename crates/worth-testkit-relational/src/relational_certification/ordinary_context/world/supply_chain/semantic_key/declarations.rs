@@ -1,4 +1,4 @@
-pub use {std::fmt};
+pub use std::fmt;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum EntityKind {

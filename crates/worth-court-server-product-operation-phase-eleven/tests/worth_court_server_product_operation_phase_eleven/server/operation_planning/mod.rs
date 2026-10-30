@@ -1,25 +1,32 @@
-#[allow(unused_imports)] use crate::operation_planning::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
-
-use {worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily, worth_query::facade::runtime::WorthQueryRuntimeFamilySupport, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServerDirectDeliveryClass, worth_server::WorthServerDirectFreshnessMode, worth_server::WorthServerOperationPlanDenialCode, worth_server::WorthServerOperationPlannerInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryRequestedResume, worth_server::WorthServerRequestContextInput, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+use crate::operation_planning::ordinary_context::*;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime};
+use worth_testkit_server::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture};
+use worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions};
+use worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_worth_native_runtime as worth_native_runtime};
+use worth_testkit_server::shared_support_worth_native_runtime as worth_native_runtime;
 
-use {worth_testkit_server::shared_support_compat_http_phase_two_runtime::build_phase_two_server, worth_testkit_server::shared_support_compat_http_phase_two_runtime::compat_execution_input, worth_testkit_server::shared_support_compat_http_phase_two_runtime::worth_native_named_read};
-use {worth_testkit_server::shared_support_query_handoff_fixture::admit_delivery_posture, worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::test_server};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
-use {worth_testkit_server::shared_support_worth_native_runtime::server_with_request_context_default};
+use worth_testkit_server::shared_support_worth_native_runtime::server_with_request_context_default;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_two_runtime::build_phase_two_server,
+    worth_testkit_server::shared_support_compat_http_phase_two_runtime::compat_execution_input,
+    worth_testkit_server::shared_support_compat_http_phase_two_runtime::worth_native_named_read,
+};
+use {
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_delivery_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::request_input,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::test_server,
+};
 
 #[test]
 fn equivalent_operation_requests_lower_to_identical_plans() {
@@ -84,11 +91,15 @@ fn plan_identity_excludes_diagnostics_richness_but_includes_support_and_strategy
                     &standard_server,
                     worth_server::WorthServerRequestContextInput::builder()
                         .with_surface_family(worth_server::WorthServerSurfaceFamily::WorthNative)
-                        .with_transport_class(worth_server::WorthServerTransportClass::WorthNativeInProcess)
+                        .with_transport_class(
+                            worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                        )
                         .with_authenticated_principal_id("principal-7")
                         .with_tenant_id("tenant-a")
                         .with_workspace_id("workspace-42")
-                        .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("standard request context should validate"),
                 ),
@@ -105,11 +116,15 @@ fn plan_identity_excludes_diagnostics_richness_but_includes_support_and_strategy
                     &forensic_server,
                     worth_server::WorthServerRequestContextInput::builder()
                         .with_surface_family(worth_server::WorthServerSurfaceFamily::WorthNative)
-                        .with_transport_class(worth_server::WorthServerTransportClass::WorthNativeInProcess)
+                        .with_transport_class(
+                            worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                        )
                         .with_authenticated_principal_id("principal-7")
                         .with_tenant_id("tenant-a")
                         .with_workspace_id("workspace-42")
-                        .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+                        .with_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+                        )
                         .build()
                         .expect("forensic request context should validate"),
                 ),
@@ -128,22 +143,21 @@ fn plan_identity_excludes_diagnostics_richness_but_includes_support_and_strategy
         ),
         false,
     );
-    let unsupported =
-        unsupported_server
-            .operation_planner()
-            .lower(worth_server::WorthServerOperationPlannerInput::new(
-                admit_read_posture(
+    let unsupported = unsupported_server.operation_planner().lower(
+        worth_server::WorthServerOperationPlannerInput::new(
+            admit_read_posture(
+                &unsupported_server,
+                resolve_request_context(
                     &unsupported_server,
-                    resolve_request_context(
-                        &unsupported_server,
-                        request_input(
-                            worth_server::WorthServerSurfaceFamily::WorthNative,
-                            worth_server::WorthServerTransportClass::WorthNativeInProcess,
-                        ),
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::WorthNative,
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
                     ),
                 ),
-                worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
-            ));
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ),
+    );
 
     assert_eq!(
         standard.receipt().plan_identity(),
@@ -302,8 +316,12 @@ fn real_direct_and_compat_reads_expose_identical_lowered_plan_proofs() {
 
 #[test]
 fn real_direct_reads_keep_plan_identity_stable_across_diagnostics_profiles() {
-    let standard_server = server_with_request_context_default(worth_server::request_context::DiagnosticRichnessProfile::Standard);
-    let forensic_server = server_with_request_context_default(worth_server::request_context::DiagnosticRichnessProfile::Forensic);
+    let standard_server = server_with_request_context_default(
+        worth_server::request_context::DiagnosticRichnessProfile::Standard,
+    );
+    let forensic_server = server_with_request_context_default(
+        worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+    );
     let (standard_session, standard_declaration) =
         worth_native_named_read(&standard_server, "users.profile");
     let (forensic_session, forensic_declaration) =

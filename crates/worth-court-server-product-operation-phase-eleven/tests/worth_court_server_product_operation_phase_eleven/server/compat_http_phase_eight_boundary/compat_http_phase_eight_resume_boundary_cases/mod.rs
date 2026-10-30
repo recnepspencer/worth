@@ -1,9 +1,12 @@
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerBinaryDownloadAuthorization, worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerBinaryResumeRequest, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerQueryHandoffDenialCode};
-
-use {crate::shared_support_compat_http_phase_eight_assertions::assert_download_denial};
-use {worth_testkit_server::shared_support_compat_http_phase_eight_runtime::build_phase_eight_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_denied, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_success, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_resume_success, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::download_input, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::prepared_request};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use crate::shared_support_compat_http_phase_eight_assertions::assert_download_denial;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::build_phase_eight_server_with_workspace_provider,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_denied,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_success,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_resume_success,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::download_input,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::prepared_request,
+};
 
 #[test]
 fn compat_http_resume_denies_content_type_and_authorization_story_drift() {
@@ -53,9 +56,9 @@ fn compat_http_resume_denies_content_type_and_authorization_story_drift() {
                 "files.asset.download",
                 worth_server::WorthServerBinaryDownloadRequest::new(baseline_body.clone())
                     .with_content_type("application/octet-stream")
-                    .with_resume_request(worth_server::WorthServerBinaryResumeRequest::resume_from(
-                        resume.clone(),
-                    )),
+                    .with_resume_request(
+                        worth_server::WorthServerBinaryResumeRequest::resume_from(resume.clone()),
+                    ),
             )),
     );
     let authorization_drift = compat_download_denied(
@@ -77,10 +80,14 @@ fn compat_http_resume_denies_content_type_and_authorization_story_drift() {
                 "files.asset.download",
                 worth_server::WorthServerBinaryDownloadRequest::new(baseline_body)
                     .with_content_type("application/pdf")
-                    .with_authorization(worth_server::WorthServerBinaryDownloadAuthorization::admitted_window(
-                        11, 25,
-                    ))
-                    .with_resume_request(worth_server::WorthServerBinaryResumeRequest::resume_from(resume)),
+                    .with_authorization(
+                        worth_server::WorthServerBinaryDownloadAuthorization::admitted_window(
+                            11, 25,
+                        ),
+                    )
+                    .with_resume_request(
+                        worth_server::WorthServerBinaryResumeRequest::resume_from(resume),
+                    ),
             )),
     );
 
@@ -145,7 +152,9 @@ fn compat_http_head_requests_do_not_admit_resume_claims() {
                 ),
                 "files.asset.download",
                 worth_server::WorthServerBinaryDownloadRequest::new(baseline_body)
-                    .with_resume_request(worth_server::WorthServerBinaryResumeRequest::resume_from(resume)),
+                    .with_resume_request(
+                        worth_server::WorthServerBinaryResumeRequest::resume_from(resume),
+                    ),
             )),
     );
 

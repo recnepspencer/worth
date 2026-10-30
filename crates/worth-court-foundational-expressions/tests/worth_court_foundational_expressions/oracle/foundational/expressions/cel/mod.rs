@@ -7,17 +7,9 @@
 // expects to fail also pins the Worth denial family. Set
 // `WORTH_CEL_CLASSIFICATION=overwrite` to rewrite the table from the current
 // outcomes; hand-written rules are kept.
-#[allow(unused_imports)] use crate::expressions::reference_context::cel::*;
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::fmt::Write as _};
-
-pub(crate) use {worth_foundational::expression_api::expressions, worth_foundational::expression_api::ExpressionInputs, worth_foundational::expression_api::ExpressionProfile, worth_foundational::expression_api::ExpressionSchema, worth_foundational::expression_api::ExpressionType, worth_foundational::expression_api::ExpressionValue};
-pub(crate) use {worth_foundational::CanonicalF64};
-
-pub(crate) use {crate::expressions::ordinary_context::empty_catalog};
-
-
-pub(crate) use {crate::expressions::reference_context::cel::textproto::Message, crate::expressions::reference_context::cel::textproto::Node};
+#[allow(unused_imports)]
+use crate::expressions::reference_context::cel::*;
+pub(crate) use std::collections::BTreeMap;
 
 #[test]
 fn every_cel_case_keeps_its_recorded_disposition() {

@@ -1,21 +1,48 @@
 pub use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
 
+pub use worth_proof::TransitionOutcome;
 pub use {serde_json::json, serde_json::Value};
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerProductAdapterExecutionError, worth_server::WorthServerProductApplicationAdapter, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductOperationAuthorizer, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationDenial, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductOperationSupportSnapshot, worth_server::WorthServerProductPayloadSchemaValidator, worth_server::WorthServerProductResultContract, worth_server::WorthServerProductSession, worth_server::WorthServerProductSessionCreationRequest, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerTransportCallerVerifier, worth_server::WorthServerWorthNativeSession, worth_server::WorthServerWorthNativeSessionInput};
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig,
+    worth_server::WorthServerProductAdapterExecutionError,
+    worth_server::WorthServerProductApplicationAdapter,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerProductOperationAuthorizer,
+    worth_server::WorthServerProductOperationBasisKind,
+    worth_server::WorthServerProductOperationDeclaration,
+    worth_server::WorthServerProductOperationDenial,
+    worth_server::WorthServerProductOperationErrorMaps,
+    worth_server::WorthServerProductOperationPayload,
+    worth_server::WorthServerProductOperationSuccess,
+    worth_server::WorthServerProductOperationSupportSnapshot,
+    worth_server::WorthServerProductPayloadSchemaValidator,
+    worth_server::WorthServerProductResultContract, worth_server::WorthServerProductSession,
+    worth_server::WorthServerProductSessionCreationRequest,
+    worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceProvider,
+    worth_server::WorthServerRequestContextConfig,
+    worth_server::WorthServerTransportCallerVerifier, worth_server::WorthServerWorthNativeSession,
+    worth_server::WorthServerWorthNativeSessionInput,
+};
 
 #[allow(unused_imports)]
-pub use {crate::shared_support_product_result_schema_bound_json as schema_bound_json};
+pub use crate::shared_support_product_result_schema_bound_json as schema_bound_json;
 
 #[allow(unused_imports)]
-pub use {crate::shared_support_query_handoff_runtime as query_handoff_runtime};
+pub use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
 
 pub fn build_server(
     registrations: Vec<WorthServerProductApplicationAdapterRegistration>,
 ) -> WorthServer {
     build_server_with_query_workspace_provider(
         registrations,
-        std::sync::Arc::new(crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider),
+        std::sync::Arc::new(
+            crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider,
+        ),
     )
 }
 
@@ -147,103 +174,10 @@ pub fn open_mutation_product_session(
         .expect("mutation product session should open through the server boundary")
 }
 
-pub fn editor_registration(
-    calls: Option<Arc<AtomicUsize>>,
-    validator: Option<Arc<dyn WorthServerProductPayloadSchemaValidator>>,
-) -> WorthServerProductApplicationAdapterRegistration {
-    let adapter = std::sync::Arc::new(EditorAdapter {
-        calls: calls.unwrap_or_else(|| std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0))),
-    });
-    let render = declared(worth_server::WorthServerProductOperationDeclaration::product_read(
-        "product_editor.render",
-        "product-editor.render.v1",
-        result_contract("product-editor.render.result.v1"),
-        worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-        worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("render-supported"),
-    ));
-    let apply = declared(worth_server::WorthServerProductOperationDeclaration::product_mutation(
-        "product_editor.apply",
-        "product-editor.apply.v1",
-        result_contract("product-editor.apply.result.v1"),
-        worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-        worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("apply-supported"),
-        "draft",
-    ));
-    let apply = match validator {
-        Some(validator) => apply.with_payload_validator(validator),
-        None => apply,
-    };
-    worth_server::WorthServerProductApplicationAdapterRegistration::new("editor-adapter", adapter)
-        .with_operation(render)
-        .with_operation(declared(
-            worth_server::WorthServerProductOperationDeclaration::product_read(
-                "product_editor.select",
-                "product-editor.select.v1",
-                result_contract("product-editor.select.result.v1"),
-                worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("select-supported"),
-            ),
-        ))
-        .with_operation(declared(
-            worth_server::WorthServerProductOperationDeclaration::product_read(
-                "product_editor.available_actions",
-                "product-editor.actions.v1",
-                result_contract("product-editor.actions.result.v1"),
-                worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
-                    "actions-supported",
-                ),
-            ),
-        ))
-        .with_operation(apply)
-        .with_operation(declared(
-            worth_server::WorthServerProductOperationDeclaration::product_mutation(
-                "product_editor.finalize",
-                "product-editor.finalize.v1",
-                result_contract("product-editor.finalize.result.v1"),
-                worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
-                    "finalize-supported",
-                ),
-                "draft",
-            ),
-        ))
-}
-
-pub fn query_derived_editor_registration(
-    calls: Option<Arc<AtomicUsize>>,
-) -> WorthServerProductApplicationAdapterRegistration {
-    let adapter = std::sync::Arc::new(EditorAdapter {
-        calls: calls.unwrap_or_else(|| std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0))),
-    });
-    worth_server::WorthServerProductApplicationAdapterRegistration::new("query-derived-editor", adapter)
-        .with_operation(declared(
-            worth_server::WorthServerProductOperationDeclaration::product_read(
-                "product_editor.render",
-                "product-editor.render.v1",
-                result_contract("product-editor.render.result.v1"),
-                worth_server::WorthServerProductOperationBasisKind::QueryDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
-                    "render-query-derived",
-                ),
-            ),
-        ))
-        .with_operation(declared(
-            worth_server::WorthServerProductOperationDeclaration::product_mutation(
-                "product_editor.apply",
-                "product-editor.apply.v1",
-                result_contract("product-editor.apply.result.v1"),
-                worth_server::WorthServerProductOperationBasisKind::QueryDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
-                    "apply-query-derived",
-                ),
-                "draft",
-            ),
-        ))
-}
-
 pub fn base_config() -> WorthServerConfig {
-    base_config_with_workspace_provider(std::sync::Arc::new(crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider))
+    base_config_with_workspace_provider(std::sync::Arc::new(
+        crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider,
+    ))
 }
 
 pub fn base_config_with_workspace_provider(
@@ -253,7 +187,9 @@ pub fn base_config_with_workspace_provider(
         .with_bind_address(([127, 0, 0, 1], 8080).into())
         .with_request_context_config(
             worth_server::WorthServerRequestContextConfig::builder()
-                .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                .with_default_diagnostics_profile(
+                    worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                )
                 .build()
                 .expect("request context config should validate"),
         )
@@ -307,7 +243,8 @@ impl WorthServerProductApplicationAdapter for EditorAdapter {
         &self,
         operation: &worth_server::WorthServerScheduledProductOperation,
     ) -> Result<WorthServerProductOperationSuccess, WorthServerProductAdapterExecutionError> {
-        self.calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.calls
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let plan = operation.plan();
         if let Some(reason_key) = plan
             .payload()
@@ -315,8 +252,10 @@ impl WorthServerProductApplicationAdapter for EditorAdapter {
             .get("deny_reason")
             .and_then(serde_json::Value::as_str)
         {
-            let denial =
-                worth_server::WorthServerProductOperationDenial::new(reason_key, "product-owned refusal");
+            let denial = worth_server::WorthServerProductOperationDenial::new(
+                reason_key,
+                "product-owned refusal",
+            );
             let denial = if reason_key == "product_editor.stale_basis" {
                 denial.with_basis_mismatch("basis:6", "basis:7")
             } else {
@@ -330,10 +269,12 @@ impl WorthServerProductApplicationAdapter for EditorAdapter {
             .get("failure_reason")
             .and_then(serde_json::Value::as_str)
         {
-            return Err(worth_server::WorthServerProductAdapterExecutionError::failed(
-                reason_key,
-                "product execution failed",
-            ));
+            return Err(
+                worth_server::WorthServerProductAdapterExecutionError::failed(
+                    reason_key,
+                    "product execution failed",
+                ),
+            );
         }
         crate::shared_support_product_result_schema_bound_json::publish_schema_bound_json(
             plan.declaration().operation_name(),
@@ -375,3 +316,7 @@ impl WorthServerProductPayloadSchemaValidator for RequireTitleValidator {
         }
     }
 }
+
+#[path = "declarations/editor_registration.rs"]
+mod editor_registration;
+pub use editor_registration::*;

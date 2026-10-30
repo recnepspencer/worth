@@ -1,7 +1,13 @@
-use {worth_foundational::admit_requested_foundational_profile, worth_foundational::attach_boundary_profiled_artifact, worth_foundational::attach_proof_bearing_profiled_artifact, worth_foundational::attach_support_profiled_artifact, worth_foundational::foundational_profile_progression_authority, worth_foundational::request_foundational_profile_set, worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalProfileAttachmentDenial, worth_foundational::FoundationalProfileNarrowingKind, worth_foundational::FoundationalProfileNarrowingRecord, worth_foundational::FoundationalProfileProgressionDenial, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-use {worth_proof::TransitionOutcome};
+use {
+    worth_foundational::admit_requested_foundational_profile,
+    worth_foundational::attach_boundary_profiled_artifact,
+    worth_foundational::attach_proof_bearing_profiled_artifact,
+    worth_foundational::attach_support_profiled_artifact,
+    worth_foundational::foundational_profile_progression_authority,
+    worth_foundational::request_foundational_profile_set,
+};
 
-use {crate::certification::ordinary_context::profiles::support::profile};
+use crate::certification::ordinary_context::profiles::support::profile;
 
 #[test]
 fn requested_profiles_require_explicit_narrowing_to_reach_admitted_and_materialized_forms() {

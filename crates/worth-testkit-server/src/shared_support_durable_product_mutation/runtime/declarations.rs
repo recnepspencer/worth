@@ -1,16 +1,28 @@
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerOperationAuthorizationPolicy, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRegistration, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerWorthNativeSession, worth_server::WorthServerWorthNativeSessionInput};
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerOperationAuthorizationPolicy,
+    worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRegistration,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerWorthNativeSession, worth_server::WorthServerWorthNativeSessionInput,
+};
 
-pub use {crate::shared_support_durable_product_mutation::product_specimens::registration, crate::shared_support_durable_product_mutation::executor::TestDurableProductExecutor};
+pub use {
+    crate::shared_support_durable_product_mutation::executor::TestDurableProductExecutor,
+    crate::shared_support_durable_product_mutation::product_specimens::registration,
+};
 
 #[allow(unused_imports)]
-pub use {crate::shared_support_product_adapter_phase_nine_fixture as product_adapter_fixture};
+pub use crate::shared_support_product_adapter_phase_nine_fixture as product_adapter_fixture;
 
-pub use {crate::shared_support_product_adapter_phase_nine_fixture::direct_session};
-pub use {crate::shared_support_product_result_schema_bound_json::publish_schema_bound_json};
+pub use crate::shared_support_product_adapter_phase_nine_fixture::direct_session;
+pub use crate::shared_support_product_result_schema_bound_json::publish_schema_bound_json;
 
 pub fn build_server(executor: &TestDurableProductExecutor) -> WorthServer {
-    crate::shared_support_product_adapter_phase_nine_fixture::build_server(vec![registration(executor.clone())])
+    crate::shared_support_product_adapter_phase_nine_fixture::build_server(vec![registration(
+        executor.clone(),
+    )])
 }
 
 pub fn build_server_with_registration(
@@ -23,16 +35,19 @@ pub fn build_server_with_mutation_policy(
     executor: &TestDurableProductExecutor,
     policy: WorthServerOperationAuthorizationPolicy,
 ) -> WorthServer {
-    let operation_registrations = worth_server::WorthServerOperationRegistration::phase_two_defaults()
-        .into_iter()
-        .map(|registration| {
-            if registration.family() == worth_server::WorthServerOperationFamily::ProductApplicationMutation {
-                registration.with_authorization_policy(policy.clone())
-            } else {
-                registration
-            }
-        })
-        .collect::<Vec<_>>();
+    let operation_registrations =
+        worth_server::WorthServerOperationRegistration::phase_two_defaults()
+            .into_iter()
+            .map(|registration| {
+                if registration.family()
+                    == worth_server::WorthServerOperationFamily::ProductApplicationMutation
+                {
+                    registration.with_authorization_policy(policy.clone())
+                } else {
+                    registration
+                }
+            })
+            .collect::<Vec<_>>();
     worth_server::WorthServer::builder()
         .with_config(crate::shared_support_product_adapter_phase_nine_fixture::base_config())
         .register_operations(operation_registrations)
@@ -75,5 +90,9 @@ pub fn prepared_mutation_request(
     server: &WorthServer,
     operation_name: &str,
 ) -> WorthServerCompatibilityPreparedRequest {
-    crate::shared_support_product_adapter_phase_nine_fixture::prepared_mutation_request(server, operation_name, None)
+    crate::shared_support_product_adapter_phase_nine_fixture::prepared_mutation_request(
+        server,
+        operation_name,
+        None,
+    )
 }

@@ -1,5 +1,5 @@
 error[E0451]: fields `descriptor`, `selection_basis`, `parameter_digest` and `frozen_digest` of struct `FrozenResourcePolicyDescriptor` are private
-  --> tests/ui/frozen_resource_policy_descriptor_fields_are_private.rs:12:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/frozen_resource_policy_descriptor_fields_are_private.rs:12:9
    |
 11 |     let _descriptor = FrozenResourcePolicyDescriptor {
    |                       ------------------------------ in this type

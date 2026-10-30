@@ -1,11 +1,11 @@
 error[E0603]: module `subscription` is private
- --> tests/ui/subscription_module_private.rs:1:27
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_module_private.rs:1:27
   |
 1 | use worth_runtime_bridge::subscription::FrozenSubscriptionFamilyRegistry;
   |                           ^^^^^^^^^^^^ private module
   |
 note: the module `subscription` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/lib.rs
   |
   | mod subscription;
   | ^^^^^^^^^^^^^^^^

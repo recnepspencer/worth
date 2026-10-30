@@ -1,6 +1,12 @@
-pub use {worth_query::facade::foundation::AspectFieldKey};
-pub use {worth_query::facade::runtime::WorthQueryWorkspace};
-pub use {worth_server::WorthServerDirectDeclarationSourceKind, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryWorkspaceBindingError, worth_server::WorthServerQueryWorkspaceBindingRequest, worth_server::WorthServerQueryWorkspaceBindingTarget};
+pub use worth_query::facade::foundation::AspectFieldKey;
+pub use worth_query::facade::runtime::WorthQueryWorkspace;
+pub use {
+    worth_server::WorthServerDirectDeclarationSourceKind,
+    worth_server::WorthServerQueryHandoffOperation,
+    worth_server::WorthServerQueryWorkspaceBindingError,
+    worth_server::WorthServerQueryWorkspaceBindingRequest,
+    worth_server::WorthServerQueryWorkspaceBindingTarget,
+};
 
 pub fn install_requested_named_read(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -54,10 +60,14 @@ pub fn binding_label(target: &WorthServerQueryWorkspaceBindingTarget) -> Option<
 pub fn query_handoff_binding_label(operation: &WorthServerQueryHandoffOperation) -> Option<&str> {
     match operation {
         worth_server::WorthServerQueryHandoffOperation::QueryRead { operation_name }
-        | worth_server::WorthServerQueryHandoffOperation::DirectRead { operation_name } => Some(operation_name),
+        | worth_server::WorthServerQueryHandoffOperation::DirectRead { operation_name } => {
+            Some(operation_name)
+        }
         worth_server::WorthServerQueryHandoffOperation::DirectState { target_label }
         | worth_server::WorthServerQueryHandoffOperation::DirectInspection { target_label }
-        | worth_server::WorthServerQueryHandoffOperation::DirectProjection { target_label } => Some(target_label),
+        | worth_server::WorthServerQueryHandoffOperation::DirectProjection { target_label } => {
+            Some(target_label)
+        }
         worth_server::WorthServerQueryHandoffOperation::DirectMutation { .. }
         | worth_server::WorthServerQueryHandoffOperation::QueryMutation { .. }
         | worth_server::WorthServerQueryHandoffOperation::DownstreamDelivery { .. } => None,

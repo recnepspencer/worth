@@ -1,5 +1,5 @@
 error[E0451]: fields `node`, `from`, `to`, `kind`, `ordinal` and `output_continuity` of struct `ResourceLifecycleTransition` are private
-  --> tests/ui/resource_lifecycle_transition_fields_are_private.rs:8:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_transition_fields_are_private.rs:8:9
    |
  7 |     let _ = ResourceLifecycleTransition {
    |             --------------------------- in this type

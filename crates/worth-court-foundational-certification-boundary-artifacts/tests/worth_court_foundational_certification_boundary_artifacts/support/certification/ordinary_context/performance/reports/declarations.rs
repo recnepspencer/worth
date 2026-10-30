@@ -1,4 +1,24 @@
-pub(crate) use {worth_foundational::performance, worth_foundational::performance_api, worth_foundational::profiles, worth_foundational::CertificationPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceAttachmentDenial, worth_foundational::FoundationalPerformanceAttachmentTargetKind, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceCounterRow, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformanceLayoutIntent, worth_foundational::FoundationalPerformanceReportMaterializationBoundary, worth_foundational::FoundationalPerformanceReportSection, worth_foundational::FoundationalPerformanceReportSectionDecisionCause, worth_foundational::FoundationalPerformanceWorkClass, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
+pub(crate) use {
+    worth_foundational::performance, worth_foundational::performance_api,
+    worth_foundational::profiles, worth_foundational::CertificationPostureProfile,
+    worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalPerformanceAccessPatternPosture,
+    worth_foundational::FoundationalPerformanceAttachmentDenial,
+    worth_foundational::FoundationalPerformanceAttachmentTargetKind,
+    worth_foundational::FoundationalPerformanceBoundary,
+    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
+    worth_foundational::FoundationalPerformanceCounterRow,
+    worth_foundational::FoundationalPerformanceEvidenceStrength,
+    worth_foundational::FoundationalPerformanceExecutionTemperature,
+    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
+    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
+    worth_foundational::FoundationalPerformanceLayoutIntent,
+    worth_foundational::FoundationalPerformanceReportMaterializationBoundary,
+    worth_foundational::FoundationalPerformanceReportSection,
+    worth_foundational::FoundationalPerformanceReportSectionDecisionCause,
+    worth_foundational::FoundationalPerformanceWorkClass,
+    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+};
 
 pub(crate) fn standard_profile() -> worth_foundational::FoundationalProfileSet {
     profiles()
@@ -87,11 +107,21 @@ pub(crate) fn policy_receipt() -> worth_foundational::FoundationalPolicyAdmissio
         .claim()
         .policy_admission()
         .boundary(worth_foundational::FoundationalPerformanceBoundary::AuthoritativeExecution)
-        .evidence_strength(worth_foundational::FoundationalPerformanceEvidenceStrength::RuntimePolicyAdmission)
-        .breadth_locality(worth_foundational::FoundationalPerformanceBreadthLocalityPosture::DeltaBound)
-        .access_pattern(worth_foundational::FoundationalPerformanceAccessPatternPosture::PointLookup)
-        .execution_temperature(worth_foundational::FoundationalPerformanceExecutionTemperature::HotPath)
-        .freshness_retention(worth_foundational::FoundationalPerformanceFreshnessRetentionPosture::ExactBasisCurrent)
+        .evidence_strength(
+            worth_foundational::FoundationalPerformanceEvidenceStrength::RuntimePolicyAdmission,
+        )
+        .breadth_locality(
+            worth_foundational::FoundationalPerformanceBreadthLocalityPosture::DeltaBound,
+        )
+        .access_pattern(
+            worth_foundational::FoundationalPerformanceAccessPatternPosture::PointLookup,
+        )
+        .execution_temperature(
+            worth_foundational::FoundationalPerformanceExecutionTemperature::HotPath,
+        )
+        .freshness_retention(
+            worth_foundational::FoundationalPerformanceFreshnessRetentionPosture::ExactBasisCurrent,
+        )
         .fallback_debt(worth_foundational::FoundationalPerformanceFallbackDebtPosture::Verified)
         .include_work(worth_foundational::FoundationalPerformanceWorkClass::ValidationPlanning)
         .exclude_work(worth_foundational::FoundationalPerformanceWorkClass::SupportReportAssembly)

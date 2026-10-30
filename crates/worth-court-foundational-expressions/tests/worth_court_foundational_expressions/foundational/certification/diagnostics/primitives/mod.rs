@@ -1,4 +1,10 @@
-use {worth_foundational::diagnostic_artifact_kind_definitions, worth_foundational::evaluate_diagnostic_materialization_legality, worth_foundational::foundational_diagnostic_code, worth_foundational::foundational_diagnostic_scope, worth_foundational::foundational_responsibilities, worth_foundational::FoundationalDiagnosticArtifactKind, worth_foundational::FoundationalDiagnosticAvailability, worth_foundational::FoundationalDiagnosticBreachClass, worth_foundational::FoundationalDiagnosticDeliveryClass, worth_foundational::FoundationalDiagnosticEvidencePosture, worth_foundational::FoundationalDiagnosticMaterializationLegalityDenial, worth_foundational::FoundationalDiagnosticPrimitiveConstructionDenial, worth_foundational::FoundationalDiagnosticSeverity};
+use {
+    worth_foundational::diagnostic_artifact_kind_definitions,
+    worth_foundational::evaluate_diagnostic_materialization_legality,
+    worth_foundational::foundational_diagnostic_code,
+    worth_foundational::foundational_diagnostic_scope,
+    worth_foundational::foundational_responsibilities,
+};
 
 #[test]
 fn diagnostics_responsibility_home_is_named_in_the_facade_topology() {

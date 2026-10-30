@@ -1,6 +1,6 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::boundary_evidence::grouped_surface::*;
-use {worth_foundational::attachment, worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path, worth_foundational::boundary_evidence_api::lower_lane, worth_foundational::boundary_evidence_api::stronger_lane, worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle, worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture, worth_foundational::FoundationalBoundaryEvidenceLineageSubject, worth_foundational::FoundationalBoundaryEvidenceMaterializationProfile, worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary, worth_foundational::FoundationalBoundaryEvidenceSourceBasis, worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis, worth_foundational::FoundationalCommitParentageLocator, worth_foundational::FoundationalTransitionLocator};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::boundary_evidence::grouped_surface::*;
+use {worth_foundational::attachment, worth_foundational::boundary_evidence};
 
 #[test]
 fn grouped_boundary_evidence_surface_exposes_common_lower_and_stronger_lanes() {

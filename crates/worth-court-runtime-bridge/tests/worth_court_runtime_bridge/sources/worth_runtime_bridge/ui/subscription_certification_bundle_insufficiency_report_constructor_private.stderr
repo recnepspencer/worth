@@ -1,5 +1,5 @@
 error[E0451]: fields `complete_bundle_digest`, `insufficient_bundle_digest`, `complete_completeness_report_digest`, `insufficient_completeness_report_digest`, `comparison_report_digest`, `primary_failure_boundary`, `primary_failure_precedence_stage`, `insufficiency_is_primary_without_semantic_drift`, `counters`, `canonical_basis` and `digest` of struct `BridgeSubscriptionCertificationBundleInsufficiencyReport` are private
-  --> tests/ui/subscription_certification_bundle_insufficiency_report_constructor_private.rs:9:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_bundle_insufficiency_report_constructor_private.rs:9:9
    |
  8 |     let _report = BridgeSubscriptionCertificationBundleInsufficiencyReport {
    |                   -------------------------------------------------------- in this type

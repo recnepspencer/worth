@@ -1,8 +1,44 @@
-pub use {worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalFieldPath, worth_foundational::facade::FieldKey};
-pub use {worth_query::facade::foundation::DeclarativeLiveQueryRequest, worth_query::facade::foundation::WorthQueryEntity, worth_query::facade::foundation::WorthQueryLivePatch, worth_query::facade::foundation::WorthQueryLiveViewHandle, worth_query::facade::foundation::WorthQuerySnapshotIdentity, worth_query::facade::foundation::WorthQueryWorkspaceError};
-pub use {worth_query::facade::runtime::LiveViewDeclarationAdmissionBoundaryReceipt, worth_query::facade::runtime::QuerySchemaView, worth_query::facade::runtime::SubscriptionActivationInput, worth_query::facade::runtime::SubscriptionActivationReceipt, worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation, worth_query::facade::runtime::WorthQueryEvidenceIdentity, worth_query::facade::runtime::WorthQueryLiveArtifactTarget, worth_query::facade::runtime::WorthQueryRuntime, worth_query::facade::runtime::WorthQueryRuntimeBackend, worth_query::facade::runtime::WorthQueryRuntimeError, worth_query::facade::runtime::WorthQueryRuntimeEvidenceAuthority, worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence, worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection, worth_query::facade::runtime::WorthQueryRuntimeSchemaAdapter, worth_query::facade::runtime::WorthQueryRuntimeSubscriptionActivationAdapter, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile, worth_query::facade::runtime::WorthQuerySessionLabel, worth_query::facade::runtime::WorthQueryWorkspace, worth_query::facade::runtime::WorthQueryWriteReceipt};
-pub use {worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts};
-pub use {worth_server::WorthServerDirectDeclarationSourceKind, worth_server::WorthServerQueryWorkspaceBindingError, worth_server::WorthServerQueryWorkspaceBindingRequest, worth_server::WorthServerQueryWorkspaceBindingTarget, worth_server::WorthServerQueryWorkspaceProvider};
+pub use worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts;
+pub use {
+    worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalFieldPath,
+    worth_foundational::facade::FieldKey,
+};
+pub use {
+    worth_query::facade::foundation::DeclarativeLiveQueryRequest,
+    worth_query::facade::foundation::WorthQueryEntity,
+    worth_query::facade::foundation::WorthQueryLivePatch,
+    worth_query::facade::foundation::WorthQueryLiveViewHandle,
+    worth_query::facade::foundation::WorthQuerySnapshotIdentity,
+    worth_query::facade::foundation::WorthQueryWorkspaceError,
+};
+pub use {
+    worth_query::facade::runtime::LiveViewDeclarationAdmissionBoundaryReceipt,
+    worth_query::facade::runtime::QuerySchemaView,
+    worth_query::facade::runtime::SubscriptionActivationInput,
+    worth_query::facade::runtime::SubscriptionActivationReceipt,
+    worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentity,
+    worth_query::facade::runtime::WorthQueryLiveArtifactTarget,
+    worth_query::facade::runtime::WorthQueryRuntime,
+    worth_query::facade::runtime::WorthQueryRuntimeBackend,
+    worth_query::facade::runtime::WorthQueryRuntimeError,
+    worth_query::facade::runtime::WorthQueryRuntimeEvidenceAuthority,
+    worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence,
+    worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection,
+    worth_query::facade::runtime::WorthQueryRuntimeSchemaAdapter,
+    worth_query::facade::runtime::WorthQueryRuntimeSubscriptionActivationAdapter,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+    worth_query::facade::runtime::WorthQuerySessionLabel,
+    worth_query::facade::runtime::WorthQueryWorkspace,
+    worth_query::facade::runtime::WorthQueryWriteReceipt,
+};
+pub use {
+    worth_server::WorthServerDirectDeclarationSourceKind,
+    worth_server::WorthServerQueryWorkspaceBindingError,
+    worth_server::WorthServerQueryWorkspaceBindingRequest,
+    worth_server::WorthServerQueryWorkspaceBindingTarget,
+    worth_server::WorthServerQueryWorkspaceProvider,
+};
 
 #[derive(Clone, Debug)]
 pub struct RemaskWorkspaceProvider {
@@ -41,7 +77,10 @@ impl WorthServerQueryWorkspaceProvider for RemaskWorkspaceProvider {
                     &resources,
                 )
                 .map_err(|error| {
-                    worth_server::WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                    worth_server::WorthServerQueryWorkspaceBindingError::new(
+                        "product_world",
+                        error.to_string(),
+                    )
                 })?;
             let mut workspace = worth_query::facade::runtime::WorthQueryRuntime::builder(resources)
             .backend(crate::shared_support_direct_context_runtime::RemaskRuntimeBackend::new(
@@ -254,59 +293,15 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
         receipt: &WorthQueryWriteReceipt,
         authority: &WorthQueryRuntimeEvidenceAuthority,
     ) -> Result<WorthQueryRuntimeInspectionEvidence, WorthQueryWorkspaceError> {
-        Ok(worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence::new(
-            authority,
-            "direct-context-remask-write-receipt",
-            receipt.authority_lane(),
-            ["direct-context-remask-inspector"],
-        ))
+        Ok(
+            worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence::new(
+                authority,
+                "direct-context-remask-write-receipt",
+                receipt.authority_lane(),
+                ["direct-context-remask-inspector"],
+            ),
+        )
     }
-}
-
-pub fn install_requested_named_read(
-    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    workspace: &mut WorthQueryWorkspace,
-    request: &WorthServerQueryWorkspaceBindingRequest,
-) -> Result<(), WorthServerQueryWorkspaceBindingError> {
-    let worth_server::WorthServerQueryWorkspaceBindingTarget::DirectDeclaration {
-        source_kind: worth_server::WorthServerDirectDeclarationSourceKind::NamedRead,
-        binding_label,
-    } = request.target()
-    else {
-        return Ok(());
-    };
-
-    workspace
-        .live_view::<serde_json::Value>(request_execution, binding_label, |q| {
-            q.from("User")
-                .select([
-                    aspect_field_key("identity", "id"),
-                    aspect_field_key("profile", "display_name"),
-                ])
-                .schema_basis("worth-server-direct-context-remask")
-        })
-        .map(|_| ())
-        .map_err(|error| {
-            worth_server::WorthServerQueryWorkspaceBindingError::new(
-                "workspace_declaration",
-                format!("{error:?}"),
-            )
-        })
-}
-
-pub fn aspect_field_key(aspect: &str, field: &str) -> worth_query::facade::foundation::AspectFieldKey {
-    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(aspect, field)
-        .expect("direct context field keys should be foundational")
-}
-
-pub fn field_path(path: &str) -> CanonicalFieldPath {
-    let fields = path
-        .split('.')
-        .map(|field| {
-            worth_foundational::facade::FieldKey::new(field).expect("direct context field segments should be foundational")
-        })
-        .collect::<Vec<_>>();
-    worth_foundational::facade::CanonicalFieldPath::new(fields).expect("direct context field path should be non-empty")
 }
 
 pub struct DirectContextSchemaAdapter;
@@ -354,3 +349,7 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for DirectContextRemaskActiv
         Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
     }
 }
+
+#[path = "declarations/named_read_installation.rs"]
+mod named_read_installation;
+pub use named_read_installation::*;

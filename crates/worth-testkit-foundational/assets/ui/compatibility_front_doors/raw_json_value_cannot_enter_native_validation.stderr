@@ -1,25 +1,25 @@
 error[E0277]: the trait bound `ContractValidationInput: From<serde_json::Value>` is not satisfied
-  --> tests/ui/compatibility_front_doors/raw_json_value_cannot_enter_native_validation.rs:13:59
-   |
-13 |     let _ = aspects().validate().against(&contract).value(json!(3));
-   |                                                     ----- ^^^^^^^^ the trait `From<serde_json::Value>` is not implemented for `ContractValidationInput`
-   |                                                     |
-   |                                                     required by a bound introduced by this call
-   |
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/compatibility_front_doors/raw_json_value_cannot_enter_native_validation.rs
+  |
+  |     let _ = aspects().validate().against(&contract).value(json!(3));
+  |                                                     ----- ^^^^^^^^ the trait `From<serde_json::Value>` is not implemented for `ContractValidationInput`
+  |                                                     |
+  |                                                     required by a bound introduced by this call
+  |
 help: the following other types implement trait `From<T>`
-  --> src/aspects/validation/validation_input.rs
-   |
-   | impl From<AspectValue> for ContractValidationInput {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `ContractValidationInput` implements `From<AspectValue>`
+ --> $WORKSPACE/crates/worth-foundational/src/aspects/validation/validation_input.rs
+  |
+  | impl From<AspectValue> for ContractValidationInput {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `ContractValidationInput` implements `From<AspectValue>`
 ...
-   | impl From<StructAspectValue> for ContractValidationInput {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `ContractValidationInput` implements `From<StructAspectValue>`
-   = note: required for `serde_json::Value` to implement `Into<ContractValidationInput>`
+  | impl From<StructAspectValue> for ContractValidationInput {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `ContractValidationInput` implements `From<StructAspectValue>`
+  = note: required for `serde_json::Value` to implement `Into<ContractValidationInput>`
 note: required by a bound in `worth_foundational::aspects::front_doors::validation::value_admission::<impl AspectValidationInputStep<'a>>::value`
-  --> src/aspects/front_doors/validation/value_admission.rs
-   |
-   |     pub fn value(
-   |            ----- required by a bound in this associated function
-   |         self,
-   |         input: impl Into<ContractValidationInput>,
-   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `worth_foundational::aspects::front_doors::validation::value_admission::<impl AspectValidationInputStep<'a>>::value`
+ --> $WORKSPACE/crates/worth-foundational/src/aspects/front_doors/validation/value_admission.rs
+  |
+  |     pub fn value(
+  |            ----- required by a bound in this associated function
+  |         self,
+  |         input: impl Into<ContractValidationInput>,
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `worth_foundational::aspects::front_doors::validation::value_admission::<impl AspectValidationInputStep<'a>>::value`

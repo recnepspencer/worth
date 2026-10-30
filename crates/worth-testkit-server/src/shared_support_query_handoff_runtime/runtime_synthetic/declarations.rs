@@ -1,12 +1,19 @@
 pub use {std::sync::atomic::AtomicUsize, std::sync::Arc};
-pub use {worth_query::facade::runtime::WorthQueryRuntime, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile, worth_query::facade::runtime::WorthQueryWorkspace};
-pub use {worth_server::WorthServerQueryWorkspaceBindingError, worth_server::WorthServerQueryWorkspaceBindingRequest, worth_server::WorthServerQueryWorkspaceProvider};
+pub use {
+    worth_query::facade::runtime::WorthQueryRuntime,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+    worth_query::facade::runtime::WorthQueryWorkspace,
+};
+pub use {
+    worth_server::WorthServerQueryWorkspaceBindingError,
+    worth_server::WorthServerQueryWorkspaceBindingRequest,
+    worth_server::WorthServerQueryWorkspaceProvider,
+};
 
-pub use {crate::shared_support_query_handoff_runtime::runtime_aspect_contracts::query_handoff_aspect_contracts};
-pub use {crate::shared_support_query_handoff_runtime::runtime_named_read::install_requested_named_read};
+pub use crate::shared_support_query_handoff_runtime::runtime_aspect_contracts::query_handoff_aspect_contracts;
+pub use crate::shared_support_query_handoff_runtime::runtime_named_read::install_requested_named_read;
 
-
-pub use {crate::shared_support_query_handoff_runtime::runtime_synthetic::runtime_synthetic_backend::TestQueryRuntimeBackend};
+pub use crate::shared_support_query_handoff_runtime::runtime_synthetic::runtime_synthetic_backend::TestQueryRuntimeBackend;
 
 #[derive(Clone, Debug, Default)]
 pub struct TestWorkspaceProvider;
@@ -136,7 +143,10 @@ pub fn bind_with_backend(
     let (product_source, product_bridge) =
         worth_query::facade::consumer_kit::in_memory_test_product_world_installation(&resources)
             .map_err(|error| {
-                worth_server::WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                worth_server::WorthServerQueryWorkspaceBindingError::new(
+                    "product_world",
+                    error.to_string(),
+                )
             })?;
     let mut workspace = worth_query::facade::runtime::WorthQueryRuntime::builder(resources)
         .aspect_contracts(query_handoff_aspect_contracts())
@@ -153,11 +163,17 @@ pub fn bind_with_backend(
         )
         .build(request_execution)
         .map_err(|error| {
-            worth_server::WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
+            worth_server::WorthServerQueryWorkspaceBindingError::new(
+                "runtime_build",
+                format!("{error:?}"),
+            )
         })?
         .workspace(workspace_id)
         .map_err(|error| {
-            worth_server::WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
+            worth_server::WorthServerQueryWorkspaceBindingError::new(
+                "workspace_bind",
+                format!("{error:?}"),
+            )
         })?;
     install_requested_named_read(request_execution, &mut workspace, request)?;
     Ok(workspace)

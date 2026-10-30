@@ -1,8 +1,24 @@
-pub(crate) use {worth_foundational::claim_derived_projection_boundary_surface, worth_foundational::compare_canonical_basis, worth_foundational::materialize_admitted_foundational_profile, worth_foundational::materialize_descriptive_boundary_surface, worth_foundational::prepare_canonical_comparison, worth_foundational::request_foundational_profile_set, worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalizationRuleVersion, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalBoundaryArtifactSurface, worth_foundational::FoundationalMaterializedBoundaryArtifact, worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::claim_derived_projection_boundary_surface,
+    worth_foundational::compare_canonical_basis,
+    worth_foundational::materialize_admitted_foundational_profile,
+    worth_foundational::materialize_descriptive_boundary_surface,
+    worth_foundational::prepare_canonical_comparison,
+    worth_foundational::request_foundational_profile_set,
+    worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalComparisonOutcome,
+    worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::CertificationPostureProfile,
+    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalBoundaryArtifactSurface,
+    worth_foundational::FoundationalMaterializedBoundaryArtifact,
+    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
+    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+};
 
 pub(crate) fn version(name: &str) -> CanonicalizationRuleVersion {
-    worth_foundational::CanonicalizationRuleVersion::new(name).expect("valid canonicalization version")
+    worth_foundational::CanonicalizationRuleVersion::new(name)
+        .expect("valid canonicalization version")
 }
 
 pub(crate) fn materialized_profile(
@@ -69,10 +85,9 @@ pub(crate) fn materialize_projection_artifact(
     profile: worth_foundational::MaterializedFoundationalProfileSet,
 ) -> FoundationalMaterializedBoundaryArtifact<FoundationalBoundaryArtifactSurface<Vec<u8>>> {
     materialize_descriptive_boundary_surface(
-        claim_derived_projection_boundary_surface(worth_foundational::FoundationalBoundaryArtifactSurface::new(
-            payload,
-            attachment_slots,
-        )),
+        claim_derived_projection_boundary_surface(
+            worth_foundational::FoundationalBoundaryArtifactSurface::new(payload, attachment_slots),
+        ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
         profile,

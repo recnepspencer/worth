@@ -1,34 +1,34 @@
 error[E0599]: no function or associated item named `admit` found for struct `FoundationalAuthorityIdentity<Value, Authority, Kind>` in the current scope
-  --> tests/ui/identity_categories/direct_authority_identity_admit_not_public.rs:20:8
-   |
-16 |       let _identity = FoundationalAuthorityIdentity::<
-   |  _____________________-
-17 | |         u64,
-18 | |         QueryIdentityAuthority,
-19 | |         QueryCommitIdentityKind,
-20 | |     >::admit(42, authority());
-   | |       -^^^^^ function or associated item not found in `FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
-   | |_______|
-   |
-   |
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/direct_authority_identity_admit_not_public.rs
+  |
+  |       let _identity = FoundationalAuthorityIdentity::<
+  |  _____________________-
+  | |         u64,
+  | |         QueryIdentityAuthority,
+  | |         QueryCommitIdentityKind,
+  | |     >::admit(42, authority());
+  | |       -^^^^^ function or associated item not found in `FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
+  | |_______|
+  |
+  |
 note: if you're trying to build a new `FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>` consider using one of the following associated functions:
       FoundationalAuthorityIdentity::<Value, Authority, Kind>::from_admitted
       FoundationalAuthorityIdentity::<Value, Authority, Kind>::readmit
-  --> src/identities/authority_identity/current.rs
-   |
-   | /     pub fn from_admitted(
-   | |         admitted: FoundationalAdmittedIdentityValue<Value, Authority, Kind>,
-   | |     ) -> Self {
-   | |_____________^
+ --> $WORKSPACE/crates/worth-foundational/src/identities/authority_identity/current.rs
+  |
+  | /     pub fn from_admitted(
+  | |         admitted: FoundationalAdmittedIdentityValue<Value, Authority, Kind>,
+  | |     ) -> Self {
+  | |_____________^
 ...
-   | /     pub fn readmit(
-   | |         revalidated: FoundationalRevalidatedIdentityValue<Value, Authority, Kind>,
-   | |     ) -> Self {
-   | |_____________^
+  | /     pub fn readmit(
+  | |         revalidated: FoundationalRevalidatedIdentityValue<Value, Authority, Kind>,
+  | |     ) -> Self {
+  | |_____________^
 help: there is an associated function `readmit` with a similar name
-  --> src/identities/authority_identity/current.rs
-   |
-   | /     pub fn readmit(
-   | |         revalidated: FoundationalRevalidatedIdentityValue<Value, Authority, Kind>,
-   | |     ) -> Self {
-   | |_____________^
+ --> $WORKSPACE/crates/worth-foundational/src/identities/authority_identity/current.rs
+  |
+  | /     pub fn readmit(
+  | |         revalidated: FoundationalRevalidatedIdentityValue<Value, Authority, Kind>,
+  | |     ) -> Self {
+  | |_____________^

@@ -10,7 +10,15 @@
 //! cargo run -p worth-signal --example branch_bases
 //! ```
 
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::SignalBranchBasisReadmissionDenial, worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial, worth_signal::facade::branch::SignalBranchRetentionOwnerPosture, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalBranchRetentionTerminalOutcome, worth_signal::facade::branch::SignalBranchTarget};
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::SignalBranchBasisReadmissionDenial,
+    worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial,
+    worth_signal::facade::branch::SignalBranchRetentionOwnerPosture,
+    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
+    worth_signal::facade::branch::SignalBranchRetentionTerminalOutcome,
+    worth_signal::facade::branch::SignalBranchTarget,
+};
 pub(crate) use {worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
 
 pub(crate) type ExampleRuntime = SignalRuntime<(), (), (), (), ()>;
@@ -29,9 +37,11 @@ pub(crate) fn main() {
 }
 
 pub(crate) fn owner_workflow() {
-    let mut runtime = crate::branch_bases_example::ExampleRuntime::builder(worth_signal::facade::SignalGraph::new())
-        .with_kernel_defaults()
-        .build();
+    let mut runtime = crate::branch_bases_example::ExampleRuntime::builder(
+        worth_signal::facade::SignalGraph::new(),
+    )
+    .with_kernel_defaults()
+    .build();
     let (superseded, current) = branch_with_a_superseded_target(&mut runtime);
 
     residency_is_not_currentness(&runtime, &superseded, &current);
@@ -97,7 +107,9 @@ pub(crate) fn residency_is_not_currentness(
     // The currentness question: refused, because the branch has moved on.
     assert!(matches!(
         runtime.readmit_signal_branch_basis(superseded.descriptor().clone()),
-        Err(worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::ReferenceMismatch { .. })
+        Err(
+            worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::ReferenceMismatch { .. }
+        )
     ));
 
     // The residency question: granted, because the exact state is still stored.
@@ -131,7 +143,9 @@ pub(crate) fn residency_is_not_currentness(
     // The obligation authorizes one exact target, not any target.
     assert!(matches!(
         runtime.readmit_retained_signal_branch_basis(current.descriptor().clone(), &lease),
-        Err(worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial::DescriptorMismatch)
+        Err(
+            worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial::DescriptorMismatch
+        )
     ));
 
     drop(readmitted);
@@ -155,11 +169,16 @@ pub(crate) fn explicit_release_returns_governed_evidence(
         .expect("the same exact target may carry more than one obligation");
 
     let receipt = match runtime.release_signal_component_basis(first) {
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => receipt,
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => {
+            receipt
+        }
         // A denial hands the still-live obligation back rather than dissolving
         // it. Letting that binding fall out of scope here would drop-release
         // the very obligation you were just told you still hold.
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Denied { lease, denial } => {
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Denied {
+            lease,
+            denial,
+        } => {
             panic!("this runtime issued the obligation: {denial:?} {lease:?}")
         }
     };
@@ -174,7 +193,9 @@ pub(crate) fn explicit_release_returns_governed_evidence(
     assert_eq!(receipt.remaining_branch_leases(), 1);
 
     let receipt = match runtime.release_signal_component_basis(second) {
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => receipt,
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => {
+            receipt
+        }
         other => panic!("this runtime issued the obligation: {other:?}"),
     };
     assert_eq!(receipt.remaining_target_leases(), 0);
@@ -272,9 +293,11 @@ pub(crate) fn an_obligation_outlives_its_owner(
 /// admitted snapshots alive across the release, the drop, and the loss of the
 /// runtime, as the guide's own bindings do — and asserts the published numbers.
 pub(crate) fn internal_obligations_stay_out_of_the_external_ledger() {
-    let mut runtime = crate::branch_bases_example::ExampleRuntime::builder(worth_signal::facade::SignalGraph::new())
-        .with_kernel_defaults()
-        .build();
+    let mut runtime = crate::branch_bases_example::ExampleRuntime::builder(
+        worth_signal::facade::SignalGraph::new(),
+    )
+    .with_kernel_defaults()
+    .build();
     let main_basis = runtime
         .observe_signal_branch_basis(runtime.current_branch())
         .expect("the current branch admits an owner basis");
@@ -309,7 +332,9 @@ pub(crate) fn one_explicit_release_and_one_drop_read_as_published(
         .expect("a second obligation over the same exact target is legitimate");
 
     let receipt = match runtime.release_signal_component_basis(first) {
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => receipt,
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => {
+            receipt
+        }
         other => panic!("this runtime issued the obligation: {other:?}"),
     };
     assert_eq!(

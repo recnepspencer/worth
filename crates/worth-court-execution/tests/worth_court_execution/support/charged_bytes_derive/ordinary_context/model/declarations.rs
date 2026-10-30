@@ -1,5 +1,5 @@
-pub(crate) use {worth_execution::CanonicalBits};
-pub(crate) use {worth_foundational::facade::ChargedBytes};
+pub(crate) use worth_execution::CanonicalBits;
+pub(crate) use worth_foundational::facade::ChargedBytes;
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, ChargedBytes)]
 #[charged_bytes(crate = "worth_foundational::facade")]

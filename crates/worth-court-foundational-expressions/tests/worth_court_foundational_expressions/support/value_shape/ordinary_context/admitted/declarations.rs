@@ -1,6 +1,15 @@
 // Representation bounds do not replace cumulative borrowed request authority.
-pub(crate) use {crate::value_shape::ordinary_context::packet, crate::value_shape::ordinary_context::Packet, crate::value_shape::ordinary_context::BOUNDS, crate::value_shape::ordinary_context::RAW};
-pub(crate) use {worth_foundational::facade::decode_canonical_value_with_admission, worth_foundational::facade::CanonicalValue, worth_foundational::facade::ValueCodecDenial as D, worth_foundational::facade::ValueDecodeAdmission, worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShapeBody, worth_foundational::facade::WorthValue};
+pub(crate) use {
+    crate::value_shape::ordinary_context::packet, crate::value_shape::ordinary_context::Packet,
+    crate::value_shape::ordinary_context::BOUNDS, crate::value_shape::ordinary_context::RAW,
+};
+pub(crate) use {
+    worth_foundational::facade::decode_canonical_value_with_admission,
+    worth_foundational::facade::CanonicalValue, worth_foundational::facade::ValueCodecDenial as D,
+    worth_foundational::facade::ValueDecodeAdmission,
+    worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShapeBody,
+    worth_foundational::facade::WorthValue,
+};
 
 #[derive(Debug, PartialEq, serde::Serialize)]
 pub(crate) struct Swallowing(pub(crate) bool);

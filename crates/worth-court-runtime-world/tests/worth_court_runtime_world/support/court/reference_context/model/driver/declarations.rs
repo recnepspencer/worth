@@ -1,7 +1,13 @@
-pub(crate) use {crate::court::reference_context::model::observation::ProductObserver};
-pub(crate) use {worth_runtime_world::facade::*, std::collections::BTreeMap, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::oracle::product::ProductModel, crate::court::reference_context::model, crate::court::ordinary_context::relational};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name};
+pub(crate) use crate::court::reference_context::model::observation::ProductObserver;
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_signal::facade::branch::validate_signal_branch_name;
+pub(crate) use {
+    crate::court::ordinary_context::relational,
+    crate::court::ordinary_context::CompositeSupplyChainCourt,
+    crate::court::reference_context::model,
+    crate::oracle::support::ordinary_context::product::ProductModel, std::collections::BTreeMap,
+    worth_runtime_world::facade::*,
+};
 
 pub(crate) struct ModelRun {
     pub(crate) court: CompositeSupplyChainCourt,
@@ -17,7 +23,7 @@ pub(crate) fn run(
     rounds: usize,
 ) {
     let court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile();
-    let model = crate::court::ordinary_context::oracle::product::ProductModel::bootstrap();
+    let model = crate::oracle::support::ordinary_context::product::ProductModel::bootstrap();
     let root = court.bootstrap();
     let mut run = ModelRun {
         court,

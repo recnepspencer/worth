@@ -3,9 +3,15 @@
 // this claim; no Query capture or memory admission is exercised here.
 #![forbid(unsafe_code)]
 
-#[allow(unused_imports)] use crate::borrowed_canonical_material::isolated_context::*;
-use {stats_alloc::Region, stats_alloc::StatsAlloc, stats_alloc::INSTRUMENTED_SYSTEM};
-use {worth_foundational::facade::write_aspect_value_identity_material, worth_foundational::facade::write_struct_aspect_value_identity_material, worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalBigInt, worth_foundational::facade::CanonicalDecimal, worth_foundational::facade::CanonicalMaterialByteCount, worth_foundational::facade::CanonicalMaterialSink, worth_foundational::facade::CanonicalRational, worth_foundational::facade::FieldKey, worth_foundational::facade::StructAspectValue};
+#[allow(unused_imports)]
+use crate::borrowed_canonical_material::isolated_context::*;
+use stats_alloc::INSTRUMENTED_SYSTEM;
+use {
+    worth_foundational::facade::write_aspect_value_identity_material,
+    worth_foundational::facade::write_struct_aspect_value_identity_material,
+    worth_foundational::facade::CanonicalBigInt, worth_foundational::facade::CanonicalDecimal,
+    worth_foundational::facade::CanonicalRational,
+};
 
 #[test]
 fn borrowed_canonical_writing_allocates_no_intermediate_buffers() {
@@ -37,7 +43,9 @@ fn isolated_borrowed_canonical_writing_probe() {
     }
     let inputs = [
         worth_foundational::facade::AspectValue::String("q".repeat(128 * 1024).into()),
-        worth_foundational::facade::AspectValue::Decimal(CanonicalDecimal("1234567890".repeat(1024))),
+        worth_foundational::facade::AspectValue::Decimal(CanonicalDecimal(
+            "1234567890".repeat(1024),
+        )),
         worth_foundational::facade::AspectValue::BigInt(CanonicalBigInt("1234567890".repeat(1024))),
         worth_foundational::facade::AspectValue::Rational(CanonicalRational {
             numerator: CanonicalBigInt("1234567890".repeat(1024)),
@@ -45,8 +53,14 @@ fn isolated_borrowed_canonical_writing_probe() {
         }),
     ];
     let structure = worth_foundational::facade::StructAspectValue::new([
-        (worth_foundational::facade::FieldKey::new("body").unwrap(), inputs[0].clone()),
-        (worth_foundational::facade::FieldKey::new("ratio").unwrap(), inputs[3].clone()),
+        (
+            worth_foundational::facade::FieldKey::new("body").unwrap(),
+            inputs[0].clone(),
+        ),
+        (
+            worth_foundational::facade::FieldKey::new("ratio").unwrap(),
+            inputs[3].clone(),
+        ),
     ])
     .unwrap();
     let mut sink = StackSink {

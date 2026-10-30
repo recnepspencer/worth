@@ -1,9 +1,17 @@
 // A refused basis read fails its slot and closes the ordered mutation lane.
-use {worth_server::WorthServerSchedulerFailurePosture, crate::operation_scheduler_phase_eight::ordinary_context::lower_product_mutation_plan, crate::operation_scheduler_phase_eight::ordinary_context::scheduler_server};
+use {
+    crate::operation_scheduler_phase_eight::ordinary_context::lower_product_mutation_plan,
+    crate::operation_scheduler_phase_eight::ordinary_context::scheduler_server,
+};
 
 #[test]
 fn refused_basis_advancement_fails_the_slot_and_closes_the_lane() {
-    use {worth_query_host::facade::primary_graph::bound_advancement_requests_on_this_thread_for_test as bound, worth_query_host::facade::primary_graph::place_managed_computations_on_this_thread_for_test as place, worth_query_host::facade::primary_graph::WorthQueryExecutionObservation, worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest as Placement};
+    use {
+        worth_query_host::facade::primary_graph::bound_advancement_requests_on_this_thread_for_test as bound,
+        worth_query_host::facade::primary_graph::place_managed_computations_on_this_thread_for_test as place,
+        worth_query_host::facade::primary_graph::WorthQueryExecutionObservation,
+        worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest as Placement,
+    };
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let server = scheduler_server();
     let first = lower_product_mutation_plan(&server, "session-alpha", "", "task-refused");
@@ -42,7 +50,9 @@ fn refused_basis_advancement_fails_the_slot_and_closes_the_lane() {
     assert_eq!(executed.counters().completed_mutation_slot_count(), 0);
     assert_eq!(executed.counters().queue_closed_slot_count(), 1);
     match executed.outcomes()[0].failure_posture().unwrap() {
-        worth_server::WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure { runtime_failure } => {
+        worth_server::WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure {
+            runtime_failure,
+        } => {
             // The zero-work case stops the outer advancement. A custody
             // refusal inside snapshot_identity has a separate typed stage.
             assert!(

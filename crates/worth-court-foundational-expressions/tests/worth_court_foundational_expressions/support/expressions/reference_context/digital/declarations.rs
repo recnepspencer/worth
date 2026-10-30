@@ -2,9 +2,12 @@
 // checked against an independent per-symbol oracle written from the
 // language rules: bus literals are most significant bit first, Z is
 // unknown in bitwise operations, and a mux keeps the symbols its arms share.
-pub(crate) use {worth_foundational::expression_api::ExpressionDenialFamily as Family, worth_foundational::expression_api::ExpressionValue};
+pub(crate) use {
+    worth_foundational::expression_api::ExpressionDenialFamily as Family,
+    worth_foundational::expression_api::ExpressionValue,
+};
 
-pub(crate) use {crate::expressions::ordinary_context::evaluate};
+pub(crate) use crate::expressions::ordinary_context::evaluate;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Symbol {
@@ -14,7 +17,12 @@ pub(crate) enum Symbol {
     Z,
 }
 
-pub(crate) use {crate::expressions::reference_context::digital::Symbol::One, crate::expressions::reference_context::digital::Symbol::Zero, crate::expressions::reference_context::digital::Symbol::X, crate::expressions::reference_context::digital::Symbol::Z};
+pub(crate) use {
+    crate::expressions::reference_context::digital::Symbol::One,
+    crate::expressions::reference_context::digital::Symbol::Zero,
+    crate::expressions::reference_context::digital::Symbol::X,
+    crate::expressions::reference_context::digital::Symbol::Z,
+};
 
 pub(crate) const SYMBOLS: [Symbol; 4] = [Zero, One, X, Z];
 
@@ -100,7 +108,12 @@ pub(crate) fn logic(bus: &[Symbol]) -> ExpressionValue {
         value |= u64::from(matches!(symbol, One | Z)) << position;
         unknown |= u64::from(matches!(symbol, X | Z)) << position;
     }
-    worth_foundational::expression_api::ExpressionValue::logic4(bus.len() as u32, vec![value], vec![unknown]).expect("oracle planes")
+    worth_foundational::expression_api::ExpressionValue::logic4(
+        bus.len() as u32,
+        vec![value],
+        vec![unknown],
+    )
+    .expect("oracle planes")
 }
 
 pub(crate) fn outcome(source: &str) -> ExpressionValue {
@@ -122,5 +135,6 @@ pub(crate) fn bits_literal(width: u32, value: u64) -> String {
 }
 
 pub(crate) fn bits(width: u32, value: u64) -> ExpressionValue {
-    worth_foundational::expression_api::ExpressionValue::bits(width, vec![value]).expect("oracle bits")
+    worth_foundational::expression_api::ExpressionValue::bits(width, vec![value])
+        .expect("oracle bits")
 }

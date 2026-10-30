@@ -1,5 +1,5 @@
 error[E0451]: fields `descriptor_count`, `id_index_width`, `kind_name_index_width` and `registry_digest` of struct `ResourcePolicyRegistryFreezeReport` are private
-  --> tests/ui/resource_policy_registry_freeze_report_fields_are_private.rs:8:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_registry_freeze_report_fields_are_private.rs:8:9
    |
  7 |     let _report = ResourcePolicyRegistryFreezeReport {
    |                   ---------------------------------- in this type

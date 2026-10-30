@@ -1,15 +1,20 @@
-pub use {serde_json::json};
-pub use {worth_server::WorthServer, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationPayload};
+pub use serde_json::json;
+pub use {
+    worth_server::WorthServer, worth_server::WorthServerProductOperationInput,
+    worth_server::WorthServerProductOperationPayload,
+};
 
 #[allow(unused_imports)]
-pub use {crate::shared_support_product_adapter_phase_nine_fixture as product_fixture};
+pub use crate::shared_support_product_adapter_phase_nine_fixture as product_fixture;
 
 pub fn build_server() -> WorthServer {
     let structured_read =
         worth_server::WorthServerProductOperationDeclaration::product_structured_read(
             "product_editor.inspect",
             "product-editor.inspect.v1",
-            crate::shared_support_product_adapter_phase_nine_fixture::result_contract("product-editor.inspect.result.v1"),
+            crate::shared_support_product_adapter_phase_nine_fixture::result_contract(
+                "product-editor.inspect.result.v1",
+            ),
             worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
             worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
                 "inspect-supported",
@@ -17,7 +22,8 @@ pub fn build_server() -> WorthServer {
         )
         .with_error_map(worth_server::WorthServerProductOperationErrorMaps::passthrough());
     crate::shared_support_product_adapter_phase_nine_fixture::build_server(vec![
-        crate::shared_support_product_adapter_phase_nine_fixture::editor_registration(None, None).with_operation(structured_read)
+        crate::shared_support_product_adapter_phase_nine_fixture::editor_registration(None, None)
+            .with_operation(structured_read),
     ])
 }
 
@@ -36,7 +42,10 @@ pub fn direct_read(server: &WorthServer) -> worth_server::WorthServerCompletedPr
             .execute(
                 worth_server::WorthServerProductOperationInput::new(
                     "product_editor.render",
-                    worth_server::WorthServerProductOperationPayload::json("product-editor.render.v1", json!({})),
+                    worth_server::WorthServerProductOperationPayload::json(
+                        "product-editor.render.v1",
+                        json!({}),
+                    ),
                 )
                 .with_basis_digest("basis:7"),
             ),
@@ -51,7 +60,11 @@ pub fn direct_mutation(
 ) {
     let session = crate::shared_support_product_adapter_phase_nine_fixture::direct_session(server);
     let product_session =
-        crate::shared_support_product_adapter_phase_nine_fixture::open_mutation_product_session(&session, "product_editor.apply", "basis:7");
+        crate::shared_support_product_adapter_phase_nine_fixture::open_mutation_product_session(
+            &session,
+            "product_editor.apply",
+            "basis:7",
+        );
     let completed = crate::shared_support_product_adapter_phase_nine_fixture::completed(
         session.product_operations().execute(
             worth_server::WorthServerProductOperationInput::new(

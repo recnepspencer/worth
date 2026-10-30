@@ -1,4 +1,26 @@
-pub(crate) use {worth_foundational::admit_canonical_sequence_digest_derivation, worth_foundational::certify_canonical_milestone2_production_readiness, worth_foundational::prepare_canonical_basis_bundle, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::prepare_canonical_comparison, worth_foundational::prepare_canonical_export_bundle, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadinessProofs, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalBundleReadinessProofs, worth_foundational::CanonicalBundleReadyArtifact, worth_foundational::CanonicalComparisonReadinessProofs, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::CanonicalDigestDerivationReadinessProofs, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalExportReadinessProofs, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalProducerShape, worth_foundational::CanonicalProductionReadinessCertified, worth_foundational::CanonicalProductionTestReadyArtifact, worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot, worth_foundational::CanonicalizationRuleVersion};
+pub(crate) use {
+    worth_foundational::admit_canonical_sequence_digest_derivation,
+    worth_foundational::certify_canonical_milestone2_production_readiness,
+    worth_foundational::prepare_canonical_basis_bundle,
+    worth_foundational::prepare_canonical_basis_sequence,
+    worth_foundational::prepare_canonical_comparison,
+    worth_foundational::prepare_canonical_export_bundle, worth_foundational::CanonicalBasisDomain,
+    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
+    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadinessProofs,
+    worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue,
+    worth_foundational::CanonicalBundleReadinessProofs,
+    worth_foundational::CanonicalBundleReadyArtifact,
+    worth_foundational::CanonicalComparisonReadinessProofs,
+    worth_foundational::CanonicalDigestAlgorithmId,
+    worth_foundational::CanonicalDigestDerivationReadinessProofs,
+    worth_foundational::CanonicalEquivalenceBasis,
+    worth_foundational::CanonicalExportReadinessProofs, worth_foundational::CanonicalIntegerWidth,
+    worth_foundational::CanonicalProducerShape,
+    worth_foundational::CanonicalProductionReadinessCertified,
+    worth_foundational::CanonicalProductionTestReadyArtifact,
+    worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot,
+    worth_foundational::CanonicalizationRuleVersion,
+};
 pub(crate) use {worth_proof::Proof, worth_proof::TransitionOutcome};
 
 pub(crate) fn version(name: &str) -> CanonicalizationRuleVersion {
@@ -44,7 +66,9 @@ pub(crate) fn ready_value_sequence(
     }
 }
 
-pub(crate) fn ready_identity_sequence(version: CanonicalizationRuleVersion) -> CanonicalBasisReadyArtifact {
+pub(crate) fn ready_identity_sequence(
+    version: CanonicalizationRuleVersion,
+) -> CanonicalBasisReadyArtifact {
     match prepare_canonical_basis_sequence(
         version,
         worth_foundational::CanonicalBasisDomain::Identity,

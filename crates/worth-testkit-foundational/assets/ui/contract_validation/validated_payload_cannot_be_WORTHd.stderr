@@ -1,27 +1,27 @@
 error[E0624]: associated function `scalar` is private
- --> tests/ui/contract_validation/validated_payload_cannot_be_WORTHd.rs:6:49
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/contract_validation/validated_payload_cannot_be_WORTHd.rs
   |
-6 |     let _worthd = ContractValidatedAspectValue::scalar(
+  |     let _worthd = ContractValidatedAspectValue::scalar(
   |                                                 ^^^^^^ private associated function
   |
- ::: src/aspects/validation/validated_value.rs
+ ::: $WORKSPACE/crates/worth-foundational/src/aspects/validation/validated_value.rs
   |
   |     pub(crate) fn scalar(contract: AspectContract, value: AspectValue) -> Self {
   |     -------------------------------------------------------------------------- private associated function defined here
 
 error[E0061]: this function takes 2 arguments but 3 arguments were supplied
- --> tests/ui/contract_validation/validated_payload_cannot_be_WORTHd.rs:6:19
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/contract_validation/validated_payload_cannot_be_WORTHd.rs
   |
-6 |     let _worthd = ContractValidatedAspectValue::scalar(
+  |     let _worthd = ContractValidatedAspectValue::scalar(
   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-7 |         AspectKey::new("count").unwrap(),
+  |         AspectKey::new("count").unwrap(),
   |         -------------------------------- expected `AspectContract`, found `AspectKey`
-8 |         AspectValue::Int64(1),
-9 |         AspectContractRevision(1),
+  |         AspectValue::Int64(1),
+  |         AspectContractRevision(1),
   |         ------------------------- unexpected argument #3 of type `AspectContractRevision`
   |
 note: associated function defined here
- --> src/aspects/validation/validated_value.rs
+ --> $WORKSPACE/crates/worth-foundational/src/aspects/validation/validated_value.rs
   |
   |     pub(crate) fn scalar(contract: AspectContract, value: AspectValue) -> Self {
   |                   ^^^^^^

@@ -3313,15 +3313,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-query-bank-court-estate-certification"
-version = "0.1.0"
-dependencies = [
- "bank-server",
- "serde_json",
- "worth-query-bank-testkit-estate-certification",
-]
-
-[[package]]
 name = "worth-query-bank-court-external-rail"
 version = "0.1.0"
 dependencies = [
@@ -3348,6 +3339,15 @@ name = "worth-query-bank-court-http-adapter"
 version = "0.1.0"
 dependencies = [
  "worth-query-bank-testkit-http-adapter",
+]
+
+[[package]]
+name = "worth-query-bank-court-server"
+version = "0.1.0"
+dependencies = [
+ "bank-server",
+ "serde_json",
+ "worth-query-bank-testkit-estate-certification",
 ]
 
 [[package]]

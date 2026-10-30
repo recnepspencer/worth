@@ -1,19 +1,19 @@
 error[E0308]: mismatched types
- --> tests/ui/profiles/family_boundaries/support_posture_cannot_satisfy_certification_posture.rs:8:28
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/family_boundaries/support_posture_cannot_satisfy_certification_posture.rs
   |
-8 |     requires_certification(SupportPostureProfile::CertificationReady);
+  |     requires_certification(SupportPostureProfile::CertificationReady);
   |     ---------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `CertificationPostureProfile`, found `SupportPostureProfile`
   |     |
   |     arguments to this function are incorrect
   |
 note: function defined here
- --> tests/ui/profiles/family_boundaries/support_posture_cannot_satisfy_certification_posture.rs:5:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/family_boundaries/support_posture_cannot_satisfy_certification_posture.rs
   |
-5 | fn requires_certification(_: CertificationPostureProfile) {}
+  | fn requires_certification(_: CertificationPostureProfile) {}
   |    ^^^^^^^^^^^^^^^^^^^^^^ ------------------------------
 
 error[E0308]: mismatched types
-  --> tests/ui/profiles/family_boundaries/support_posture_cannot_satisfy_certification_posture.rs:16:32
-   |
-16 |         certification_posture: SupportPostureProfile::CertificationReady,
-   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `CertificationPostureProfile`, found `SupportPostureProfile`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/family_boundaries/support_posture_cannot_satisfy_certification_posture.rs
+  |
+  |         certification_posture: SupportPostureProfile::CertificationReady,
+  |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `CertificationPostureProfile`, found `SupportPostureProfile`

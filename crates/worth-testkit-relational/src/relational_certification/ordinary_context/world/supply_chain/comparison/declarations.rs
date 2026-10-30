@@ -4,7 +4,11 @@ pub use {crate::relational_certification::ordinary_context::world::supply_chain:
 pub use {crate::relational_certification::ordinary_context::world::supply_chain::comparison_schema::compare_schema};
 pub use {crate::relational_certification::ordinary_context::world::supply_chain::expected_observation::ExpectedSupplyChainObservation};
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::comparison_state::ComparisonFailure, crate::relational_certification::ordinary_context::world::supply_chain::comparison_state::ComparisonMismatch, crate::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::comparison_state::ComparisonFailure,
+    crate::relational_certification::ordinary_context::world::supply_chain::comparison_state::ComparisonMismatch,
+    crate::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState,
+};
 
 /// Compare a complete observation by semantic axis.  Each axis owns its
 /// mismatch construction; this function is only the ordered table of contents.

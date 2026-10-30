@@ -1,8 +1,14 @@
-pub(crate) use {std::sync::Arc};
+pub(crate) use std::sync::Arc;
 
-pub(crate) use {worth_relational::facade::mvcc::PreparedRelationalCommitCandidate, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::transactions::WorkerIntentBatch};
-pub(crate) use {worth_runtime_bridge::facade::*};
-pub(crate) use {worth_runtime_world::facade::*};
+pub(crate) use worth_runtime_bridge::facade::*;
+pub(crate) use worth_runtime_world::facade::*;
+pub(crate) use {
+    worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::runtime::RelationalRuntimeApi,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
 
 pub(crate) struct AsyncSourceCourt {
     pub(crate) world: RuntimeWorldOwner<(), (), (), (), ()>,
@@ -44,7 +50,10 @@ impl AsyncSourceCourt {
         Self::with_queue_capacity(Some(capacity), true)
     }
 
-    pub(crate) fn with_queue_capacity(capacity: Option<std::num::NonZeroU64>, process_local: bool) -> Self {
+    pub(crate) fn with_queue_capacity(
+        capacity: Option<std::num::NonZeroU64>,
+        process_local: bool,
+    ) -> Self {
         let relational = std::sync::Arc::new(
             worth_relational::facade::runtime::RelationalRuntimeApi::builder()
                 .build()
@@ -156,7 +165,9 @@ impl AsyncSourceCourt {
             )
             .unwrap();
         tx.push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new("metadata-only-source-event"),
+            worth_relational::facade::transactions::WorkerIntentBatch::new(
+                "metadata-only-source-event",
+            ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
@@ -178,8 +189,10 @@ impl AsyncSourceCourt {
         let prepared = publication
             .prepare_without_signal(
                 head.clone(),
-                CompositePublicationIntent::without_signal(worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
-                    .with_prepared_relational_candidate(candidate),
+                CompositePublicationIntent::without_signal(
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
+                .with_prepared_relational_candidate(candidate),
                 &cancellation,
                 None,
             )
@@ -196,7 +209,11 @@ impl AsyncSourceCourt {
             .unwrap()
     }
 
-    pub(crate) fn fork(&self, head: &ProductBranchObservation, name: &str) -> ProductBranchObservation {
+    pub(crate) fn fork(
+        &self,
+        head: &ProductBranchObservation,
+        name: &str,
+    ) -> ProductBranchObservation {
         let host = crate::test_execution_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let RuntimeWorldBranchCreationOutcome::Performed(fork) = self
@@ -224,7 +241,10 @@ impl AsyncSourceCourt {
         fork
     }
 
-    pub(crate) fn lease(&self, head: &ProductBranchObservation) -> RelationalBridgeObservationLease {
+    pub(crate) fn lease(
+        &self,
+        head: &ProductBranchObservation,
+    ) -> RelationalBridgeObservationLease {
         self.source
             .retain_branch_basis_for_bridge(head.basis().relational_basis())
             .unwrap()

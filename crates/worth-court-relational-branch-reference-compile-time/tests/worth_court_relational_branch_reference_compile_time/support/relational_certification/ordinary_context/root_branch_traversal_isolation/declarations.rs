@@ -1,4 +1,4 @@
-pub(crate) use {std::sync::Arc};
+pub(crate) use std::sync::Arc;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_kind_id, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::snapshot_for_supply_chain_identity, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::expected_observation::ExpectedSupplyChainObservation, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles};
@@ -61,8 +61,13 @@ pub(crate) fn publish_main_rewire(
         source: worth_relational::facade::transactions::EntityReference::Existing(edge.main_source),
         target: worth_relational::facade::transactions::EntityReference::Existing(edge.main_target),
     };
-    let batch = worth_relational::facade::transactions::WorkerIntentBatch::new("phase5-adversarial-main-edge-rewire").push(
-        worth_relational::facade::transactions::MutationIntent::Relation(worth_relational::facade::transactions::RelationMutationIntent::UpdateEndpoints(intent)),
+    let batch = worth_relational::facade::transactions::WorkerIntentBatch::new(
+        "phase5-adversarial-main-edge-rewire",
+    )
+    .push(
+        worth_relational::facade::transactions::MutationIntent::Relation(
+            worth_relational::facade::transactions::RelationMutationIntent::UpdateEndpoints(intent),
+        ),
     );
     commit_branch_batch(execution, runtime, BranchId("main".to_owned()), batch);
 }
@@ -146,7 +151,11 @@ impl EdgeMovement {
         (self.relation_id, self.main_source, self.main_target)
     }
 
-    pub(crate) const fn ancestor_probe(&self, direction: Direction, ordinal: u128) -> TraversalProbe {
+    pub(crate) const fn ancestor_probe(
+        &self,
+        direction: Direction,
+        ordinal: u128,
+    ) -> TraversalProbe {
         let seed = match direction {
             crate::relational_certification::ordinary_context::root_branch_traversal_isolation::Direction::Outgoing => self.ancestor_source,
             crate::relational_certification::ordinary_context::root_branch_traversal_isolation::Direction::Incoming => self.ancestor_target,
@@ -177,7 +186,12 @@ pub(crate) struct TraversalProbe {
 }
 
 impl TraversalProbe {
-    pub(crate) const fn new(seed: EntityId, kind_id: KindId, direction: Direction, ordinal: u128) -> Self {
+    pub(crate) const fn new(
+        seed: EntityId,
+        kind_id: KindId,
+        direction: Direction,
+        ordinal: u128,
+    ) -> Self {
         Self {
             seed,
             kind_id,
@@ -260,7 +274,8 @@ pub(crate) fn traversal_packet(
         scope,
         locality: worth_relational::facade::query::QueryLocalityClass::CrossPartitionTraversal,
         ordering: worth_relational::facade::query::QueryOrderingContract::CanonicalTraversalOrder,
-        access_contract: worth_relational::facade::query::QueryAccessContract::AuthoritativeStorageOnly,
+        access_contract:
+            worth_relational::facade::query::QueryAccessContract::AuthoritativeStorageOnly,
         execution_shape: worth_relational::facade::query::QueryExecutionShape::BulkPacketized,
         reduction: worth_relational::facade::query::ReductionDiscipline::DeterministicMerge,
         plan_key: DeterministicQueryPlanKey(9_171_500 + ordinal),

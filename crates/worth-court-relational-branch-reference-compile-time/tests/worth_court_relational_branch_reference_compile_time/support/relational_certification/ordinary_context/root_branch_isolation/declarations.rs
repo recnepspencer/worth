@@ -1,4 +1,4 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::invariant_oracle_expectations::expected_supply_chain_branch};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison::compare, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::observation::observe_snapshot as observe_supply_chain_snapshot, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::snapshot_for_supply_chain_identity, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::production_world::ProductionSeededSupplyChainWorld, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
@@ -36,7 +36,9 @@ pub(crate) fn assert_child_explicit_query_uses_snapshot_root(
     let packet = worth_relational::facade::query::PlannedQueryPacket::explicit_targets(
         "main-advances-before-child-explicit-query",
         context,
-        vec![worth_relational::facade::transactions::RecordRef::Entity(world.handles.aurora_voyage().id)],
+        vec![worth_relational::facade::transactions::RecordRef::Entity(
+            world.handles.aurora_voyage().id,
+        )],
     );
     let plan = world
         .runtime
@@ -60,7 +62,9 @@ pub(crate) fn assert_child_explicit_query_uses_snapshot_root(
     let main_packet = worth_relational::facade::query::PlannedQueryPacket::explicit_targets(
         "advanced-main-explicit-query-control",
         main_context,
-        vec![worth_relational::facade::transactions::RecordRef::Entity(world.handles.aurora_voyage().id)],
+        vec![worth_relational::facade::transactions::RecordRef::Entity(
+            world.handles.aurora_voyage().id,
+        )],
     );
     let main_plan = world
         .runtime
@@ -90,13 +94,22 @@ pub(crate) fn advance_main_aurora_status(
     );
     let update = UpdateEntityFieldsIntent {
         entity_id: world.handles.aurora_voyage().id,
-        fields: worth_relational::facade::transactions::AspectFieldPatch::new(std::collections::BTreeMap::from([(
-            status_locator,
-            worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw("Held".to_owned())),
-        )])),
+        fields: worth_relational::facade::transactions::AspectFieldPatch::new(
+            std::collections::BTreeMap::from([(
+                status_locator,
+                worth_foundational::facade::AspectValue::String(
+                    worth_foundational::facade::InternedString::Raw("Held".to_owned()),
+                ),
+            )]),
+        ),
     };
-    let batch = worth_relational::facade::transactions::WorkerIntentBatch::new("main-advances-before-child-read").push(
-        worth_relational::facade::transactions::MutationIntent::Entity(worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(update)),
+    let batch = worth_relational::facade::transactions::WorkerIntentBatch::new(
+        "main-advances-before-child-read",
+    )
+    .push(
+        worth_relational::facade::transactions::MutationIntent::Entity(
+            worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(update),
+        ),
     );
     commit_branch_batch(
         execution,

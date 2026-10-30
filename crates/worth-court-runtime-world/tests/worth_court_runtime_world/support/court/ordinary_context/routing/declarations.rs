@@ -1,6 +1,6 @@
+pub(crate) use worth_signal::facade::specialist::EvaluationOutput;
+pub(crate) use worth_signal::facade::*;
 pub(crate) use {std::sync::Arc, std::sync::OnceLock};
-pub(crate) use {worth_signal::facade::specialist::EvaluationOutput};
-pub(crate) use {worth_signal::facade::*};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct RouteDefinition(pub(crate) u8);
@@ -8,7 +8,8 @@ pub(crate) struct RouteDefinition(pub(crate) u8);
 pub(crate) struct CargoKey(pub(crate) u64);
 pub(crate) struct CargoEvent;
 pub(crate) struct RoutingContext {
-    pub(crate) records: Arc<OnceLock<crate::court::ordinary_context::observation::SupplyChainObservation>>,
+    pub(crate) records:
+        Arc<OnceLock<crate::court::ordinary_context::observation::SupplyChainObservation>>,
 }
 pub(crate) type CourtSignal =
     SignalRuntime<RouteDefinition, CargoKey, CargoEvent, RoutingContext, u64>;

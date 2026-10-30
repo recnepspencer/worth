@@ -1,5 +1,6 @@
-#[allow(unused_imports)] use crate::reference::ordinary_context::*;
-use {worth_runtime_world::facade::ProductBranchObservation, worth_runtime_world::facade::ProductBranchObservationMismatchAxis};
+#[allow(unused_imports)]
+use crate::reference::ordinary_context::*;
+use worth_runtime_world::facade::ProductBranchObservation;
 
 #[test]
 fn managed_observation_is_cloneable_and_sendable() {

@@ -1,13 +1,13 @@
 error[E0277]: the trait bound `EquivalenceBasisId: FoundationalBranchTargetBasis` is not satisfied
- --> tests/ui/transitions/branch_reference/equivalence_id_cannot_be_target_basis.rs:9:41
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/branch_reference/equivalence_id_cannot_be_target_basis.rs
   |
-9 |         FoundationalBranchTarget::basis(EquivalenceBasisId::new(7)),
+  |         FoundationalBranchTarget::basis(EquivalenceBasisId::new(7)),
   |         ------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `FoundationalBranchTargetBasis` is not implemented for `EquivalenceBasisId`
   |         |
   |         required by a bound introduced by this call
   |
 note: required by a bound in `FoundationalBranchTarget::<T>::basis`
- --> src/transitions/branches/reference.rs
+ --> $WORKSPACE/crates/worth-foundational/src/transitions/branches/reference.rs
   |
   | impl<T: FoundationalBranchTargetBasis> FoundationalBranchTarget<T> {
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `FoundationalBranchTarget::<T>::basis`
@@ -16,30 +16,30 @@ note: required by a bound in `FoundationalBranchTarget::<T>::basis`
   |            ----- required by a bound in this associated function
 
 error[E0277]: the trait bound `EquivalenceBasisId: FoundationalBranchTargetBasis` is not satisfied
- --> tests/ui/transitions/branch_reference/equivalence_id_cannot_be_target_basis.rs:9:9
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/branch_reference/equivalence_id_cannot_be_target_basis.rs
   |
-9 |         FoundationalBranchTarget::basis(EquivalenceBasisId::new(7)),
+  |         FoundationalBranchTarget::basis(EquivalenceBasisId::new(7)),
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `FoundationalBranchTargetBasis` is not implemented for `EquivalenceBasisId`
   |
 note: required by a bound in `FoundationalBranchTarget`
- --> src/transitions/branches/reference.rs
+ --> $WORKSPACE/crates/worth-foundational/src/transitions/branches/reference.rs
   |
   | pub enum FoundationalBranchTarget<T: FoundationalBranchTargetBasis> {
   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `FoundationalBranchTarget`
 
 error[E0277]: the trait bound `EquivalenceBasisId: FoundationalBranchTargetBasis` is not satisfied
-  --> tests/ui/transitions/branch_reference/equivalence_id_cannot_be_target_basis.rs:7:24
-   |
- 7 |       let _observation = FoundationalBranchReferenceObservation::new(
-   |  ________________________^
- 8 | |         FoundationalBranchId::new("main").expect("valid branch"),
- 9 | |         FoundationalBranchTarget::basis(EquivalenceBasisId::new(7)),
-10 | |         FoundationalBranchReferenceGeneration::initial(),
-11 | |     );
-   | |_____^ the trait `FoundationalBranchTargetBasis` is not implemented for `EquivalenceBasisId`
-   |
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/branch_reference/equivalence_id_cannot_be_target_basis.rs
+  |
+  |       let _observation = FoundationalBranchReferenceObservation::new(
+  |  ________________________^
+  | |         FoundationalBranchId::new("main").expect("valid branch"),
+  | |         FoundationalBranchTarget::basis(EquivalenceBasisId::new(7)),
+  | |         FoundationalBranchReferenceGeneration::initial(),
+  | |     );
+  | |_____^ the trait `FoundationalBranchTargetBasis` is not implemented for `EquivalenceBasisId`
+  |
 note: required by a bound in `FoundationalBranchReferenceObservation`
-  --> src/transitions/branches/reference.rs
-   |
-   | pub struct FoundationalBranchReferenceObservation<T: FoundationalBranchTargetBasis> {
-   |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `FoundationalBranchReferenceObservation`
+ --> $WORKSPACE/crates/worth-foundational/src/transitions/branches/reference.rs
+  |
+  | pub struct FoundationalBranchReferenceObservation<T: FoundationalBranchTargetBasis> {
+  |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `FoundationalBranchReferenceObservation`

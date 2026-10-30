@@ -1,12 +1,16 @@
-use {worth_foundational::aspect_patch_digest_preparation_basis, worth_foundational::AspectValue, worth_foundational::AuthoritativeRecordAspectPatch, worth_foundational::ScalarAspectType};
-use {worth_proof::TransitionOutcome};
+use worth_foundational::aspect_patch_digest_preparation_basis;
 
 use {crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::ready_patch};
 use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::validated_scalar};
 
 #[test]
 fn patch_digest_preparation_basis_is_ordered_independent_of_construction_path() {
-    let count = validated_scalar("count", 1, worth_foundational::ScalarAspectType::Int64, worth_foundational::AspectValue::Int64(2));
+    let count = validated_scalar(
+        "count",
+        1,
+        worth_foundational::ScalarAspectType::Int64,
+        worth_foundational::AspectValue::Int64(2),
+    );
     let name = validated_scalar(
         "name",
         2,
@@ -14,7 +18,10 @@ fn patch_digest_preparation_basis_is_ordered_independent_of_construction_path() 
         worth_foundational::AspectValue::String("Ada".into()),
     );
     let worth_proof::TransitionOutcome::Success(left_patch) =
-        worth_foundational::AuthoritativeRecordAspectPatch::whole_aspect([count.clone(), name.clone()], [])
+        worth_foundational::AuthoritativeRecordAspectPatch::whole_aspect(
+            [count.clone(), name.clone()],
+            [],
+        )
     else {
         panic!("expected left patch");
     };

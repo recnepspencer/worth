@@ -1,11 +1,11 @@
 error[E0603]: module `values` is private
- --> tests/ui/facade_boundary/internal_value_home_is_not_public.rs:1:25
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/facade_boundary/internal_value_home_is_not_public.rs
   |
-1 | use worth_foundational::values;
+  | use worth_foundational::values;
   |                         ^^^^^^ private module
   |
 note: the module `values` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-foundational/src/lib.rs
   |
   | mod values;
   | ^^^^^^^^^^

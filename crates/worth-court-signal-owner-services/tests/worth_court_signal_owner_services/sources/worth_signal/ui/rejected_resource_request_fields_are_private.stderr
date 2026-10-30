@@ -1,5 +1,5 @@
 error: cannot construct `RejectedResourceRequest` with struct literal syntax due to private fields
-  --> tests/ui/rejected_resource_request_fields_are_private.rs:19:13
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/rejected_resource_request_fields_are_private.rs:19:13
    |
 19 |     let _ = RejectedResourceRequest {
    |             ^^^^^^^^^^^^^^^^^^^^^^^

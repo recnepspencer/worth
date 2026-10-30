@@ -1,7 +1,7 @@
 error[E0599]: no function or associated item named `new` found for struct `Milestone1ProductionReadinessAuthority` in the current scope
- --> tests/ui/milestone1_readiness/milestone1_readiness_authority_cannot_be_minted.rs:4:62
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/milestone1_readiness/milestone1_readiness_authority_cannot_be_minted.rs
   |
-4 |     let _authority = Milestone1ProductionReadinessAuthority::new();
+  |     let _authority = Milestone1ProductionReadinessAuthority::new();
   |                                                              ^^^ function or associated item not found in `Milestone1ProductionReadinessAuthority`
   |
 help: there is a method `ne` with a similar name, but with different arguments

@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/merge/relational_merge_inspection_input_private.rs:8:18
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/merge/relational_merge_inspection_input_private.rs:8:18
    |
  8 |           request: MergeExecutionRequest {
    |  __________________^

@@ -1,18 +1,23 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::scoped_merge_denials::*;
-use {std::fmt::Debug};
-use {worth_foundational::FoundationalAdmittedMergeScopeEvidence, worth_foundational::FoundationalDeniedScopeLocus, worth_foundational::FoundationalMergeAdmissionDenial, worth_foundational::FoundationalMergeConstructionDenial, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalMergeScopeFamily, worth_foundational::FoundationalScopeAdmissionBasis, worth_foundational::FoundationalScopedMergeDenialEvidence, worth_foundational::FoundationalScopedMergeDenialKind, worth_foundational::FoundationalSelectedScopeNoOpCause, worth_foundational::FoundationalSkippedOutOfScopeEvidence};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::scoped_merge_denials::*;
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-use {crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary};
-use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_node, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+use crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary;
+use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_node,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 #[test]
 fn custom_scope_evidence_denies_mismatched_candidate_scope_or_branch_basis() {
     let requested_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
-    let candidate_scope = worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("material")])
-        .expect("candidate scope");
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("node scope");
+    let candidate_scope =
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("material")])
+            .expect("candidate scope");
     let evidence_scope_mismatch = worth_foundational::FoundationalAdmittedMergeScopeEvidence::new(
         branch_id("feature/geometry"),
         branch_id("main"),
@@ -72,8 +77,8 @@ fn custom_scope_evidence_denies_mismatched_candidate_scope_or_branch_basis() {
 
 #[test]
 fn custom_scope_evidence_denies_conflict_width_mismatch() {
-    let scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+    let scope = worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+        .expect("node scope");
     let evidence = worth_foundational::FoundationalAdmittedMergeScopeEvidence::new(
         branch_id("feature/geometry"),
         branch_id("main"),
@@ -96,8 +101,10 @@ fn custom_scope_evidence_denies_conflict_width_mismatch() {
 #[test]
 fn scope_evidence_constructor_denies_loci_outside_requested_scope() {
     let requested_scope =
-        worth_foundational::FoundationalMergeScope::selected_aspects([selected_aspect("gear", "teeth")])
-            .expect("aspect scope");
+        worth_foundational::FoundationalMergeScope::selected_aspects([selected_aspect(
+            "gear", "teeth",
+        )])
+        .expect("aspect scope");
     let denial = worth_foundational::FoundationalAdmittedMergeScopeEvidence::new(
         branch_id("feature/geometry"),
         branch_id("main"),
@@ -120,7 +127,8 @@ fn scope_evidence_constructor_denies_loci_outside_requested_scope() {
 #[test]
 fn scope_evidence_constructor_denies_duplicate_no_ops_and_full_branch_skips() {
     let selected_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("node scope");
     let duplicate_no_op = worth_foundational::FoundationalAdmittedMergeScopeEvidence::new(
         branch_id("feature/geometry"),
         branch_id("main"),
@@ -168,7 +176,8 @@ fn scope_evidence_constructor_denies_duplicate_no_ops_and_full_branch_skips() {
 #[test]
 fn scope_evidence_constructor_denies_one_locus_with_multiple_outcomes() {
     let selected_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("node scope");
     let denial = worth_foundational::FoundationalAdmittedMergeScopeEvidence::new(
         branch_id("feature/geometry"),
         branch_id("main"),
@@ -287,7 +296,8 @@ fn selected_scope_denials_preserve_every_scope_specific_denial_family() {
 #[test]
 fn selected_scope_denial_evidence_denies_wrong_locus_kind_or_out_of_scope_locus() {
     let selected_node_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("node scope");
     let wrong_locus_kind = worth_foundational::FoundationalScopedMergeDenialEvidence::new(
         branch_id("feature/geometry"),
         branch_id("main"),
@@ -318,9 +328,11 @@ fn selected_scope_denial_evidence_denies_wrong_locus_kind_or_out_of_scope_locus(
 #[test]
 fn selected_scope_denial_admission_denies_mismatched_scope_or_branch_basis() {
     let candidate_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("node scope");
     let evidence_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("material")]).expect("node scope");
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("material")])
+            .expect("node scope");
     let scope_mismatch = scoped_denial_evidence(
         worth_foundational::FoundationalScopedMergeDenialKind::UnknownSelectedNode,
         evidence_scope,

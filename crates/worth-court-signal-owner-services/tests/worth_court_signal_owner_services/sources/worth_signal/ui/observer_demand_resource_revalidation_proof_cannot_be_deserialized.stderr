@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `ObserverDemandResourceRevalidationProof: serde::de::DeserializeOwned` is not satisfied
- --> tests/ui/observer_demand_resource_revalidation_proof_cannot_be_deserialized.rs:6:34
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/observer_demand_resource_revalidation_proof_cannot_be_deserialized.rs:6:34
   |
 6 |     requires_deserialize_owned::<ObserverDemandResourceRevalidationProof>();
   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ObserverDemandResourceRevalidationProof`
@@ -16,7 +16,7 @@ error[E0277]: the trait bound `ObserverDemandResourceRevalidationProof: serde::d
           and $N others
   = note: required for `ObserverDemandResourceRevalidationProof` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
- --> tests/ui/observer_demand_resource_revalidation_proof_cannot_be_deserialized.rs:3:34
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/observer_demand_resource_revalidation_proof_cannot_be_deserialized.rs:3:34
   |
 3 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`

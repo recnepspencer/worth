@@ -1,18 +1,28 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+pub(crate) use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-pub(crate) use {worth_server::WorthServer, worth_server::WorthServerLoweredOperationPlan, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationPlannerInput, worth_server::WorthServerOperationRequestInput, worth_server::WorthServerQueryOperation, worth_server::WorthServerSchedulerCancellationDirective, worth_server::WorthServerSchedulerCancellationPosture, worth_server::WorthServerSchedulerConflictDenialCode, worth_server::WorthServerSchedulerFailurePosture};
-
+pub(crate) use {
+    worth_server::WorthServer, worth_server::WorthServerLoweredOperationPlan,
+    worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationPlannerInput,
+    worth_server::WorthServerOperationRequestInput, worth_server::WorthServerQueryOperation,
+    worth_server::WorthServerSchedulerCancellationDirective,
+    worth_server::WorthServerSchedulerCancellationPosture,
+    worth_server::WorthServerSchedulerConflictDenialCode,
+    worth_server::WorthServerSchedulerFailurePosture,
+};
 
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture};
+pub(crate) use worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture;
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+pub(crate) use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
 
-pub(crate) use {crate::operation_scheduler_phase_eight::ordinary_context::phase_eight_helpers::insert_task, crate::operation_scheduler_phase_eight::ordinary_context::phase_eight_helpers::worth_native_request_input};
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context};
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_real_mutation::RealMutationWorkspaceProvider};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context;
+pub(crate) use worth_testkit_server::shared_support_query_handoff_runtime::runtime_real_mutation::RealMutationWorkspaceProvider;
+pub(crate) use {
+    crate::operation_scheduler_phase_eight::ordinary_context::phase_eight_helpers::insert_task,
+    crate::operation_scheduler_phase_eight::ordinary_context::phase_eight_helpers::worth_native_request_input,
+};
 
 pub(crate) fn execute_interleaved_batch() -> worth_server::WorthServerExecutedOperationBatch {
     let server = scheduler_server();
@@ -48,7 +58,10 @@ pub(crate) fn lower_submission_plan(
         "tasks.insert",
         None,
         basis_digest,
-        worth_server::WorthServerQueryOperation::single_mutation("tasks.insert", insert_task(task_identity)),
+        worth_server::WorthServerQueryOperation::single_mutation(
+            "tasks.insert",
+            insert_task(task_identity),
+        ),
     )
 }
 
@@ -64,7 +77,10 @@ pub(crate) fn lower_product_mutation_plan(
         "editor.apply",
         Some(product_session_identity),
         (!basis_digest.is_empty()).then_some(basis_digest),
-        worth_server::WorthServerQueryOperation::single_mutation("editor.apply", insert_task(task_identity)),
+        worth_server::WorthServerQueryOperation::single_mutation(
+            "editor.apply",
+            insert_task(task_identity),
+        ),
     )
 }
 
@@ -84,7 +100,9 @@ pub(crate) fn lower_session_coordination_plan(
         .admit_from_worth_native_admission(
             &admission,
             worth_server::WorthServerOperationRequestInput::builder()
-                .with_operation_family(worth_server::WorthServerOperationFamily::ProductSessionCoordination)
+                .with_operation_family(
+                    worth_server::WorthServerOperationFamily::ProductSessionCoordination,
+                )
                 .with_operation_name(operation_name)
                 .with_product_session_identity(product_session_identity)
                 .with_idempotency_key(format!(

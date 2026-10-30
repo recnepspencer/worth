@@ -1,39 +1,14 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::boundary_evidence::lineage::*;
-use worth_proof::TransitionOutcome;
 use {
-    worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path,
-    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::boundary_evidence,
     worth_foundational::foundational_boundary_evidence_branch_divergence_posture_definitions,
     worth_foundational::foundational_boundary_evidence_lineage_outcome_kind_definitions,
     worth_foundational::foundational_boundary_evidence_lineage_partiality_posture_definitions,
     worth_foundational::foundational_boundary_evidence_promotion_posture_definitions,
-    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
-    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
-    worth_foundational::FoundationalBoundaryEvidenceBranchDivergencePosture,
-    worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture,
-    worth_foundational::FoundationalBoundaryEvidenceLineageConstructionDenial,
-    worth_foundational::FoundationalBoundaryEvidenceLineageOutcomeKind,
-    worth_foundational::FoundationalBoundaryEvidenceLineagePartialityPosture,
-    worth_foundational::FoundationalBoundaryEvidenceLineageSubject,
-    worth_foundational::FoundationalBoundaryEvidenceLineageSubjectSet,
-    worth_foundational::FoundationalBoundaryEvidenceLocality,
-    worth_foundational::FoundationalBoundaryEvidencePromotionPosture,
-    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
-    worth_foundational::FoundationalBoundaryEvidenceReceiptKind,
-    worth_foundational::FoundationalBoundaryEvidenceSourceBasis,
-    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
-    worth_foundational::FoundationalCommitParentageLocator,
-    worth_foundational::FoundationalTransitionLocator,
 };
 
-use {
-    crate::certification::ordinary_context::boundary_evidence::provenance::authority_path,
-    crate::certification::ordinary_context::boundary_evidence::provenance::digest_basis,
-    crate::certification::ordinary_context::boundary_evidence::provenance::profile_basis,
-    crate::certification::ordinary_context::boundary_evidence::provenance::source_basis,
-    crate::certification::ordinary_context::boundary_evidence::provenance::strategy_basis,
-};
+use crate::certification::ordinary_context::boundary_evidence::provenance::source_basis;
 
 #[test]
 fn lineage_definitions_are_blind_consumer_interpretable() {

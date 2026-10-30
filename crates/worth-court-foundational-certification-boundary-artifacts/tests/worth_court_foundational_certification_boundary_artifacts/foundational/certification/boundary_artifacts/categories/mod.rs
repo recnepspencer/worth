@@ -1,4 +1,12 @@
-use {worth_foundational::boundary_artifact_category_definitions, worth_foundational::boundary_artifact_category_of, worth_foundational::boundary_receipt_category_of, worth_foundational::boundary_summary_category_of, worth_foundational::foundational_responsibilities, worth_foundational::FoundationalBoundaryArtifactCategory, worth_foundational::FoundationalBoundaryArtifactSurface, worth_foundational::FoundationalBoundaryCategoryConstructionDenial, worth_foundational::FoundationalBoundaryCategorySurface, worth_foundational::FoundationalBoundaryReceiptSurface, worth_foundational::FoundationalBoundaryReportSurface, worth_foundational::FoundationalBoundarySummarySurface};
+use {
+    worth_foundational::boundary_artifact_category_definitions,
+    worth_foundational::boundary_artifact_category_of,
+    worth_foundational::boundary_receipt_category_of,
+    worth_foundational::boundary_summary_category_of,
+    worth_foundational::foundational_responsibilities,
+    worth_foundational::FoundationalBoundaryCategorySurface,
+    worth_foundational::FoundationalBoundaryReportSurface,
+};
 
 #[test]
 fn boundary_artifact_responsibility_home_is_named_in_the_facade_topology() {
@@ -51,10 +59,16 @@ fn category_definitions_are_blind_consumer_interpretable() {
 #[test]
 fn category_local_surfaces_are_mutually_non_substitutable() {
     let summary =
-        worth_foundational::FoundationalBoundarySummarySurface::new("compact exchange overview", 2).expect("summary");
-    let report = worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row-1", "row-2"], 1).expect("report");
-    let artifact = worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![1_u8, 2, 3], 3);
-    let receipt = worth_foundational::FoundationalBoundaryReceiptSurface::new("commit persisted", 1).expect("receipt");
+        worth_foundational::FoundationalBoundarySummarySurface::new("compact exchange overview", 2)
+            .expect("summary");
+    let report =
+        worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row-1", "row-2"], 1)
+            .expect("report");
+    let artifact =
+        worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![1_u8, 2, 3], 3);
+    let receipt =
+        worth_foundational::FoundationalBoundaryReceiptSurface::new("commit persisted", 1)
+            .expect("receipt");
 
     assert_eq!(
         boundary_summary_category_of(&summary),

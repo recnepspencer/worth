@@ -1,13 +1,13 @@
 error[E0277]: the trait bound `FoundationalBoundaryArtifactCategory: FoundationalBoundaryCategorySurface` is not satisfied
- --> tests/ui/boundary_artifacts/categories/plain_label_cannot_satisfy_summary_surface_api.rs:5:42
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/categories/plain_label_cannot_satisfy_summary_surface_api.rs
   |
-5 |     let _ = boundary_summary_category_of(&label);
+  |     let _ = boundary_summary_category_of(&label);
   |             ---------------------------- ^^^^^^ the trait `FoundationalBoundaryCategorySurface` is not implemented for `FoundationalBoundaryArtifactCategory`
   |             |
   |             required by a bound introduced by this call
   |
 help: the following other types implement trait `FoundationalBoundaryCategorySurface`
- --> src/boundary_artifacts/categories.rs
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/categories.rs
   |
   | impl FoundationalBoundaryCategorySurface for FoundationalBoundarySummarySurface {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundarySummarySurface`
@@ -21,7 +21,7 @@ help: the following other types implement trait `FoundationalBoundaryCategorySur
   | impl FoundationalBoundaryCategorySurface for FoundationalBoundaryReceiptSurface {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryReceiptSurface`
 note: required by a bound in `boundary_summary_category_of`
- --> src/boundary_artifacts/categories.rs
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/categories.rs
   |
   | pub fn boundary_summary_category_of<S>(surface: &S) -> FoundationalBoundaryArtifactCategory
   |        ---------------------------- required by a bound in this function

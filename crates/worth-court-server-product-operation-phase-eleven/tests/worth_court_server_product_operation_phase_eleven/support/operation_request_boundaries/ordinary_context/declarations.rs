@@ -1,21 +1,39 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_compat_http_phase_three_runtime as compat_http_phase_three_runtime};
+pub(crate) use worth_testkit_server::shared_support_compat_http_phase_three_runtime as compat_http_phase_three_runtime;
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+pub(crate) use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+pub(crate) use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions};
+pub(crate) use worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions;
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_worth_native_runtime as worth_native_runtime};
+pub(crate) use worth_testkit_server::shared_support_worth_native_runtime as worth_native_runtime;
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityMutationExecutionInput, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationAuthorityDeclaration, worth_server::WorthServerOperationAuthorizationPolicy, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRegistration, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerQueryOperation, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerSuccessKind, worth_server::WorthServerSurfaceFamily};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityMutationExecutionInput,
+    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig,
+    worth_server::WorthServerOperationAuthorityDeclaration,
+    worth_server::WorthServerOperationAuthorizationPolicy,
+    worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRegistration,
+    worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryHandoffDenial,
+    worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerQueryOperation,
+    worth_server::WorthServerRequestContextConfig, worth_server::WorthServerSuccessKind,
+    worth_server::WorthServerSurfaceFamily,
+};
 
-pub(crate) use {worth_testkit_server::shared_support_compat_http_phase_three_runtime::compat_mutation_success, worth_testkit_server::shared_support_compat_http_phase_three_runtime::insert_task, worth_testkit_server::shared_support_compat_http_phase_three_runtime::single_insert_body};
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_real_mutation::RealMutationWorkspaceProvider};
-pub(crate) use {worth_testkit_server::shared_support_worth_native_assertions::worth_native_session};
+pub(crate) use worth_testkit_server::shared_support_query_handoff_runtime::runtime_real_mutation::RealMutationWorkspaceProvider;
+pub(crate) use worth_testkit_server::shared_support_worth_native_assertions::worth_native_session;
+pub(crate) use {
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime::compat_mutation_success,
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime::insert_task,
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime::single_insert_body,
+};
 
 pub(crate) fn build_operation_name_guarded_server() -> WorthServer {
     worth_server::WorthServer::builder()
@@ -25,7 +43,9 @@ pub(crate) fn build_operation_name_guarded_server() -> WorthServer {
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -73,7 +93,9 @@ pub(crate) fn operation_name_guarded_registrations() -> Vec<WorthServerOperation
                 "derive-from-request",
             ),
         )
-        .with_authorization_policy(worth_server::WorthServerOperationAuthorizationPolicy::allow_authenticated())])
+        .with_authorization_policy(
+            worth_server::WorthServerOperationAuthorizationPolicy::allow_authenticated(),
+        )])
         .collect()
 }
 

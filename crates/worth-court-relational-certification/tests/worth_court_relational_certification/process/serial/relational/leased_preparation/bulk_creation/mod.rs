@@ -1,4 +1,10 @@
-pub(crate) use {worth_execution::ExecutionAllocationPolicy as AllocationPolicy, worth_relational::facade::transactions::AspectFieldPatch, worth_foundational::facade::AspectValue, worth_relational::facade::transactions::BulkEntityCreateIntent, worth_execution::CancellationToken, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::identity::KindId, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::transactions::WorkerIntentBatch, crate::leased_preparation::ordinary_context::authority, crate::leased_preparation::ordinary_context::lease_request, crate::leased_preparation::ordinary_context::serial, crate::leased_preparation::ordinary_context::support};
+pub(crate) use {
+    crate::leased_preparation::ordinary_context::authority,
+    crate::leased_preparation::ordinary_context::lease_request,
+    crate::leased_preparation::ordinary_context::serial,
+    worth_relational::facade::identity::KindId,
+    worth_relational::facade::transactions::BulkEntityCreateIntent,
+};
 
 #[test]
 fn leased_bulk_creation_matches_serial_canonical_patch() {
@@ -15,13 +21,18 @@ fn leased_bulk_creation_matches_serial_canonical_patch() {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> worth_relational::facade::transactions::CommitResult {
         let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-            .schema_registry(crate::leased_preparation::ordinary_context::support::demo_schema_registry())
+            .schema_registry(
+                crate::leased_preparation::ordinary_context::support::demo_schema_registry(),
+            )
             .build()
             .expect("valid native runtime configuration");
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).expect("main basis");
         let mut transaction = runtime
-            .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+            .begin_branch_transaction(
+                &basis,
+                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            )
             .expect("admitted basis");
         let keys = (0..64)
             .map(|index| worth_relational::facade::symbols::ClientKey::raw(format!("bulk-{index}")))
@@ -29,21 +40,28 @@ fn leased_bulk_creation_matches_serial_canonical_patch() {
         let fields = (0..64)
             .map(|index| {
                 worth_relational::facade::transactions::AspectFieldPatch::from_locator(
-                    crate::leased_preparation::ordinary_context::support::aspect_field_locator("name"),
+                    crate::leased_preparation::ordinary_context::support::aspect_field_locator(
+                        "name",
+                    ),
                     worth_foundational::facade::AspectValue::String(format!("bulk-{index}").into()),
                 )
             })
             .collect();
         transaction
             .push_batch(
-                worth_relational::facade::transactions::WorkerIntentBatch::new("leased-bulk").push(worth_relational::facade::transactions::MutationIntent::Create(
-                    worth_relational::facade::transactions::CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                        partition_id: worth_relational::facade::identity::PartitionId::main(),
-                        kind_id: KindId(1),
-                        client_keys: keys,
-                        field_patches: fields,
-                    }),
-                )),
+                worth_relational::facade::transactions::WorkerIntentBatch::new("leased-bulk").push(
+                    worth_relational::facade::transactions::MutationIntent::Create(
+                        worth_relational::facade::transactions::CreateIntent::BulkEntities(
+                            BulkEntityCreateIntent {
+                                partition_id: worth_relational::facade::identity::PartitionId::main(
+                                ),
+                                kind_id: KindId(1),
+                                client_keys: keys,
+                                field_patches: fields,
+                            },
+                        ),
+                    ),
+                ),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("bulk transaction stages");
@@ -54,7 +72,10 @@ fn leased_bulk_creation_matches_serial_canonical_patch() {
 
     let serial = commit_bulk(execution);
     let lease = authority()
-        .request_lease(lease_request(32 * 1024 * 1024, worth_execution::CancellationToken::new()))
+        .request_lease(lease_request(
+            32 * 1024 * 1024,
+            worth_execution::CancellationToken::new(),
+        ))
         .expect("bulk lease admitted");
     let leased = commit_bulk(&worth_execution::ExecutionRequest::leased(&lease));
     assert_eq!(serial.changed_records.len(), 64);

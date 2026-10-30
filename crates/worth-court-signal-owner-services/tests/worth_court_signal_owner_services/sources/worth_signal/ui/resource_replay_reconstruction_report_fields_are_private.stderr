@@ -1,5 +1,5 @@
 error: cannot construct `ResourceReplayReconstructionReport` with struct literal syntax due to private fields
-  --> tests/ui/resource_replay_reconstruction_report_fields_are_private.rs:10:19
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_reconstruction_report_fields_are_private.rs:10:19
    |
 10 |     let _forged = ResourceReplayReconstructionReport {
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

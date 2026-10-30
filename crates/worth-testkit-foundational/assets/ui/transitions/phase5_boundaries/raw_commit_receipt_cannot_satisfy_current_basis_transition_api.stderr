@@ -1,23 +1,23 @@
 warning: unreachable statement
- --> tests/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs:5:5
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs
   |
-4 |     let raw: worth_foundational::FoundationalCommitReceiptArtifact = panic!();
+  |     let raw: worth_foundational::FoundationalCommitReceiptArtifact = panic!();
   |                                                                      -------- any code following this expression is unreachable
-5 |     wants_current_basis(raw);
+  |     wants_current_basis(raw);
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
   |
   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0308]: mismatched types
- --> tests/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs:5:25
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs
   |
-5 |     wants_current_basis(raw);
+  |     wants_current_basis(raw);
   |     ------------------- ^^^ expected `CurrentBasisCommitReceiptArtifact`, found `FoundationalCommitReceiptArtifact`
   |     |
   |     arguments to this function are incorrect
   |
 note: function defined here
- --> tests/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs:1:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/raw_commit_receipt_cannot_satisfy_current_basis_transition_api.rs
   |
-1 | fn wants_current_basis(_value: worth_foundational::CurrentBasisCommitReceiptArtifact) {}
+  | fn wants_current_basis(_value: worth_foundational::CurrentBasisCommitReceiptArtifact) {}
   |    ^^^^^^^^^^^^^^^^^^^ -------------------------------------------------------------

@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/subscription_resume_rejects_unsealed_stream_checkpoint_type.rs:8:68
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_resume_rejects_unsealed_stream_checkpoint_type.rs:8:68
   |
 8 |     let _ = runtime.admit_subscription_resume(active_subscription, unsealed_stream_checkpoint);
   |                     -------------------------                      ^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&BridgeSubscriptionCheckpoint`, found `&str`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&BridgeSubscriptionCheckpoint`
              found reference `&str`
 note: method defined here
- --> src/facade/runtime/subscription.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription.rs
   |
   |     pub fn admit_subscription_resume(
   |            ^^^^^^^^^^^^^^^^^^^^^^^^^

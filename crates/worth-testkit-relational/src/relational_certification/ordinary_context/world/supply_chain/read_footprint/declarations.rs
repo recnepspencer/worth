@@ -1,4 +1,4 @@
-pub use {std::collections::BTreeSet};
+pub use std::collections::BTreeSet;
 
 pub use {crate::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, crate::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaPrecondition};
 pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion};

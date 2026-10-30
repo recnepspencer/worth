@@ -1,10 +1,12 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::scoped_merge_posture::*;
-use {std::fmt::Debug};
-use {worth_foundational::FoundationalMergeAdmissionDenial, worth_foundational::FoundationalMergeConstructionDenial, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalScopedMergeUnavailableOutcomeCategory, worth_foundational::FoundationalScopedMergeUnavailablePosture, worth_foundational::FoundationalScopedMergeUnavailableReason};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::scoped_merge_posture::*;
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 #[test]
 fn scoped_unavailable_reasons_map_to_their_required_proof_categories() {
@@ -18,7 +20,8 @@ fn scoped_unavailable_reasons_map_to_their_required_proof_categories() {
         worth_foundational::FoundationalScopedMergeUnavailableReason::RuntimeDoesNotSupportSelectedAspects,
     );
     assert_failed_unavailable(
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope"),
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("node scope"),
         worth_foundational::FoundationalScopedMergeUnavailableReason::MaterializerUnavailable,
     );
     assert_rebind_unavailable(
@@ -27,7 +30,8 @@ fn scoped_unavailable_reasons_map_to_their_required_proof_categories() {
         worth_foundational::FoundationalScopedMergeUnavailableReason::IdentityCorrespondenceUnavailable,
     );
     assert_stale_unavailable(
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope"),
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("node scope"),
         worth_foundational::FoundationalScopedMergeUnavailableReason::RetainedProofUnavailable,
     );
 }
@@ -79,9 +83,11 @@ fn scoped_unavailable_constructor_denies_correspondence_unavailable_without_aspe
 #[test]
 fn scoped_unavailable_admission_denies_mismatched_scope_or_branch_basis() {
     let candidate_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("node scope");
     let different_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("material")]).expect("node scope");
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("material")])
+            .expect("node scope");
     let scope_mismatch = scoped_unavailable(
         different_scope,
         worth_foundational::FoundationalScopedMergeUnavailableReason::RuntimeDoesNotSupportSelectedNodes,
@@ -117,8 +123,8 @@ fn scoped_unavailable_admission_denies_mismatched_scope_or_branch_basis() {
 
 #[test]
 fn scoped_unavailable_is_not_invalid_scope_denial_or_admitted_scope_evidence() {
-    let scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+    let scope = worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+        .expect("node scope");
     let outcome = scoped_candidate(scope.clone()).scope_unavailable(scoped_unavailable(
         scope,
         worth_foundational::FoundationalScopedMergeUnavailableReason::RuntimeDoesNotSupportSelectedNodes,

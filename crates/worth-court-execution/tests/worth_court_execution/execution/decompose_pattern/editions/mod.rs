@@ -1,4 +1,13 @@
-pub(crate) use {worth_execution::DecomposeFailure, worth_execution::DecomposeInputDenial, worth_execution::DecomposeKernelEditions, crate::decompose_pattern::ordinary_context::EDITIONS, worth_execution::InterfaceSolution, worth_execution::MapKernelFailure, crate::decompose_pattern::ordinary_context::back, crate::decompose_pattern::ordinary_context::base_subdomains, crate::decompose_pattern::ordinary_context::decomposer, crate::decompose_pattern::ordinary_context::interface, crate::decompose_pattern::ordinary_context::interior, crate::decompose_pattern::ordinary_context::subdomain_map};
+pub(crate) use {
+    crate::decompose_pattern::ordinary_context::back,
+    crate::decompose_pattern::ordinary_context::base_subdomains,
+    crate::decompose_pattern::ordinary_context::decomposer,
+    crate::decompose_pattern::ordinary_context::interface,
+    crate::decompose_pattern::ordinary_context::interior,
+    crate::decompose_pattern::ordinary_context::subdomain_map,
+    crate::decompose_pattern::ordinary_context::EDITIONS, worth_execution::DecomposeKernelEditions,
+    worth_execution::InterfaceSolution, worth_execution::MapKernelFailure,
+};
 
 #[test]
 fn changed_back_callback_edition_invalidates_empty_input_reuse() {

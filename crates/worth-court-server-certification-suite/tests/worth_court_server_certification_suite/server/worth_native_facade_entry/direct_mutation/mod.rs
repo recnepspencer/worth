@@ -1,14 +1,14 @@
-#[allow(unused_imports)] use crate::worth_native_facade_entry::ordinary_context::direct_mutation::*;
-use {std::sync::atomic::Ordering};
-use {worth_proof::TransitionOutcome};
-use {worth_query::facade::foundation::QueryExternalIdentityToken, worth_query::facade::foundation::WorthQueryEntityIdentity};
-use {worth_query::facade::runtime::WorthQueryAspectMutationBuilder, worth_query::facade::runtime::WorthQueryExistingEntityTarget, worth_query::facade::runtime::WorthQueryExistingTruthBindingAuthorityLabel, worth_query::facade::runtime::WorthQueryExistingTruthTargetBinding, worth_query::facade::runtime::WorthQueryMutationAuthorityIdentity, worth_query::facade::runtime::WorthQueryRuntimeBackendPosture, worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily, worth_query::facade::runtime::WorthQueryRuntimeFamilySupport, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile, worth_query::facade::runtime::WorthQueryWriteCommand};
-use {worth_server::WorthServerDirectMutationOutcome, worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerQueryOperation, worth_server::WorthServerResponseInput, worth_server::WorthServerSuccessKind};
+#[allow(unused_imports)]
+use crate::worth_native_facade_entry::ordinary_context::direct_mutation::*;
 
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_real_mutation::RealMutationWorkspaceProvider};
-use {worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest, worth_testkit_server::shared_support_worth_native_assertions::operator_evidence_record, worth_testkit_server::shared_support_worth_native_assertions::response_provenance_digest, worth_testkit_server::shared_support_worth_native_assertions::worth_native_session};
-use {worth_testkit_server::shared_support_worth_native_runtime::build_server, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_counting_workspace};
-
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_real_mutation::RealMutationWorkspaceProvider;
+use worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_counting_workspace;
+use {
+    worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::operator_evidence_record,
+    worth_testkit_server::shared_support_worth_native_assertions::response_provenance_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::worth_native_session,
+};
 
 #[test]
 fn direct_single_mutation_returns_provenance_bearing_result_boundary() {
@@ -17,7 +17,10 @@ fn direct_single_mutation_returns_provenance_bearing_result_boundary() {
         true,
     );
     let mutation = direct_mutation_success(worth_native_session(&server).direct().mutate(
-        &worth_server::WorthServerQueryOperation::single_mutation("tasks.insert", insert_task("task-1")),
+        &worth_server::WorthServerQueryOperation::single_mutation(
+            "tasks.insert",
+            insert_task("task-1"),
+        ),
     ));
 
     assert_eq!(
@@ -93,15 +96,19 @@ fn direct_batch_mutation_preserves_batch_receipt_and_inspection_digests() {
 #[test]
 fn direct_mutation_denies_before_write_when_write_family_is_unavailable() {
     let (server, attempted_writes) = build_server_with_profiled_counting_workspace(
-        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
-            worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
-                worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Write,
-                "write is intentionally denied in this hostile mutation profile",
+        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile()
+            .with_family_support(
+                worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
+                    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Write,
+                    "write is intentionally denied in this hostile mutation profile",
+                ),
             ),
-        ),
     );
     let denial = direct_mutation_denied(worth_native_session(&server).direct().mutate(
-        &worth_server::WorthServerQueryOperation::single_mutation("tasks.insert", insert_task("task-1")),
+        &worth_server::WorthServerQueryOperation::single_mutation(
+            "tasks.insert",
+            insert_task("task-1"),
+        ),
     ));
 
     assert_eq!(
@@ -116,12 +123,9 @@ fn direct_mutation_denies_before_write_when_write_family_is_unavailable() {
         0,
         "unsupported write should deny direct mutation before any write attempt"
     );
-    let denial_response =
-        server
-            .responses()
-            .shape_with_defaults(worth_server::WorthServerResponseInput::query_handoff_denied(
-                denial.clone(),
-            ));
+    let denial_response = server.responses().shape_with_defaults(
+        worth_server::WorthServerResponseInput::query_handoff_denied(denial.clone()),
+    );
     let denial_evidence = operator_evidence_record(&server, denial_response);
     assert_eq!(
         denial_evidence
@@ -152,15 +156,19 @@ fn direct_mutation_denies_before_write_when_write_family_is_unavailable() {
 #[test]
 fn direct_mutation_denies_before_write_when_receipt_inspection_family_is_unavailable() {
     let (server, attempted_writes) = build_server_with_profiled_counting_workspace(
-        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
-            worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
-                worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Inspect,
-                "inspect is intentionally denied in this hostile mutation profile",
+        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile()
+            .with_family_support(
+                worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
+                    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Inspect,
+                    "inspect is intentionally denied in this hostile mutation profile",
+                ),
             ),
-        ),
     );
     let denial = direct_mutation_denied(worth_native_session(&server).direct().mutate(
-        &worth_server::WorthServerQueryOperation::single_mutation("tasks.insert", insert_task("task-1")),
+        &worth_server::WorthServerQueryOperation::single_mutation(
+            "tasks.insert",
+            insert_task("task-1"),
+        ),
     ));
 
     assert_eq!(
@@ -181,7 +189,10 @@ fn direct_mutation_denies_before_write_when_receipt_inspection_family_is_unavail
 fn direct_mutation_preserves_mutation_lane_support_and_operator_classification() {
     let server = build_dual_surface_mutation_server();
     let direct = direct_mutation_success(worth_native_session(&server).direct().mutate(
-        &worth_server::WorthServerQueryOperation::single_mutation("tasks.insert", insert_task("task-1")),
+        &worth_server::WorthServerQueryOperation::single_mutation(
+            "tasks.insert",
+            insert_task("task-1"),
+        ),
     ));
     let compat = compat_mutation_success(server.compat_http().mutate(
         worth_server::WorthServerCompatibilityMutationExecutionInput::new(

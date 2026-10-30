@@ -1,9 +1,5 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::SignalBranchRetirementReason};
-pub(crate) use {worth_signal::facade::branch::ManagedSignalBranchReferenceAdmissionDenial, worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchBasisObservationDenial, worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerLifecycleObservation};
-
-pub(crate) use {crate::signal_owner_services::ordinary_context::signal_world::observation::neutral_basis};
-pub(crate) use {crate::signal_owner_services::ordinary_context::signal_world::world::populated_world, crate::signal_owner_services::ordinary_context::signal_world::world::CargoContext, crate::signal_owner_services::ordinary_context::signal_world::world::CargoOutputs};
+pub(crate) use crate::signal_owner_services::ordinary_context::signal_world::observation::neutral_basis;
+pub(crate) use crate::signal_owner_services::ordinary_context::signal_world::world::populated_world;
 
 #[test]
 fn same_branch_stale_and_retired_postures_are_exact_and_recoverable() {
@@ -118,7 +114,9 @@ fn unrelated_branch_mutations_make_progress_and_keep_effects_separate() {
         neutral_basis(&maintenance_after).generation
     );
 
-    let mut storm_followup_context = crate::signal_owner_services::ordinary_context::signal_world::world::CargoContext::baseline();
+    let mut storm_followup_context =
+        crate::signal_owner_services::ordinary_context::signal_world::world::CargoContext::baseline(
+        );
     let (storm_followup, storm_followup_outputs) = world
         .advance(
             storm.advanced_basis(),
@@ -127,7 +125,11 @@ fn unrelated_branch_mutations_make_progress_and_keep_effects_separate() {
             crate::signal_owner_services::ordinary_context::signal_world::world::STORM_SEVERITY,
         )
         .expect("the storm branch remains independently writable after maintenance");
-    assert_eq!(storm_followup_outputs, crate::signal_owner_services::ordinary_context::signal_world::world::CargoOutputs::baseline());
+    assert_eq!(
+        storm_followup_outputs,
+        crate::signal_owner_services::ordinary_context::signal_world::world::CargoOutputs::baseline(
+        )
+    );
     let storm_followup_reference = world.reference(storm_followup.advanced_basis());
     let storm_followup_after = world
         .observe(&storm_followup_reference)
@@ -155,14 +157,17 @@ fn retired_child_denies_new_work_while_the_owner_and_unrelated_branch_remain_hea
     let child_reference = world.reference(&child_basis);
     let main_reference = world.reference(&world.main_basis);
     let lifecycle = world.services.lifecycle_port();
-    let plan = match lifecycle
-        .plan_retirement_exact(child_basis, worth_signal::facade::branch::SignalBranchRetirementReason::Superseded)
-    {
+    let plan = match lifecycle.plan_retirement_exact(
+        child_basis,
+        worth_signal::facade::branch::SignalBranchRetirementReason::Superseded,
+    ) {
         worth_proof::TransitionOutcome::Success(plan) => plan,
         other => panic!("the child retirement plan must be owner-issued: {other:?}"),
     };
-    let receipt = match lifecycle.retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token())
-    {
+    let receipt = match lifecycle.retire_exact(
+        plan,
+        &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+    ) {
         worth_proof::TransitionOutcome::Success(receipt) => receipt,
         other => panic!("the child retirement must perform: {other:?}"),
     };

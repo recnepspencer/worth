@@ -1,4 +1,31 @@
-pub use {std::sync::atomic::Ordering, worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts, worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts, crate::shared_support_compat_http_phase_three_runtime::StatefulCountingMutationRuntimeBackend, worth_query::facade::runtime::SubscriptionActivationInput, worth_query::facade::runtime::SubscriptionActivationReceipt, worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation, worth_query::facade::foundation::WorthQueryCommitIdentity, worth_query::facade::foundation::WorthQueryEntity, worth_query::facade::foundation::WorthQueryEntityIdentity, worth_query::facade::runtime::WorthQueryIntentDeclaration, worth_query::facade::runtime::WorthQueryIntentExecution, worth_query::facade::runtime::WorthQueryLiveArtifactTarget, worth_query::facade::foundation::WorthQueryLivePatch, worth_query::facade::foundation::WorthQueryMutationDelta, worth_query::facade::foundation::WorthQueryMutationKind, worth_query::facade::foundation::WorthQueryMutationReceipt, worth_query::facade::runtime::WorthQueryPreviewBasisAdmission, worth_query::facade::runtime::WorthQueryRuntimeBackend, worth_query::facade::runtime::WorthQueryRuntimeError, worth_query::facade::runtime::WorthQueryRuntimeEvidenceAuthority, worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile, worth_query::facade::runtime::WorthQuerySessionLabel, worth_query::facade::foundation::WorthQuerySnapshotIdentity, worth_query::facade::foundation::WorthQueryWorkspaceError, worth_query::facade::runtime::WorthQueryWriteReceipt};
+pub use {
+    crate::shared_support_compat_http_phase_three_runtime::StatefulCountingMutationRuntimeBackend,
+    std::sync::atomic::Ordering, worth_query::facade::foundation::WorthQueryCommitIdentity,
+    worth_query::facade::foundation::WorthQueryEntity,
+    worth_query::facade::foundation::WorthQueryEntityIdentity,
+    worth_query::facade::foundation::WorthQueryLivePatch,
+    worth_query::facade::foundation::WorthQueryMutationDelta,
+    worth_query::facade::foundation::WorthQueryMutationKind,
+    worth_query::facade::foundation::WorthQueryMutationReceipt,
+    worth_query::facade::foundation::WorthQuerySnapshotIdentity,
+    worth_query::facade::foundation::WorthQueryWorkspaceError,
+    worth_query::facade::runtime::SubscriptionActivationInput,
+    worth_query::facade::runtime::SubscriptionActivationReceipt,
+    worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation,
+    worth_query::facade::runtime::WorthQueryIntentDeclaration,
+    worth_query::facade::runtime::WorthQueryIntentExecution,
+    worth_query::facade::runtime::WorthQueryLiveArtifactTarget,
+    worth_query::facade::runtime::WorthQueryPreviewBasisAdmission,
+    worth_query::facade::runtime::WorthQueryRuntimeBackend,
+    worth_query::facade::runtime::WorthQueryRuntimeError,
+    worth_query::facade::runtime::WorthQueryRuntimeEvidenceAuthority,
+    worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+    worth_query::facade::runtime::WorthQuerySessionLabel,
+    worth_query::facade::runtime::WorthQueryWriteReceipt,
+    worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
+    worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts,
+};
 
 impl worth_query::facade::runtime::WorthQuerySettlementRecoveryBackend
     for StatefulCountingMutationRuntimeBackend
@@ -61,7 +88,8 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
         _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
-        self.attempted_writes.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.attempted_writes
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         Ok(test_mutation_receipt(
             &command,
             self.next_snapshot_ordinal(),
@@ -156,12 +184,14 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
         receipt: &WorthQueryWriteReceipt,
         authority: &WorthQueryRuntimeEvidenceAuthority,
     ) -> Result<WorthQueryRuntimeInspectionEvidence, WorthQueryWorkspaceError> {
-        Ok(worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence::new(
-            authority,
-            "phase-three-mutation-inspection",
-            receipt.authority_lane(),
-            ["phase-three-mutation-runtime"],
-        ))
+        Ok(
+            worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence::new(
+                authority,
+                "phase-three-mutation-inspection",
+                receipt.authority_lane(),
+                ["phase-three-mutation-runtime"],
+            ),
+        )
     }
 }
 

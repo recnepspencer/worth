@@ -1,9 +1,23 @@
 #[allow(unused_imports)]
-pub(crate) use {crate::reducer_overlap};
-pub(crate) use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::OnceLock};
+pub(crate) use crate::reducer_overlap;
+pub(crate) use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    std::sync::OnceLock,
+};
 
-pub(crate) use {worth_execution::BackInput, worth_execution::CancellationToken, worth_execution::DecomposeKernelEditions, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionDecompose, worth_execution::ExecutionMap, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapPartition};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::BackInput, worth_execution::CancellationToken,
+    worth_execution::DecomposeKernelEditions, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionDecompose,
+    worth_execution::ExecutionMap, worth_execution::InterfaceSolution,
+    worth_execution::InteriorResult, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::MapPartition,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 pub(crate) static AUTHORITY: OnceLock<ExecutionAuthority> = std::sync::OnceLock::new();
 pub(crate) const EDITIONS: DecomposeKernelEditions = DecomposeKernelEditions {
@@ -25,7 +39,11 @@ pub(crate) fn lease(workers: usize) -> worth_execution::ExecutionResourceLease<'
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(workers).unwrap(), None, Some(10_000)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(workers).unwrap(),
+                    None,
+                    Some(10_000),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),
@@ -34,7 +52,9 @@ pub(crate) fn lease(workers: usize) -> worth_execution::ExecutionResourceLease<'
 }
 
 pub(crate) fn input(count: u64) -> ExecutionMap<u64, u64> {
-    let ids: Vec<_> = (1..=count).map(worth_foundational::PartitionIdentity::new).collect();
+    let ids: Vec<_> = (1..=count)
+        .map(worth_foundational::PartitionIdentity::new)
+        .collect();
     let partitions = ids
         .iter()
         .copied()

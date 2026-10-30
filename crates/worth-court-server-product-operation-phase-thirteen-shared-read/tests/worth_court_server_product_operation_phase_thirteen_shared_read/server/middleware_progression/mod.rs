@@ -1,6 +1,5 @@
-#[allow(unused_imports)] use crate::middleware_progression::ordinary_context::*;
-use {worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
-use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerAdmission, worth_server::WorthServerConfig, worth_server::WorthServerDenial, worth_server::WorthServerDenialCode, worth_server::WorthServerDenialPriority, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent, worth_server::WorthServerPipelineStep, worth_server::WorthServerPreparedQueryHandoffKind, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+#[allow(unused_imports)]
+use crate::middleware_progression::ordinary_context::*;
 
 #[test]
 fn admit_returns_ready_admission_with_prepared_query_handoff_intent() {
@@ -24,10 +23,12 @@ fn admit_returns_ready_admission_with_prepared_query_handoff_intent() {
             .expect("request context input should validate"),
     );
 
-    let admission = server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-        resolved_request_context.clone(),
-        worth_server::WorthServerPipelineIntent::query_read("users.profile"),
-    ));
+    let admission = server
+        .middleware()
+        .admit(worth_server::WorthServerPipelineInput::new(
+            resolved_request_context.clone(),
+            worth_server::WorthServerPipelineIntent::query_read("users.profile"),
+        ));
 
     let admission = match admission {
         worth_proof::TransitionOutcome::Success(admitted) => admitted,
@@ -61,30 +62,36 @@ fn admit_preserves_validation_denial_across_surface_families() {
     );
 
     let worth_native = denied(
-        server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-            resolve_request_context(
-                &server,
-                request_input_builder()
-                    .with_surface_family(worth_server::WorthServerSurfaceFamily::WorthNative)
-                    .with_transport_class(worth_server::WorthServerTransportClass::WorthNativeInProcess)
-                    .build()
-                    .expect("request context input should validate"),
-            ),
-            worth_server::WorthServerPipelineIntent::query_mutation("users.rename"),
-        )),
+        server
+            .middleware()
+            .admit(worth_server::WorthServerPipelineInput::new(
+                resolve_request_context(
+                    &server,
+                    request_input_builder()
+                        .with_surface_family(worth_server::WorthServerSurfaceFamily::WorthNative)
+                        .with_transport_class(
+                            worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                        )
+                        .build()
+                        .expect("request context input should validate"),
+                ),
+                worth_server::WorthServerPipelineIntent::query_mutation("users.rename"),
+            )),
     );
     let compat_http = denied(
-        server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-            resolve_request_context(
-                &server,
-                request_input_builder()
-                    .with_surface_family(worth_server::WorthServerSurfaceFamily::CompatHttp)
-                    .with_transport_class(worth_server::WorthServerTransportClass::CompatHttp)
-                    .build()
-                    .expect("request context input should validate"),
-            ),
-            worth_server::WorthServerPipelineIntent::query_mutation("users.rename"),
-        )),
+        server
+            .middleware()
+            .admit(worth_server::WorthServerPipelineInput::new(
+                resolve_request_context(
+                    &server,
+                    request_input_builder()
+                        .with_surface_family(worth_server::WorthServerSurfaceFamily::CompatHttp)
+                        .with_transport_class(worth_server::WorthServerTransportClass::CompatHttp)
+                        .build()
+                        .expect("request context input should validate"),
+                ),
+                worth_server::WorthServerPipelineIntent::query_mutation("users.rename"),
+            )),
     );
 
     assert_eq!(worth_native, compat_http);
@@ -107,8 +114,12 @@ fn admit_uses_canonical_denial_priority_under_overlapping_failures() {
     let server = test_server(
         worth_server::WorthServerRequestContextConfig::builder()
             .with_preview_targeting_enabled(true)
-            .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
-            .with_maximum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+            .with_default_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+            )
+            .with_maximum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+            )
             .build()
             .expect("request context config should validate"),
         worth_server::WorthServerMiddlewareConfig::builder()
@@ -129,7 +140,9 @@ fn admit_uses_canonical_denial_priority_under_overlapping_failures() {
                     .with_surface_family(worth_server::WorthServerSurfaceFamily::CompatHttp)
                     .with_transport_class(worth_server::WorthServerTransportClass::CompatHttp)
                     .with_preview_id("preview-1")
-                    .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+                    .with_diagnostics_profile(
+                        worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+                    )
                     .build()
                     .expect("request context input should validate"),
             ),
@@ -140,9 +153,13 @@ fn admit_uses_canonical_denial_priority_under_overlapping_failures() {
                 &server,
                 request_input_builder()
                     .with_surface_family(worth_server::WorthServerSurfaceFamily::WorthNative)
-                    .with_transport_class(worth_server::WorthServerTransportClass::WorthNativeInProcess)
+                    .with_transport_class(
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
+                    )
                     .with_preview_id("preview-2")
-                    .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+                    .with_diagnostics_profile(
+                        worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+                    )
                     .build()
                     .expect("request context input should validate"),
             ),
@@ -155,7 +172,9 @@ fn admit_uses_canonical_denial_priority_under_overlapping_failures() {
                     .with_surface_family(worth_server::WorthServerSurfaceFamily::CompatHttp)
                     .with_transport_class(worth_server::WorthServerTransportClass::CompatHttp)
                     .with_preview_id("preview-3")
-                    .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                    .with_diagnostics_profile(
+                        worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                    )
                     .build()
                     .expect("request context input should validate"),
             ),
@@ -169,8 +188,14 @@ fn admit_uses_canonical_denial_priority_under_overlapping_failures() {
             denial.code(),
             worth_server::WorthServerDenialCode::PreviewBranchAccessDenied
         );
-        assert_eq!(denial.priority(), worth_server::WorthServerDenialPriority::Authorization);
-        assert_eq!(denial.step(), worth_server::WorthServerPipelineStep::AuthorizationPosture);
+        assert_eq!(
+            denial.priority(),
+            worth_server::WorthServerDenialPriority::Authorization
+        );
+        assert_eq!(
+            denial.step(),
+            worth_server::WorthServerPipelineStep::AuthorizationPosture
+        );
         assert_eq!(
             denial.detail(),
             "preview branch access is denied by middleware authorization posture"
@@ -182,8 +207,12 @@ fn admit_uses_canonical_denial_priority_under_overlapping_failures() {
 fn admit_denies_compat_http_diagnostics_budget_before_validation_when_authorization_allows() {
     let server = test_server(
         worth_server::WorthServerRequestContextConfig::builder()
-            .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
-            .with_maximum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+            .with_default_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+            )
+            .with_maximum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+            )
             .build()
             .expect("request context config should validate"),
         worth_server::WorthServerMiddlewareConfig::builder()
@@ -197,24 +226,34 @@ fn admit_denies_compat_http_diagnostics_budget_before_validation_when_authorizat
     );
 
     let denial = denied(
-        server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-            resolve_request_context(
-                &server,
-                request_input_builder()
-                    .with_surface_family(worth_server::WorthServerSurfaceFamily::CompatHttp)
-                    .with_transport_class(worth_server::WorthServerTransportClass::CompatHttp)
-                    .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
-                    .build()
-                    .expect("request context input should validate"),
-            ),
-            worth_server::WorthServerPipelineIntent::query_mutation("users.rename"),
-        )),
+        server
+            .middleware()
+            .admit(worth_server::WorthServerPipelineInput::new(
+                resolve_request_context(
+                    &server,
+                    request_input_builder()
+                        .with_surface_family(worth_server::WorthServerSurfaceFamily::CompatHttp)
+                        .with_transport_class(worth_server::WorthServerTransportClass::CompatHttp)
+                        .with_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+                        )
+                        .build()
+                        .expect("request context input should validate"),
+                ),
+                worth_server::WorthServerPipelineIntent::query_mutation("users.rename"),
+            )),
     );
 
     assert_eq!(
         denial.code(),
         worth_server::WorthServerDenialCode::CompatHttpDiagnosticsBudgetExceeded
     );
-    assert_eq!(denial.priority(), worth_server::WorthServerDenialPriority::Budget);
-    assert_eq!(denial.step(), worth_server::WorthServerPipelineStep::BudgetPosture);
+    assert_eq!(
+        denial.priority(),
+        worth_server::WorthServerDenialPriority::Budget
+    );
+    assert_eq!(
+        denial.step(),
+        worth_server::WorthServerPipelineStep::BudgetPosture
+    );
 }

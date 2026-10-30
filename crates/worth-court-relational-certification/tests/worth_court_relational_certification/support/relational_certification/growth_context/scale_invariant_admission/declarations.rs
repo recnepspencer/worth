@@ -1,6 +1,5 @@
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::sync::atomic::Ordering};
-
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::sync::atomic::Ordering;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::graph_composition_probe::registration};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::baseline_audit::audit as audit_supply_chain_baseline, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_budget_and_invariant_catalog_and_custom_invariants, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::head_for_supply_chain_branch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition};
@@ -107,7 +106,9 @@ pub(crate) fn contains_native_uniqueness(
         execution.results().iter().any(|result| {
             matches!(
                 &result.rule,
-                worth_relational::facade::runtime::InvariantReportedRule::Native(worth_relational::facade::runtime::InvariantRule::UniqueEntityAspectField { .. })
+                worth_relational::facade::runtime::InvariantReportedRule::Native(
+                    worth_relational::facade::runtime::InvariantRule::UniqueEntityAspectField { .. }
+                )
             )
         })
     })
@@ -192,14 +193,18 @@ pub(crate) fn vessel_fields(call_sign: &str) -> AspectFieldPatch {
             worth_foundational::facade::AspectKey::new("call_sign").expect("call-sign aspect"),
             worth_foundational::facade::FieldKey::new("call_sign").expect("call-sign field"),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw(call_sign.to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw(call_sign.to_owned()),
+        ),
     );
     fields.insert(
         planned_single_field_locator(
             worth_foundational::facade::AspectKey::new("class").expect("class aspect"),
             worth_foundational::facade::FieldKey::new("class").expect("class field"),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw("Feeder".to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw("Feeder".to_owned()),
+        ),
     );
     fields.insert(
         planned_single_field_locator(
@@ -213,7 +218,9 @@ pub(crate) fn vessel_fields(call_sign: &str) -> AspectFieldPatch {
             worth_foundational::facade::AspectKey::new("posture").expect("posture aspect"),
             worth_foundational::facade::FieldKey::new("posture").expect("posture field"),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw("Open".to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw("Open".to_owned()),
+        ),
     );
     worth_relational::facade::transactions::AspectFieldPatch::new(fields)
 }

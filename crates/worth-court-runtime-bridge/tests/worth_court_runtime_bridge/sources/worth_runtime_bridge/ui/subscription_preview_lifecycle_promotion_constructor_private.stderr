@@ -1,10 +1,10 @@
 error[E0624]: associated function `admit` is private
- --> tests/ui/subscription_preview_lifecycle_promotion_constructor_private.rs:4:69
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_preview_lifecycle_promotion_constructor_private.rs:4:69
   |
 4 |       let _constructor = BridgeSubscriptionPreviewLifecyclePromotion::admit;
   |                                                                       ^^^^^ private associated function
   |
- ::: src/subscription/preview_lifecycle/promotion.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/preview_lifecycle/promotion.rs
   |
   | /     pub(crate) fn admit(
   | |         preview_active: &BridgePreviewActiveSubscription,

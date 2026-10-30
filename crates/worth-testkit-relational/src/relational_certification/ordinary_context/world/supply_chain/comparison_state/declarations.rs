@@ -168,7 +168,10 @@ impl ObservedSupplyChainState {
         self.accepted = accepted;
     }
 
-    pub fn set_history(&mut self, history: Vec<crate::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::AcceptedDelta>) {
+    pub fn set_history(
+        &mut self,
+        history: Vec<crate::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::AcceptedDelta>,
+    ) {
         self.history = history;
     }
 

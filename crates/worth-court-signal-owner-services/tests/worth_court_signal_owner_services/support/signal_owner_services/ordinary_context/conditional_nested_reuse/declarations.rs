@@ -1,7 +1,26 @@
-pub(crate) use {worth_proof::ConditionalEvaluationSource, worth_proof::ConditionalSourceObservationOwner};
-pub(crate) use {worth_signal::facade::branch::SignalConditionalServiceExecutionRequest as Request, worth_signal::facade::branch::SignalOwnerCancellationSource};
-pub(crate) use {worth_signal::facade::specialist::DefaultComparatorResolver};
-pub(crate) use {worth_signal::facade::Aspect, worth_signal::facade::AspectMask, worth_signal::facade::AspectVersion, worth_signal::facade::ConditionEvaluationContext, worth_signal::facade::DependencyEdge, worth_signal::facade::InstalledSignalConditionDecision, worth_signal::facade::InstalledSignalConditionIdentity, worth_signal::facade::InstalledSignalConditionResolver, worth_signal::facade::InstalledSignalConditionalContract, worth_signal::facade::NodeEvaluationResult, worth_signal::facade::SignalAspectLoweringOwner, worth_signal::facade::SignalConditionalArtifactReuse, worth_signal::facade::SignalConditionalCondition, worth_signal::facade::SignalConditionalContractDefinition, worth_signal::facade::SignalConditionalDecisionClass, worth_signal::facade::SignalConditionalVersionComparator, worth_signal::facade::SignalError, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
+pub(crate) use worth_signal::facade::specialist::DefaultComparatorResolver;
+pub(crate) use {
+    worth_proof::ConditionalEvaluationSource, worth_proof::ConditionalSourceObservationOwner,
+};
+pub(crate) use {
+    worth_signal::facade::branch::SignalConditionalServiceExecutionRequest as Request,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
+pub(crate) use {
+    worth_signal::facade::Aspect, worth_signal::facade::AspectMask,
+    worth_signal::facade::AspectVersion, worth_signal::facade::ConditionEvaluationContext,
+    worth_signal::facade::DependencyEdge, worth_signal::facade::InstalledSignalConditionDecision,
+    worth_signal::facade::InstalledSignalConditionIdentity,
+    worth_signal::facade::InstalledSignalConditionResolver,
+    worth_signal::facade::InstalledSignalConditionalContract,
+    worth_signal::facade::NodeEvaluationResult, worth_signal::facade::SignalAspectLoweringOwner,
+    worth_signal::facade::SignalConditionalArtifactReuse,
+    worth_signal::facade::SignalConditionalCondition,
+    worth_signal::facade::SignalConditionalContractDefinition,
+    worth_signal::facade::SignalConditionalDecisionClass,
+    worth_signal::facade::SignalConditionalVersionComparator, worth_signal::facade::SignalError,
+    worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime,
+};
 
 pub(crate) struct NoPredicate;
 
@@ -29,7 +48,10 @@ pub(crate) fn runtime_with_contract() -> (
     graph
         .set_dependencies(
             rollback_target,
-            [worth_signal::facade::DependencyEdge::new(dependency, worth_signal::facade::Aspect::new(1))],
+            [worth_signal::facade::DependencyEdge::new(
+                dependency,
+                worth_signal::facade::Aspect::new(1),
+            )],
         )
         .unwrap();
     let node = graph.node().build();
@@ -43,9 +65,14 @@ pub(crate) fn runtime_with_contract() -> (
             capability,
             SignalConditionalContractDefinition {
                 condition: worth_signal::facade::SignalConditionalCondition::Always,
-                dependency_aspects: worth_signal::facade::AspectMask::from_aspect(worth_signal::facade::Aspect::new(1)),
-                trigger_aspects: worth_signal::facade::AspectMask::from_aspect(worth_signal::facade::Aspect::new(1)),
-                dependency_comparator: worth_signal::facade::SignalConditionalVersionComparator::Exact,
+                dependency_aspects: worth_signal::facade::AspectMask::from_aspect(
+                    worth_signal::facade::Aspect::new(1),
+                ),
+                trigger_aspects: worth_signal::facade::AspectMask::from_aspect(
+                    worth_signal::facade::Aspect::new(1),
+                ),
+                dependency_comparator:
+                    worth_signal::facade::SignalConditionalVersionComparator::Exact,
                 output_comparator: worth_signal::facade::SignalConditionalVersionComparator::Exact,
                 artifact_reuse: worth_signal::facade::SignalConditionalArtifactReuse::NotReusable,
             },
@@ -60,5 +87,10 @@ pub(crate) fn runtime_with_contract() -> (
 }
 
 pub(crate) fn output(value: u64) -> NodeEvaluationResult {
-    worth_signal::facade::NodeEvaluationResult::from_version(worth_signal::facade::AspectVersion::from_updates([(worth_signal::facade::Aspect::new(0), value)]))
+    worth_signal::facade::NodeEvaluationResult::from_version(
+        worth_signal::facade::AspectVersion::from_updates([(
+            worth_signal::facade::Aspect::new(0),
+            value,
+        )]),
+    )
 }

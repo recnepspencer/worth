@@ -1,8 +1,7 @@
-#[allow(unused_imports)] use crate::phase_two_neutral_certification::isolated_context::*;
-use {std::num::NonZeroUsize, std::sync::Mutex, std::sync::OnceLock, std::time::Instant};
+#[allow(unused_imports)]
+use crate::phase_two_neutral_certification::isolated_context::*;
 
-use {worth_execution::compare_canonical_values, worth_execution::BackInput, worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::CanonicalBits, worth_execution::ChargedBytes, worth_execution::DecomposeFailure, worth_execution::DecomposeKernelEditions, worth_execution::EquivalencePredicate, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionDecompose, worth_execution::ExecutionForkJoin, worth_execution::ExecutionMap, worth_execution::ExecutionRounds, worth_execution::ExecutionScan, worth_execution::ForkChild, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop, worth_execution::RoundsOutcome, worth_execution::ScanOutcome};
-use {worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use {worth_execution::ForkChild, worth_execution::MapKernelFailure};
 
 #[test]
 fn map_and_fork_match_independent_values_under_widths_and_perturbed_schedules() {
@@ -17,7 +16,9 @@ fn map_and_fork_match_independent_values_under_widths_and_perturbed_schedules() 
         context.checkpoint(*n % 5 + 1)?;
         Ok::<_, MapKernelFailure<()>>(n * n + 7)
     });
-    assert!(matches!(&serial, worth_execution::MapOutcome::Complete { values, .. } if values == &expected));
+    assert!(
+        matches!(&serial, worth_execution::MapOutcome::Complete { values, .. } if values == &expected)
+    );
     let serial_work = serial.report().charged_work();
     let serial_span = serial.report().charged_span();
     assert_eq!(serial_work, (1..=31_u64).map(|n| n % 5 + 1).sum::<u64>());
@@ -74,8 +75,10 @@ fn map_and_fork_match_independent_values_under_widths_and_perturbed_schedules() 
                     ))
                 })
                 .unwrap();
-            assert!(matches!(floating, worth_execution::MapOutcome::Complete { values, .. }
-                if values.iter().map(|value| value.to_bits()).collect::<Vec<_>>() == adversarial_bits));
+            assert!(
+                matches!(floating, worth_execution::MapOutcome::Complete { values, .. }
+                if values.iter().map(|value| value.to_bits()).collect::<Vec<_>>() == adversarial_bits)
+            );
 
             let joined = fork
                 .certify(&lease, seed, |n, context| {
@@ -92,7 +95,6 @@ fn map_and_fork_match_independent_values_under_widths_and_perturbed_schedules() 
     }
 }
 
-
 #[test]
 fn ordered_scan_and_rounds_stop_at_their_canonical_barriers() {
     if crate::test_process::reexecute_isolated_test() {
@@ -100,7 +102,9 @@ fn ordered_scan_and_rounds_stop_at_their_canonical_barriers() {
     }
 
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
-    let ids: Vec<_> = (1..=4).map(worth_foundational::PartitionIdentity::new).collect();
+    let ids: Vec<_> = (1..=4)
+        .map(worth_foundational::PartitionIdentity::new)
+        .collect();
     let scan = worth_execution::ExecutionScan::try_from_ordered(
         ids.clone(),
         ids.into_iter().map(|id| (id, id.value())).collect(),
@@ -133,7 +137,8 @@ fn ordered_scan_and_rounds_stop_at_their_canonical_barriers() {
         None,
         worth_foundational::DeterminismContract::CanonicalBitwise,
     );
-    let rounds = worth_execution::ExecutionRounds::try_new(std::num::NonZeroUsize::new(5).unwrap()).unwrap();
+    let rounds =
+        worth_execution::ExecutionRounds::try_new(std::num::NonZeroUsize::new(5).unwrap()).unwrap();
     let stopped = rounds.run(
         Some(&round_lease),
         0_u64,

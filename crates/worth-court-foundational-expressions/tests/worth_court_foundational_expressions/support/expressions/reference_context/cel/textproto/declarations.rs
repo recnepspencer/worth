@@ -31,14 +31,18 @@ impl Message {
 
     pub(crate) fn message(&self, name: &str) -> Option<&Message> {
         match self.get(name)? {
-            crate::expressions::reference_context::cel::textproto::Node::Message(message) => Some(message),
+            crate::expressions::reference_context::cel::textproto::Node::Message(message) => {
+                Some(message)
+            }
             _ => None,
         }
     }
 
     pub(crate) fn text(&self, name: &str) -> Option<String> {
         match self.get(name)? {
-            crate::expressions::reference_context::cel::textproto::Node::Text(bytes) => Some(String::from_utf8(bytes.clone()).expect("UTF-8 text")),
+            crate::expressions::reference_context::cel::textproto::Node::Text(bytes) => {
+                Some(String::from_utf8(bytes.clone()).expect("UTF-8 text"))
+            }
             _ => None,
         }
     }
@@ -74,20 +78,32 @@ pub(crate) fn parse(source: &str) -> Message {
 
 pub(crate) fn fields(tokens: &[Token], at: &mut usize) -> Message {
     let mut message = crate::expressions::reference_context::cel::textproto::Message::default();
-    while let Some(crate::expressions::reference_context::cel::textproto::Token::Word(name)) = tokens.get(*at) {
+    while let Some(crate::expressions::reference_context::cel::textproto::Token::Word(name)) =
+        tokens.get(*at)
+    {
         *at += 1;
-        if tokens.get(*at) == Some(&crate::expressions::reference_context::cel::textproto::Token::Colon) {
+        if tokens.get(*at)
+            == Some(&crate::expressions::reference_context::cel::textproto::Token::Colon)
+        {
             *at += 1;
         }
         let node = match &tokens[*at] {
             crate::expressions::reference_context::cel::textproto::Token::Open => {
                 *at += 1;
                 let inner = fields(tokens, at);
-                assert_eq!(tokens.get(*at), Some(&crate::expressions::reference_context::cel::textproto::Token::Close), "unclosed {name}");
+                assert_eq!(
+                    tokens.get(*at),
+                    Some(&crate::expressions::reference_context::cel::textproto::Token::Close),
+                    "unclosed {name}"
+                );
                 crate::expressions::reference_context::cel::textproto::Node::Message(inner)
             }
-            crate::expressions::reference_context::cel::textproto::Token::Word(word) => crate::expressions::reference_context::cel::textproto::Node::Word(word.clone()),
-            crate::expressions::reference_context::cel::textproto::Token::Text(bytes) => crate::expressions::reference_context::cel::textproto::Node::Text(bytes.clone()),
+            crate::expressions::reference_context::cel::textproto::Token::Word(word) => {
+                crate::expressions::reference_context::cel::textproto::Node::Word(word.clone())
+            }
+            crate::expressions::reference_context::cel::textproto::Token::Text(bytes) => {
+                crate::expressions::reference_context::cel::textproto::Node::Text(bytes.clone())
+            }
             other => panic!("unexpected {other:?} after {name}"),
         };
         *at += 1;
@@ -121,8 +137,12 @@ pub(crate) fn tokenize(bytes: &[u8]) -> Vec<Token> {
             b'"' | b'\'' => {
                 let text = quoted(bytes, &mut at);
                 match tokens.last_mut() {
-                    Some(crate::expressions::reference_context::cel::textproto::Token::Text(previous)) => previous.extend(text),
-                    _ => tokens.push(crate::expressions::reference_context::cel::textproto::Token::Text(text)),
+                    Some(crate::expressions::reference_context::cel::textproto::Token::Text(
+                        previous,
+                    )) => previous.extend(text),
+                    _ => tokens.push(
+                        crate::expressions::reference_context::cel::textproto::Token::Text(text),
+                    ),
                 }
             }
             byte if byte.is_ascii_whitespace() || byte == b',' || byte == b';' => at += 1,
@@ -135,7 +155,8 @@ pub(crate) fn tokenize(bytes: &[u8]) -> Vec<Token> {
                 }
                 assert!(at > start, "unexpected byte {byte:#x}");
                 let word = String::from_utf8(bytes[start..at].to_vec()).expect("ASCII word");
-                tokens.push(crate::expressions::reference_context::cel::textproto::Token::Word(word));
+                tokens
+                    .push(crate::expressions::reference_context::cel::textproto::Token::Word(word));
             }
         }
     }

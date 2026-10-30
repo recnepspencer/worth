@@ -1,21 +1,18 @@
-use {crate::signal_owner_services::ordinary_context::execution_custody};
 pub(crate) use {std::panic::catch_unwind, std::panic::AssertUnwindSafe};
-
-pub(crate) use {worth_signal::facade::branch::SignalBranchBasisObservationDenial, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest};
-
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld};
 
 #[test]
 fn pre_effect_advance_panic_unwinds_without_poisoning_the_owner() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the strong root remains live")
         .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    control
-        .inject_panic_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    control.inject_panic_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let mutation = world.mutation.clone();
     let basis = world.root_basis.clone();
     let fault = catch_unwind(AssertUnwindSafe(|| {
@@ -53,7 +50,8 @@ fn pre_effect_advance_panic_unwinds_without_poisoning_the_owner() {
 
 #[test]
 fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let reference = world
         .basis
         .issue_managed_branch_reference(&world.root_basis)
@@ -64,7 +62,9 @@ fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
         .expect("the strong root remains live")
         .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    control.inject_panic_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
+    control.inject_panic_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
+    );
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
@@ -105,7 +105,8 @@ fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
 
 #[test]
 fn fork_source_capture_fault_quarantines_only_source_and_releases_destination() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let source_reference = world
         .basis
         .issue_managed_branch_reference(&world.root_basis)
@@ -116,7 +117,9 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination() 
         .expect("the strong root remains live")
         .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control");
-    control.inject_panic_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::ForkSourceCapture);
+    control.inject_panic_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::ForkSourceCapture,
+    );
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.mutation.fork_exact(
             worth_signal::facade::branch::validate_signal_branch_name("faulted-source")
@@ -168,14 +171,17 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination() 
 
 #[test]
 fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
-    let snapshot_world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let snapshot_world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = snapshot_world
         .runtime
         .as_ref()
         .expect("the strong root remains live")
         .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    control.inject_panic_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
+    control.inject_panic_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
+    );
     let snapshot_fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = snapshot_world.mutation.capture_exact(
             &snapshot_world.child_basis,
@@ -199,7 +205,8 @@ fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
         )
         .expect("snapshot outcome unwind does not poison an unrelated branch");
 
-    let restore_world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let restore_world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let (snapshot, current) = restore_world
         .mutation
         .capture_exact(
@@ -214,7 +221,9 @@ fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
         .expect("the strong root remains live")
         .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    control.inject_panic_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
+    control.inject_panic_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
+    );
     let restore_fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = restore_world.mutation.restore_exact(
             &current,

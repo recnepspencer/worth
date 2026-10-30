@@ -1,6 +1,10 @@
-use {worth_foundational::foundational_branch_local_state_definitions, worth_foundational::FoundationalBranchId, worth_foundational::FoundationalBranchIdConstructionDenial, worth_foundational::FoundationalBranchLocalStateKind};
+use worth_foundational::foundational_branch_local_state_definitions;
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate, crate::certification::ordinary_context::transitions::fixtures::branch::projection_shaped_candidate, crate::certification::ordinary_context::transitions::fixtures::branch::staged_candidate};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::branch::projection_shaped_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::branch::staged_candidate,
+};
 
 #[test]
 fn branch_local_state_definitions_remain_non_authoritative() {
@@ -88,6 +92,10 @@ fn blind_consumer_can_interpret_branch_local_basis_without_runtime_state() {
 
 #[test]
 fn branch_id_rejects_empty_names() {
-    let denial = worth_foundational::FoundationalBranchId::new("  ").expect_err("empty branch ids fail closed");
-    assert_eq!(denial, worth_foundational::FoundationalBranchIdConstructionDenial::EmptyName);
+    let denial = worth_foundational::FoundationalBranchId::new("  ")
+        .expect_err("empty branch ids fail closed");
+    assert_eq!(
+        denial,
+        worth_foundational::FoundationalBranchIdConstructionDenial::EmptyName
+    );
 }

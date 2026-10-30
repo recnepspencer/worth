@@ -1,8 +1,12 @@
 // Payload admission, replacement, and transfer retain one ledger charge.
-#[allow(unused_imports)] use crate::memory_reservation::isolated_context::payload_custody::*;
-pub(crate) use {crate::memory_reservation::ordinary_context::authority, crate::memory_reservation::ordinary_context::request, worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel, crate::memory_reservation::ordinary_context::PROCESS_BYTES, crate::memory_reservation::ordinary_context::SERIAL};
-pub(crate) use {std::cell::Cell};
-pub(crate) use {worth_execution::ExecutionMemoryReservation, worth_execution::ExecutionResourceLease, worth_execution::LeaseDenial};
+#[allow(unused_imports)]
+use crate::memory_reservation::isolated_context::payload_custody::*;
+pub(crate) use {
+    crate::memory_reservation::ordinary_context::authority,
+    crate::memory_reservation::ordinary_context::request,
+    crate::memory_reservation::ordinary_context::PROCESS_BYTES,
+    crate::memory_reservation::ordinary_context::SERIAL,
+};
 
 #[test]
 fn the_authority_reports_its_configuration() {
@@ -129,11 +133,13 @@ fn same_byte_transfer_is_atomic_and_releases_only_the_old_lineage() {
     let blocker = target.reserve_memory(1).unwrap();
     assert_eq!(
         target.transfer_memory(&mut retained.ticket),
-        Err(worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
-            requested: 64,
-            admitted: 63,
-            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-        }))
+        Err(worth_execution::LeaseDenial::MemoryExhausted(
+            worth_execution::MemoryLimitDenial::Capacity {
+                requested: 64,
+                admitted: 63,
+                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+            }
+        ))
     );
     assert_eq!(retained.ticket.bytes(), 64);
     assert!(matches!(

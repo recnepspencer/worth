@@ -4,8 +4,8 @@
 
 pub(crate) use {std::collections::BTreeMap, std::collections::BTreeSet};
 
+pub(crate) use worth_foundational::PartitionIdentity;
 pub(crate) use {worth_execution::ComponentPartitioner, worth_execution::PartitionItemId};
-pub(crate) use {worth_foundational::PartitionIdentity};
 
 pub(crate) type Islands = BTreeMap<PartitionIdentity, BTreeSet<u64>>;
 
@@ -56,7 +56,8 @@ pub(crate) enum Step {
 pub(crate) fn touched(step: Step) -> Vec<u64> {
     match step {
         crate::components_differential::reference_context::Step::AddItem(_) => Vec::new(),
-        crate::components_differential::reference_context::Step::AddEdge(a, b) | crate::components_differential::reference_context::Step::RemoveEdge(a, b) => vec![a, b],
+        crate::components_differential::reference_context::Step::AddEdge(a, b)
+        | crate::components_differential::reference_context::Step::RemoveEdge(a, b) => vec![a, b],
         crate::components_differential::reference_context::Step::RemoveItem(item) => vec![item],
     }
 }

@@ -1,11 +1,13 @@
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
-
-use {worth_server::WorthServerProductOperationExecutionBoundary, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationOutcome, worth_server::WorthServerProductOperationSurfaceDenialCode, worth_server::WorthServerProductSessionCreationRequest, worth_server::WorthServerProductSessionDenialCode, worth_server::WorthServerProductSessionLifecycle};
-
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_product_session_phase_ten_fixture as fixture};
+pub(crate) use worth_testkit_server::shared_support_product_session_phase_ten_fixture as fixture;
 
-use {worth_testkit_server::shared_support_product_session_phase_ten_fixture::apply_payload, worth_testkit_server::shared_support_product_session_phase_ten_fixture::build_server_with_clock, worth_testkit_server::shared_support_product_session_phase_ten_fixture::direct_session, worth_testkit_server::shared_support_product_session_phase_ten_fixture::preview_payload, worth_testkit_server::shared_support_product_session_phase_ten_fixture::session_backed_editor_registration, worth_testkit_server::shared_support_product_session_phase_ten_fixture::manual_clock::ManualProductSessionClock};
+use {
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::apply_payload,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::build_server_with_clock,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::direct_session,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::preview_payload,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::session_backed_editor_registration,
+};
 
 #[test]
 fn product_session_lifecycle_denies_expired_foreign_or_moved_sessions() {
@@ -50,9 +52,11 @@ fn product_session_lifecycle_denies_expired_foreign_or_moved_sessions() {
     let mutation_session = primary_session
         .product_sessions()
         .open_mutation(
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest("basis:head")
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest("basis:head")
+            .with_expiry_seconds(300),
         )
         .expect("mutation session should open");
     assert_eq!(
@@ -62,9 +66,12 @@ fn product_session_lifecycle_denies_expired_foreign_or_moved_sessions() {
     let applied = primary_session
         .product_operations()
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.apply", apply_payload())
-                .with_basis_digest("basis:head")
-                .with_product_session_identity(mutation_session.identity().as_str()),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.apply",
+                apply_payload(),
+            )
+            .with_basis_digest("basis:head")
+            .with_product_session_identity(mutation_session.identity().as_str()),
         )
         .expect("mutation session should admit mutation work");
     assert!(matches!(
@@ -75,18 +82,23 @@ fn product_session_lifecycle_denies_expired_foreign_or_moved_sessions() {
     let expired_session = primary_session
         .product_sessions()
         .open_mutation(
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest("basis:head")
-                .with_expiry_seconds(1),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest("basis:head")
+            .with_expiry_seconds(1),
         )
         .expect("expired test session should open");
     clock.advance_millis(1_001);
     let expired = primary_session
         .product_operations()
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.apply", apply_payload())
-                .with_basis_digest("basis:head")
-                .with_product_session_identity(expired_session.identity().as_str()),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.apply",
+                apply_payload(),
+            )
+            .with_basis_digest("basis:head")
+            .with_product_session_identity(expired_session.identity().as_str()),
         )
         .expect_err("expired session should deny before mutation scheduling");
     assert_eq!(
@@ -111,9 +123,12 @@ fn product_session_lifecycle_denies_expired_foreign_or_moved_sessions() {
     let closed = primary_session
         .product_operations()
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.apply", apply_payload())
-                .with_basis_digest("basis:head")
-                .with_product_session_identity(mutation_session.identity().as_str()),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.apply",
+                apply_payload(),
+            )
+            .with_basis_digest("basis:head")
+            .with_product_session_identity(mutation_session.identity().as_str()),
         )
         .expect_err("closed session should deny");
     assert_eq!(
@@ -128,17 +143,22 @@ fn product_session_lifecycle_denies_expired_foreign_or_moved_sessions() {
     let foreign_session = direct_session(&server, "workspace-else", "branch-9")
         .product_sessions()
         .open_mutation(
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest("basis:head")
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest("basis:head")
+            .with_expiry_seconds(300),
         )
         .expect("foreign workspace session should open");
     let foreign = primary_session
         .product_operations()
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.apply", apply_payload())
-                .with_basis_digest("basis:head")
-                .with_product_session_identity(foreign_session.identity().as_str()),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.apply",
+                apply_payload(),
+            )
+            .with_basis_digest("basis:head")
+            .with_product_session_identity(foreign_session.identity().as_str()),
         )
         .expect_err("foreign workspace session should deny");
     assert_eq!(
@@ -155,17 +175,22 @@ fn product_session_lifecycle_denies_expired_foreign_or_moved_sessions() {
     let moved_session = direct_session(&server, "workspace-42", "branch-else")
         .product_sessions()
         .open_mutation(
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest("basis:head")
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest("basis:head")
+            .with_expiry_seconds(300),
         )
         .expect("moved-session test session should open");
     let moved = primary_session
         .product_operations()
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.apply", apply_payload())
-                .with_basis_digest("basis:head")
-                .with_product_session_identity(moved_session.identity().as_str()),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.apply",
+                apply_payload(),
+            )
+            .with_basis_digest("basis:head")
+            .with_product_session_identity(moved_session.identity().as_str()),
         )
         .expect_err("branch-moved session should deny");
     assert_eq!(

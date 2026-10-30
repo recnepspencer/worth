@@ -1,5 +1,17 @@
 pub use {worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::SyncSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerAdmission, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationAdmissionPosture, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRequestInput, worth_server::WorthServerQueryHandoff, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffOutcome, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::SyncSurface,
+    worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer,
+    worth_server::WorthServerAdmission, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationAdmissionPosture,
+    worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRequestInput,
+    worth_server::WorthServerQueryHandoff, worth_server::WorthServerQueryHandoffConfig,
+    worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffOutcome,
+    worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig,
+    worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext,
+    worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass,
+};
 
 pub fn test_server(
     workspace_provider: impl WorthServerQueryWorkspaceProvider,
@@ -26,7 +38,9 @@ pub fn test_server_with_middleware(
                 .with_middleware_config(middleware_config)
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -134,7 +148,9 @@ pub fn admit_mutation_posture(
         .admit_from_worth_native_admission(
             &admission,
             worth_server::WorthServerOperationRequestInput::builder()
-                .with_operation_family(worth_server::WorthServerOperationFamily::QueryDirectSubmission)
+                .with_operation_family(
+                    worth_server::WorthServerOperationFamily::QueryDirectSubmission,
+                )
                 .with_operation_name("users.rename")
                 .with_idempotency_key("idem-7")
                 .build(),

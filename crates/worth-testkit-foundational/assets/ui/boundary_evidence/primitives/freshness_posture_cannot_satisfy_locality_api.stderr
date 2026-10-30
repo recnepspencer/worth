@@ -1,13 +1,13 @@
 error[E0308]: mismatched types
- --> tests/ui/boundary_evidence/primitives/freshness_posture_cannot_satisfy_locality_api.rs:9:20
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/primitives/freshness_posture_cannot_satisfy_locality_api.rs
   |
-9 |     needs_locality(freshness);
+  |     needs_locality(freshness);
   |     -------------- ^^^^^^^^^ expected `FoundationalBoundaryEvidenceLocality`, found `FoundationalBoundaryEvidenceFreshnessPosture`
   |     |
   |     arguments to this function are incorrect
   |
 note: function defined here
- --> tests/ui/boundary_evidence/primitives/freshness_posture_cannot_satisfy_locality_api.rs:5:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/primitives/freshness_posture_cannot_satisfy_locality_api.rs
   |
-5 | fn needs_locality(_locality: FoundationalBoundaryEvidenceLocality) {}
+  | fn needs_locality(_locality: FoundationalBoundaryEvidenceLocality) {}
   |    ^^^^^^^^^^^^^^ -----------------------------------------------

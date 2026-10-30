@@ -6,16 +6,36 @@
 // The competitor fills the whole process memory, so this test owns its
 // process and its authority: no other test can starve beside it.
 
-pub(crate) use {std::num::NonZeroUsize};
+pub(crate) use std::num::NonZeroUsize;
+pub(crate) use std::thread::JoinHandle;
 pub(crate) use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 pub(crate) use {std::sync::mpsc, std::sync::Mutex, std::sync::OnceLock};
-pub(crate) use {std::thread::JoinHandle};
 
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapPartition, worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel, worth_execution::PreparedExecutionMap};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapPartition,
+    worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
+    worth_execution::PreparedExecutionMap,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
-pub(crate) use {worth_signal::facade::adapters::NodeContract};
-pub(crate) use {worth_signal::facade::Aspect, worth_signal::facade::AspectVersion, worth_signal::facade::BoundedSignalInputs, worth_signal::facade::ChangedRegion, worth_signal::facade::DeclaredSignalInput, worth_signal::facade::DependencyEdge, worth_signal::facade::NodeEvaluationResult, worth_signal::facade::NodeId, worth_signal::facade::PartitionSubscription, worth_signal::facade::RunMode, worth_signal::facade::ScopePath, worth_signal::facade::SignalError, worth_signal::facade::SignalExecutionFailure, worth_signal::facade::SignalExecutionStopReason, worth_signal::facade::SignalGraph, worth_signal::facade::SignalLeaseDenial, worth_signal::facade::SignalPublicationDisposition};
+pub(crate) use worth_signal::facade::adapters::NodeContract;
+pub(crate) use {
+    worth_signal::facade::Aspect, worth_signal::facade::AspectVersion,
+    worth_signal::facade::BoundedSignalInputs, worth_signal::facade::ChangedRegion,
+    worth_signal::facade::DeclaredSignalInput, worth_signal::facade::DependencyEdge,
+    worth_signal::facade::NodeEvaluationResult, worth_signal::facade::NodeId,
+    worth_signal::facade::PartitionSubscription, worth_signal::facade::RunMode,
+    worth_signal::facade::ScopePath, worth_signal::facade::SignalError,
+    worth_signal::facade::SignalExecutionFailure, worth_signal::facade::SignalExecutionStopReason,
+    worth_signal::facade::SignalGraph, worth_signal::facade::SignalLeaseDenial,
+    worth_signal::facade::SignalPublicationDisposition,
+};
 
 pub(crate) const VALUE: Aspect = worth_signal::facade::Aspect::new(0);
 pub(crate) const HOST_MEMORY: u64 = 512 * 1024 * 1024;
@@ -77,7 +97,10 @@ pub(crate) fn competing_ticket(scratch_bytes: u64) -> Result<HostTicket, LeaseDe
     map.prepare_run(lease)
 }
 
-pub(crate) fn hold_remaining_host_memory(release: std::sync::mpsc::Receiver<()>, ready: std::sync::mpsc::Sender<bool>) {
+pub(crate) fn hold_remaining_host_memory(
+    release: std::sync::mpsc::Receiver<()>,
+    ready: std::sync::mpsc::Sender<bool>,
+) {
     let mut low = 0_u64;
     let mut high = HOST_MEMORY;
     while low < high {
@@ -112,13 +135,17 @@ pub(crate) fn subscribed_graph(maximum: u64) -> (SignalGraph, NodeId) {
     let consumer = graph
         .node()
         .with_contract(
-            worth_signal::facade::adapters::NodeContract::wildcard().with_bounded_inputs(worth_signal::facade::BoundedSignalInputs::new([
-                worth_signal::facade::DeclaredSignalInput::scoped(
-                    producer,
-                    VALUE,
-                    worth_signal::facade::PartitionSubscription::exact(worth_signal::facade::ScopePath::one("desk").unwrap()),
-                ),
-            ])),
+            worth_signal::facade::adapters::NodeContract::wildcard().with_bounded_inputs(
+                worth_signal::facade::BoundedSignalInputs::new([
+                    worth_signal::facade::DeclaredSignalInput::scoped(
+                        producer,
+                        VALUE,
+                        worth_signal::facade::PartitionSubscription::exact(
+                            worth_signal::facade::ScopePath::one("desk").unwrap(),
+                        ),
+                    ),
+                ]),
+            ),
         )
         .build();
     graph
@@ -127,7 +154,9 @@ pub(crate) fn subscribed_graph(maximum: u64) -> (SignalGraph, NodeId) {
             [worth_signal::facade::DependencyEdge::with_partition_scope(
                 producer,
                 VALUE,
-                worth_signal::facade::PartitionSubscription::exact(worth_signal::facade::ScopePath::one("desk").unwrap()),
+                worth_signal::facade::PartitionSubscription::exact(
+                    worth_signal::facade::ScopePath::one("desk").unwrap(),
+                ),
             )],
         )
         .unwrap();

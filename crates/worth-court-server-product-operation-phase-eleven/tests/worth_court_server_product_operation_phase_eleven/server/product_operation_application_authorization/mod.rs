@@ -1,18 +1,19 @@
-#[allow(unused_imports)] use crate::product_operation_application_authorization::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
-
-use {std::sync::Arc, std::sync::Mutex};
-
-use {worth_server::WorthServerProductOperationAuthorization, worth_server::WorthServerProductOperationAuthorizationDenial, worth_server::WorthServerProductOperationAuthorizationRequest, worth_server::WorthServerProductOperationAuthorizer, worth_server::WorthServerProductOperationExecutionBoundary, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationSurfaceDenialCode, worth_server::WorthServerTransportCallerAdmissionRequest, worth_server::WorthServerTransportCallerVerification, worth_server::WorthServerTransportCallerVerifier, worth_server::WorthServerVerifiedTransportCaller};
+use crate::product_operation_application_authorization::ordinary_context::*;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture as fixture};
+use worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture as fixture;
 #[allow(unused_imports)]
 use {};
 
-use {worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::build_server_with_operation_authority, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_session, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_session_with_proof, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::render_payload, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::StatefulEditorLikeBackend};
-use {worth_testkit_server::shared_support_route_assembly_phase_twelve_request_driver::WorthServerRouteHttpTestDriver};
+use {
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::build_server_with_operation_authority,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_session,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_session_with_proof,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::render_payload,
+};
 
 #[tokio::test]
 async fn native_and_projected_http_share_one_application_authorization_plan() {
@@ -28,8 +29,11 @@ async fn native_and_projected_http_share_one_application_authorization_plan() {
     let missing = direct_session(&server)
         .product_operations()
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.render", render_payload())
-                .with_basis_digest(&basis),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.render",
+                render_payload(),
+            )
+            .with_basis_digest(&basis),
         )
         .expect_err("native execution without an application proof must deny");
     assert_eq!(
@@ -44,8 +48,11 @@ async fn native_and_projected_http_share_one_application_authorization_plan() {
     let native = direct_session_with_proof(&server, AUTHORITY_PROOF)
         .product_operations()
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.render", render_payload())
-                .with_basis_digest(&basis),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.render",
+                render_payload(),
+            )
+            .with_basis_digest(&basis),
         )
         .expect("native execution with an admitted proof should succeed");
     let native_authorization = native

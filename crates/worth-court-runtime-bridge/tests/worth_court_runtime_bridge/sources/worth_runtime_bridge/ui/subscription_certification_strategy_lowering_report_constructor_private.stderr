@@ -1,5 +1,5 @@
 error[E0451]: fields `detail_bundle_digest`, `collection_bundle_digest`, `comparison_report_digest`, `primary_failure_boundary`, `primary_failure_precedence_stage`, `strategy_lowering_is_distinct_without_signal_rediscovery`, `counters`, `canonical_basis` and `digest` of struct `BridgeSubscriptionCertificationStrategyLoweringReport` are private
-  --> tests/ui/subscription_certification_strategy_lowering_report_constructor_private.rs:9:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_strategy_lowering_report_constructor_private.rs:9:9
    |
  8 |     let _report = BridgeSubscriptionCertificationStrategyLoweringReport {
    |                   ----------------------------------------------------- in this type

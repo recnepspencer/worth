@@ -1,22 +1,29 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::phase5_basis::locator_exactness::*;
-use {worth_foundational::prepare_locator_for_canonical_basis, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalLocatorInput, worth_foundational::FoundationalBranchCandidateLocator, worth_foundational::FoundationalCommitParentageLocator, worth_foundational::FoundationalCommittedDeltaLocator, worth_foundational::FoundationalMergeConflictLocator, worth_foundational::FoundationalTransitionLocator};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::phase5_basis::locator_exactness::*;
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate};
-use {crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority, crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input};
-use {crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate, crate::certification::ordinary_context::transitions::fixtures::merge::conflict_locus};
-use {crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id};
-use {crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::version};
+use crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate;
+use crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id;
+use {
+    crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,
+    crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::merge::conflict_locus,
+};
 
 #[test]
 fn transition_locators_point_at_exact_branch_conflict_parentage_and_delta_loci() {
     let branch_candidate = authority_first_candidate("mesh-update");
-    let branch_entries = locator_entries(worth_foundational::FoundationalTransitionLocator::BranchCandidate(
-        worth_foundational::FoundationalBranchCandidateLocator::new(
-            branch_candidate.branch_id().clone(),
-            branch_candidate.candidate_id(),
+    let branch_entries = locator_entries(
+        worth_foundational::FoundationalTransitionLocator::BranchCandidate(
+            worth_foundational::FoundationalBranchCandidateLocator::new(
+                branch_candidate.branch_id().clone(),
+                branch_candidate.candidate_id(),
+            ),
         ),
-    ));
+    );
     assert_eq!(
         branch_entries,
         vec![
@@ -30,13 +37,15 @@ fn transition_locators_point_at_exact_branch_conflict_parentage_and_delta_loci()
     );
 
     let merge_candidate = authority_first_merge_candidate("mesh-update");
-    let conflict_entries = locator_entries(worth_foundational::FoundationalTransitionLocator::MergeConflict(
-        worth_foundational::FoundationalMergeConflictLocator::new(
-            merge_candidate.source_branch().clone(),
-            merge_candidate.target_branch().clone(),
-            conflict_locus(),
+    let conflict_entries = locator_entries(
+        worth_foundational::FoundationalTransitionLocator::MergeConflict(
+            worth_foundational::FoundationalMergeConflictLocator::new(
+                merge_candidate.source_branch().clone(),
+                merge_candidate.target_branch().clone(),
+                conflict_locus(),
+            ),
         ),
-    ));
+    );
     assert_eq!(
         conflict_entries,
         vec![
@@ -61,9 +70,14 @@ fn transition_locators_point_at_exact_branch_conflict_parentage_and_delta_loci()
     let committed = accepted_verdict("mesh-update")
         .commit_with(ordinary_commit_input(), committed_authority())
         .expect("committed authority");
-    let parentage_entries = locator_entries(worth_foundational::FoundationalTransitionLocator::CommitParentage(
-        worth_foundational::FoundationalCommitParentageLocator::new(commit_id(81), committed.parent_basis()),
-    ));
+    let parentage_entries = locator_entries(
+        worth_foundational::FoundationalTransitionLocator::CommitParentage(
+            worth_foundational::FoundationalCommitParentageLocator::new(
+                commit_id(81),
+                committed.parent_basis(),
+            ),
+        ),
+    );
     assert_eq!(
         parentage_entries,
         vec![
@@ -73,12 +87,14 @@ fn transition_locators_point_at_exact_branch_conflict_parentage_and_delta_loci()
         ]
     );
 
-    let delta_entries = locator_entries(worth_foundational::FoundationalTransitionLocator::CommittedDelta(
-        worth_foundational::FoundationalCommittedDeltaLocator::new(
-            commit_id(81),
-            committed.committed_delta_summary().loci()[0].clone(),
+    let delta_entries = locator_entries(
+        worth_foundational::FoundationalTransitionLocator::CommittedDelta(
+            worth_foundational::FoundationalCommittedDeltaLocator::new(
+                commit_id(81),
+                committed.committed_delta_summary().loci()[0].clone(),
+            ),
         ),
-    ));
+    );
     assert_eq!(
         delta_entries,
         vec![

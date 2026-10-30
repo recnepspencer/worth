@@ -1,8 +1,7 @@
 // The prepared native owner retains the read image through actual cutover.
-#[allow(unused_imports)] use crate::leased_preparation::ordinary_context::companion_read::*;
-pub(crate) use {worth_execution::ExecutionAllocationPolicy as AllocationPolicy, worth_relational::facade::transactions::AspectFieldPatch, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::EntitySpec, worth_relational::facade::identity::KindId, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::transactions::WorkerIntentBatch, crate::leased_preparation::ordinary_context::serial, crate::leased_preparation::ordinary_context::support};
-pub(crate) use {std::sync::atomic::AtomicBool, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
-pub(crate) use {worth_relational::facade::mvcc::CompanionBranchCell, worth_relational::facade::mvcc::CompanionCellEditStop, worth_relational::facade::mvcc::CompanionPreflightStop, worth_relational::facade::mvcc::PreparedPublicationCompanionEffect, worth_relational::facade::mvcc::PublicationCompanionPreflight, worth_relational::facade::mvcc::RelationalPublicationCompanion, worth_relational::facade::mvcc::RelationalPublicationDeferred, worth_relational::facade::mvcc::RelationalPublicationOutcome, worth_relational::facade::runtime::RelationalRuntime};
+#[allow(unused_imports)]
+use crate::leased_preparation::ordinary_context::companion_read::*;
+pub(crate) use crate::leased_preparation::ordinary_context::serial;
 
 #[test]
 fn native_companion_read_image_rejects_replacement_and_admits_original_owner_retry() {
@@ -10,7 +9,9 @@ fn native_companion_read_image_rejects_replacement_and_admits_original_owner_ret
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(crate::leased_preparation::ordinary_context::support::demo_schema_registry())
+        .schema_registry(
+            crate::leased_preparation::ordinary_context::support::demo_schema_registry(),
+        )
         .build()
         .expect("valid native runtime configuration");
     let (_registration, publisher, other) = install(&runtime);
@@ -56,7 +57,9 @@ fn native_companion_read_image_rejects_replacement_and_admits_original_owner_ret
         worth_relational::facade::mvcc::CompanionPreflightStop::ForeignCell,
     );
     let foreign = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(crate::leased_preparation::ordinary_context::support::demo_schema_registry())
+        .schema_registry(
+            crate::leased_preparation::ordinary_context::support::demo_schema_registry(),
+        )
         .build()
         .expect("valid native runtime configuration");
     let (_foreign_registration, foreign_publisher, _) = install(&foreign);
@@ -76,7 +79,9 @@ fn native_companion_read_image_rejects_replacement_and_admits_original_owner_ret
     let outcome = runtime
         .publication_port()
         .compare_and_publish(execution, prepared);
-    let worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) = outcome else {
+    let worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) =
+        outcome
+    else {
         panic!("{outcome:?}");
     };
     let committed = runtime.settle_performed_publication(performed).unwrap();
@@ -84,7 +89,12 @@ fn native_companion_read_image_rejects_replacement_and_admits_original_owner_ret
         .snapshots()
         .release_snapshot(&committed.snapshot)
         .unwrap();
-    assert_eq!(publisher.refused_edits.load(std::sync::atomic::Ordering::Acquire), 1);
+    assert_eq!(
+        publisher
+            .refused_edits
+            .load(std::sync::atomic::Ordering::Acquire),
+        1
+    );
     assert_eq!(**publisher.cell.read_image().payload(), 2);
     // After cutover released the reservation, the original cell can advance.
     publisher

@@ -1,5 +1,5 @@
 error: cannot construct `TerminalStateResourceRevalidationProof` with struct literal syntax due to private fields
-  --> tests/ui/terminal_state_resource_revalidation_proof_fields_are_private.rs:8:18
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/terminal_state_resource_revalidation_proof_fields_are_private.rs:8:18
    |
  8 |     let _proof = TerminalStateResourceRevalidationProof {
    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
