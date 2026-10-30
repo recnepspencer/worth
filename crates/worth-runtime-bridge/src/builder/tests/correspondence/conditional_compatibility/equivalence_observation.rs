@@ -14,6 +14,7 @@ use worth_signal::facade::{
 struct VersionCompute;
 struct ParityComparator;
 struct Requested;
+mod exact_pair;
 macro_rules! stateless_semantics {
     ($Provider:ty, $identity:literal) => {
         impl BridgeConditionalProviderSemantics for $Provider {

@@ -1560,8 +1560,29 @@ operational-evidence release and final reservation release. All 171 focused
 Signal/Bridge conditional-execution tests pass. This is a qualified substrate,
 not application suppression completion: installed producer scheduling/readiness
 still use attempt versions, so their reports cannot stand in for actual handler
-output evaluation. The remaining sequence below must supply that declared output
+output evaluation. The remaining work must supply that declared output
 basis and the independently admitted application outcome.
+
+The exact-output comparison primitive now initializes a supplied present u64
+baseline and computes its candidate through one installed source-free OnDemand
+Exact contract in a fresh private Signal session. Its unique admission/partition
+never escapes, so equal reporting labels or another occurrence cannot replace the
+baseline. Each actual computed report must produce its supplied value, and the
+candidate's before version must equal the baseline's after version. Only this
+completed pair can issue the private read-only comparison. Admission, baseline
+and candidate failures preserve their original typed causes and release partial
+private state without returning a pair. No new Signal sequencing API, graph,
+reader, publication authority or retention registry is introduced.
+
+The courts qualify nonzero and zero initialization, changed/equal outcomes,
+equal-labeled occurrence isolation, clone/final release, a wrong-baseline trap,
+actual candidate failure/retry, foreign owner and cancellation. All 77 current
+Bridge conditional tests and 97 unchanged Signal owner tests pass. This remains
+substrate qualification: the pair itself proves no Native field/source association.
+The next integration must bind actual performed-before and owner-observed-after
+field artifacts, publish its declared producer-evaluation outcome before Ready,
+preserve committed receipt/checkpoint custody on late failure, and expose it only
+through independently admitted application inspection.
 
 #### Phase 9.9: Optional Rich Materialization
 

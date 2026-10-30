@@ -160,6 +160,23 @@ still describes that installed contract; it cannot establish equivalence of an
 application handler's output. Application producer explanation requires its
 own exact source/output association and current admission.
 
+`BridgeSealedRuntimeAssembly::compare_exact_output` evaluates a supplied u64
+baseline and candidate through a source-free, on-demand Exact contract. It creates
+one fresh private Signal session, initializes the exact baseline, then compares
+the candidate in that same partition. Neither caller nor provider receives the
+session. Other occurrences cannot replace its state, even with equal descriptive
+labels. The returned `BridgeExactOutputComparison` retains only genuine paired
+computed observations; its candidate's before version must equal its baseline's
+after version. The compute provider must produce each supplied version exactly.
+
+`BridgeOutputComparisonDenial` identifies admission, baseline or candidate failure
+and retains the original typed cause. Partial failure releases the private session
+and returns no comparison. This is fixed scratch evaluation, not an atomic Native
+publication or a rollback guarantee. The [exact-pair courts](src/builder/tests/correspondence/conditional_compatibility/equivalence_observation/exact_pair.rs)
+cover nonzero initialization, exact equivalence/change, occurrence isolation and
+release, wrong baseline, candidate failure/retry, foreign owner and cancellation.
+The pair supplies no Native-field or application source association by itself.
+
 Bridge reserves the decision and observation headers before provider callbacks.
 Signal funds its immutable invalidation backing at its existing post-execution
 receipt-preparation boundary, preserving that boundary's typed failure posture.

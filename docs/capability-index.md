@@ -133,6 +133,9 @@ before/after Signal versions. The original Signal verdict, suppression reason
 and comparison survive; passive decisions have no computed report. Scheduling
 and readiness evidence describes those installed contracts and supplies no
 application output-equivalence association. See [read-only Native observation custody](../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
+`compare_exact_output` supplies a fixed baseline/candidate computation in a fresh
+private Signal partition; its paired observations do not independently establish
+Native field provenance or application permission.
 
 Native generation payload inspection uses request-aware `read_latest_generation`,
 `read_published_generation_for_commit`, `read_published_generation_for_observation`
