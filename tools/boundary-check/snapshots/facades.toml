@@ -375,6 +375,7 @@ exports = [
     "WorthQuerySettledFixedOperation",
     "WorthQuerySettledProgramOutputOperation",
     "WorthQuerySourceCompletion",
+    "WorthQuerySourceCompletionHandoffPauseForTest",
     "WorthQuerySourceDeliveryMode",
     "WorthQuerySourceOnlyAdvance",
     "WorthQuerySourceOnlyDenial",

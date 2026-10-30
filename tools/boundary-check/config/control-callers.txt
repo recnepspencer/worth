@@ -1,4 +1,6 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+# Phase17 receiving boundary: pause only a genuine SourceOnly completion before its request handoff.
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/handoff.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/derived/court.rs
 # Logical source court observes only real closed-count retention lifecycle.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/logical/court.rs

@@ -2102,6 +2102,14 @@ but the public application must also consume the real guarded receiver.
 
 ### Evidence Boundaries And Certification Run
 
+The exact consumer court `proposal_acceptance/courts/attempts/handoff.rs` may arm
+Publication's receiver-local source-completion handoff pause. It parks only after
+the original operation has genuinely completed and before the initiating request
+returns. Cancelling that real scope must retain actual Fresh evidence for a new
+authorized request. The control may not inject an outcome, modify command meaning,
+mint authority or substitute a second runtime. Keep this caller closed in
+`control-callers.txt`; ordinary application sources cannot arm it.
+
 The [existing expected-source cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance.rs),
 [adoption cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/adoption.rs)
 and [stored-basis cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/stored_basis.rs)
