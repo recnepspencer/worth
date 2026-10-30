@@ -116,6 +116,11 @@ where
         } else {
             plan
         };
+        let plan = if self.retain_projection_for_inspection {
+            plan.retain_projection_for_inspection()
+        } else {
+            plan
+        };
         perform(self.application, &binding, self.principal, plan)
     }
 }

@@ -46,6 +46,7 @@ pub(crate) use config::BridgeDiagnosticsConfig;
 
 #[derive(Debug, Default)]
 pub(crate) struct BridgeDiagnosticsState {
+    pub(super) conditional_history: super::conditional_history::ConditionalExecutionHistory,
     route_records: VecDeque<Arc<BridgeRouteRecord>>,
     bulk_records: VecDeque<Arc<BridgeCanonicalBulkPlanRecord>>,
     continuity_records: VecDeque<Arc<BridgeCanonicalContinuityRecord>>,

@@ -330,6 +330,15 @@ pub use worth_query_declaration::{
 };
 pub use worth_query_execution::facade::application_contribution;
 pub use worth_query_execution::facade::application_discovery;
+/// Explain saved query results and authored source operations for audit or debugging.
+///
+/// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] for an
+/// original query observation, or
+/// [`application_entry::WorthQueryApplicationRequest::inspect_source`] for an
+/// authored source receipt. Choose a reference report, comparison, producer
+/// explanation or materialized original values. Each execution checks current
+/// inspection permission; saving an original does not preserve an access grant.
+pub use worth_query_execution::facade::application_inspection as causal_inspection;
 pub use worth_query_execution::facade::application_installation;
 pub use worth_query_execution::facade::application_invariants;
 /// Read-only observations for facade-only certification; these reports grant no authority.

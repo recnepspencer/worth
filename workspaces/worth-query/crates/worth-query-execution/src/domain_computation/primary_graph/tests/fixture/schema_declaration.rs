@@ -126,6 +126,29 @@ worth_query_declaration::worth_query_application_contribution! {
                     .allow(Principal::reference())],
                 )
                 .application_query_binding::<TestAccountSourceBinding>()
+                .application_query_binding::<AlternateAccountSourceBinding>()
+                .application_query_inspection(
+                    worth_query_declaration::facade::application_query::ApplicationQueryInspectionDefinition::<IdentityExecutionSchema, TestAccountSourceBinding>::new(
+                        worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract::public(),
+                    ).unwrap(),
+                )
+                .application_query_inspection(
+                    inspection_disclosure::governed(),
+                )
+                .application_query_binding::<diagnostic_comparison::DiagnosticAccountBinding>()
+                .application_query_binding::<diagnostic_comparison::GovernedDiagnosticAccountBinding>()
+                .application_query_binding::<diagnostic_comparison::DeniedDiagnosticInternalBinding>()
+                .application_query_binding::<diagnostic_comparison::DeniedDiagnosticRelationBinding>()
+                .application_query_binding::<diagnostic_comparison::DeniedDiagnosticFieldBinding>()
+                .application_query_inspection(worth_query_declaration::facade::application_query::ApplicationQueryInspectionDefinition::<IdentityExecutionSchema, diagnostic_comparison::DiagnosticAccountBinding>::new(worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract::public()).unwrap())
+                .application_query_inspection(worth_query_declaration::facade::application_query::ApplicationQueryInspectionDefinition::<IdentityExecutionSchema, diagnostic_comparison::DeniedDiagnosticInternalBinding>::new(worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract::public()).unwrap())
+                .application_query_inspection(worth_query_declaration::facade::application_query::ApplicationQueryInspectionDefinition::<IdentityExecutionSchema, diagnostic_comparison::DeniedDiagnosticRelationBinding>::new(worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract::public()).unwrap())
+                .application_query_inspection(worth_query_declaration::facade::application_query::ApplicationQueryInspectionDefinition::<IdentityExecutionSchema, diagnostic_comparison::DeniedDiagnosticFieldBinding>::new(worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract::public()).unwrap())
+                .application_query_inspection(diagnostic_comparison::governed_metadata())
+                .application_query(diagnostic_comparison::definition(diagnostic_comparison::DiagnosticAccountQuery::reference(), diagnostic_comparison::DiagnosticPolicy::Complete))
+                .application_query(diagnostic_comparison::definition(diagnostic_comparison::DeniedDiagnosticInternalQuery::reference(), diagnostic_comparison::DiagnosticPolicy::DenyInternal))
+                .application_query(diagnostic_comparison::definition(diagnostic_comparison::DeniedDiagnosticRelationQuery::reference(), diagnostic_comparison::DiagnosticPolicy::DenyRelation))
+                .application_query(diagnostic_comparison::definition(diagnostic_comparison::DeniedDiagnosticFieldQuery::reference(), diagnostic_comparison::DiagnosticPolicy::DenyField))
                 .application_query(application_queries::account_summary_definition())
                 .application_query(application_queries::scoped_account_summary_definition())
                 .application_query(application_queries::public_scoped_definition())

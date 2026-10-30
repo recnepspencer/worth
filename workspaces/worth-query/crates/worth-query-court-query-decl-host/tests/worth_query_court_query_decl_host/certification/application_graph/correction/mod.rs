@@ -1,5 +1,6 @@
 pub(crate) use worth_query_testkit_certification_correction::facade::certification::application_graph::correction::*;
 
+mod causal_inspection;
 #[path = "consecutive_undo.rs"]
 mod consecutive_undo;
 
@@ -58,6 +59,7 @@ fn performed_source_survives_operation_close_and_receipt_copy() {
     assert_eq!(
         host::read(&host),
         [model::query::Row {
+            operand: None,
             primary: 11,
             secondary: 19
         }]
@@ -103,6 +105,7 @@ fn changed_independent_handler_dependency_refuses_an_unchanged_afterimage() {
     assert_eq!(
         host::read(&host),
         [model::query::Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]

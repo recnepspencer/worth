@@ -134,6 +134,9 @@ impl RelationalRuntime {
             total.publication_new_authoritative_bytes = total
                 .publication_new_authoritative_bytes
                 .saturating_add(costs.publication_new_authoritative_bytes);
+            total.publication_new_root_authoritative_bytes = total
+                .publication_new_root_authoritative_bytes
+                .saturating_add(costs.publication_new_root_authoritative_bytes);
             total.publication_content_values_hashed = total
                 .publication_content_values_hashed
                 .saturating_add(costs.publication_content_values_hashed);

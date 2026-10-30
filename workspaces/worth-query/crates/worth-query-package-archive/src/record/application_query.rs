@@ -23,6 +23,7 @@ use super::sequence::{decode_sequence, write_sequence};
 mod components;
 pub(in crate::record) mod controls;
 pub(in crate::record) mod disclosure;
+mod field_presence;
 mod managed_index;
 mod orbit;
 pub(in crate::record) mod result_shape;

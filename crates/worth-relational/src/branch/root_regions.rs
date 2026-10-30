@@ -7,6 +7,7 @@ use super::root::{
     RelationalBranchRootCaptureDenial, RelationalBranchRootIdentityIssuer, RelationalRootRegion,
 };
 
+mod allocation_visitation;
 mod partition_visitation;
 pub(crate) use partition_visitation::RelationalPartitionVisit;
 

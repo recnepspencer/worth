@@ -151,6 +151,7 @@ where
         Ok(WorthQueryAdmittedApplicationQueryPlan {
             planned_batch_item: None,
             retain_expression_context: false,
+            retain_projection_for_inspection: false,
             runtime_authority: self.runtime.authority_identity(),
             graph_authority_identity: self
                 .primary_graph_authority

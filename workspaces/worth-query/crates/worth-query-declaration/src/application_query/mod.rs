@@ -36,9 +36,13 @@ pub use orbit::{
     ApplicationQueryOrbitMeaning, ApplicationQueryOrbitRef,
     WorthQueryPortableApplicationQueryOrbitParts,
 };
+mod optional_aspect_field;
 mod parameters;
 mod reference;
+mod result_field_presence;
 mod result_field_selector;
+pub use optional_aspect_field::ApplicationQueryOptionalAspectFieldRef;
+pub use result_field_presence::ApplicationQueryResultFieldPresence;
 mod result_relation_selector;
 mod result_shape;
 mod result_slot_key;

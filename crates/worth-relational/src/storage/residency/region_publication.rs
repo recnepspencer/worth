@@ -21,6 +21,7 @@ pub(crate) struct RegionCaptureBasis<'region> {
     pub(crate) retention: &'region RelationalRegionRetention,
     pub(crate) inventory: RelationalPartitionAllocationInventory,
     pub(crate) unavailable_records: usize,
+    pub(crate) kind_commitment: RelationalRegionKindCommitment,
 }
 
 pub(crate) struct PreparedResidentRegion {
@@ -91,7 +92,18 @@ impl PreparedResidentRegion {
         let prior_commitment = previous.commitment.as_ref().ok_or_else(absent)?;
         let mut partition = previous.partition.clone();
         let copied_truth_bytes = partition.merge_overlay_from_owned(&mut overlay.clone(), journal);
-        normalize(&mut partition)?;
+        let kind_commitment =
+            if journal.adjacency_slots.is_empty() && journal.reverse_adjacency_slots.is_empty() {
+                // The sealed publication journal carries no incidence changes.
+                // merge_adjacency_from therefore preserves the prior authenticated
+                // projections, including omitted Head history and peer claims.
+                partition.clear_runtime_pin_counters();
+                basis.kind_commitment
+            } else {
+                normalize(&mut partition)?;
+                RelationalRegionKindCommitment::capture(&partition)
+                    .map_err(|_| RegionContentFailure::Adjacency)?
+            };
         let (commitment, content_values_hashed) = PartitionContentCommitment::capture(
             &partition,
             &symbols.interner_snapshot(),
@@ -118,8 +130,6 @@ impl PreparedResidentRegion {
                 cause: RelationalStorageUnavailableCause::IntegrityMismatch,
             }),
         )?;
-        let kind_commitment = RelationalRegionKindCommitment::capture(&partition)
-            .map_err(|_| RegionContentFailure::Adjacency)?;
         let entity_slots = partition.entity_arena.slot_count();
         let relation_slots = partition.relation_arena.slot_count();
         let content_digest = commitment.digest(partition.partition_id);

@@ -1,7 +1,9 @@
+mod aspect_removal;
 use std::collections::{BTreeMap, BTreeSet};
 mod derived_reads;
+mod projection_mask;
 
-use worth_foundational::facade::{aspects, CanonicalFieldPath, FieldKey};
+use worth_foundational::facade::CanonicalFieldPath;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
@@ -168,18 +170,7 @@ fn compile_reads(
                     .ok_or(WorthQueryPortableOperationContractSpineDenialKind::MissingNativeField)
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let mask = aspects()
-            .projection_mask()
-            .fields(fields.iter().map(FieldKey::as_str))
-            .map_err(|_| {
-                WorthQueryPortableOperationContractSpineDenialKind::InvalidProjectionMask
-            })?;
-        native
-            .contract()
-            .admits_projection_mask(&mask)
-            .map_err(|_| {
-                WorthQueryPortableOperationContractSpineDenialKind::InvalidProjectionMask
-            })?;
+        let mask = projection_mask::compile(native, &fields)?;
         scopes.push(
             WorthQueryPortableOperationGraphReadScope::NativeProjection {
                 schema: schema.to_owned(),
@@ -225,6 +216,9 @@ fn compile_touch(
 ) -> SpineResult<WorthQueryPortableOperationTouchScope> {
     let schema = schema.to_owned();
     match target {
+        ApplicationOperationProgramTarget::RemoveAspect { entity, aspect } => {
+            aspect_removal::compile(&schema, native_contracts, entity, aspect)
+        }
         ApplicationOperationProgramTarget::Create { entity } => {
             Ok(WorthQueryPortableOperationTouchScope::CreateEntity {
                 schema,

@@ -45,6 +45,7 @@ use super::writeback::{
 };
 use super::BridgeRouteExplanation;
 
+mod conditional_history;
 mod explain;
 mod policy;
 mod query;

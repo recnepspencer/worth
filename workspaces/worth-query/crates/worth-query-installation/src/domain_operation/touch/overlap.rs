@@ -60,6 +60,14 @@ fn read_intersects_touch(
 ) -> bool {
     match (read, touch) {
         (
+            WorthQueryOperationGraphReadScope::NativeProjection(read),
+            WorthQueryOperationTouchScope::RemoveAspect(touch),
+        ) => {
+            read.schema() == touch.schema()
+                && read.entity().semantic_key() == touch.entity()
+                && read.projection().contract() == touch.contract()
+        }
+        (
             WorthQueryOperationGraphReadScope::Relation(read),
             WorthQueryOperationTouchScope::InitializeRelationField(touch),
         ) => {

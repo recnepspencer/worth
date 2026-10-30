@@ -195,6 +195,7 @@ impl CausalInspectionPlanExplanation {
 
 pub(super) fn reason_for_outcome(outcome: CausalObservationOutcome) -> CausalInspectionReason {
     match outcome {
+        CausalObservationOutcome::Observed => CausalInspectionReason::ObservedResult,
         CausalObservationOutcome::Changed => CausalInspectionReason::ChangedResult,
         CausalObservationOutcome::Suppressed => CausalInspectionReason::SuppressedResult,
         CausalObservationOutcome::Denied => CausalInspectionReason::DeniedResult,

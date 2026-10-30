@@ -3,6 +3,7 @@ mod denial;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use denial::{denial, inconsistent_refresh};
 mod installed_basis;
+mod prepared_read;
 
 use worth_query_installation::facade::ApplicationSchema;
 

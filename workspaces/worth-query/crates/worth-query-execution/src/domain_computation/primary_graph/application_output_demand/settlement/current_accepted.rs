@@ -2,6 +2,7 @@ use super::*;
 
 impl WorthQueryOutputDemandSettlement {
     pub(in crate::domain_computation::primary_graph) fn from_current_accepted<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         bound: BoundCurrentAcceptedOutput<'_>,
         producer_identity: &str,
@@ -54,8 +55,14 @@ impl WorthQueryOutputDemandSettlement {
             restored_source,
             readiness_delivery,
             producer_contacts_in_this_demand,
-            observation: WorthQueryApplicationReadObservation::from_product_funded(
+            observation: WorthQueryApplicationReadObservation::from_settled_product(
                 runtime,
+                observation::OriginalSettledProducerObservation::ready(
+                    execution,
+                    runtime,
+                    completion,
+                    bound.product(),
+                )?,
                 bound.product().retained_clone(),
             ),
         }))

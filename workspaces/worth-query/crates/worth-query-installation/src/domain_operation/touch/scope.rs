@@ -13,6 +13,7 @@ pub enum WorthQueryOperationTouchScope {
     UnlinkRelation(WorthQueryOperationRelationTouchScope),
     InitializeRelationField(super::WorthQueryOperationRelationFieldInitializationScope),
     DeclaredDomain(WorthQueryDeclaredDomainTouchScopeIdentity),
+    RemoveAspect(super::WorthQueryOperationAspectRemovalScope),
 }
 
 impl WorthQueryOperationTouchScope {
@@ -52,6 +53,11 @@ impl WorthQueryOperationTouchScope {
                         .then_with(|| left.contract().key().cmp(right.contract().key()))
                         .then_with(|| left.field_path().cmp(right.field_path()))
                 }
+                (Self::RemoveAspect(left), Self::RemoveAspect(right)) => {
+                    compare_binding(left.schema(), right.schema())
+                        .then_with(|| left.entity().cmp(right.entity()))
+                        .then_with(|| left.contract().key().cmp(right.contract().key()))
+                }
                 _ => Ordering::Equal,
             })
     }
@@ -66,6 +72,7 @@ fn touch_rank(scope: &WorthQueryOperationTouchScope) -> u8 {
         WorthQueryOperationTouchScope::UnlinkRelation(_) => 4,
         WorthQueryOperationTouchScope::DeclaredDomain(_) => 5,
         WorthQueryOperationTouchScope::InitializeRelationField(_) => 6,
+        WorthQueryOperationTouchScope::RemoveAspect(_) => 7,
     }
 }
 

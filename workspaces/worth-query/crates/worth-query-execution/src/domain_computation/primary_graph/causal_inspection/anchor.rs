@@ -330,6 +330,9 @@ fn inspection_reason_matches_observation_outcome(
     matches!(
         (inspection_reason, observation_receipt.outcome()),
         (
+            CausalInspectionReason::ObservedResult,
+            CausalObservationOutcome::Observed
+        ) | (
             CausalInspectionReason::ChangedResult,
             CausalObservationOutcome::Changed
         ) | (

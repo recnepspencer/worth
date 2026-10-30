@@ -4,12 +4,13 @@ use worth_signal::facade::branch::SignalConditionalServiceExecutionRequest;
 use worth_signal::facade::SignalConditionalDecisionEvidence;
 
 use super::resolver_adapters::{ComparatorAdapter, ConditionAdapter};
-use super::retained_decision::BridgeRetainedConditionalDecisionCore;
+mod retained;
 use super::{
     BridgeConditionalDecisionEvidence, BridgeConditionalDenial, BridgeConditionalDenialKind,
     BridgeConditionalEvaluationAdmissionRequest, BridgeConditionalEvaluationSession,
     BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime,
 };
+use retained::{retain_bridge_decision, RetainedBridgeDecisionOutcome};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct BridgeConditionalExecutionCounters {
@@ -160,10 +161,21 @@ impl BridgeOwnedSignalRuntime {
         retain_successful_observation_baseline(session, &observations);
         counters.observation_baseline_writes = observations.len();
         counters.decisions_retained = 1;
+        let history = self
+            .bridge
+            .diagnostics
+            .retain_conditional_history(execution_request, &signal)
+            .map_err(|cause| {
+                BridgeConditionalDenial::new(
+                    BridgeConditionalDenialKind::ExecutionDenied(cause.into()),
+                    "Bridge conditional history capture stopped the actual request",
+                )
+            })?;
         Ok(retain_bridge_decision(
             &request,
             self.bridge.signal_runtime_key,
             RetainedBridgeDecisionOutcome {
+                history,
                 reservation: decision_reservation,
                 source_snapshot: session.source_snapshot.as_ref().map(std::sync::Arc::clone),
                 signal,
@@ -320,71 +332,5 @@ fn admit_signal_execution(
             )
             .with_execution_counters(counters, observation_reads))
         }
-    }
-}
-
-struct RetainedBridgeDecisionOutcome {
-    reservation: super::retention::DecisionReservations,
-    source_snapshot: Option<
-        std::sync::Arc<
-            crate::snapshot::AdmittedSnapshotContext<Box<dyn crate::snapshot::TruthSnapshotReader>>,
-        >,
-    >,
-    signal: SignalConditionalDecisionEvidence,
-    observations: super::observation_retention::BridgeRetainedObservations,
-    counters: BridgeConditionalExecutionCounters,
-    performed_signal_invalidation: Option<SignalInvalidationExecutionReceipt>,
-}
-
-fn retain_bridge_decision(
-    request: &BridgeConditionalExecutionRequest<'_>,
-    bridge_runtime_key: u64,
-    outcome: RetainedBridgeDecisionOutcome,
-) -> BridgeConditionalDecisionEvidence {
-    let RetainedBridgeDecisionOutcome {
-        reservation,
-        source_snapshot,
-        signal,
-        observations,
-        counters,
-        performed_signal_invalidation,
-    } = outcome;
-    let bridge_snapshot_identity = source_snapshot
-        .as_ref()
-        .map(|source| source.snapshot_identity().clone());
-    let observation = std::sync::Arc::new(
-        super::causal_observation::BridgeRetainedConditionalObservation {
-            _reservation: reservation.core,
-            bridge_runtime_key,
-            lowering_projection: request.lowering.projection().clone(),
-            _definition_retention: request
-                .lowering
-                ._definition_retention
-                .as_ref()
-                .map(std::sync::Arc::clone),
-            bridge_snapshot_identity,
-            signal_snapshot_projection: request.snapshot_identity.into(),
-            signal_execution_projection: request.execution_identity.into(),
-            attempt: request.attempt,
-            signal,
-            performed_signal_invalidation: performed_signal_invalidation
-                .as_ref()
-                .map(SignalInvalidationExecutionReceipt::retain_causal_observation),
-            semantic_observations: observations,
-            bridge_execution_counters: counters,
-            triggering_change_set: None,
-        },
-    );
-    BridgeConditionalDecisionEvidence {
-        _reservation: reservation.evidence,
-        core: std::sync::Arc::new(BridgeRetainedConditionalDecisionCore {
-            lowering: std::sync::Arc::clone(request.lowering),
-            source_snapshot,
-            observation,
-        }),
-        query_binding_identity: request.query_binding_identity.into(),
-        query_capability_identity: request.query_capability_identity,
-        reentry_counters: BridgeConditionalReentryCounters::default(),
-        performed_signal_invalidation,
     }
 }

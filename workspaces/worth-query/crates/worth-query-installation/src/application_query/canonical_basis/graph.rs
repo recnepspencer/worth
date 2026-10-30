@@ -124,16 +124,9 @@ fn append_projections(
 }
 
 const fn field_presence_name(
-    value: worth_query_declaration::facade::application_schema::ApplicationFieldPresence,
+    value: worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence,
 ) -> &'static str {
-    match value {
-        worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Required => {
-            "required"
-        }
-        worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => {
-            "optional"
-        }
-    }
+    value.canonical_name()
 }
 
 fn append_relations(

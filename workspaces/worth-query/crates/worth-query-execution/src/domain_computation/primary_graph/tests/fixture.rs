@@ -67,8 +67,12 @@ pub(in crate::domain_computation::primary_graph) use capability_status_mutation:
 mod application_queries;
 #[path = "fixture/current_output_source.rs"]
 mod current_output_source;
+#[path = "fixture/diagnostic_comparison.rs"]
+pub(in crate::domain_computation::primary_graph) mod diagnostic_comparison;
 #[path = "fixture/filtered_activity_query.rs"]
 mod filtered_activity_query;
+#[path = "fixture/inspection_disclosure.rs"]
+mod inspection_disclosure;
 pub(super) use application_queries::{
     cross_root_definition, AccountSummaryQuery, GovernedAccountSummaryQuery,
     OrderedAccountSummaryQuery, PublicAccountMembershipQuery, PublicAccountMembershipResult,
@@ -78,7 +82,9 @@ pub(in crate::domain_computation::primary_graph) use application_queries::{
     status_parameter, AccountSummaryParameters, AccountSummaryResult, CrossRootQuery,
     PublicScopedAccountSummaryQuery,
 };
-pub(in crate::domain_computation::primary_graph) use current_output_source::TestAccountSourceBinding;
+pub(in crate::domain_computation::primary_graph) use current_output_source::{
+    AlternateAccountSourceBinding, TestAccountSourceBinding,
+};
 pub(super) use filtered_activity_query::{
     selected_activity_parameters, SelectedActivityParameters, SelectedActivityQuery,
     SelectedActivityResult,
@@ -187,14 +193,14 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
     installed_capability_world_with_same_resource_unrelated, installed_delegated_capability_world,
     installed_delegated_capability_world_at_depth,
     installed_delegated_capability_world_with_unrelated, installed_elevated_capability_live_world,
-    installed_elevated_capability_world,
+    installed_elevated_capability_world, installed_inspection_capability_world,
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation) use world_installation::installed_authorization_world;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
     installed_authorization_world_with_label, installed_authorization_world_with_product_resources,
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
-    installed_two_principal_authorization_world,
+    installed_reclaiming_authorization_world, installed_two_principal_authorization_world,
 };
 pub(super) use world_installation::{
     installed_world, installed_world_with_policy_fact, restored_world,

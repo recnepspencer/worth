@@ -17,6 +17,8 @@ pub struct RelationalRetentionCostCounters {
     pub head_transfers: u64,
     pub retired_root_enqueues: u64,
     pub reclamation_roots_examined: u64,
+    /// Retired-root rows visited to decide derived-generation reader custody.
+    pub index_retention_roots_examined: u64,
     pub reclamation_roots_reclaimed: u64,
     pub reclamation_unique_authoritative_bytes: u64,
 }
@@ -43,6 +45,7 @@ impl RelationalRetentionCostCounters {
             head_transfers,
             retired_root_enqueues,
             reclamation_roots_examined,
+            index_retention_roots_examined,
             reclamation_roots_reclaimed,
             reclamation_unique_authoritative_bytes,
         )
@@ -69,6 +72,7 @@ impl RelationalRetentionCostCounters {
             head_transfers,
             retired_root_enqueues,
             reclamation_roots_examined,
+            index_retention_roots_examined,
             reclamation_roots_reclaimed,
             reclamation_unique_authoritative_bytes,
         )
@@ -77,6 +81,7 @@ impl RelationalRetentionCostCounters {
     pub(crate) fn maintenance_only(self) -> Self {
         Self {
             reclamation_roots_examined: self.reclamation_roots_examined,
+            index_retention_roots_examined: self.index_retention_roots_examined,
             reclamation_roots_reclaimed: self.reclamation_roots_reclaimed,
             reclamation_unique_authoritative_bytes: self.reclamation_unique_authoritative_bytes,
             ..Self::default()

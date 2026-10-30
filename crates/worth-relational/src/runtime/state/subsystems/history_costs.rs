@@ -23,6 +23,9 @@ pub struct RelationalBranchSharingCostCounters {
     /// Unchanged retained values contribute zero; digest index nodes are not values.
     pub publication_content_values_hashed: u64,
     pub publication_new_authoritative_bytes: u64,
+    /// Root/payload/schema allocations within the publication's aggregate.
+    /// Canonical artifact allocations contribute to the aggregate separately.
+    pub publication_new_root_authoritative_bytes: u64,
     pub reclaimable_unique_bytes: u64,
 }
 
@@ -84,6 +87,10 @@ impl RelationalBranchSharingCostCounters {
             publication_new_authoritative_bytes: delta(
                 self.publication_new_authoritative_bytes,
                 baseline.publication_new_authoritative_bytes,
+            ),
+            publication_new_root_authoritative_bytes: delta(
+                self.publication_new_root_authoritative_bytes,
+                baseline.publication_new_root_authoritative_bytes,
             ),
             publication_content_values_hashed: delta(
                 self.publication_content_values_hashed,

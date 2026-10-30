@@ -2,7 +2,7 @@ use worth_runtime_bridge::facade::{BridgeConditionalDenial, BridgeConditionalDen
 
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 
-pub(super) fn bridge_denial(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn bridge_denial(
     producer_identity: &str,
     failure: BridgeConditionalDenial,
 ) -> WorthQueryOutputDemandDenial {

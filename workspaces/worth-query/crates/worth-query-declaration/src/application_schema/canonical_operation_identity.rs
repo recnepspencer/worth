@@ -7,6 +7,11 @@ pub(super) fn append_operation_target(
     target: &ApplicationOperationProgramTarget,
 ) {
     match target {
+        ApplicationOperationProgramTarget::RemoveAspect { entity, aspect } => {
+            basis.text(format!("{prefix}.action"), "remove-aspect");
+            basis.text(format!("{prefix}.entity"), entity);
+            basis.text(format!("{prefix}.aspect"), aspect);
+        }
         ApplicationOperationProgramTarget::Create { entity } => {
             basis.text(format!("{prefix}.action"), "create");
             basis.text(format!("{prefix}.entity"), entity);

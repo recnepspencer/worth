@@ -153,7 +153,7 @@ fn write_selector(
             output.text(output_name)?;
             foundational_aspect::write_scalar_type(output, *scalar_family)?;
             write_type_identity(output, value_type)?;
-            crate::record::application_schema::wire_vocabulary::write_presence(output, *presence)?;
+            super::field_presence::write(output, *presence)?;
             write_mask(output, projection_mask)?;
             write_mask(output, diagnostic_mask)
         }
@@ -221,7 +221,7 @@ fn decode_selector(
             output_name: input.text()?.to_owned(),
             scalar_family: foundational_aspect::decode_scalar_type(input)?,
             value_type: decode_type_identity(input)?,
-            presence: crate::record::application_schema::wire_vocabulary::decode_presence(input)?,
+            presence: super::field_presence::decode(input)?,
             projection_mask: decode_mask(input, budget)?,
             diagnostic_mask: decode_mask(input, budget)?,
         },

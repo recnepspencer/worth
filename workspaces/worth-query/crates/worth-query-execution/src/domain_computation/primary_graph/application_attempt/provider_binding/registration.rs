@@ -145,8 +145,8 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     };
     let source_fact_rebase = match match (&output_currentness_facts, correction_facts) {
         (Some(facts), _) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
-            facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), control,
-        ),
+            facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), facts.performed_input_facts().cloned(), control,
+        ).map(|prepared| prepared.retaining_output_field_evidence(facts.retains_output_field_evidence())),
         (None, Some(facts)) => {
             let semantic = match &workflow_origin {
                 Some(origin) => origin.semantic_facts(&facts, control),

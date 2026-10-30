@@ -9,7 +9,7 @@ use super::super::{
     InstalledSignalConditionResolver, SignalConditionalDecisionClass,
     SignalConditionalDecisionCounters, SignalConditionalDecisionEvidence,
 };
-use super::application::{apply_passive, ConditionalResolutionAttempt};
+use super::application::{apply_passive, ConditionalResolution, ConditionalResolutionAttempt};
 use super::preparation::{prepare_conditional_attempt, PreparedConditionalAttempt};
 use super::{
     work, SignalConditionalAttemptOutcome, SignalConditionalExecutionFailure,
@@ -65,7 +65,7 @@ struct ConditionalExecutionCompletion {
 struct ConditionalFinalization<'a> {
     request: SignalConditionalExecutionRequest<'a>,
     completion: ConditionalExecutionCompletion,
-    class: SignalConditionalDecisionClass,
+    resolution: ConditionalResolution,
 }
 
 fn execute_conditional_attempt<Condition, Comparator, Compute>(
@@ -92,10 +92,10 @@ where
         passive_dependency_hit,
         ready_invalidation,
     } = prepared;
-    let class = if passive_dependency_hit {
+    let resolution = if passive_dependency_hit {
         counters.application_contacts += 1;
         apply_passive(graph, node, providers.comparator, work)?;
-        SignalConditionalDecisionClass::DependencyUnchanged
+        ConditionalResolution::passive(SignalConditionalDecisionClass::DependencyUnchanged)
     } else {
         counters.condition_checks += 1;
         ConditionalResolutionAttempt {
@@ -120,7 +120,7 @@ where
                 output_version_before,
                 dependency_changed,
             },
-            class,
+            resolution,
         },
         providers.comparator,
         counters,
@@ -139,8 +139,9 @@ fn finalize_conditional_attempt(
     let ConditionalFinalization {
         request,
         completion,
-        class,
+        resolution,
     } = finalization;
+    let class = resolution.class;
     retain_outcome_counter(class, counters);
     counters.output_version_reads += 1;
     let output_version_after = graph.conditional_node_version_for_scope(
@@ -178,9 +179,11 @@ fn finalize_conditional_attempt(
             class,
             counters: *counters,
             artifact_reuse_admitted,
+            computed_evaluation: resolution.computed_evaluation,
             dependency_versions: completion.dependency_versions,
             executed,
             output_aspect: completion.output_aspect,
+            output_version_before: completion.output_version_before,
             output_version: output_version_after,
         },
         work,
@@ -217,9 +220,11 @@ struct ConditionalDecisionOutcome {
     class: SignalConditionalDecisionClass,
     counters: SignalConditionalDecisionCounters,
     artifact_reuse_admitted: bool,
+    computed_evaluation: Option<crate::logic::evaluation::AppliedEffectReport>,
     dependency_versions: SignalConditionalDependencyVersions,
     executed: SignalConditionalExecutedRecipe,
     output_aspect: crate::data::aspect::Aspect,
+    output_version_before: u64,
     output_version: u64,
 }
 
@@ -247,7 +252,9 @@ fn mint_evidence(
         class: outcome.class,
         counters: outcome.counters,
         artifact_reuse_admitted: outcome.artifact_reuse_admitted,
+        computed_evaluation: outcome.computed_evaluation,
         output_aspect: outcome.output_aspect,
+        output_version_before: outcome.output_version_before,
         output_version: outcome.output_version,
         _dependency_versions: outcome.dependency_versions,
         _execution: outcome.executed,

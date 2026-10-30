@@ -14,11 +14,11 @@ use std::sync::{Arc, OnceLock};
 
 use crate::identity::CompositeCommitIdentity;
 
-use super::support::{
-    detach_installed, effective_parent, lock_state, remove_installed, validate_owner,
-};
+use super::support::{effective_parent, lock_state, remove_installed, validate_owner};
 use super::{lock_index, CompositeHistoryCatalog, CompositeHistoryCatalogDenial};
 use super::{CompositeHistoryCatalogEntry, CompositeHistoryCatalogState};
+mod interior;
+use interior::EligibleInterior;
 
 /// Entries removed from the catalog. Dropping them releases their component
 /// pins, so the caller drops them only after the catalog lock is gone.
@@ -33,6 +33,23 @@ pub(super) struct SplicedParent {
 }
 
 impl CompositeHistoryCatalog {
+    /// Automatic owner-wide retirement visits only changed reachability slots.
+    /// Returned payloads must be dropped after releasing the catalog lock.
+    pub(crate) fn retire_changed_history(&self) -> RetiredHistoryEntries {
+        let mut state = lock_state(&self.state);
+        let mut retired = Vec::new();
+        loop {
+            let next = lock_index(&state.reachability).pop_changed();
+            let Some(commit) = next else {
+                break;
+            };
+            if let Some(eligible) = EligibleInterior::assess(&state, &commit) {
+                retired.push(eligible.retire(&mut state));
+            }
+        }
+        retired
+    }
+
     /// Retires every unprotected commit on `keep`'s ancestry, oldest first.
     pub(crate) fn retire_unprotected_history(
         &self,
@@ -44,34 +61,16 @@ impl CompositeHistoryCatalog {
         let mut retired = Vec::new();
         let mut child = keep.clone();
         for commit in &ancestry {
-            if !retirable(&state, commit) {
+            let Some(eligible) = EligibleInterior::assess(&state, commit) else {
                 child = commit.clone();
                 continue;
-            }
-            let (_, child_span) = installed(&state, &child)
-                .and_then(|entry| effective_parent(&state, entry.commit()))
-                .expect("a walked child depends on its installed parent");
-            // The child's edge is the only dependency left; it ends here.
-            lock_index(&state.reachability).decrement_descendant_dependency(commit);
-            let (entry, parent) = detach_installed(&mut state, commit);
-            retired.push(entry);
-            match parent.filter(|(parent, _)| installed(&state, parent).is_some()) {
-                // The child inherits the retired commit's own parent edge.
-                Some((parent, span)) => {
-                    let generations = child_span.saturating_add(span);
-                    state.spliced.insert(
-                        child.clone(),
-                        SplicedParent {
-                            parent,
-                            generations,
-                        },
-                    );
-                }
-                None => {
-                    state.spliced.remove(&child);
-                    state.root = Some(child.clone());
-                }
-            }
+            };
+            assert_eq!(
+                eligible.child(),
+                &child,
+                "the assessed child is on the selected ancestry"
+            );
+            retired.push(eligible.retire(&mut state));
         }
         retired.reverse();
         Ok(retired)
@@ -192,21 +191,4 @@ fn installed<'state>(
     identity: &CompositeCommitIdentity,
 ) -> Option<&'state CompositeHistoryCatalogEntry> {
     state.entries.get(identity).and_then(|slot| slot.get())
-}
-
-/// Protections are only acquired under the catalog lock this caller holds, so
-/// an unprotected commit cannot gain a protection before it is removed. The
-/// walk reaches a commit through its installed child, which holds one of its
-/// dependencies; a single dependency therefore means no other child or
-/// reservation needs it.
-fn retirable(state: &CompositeHistoryCatalogState, commit: &CompositeCommitIdentity) -> bool {
-    let awaits_delivery = installed(state, commit)
-        .and_then(|entry| entry.publication.as_ref())
-        .is_some_and(|publication| publication.awaits_delivery());
-    let reachability = lock_index(&state.reachability)
-        .lookup(commit)
-        .expect("an installed commit has a reachability row");
-    !awaits_delivery
-        && reachability.direct_protections() == 0
-        && reachability.descendant_dependencies() == 1
 }

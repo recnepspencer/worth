@@ -227,6 +227,9 @@ where
             worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(edition.build_identity(), edition.digest()),
             successor_of,
             identity_execution.allocation_policy(),
+            runtime.installed_producers.entries.get(Binding::IDENTITY)
+                .expect("execution retains its installed producer")
+                .declaration.installed_output_equivalence.is_some(),
         )
         .map_err(|identity_denial| super::super::denial::identity_failed(Binding::IDENTITY, identity_denial))?;
             let idempotency = bound_source

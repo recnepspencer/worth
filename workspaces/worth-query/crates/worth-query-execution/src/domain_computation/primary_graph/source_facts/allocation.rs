@@ -1,4 +1,5 @@
 //! Original complete-source backing for walk or material-selection custody.
+use super::super::admitted_capture::storage::tree_clone_bytes;
 use super::super::structural_walk::{memory, StructuralWalkObservation};
 use std::sync::{Arc, Mutex};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -101,14 +102,6 @@ impl SourceFactsAllocation {
             tree_clone_bytes::<T>(len).ok_or(Cause::ChargedBytesOverflow)?,
         )
     }
-}
-
-pub(super) fn tree_clone_bytes<T>(len: usize) -> Option<u64> {
-    u64::try_from(len).ok()?.checked_mul(
-        11_u64
-            .checked_mul(size_of::<T>() as u64)?
-            .checked_add(14 * size_of::<usize>() as u64)?,
-    )
 }
 
 fn tree_insertion_bytes<T>(len: usize) -> Option<u64> {

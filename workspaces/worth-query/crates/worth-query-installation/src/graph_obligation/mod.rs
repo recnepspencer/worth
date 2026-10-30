@@ -4,6 +4,7 @@ mod contract;
 pub(crate) use capability_binding::install_disclosure_capabilities;
 mod denial;
 mod identity;
+mod inspection_binding;
 mod installed_set;
 mod kind;
 mod managed_index_binding;
@@ -30,6 +31,7 @@ pub use contract::{
 };
 pub(crate) use denial::WorthQueryGraphObligationInstallationDenial;
 pub use identity::WorthQueryInstalledGraphObligationSetIdentity;
+pub(crate) use inspection_binding::bind_inspection_obligations;
 pub use installed_set::{
     WorthQueryInstalledGraphObligationInspection,
     WorthQueryInstalledGraphObligationInstallationEvidence,

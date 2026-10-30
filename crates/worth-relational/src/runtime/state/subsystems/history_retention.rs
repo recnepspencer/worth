@@ -10,6 +10,48 @@ use crate::history::retention::{
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn retired_root_storage_inventory(
+        &self,
+    ) -> Vec<crate::history::retention::RelationalRetiredRootStorageSnapshot> {
+        self.retention_owner.storage_inventory()
+    }
+
+    pub(crate) fn current_root_storage_inventory(&self) -> Vec<Arc<RelationalBranchRoot>> {
+        self.record_branch_population_scan();
+        self.branch_cells
+            .values()
+            .into_iter()
+            .filter_map(|cell| cell.root())
+            .collect()
+    }
+
+    pub(crate) fn index_generation_basis_is_held(
+        &self,
+        generation: &crate::indexes::data::DerivedIndexGeneration,
+        branch_scoped: bool,
+    ) -> bool {
+        let basis = &generation.applicability;
+        let head_is_live = if branch_scoped {
+            self.branch_cell(&basis.branch_id)
+                .and_then(|cell| cell.root())
+                .is_some_and(|root| {
+                    root.canonical_envelope()
+                        .map(|envelope| envelope.commit.version_id)
+                        == Some(basis.version_id)
+                        && root.schema_authority().schema_version() == basis.schema_version
+                })
+        } else {
+            self.branch_head_versions
+                .contains(basis.version_id, basis.schema_version)
+        };
+        head_is_live
+            || self.retention_owner.index_basis_is_held(
+                basis.version_id,
+                basis.schema_version,
+                branch_scoped.then_some(&basis.branch_id),
+            )
+    }
+
     pub(crate) fn has_detached_retention_obligations(&self) -> bool {
         self.retention_owner.has_detached_obligations()
     }

@@ -14,6 +14,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::{EntityId, RelationId};
 
+pub(in crate::domain_computation::primary_graph::application_query::projection) mod comparison;
 mod disclosure_boundary;
 
 pub(in crate::domain_computation::primary_graph::application_query) use disclosure_boundary::{
@@ -193,6 +194,12 @@ impl WorthQueryApplicationProjectedField {
         &self,
     ) -> &str {
         &self.result_path
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn slot_key_identity(
+        &self,
+    ) -> &Arc<ApplicationQueryResultSlotKey> {
+        &self.slot_key
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn value(
@@ -383,3 +390,5 @@ impl WorthQueryApplicationProjectedRelation {
         self.slot_key.as_ref() == &selector.slot_key() && self.cardinality == selector.cardinality()
     }
 }
+
+pub(in crate::domain_computation::primary_graph::application_query::projection) mod materialization;

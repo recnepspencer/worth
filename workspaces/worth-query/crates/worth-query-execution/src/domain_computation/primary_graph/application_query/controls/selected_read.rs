@@ -32,6 +32,7 @@ impl<'request, Schema> WorthQueryApplicationQueryControls<'request, Schema> {
             maximum_result_count,
 
             request_scope,
+            producer: None,
             _schema: PhantomData,
         })
     }

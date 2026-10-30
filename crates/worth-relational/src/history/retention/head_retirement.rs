@@ -97,11 +97,9 @@ impl RelationalBranchRetentionBinding {
                     retired: false,
                     generation,
                 });
-                if let Some(commit_id) = root.commit_id() {
-                    owner
-                        .retired_roots_by_commit
-                        .insert(commit_id, (root_key, generation));
-                }
+                owner
+                    .retired_root_locators
+                    .register(root, root_key, generation);
                 generation
             }
         };
@@ -208,13 +206,9 @@ impl RelationalHeadRetirementReservation {
                             && !entry.retired
                     })
         {
-            if let Some(commit_id) = entry.root.commit_id() {
-                self.owner
-                    .retired_roots_by_commit
-                    .remove_if(&commit_id, |_, indexed| {
-                        *indexed == (self.root_key, self.generation)
-                    });
-            }
+            self.owner
+                .retired_root_locators
+                .remove(&entry.root, self.root_key, self.generation);
             release_retirement_slot(&self.owner);
         }
     }

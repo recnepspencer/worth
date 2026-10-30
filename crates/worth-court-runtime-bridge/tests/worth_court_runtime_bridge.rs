@@ -14,5 +14,7 @@ pub(crate) mod runtime_bridge;
 #[path = "worth_court_runtime_bridge/support/test_process/mod.rs"]
 pub(crate) mod test_process;
 
+#[path = "worth_court_runtime_bridge/support/conditional_evaluations/mod.rs"]
+mod conditional_evaluations;
 #[path = "worth_court_runtime_bridge/supported_programs/mod.rs"]
 mod supported_programs;

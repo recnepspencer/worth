@@ -184,10 +184,10 @@ impl HistorySubsystem {
         self.ledger.read().current_version_id()
     }
 
-    pub(crate) fn move_branch_head_version(
+    pub(crate) fn move_branch_head_basis(
         &self,
-        previous: Option<VersionId>,
-        next: Option<VersionId>,
+        previous: Option<&crate::branch::RelationalBranchRoot>,
+        next: Option<&crate::branch::RelationalBranchRoot>,
     ) {
         self.branch_head_versions.move_head(previous, next);
     }

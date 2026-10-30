@@ -130,6 +130,7 @@ pub fn historical_created_output() {
     assert_eq!(
         host::read(&application)[0],
         super::query::Row {
+            operand: None,
             primary: 17,
             secondary: 8
         }

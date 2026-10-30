@@ -4,7 +4,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade as domain;
 pub(super) mod typed;
-use typed::FieldExpectation;
+use super::super::native_field_contract::FieldExpectation;
 pub use typed::{WorthQueryOutputReadinessContract, WorthQueryReadinessFieldUse};
 
 /// Domain facts needed to declare Query's standard derived-output readiness operation.
@@ -31,6 +31,17 @@ pub struct WorthQueryOutputReadinessContractDenial {
     detail: String,
     locus:
         Option<worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus>,
+}
+
+impl From<super::super::native_field_contract::NativeFieldContractDenial>
+    for WorthQueryOutputReadinessContractDenial
+{
+    fn from(denial: super::super::native_field_contract::NativeFieldContractDenial) -> Self {
+        Self {
+            locus: Some(denial.locus),
+            detail: denial.detail,
+        }
+    }
 }
 
 impl WorthQueryOutputReadinessContractDenial {

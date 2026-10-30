@@ -21,6 +21,7 @@ mod court;
 mod installation;
 mod journey;
 mod producer;
+mod producer_observation;
 use producer::*;
 mod cases;
 mod read_commit;

@@ -200,6 +200,11 @@ fn write_program_target(
     target: &ApplicationOperationProgramTarget,
 ) -> Result<(), Denial> {
     match target {
+        ApplicationOperationProgramTarget::RemoveAspect { entity, aspect } => {
+            output.u16(8)?;
+            output.text(entity)?;
+            output.text(aspect)
+        }
         ApplicationOperationProgramTarget::Create { entity } => tagged_text(output, 1, entity),
         ApplicationOperationProgramTarget::Delete { entity } => tagged_text(output, 2, entity),
         ApplicationOperationProgramTarget::Write {
@@ -268,6 +273,10 @@ fn decode_program_target(
             to: input.text()?.to_owned(),
             aspect: input.text()?.to_owned(),
             field: input.text()?.to_owned(),
+        },
+        8 => ApplicationOperationProgramTarget::RemoveAspect {
+            entity: input.text()?.into(),
+            aspect: input.text()?.into(),
         },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
@@ -363,3 +372,6 @@ fn write_three_texts(
     output.text(second)?;
     output.text(third)
 }
+
+#[cfg(test)]
+mod removal_encoding;

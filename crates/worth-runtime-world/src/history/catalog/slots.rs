@@ -40,7 +40,7 @@ impl ReservedHistorySlots {
         let mut reachability = lock_index(&state.reachability);
         reachability.install_reserved_slot(&self.reachability);
         if let CompositeCommitParent::Ordinary(parent) = entry.commit().parent() {
-            reachability.install_forming_child(parent.commit());
+            reachability.install_forming_child(parent.commit(), &identity);
         }
         drop(reachability);
         self.entry

@@ -1,4 +1,6 @@
+mod output_field_capture;
 pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
+pub(in crate::domain_computation::primary_graph) use output_field_capture::OutputFieldCaptureFailure;
 mod capability_revocation_program;
 mod commit_authority_binding;
 mod commit_outcome_identity;
@@ -230,3 +232,5 @@ pub(in crate::domain_computation) use fact::consult_observation;
 pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;
 
 pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScopes;
+
+pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;

@@ -18,6 +18,8 @@ mod checkpoint_admission;
 mod lifecycle_order_control;
 #[path = "canonical_publication_routes/patch_position_reservation.rs"]
 mod patch_position_reservation;
+#[path = "canonical_publication_routes/pending_settlement.rs"]
+mod pending_settlement;
 #[path = "canonical_publication_routes/performed_stream.rs"]
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
@@ -50,6 +52,8 @@ pub(crate) struct RelationalCanonicalPublicationRoutes {
     by_commit: DashMap<CommitId, Arc<CanonicalPublicationRoute>>,
     by_version: DashMap<VersionId, Arc<CanonicalPublicationRoute>>,
     performed_stream: PerformedPublicationStream,
+    pending_settlement: pending_settlement::PendingSettlementRoutes,
+    settlement_route_visits: AtomicU64,
     branch_transitions: Arc<BranchTransitionStream>,
     lifecycle: RwLock<()>,
     #[cfg(test)]
@@ -111,6 +115,8 @@ impl Default for RelationalCanonicalPublicationRoutes {
             by_commit: DashMap::new(),
             by_version: DashMap::new(),
             performed_stream: PerformedPublicationStream::default(),
+            pending_settlement: Default::default(),
+            settlement_route_visits: AtomicU64::new(0),
             branch_transitions: Arc::default(),
             lifecycle: RwLock::new(()),
             #[cfg(test)]
@@ -214,6 +220,7 @@ impl RelationalCanonicalPublicationRoutes {
             routes.by_commit.remove(&commit_id);
             return Err("canonical publication version identity is already reserved");
         }
+        routes.pending_settlement.register(Arc::clone(&route));
         Ok(PreparedCanonicalPublicationRoute {
             routes: Arc::clone(routes),
             route,
@@ -239,6 +246,7 @@ impl RelationalCanonicalPublicationRoutes {
             return false;
         };
         self.by_version.remove(&route.commit.version_id);
+        self.pending_settlement.withdraw(&route);
         true
     }
 
@@ -254,6 +262,7 @@ impl RelationalCanonicalPublicationRoutes {
             .remove_if(&route.commit.version_id, |_, existing| {
                 Arc::ptr_eq(existing, route)
             });
+        self.pending_settlement.withdraw(route);
     }
 }
 

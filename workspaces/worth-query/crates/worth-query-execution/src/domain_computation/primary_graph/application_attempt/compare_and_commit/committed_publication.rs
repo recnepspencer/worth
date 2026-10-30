@@ -39,6 +39,18 @@ struct RetiredProductPublication {
 }
 
 impl WorthQueryCommittedProductPublication {
+    /// The original performed selection, without retaining its owner bases.
+    /// Identity-only retired custody cannot supply the missing full basis.
+    pub(in crate::domain_computation::primary_graph) fn observed_product_identity(
+        &self,
+    ) -> Option<crate::basis::WorthQueryProductBranchReadIdentity> {
+        self.performed().map(|receipt| {
+            crate::basis::WorthQueryProductBranchReadIdentity::from_reference_snapshot(
+                receipt.publication().new_product_head(),
+            )
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_receipt(
         receipt: WorthQueryProductPublicationReceipt,
     ) -> Self {

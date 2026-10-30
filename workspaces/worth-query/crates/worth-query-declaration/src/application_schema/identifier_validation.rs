@@ -144,6 +144,13 @@ pub(super) fn validate_member_identifiers(
             ApplicationSchemaMember::Aspect { entity, aspect, .. } => {
                 validate_identifiers([entity, aspect])?;
             }
+            ApplicationSchemaMember::ScalarAspectField {
+                entity,
+                aspect,
+                field,
+            } => {
+                validate_identifiers([entity, aspect, field])?;
+            }
             ApplicationSchemaMember::Field {
                 entity,
                 aspect,

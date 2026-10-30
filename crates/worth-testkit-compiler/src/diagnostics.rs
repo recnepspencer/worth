@@ -2,6 +2,28 @@ use std::path::Path;
 
 use crate::paths::source_key;
 
+pub(crate) fn semantic_text(message: &serde_json::Value) -> String {
+    let mut text = Vec::new();
+    collect_semantic_text(message, &mut text);
+    text.join("\n")
+}
+
+fn collect_semantic_text<'a>(message: &'a serde_json::Value, text: &mut Vec<&'a str>) {
+    if let Some(value) = message["message"].as_str() {
+        text.push(value);
+    }
+    text.extend(
+        message["spans"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|span| span["label"].as_str()),
+    );
+    for child in message["children"].as_array().into_iter().flatten() {
+        collect_semantic_text(child, text);
+    }
+}
+
 pub(crate) fn attributed(message: &serde_json::Value, source: &Path) -> bool {
     if message["spans"]
         .as_array()

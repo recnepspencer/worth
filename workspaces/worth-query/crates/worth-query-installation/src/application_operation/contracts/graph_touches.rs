@@ -1,3 +1,4 @@
+mod aspect_removal;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
 
 use crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog;
@@ -12,10 +13,14 @@ pub(crate) fn install_portable_graph_touches(
     binding: &ApplicationSchemaBindingIdentity,
     catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
     portable: &[WorthQueryPortableOperationTouchScope],
+    reads: &crate::domain_operation::WorthQueryOperationGraphReadContract,
 ) -> Result<(WorthQueryOperationTouchContract, usize), ()> {
     let scopes = portable
         .iter()
         .map(|scope| match scope {
+            WorthQueryPortableOperationTouchScope::RemoveAspect {
+                entity, contract, ..
+            } => aspect_removal::install(binding, catalog, entity, contract, reads),
             WorthQueryPortableOperationTouchScope::InitializeRelationField {
                 relation,
                 from,
@@ -108,3 +113,6 @@ pub(crate) fn install_portable_graph_touches(
     };
     Ok((contract, count))
 }
+
+#[cfg(test)]
+mod tests;

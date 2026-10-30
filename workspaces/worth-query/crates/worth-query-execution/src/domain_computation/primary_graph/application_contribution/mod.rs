@@ -1,5 +1,6 @@
 mod composition;
 mod derived_relation;
+mod native_field_contract;
 pub use derived_relation::WorthQueryDerivedRelationCountOwner;
 pub(in crate::domain_computation::primary_graph) mod computation;
 mod conditional;
@@ -86,8 +87,9 @@ pub use producer::{
     WorthQueryOutputReadCloseDenial, WorthQueryProducerApplicability,
     WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
     WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
-    WorthQueryProducerDenialValue, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerDenialValue, WorthQueryProducerEvaluationIneligibility,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputEquivalence,
     WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
     WorthQuerySelectedApplicationProducer, WorthQueryUndeclaredProducerDenial,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
@@ -132,3 +134,7 @@ pub(in crate::domain_computation::primary_graph) use request_execution::advancem
 
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
+
+pub(in crate::domain_computation::primary_graph) use producer::{
+    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+};

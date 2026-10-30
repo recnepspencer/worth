@@ -26,6 +26,16 @@ pub(crate) fn retained_record_evidence_identity(
 ) -> Result<Option<BridgeIdentityEvidence>, BridgeCausalEnvelopeDenial> {
     let reference_identity = reference.reference_evidence_identity();
     match reference.family() {
+        BridgeCausalEvidenceFamily::BridgeConditionalObservation => {
+            Err(BridgeCausalEnvelopeDenial::new(
+                BridgeCausalEnvelopeDenialKind::NativeObservationRequired,
+                reference.family(),
+                reference.owner(),
+                reference.family().expected_owner(),
+                reference.reference_evidence_identity().clone(),
+                BridgeCausalEnvelopeCounters::empty(),
+            ))
+        }
         BridgeCausalEvidenceFamily::BridgeBulkPlanning => {
             Ok(bulk_planning_record_digest(facade, reference_identity))
         }

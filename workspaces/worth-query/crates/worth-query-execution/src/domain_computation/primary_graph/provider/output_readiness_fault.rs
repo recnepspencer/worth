@@ -1,6 +1,17 @@
 use super::{fault_port::WorthQueryPrimaryGraphFault, WorthQueryPrimaryGraphProvider};
 
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn output_comparison_completed(&self) {
+        self.fault_port.output_comparison_completed();
+    }
+    pub(in crate::domain_computation::primary_graph) fn cancel_after_next_output_comparison_for_test(
+        &self,
+        source: worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        self.fault_port
+            .cancel_after_next_output_comparison_for_test(source)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn take_delayed_output_readiness_delivery(
         &self,
     ) -> bool {

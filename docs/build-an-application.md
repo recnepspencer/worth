@@ -18,6 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
+| Explain a query result or an authored operation | [Inspect original evidence](#inspect-original-source-and-query-evidence) | Saved source/query receipts and current inspection permissions |
 | Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
@@ -2227,6 +2228,12 @@ request's `with_application_advancement` call. The description grants no further
 permission and may already be stale for `select_expected` if the head moved.
 Drop the observation when its reads are finished. Managed-index open and rebuild
 require a current request and refuse retained mode with `RequestMode`.
+
+For storage certification, use the [retained-owner census](../crates/worth-relational/API_OVERVIEW.md#retained-owner-footprints)
+outside publication timing. It unions shared allocations across current, held
+and queued roots and reports catalog footprints separately. Keep requested-object
+allocation peaks, checkpoint readmission and complete first-answer costs as
+separate measurements.
 
 The entity a mutation acts on is its intent's *scope binding*, shown next.
 
@@ -5741,3 +5748,70 @@ Declared query roots can traverse complete endorelation reachability with
 `ApplicationQueryRootPath::forward_closure` and `reverse_closure`, composed with
 ordinary hops and guards. See [declared query closure](../workspaces/worth-query/crates/worth-query/docs/foundations/declared-query-closure.md)
 for reflexive selection, source currentness and per-step receipt observations.
+
+
+## Inspect original source and query evidence
+
+Use inspection for an audit view, a debugging explanation, or a comparison of
+what two executions returned. It reads saved evidence, so a later write does not
+replace the result you are explaining. Each new request checks current access.
+
+The entry points are `request.inspect::<ReadBinding>(&original)` and
+`request.inspect_source::<SourceDisclosure>(&source_receipt)`. Their request and
+result types are in `worth_query_host::facade::causal_inspection`; declarations
+use `worth-query-decl`.
+
+Keep the original before dropping a query result. Opt into its values when you
+will compare or materialize them:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let result = request.query(Read { key })
+    .retain_projection_for_inspection().execute()?;
+let original = result.receipt().inspect().observation()
+    .ok_or(AppError::ObservationUnavailable)?.clone();
+drop(result);
+let report = fresh.inspect::<ReadBinding>(&original)
+    .why_observed().reference_only().execute_governed(query_metadata)?;
+let availability = report.evidence_availability();
+report.close();
+original.close();
+```
+
+`Read`, `ReadBinding`, `AppError` and the capability arguments belong to your
+application. Inspection consumes freshly admitted metadata/diagnostic access;
+a payload query's refs-and-input `execute_governed` call is a different interface.
+See [admit inspection access](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#admit-current-inspection-access)
+for the Host calls that create those access values.
+
+| Question | Request |
+| --- | --- |
+| What was this result? | `why_observed().reference_only()` |
+| Did two saved results differ? | `why_changed(&before).reference_only()` with diagnostics |
+| Did this source create the observed output? | `why_observed().caused_by::<SourceDisclosure>(&source_receipt)` |
+| Did a producer compute changed or equivalent output? | `why_observed().evaluated_by::<SourceDisclosure>(&source_receipt)` |
+| What did an authored operation record? | `inspect_source::<SourceDisclosure>(&source_receipt).why_performed()` |
+
+For a producer explanation, query through
+`request.at(settlement.observation()).query(...)` so the original carries that
+settlement's supplier association. Keep the earlier authored source receipt for
+`caused_by`/`evaluated_by`; the producer publication receipt is a different object.
+A plain head query does not infer a producer from equal values.
+
+Add `.materialize(detail)` when you need original values. Select
+`WorthQueryApplicationMaterializationRequest::family(WorthQueryApplicationEvidenceFamily::QueryInspection)` for the
+query projection, `source_effects()` for source-only effects, or combine
+`.with_source_effects()`, `.with_producer_evidence()` and
+`.with_conditional_history()` on a connected request. Admit query and source
+metadata/diagnostics independently. Equivalent output preserves its observed
+revision and cannot claim a new creation.
+
+Handle unavailable and unrequested detail explicitly. Availability is a snapshot,
+not a retention lease: optional history can be evicted before a later rich read.
+Request cancellation or revoked access refuses the new inspection; neither expires
+an immutable original. Close reports and the final original holder when done.
+
+Follow [Explain original query results and source operations](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+for contract setup, capability admission, supported shapes, materialized values,
+loss outcomes and retry handling.

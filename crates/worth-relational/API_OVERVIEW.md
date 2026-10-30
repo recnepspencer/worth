@@ -55,9 +55,6 @@ unchanged. Component source declarations have a distinct object grammar and
 canonical domain. See the
 [Native component courts](src/tests/transactions/core/aggregate_identity/components.rs)
 and [source/encoding controls](src/tests/transactions/core/aggregate_identity/components/registration.rs).
-Query declaration/read/count/footprint and scoped visibility, topology examples,
-and CAD shell integration remain unfinished in
-[milestone 9.18.1 Phase 5](../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
 
 ## Main doors
 
@@ -120,6 +117,38 @@ an absent branch, `None`, or the string `"main"` as authority.
 
 - `runtime.inspect_what_happened()`
 - `runtime.publication()`
+
+For cost diagnosis, capture `RelationalMvccCostScope` from `facade::inspection`
+before the operation and call `runtime.observe_mvcc_counters(&scope)` afterwards.
+`canonical_settlement_route_visits()` reports actual runtime-wide candidates
+examined for unsettled-publication admission, including other branches. It is
+separate from retained-root maintenance work and grants no publication authority.
+
+### Retained owner footprints
+
+Call `runtime.observe_retained_storage()` outside ordinary operation timing to
+inspect live branch roots, actual retired-owner rows and the resident canonical
+catalog. `PublicationBusy` defers an in-flight or unsettled publication;
+`OwnerInventory` preserves cold-payload or physical root/catalog linkage refusal.
+An error returns no partial census and never loads cold storage.
+
+`current_root_authoritative_bytes`, `held_history_only_authoritative_bytes` and
+`reclaimable_only_authoritative_bytes` are disjoint allocation unions in that
+order. Shared persistent backing counts once. Held rows include reservations and
+other actual custody. Queued eligibility uses the reclaimer's retired,
+no-reservations, sole-Arc predicate before diagnostic clones; it promises no
+specific reclamation effect. `catalog_owner_footprint_bytes` remains separate and
+append-only after reader release. Its nested optional authority records use
+their existing canonical encoded footprint convention.
+
+`authoritative_owner_footprint_bytes` combines those owner categories; it is not
+physical heap or peak allocation. Optional-index estimates, allocator-private
+headers, diagnostics, inspector backing, unpublished candidate roots and
+transaction working sets are excluded. Concurrent reader release and lazy
+residency remain observations made during the owner walk, not an atomic heap
+snapshot. For application certification, import
+`WorthQueryCertificationCostRuntimeExt` from `worth-query-replay::facade` and call
+`runtime.observe_certification_retained_storage(&phase)` in a fresh advancement.
 
 ### Publish semantic aspect changes
 
@@ -215,6 +244,7 @@ These are real public capabilities, but not the default first-contact story:
 - `runtime.retention()`
 - `runtime.index_access()`
 - `runtime.index_authority()`
+
 - `runtime.durability()` (including `recovery_plan_from_source(...)` for
   reopening from a durable medium)
 - `runtime.durability_authority()`
@@ -222,6 +252,17 @@ These are real public capabilities, but not the default first-contact story:
 - `runtime.commit_strategies_authority()`
 - `runtime.merge()`
 - `runtime.replay_authority()`
+
+After settling an ordinary publication and releasing its temporary before-basis
+snapshots, call
+`runtime.run_index_generation_reclamation_after_publication(&committed)` with
+that runtime's original `CommitResult`. It examines the publication's actual
+previous bases and affected index generations, plus a bounded pass over older
+generations. `Ok(None)` leaves cleanup for a later quiescent opportunity; a
+foreign runtime's result is refused. Intentional readers and retained receipts
+keep their exact generations, including global generations selected by another
+branch. `run_index_generation_reclamation_pass()` performs an explicit cold
+inventory pass when that broader maintenance work is appropriate.
 
 ## Published runtime lanes
 

@@ -1,3 +1,4 @@
+mod aspect_removal;
 mod body_external_emission;
 mod conditional_definition;
 mod effect_growth;

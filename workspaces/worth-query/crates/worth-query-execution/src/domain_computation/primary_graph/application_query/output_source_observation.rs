@@ -133,7 +133,8 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             limits.maximum_results().min(query_maximum),
             self.request,
         )
-        .map_err(|stop| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(stop)))?;
+        .map_err(|stop| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(stop)))?
+        .with_original_settled_producer(selected.original_settled_producer().cloned());
         // Use the existing typed parameter admission/canonical engine and its
         // installed canonical ceiling; no caller digest grants query meaning.
         let (parameters, controls) = application

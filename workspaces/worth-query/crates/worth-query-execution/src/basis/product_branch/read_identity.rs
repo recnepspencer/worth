@@ -1,6 +1,6 @@
 use worth_runtime_world::facade::{
     CompositeBasisKey, CompositeCommitIdentity, ProductBranchIdentity, ProductBranchIncarnation,
-    ProductBranchObservation, ProductBranchReferenceGeneration,
+    ProductBranchObservation, ProductBranchReferenceGeneration, ProductBranchReferenceSnapshot,
 };
 
 /// Describes the exact World occurrence used by a read. It carries no live
@@ -50,6 +50,17 @@ impl WorthQueryProductBranchReadIdentity {
     ) -> bool {
         self.position.branch() == observation.branch_identity()
             && self.position.incarnation() == observation.lifecycle_incarnation()
+    }
+
+    /// Project the actual performed head without retaining its snapshot or commit.
+    pub(crate) fn from_reference_snapshot(snapshot: &ProductBranchReferenceSnapshot) -> Self {
+        Self {
+            position:
+                super::read_position::WorthQueryProductBranchReadPosition::from_reference_snapshot(
+                    snapshot,
+                ),
+            basis: snapshot.basis().identity().clone(),
+        }
     }
 
     pub(crate) fn from_observation(observation: &ProductBranchObservation) -> Self {

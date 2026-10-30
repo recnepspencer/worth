@@ -108,7 +108,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                     application_basis,
                     controls.maximum_results,
                     controls.request,
-                ),
+                )
+                .with_original_settled_producer(retained.original_settled_producer().cloned()),
             )
             .map_err(Admission)?;
         plan.carry_planned_batch_item(planned_item);

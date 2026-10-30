@@ -154,7 +154,7 @@ where
         read_set.lease.layout.unique_fields(),
         mutation_partition,
         read_set.effect_routes,
-        &|entity, aspect| read_set.lease.layout.aspect_contract(entity, aspect),
+        &|entity, aspect| read_set.lease.layout.aspect_binding(entity, aspect),
         effects,
     )?;
     Ok((source_product, batch, effect_count))

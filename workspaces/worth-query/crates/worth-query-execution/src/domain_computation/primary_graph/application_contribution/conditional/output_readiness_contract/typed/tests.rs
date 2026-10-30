@@ -2,6 +2,7 @@
 use super::*;
 use schema::{ApplicationScalarValueBinding, ApplicationSchema};
 mod composition_refusal;
+mod scalar;
 use worth_foundational::facade::{AbsenceLaw, AspectShape, WorthValue};
 use worth_query_declaration::facade::{
     authoring::*, binding::QueryBindingDescriptor, canonicalization::canonicalize_request,

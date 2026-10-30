@@ -22,18 +22,13 @@ impl HistorySubsystem {
     }
 
     pub(crate) fn rebuild_branch_head_version_index(&self) {
-        let versions = self
+        let roots = self
             .branch_cells
             .values()
             .into_iter()
-            .filter_map(|cell| match cell.observation().target() {
-                FoundationalBranchTarget::Empty => None,
-                FoundationalBranchTarget::Basis(target) => {
-                    Some(crate::identity::data::VersionId(target.version_id()))
-                }
-            })
+            .filter_map(|cell| cell.root())
             .collect::<Vec<_>>();
-        self.branch_head_versions.rebuild(versions);
+        self.branch_head_versions.rebuild(roots);
     }
 
     pub(crate) fn transition_empty_branches_to_initial_schema(
@@ -249,14 +244,8 @@ impl HistorySubsystem {
             cell.head_retention(),
         )
         .map_err(|denial| format!("recovered branch head retention denied: {denial:?}"))?;
-        let recovered_head_version = match cell.observation().target() {
-            FoundationalBranchTarget::Empty => None,
-            FoundationalBranchTarget::Basis(target) => {
-                Some(crate::identity::data::VersionId(target.version_id()))
-            }
-        };
         self.insert_branch_cell(cell);
-        self.move_branch_head_version(None, recovered_head_version);
+        self.move_branch_head_basis(None, Some(&installed_root));
         Ok(())
     }
 

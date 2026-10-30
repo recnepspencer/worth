@@ -3,6 +3,7 @@
 // panic reports a violated test scenario, never an ordinary product refusal.
 mod actor_retention;
 mod correction_history_indexes;
+mod inspection_materialization;
 mod managed_cleanup;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 #[path = "certification_controls/workflow_membership.rs"]
@@ -83,6 +84,17 @@ where
     pub fn press_next_readiness_with_world_snapshots_for_test(&self) {
         self.primary_provider
             .press_next_readiness_with_world_snapshots_for_test();
+    }
+
+    /// Cancels an actual request after the next newly computed output pair is memoized.
+    /// A pending registration cannot be replaced; no verdict or evidence is supplied.
+    #[doc(hidden)]
+    pub fn cancel_after_next_output_comparison_for_test(
+        &self,
+        source: worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        self.primary_provider
+            .cancel_after_next_output_comparison_for_test(source)
     }
 
     /// Counts readiness decisions actually attempted by this application runtime.

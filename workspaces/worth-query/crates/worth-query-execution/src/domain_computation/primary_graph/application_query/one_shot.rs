@@ -26,7 +26,7 @@ mod result;
 pub use pair_plans::WorthQueryDerivedPairReadPlans;
 
 use denial::authorization_denial;
-pub(super) use denial::denial;
+pub(in crate::domain_computation::primary_graph::application_query) use denial::denial;
 pub(in crate::domain_computation::primary_graph) use denial::retain_reconstruction_result;
 pub use denial::WorthQueryApplicationOneShotDenial;
 pub use denial::WorthQueryApplicationOneShotDenialKind;

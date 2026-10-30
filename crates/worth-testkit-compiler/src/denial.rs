@@ -48,40 +48,7 @@ pub(crate) fn check_outcome(
     expected: &str,
     required: RequiredEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
-    session::validate_provenance(outcome)?;
-    let environment = outcome["environment"].as_str().ok_or_else(|| {
-        CompilerFixtureRefusal::InvalidPrebuild("missing compiler environment".into())
-    })?;
-    match environment {
-        "production" | "certification" => (),
-        other => {
-            return Err(CompilerFixtureRefusal::InvalidPrebuild(format!(
-                "unknown compiler environment {other:?}"
-            )))
-        }
-    }
-    if matches!(required, RequiredEnvironment::Production) && environment != "production" {
-        return Err(CompilerFixtureRefusal::WrongEnvironment {
-            path: source.to_path_buf(),
-            observed: environment.to_owned(),
-        });
-    }
-    match outcome["fate"].as_str() {
-        Some("denied") => (),
-        Some("compiled") => {
-            return Err(CompilerFixtureRefusal::UnexpectedCompilerSuccess(
-                source.to_path_buf(),
-            ))
-        }
-        other => {
-            return Err(CompilerFixtureRefusal::InvalidPrebuild(format!(
-                "unknown fixture fate {other:?}"
-            )))
-        }
-    }
-    let messages = outcome["messages"].as_array().ok_or_else(|| {
-        CompilerFixtureRefusal::InvalidPrebuild("missing raw compiler diagnostics".into())
-    })?;
+    let messages = denied_messages(source, outcome, required)?;
     let mut observed = String::new();
     let mut attributed = false;
     let mut error_count = 0;
@@ -125,4 +92,46 @@ pub(crate) fn check_outcome(
         });
     }
     Ok(())
+}
+
+pub(crate) fn denied_messages<'a>(
+    source: &Path,
+    outcome: &'a serde_json::Value,
+    required: RequiredEnvironment,
+) -> Result<&'a [serde_json::Value], CompilerFixtureRefusal> {
+    session::validate_provenance(outcome)?;
+    let environment = outcome["environment"].as_str().ok_or_else(|| {
+        CompilerFixtureRefusal::InvalidPrebuild("missing compiler environment".into())
+    })?;
+    match environment {
+        "production" | "certification" => (),
+        other => {
+            return Err(CompilerFixtureRefusal::InvalidPrebuild(format!(
+                "unknown compiler environment {other:?}"
+            )))
+        }
+    }
+    if matches!(required, RequiredEnvironment::Production) && environment != "production" {
+        return Err(CompilerFixtureRefusal::WrongEnvironment {
+            path: source.to_path_buf(),
+            observed: environment.to_owned(),
+        });
+    }
+    match outcome["fate"].as_str() {
+        Some("denied") => (),
+        Some("compiled") => {
+            return Err(CompilerFixtureRefusal::UnexpectedCompilerSuccess(
+                source.to_path_buf(),
+            ))
+        }
+        other => {
+            return Err(CompilerFixtureRefusal::InvalidPrebuild(format!(
+                "unknown fixture fate {other:?}"
+            )))
+        }
+    }
+    let messages = outcome["messages"].as_array().ok_or_else(|| {
+        CompilerFixtureRefusal::InvalidPrebuild("missing raw compiler diagnostics".into())
+    })?;
+    Ok(messages)
 }

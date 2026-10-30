@@ -86,6 +86,7 @@ pub enum CausalInspectionMaterializationErrorKind {
     QueryObservationBindingOverclaim,
     ReplayPostureUnsupported,
     MaterializationPolicyOverclaim,
+    NativeInspectionAdmissionRequired,
 }
 
 impl CausalInspectionMaterializationErrorKind {
@@ -98,6 +99,7 @@ impl CausalInspectionMaterializationErrorKind {
             Self::QueryObservationBindingOverclaim => "query_observation_binding_overclaim",
             Self::ReplayPostureUnsupported => "replay_posture_unsupported",
             Self::MaterializationPolicyOverclaim => "materialization_policy_overclaim",
+            Self::NativeInspectionAdmissionRequired => "native_inspection_admission_required",
         }
     }
 }

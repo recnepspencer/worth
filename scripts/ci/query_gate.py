@@ -111,9 +111,11 @@ COMMAND_SUITES = {
     "boundary": [
         ("prepare-constitution", [powershell(), "-NoProfile", "-File", "scripts/prepare-constitution-hook.ps1"]),
         ("constitution", [powershell(), "-NoProfile", "-File", "scripts/check-constitution.ps1"]),
+        ("line-caps", [bash(), "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]),
+    ],
+    "boundary-tests": [
         ("boundary-tests", ["cargo", "test", "--manifest-path", BOUNDARY,
                             "--target-dir", "target/constitution-tools"]),
-        ("line-caps", [bash(), "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]),
     ],
     "extra": [
         ("consumer-root",
@@ -139,7 +141,7 @@ COMMAND_ENV = {
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "root-rest", "query-execution", "query-rest",
          "query-process", "query-exhaustive", "fixture", "bank", "bank-process",
-         "root-doc", "query-doc", "bank-doc", "wasm", "boundary", "extra"]
+         "root-doc", "query-doc", "bank-doc", "wasm", "boundary", "boundary-tests", "extra"]
 ORDER += [name for name in TEST_SUITES if name.startswith(("query-", "bank-", "root-"))
           and name not in ORDER and not name.endswith("-scale")]
 

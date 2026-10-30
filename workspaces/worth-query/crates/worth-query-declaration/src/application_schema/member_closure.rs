@@ -104,7 +104,8 @@ impl<'a> ClosureIndex<'a> {
             {
                 Err(ApplicationSchemaDeclarationDenial::MissingEntity)
             }
-            ApplicationSchemaMember::Field { entity, aspect, .. }
+            ApplicationSchemaMember::ScalarAspectField { entity, aspect, .. }
+            | ApplicationSchemaMember::Field { entity, aspect, .. }
                 if !self.aspects.contains(&(entity.as_str(), aspect.as_str())) =>
             {
                 Err(ApplicationSchemaDeclarationDenial::MissingAspect)

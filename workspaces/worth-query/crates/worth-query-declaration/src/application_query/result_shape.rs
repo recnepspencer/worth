@@ -1,10 +1,11 @@
+use crate::application_query::ApplicationQueryResultFieldPresence;
 use std::marker::PhantomData;
 
 use crate::application_schema::ApplicationStructuredValueBinding;
 use crate::application_schema::{
-    ApplicationFieldPresence, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, EqualityCapable,
-    EqualityPredicate, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding,
+    DeclaredApplicationFieldValue, EqualityCapable, EqualityPredicate,
+    OptionalApplicationFieldValue, RequiredApplicationFieldValue,
 };
 
 use super::{
@@ -17,6 +18,7 @@ use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIde
 
 mod expression_context;
 mod field;
+mod optional_aspect;
 pub use expression_context::ApplicationQueryExpressionContextDenial;
 mod relation;
 
@@ -149,7 +151,7 @@ where
                     output_name: field.output_name().to_owned(),
                     scalar_family: Field::Binding::SCALAR_FAMILY,
                     value_type: Field::Binding::IDENTITY,
-                    presence: ApplicationFieldPresence::Required,
+                    presence: ApplicationQueryResultFieldPresence::Required,
                 },
             ));
         self
@@ -187,7 +189,7 @@ where
                     output_name: field.output_name().to_owned(),
                     scalar_family: Field::Binding::SCALAR_FAMILY,
                     value_type: Field::Binding::IDENTITY,
-                    presence: ApplicationFieldPresence::Optional,
+                    presence: ApplicationQueryResultFieldPresence::Optional,
                 },
             ));
         self

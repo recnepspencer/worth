@@ -2,6 +2,24 @@ use super::super::BridgeConditionalDenial;
 use super::BridgeSealedRuntimeAssembly;
 
 impl BridgeSealedRuntimeAssembly {
+    pub fn compare_exact_output(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        signal_basis: &super::super::BridgeConditionalSignalBasisBinding,
+        request: super::super::BridgeConditionalExecutionRequest<'_>,
+        baseline_version: u64,
+        candidate_version: u64,
+    ) -> Result<super::super::BridgeExactOutputComparison, super::super::BridgeOutputComparisonDenial>
+    {
+        self.runtime.compare_exact_output(
+            execution,
+            signal_basis,
+            request,
+            baseline_version,
+            candidate_version,
+        )
+    }
+
     pub fn execute_admitted_conditional(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,

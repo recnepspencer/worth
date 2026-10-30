@@ -163,6 +163,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
             self.contribution.identity().as_str(),
             provider,
             mutation,
+            self.installed_schema,
             source_query,
         )
     }

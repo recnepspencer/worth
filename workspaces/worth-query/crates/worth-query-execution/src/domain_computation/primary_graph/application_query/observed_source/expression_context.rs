@@ -3,12 +3,11 @@
 use crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectionNode;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotDenialKind as Denial;
 use worth_foundational::expression_api::{ExpressionSchema, ExpressionValue};
+use worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryCardinality, ApplicationQueryExpressionSnapshot,
 };
-use worth_query_installation::facade::{
-    ApplicationFieldPresence, WorthQueryInstalledGraphReadContract,
-};
+use worth_query_installation::facade::WorthQueryInstalledGraphReadContract;
 
 pub(in crate::domain_computation::primary_graph::application_query) struct RetainedExpressionContext
 {
@@ -73,18 +72,26 @@ fn project(
     {
         let value = node.field(field.slot_type()).map(|field| field.value());
         fields.push(match (field.presence(), value) {
-            (ApplicationFieldPresence::Required, Some(value)) => {
+            (ApplicationQueryResultFieldPresence::Required, Some(value)) => {
                 ExpressionValue::from_aspect_value(value)
                     .map_err(|_| Denial::ExpressionContextUnavailable)?
             }
-            (ApplicationFieldPresence::Required, None) => {
+            (ApplicationQueryResultFieldPresence::Required, None) => {
                 return Err(Denial::ExpressionContextUnavailable)
             }
-            (ApplicationFieldPresence::Optional, Some(value)) => ExpressionValue::some(
+            (
+                ApplicationQueryResultFieldPresence::Optional
+                | ApplicationQueryResultFieldPresence::OptionalAspect,
+                Some(value),
+            ) => ExpressionValue::some(
                 ExpressionValue::from_aspect_value(value)
                     .map_err(|_| Denial::ExpressionContextUnavailable)?,
             ),
-            (ApplicationFieldPresence::Optional, None) => ExpressionValue::none(),
+            (
+                ApplicationQueryResultFieldPresence::Optional
+                | ApplicationQueryResultFieldPresence::OptionalAspect,
+                None,
+            ) => ExpressionValue::none(),
         });
     }
     for relation in contract

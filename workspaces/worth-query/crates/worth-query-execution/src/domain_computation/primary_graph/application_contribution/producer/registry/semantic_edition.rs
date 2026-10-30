@@ -152,6 +152,32 @@ impl InstalledProducerEdition {
             })?
             .identity(),
         };
+        let digest = match (
+            &declaration.output_equivalence,
+            &declaration.installed_output_equivalence,
+        ) {
+            (None, None) => digest,
+            (Some(field), Some(installed)) if field == &installed.field.binding => {
+                application_value_identity(
+                    ApplicationValueIdentityDomain::ProducerImplementationEdition,
+                    &declaration.identity,
+                    &("producer-output-equivalence.v1", digest, installed.meaning),
+                )
+                .map_err(|_| {
+                    WorthQueryPrimaryGraphInstallationDenial::new(
+                        DenialKind::ProducerBindingMeaningMismatch,
+                        declaration.identity.clone(),
+                    )
+                })?
+                .identity()
+            }
+            _ => {
+                return Err(WorthQueryPrimaryGraphInstallationDenial::new(
+                    DenialKind::ProducerBindingMeaningMismatch,
+                    declaration.identity.clone(),
+                ))
+            }
+        };
         let digest = application_value_identity(
             ApplicationValueIdentityDomain::ProducerImplementationEdition,
             &declaration.identity,

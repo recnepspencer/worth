@@ -22,6 +22,7 @@ pub enum BridgeCausalEvidenceFamily {
     QueryObservation,
     BridgeBulkPlanning,
     BridgeRoute,
+    BridgeConditionalObservation,
     BridgeHistoricalEvaluation,
     BridgeHistoricalEvaluationFailure,
     BridgePreviewExecution,
@@ -56,6 +57,7 @@ impl BridgeCausalEvidenceFamily {
             Self::QueryObservation => "query_observation",
             Self::BridgeBulkPlanning => "bridge_bulk_planning",
             Self::BridgeRoute => "bridge_route",
+            Self::BridgeConditionalObservation => "bridge_conditional_observation",
             Self::BridgeHistoricalEvaluation => "bridge_historical_evaluation",
             Self::BridgeHistoricalEvaluationFailure => "bridge_historical_evaluation_failure",
             Self::BridgePreviewExecution => "bridge_preview_execution",
@@ -90,6 +92,7 @@ impl BridgeCausalEvidenceFamily {
             Self::QueryObservation => BridgeCausalEvidenceOwner::Query,
             Self::BridgeBulkPlanning
             | Self::BridgeRoute
+            | Self::BridgeConditionalObservation
             | Self::BridgeHistoricalEvaluation
             | Self::BridgeHistoricalEvaluationFailure
             | Self::BridgePreviewExecution

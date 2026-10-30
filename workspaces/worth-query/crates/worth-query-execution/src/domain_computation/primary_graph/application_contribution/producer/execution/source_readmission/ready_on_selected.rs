@@ -102,7 +102,8 @@ where
         installed_limits.maximum_results(),
         request,
     )
-    .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
+    .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?
+    .with_original_settled_producer(shared.selected().original_settled_producer().cloned());
     runtime
         .with_fresh_retained_query_permission(execution, installed, Some(validated_principal), external_principal, retained, shared.selected(), controls, |permission| {
                 let Some(candidate) = candidate else {
@@ -145,6 +146,7 @@ where
                             .validate_request()
                             .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
                         let settled = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_current_accepted(
+                            execution,
                             runtime,
                             bound,
                             Binding::IDENTITY,

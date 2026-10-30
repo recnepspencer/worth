@@ -6,6 +6,65 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Both named-source Ready refresh and replaced-source Ready refresh use
+    /// this same original-publication boundary. Ordinary/external refresh does not.
+    pub(super) fn refresh_ready_output_demand<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        source: &FamilySourceValue<Schema, Family>,
+        observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
+            FamilySourceQuery<Schema, Family>,
+        >,
+        completion: &crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion,
+    ) -> Result<(), WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        use crate::domain_computation::primary_graph::application_output_demand::{
+            OriginalProducingPublication, WorthQueryAcceptedOutputAuthority as Authority,
+        };
+        let original = if !demand.settled
+            && matches!(&completion.authority,
+            Authority::Committed(receipt) if observed_source.selected_product_commit()
+                == Some(receipt.committed_product_publication().composite_commit()))
+        {
+            OriginalProducingPublication::retain(execution, completion)?
+        } else {
+            None
+        };
+        let occurrence = demand
+            .interest
+            .as_ref()
+            .expect("live refresh Interest")
+            .key()
+            .source_epoch()
+            .occurrence_coordinate();
+        self.refresh_output_demand(
+            execution,
+            demand,
+            source,
+            observed_source,
+            Some(&completion.authority),
+        )?;
+        // The registry admitted this family's actual lifecycle successor. An
+        // executor Arc is neither source occurrence nor creator continuity.
+        if demand
+            .interest
+            .as_ref()
+            .expect("admitted successor Interest")
+            .key()
+            .source_epoch()
+            .occurrence_coordinate()
+            == occurrence
+        {
+            demand.original_producing_publication = original;
+        }
+        Ok(())
+    }
+
     /// Move `demand` to a row admitted under the disclosed source. The Ready
     /// it held is the new row's `predecessor`. A row that held none has no
     /// accepted output to succeed: the new row executes Fresh, and its

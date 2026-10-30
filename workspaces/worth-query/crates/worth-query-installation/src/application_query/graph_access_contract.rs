@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use worth_foundational::facade::{AspectKey, CanonicalDigestId, FieldKey, ScalarAspectType};
+use worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryCardinality, ApplicationQueryOrderingDirection, ApplicationQueryResultSlotKey,
     ApplicationQueryResultTraversalDirection,
 };
-use worth_query_declaration::facade::application_schema::ApplicationFieldPresence;
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 mod compilation;
@@ -24,7 +24,7 @@ pub struct WorthQueryInstalledGraphProjection {
     output_name: String,
     scalar_family: ScalarAspectType,
     value_type: WorthQueryPortableTypeIdentity,
-    presence: ApplicationFieldPresence,
+    presence: ApplicationQueryResultFieldPresence,
 }
 
 impl WorthQueryInstalledGraphProjection {
@@ -92,7 +92,7 @@ impl WorthQueryInstalledGraphProjection {
         self.value_type.as_str()
     }
 
-    pub const fn presence(&self) -> ApplicationFieldPresence {
+    pub const fn presence(&self) -> ApplicationQueryResultFieldPresence {
         self.presence
     }
 }

@@ -14,6 +14,7 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
     let branch = create_branch_from_main(&runtime, "pinned-deleted-fork");
     let identity = runtime.branch_identity(&branch).unwrap();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
+    let (_, second_basis) = runtime.observe_branch(&identity).unwrap();
     let built = runtime.index_authority().build_for_basis(
         execution,
         DerivedIndexBuildRequest {
@@ -30,7 +31,12 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
         .unwrap()
         .deleted()
         .is_some());
-    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
+    assert_eq!(
+        runtime
+            .run_index_generation_reclamation_after_publication(&anchor)
+            .unwrap(),
+        Some(0)
+    );
     assert!(runtime.indexes.generation(generation).is_some());
     crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let plan = crate::tests::support::recovery_plan_for(
@@ -46,6 +52,20 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
         .unwrap();
     assert!(recovered.indexes.generation(generation).is_none());
     drop(basis);
-    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(1));
+    assert_eq!(
+        runtime
+            .run_index_generation_reclamation_after_publication(&anchor)
+            .unwrap(),
+        Some(0)
+    );
+    assert!(runtime.indexes.generation(generation).is_some());
+    drop(second_basis);
+    assert_eq!(
+        runtime
+            .run_index_generation_reclamation_after_publication(&anchor)
+            .unwrap(),
+        Some(1)
+    );
+    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
     assert!(runtime.indexes.generation(generation).is_none());
 }

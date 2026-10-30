@@ -136,6 +136,15 @@ pub(super) fn write(
             super::super::operation_body::write(output, body)
         }
         ApplicationSchemaMember::ApplicationInvariant { .. } => invariant::write(output, member),
+        ApplicationSchemaMember::ScalarAspectField {
+            entity,
+            aspect,
+            field,
+        } => {
+            output.text(entity)?;
+            output.text(aspect)?;
+            output.text(field)
+        }
         ApplicationSchemaMember::Entity { .. }
         | ApplicationSchemaMember::Aspect { .. }
         | ApplicationSchemaMember::Field { .. }
@@ -171,6 +180,11 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        50 => Ok(ApplicationSchemaMember::ScalarAspectField {
+            entity: input.text()?.to_owned(),
+            aspect: input.text()?.to_owned(),
+            field: input.text()?.to_owned(),
+        }),
         48 => managed_index::decode(input, budget),
         46 => derived_component_set::decode(input, budget),
         47 => derived_relation::decode(47, input, budget),
@@ -207,6 +221,7 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ScalarAspectField { .. } => 50,
         ApplicationSchemaMember::ManagedIndex { .. } => 48,
         ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,
         ApplicationSchemaMember::ApplicationQueryInspection { .. } => 45,

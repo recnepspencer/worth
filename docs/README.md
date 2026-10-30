@@ -28,6 +28,7 @@ Read these in order the first time. Keep the Glossary open as a reference while 
 | Understand the platform in five minutes | [Platform README](../README.md) |
 | Understand the reasons behind a rule | [Philosophy](philosophy.md) |
 | Build an application on WORTH | [Build an Application](build-an-application.md) |
+| Explain a query result or an authored operation | [Inspect original evidence](build-an-application.md#inspect-original-source-and-query-evidence) |
 | Check whether a capability exists before building one | [Capability Index](capability-index.md) |
 | Declare features and a program | [Build an Application §3](build-an-application.md#3-declare-features-and-the-program) |
 | Add a feature without repeating registration and runtime wiring | [Complete feature definitions](build-an-application.md#complete-feature-definitions) |

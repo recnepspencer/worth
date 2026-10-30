@@ -55,6 +55,7 @@ pub enum WorthQueryApplicationBasisSelectionIdentity {
 }
 
 impl WorthQueryApplicationBasisIdentity {
+    /// Physical Relational clone backing; world selection custody remains shared.
     pub(in crate::domain_computation) fn retained_clone_heap_bytes(&self) -> Option<u64> {
         Self::clone_heap_bytes(&self.branch_id, &self.descriptor)
     }

@@ -95,6 +95,14 @@ fn owned_correspondence_delivery_and_execution_share_the_sealed_signal_root() {
         SignalConditionalDecisionClass::DependencyUnchanged,
         "the retained session remains pinned to its admitted execution basis"
     );
+    assert!(old_basis.signal().computed_evaluation().is_none());
+    assert!(
+        old_basis
+            .retain_causal_observation()
+            .computed_evaluation()
+            .is_none(),
+        "passive dependency reuse cannot acquire a computed-equivalence report in Bridge"
+    );
     let fresh = owner
         .readmit_conditional_evaluation(
             crate::facade::BridgeConditionalEvaluationReadmissionRequest {

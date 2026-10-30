@@ -162,7 +162,9 @@ pub use programs::{
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
     WorthQueryWorkflowInstanceDisposition,
 };
-pub use query::WorthQueryApplicationQueryRequest;
+pub use query::{
+    WorthQueryApplicationProjectionRetentionRequest, WorthQueryApplicationQueryRequest,
+};
 pub use query_batch::{
     WorthQueryApplicationQueryBatchDenial, WorthQueryApplicationQueryBatchRequest,
 };

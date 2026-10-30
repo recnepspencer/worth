@@ -24,6 +24,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
+        ready: &crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
     ) -> Result<
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence,
         WorthQueryOutputDemandDenial,
@@ -34,6 +35,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             producer_identity,
             receipt,
             delivery,
+            ready,
             None,
         )
     }
@@ -49,6 +51,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
+        ready: &crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
         request: &WorthQueryRequestScope,
 
     ) -> Result<
@@ -61,6 +64,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             producer_identity,
             receipt,
             delivery,
+            ready,
             Some(request),
         )
     }
@@ -73,6 +77,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
+        ready: &crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
 
         admitted: Option<&WorthQueryRequestScope>,
     ) -> Result<
@@ -196,10 +201,49 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 },
             ));
         }
+        let evaluation = match self
+            .output_producer_routes
+            .get(producer_identity)
+            .and_then(|route| route.output_comparison.as_ref())
+        {
+            None => None,
+            Some(comparison) => {
+                let visit = comparison.evaluate(
+                    phase
+                        .request_for_owner(truth.owner_identity())
+                        .expect("output evaluation uses its admitted runtime"),
+                    &bridge,
+                    &truth,
+                    super::super::output_evaluation::NativeOutputBasis {
+                        receipt,
+                        readiness: &execution,
+                        lowering: &route.lowering,
+                        ordinal: route.delivery_dependency_ordinal,
+                        layout: &self.primary_provider.graph.layout,
+                    },
+                    ready,
+                    &self.next_output_producer_attempt,
+                )?;
+                if visit.compared_now {
+                    self.primary_provider.output_comparison_completed();
+                }
+                Some(visit.evaluation)
+            }
+        };
+        // A newly completed comparison is already memoized. Any late request
+        // interruption must return its Delivered checkpoint, including ordinary demand.
+        super::super::output_evaluation::consult(
+            &phase
+                .request_for_owner(truth.owner_identity())
+                .expect("readiness completion uses its admitted runtime"),
+        )?;
+        if let Some(request) = admitted.as_ref() {
+            check_readiness_request(request)?;
+        }
         Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::from_execution(
             delivery,
             &execution,
-        ))
+        ).with_output_evaluation(evaluation))
     }
 }
 

@@ -5,6 +5,13 @@ use std::{sync::Arc, time::Duration};
 use worth_query_decl::facade::application_query::ApplicationQueryParameterSet;
 
 pub(super) fn complete(runtime: &Application) -> Arc<WorthQueryOutputDemandSettlement> {
+    complete_with_contacts(runtime, 1)
+}
+
+pub(super) fn complete_with_contacts(
+    runtime: &Application,
+    contacts: usize,
+) -> Arc<WorthQueryOutputDemandSettlement> {
     let scope = primary_graph::tests::fixture::live_scope();
     let external = primary_graph::tests::fixture::authenticate_external(
         runtime.installed_schema(),
@@ -97,7 +104,7 @@ pub(super) fn complete(runtime: &Application) -> Arc<WorthQueryOutputDemandSettl
             let WorthQueryOutputDemandAdvance::Settled(settlement) = advanced else {
                 panic!("the synchronous real MODE2 handler must settle")
             };
-            assert_eq!(settlement.producer_contacts_in_this_demand(), 1);
+            assert_eq!(settlement.producer_contacts_in_this_demand(), contacts);
             assert!(!settlement.is_stably_reused());
             settlement
         })

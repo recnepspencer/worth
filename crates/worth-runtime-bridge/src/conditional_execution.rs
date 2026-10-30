@@ -28,6 +28,7 @@ pub(crate) use managed_time::quarantine_tests::assert_lane_quarantine;
 mod context_retention_tests;
 mod managed_wake_execution;
 mod observation_retention;
+mod output_comparison;
 mod owned_async;
 mod owned_async_observation;
 mod owned_installation;
@@ -99,6 +100,9 @@ pub use managed_time::{
     BridgeManagedTemporalIntentReconciliationParts,
 };
 pub use managed_wake_execution::BridgeManagedConditionalExecutionRequest;
+pub use output_comparison::{
+    BridgeExactOutputComparison, BridgeOutputComparisonDenial, BridgeOutputComparisonStage,
+};
 pub use owned_async::{
     BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncManagedDenial,
     BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,

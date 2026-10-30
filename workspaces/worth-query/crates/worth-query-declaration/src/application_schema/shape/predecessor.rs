@@ -32,7 +32,10 @@ impl ApplicationAspectValueMeaning {
         if self.revision().0 < previous.revision().0 {
             return Err(D::RevisionRegressed);
         }
-        if self.absence() != previous.absence() || self.fields() != previous.fields() {
+        if self.absence() != previous.absence()
+            || self.fields() != previous.fields()
+            || self.scalar_field() != previous.scalar_field()
+        {
             if self.revision() == previous.revision() {
                 return Err(D::MeaningChangedWithoutRevision);
             }

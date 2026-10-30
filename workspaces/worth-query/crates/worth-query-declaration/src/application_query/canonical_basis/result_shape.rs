@@ -78,12 +78,9 @@ pub(super) fn append_result_shape(
 }
 
 const fn field_presence_name(
-    value: crate::application_schema::ApplicationFieldPresence,
+    value: crate::application_query::ApplicationQueryResultFieldPresence,
 ) -> &'static str {
-    match value {
-        crate::application_schema::ApplicationFieldPresence::Required => "required",
-        crate::application_schema::ApplicationFieldPresence::Optional => "optional",
-    }
+    value.canonical_name()
 }
 
 pub(super) const fn cardinality_name(value: ApplicationQueryCardinality) -> &'static str {

@@ -67,7 +67,7 @@ fn write_field(
     output.text(field.output_name())?;
     foundational_aspect::write_scalar_type(output, field.scalar_family())?;
     output.text(field.value_type())?;
-    crate::record::application_schema::wire_vocabulary::write_presence(output, field.presence())
+    super::field_presence::write(output, field.presence())
 }
 
 fn decode_field(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryResultField, Denial> {
@@ -81,7 +81,7 @@ fn decode_field(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryResultFie
             output_name: input.text()?.to_owned(),
             scalar_family: foundational_aspect::decode_scalar_type(input)?,
             value_type: decode_type_identity(input)?,
-            presence: crate::record::application_schema::wire_vocabulary::decode_presence(input)?,
+            presence: super::field_presence::decode(input)?,
         },
     ))
 }

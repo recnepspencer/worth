@@ -3,27 +3,31 @@ use super::{
     compilation, WorthQueryApplicationSchemaContractCatalogDenial as D,
     WorthQueryApplicationSchemaContractCatalogDenialKind as K,
 };
-use worth_foundational::facade::{AspectContract, AspectKey};
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldBindingOwnerKind, ErasedApplicationSchemaDeclaration,
 };
 
-/// Resolve the complete aspect, including absence, siblings and codec digests.
-/// This describes declaration meaning; it grants no installation authority.
-pub fn declared_application_aspect_contract(
+/// Resolve the Native compiler's complete contract and physical binding together.
+/// This is declaration meaning, not an installed projection or runtime grant.
+pub fn declared_application_aspect(
     declaration: &ErasedApplicationSchemaDeclaration,
     entity: &str,
     aspect: &str,
-) -> Result<AspectContract, D> {
+) -> Result<crate::package::WorthQueryPortableNativeAspectContractRecord, D> {
     let mut aspects = compilation::collect_declared_aspects(declaration)?;
     compilation::collect_declared_fields(declaration, &mut aspects)?;
     let seed = aspects
-        .get(&(
+        .remove(&(
             ApplicationFieldBindingOwnerKind::Entity,
             entity.to_owned(),
             aspect.to_owned(),
         ))
         .ok_or_else(|| D::new(K::FieldWithoutAspect, format!("{entity}:{aspect}")))?;
-    let key = AspectKey::new(aspect).ok_or_else(|| D::new(K::InvalidAspectKey, aspect))?;
-    compilation::build_foundational_contract(&key, aspect, seed)
+    compilation::compile_portable_aspect_record(
+        declaration.name(),
+        ApplicationFieldBindingOwnerKind::Entity,
+        entity.to_owned(),
+        aspect.to_owned(),
+        seed,
+    )
 }

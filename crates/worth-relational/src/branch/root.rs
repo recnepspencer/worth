@@ -28,6 +28,9 @@ mod identity;
 mod output_publication;
 #[path = "root_owner_allocation_ledger.rs"]
 mod owner_allocation_ledger;
+#[cfg(test)]
+#[path = "root_physical_linkage_tests.rs"]
+mod physical_linkage_tests;
 #[path = "root_readmission.rs"]
 mod readmission;
 #[path = "root_region_access.rs"]
@@ -44,7 +47,10 @@ mod visibility;
 
 pub(super) use super::root_region::RelationalRootRegion;
 pub(crate) use super::root_region::RelationalRootRegionObservation;
-pub(crate) use allocation::RelationalRootAuthoritativeAllocationKind;
+pub(crate) use allocation::{
+    RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationKind,
+    RelationalRootAuthoritativeAllocationObservation,
+};
 pub(crate) use identity::RelationalBranchRootIdentityIssuer;
 pub(crate) use schema::RelationalBranchRootSchemaAuthority;
 pub(crate) use visibility::RelationalBranchVisibilityCommitment;

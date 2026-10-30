@@ -13,6 +13,7 @@ use super::WorthQueryGraphObligationSelectionCounters;
 pub enum WorthQueryGraphWorkIntentKind {
     ManagedIndexRead,
     ApplicationQueryRead,
+    ApplicationInspectionRead,
     ResourceRead,
     ApplicationOperationRead,
     ApplicationOperationMutation,
@@ -24,6 +25,11 @@ pub struct WorthQueryGraphWorkIntent {
 }
 
 impl WorthQueryGraphWorkIntent {
+    pub const fn application_inspection_read() -> Self {
+        Self {
+            kind: WorthQueryGraphWorkIntentKind::ApplicationInspectionRead,
+        }
+    }
     pub const fn managed_index_read() -> Self {
         Self {
             kind: WorthQueryGraphWorkIntentKind::ManagedIndexRead,
@@ -94,6 +100,7 @@ pub(super) enum SelectedInstalledGraphObligations {
     Shared(WorthQueryRetainedApplicationQueryGraphObligations),
     PreparedOperation(Arc<WorthQueryInstalledGraphObligationSet>),
     PreparedResource(Arc<WorthQueryInstalledGraphObligationSet>),
+    ApplicationInspection(Arc<WorthQueryInstalledGraphObligationSet>),
     PreparedManagedIndex(Arc<WorthQueryInstalledGraphObligationSet>),
 }
 
@@ -104,6 +111,7 @@ impl SelectedInstalledGraphObligations {
             Self::Shared(installed) => installed.installed_set(),
             Self::PreparedOperation(installed)
             | Self::PreparedResource(installed)
+            | Self::ApplicationInspection(installed)
             | Self::PreparedManagedIndex(installed) => installed,
         }
     }

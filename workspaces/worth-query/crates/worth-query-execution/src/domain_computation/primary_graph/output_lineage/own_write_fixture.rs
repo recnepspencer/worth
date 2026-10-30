@@ -207,6 +207,7 @@ fn commit_own_write(
                     worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11;16], [0x22;32]).unwrap(),
                     None,
                     execution.allocation_policy(),
+                    false,
                 )
             } else {
                 program.producer_idempotency_identities::<RetentionOutputs>(
@@ -216,6 +217,7 @@ fn commit_own_write(
                     worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11;16], [0x22;32]).unwrap(),
                     None,
                     execution.allocation_policy(),
+                    false,
                 )
             }
             .unwrap()

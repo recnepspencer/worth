@@ -1,6 +1,7 @@
 //! One-operation compilation authority shared by install and reinstallation.
 
 mod capability_demand;
+mod decision_reads;
 mod external_effect_contract;
 mod invariant_selection;
 mod program_width;
@@ -51,6 +52,7 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
     operation: String,
     input_type: String,
     decision_reads: Vec<ApplicationOperationDecisionReadTarget>,
+    graph_reads: WorthQueryOperationGraphReadContract,
     projection_work_budget: Option<usize>,
     execution_posture: WorthQueryInstalledApplicationOperationExecutionPosture,
     external_effect: InstalledExternalEffectContract,
@@ -86,6 +88,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
         binding: ApplicationSchemaBindingIdentity,
         members: &'a [ApplicationSchemaMember],
         portable_contract: &'a WorthQueryPortableApplicationOperationContractRecord,
+        native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
         operation: &str,
         input_type: &str,
     ) -> Result<Self, WorthQueryApplicationOperationInstallationDenial> {
@@ -112,7 +115,18 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 operation,
             ));
         }
-        let decision_reads = portable_contract.decision_read_targets().map_err(|()| {
+        let graph_reads = super::super::contracts::install_portable_graph_reads(
+            &binding,
+            native_contracts,
+            portable_contract.graph_reads(),
+        )
+        .map_err(|()| {
+            operation_denial(
+                WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract,
+                operation,
+            )
+        })?;
+        let decision_reads = decision_reads::from_installed(&graph_reads).map_err(|()| {
             operation_denial(
                 WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract,
                 operation,
@@ -152,6 +166,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
             decision_reads,
+            graph_reads,
             projection_work_budget,
             execution_posture: operation_execution_posture(members, operation, input_type),
             external_effect,
@@ -187,22 +202,12 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
         let additional_authorization_fact_count =
             progression_support_fact_count(self.members, &self.operation, &self.input_type);
         let mutation_preconditions = self.compile_mutation_preconditions(&ability_requirements)?;
-        let graph_reads = super::super::contracts::install_portable_graph_reads(
-            &self.binding,
-            native_contracts,
-            self.portable_contract.graph_reads(),
-        )
-        .map_err(|()| {
-            operation_denial(
-                WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract,
-                &self.operation,
-            )
-        })?;
         let (touches, _) =
             super::super::contracts::install_portable_graph_touches(
             &self.binding,
             native_contracts,
             self.portable_contract.touches(),
+            &self.graph_reads,
         )
         .map_err(|()| {
             operation_denial(
@@ -284,7 +289,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                     _ => None,
                 })
                 .collect(),
-            graph_reads,
+            graph_reads: self.graph_reads,
             touches,
             emissions,
             graph_mutation_count,

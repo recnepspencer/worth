@@ -3,7 +3,6 @@
 use std::sync::Arc;
 
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
@@ -25,22 +24,22 @@ impl WorthQueryPrimaryGraphProvider {
         product.owner_cleanup.follow_history_releases(follower);
     }
 
-    /// World retires every commit behind `settled` that nothing protects,
+    /// World retires changed history interiors that nothing protects,
     /// splicing retired commits out from between kept ones, and the receipt
     /// bases of those commits go with it, so inspection of a retired commit
     /// is unavailable. Their completed evidence keeps only the
     /// publication's identities, so replay still answers. Relational then
     /// reclaims the roots the retired history no longer pins. A World that
     /// cannot retire keeps its history; nothing is lost but capacity.
-    pub(super) fn retire_history_behind(
+    pub(super) fn retire_changed_history(
         &self,
         runtime: &mut RelationalRuntime,
-        settled: &CompositeCommitIdentity,
+        committed: &worth_relational::facade::transactions::CommitResult,
     ) {
         let retired = self
             .world_history
             .get()
-            .and_then(|world| world.retire_unprotected_history(settled).ok())
+            .and_then(|world| world.retire_changed_history().ok())
             .unwrap_or_default();
         if !retired.is_empty() {
             let commits = self
@@ -57,7 +56,7 @@ impl WorthQueryPrimaryGraphProvider {
             }
         }
         runtime.run_branch_root_reclamation_pass();
-        runtime.run_index_generation_reclamation_pass();
+        let _ = runtime.run_index_generation_reclamation_after_publication(committed);
     }
 }
 

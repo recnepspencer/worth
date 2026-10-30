@@ -248,6 +248,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let required_execution = required_output.prepare_execution(published_mode);
         let runtime_identity = self.runtime.authority_identity().as_u64();
         let root = demand.observed_source.source_root();
+        let original_publication = demand.original_producing_publication.clone();
         let finish = move |result, readiness| {
             super::execution_completion::finish(
                 result,
@@ -256,6 +257,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 readiness,
                 runtime_identity,
                 root,
+                original_publication,
+                &execution,
             )
         };
         let prepared_input = demand

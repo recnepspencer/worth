@@ -182,7 +182,7 @@ impl crate::runtime::RelationalRuntime {
                 // removed cell still selects this exact prepared root.
                 let retired_root_identity = head_retirement.retire_head();
                 self.history
-                    .move_branch_head_version(previous_head_version, None);
+                    .move_branch_head_basis(Some(&selected_root), None);
                 self.visibility_pins()
                     .move_branch_head_visibility_residency(
                         &branch,

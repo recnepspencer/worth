@@ -12,6 +12,16 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, scope: &Scope) -> Result<(), Denial> {
     match scope {
+        Scope::RemoveAspect {
+            schema,
+            entity,
+            contract,
+        } => {
+            output.u16(7)?;
+            output.text(schema)?;
+            output.text(entity)?;
+            super::super::foundational_aspect::write_aspect_contract(output, contract)
+        }
         Scope::InitializeRelationField {
             schema,
             relation,
@@ -97,6 +107,11 @@ pub(super) fn decode(
             contract: super::super::foundational_aspect::decode_aspect_contract(input, budget)?,
             field_path: super::super::foundational_aspect::decode_field_path(input, budget)?,
         },
+        7 => Scope::RemoveAspect {
+            schema: input.text()?.into(),
+            entity: input.text()?.into(),
+            contract: super::super::foundational_aspect::decode_aspect_contract(input, budget)?,
+        },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
 }
@@ -150,6 +165,18 @@ fn same_variant_order(left: &Scope, right: &Scope) -> Ordering {
         | (Scope::UnlinkRelation { .. }, Scope::UnlinkRelation { .. }) => {
             relation_order(left, right)
         }
+        (
+            Scope::RemoveAspect {
+                schema: a,
+                entity: ae,
+                contract: ac,
+            },
+            Scope::RemoveAspect {
+                schema: b,
+                entity: be,
+                contract: bc,
+            },
+        ) => (a, ae, ac.key()).cmp(&(b, be, bc.key())),
         _ => Ordering::Equal,
     }
 }
@@ -248,5 +275,9 @@ const fn rank(scope: &Scope) -> u8 {
         Scope::LinkRelation { .. } => 4,
         Scope::UnlinkRelation { .. } => 5,
         Scope::InitializeRelationField { .. } => 6,
+        Scope::RemoveAspect { .. } => 7,
     }
 }
+
+#[cfg(test)]
+mod removal_encoding;

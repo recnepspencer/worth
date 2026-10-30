@@ -72,6 +72,7 @@ pub fn adoption_cycles_retain_linear_history() {
     assert_eq!(
         host::read_on(&host, head),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 20
         }]
@@ -80,6 +81,7 @@ pub fn adoption_cycles_retain_linear_history() {
     assert_eq!(
         host::read_on(&host, head),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 20
         }],
@@ -104,6 +106,7 @@ pub fn refused_fork_leaves_its_parent_unchanged() {
     assert_eq!(
         host::read_on(&host, parent),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -112,6 +115,7 @@ pub fn refused_fork_leaves_its_parent_unchanged() {
     assert_eq!(
         host::read_on(&host, parent),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 7
         }]
@@ -139,6 +143,7 @@ pub fn corrections_reach_across_an_adoption() {
         assert_eq!(
             host::read_on(&host, adopted),
             [Row {
+                operand: None,
                 primary: restored,
                 secondary
             }]

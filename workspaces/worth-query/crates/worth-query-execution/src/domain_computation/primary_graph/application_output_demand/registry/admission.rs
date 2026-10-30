@@ -53,8 +53,12 @@ impl WorthQueryOutputDemandRegistry {
         }
         let stable_refresh = matches!(successor_of, Some(OutputRefreshPredecessor::Stable { .. }));
         let selected_commit = selected_output.as_ref().map(|selected| selected.commit);
-        let notes =
-            occurrence_notes::discover(&state, &requested_key, selected_commit, stable_refresh)?;
+        let notes = occurrence_notes::discover(
+            &state,
+            &requested_key,
+            selected_commit,
+            successor_of.is_some(),
+        )?;
         let matching_delivery = notes.delivery;
         let own_closed = notes.closed;
         let own_custody = notes.custody;
@@ -71,8 +75,10 @@ impl WorthQueryOutputDemandRegistry {
             state.drain_custody_for_occurrence(&requested_key);
         }
         let exact_retained_row = if let Some(selected) =
-            selected_output.as_ref().filter(|_| !stable_refresh)
+            selected_output.as_ref().filter(|_| successor_of.is_none())
         {
+            // An explicit accepted-authority refresh already rejected its Ready.
+            // A retained selector hint cannot rejoin that stale source address.
             super::refreshed_rejoin::newest_matching_row(
                 &state.records,
                 &requested_key,

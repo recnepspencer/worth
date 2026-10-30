@@ -1,13 +1,13 @@
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, ProductBranchIdentity, ProductBranchIncarnation,
-    ProductBranchObservation, ProductBranchReferenceGeneration,
+    ProductBranchObservation, ProductBranchReferenceGeneration, ProductBranchReferenceSnapshot,
 };
 
 /// Declared World occurrence axes used to order conditional evaluations.
 /// The owner-issued immutable commit determines its basis; the history owner
 /// refuses duplicate commits. Exact admission tokens add no ordering axis.
 ///
-/// The only constructor takes an owner-issued observation. The World snapshot
+/// Constructors take an owner-issued observation or reference snapshot. World
 /// obtains commit and basis from one immutable commit; callers cannot splice
 /// axes from different observations into this ordering position.
 ///
@@ -54,6 +54,15 @@ impl WorthQueryProductBranchReadPosition {
     }
     pub(super) fn commit(&self) -> &CompositeCommitIdentity {
         &self.commit
+    }
+
+    pub(super) fn from_reference_snapshot(snapshot: &ProductBranchReferenceSnapshot) -> Self {
+        Self {
+            branch: snapshot.branch_identity().clone(),
+            incarnation: snapshot.lifecycle_incarnation(),
+            generation: snapshot.reference_generation(),
+            commit: snapshot.selected_commit().clone(),
+        }
     }
 
     pub(super) fn from_observation(observation: &ProductBranchObservation) -> Self {

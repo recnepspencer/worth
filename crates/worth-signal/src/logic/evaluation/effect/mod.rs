@@ -9,5 +9,5 @@ pub use operational::{DeferralReason, EvaluationVerdict, OperationalEffect, Supp
 pub(crate) use operational::{
     DependencyInputContext, EffectDependencyInputs, PendingDependencySnapshot,
 };
-pub use report::AppliedEffectReport;
-pub(crate) use report::{EffectComparison, PreparedApplyResult};
+pub(crate) use report::PreparedApplyResult;
+pub use report::{AppliedEffectReport, EffectComparison};

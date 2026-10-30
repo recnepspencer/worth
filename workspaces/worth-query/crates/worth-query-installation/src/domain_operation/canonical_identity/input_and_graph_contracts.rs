@@ -221,6 +221,9 @@ fn hash_application_read_scope(hasher: &mut impl Sink, scope: &WorthQueryOperati
                 projection.entity().semantic_key(),
             );
             hash_text_field(hasher, "graph-read-aspect", projection.aspect().as_str());
+            if let Some(field) = projection.bound_scalar_field() {
+                hash_text_field(hasher, "graph-read-scalar-field", field.as_str());
+            }
             hash_native_projection(hasher, projection.projection());
         }
         WorthQueryOperationGraphReadScope::Relation(relation) => {

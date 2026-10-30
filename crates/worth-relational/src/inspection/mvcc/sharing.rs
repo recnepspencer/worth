@@ -38,7 +38,7 @@
 //! - `sharing_inspection.rs` — the entry point that assembles the observation.
 
 #[path = "sharing_accounting.rs"]
-mod accounting;
+pub(super) mod accounting;
 #[path = "sharing_allocation_inventory.rs"]
 mod allocation_inventory;
 #[path = "sharing_authoritative_byte_metrics.rs"]

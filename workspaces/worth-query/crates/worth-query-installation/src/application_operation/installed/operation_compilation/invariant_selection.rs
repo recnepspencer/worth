@@ -37,6 +37,10 @@ fn invalidates(
             | WorthQueryOperationTouchScope::UnlinkRelation(scope),
             ApplicationInvariantScopeTarget::Entity(entity),
         ) => scope.from() == entity || scope.to() == entity,
+        (
+            WorthQueryOperationTouchScope::RemoveAspect(scope),
+            ApplicationInvariantScopeTarget::Entity(entity),
+        ) => scope.entity() == entity,
         (WorthQueryOperationTouchScope::DeclaredDomain(_), _) => true,
         _ => false,
     }

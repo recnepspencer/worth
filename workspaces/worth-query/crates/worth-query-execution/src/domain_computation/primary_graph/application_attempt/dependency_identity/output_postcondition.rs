@@ -15,13 +15,41 @@ use super::super::WorthQueryApplicationObservedFact;
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    performed_inputs: Option<
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    >,
     moved_by_own_effect: std::sync::Arc<[usize]>,
+    retain_output_field_evidence: bool,
     carry: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
     >,
 }
 
 impl OutputCurrentnessFacts {
+    pub(in crate::domain_computation::primary_graph) fn retains_output_field_evidence(
+        &self,
+    ) -> bool {
+        self.retain_output_field_evidence
+    }
+    pub(super) fn retaining_output_field_evidence(mut self, requested: bool) -> Self {
+        self.retain_output_field_evidence = requested;
+        self
+    }
+    /// Captured from the completed pre-normalization producer read set.
+    pub(super) fn with_performed_inputs(
+        mut self,
+        inputs: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    ) -> Self {
+        self.performed_inputs = Some(inputs);
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) fn performed_input_facts(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
+    {
+        self.performed_inputs.as_ref()
+    }
+
     /// Query owns these newly assembled program facts before any effect. Move
     /// them through completed-read construction, never relabel opaque storage.
     /// No computation supplied postconditions: candidate rebase must resolve
@@ -41,6 +69,8 @@ impl OutputCurrentnessFacts {
         Ok(Self {
             facts: builder.seal()?,
             carry: None,
+            performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: std::sync::Arc::from([]),
         })
     }
@@ -83,6 +113,8 @@ impl From<crate::domain_computation::primary_graph::output_lineage::ComparableSo
         Self {
             facts: facts.facts().clone(),
             carry: None,
+            performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -97,12 +129,16 @@ pub(super) fn complete_content_currentness_facts(
         OutputCurrentnessFacts {
             facts,
             carry: None,
+            performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: moved.into(),
         }
     } else {
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
             carry: None,
+            performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -117,6 +153,8 @@ pub(super) fn complete_output_currentness_facts(
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from(facts).into(),
             carry: None,
+            performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: moved_by_own_effect.into(),
         }
     } else {
@@ -126,6 +164,8 @@ pub(super) fn complete_output_currentness_facts(
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
             carry: None,
+            performed_inputs: None,
+            retain_output_field_evidence: false,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -162,6 +202,23 @@ pub(super) fn normalized_output_facts(
     facts
         .iter()
         .map(|fact| match fact {
+            WorthQueryApplicationObservedFact::Field {
+                entity_id,
+                kind,
+                locator,
+                ..
+            }
+            | WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                kind,
+                locator,
+            } if parent_removed(*entity_id, locator.aspect().aspect_key(), effects) => {
+                WorthQueryApplicationObservedFact::OptionalAspectAbsent {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    locator: locator.clone(),
+                }
+            }
             WorthQueryApplicationObservedFact::AspectPresence {
                 entity_id,
                 kind,
@@ -189,7 +246,8 @@ pub(super) fn normalized_output_facts(
                     entity_id: *entity_id,
                     kind: *kind,
                     aspect: aspect.clone(),
-                    present: *present || initialized,
+                    present: !parent_removed(*entity_id, aspect, effects)
+                        && (*present || initialized),
                 }
             }
             WorthQueryApplicationObservedFact::Field {
@@ -257,3 +315,13 @@ fn replacement_field_value<'effect>(
 
 #[cfg(test)]
 mod owned_program_facts_tests;
+
+#[cfg(test)]
+fn parent_removed(
+    entity: EntityId,
+    aspect: &worth_foundational::facade::AspectKey,
+    effects: &[WorthQueryApplicationRealizedEffect],
+) -> bool {
+    effects.iter().any(|effect| matches!(effect, WorthQueryApplicationRealizedEffect::RemoveAspect { entity_id, contract, .. }
+        if *entity_id == entity && contract.key() == aspect))
+}

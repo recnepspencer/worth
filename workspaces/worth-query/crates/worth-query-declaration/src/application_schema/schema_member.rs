@@ -44,6 +44,10 @@ pub enum ApplicationOperationProgramTarget {
     Emit {
         effect: String,
     },
+    RemoveAspect {
+        entity: String,
+        aspect: String,
+    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -262,5 +266,11 @@ pub enum ApplicationSchemaMember {
     },
     ProjectedMemberDomain {
         definition: super::ErasedApplicationProjectedMemberDomainDefinition,
+    },
+    /// Explicit physical scalar storage for the sole Required child of an aspect.
+    ScalarAspectField {
+        entity: String,
+        aspect: String,
+        field: String,
     },
 }
