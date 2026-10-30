@@ -42,7 +42,7 @@ where
                 Schema,
                 <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
             >,
-    {
+{
         self.request
             .recover_discovered_required_outputs(application, receipt, controls)
     }

@@ -1,7 +1,0 @@
-error[E0277]: the trait bound `PhysicalDurabilityRecoveryHandoff: From<PhysicalDurabilityPerformanceSummary>` is not satisfied
- --> tests/physical_runtime_authority/c8_recovery_handoff_rejects_report_conversion.rs:6:12
-  |
-6 |     report.into()
-  |            ^^^^ the trait `From<PhysicalDurabilityPerformanceSummary>` is not implemented for `PhysicalDurabilityRecoveryHandoff`
-  |
-  = note: required for `PhysicalDurabilityPerformanceSummary` to implement `Into<PhysicalDurabilityRecoveryHandoff>`

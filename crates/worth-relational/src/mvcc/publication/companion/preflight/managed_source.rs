@@ -30,7 +30,7 @@ impl PublicationCompanionPreflight<'_> {
         }
         let mut next = (**selected.current().payload()).clone();
         for root in self.managed_sources().roots() {
-            crate::authority::commit::pipeline::consult_stage_control(
+            crate::authority::commit::pipeline::consult_stage(
                 self.execution,
                 crate::authority::commit::pipeline::CommitStage::Publication,
             )

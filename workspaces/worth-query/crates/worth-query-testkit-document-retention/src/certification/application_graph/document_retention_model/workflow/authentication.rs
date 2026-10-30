@@ -1,0 +1,193 @@
+pub use std::num::NonZeroUsize;
+pub use std::sync::atomic::{AtomicU64, Ordering};
+pub use std::sync::Arc;
+pub use std::time::{Duration, Instant};
+
+pub use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
+pub use worth_query_host::facade::admission::authentication_event::{
+    install_authentication_event_owner, WorthQueryAuthenticationEventChallenge,
+    WorthQueryAuthenticationEventFuture, WorthQueryAuthenticationEventPolicy,
+    WorthQueryAuthenticationEventReuse, WorthQueryAuthenticationEventVerifier,
+    WorthQueryAuthenticationEventVerifierFailure, WorthQueryInstalledAuthenticationEventOwner,
+};
+pub use worth_query_host::facade::domain::{
+    WorthQueryClockCoordinate, WorthQueryClockSourceIdentity, WorthQueryClockTimelineIdentity,
+    WorthQueryInstalledApplicationSchema, WorthQueryNamedClock, WorthQueryNamedClockFailure,
+    WorthQueryNamedClockReading, WorthQueryNamedClockSource,
+};
+
+pub use super::super::operator_identity::{operator_identity, secondary_signer_identity};
+pub use super::super::schema::DocumentRetentionSchema;
+
+pub struct CertificationAuthenticationClock;
+impl WorthQueryNamedClock for CertificationAuthenticationClock {
+    const PORTABLE_IDENTITY: &'static str = "certification.workflow-authentication-clock.v1";
+}
+
+pub struct CertificationAuthenticationClockSource {
+    pub started: Instant,
+    pub sequence: Arc<AtomicU64>,
+    pub offset_nanoseconds: Arc<AtomicU64>,
+}
+
+impl Clone for CertificationAuthenticationClockSource {
+    fn clone(&self) -> Self {
+        Self {
+            started: self.started,
+            sequence: Arc::clone(&self.sequence),
+            offset_nanoseconds: Arc::clone(&self.offset_nanoseconds),
+        }
+    }
+}
+
+impl Default for CertificationAuthenticationClockSource {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CertificationAuthenticationClockSource {
+    pub fn new() -> Self {
+        Self {
+            started: Instant::now(),
+            sequence: Arc::new(AtomicU64::new(1)),
+            offset_nanoseconds: Arc::new(AtomicU64::new(0)),
+        }
+    }
+
+    pub fn advance_for_test(&self, duration: Duration) {
+        let additional = u64::try_from(duration.as_nanos()).expect("finite test clock advance");
+        {
+            let update_counter = &self.offset_nanoseconds;
+            let mut previous = update_counter.load(Ordering::SeqCst);
+            loop {
+                let Some(updated_value) = previous.checked_add(additional) else {
+                    break Err(previous);
+                };
+                match update_counter.compare_exchange_weak(
+                    previous,
+                    updated_value,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => previous = reloaded_value,
+                }
+            }
+        }
+        .expect("finite test clock offset");
+    }
+}
+
+impl WorthQueryNamedClockSource<CertificationAuthenticationClock>
+    for CertificationAuthenticationClockSource
+{
+    const SEMANTIC_IDENTITY: &'static str = "certification.workflow-authentication-source.v1";
+
+    fn source_identity(&self) -> WorthQueryClockSourceIdentity {
+        WorthQueryClockSourceIdentity::declare("certification-workflow-authentication").unwrap()
+    }
+
+    fn timeline_identity(&self) -> WorthQueryClockTimelineIdentity {
+        WorthQueryClockTimelineIdentity::declare("certification-process-local").unwrap()
+    }
+
+    fn observe(
+        &self,
+    ) -> Result<
+        WorthQueryNamedClockReading<CertificationAuthenticationClock>,
+        WorthQueryNamedClockFailure,
+    > {
+        Ok(WorthQueryNamedClockReading::new(
+            self.sequence.fetch_add(1, Ordering::SeqCst),
+            WorthQueryClockCoordinate::from_nanoseconds(
+                u64::try_from(self.started.elapsed().as_nanos())
+                    .expect("finite test clock lifetime")
+                    .checked_add(self.offset_nanoseconds.load(Ordering::SeqCst))
+                    .expect("finite test clock coordinate"),
+            ),
+        ))
+    }
+}
+
+pub struct CertificationAuthenticationVerifier;
+impl WorthQueryAuthenticationEventVerifier for CertificationAuthenticationVerifier {
+    type Credential = ();
+
+    fn configuration_identity(&self) -> &str {
+        "certification-workflow-approval-factor-v1"
+    }
+
+    fn verify<'a>(
+        &'a self,
+        (): Self::Credential,
+        challenge: &'a WorthQueryAuthenticationEventChallenge,
+        _scope: &'a WorthQueryRequestScope,
+    ) -> WorthQueryAuthenticationEventFuture<'a> {
+        Box::pin(async move {
+            if ![
+                operator_identity(),
+                secondary_signer_identity(),
+                super::super::operator_identity::reviewer_identity(),
+            ]
+            .contains(challenge.principal())
+                || !matches!(
+                    challenge.intent().purpose(),
+                    "workflow-approval-signature" | "certification-account-login"
+                )
+                || *challenge.nonce() == [0; 32]
+            {
+                return Err(WorthQueryAuthenticationEventVerifierFailure::CredentialRejected);
+            }
+            Ok(())
+        })
+    }
+}
+
+pub type CertificationAuthenticationOwner = Arc<
+    WorthQueryInstalledAuthenticationEventOwner<
+        DocumentRetentionSchema,
+        CertificationAuthenticationClock,
+        CertificationAuthenticationClockSource,
+        CertificationAuthenticationVerifier,
+    >,
+>;
+
+pub fn install_certification_authentication(
+    schema: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
+) -> CertificationAuthenticationOwner {
+    install_certification_authentication_with_clock(schema).0
+}
+
+pub fn install_certification_authentication_with_clock<
+    S: worth_query_host::facade::declaration::application_schema::ApplicationSchema,
+>(
+    schema: &WorthQueryInstalledApplicationSchema<S>,
+) -> (
+    Arc<
+        WorthQueryInstalledAuthenticationEventOwner<
+            S,
+            CertificationAuthenticationClock,
+            CertificationAuthenticationClockSource,
+            CertificationAuthenticationVerifier,
+        >,
+    >,
+    CertificationAuthenticationClockSource,
+) {
+    let clock = CertificationAuthenticationClockSource::new();
+    let owner = Arc::new(
+        install_authentication_event_owner::<S, CertificationAuthenticationClock, _, _>(
+            schema,
+            clock.clone(),
+            CertificationAuthenticationVerifier,
+            WorthQueryAuthenticationEventPolicy::new(
+                Duration::from_secs(60),
+                WorthQueryAuthenticationEventReuse::SingleUse,
+            )
+            .unwrap(),
+            NonZeroUsize::new(128).unwrap(),
+        )
+        .unwrap(),
+    );
+    (owner, clock)
+}

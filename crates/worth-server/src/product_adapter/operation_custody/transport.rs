@@ -49,6 +49,10 @@ pub struct WorthServerSourceContinuation {
     ) -> Result<WorthServerProductOperationSuccess, Error>,
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime thread-builder=1: Server owns one bounded ingress worker per installed Query source adapter; native move-only owners remain on that worker."
+)]
 pub(super) fn start<C: SourceWire>(
     application: Arc<C>,
     limits: WorthServerSourceCustodyLimits,

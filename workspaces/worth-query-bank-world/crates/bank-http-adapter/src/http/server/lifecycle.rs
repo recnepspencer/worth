@@ -1,6 +1,10 @@
 //! Listener shutdown refuses before disconnecting live native mutation custody.
 use super::*;
 impl BankHttpServer {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+    )]
     pub async fn shutdown(mut self) -> Result<BankHttpServerClose, BankHttpServerCloseFailure> {
         if let Some(mutations) = self.mutations.as_ref() {
             match mutations.quiesce().await {

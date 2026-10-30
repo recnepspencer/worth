@@ -1,5 +1,5 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64};
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
@@ -22,6 +22,7 @@ mod certification_cost;
 mod conditional_cleanup;
 mod execution_memory;
 mod external_dispatch_attempt;
+mod mutation_partition;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 mod inbound_occurrence;
 #[cfg(test)]
@@ -231,17 +232,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
     ) -> Option<&super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>> {
         self.program_support.as_ref()
-    }
-
-    pub(super) fn issue_application_mutation_partition(
-        &self,
-    ) -> Option<worth_relational::facade::identity::PartitionId> {
-        self.next_application_mutation_partition
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current.checked_add(1)
-            })
-            .ok()
-            .map(worth_relational::facade::identity::PartitionId)
     }
 }
 

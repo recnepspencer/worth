@@ -48,11 +48,10 @@ impl Sha256 {
             compress(&mut self.state, &self.pending);
             self.used = 0;
         }
-        let mut chunks = bytes.chunks_exact(64);
-        for chunk in &mut chunks {
+        let (chunks, remaining) = bytes.as_chunks::<64>();
+        for chunk in chunks {
             compress(&mut self.state, chunk);
         }
-        let remaining = chunks.remainder();
         self.pending[..remaining.len()].copy_from_slice(remaining);
         self.used = remaining.len();
     }
@@ -66,7 +65,7 @@ impl Sha256 {
         self.pending[56..].copy_from_slice(&self.length.wrapping_mul(8).to_be_bytes());
         compress(&mut self.state, &self.pending);
         let mut digest = [0_u8; 32];
-        for (target, word) in digest.chunks_exact_mut(4).zip(self.state) {
+        for (target, word) in digest.as_chunks_mut::<4>().0.iter_mut().zip(self.state) {
             target.copy_from_slice(&word.to_be_bytes());
         }
         digest
@@ -75,8 +74,8 @@ impl Sha256 {
 
 fn compress(state: &mut [u32; 8], block: &[u8]) {
     let mut words = [0_u32; 64];
-    for (index, source) in block.chunks_exact(4).enumerate() {
-        words[index] = u32::from_be_bytes(source.try_into().expect("four-byte word"));
+    for (index, source) in block.as_chunks::<4>().0.iter().enumerate() {
+        words[index] = u32::from_be_bytes(*source);
     }
     for index in 16..64 {
         let first = words[index - 15].rotate_right(7)

@@ -104,12 +104,12 @@ fn retarget_presented_scroll_extent(
             && mounted.scroll_group_placed_on_screen(target)
         {
             mounted.retire_scroll_motion_sample(target);
-            if let Some(owner) = live.get(&target) {
-                if !super::scroll_arrival_placement::place_pulled_back_arrival(
+            if let Some(owner) = live.get(&target)
+                && !super::scroll_arrival_placement::place_pulled_back_arrival(
                     scroll, mounted, *owner, target,
-                ) {
-                    scroll.retire_transition(*owner);
-                }
+                )
+            {
+                scroll.retire_transition(*owner);
             }
         }
     }

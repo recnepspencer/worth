@@ -162,10 +162,9 @@ impl super::UiPortalRuntimeState {
             .records
             .get(&portal)
             .map(|record| record.semantic_surface)
+            && previous != record.semantic_surface
         {
-            if previous != record.semantic_surface {
-                self.remove_surface_stack_row(previous, portal);
-            }
+            self.remove_surface_stack_row(previous, portal);
         }
         if record.posture == super::UiPortalLifecyclePosture::Closed {
             self.remove_surface_stack_row(record.semantic_surface, portal);

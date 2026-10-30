@@ -262,10 +262,9 @@ impl WorthUiCommandKey {
         if let Some(number) = value
             .strip_prefix('F')
             .and_then(|number| number.parse::<u8>().ok())
+            && (1..=35).contains(&number)
         {
-            if (1..=35).contains(&number) {
-                return Ok(Self::Function(number));
-            }
+            return Ok(Self::Function(number));
         }
         match value {
             "Enter" => Ok(Self::Enter),

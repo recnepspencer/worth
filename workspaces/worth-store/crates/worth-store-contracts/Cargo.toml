@@ -1,14 +1,19 @@
 [package]
-workspace = "../.."
-name = "worth-store-contracts"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Shared Worth Store ids, classifications, errors, and contract vocabulary."
+"workspace" = "../.."
+"name" = "worth-store-contracts"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Shared Worth Store ids, classifications, errors, and contract vocabulary."
+"autotests" = false
+
 
 [lints]
 workspace = true
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+
+[lib]
+"test" = false

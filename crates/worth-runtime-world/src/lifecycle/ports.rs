@@ -96,6 +96,11 @@ pub enum RuntimeWorldBranchCreationOutcome {
 pub(crate) trait RuntimeWorldObservationService:
     super::availability::RuntimeWorldAvailability
 {
+    fn readmit_product_branch_reference(
+        &self,
+        description: &crate::branch::ProductBranchReferenceDescription,
+    ) -> Result<ProductBranchObservation, crate::branch::ProductBranchReferenceReadmissionDenial>;
+
     fn admit_product_branch_currentness<'selected>(
         &self,
         expected: &'selected ProductBranchObservation,

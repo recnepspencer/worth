@@ -1,0 +1,7 @@
+error[E0277]: the trait bound `AdmittedRelationalBranchBasis: From<RelationalBranchBasisDescriptor>` is not satisfied
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/branch_basis_descriptor_cannot_be_admitted.rs:6:16
+  |
+6 |     descriptor.into()
+  |                ^^^^ the trait `From<RelationalBranchBasisDescriptor>` is not implemented for `AdmittedRelationalBranchBasis`
+  |
+  = note: required for `RelationalBranchBasisDescriptor` to implement `Into<AdmittedRelationalBranchBasis>`

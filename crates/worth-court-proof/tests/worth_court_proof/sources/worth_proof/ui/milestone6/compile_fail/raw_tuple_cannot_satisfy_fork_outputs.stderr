@@ -1,0 +1,8 @@
+error[E0308]: mismatched types
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone6/compile_fail/raw_tuple_cannot_satisfy_fork_outputs.rs:10:9
+   |
+10 |         ((payload.0, proofs, basis), (payload.1, worth_proof::NoProofs, worth_proof::NoAssumptionBasis))
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `ForkOutputs2<(_, _, _), (_, _, _)>`, found `((u8, NoProofs, NoAssumptionBasis), ...)`
+   |
+   = note: expected struct `ForkOutputs2<(_, _, _), (_, _, _)>`
+               found tuple `((u8, NoProofs, NoAssumptionBasis), (u8, NoProofs, NoAssumptionBasis))`

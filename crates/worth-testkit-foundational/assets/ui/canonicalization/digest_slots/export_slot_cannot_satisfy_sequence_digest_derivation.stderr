@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/digest_slots/export_slot_cannot_satisfy_sequence_digest_derivation.rs
+  |
+  |     let _ = admit_canonical_sequence_digest_derivation(ready, export_slot);
+  |             ------------------------------------------        ^^^^^^^^^^^ expected `CanonicalSingleSequenceDigestInput`, found `CanonicalExportBundleDigestInput`
+  |             |
+  |             arguments to this function are incorrect
+  |
+  = note: expected struct `CanonicalDigestAlgorithmSlot<CanonicalSingleSequenceDigestInput>`
+             found struct `CanonicalDigestAlgorithmSlot<CanonicalExportBundleDigestInput>`
+note: function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/digest_slots/admission.rs
+  |
+  | pub fn admit_canonical_sequence_digest_derivation(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

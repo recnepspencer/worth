@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_temporal_activation_ready_cannot_route_without_request.rs:12:41
+   |
+12 |     let _ = runtime.route_temporal_wake(&ready, None::<&BridgeTemporalCauseRecord>);
+   |                     ------------------- ^^^^^^ expected `&BridgeTemporalWakeRoutingRequest`, found `&...`
+   |                     |
+   |                     arguments to this method are incorrect
+   |
+   = note: expected reference `&BridgeTemporalWakeRoutingRequest`
+              found reference `&BridgeTemporalSubscriptionActivationReady`
+note: method defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription/temporal.rs
+   |
+   |     pub fn route_temporal_wake(
+   |            ^^^^^^^^^^^^^^^^^^^

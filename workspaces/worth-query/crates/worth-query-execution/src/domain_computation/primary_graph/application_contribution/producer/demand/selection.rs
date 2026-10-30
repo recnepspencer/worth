@@ -12,6 +12,13 @@ type SelectedWithEntry<'a, Schema> = (
     &'a std::sync::Arc<super::super::registry::InstalledProducerProvider<Schema>>,
 );
 
+// Lifecycle inspection selects the producer for live output. Demand admission
+// may instead rejoin an already committed Ready, which performs no producer run.
+enum SelectionPurpose {
+    Lifecycle,
+    OutputDelivery,
+}
+
 mod native_selection;
 mod recovered_candidates;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) mod retained_liveness;
@@ -41,8 +48,16 @@ where
         let execution = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| WorthQueryOutputDemandDenial::request_admission(cause.into()))?;
-        self.select_output_producer_with_remaining::<Family>(&execution, source, profile_kind, None)
-            .map(|(selected, _)| selected)
+        self.select_output_producer_with_remaining_core::<Family>(
+            &execution,
+            source,
+            profile_kind,
+            None,
+            None,
+            SelectionPurpose::Lifecycle,
+            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire(),
+        )
+        .map(|(selected, _)| selected)
     }
 
     /// The admitted demand continues on this request's meter.
@@ -61,6 +76,6 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, None, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+        self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, None, SelectionPurpose::OutputDelivery, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 }

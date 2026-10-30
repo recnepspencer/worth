@@ -17,7 +17,7 @@ alone cannot prove the Query host contract.
 
 | Requirement | Production owner | Evidence | Status |
 |---|---|---|---|
-| Host-only installation | `WorthQueryConditionalApplicationRuntimeInstallation` binds the installed operation, node, predicate, clock, reconstruction, invoker, and admission source before publication | `worth-query-host/tests/temporal_conditional_operation.rs`; host has no Bridge, Signal, Relational, or Foundational dependency | Proved |
+| Host-only installation | `WorthQueryConditionalApplicationRuntimeInstallation` binds the installed operation, node, predicate, clock, reconstruction, invoker, and admission source before publication | `worth-query-court-host-fast/tests/worth_query_court_host_fast/fast/host/temporal_conditional_operation/mod.rs`; host has no Bridge, Signal, Relational, or Foundational dependency | Proved |
 | Authoritative reconstruction | `temporal_reconstruction` executes the bounded installed application query, projects stable intent identity/revision/due/input/lifecycle/idempotency, and resolves exact source records | active, cancelled, completed, and successor-revision host courts | Proved |
 | Signal-owned eligibility | Query lowers the exact semantic dependency into the Bridge-owned Signal runtime and retains Signal decision evidence without reevaluation | satisfied, suppressed/reconsidered, predicate panic, and due-wake courts | Proved |
 | Fresh operation authority | `application_operation_reentry` performs fresh principal/scope admission, current-intent inspection, ordinary authorization, invariant projection, idempotency, and compare-and-commit | public operation success; real governed query and operation authorization tests | Proved |

@@ -83,7 +83,7 @@ where
                 Schema,
                 <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
             >,
-    {
+{
         application
             .runtime()
             .with_application_advancement(self.scope, |phase| {
@@ -130,7 +130,7 @@ where
                 Schema,
                 <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
             >,
-    {
+{
         if !std::ptr::eq(application.runtime(), self.application) {
             return Err(WorthQueryRequiredOutputPreparationDenial::ForeignProgram);
         }
@@ -195,7 +195,7 @@ where
                 Schema,
                 <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
             >,
-    {
+{
         admission
             .validate_current_authority()
             .map_err(AdmittedDiscoveredRecoveryDenial::Authorization)?;

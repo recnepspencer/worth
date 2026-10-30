@@ -9,14 +9,12 @@ impl super::super::WorthUiActiveApplicationSession {
         crate::runtime::scroll::UiScrollBounds,
         crate::runtime::scroll::UiScrollBoundsResolutionDenial,
     > {
-        if let Some(scroll) = self.scroll.as_ref() {
-            if scroll.has_unpresented_layout(owner.semantic_surface()) {
-                if let Some(incarnation) = self.mounted.scroll_region_incarnation(target, slot) {
-                    if let Ok(bounds) = scroll.accepted_owner_bounds(owner, incarnation) {
-                        return Ok(bounds);
-                    }
-                }
-            }
+        if let Some(scroll) = self.scroll.as_ref()
+            && scroll.has_unpresented_layout(owner.semantic_surface())
+            && let Some(incarnation) = self.mounted.scroll_region_incarnation(target, slot)
+            && let Ok(bounds) = scroll.accepted_owner_bounds(owner, incarnation)
+        {
+            return Ok(bounds);
         }
         if let Some((_, region)) = self.mounted.scroll_region_geometry(target, slot) {
             return region

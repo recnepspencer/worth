@@ -175,7 +175,11 @@ impl BlobTreeNodeV1 {
             return Err(BlobRecordDenial::InvalidTreeShape);
         }
         let mut entries = Vec::with_capacity(count);
-        for entry in content[CONTENT_PREFIX_BYTES..].chunks_exact(ENTRY_BYTES) {
+        for entry in content[CONTENT_PREFIX_BYTES..]
+            .as_chunks::<ENTRY_BYTES>()
+            .0
+            .iter()
+        {
             let record = PersistedRecordIdentity::new(
                 entry[32..48].try_into().expect("fixed field"),
                 u64::from_le_bytes(entry[48..56].try_into().expect("fixed field")),

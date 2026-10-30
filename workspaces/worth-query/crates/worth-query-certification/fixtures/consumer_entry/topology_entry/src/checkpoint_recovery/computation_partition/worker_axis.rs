@@ -214,11 +214,6 @@ fn the_least_failing_partition_is_the_same_at_every_worker_count() {
 }
 }
 
-#[test]
-fn the_floating_point_sum_keeps_its_bits_and_its_work_at_one_worker() {
-    assert_floating_point(one_worker());
-}
-
 fn assert_floating_point(placements: Vec<Placement>) {
     let sensitive = association_sensitive_entries();
     let exact = (1..=40_u32)
@@ -228,18 +223,6 @@ fn assert_floating_point(placements: Vec<Placement>) {
     let serial = across_the_axis(sets, &["sensitive", "exact"], placements);
     assert!(f64::from_bits(serial[0].as_ref().unwrap().0).is_finite());
     assert_eq!(serial[1].as_ref().unwrap().0, 820.0_f64.to_bits());
-}
-
-#[test]
-fn the_least_failing_partition_is_the_same_at_one_worker() {
-    let (mut entries, least) = several_refusals();
-    // Typed refusals pin canonical failure order without needing unwinding.
-    for entry in &mut entries {
-        if matches!(entry.fault, Some(facts::RegionFault::Panic)) {
-            entry.fault = Some(facts::RegionFault::Refuse);
-        }
-    }
-    assert_least_failure(one_worker(), entries, least);
 }
 
 fn assert_least_failure(
@@ -277,4 +260,25 @@ impl PlacementFallback for Placement {
 }
 pub(super) fn serial_fallback() -> Option<ExecutionFallbackCause> {
     Placement::Serial.expected_fallback()
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn the_floating_point_sum_keeps_its_bits_and_its_work_at_one_worker() {
+        assert_floating_point(one_worker());
+    }
+
+    #[test]
+    fn the_least_failing_partition_is_the_same_at_one_worker() {
+        let (mut entries, least) = several_refusals();
+        // Typed refusals pin canonical failure order without needing unwinding.
+        for entry in &mut entries {
+            if matches!(entry.fault, Some(facts::RegionFault::Panic)) {
+                entry.fault = Some(facts::RegionFault::Refuse);
+            }
+        }
+        assert_least_failure(one_worker(), entries, least);
+    }
 }

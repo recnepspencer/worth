@@ -180,3 +180,33 @@ fn correction_history_execution_resources_keep_the_native_actors_remedy() {
         assert_eq!(derivation(cause), BankHttpDenial::new(kind, next));
     }
 }
+
+#[test]
+fn restored_history_control_stops_keep_their_http_action() {
+    use worth_query_host::facade::{
+        primary_graph::{
+            RelationalAuthoredWriteDenial as Native,
+            WorthQueryCorrectionRestoredSupportDenial as Restored,
+        },
+        runtime::ExecutionOrderedMapDenial as Storage,
+    };
+    for (stop, expected) in [
+        (MapKernelStop::Cancelled, Kind::Cancelled),
+        (MapKernelStop::DeadlineElapsed, Kind::DeadlineExceeded),
+    ] {
+        for cause in [
+            Restored::Native(Native::Request(WorkCeilingDenial::Stopped(stop))),
+            Restored::Native(Native::OrderedStorage(Storage::Request(
+                WorkCeilingDenial::Stopped(stop),
+            ))),
+            Restored::Interrupted(stop),
+        ] {
+            assert_eq!(
+                correction_denial(WorthQueryApplicationCorrectionDenial::Derivation(
+                    WorthQueryCorrectionDerivationDenial::RestoredSupport(cause)
+                )),
+                BankHttpDenial::new(expected, Next::Retry)
+            );
+        }
+    }
+}

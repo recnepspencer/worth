@@ -118,7 +118,7 @@ fn effect_runtime_floor_eligibility_carries_closed_pre_execution_facts() {
 }
 
 #[test]
-fn mismatched_runtime_floor_eligibility_stops_as_phase_two_violation() {
+fn mismatched_runtime_floor_eligibility_stops_as_violation() {
     let declaration = WorthQueryIntentDeclaration::strategy_commit(
         "eligibility-mismatch-intent",
         "strategy.intent.reconcile",
@@ -171,7 +171,7 @@ fn mismatched_runtime_floor_eligibility_stops_as_phase_two_violation() {
 }
 
 #[test]
-fn authority_lane_mismatch_stops_as_phase_two_violation() {
+fn authority_lane_mismatch_stops_as_violation() {
     let declaration = WorthQueryIntentDeclaration::strategy_commit(
         "eligibility-authority-mismatch-intent",
         "strategy.intent.reconcile",

@@ -1,7 +1,0 @@
-error[E0451]: field `reason` of struct `FrontierRouteEvidenceReceipt` is private
- --> tests/ui/frontier_route_evidence_receipt_fields_are_private.rs:5:9
-  |
-4 |     let _ = FrontierRouteEvidenceReceipt {
-  |             ---------------------------- in this type
-5 |         reason: FrontierRouteEvidenceReason::SerialExecutor,
-  |         ^^^^^^ private field

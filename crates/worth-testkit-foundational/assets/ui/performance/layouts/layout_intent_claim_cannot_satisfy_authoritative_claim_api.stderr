@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/layouts/layout_intent_claim_cannot_satisfy_authoritative_claim_api.rs
+  |
+  |     require_authoritative_claim(&layout_claim);
+  |     --------------------------- ^^^^^^^^^^^^^ expected `&...`, found `&FoundationalLayoutIntentClaim`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&FoundationalAuthoritativePerformanceClaim`
+             found reference `&FoundationalLayoutIntentClaim`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/layouts/layout_intent_claim_cannot_satisfy_authoritative_claim_api.rs
+  |
+  | fn require_authoritative_claim(_claim: &FoundationalAuthoritativePerformanceClaim) {}
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^ --------------------------------------------------

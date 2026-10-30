@@ -1,44 +1,29 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use std::time::Duration;
 
 #[path = "phase_eight_process_suite/child.rs"]
 mod child;
 
-/// Runs the Phase 8 fresh-process suite. The suite builds its writer,
-/// observer, and recovery executables itself, each independently of the test
-/// image, so the runner only bounds the run.
+/// Runs the moved Phase 8 courts through the shared executable prebuilder.
 pub(super) fn run(workspace: &Path, target_root: Option<&Path>) -> Result<(), String> {
-    let mut command = Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()));
-    command.current_dir(workspace).args([
-        "test",
-        "--locked",
-        "-p",
-        "worth-store-recovery-runtime",
-        "--test",
-        "phase_eight_process",
-        "--features",
-        "certification-test-authority",
-    ]);
-    command.env("CARGO_TARGET_DIR", cargo_target(workspace, target_root));
+    let repository = workspace
+        .parent()
+        .and_then(Path::parent)
+        .ok_or("Store workspace must live under workspaces/")?;
+    let mut command =
+        Command::new(std::env::var_os("WORTH_PYTHON").unwrap_or_else(|| "python".into()));
+    command.current_dir(repository)
+        .arg(repository.join("scripts/test_cost/run_lane.py"))
+        .args(["--workspace", "store", "--filter",
+               "binary_id(=worth-store-court-recovery-runtime-replication-phase-eight-process::worth_store_court_recovery_runtime_replication_phase_eight_process)"]);
+    if let Some(target) = target_root {
+        command.env("CARGO_TARGET_DIR", target);
+    }
     successful(
         child::run_within(&mut command, Duration::from_secs(60 * 60))?,
         "Phase 8 process suite",
     )
-}
-
-fn cargo_target(workspace: &Path, target_root: Option<&Path>) -> PathBuf {
-    target_root
-        .map(Path::to_path_buf)
-        .or_else(|| std::env::var_os("CARGO_TARGET_DIR").map(PathBuf::from))
-        .map(|target| {
-            if target.is_absolute() {
-                target
-            } else {
-                workspace.join(target)
-            }
-        })
-        .unwrap_or_else(|| workspace.join("target"))
 }
 
 fn successful(status: std::process::ExitStatus, action: &str) -> Result<(), String> {

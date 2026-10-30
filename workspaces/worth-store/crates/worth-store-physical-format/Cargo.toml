@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-physical-format"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 2 S.1 physical page, segment, extent, frame, and reference format."
+"workspace" = "../.."
+"name" = "worth-store-physical-format"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 2 S.1 physical page, segment, extent, frame, and reference format."
+"autotests" = false
+
 
 [features]
 certification-test-authority = []
@@ -18,9 +20,9 @@ worth-store-authority.workspace = true
 worth-store-contracts.workspace = true
 worth-store-budgets.workspace = true
 sha2 = "0.10"
-
 [dev-dependencies]
-tempfile = "3"
+"tempfile" = "3"
+
 
 [lints]
 workspace = true

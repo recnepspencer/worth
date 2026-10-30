@@ -36,8 +36,8 @@ pub(super) fn decode_manifest(payload: &[u8], frame_digest: [u8; 32]) -> Option<
         return None;
     }
     let mut dropped = Vec::with_capacity(count);
-    for bytes in payload[194..].chunks_exact(24) {
-        let record: [u8; 24] = bytes.try_into().ok()?;
+    for bytes in payload[194..].as_chunks::<24>().0.iter() {
+        let record = *bytes;
         if !valid_record(&record)
             || record == declaration_record
             || record == abandoned_record

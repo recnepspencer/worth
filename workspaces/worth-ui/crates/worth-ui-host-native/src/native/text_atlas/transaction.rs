@@ -212,10 +212,10 @@ impl Drop for UiNativeTextAtlasTransactionPlan {
         if self.committed {
             return;
         }
-        if let Ok(mut core) = self.core.try_borrow_mut() {
-            if core.reservation == Some(self.reservation) {
-                core.reservation = None;
-            }
+        if let Ok(mut core) = self.core.try_borrow_mut()
+            && core.reservation == Some(self.reservation)
+        {
+            core.reservation = None;
         }
     }
 }

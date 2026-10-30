@@ -20,6 +20,10 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn birth_operation<Binding, Role>(mut self) -> Result<Self, Denial>
     where
         Binding: ApplicationMutationBinding<Schema> + ApplicationCapabilityMutationBinding<Schema>,

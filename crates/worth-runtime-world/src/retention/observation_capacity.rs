@@ -34,15 +34,30 @@ impl ObservationCapacity {
     pub(super) fn reserve(
         self: &Arc<Self>,
     ) -> Result<ReservedObservationCapacity, RetentionObligationDenial> {
-        self.active
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |active| {
-                if self.maximum.is_some_and(|maximum| active >= maximum) {
+        {
+            let update_counter = &self.active;
+            let mut active = update_counter.load(Ordering::Acquire);
+            loop {
+                let next_value = if self.maximum.is_some_and(|maximum| active >= maximum) {
                     None
                 } else {
                     active.checked_add(1)
+                };
+                let Some(updated_value) = next_value else {
+                    break Err(active);
+                };
+                match update_counter.compare_exchange_weak(
+                    active,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => active = reloaded_value,
                 }
-            })
-            .map_err(|_| RetentionObligationDenial::ObservationCapacityExhausted)?;
+            }
+        }
+        .map_err(|_| RetentionObligationDenial::ObservationCapacityExhausted)?;
         Ok(ReservedObservationCapacity {
             capacity: Arc::clone(self),
         })

@@ -42,6 +42,10 @@ fn overlapping_recovery_admission_and_growth_preserve_denied_backing() {
     );
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: concurrent recovery admissions have one winner without ceiling overspend; source: worth-store-buffer-pool::physical_residency::tests::recovery_admission::concurrent_recovery_admissions_have_one_winner_without_ceiling_overspend; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=1, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn concurrent_recovery_admissions_have_one_winner_without_ceiling_overspend() {
     let pool = pool(152);
@@ -92,6 +96,10 @@ fn concurrent_recovery_admissions_have_one_winner_without_ceiling_overspend() {
     assert!(!pool.close().requires_inspection());
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: concurrent recovery growth keeps loser unchanged and retryable; source: worth-store-buffer-pool::physical_residency::tests::recovery_admission::concurrent_recovery_growth_keeps_loser_unchanged_and_retryable; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=1, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn concurrent_recovery_growth_keeps_loser_unchanged_and_retryable() {
     let pool = pool(153);

@@ -108,7 +108,7 @@ impl<'a, Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
         ApplicationInverseBinding<Schema, C>: ApplicationMutationAdmissionBinding<Schema, Admission = ApplicationConventionalAdmission>,
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<Schema, ApplicationInverseBinding<Schema, C>>,
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding: ApplicationMutationScopeResolution<Schema, <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::PrincipalIdentity>,
-    {
+{
         self.prepare::<C, ApplicationConventionalAdmission>()
     }
     fn capability<C, Capability>(self) -> Self::Output
@@ -118,7 +118,7 @@ impl<'a, Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
         ApplicationInverseBinding<Schema, C>: ApplicationCapabilityMutationBinding<Schema, Capability = Capability>,
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<Schema, ApplicationInverseBinding<Schema, C>> + ApplicationCapabilityRequest<Schema, Capability, Scope = <<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>,
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding: ApplicationMutationScopeResolution<Schema, <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::PrincipalIdentity>,
-    {
+{
         self.prepare::<C, ApplicationCapabilityAdmission<Capability>>()
     }
 }

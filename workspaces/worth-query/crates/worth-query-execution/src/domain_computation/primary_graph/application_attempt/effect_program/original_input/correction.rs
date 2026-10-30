@@ -21,6 +21,10 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::InstalledCorrectionBinding;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 pub(super) fn capture<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -68,6 +72,10 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
         Err(denied("declared correction dispatch is unavailable"))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn declared<Correction: ApplicationCorrectionBinding<Schema>>(self) -> Self::Output {
         if self.association.source_type() != TypeId::of::<Correction::Source>()
             || self.association.inverse_type()

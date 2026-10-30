@@ -1,7 +1,0 @@
-error: cannot construct `ValidatedBridgeAsyncSourceDeclaration` with struct literal syntax due to private fields
- --> tests/ui/source_async_validated_constructor_private.rs:4:13
-  |
-4 |     let _ = ValidatedBridgeAsyncSourceDeclaration {};
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields that were not provided

@@ -49,10 +49,11 @@ pub(super) fn assemble(
     ),
     UiMountedAppearanceOutputDenial,
 > {
-    if nodes.is_empty() && overlays.is_empty() {
-        if let Some(pointers) = pointers.settle_without_output() {
-            return Ok((None, pointers));
-        }
+    if nodes.is_empty()
+        && overlays.is_empty()
+        && let Some(pointers) = pointers.settle_without_output()
+    {
+        return Ok((None, pointers));
     }
     let bindings = bindings
         .iter()

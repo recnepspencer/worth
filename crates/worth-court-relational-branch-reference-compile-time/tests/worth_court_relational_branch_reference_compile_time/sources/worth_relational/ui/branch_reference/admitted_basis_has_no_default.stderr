@@ -1,0 +1,5 @@
+error[E0277]: the trait bound `AdmittedRelationalBranchBasis: Default` is not satisfied
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/admitted_basis_has_no_default.rs:4:44
+  |
+4 |     let _: AdmittedRelationalBranchBasis = Default::default();
+  |                                            ^^^^^^^^^^^^^^^^^^ the trait `Default` is not implemented for `AdmittedRelationalBranchBasis`

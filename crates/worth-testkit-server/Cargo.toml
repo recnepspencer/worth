@@ -1,0 +1,28 @@
+[package]
+"name" = "worth-testkit-server"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"axum" = { "version" = "^0.8" }
+"serde" = { "version" = "^1", "features" = ["derive", "rc"] }
+"serde_json" = { "version" = "^1" }
+"tower" = { "version" = "^0.5", "features" = ["util"] }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+"worth-query" = { "path" = "../../workspaces/worth-query/crates/worth-query" }
+"worth-query-host" = { "path" = "../../workspaces/worth-query/crates/worth-query-host" }
+"worth-runtime-bridge" = { "path" = "../worth-runtime-bridge" }
+"worth-server" = { "path" = "../worth-server" }
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true

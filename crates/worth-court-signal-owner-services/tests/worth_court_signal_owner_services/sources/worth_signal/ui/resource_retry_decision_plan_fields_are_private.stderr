@@ -1,0 +1,34 @@
+error: cannot construct `ResourceRetryDecisionPlan` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retry_decision_plan_fields_are_private.rs:8:17
+   |
+ 8 |     let _plan = ResourceRetryDecisionPlan {
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |         descriptor_id: fake(),
+   |         --------------------- private field
+10 |         semantic_name: String::from("signal.resource.retry.fixed-delay"),
+   |         ---------------------------------------------------------------- private field
+11 |         class: ResourceRetryDecisionClass::FixedDelay,
+   |         --------------------------------------------- private field
+12 |         initial_delay: fake(),
+   |         --------------------- private field
+13 |         multiplier: Some(2),
+   |         ------------------- private field
+14 |         max_delay: fake(),
+   |         ----------------- private field
+15 |         decision_digest: fake(),
+   |         ----------------------- private field
+   |
+   = note: ...and other private fields `max_attempts`, `max_jitter`, `retry_budget_scope` and `retry_budget_limit` that were not provided
+help: you might have meant to use the `new` associated function
+   |
+ 8 -     let _plan = ResourceRetryDecisionPlan {
+ 9 -         descriptor_id: fake(),
+10 -         semantic_name: String::from("signal.resource.retry.fixed-delay"),
+11 -         class: ResourceRetryDecisionClass::FixedDelay,
+12 -         initial_delay: fake(),
+13 -         multiplier: Some(2),
+14 -         max_delay: fake(),
+15 -         decision_digest: fake(),
+16 -     };
+ 8 +     let _plan = ResourceRetryDecisionPlan::new(_, _, _, _, _, _, _, _, _);
+   |

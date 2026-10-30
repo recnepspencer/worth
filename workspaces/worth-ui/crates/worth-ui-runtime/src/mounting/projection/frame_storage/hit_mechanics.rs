@@ -171,17 +171,17 @@ impl UiMountedHitMechanicSource {
         successor: Option<UiMountedHitTestMechanic>,
         work: &mut UiHitTestSpatialWork,
     ) {
-        if let (Some(old), Some(new)) = (previous, successor) {
-            if spatial_key(old) == spatial_key(new) {
-                self.update_tree(
-                    spatial_key(old),
-                    old.mounted_instance(),
-                    Some(region(old)),
-                    Some(region(new)),
-                    work,
-                );
-                return;
-            }
+        if let (Some(old), Some(new)) = (previous, successor)
+            && spatial_key(old) == spatial_key(new)
+        {
+            self.update_tree(
+                spatial_key(old),
+                old.mounted_instance(),
+                Some(region(old)),
+                Some(region(new)),
+                work,
+            );
+            return;
         }
         if let Some(old) = previous {
             self.update_tree(

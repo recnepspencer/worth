@@ -1,0 +1,16 @@
+error: cannot construct `FoundationalBoundaryEvidenceCompletedReceiptArtifact` with struct literal syntax due to private fields
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/receipts/caller_cannot_mint_completed_receipt.rs
+  |
+  |     let _ = FoundationalBoundaryEvidenceCompletedReceiptArtifact {
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         kind: FoundationalBoundaryEvidenceReceiptKind::Execution,
+  |         -------------------------------------------------------- private field
+  |
+  = note: ...and other private fields `boundary`, `provenance` and `closeout_disposition` that were not provided
+help: you might have meant to use the `new` associated function
+  |
+6 -     let _ = FoundationalBoundaryEvidenceCompletedReceiptArtifact {
+7 -         kind: FoundationalBoundaryEvidenceReceiptKind::Execution,
+8 -     };
+6 +     let _ = FoundationalBoundaryEvidenceCompletedReceiptArtifact::new(_, _, _, _);
+  |

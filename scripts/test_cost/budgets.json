@@ -1,0 +1,147 @@
+{
+  "schema": 2,
+  "root": {
+    "declared_cargo_profiles": [
+      "dev",
+      "test",
+      "ci-test",
+      "release"
+    ],
+    "lanes": {
+      "owner-unit": {
+        "max_compiles_per_unit": 1
+      },
+      "ordinary": {
+        "max_compiles_per_unit": 1
+      },
+      "process": {
+        "max_compiles_per_unit": 1
+      },
+      "compile-fail": {
+        "max_compiles_per_unit": 1
+      },
+      "oracle": {
+        "max_compiles_per_unit": 1
+      },
+      "determinism": {
+        "max_compiles_per_unit": 1
+      },
+      "cost": {
+        "max_compiles_per_unit": 1
+      },
+      "exhaustive": {
+        "max_compiles_per_unit": 1
+      },
+      "selection": {
+        "max_compiles_per_unit": 1
+      }
+    }
+  },
+  "query": {
+    "declared_cargo_profiles": [
+      "dev",
+      "test"
+    ],
+    "lanes": {
+      "owner-unit": {
+        "max_compiles_per_unit": 1
+      },
+      "ordinary": {
+        "max_compiles_per_unit": 1
+      },
+      "process": {
+        "max_compiles_per_unit": 1
+      },
+      "compile-fail": {
+        "max_compiles_per_unit": 1
+      },
+      "oracle": {
+        "max_compiles_per_unit": 1
+      },
+      "determinism": {
+        "max_compiles_per_unit": 1
+      },
+      "cost": {
+        "max_compiles_per_unit": 1
+      },
+      "exhaustive": {
+        "max_compiles_per_unit": 1
+      },
+      "selection": {
+        "max_compiles_per_unit": 1
+      }
+    }
+  },
+  "bank": {
+    "declared_cargo_profiles": [
+      "dev",
+      "test"
+    ],
+    "lanes": {
+      "owner-unit": {
+        "max_compiles_per_unit": 1
+      },
+      "ordinary": {
+        "max_compiles_per_unit": 1
+      },
+      "process": {
+        "max_compiles_per_unit": 1
+      },
+      "compile-fail": {
+        "max_compiles_per_unit": 1
+      },
+      "oracle": {
+        "max_compiles_per_unit": 1
+      },
+      "determinism": {
+        "max_compiles_per_unit": 1
+      },
+      "cost": {
+        "max_compiles_per_unit": 1
+      },
+      "exhaustive": {
+        "max_compiles_per_unit": 1
+      },
+      "selection": {
+        "max_compiles_per_unit": 1
+      }
+    }
+  },
+  "store": {
+    "declared_cargo_profiles": [
+      "dev",
+      "test",
+      "ci-test",
+      "diagnostic-test"
+    ],
+    "lanes": {
+      "owner-unit": {
+        "max_compiles_per_unit": 1
+      },
+      "ordinary": {
+        "max_compiles_per_unit": 1
+      },
+      "process": {
+        "max_compiles_per_unit": 1
+      },
+      "compile-fail": {
+        "max_compiles_per_unit": 1
+      },
+      "oracle": {
+        "max_compiles_per_unit": 1
+      },
+      "determinism": {
+        "max_compiles_per_unit": 1
+      },
+      "cost": {
+        "max_compiles_per_unit": 1
+      },
+      "exhaustive": {
+        "max_compiles_per_unit": 1
+      },
+      "selection": {
+        "max_compiles_per_unit": 1
+      }
+    }
+  }
+}

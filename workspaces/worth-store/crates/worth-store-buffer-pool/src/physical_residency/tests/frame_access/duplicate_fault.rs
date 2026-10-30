@@ -38,6 +38,10 @@ struct RunningFaultOwner {
 }
 
 impl RunningFaultOwner {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "category: coordinated storage-owner unit-test harness; purpose: RunningFaultOwner start; source: worth-store-buffer-pool::physical_residency::tests::frame_access::duplicate_fault::RunningFaultOwner::start; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+    )]
     fn start(
         pool: Arc<PhysicalResidencyPool>,
         key: PhysicalBoundedFrameKey,

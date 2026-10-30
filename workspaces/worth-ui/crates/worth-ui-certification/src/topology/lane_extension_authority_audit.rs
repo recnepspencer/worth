@@ -196,10 +196,9 @@ impl<'ast> Visit<'ast> for FrameDependencyVisitor {
             .segments
             .last()
             .map(|segment| segment.ident.to_string())
+            && FORBIDDEN_FRAME_DEPENDENCIES.contains(&identifier.as_str())
         {
-            if FORBIDDEN_FRAME_DEPENDENCIES.contains(&identifier.as_str()) {
-                self.forbidden_paths.push(identifier);
-            }
+            self.forbidden_paths.push(identifier);
         }
         syn::visit::visit_path(self, path);
     }

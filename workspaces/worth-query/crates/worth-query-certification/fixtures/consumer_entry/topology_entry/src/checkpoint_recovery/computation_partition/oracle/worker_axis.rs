@@ -36,11 +36,6 @@ worth_execution::needs_os_threads! {
 fn every_demand_of_the_sequence_runs_the_same_at_every_worker_count() { compare_sequence(axis().into_iter().skip(1).collect()); }
 }
 
-#[test]
-fn every_demand_of_the_sequence_runs_the_same_at_one_worker() {
-    compare_sequence(vec![Placement::Leased(NonZeroUsize::MIN)]);
-}
-
 fn compare_sequence(placements: Vec<Placement>) {
     let _guard = checkpoint_recovery_test_guard();
     let serial = placed(Placement::Serial, demands);
@@ -60,5 +55,14 @@ fn compare_sequence(placements: Vec<Placement>) {
         for (at, (demand, serial)) in demands.iter().zip(&serial).enumerate() {
             assert_eq!(demand, serial, "{placement:?}, demand {at}");
         }
+    }
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn every_demand_of_the_sequence_runs_the_same_at_one_worker() {
+        compare_sequence(vec![Placement::Leased(NonZeroUsize::MIN)]);
     }
 }

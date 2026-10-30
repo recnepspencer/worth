@@ -244,10 +244,9 @@ pub(in crate::runtime::core) fn apply_pending_dependency_patches_in_transaction(
         let mut locked = store
             .lock()
             .map_err(|_| SignalError::internal("runtime store mutex poisoned"))?;
-        let pending = locked
-            .pending_callback_dependency_patches
-            .drain(..)
-            .collect::<Vec<_>>();
+        // Retain the queue's allocation for the next callback batch.
+        let mut pending = Vec::with_capacity(locked.pending_callback_dependency_patches.len());
+        pending.append(&mut locked.pending_callback_dependency_patches);
         let runtime_read_breadth = locked.pending_callback_runtime_read_breadth;
         locked.pending_callback_runtime_read_breadth = 0;
         (pending, runtime_read_breadth)

@@ -157,11 +157,16 @@ impl RelationalPhase4ReferenceCostOwner {
 }
 
 fn increment(counter: &std::sync::atomic::AtomicU64) {
-    counter
-        .fetch_update(
-            std::sync::atomic::Ordering::Relaxed,
-            std::sync::atomic::Ordering::Relaxed,
-            |current| Some(current.saturating_add(1)),
-        )
+    {
+       let update_counter = counter;
+       let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
+       loop {
+           let Some(updated_value) = Some(current.saturating_add(1)) else { break Err(current) };
+           match update_counter.compare_exchange_weak(current, updated_value, std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed) {
+               Ok(previous) => break Ok(previous),
+               Err(reloaded_value) => current = reloaded_value,
+           }
+       }
+   }
         .expect(/* Proof: fetch_update always receives Some(saturating_add(1)); only returning None can make fetch_update fail. */ "saturating counter update cannot fail");
 }

@@ -1,0 +1,8 @@
+[package]
+name = "worth-state"
+version = "0.1.0"
+edition = "2024"
+autotests = false
+[[test]]
+name = "court"
+path = "tests/court.rs"

@@ -1,0 +1,9 @@
+error[E0451]: fields `requested_policy` and `resolved` of struct `InstalledSignalRuntimePolicy` are private
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_10/installed_policy_cannot_be_forged.rs:5:9
+  |
+4 |     let _ = InstalledSignalRuntimePolicy {
+  |             ---------------------------- in this type
+5 |         requested_policy: SignalRuntimePolicy::operational(),
+  |         ^^^^^^^^^^^^^^^^ private field
+6 |         resolved: unsafe { std::mem::zeroed() },
+  |         ^^^^^^^^ private field

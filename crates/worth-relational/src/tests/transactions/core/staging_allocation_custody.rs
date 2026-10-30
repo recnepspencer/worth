@@ -3,7 +3,7 @@
 use crate::{facade::mvcc::RelationalTransactionIntent, tests::support::*};
 use std::num::NonZeroUsize;
 use worth_execution::{
-    CancellationSource, CancellationToken, ExecutionAllocationDenialKind,
+    CancellationSource, CancellationToken, ExecutionAllocationDenialClass,
     ExecutionAllocationPolicy as Policy, LeaseDenial, LeaseRequest, MemoryLimitDenial,
     MemoryLimitLevel,
 };
@@ -78,13 +78,13 @@ fn native_staging_allocation_refusal_and_shared_footprint_custody() {
             std::cell::RefCell<Option<crate::facade::mvcc::RelationalTransactionWriteLocus>>,
         >()) as u64;
     assert_eq!(
-        cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial::Capacity {
+        cause.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested: staging_bytes,
                 admitted: 0,
                 level: MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert!(
@@ -110,7 +110,12 @@ fn native_staging_allocation_refusal_and_shared_footprint_custody() {
         )
         .unwrap_err();
     let cause = stopped.allocation_denial().unwrap();
-    assert_eq!(cause.kind(), ExecutionAllocationDenialKind::Cancelled);
+    assert_eq!(
+        cause.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::Cancelled
+        ))
+    );
     assert_eq!(
         cause.requested_payload_bytes(),
         None,

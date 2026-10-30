@@ -126,6 +126,9 @@ fn losing_identity_resolves_two_real_merges_and_old_pins_keep_their_own_terminal
             .latest_identity(),
         Some(b)
     );
+    drop((
+        runtime, original, sibling, first_pin, latest, born, first, second,
+    ));
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
 }
 
@@ -202,6 +205,7 @@ fn disappeared_members_leave_a_real_retired_terminal_distinct_from_missing_ident
     for result in [&born, &removed] {
         release_test_commit_snapshot(&runtime, result);
     }
+    drop((runtime, pin, read, born, removed));
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
 }
 
@@ -282,5 +286,6 @@ fn definition_qualification_reads_legal_shared_source_and_split_history_does_not
     for result in [&born, &split] {
         release_test_commit_snapshot(&runtime, result);
     }
+    drop((runtime, pin, born, split));
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
 }

@@ -105,7 +105,11 @@ pub(super) fn decode(bytes: &[u8]) -> Result<BTreeNodeV1, BTreeNodeDenial> {
     }
     let mut cells = Vec::with_capacity(count);
     let mut cursor = directory_end;
-    for slot in bytes[BTREE_NODE_HEADER_BYTES..directory_end].chunks_exact(CELL_DIRECTORY_BYTES) {
+    for slot in bytes[BTREE_NODE_HEADER_BYTES..directory_end]
+        .as_chunks::<CELL_DIRECTORY_BYTES>()
+        .0
+        .iter()
+    {
         let key_offset = u16::from_le_bytes(slot[..2].try_into().unwrap()) as usize;
         let key_len = u16::from_le_bytes(slot[2..4].try_into().unwrap()) as usize;
         let value_offset = u16::from_le_bytes(slot[4..6].try_into().unwrap()) as usize;

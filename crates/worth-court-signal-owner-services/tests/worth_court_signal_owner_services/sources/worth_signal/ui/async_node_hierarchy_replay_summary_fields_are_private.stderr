@@ -1,0 +1,21 @@
+error[E0451]: fields `root_node`, `hierarchy_nodes`, `active_request_handles`, `hierarchy_depth`, `lifecycle_digest`, `in_flight_digest`, `replay_digest` and `performance` of struct `AsyncNodeHierarchyReplaySummary` are private
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_hierarchy_replay_summary_fields_are_private.rs:9:9
+   |
+ 8 |     let _summary = AsyncNodeHierarchyReplaySummary {
+   |                    ------------------------------- in this type
+ 9 |         root_node: fake(),
+   |         ^^^^^^^^^ private field
+10 |         hierarchy_nodes: fake(),
+   |         ^^^^^^^^^^^^^^^ private field
+11 |         active_request_handles: fake(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^ private field
+12 |         hierarchy_depth: 0,
+   |         ^^^^^^^^^^^^^^^ private field
+13 |         lifecycle_digest: fake(),
+   |         ^^^^^^^^^^^^^^^^ private field
+14 |         in_flight_digest: fake(),
+   |         ^^^^^^^^^^^^^^^^ private field
+15 |         replay_digest: fake(),
+   |         ^^^^^^^^^^^^^ private field
+16 |         performance: fake(),
+   |         ^^^^^^^^^^^ private field

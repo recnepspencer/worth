@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "signal_parallel_perf_report/workloads.rs"]
 mod workloads;
 

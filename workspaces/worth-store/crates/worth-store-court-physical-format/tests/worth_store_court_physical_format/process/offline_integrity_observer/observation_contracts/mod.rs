@@ -1,0 +1,14 @@
+#[path = "comparison_protocol/mod.rs"]
+pub(crate) mod comparison_protocol;
+#[path = "documented_commands/mod.rs"]
+pub(crate) mod documented_commands;
+#[path = "hostile_process/mod.rs"]
+pub(crate) mod hostile_process;
+#[path = "journal_traversal/mod.rs"]
+pub(crate) mod journal_traversal;
+#[path = "record_truncation/mod.rs"]
+pub(crate) mod record_truncation;
+#[path = "report_boundary_and_binary/mod.rs"]
+pub(crate) mod report_boundary_and_binary;
+#[path = "selected_comparison_protocol/mod.rs"]
+pub(crate) mod selected_comparison_protocol;

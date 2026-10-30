@@ -1,0 +1,15 @@
+error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_subscription_request_requires_subscription_instance.rs:13:13
+   |
+13 |     let _ = BridgeAsyncRequestAdmissionRequest::subscription_backed(&lowered, &binding);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------------------- argument #3 of type `BridgeAsyncRequestSubscriptionInstance` is missing
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/source/async_declaration/request_identity/admission.rs
+   |
+   |     pub fn subscription_backed(
+   |            ^^^^^^^^^^^^^^^^^^^
+help: provide the argument
+   |
+13 |     let _ = BridgeAsyncRequestAdmissionRequest::subscription_backed(&lowered, &binding, /* BridgeAsyncRequestSubscriptionInstance */);
+   |                                                                                       ++++++++++++++++++++++++++++++++++++++++++++++

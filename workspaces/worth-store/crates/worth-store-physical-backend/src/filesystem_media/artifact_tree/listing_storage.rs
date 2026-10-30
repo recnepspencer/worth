@@ -106,12 +106,16 @@ fn qualified_requirement(maximum_entries: usize) -> Option<ArtifactTreeListingSt
     use std::{alloc::Layout, mem::size_of, path::Component, path::PathBuf};
 
     if maximum_entries == 0
-        || env!("WORTH_STORE_MEDIA_COMPILER") != "rustc 1.94.0 (4a4ef493e 2026-03-02)"
+        || !matches!(
+            env!("WORTH_STORE_MEDIA_COMPILER"),
+            "rustc 1.94.0 (4a4ef493e 2026-03-02)" | "rustc 1.99.1 (58cf8f9c3 2026-10-13)"
+        )
     {
         return None;
     }
     // winx =0.36.4 get_file_path has a fixed 0x7fff-u16 buffer and rejects
-    // overlong output. Rust 1.94 WTF-8 has <=3 bytes/unit and doubling growth.
+    // overlong output. Audited Rust 1.94/1.99 WTF-8 has <=3 bytes/unit and
+    // doubling growth (1.99 source: 58cf8f9c35b355199727627d07ae34a4e2846d67).
     // std readdir clones root, verbatim-joins '*', converts to UTF-16, then
     // constructs Arc<PathBuf>. PathBuf::_push also builds a Component vector;
     // both that vector and reconstructed OsString include growth overlap.

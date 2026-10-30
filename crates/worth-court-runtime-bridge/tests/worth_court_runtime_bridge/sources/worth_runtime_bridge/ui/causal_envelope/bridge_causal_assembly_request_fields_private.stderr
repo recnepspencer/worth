@@ -1,0 +1,21 @@
+error[E0308]: arguments to this function are incorrect
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_assembly_request_fields_private.rs:9:9
+  |
+9 |         BridgeCausalInspectionAdmissionSummary::admitted("admission", "anchor").unwrap();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -----------  -------- expected `BridgeIdentityEvidence`, found `&str`
+  |                                                          |
+  |                                                          expected `BridgeIdentityEvidence`, found `&str`
+  |
+note: associated function defined here
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/diagnostics/causal_envelope/assembly/request.rs
+  |
+  |     pub fn admitted(
+  |            ^^^^^^^^
+
+error[E0560]: struct `BridgeCausalEnvelopeAssemblyRequest` has no field named `request_digest`
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_assembly_request_fields_private.rs:14:9
+   |
+14 |         request_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^ `BridgeCausalEnvelopeAssemblyRequest` does not have this field
+   |
+   = note: all struct fields are already assigned

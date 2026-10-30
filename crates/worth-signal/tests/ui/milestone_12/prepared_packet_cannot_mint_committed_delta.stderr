@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_signal::facade::CommittedProducedAspectDelta`
- --> tests/ui/milestone_12/prepared_packet_cannot_mint_committed_delta.rs:1:5
-  |
-1 | use worth_signal::facade::CommittedProducedAspectDelta;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `CommittedProducedAspectDelta` in `facade`

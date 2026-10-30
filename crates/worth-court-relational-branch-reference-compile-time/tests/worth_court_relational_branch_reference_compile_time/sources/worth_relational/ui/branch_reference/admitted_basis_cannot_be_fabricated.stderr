@@ -1,0 +1,24 @@
+warning: unreachable expression
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/admitted_basis_cannot_be_fabricated.rs:4:13
+  |
+4 |     let _ = AdmittedRelationalBranchBasis { inner: todo!() };
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------^^
+  |             |                                      |
+  |             |                                      any code following this expression is unreachable
+  |             unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0451]: field `inner` of struct `AdmittedRelationalBranchBasis` is private
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/admitted_basis_cannot_be_fabricated.rs:4:45
+  |
+4 |     let _ = AdmittedRelationalBranchBasis { inner: todo!() };
+  |                                             ^^^^^ private field
+
+error: type `worth_relational::branch::basis::AdmittedRelationalBranchBasisInner` is private
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/admitted_basis_cannot_be_fabricated.rs:4:52
+  |
+4 |     let _ = AdmittedRelationalBranchBasis { inner: todo!() };
+  |                                                    ^^^^^^^ private type
+  |
+  = note: this error originates in the macro `todo` (in Nightly builds, run with -Z macro-backtrace for more info)

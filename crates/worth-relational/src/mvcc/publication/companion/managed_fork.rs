@@ -43,7 +43,7 @@ impl PreparedManagedIndexSourceFork {
         lookup_cleanup: &mut Option<Box<dyn std::any::Any + Send + Sync>>,
     ) -> Result<(Arc<RelationalBranchRoot>, Self), RelationalForkDenial> {
         let denied = RelationalForkDenial::ManagedSource;
-        crate::authority::commit::pipeline::consult_stage_control(
+        crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Publication,
         )
@@ -123,7 +123,7 @@ impl PreparedManagedIndexSourceFork {
                 .prepare_managed_source_fork(execution, &context)
                 .map_err(denied)?,
         );
-        crate::authority::commit::pipeline::consult_stage_control(
+        crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Publication,
         )

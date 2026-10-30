@@ -1,6 +1,0 @@
-[package]
-name = "worth-query-execution"
-version = "0.0.0"
-edition = "2021"
-
-[workspace]

@@ -10,7 +10,6 @@ use crate::mvcc::{
 use crate::tests::support::*;
 
 mod completion_observer;
-mod compound;
 mod concurrent_head;
 mod head_cell;
 mod positioned_admission;

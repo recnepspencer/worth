@@ -1,0 +1,5 @@
+error[E0432]: unresolved import `worth_proof::contracts::BindingMatch`
+ --> tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/binding_comparison_does_not_mint_reusable_authority.rs:1:5
+  |
+1 | use worth_proof::contracts::BindingMatch;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `BindingMatch` in `contracts`

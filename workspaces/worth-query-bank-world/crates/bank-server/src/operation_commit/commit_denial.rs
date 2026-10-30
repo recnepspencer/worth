@@ -45,6 +45,7 @@ pub enum BankCommitDenialKind {
     CorrectionContextMismatch,
     CorrectionIdentityMismatch,
     OperationBodyExecutionRequired,
+    UnobservedWrite,
     SignedCreationAuthentication {
         kind: WorthQueryAuthenticationEventDenial,
     },
@@ -123,6 +124,7 @@ pub(crate) const fn denial_kind(
             BankCommitDenialKind::ExecutionIdentitiesNotCanonical { partition_identity }
         }
         Query::ProviderRejected => BankCommitDenialKind::ProviderRejected,
+        Query::UnobservedWrite => BankCommitDenialKind::UnobservedWrite,
         Query::CustomInvariantDenied => BankCommitDenialKind::CustomInvariantDenied,
         Query::WorkflowSettlementDenied { kind } => {
             BankCommitDenialKind::WorkflowSettlementDenied { kind }

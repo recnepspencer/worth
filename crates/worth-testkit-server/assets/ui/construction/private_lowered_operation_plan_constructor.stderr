@@ -1,0 +1,27 @@
+warning: unreachable expression
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/private_lowered_operation_plan_constructor.rs
+  |
+  |         query_handoff: loop {},
+  |                        ------- any code following this expression is unreachable
+  |         strategy: loop {},
+  |                   ^^^^^^^ unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0451]: fields `query_handoff`, `strategy`, `evidence_policy`, `counters`, `receipt` and `canonical_digest` of struct `WorthServerLoweredOperationPlan` are private
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/private_lowered_operation_plan_constructor.rs
+  |
+  |     let _ = WorthServerLoweredOperationPlan {
+  |             ------------------------------- in this type
+  |         query_handoff: loop {},
+  |         ^^^^^^^^^^^^^ private field
+  |         strategy: loop {},
+  |         ^^^^^^^^ private field
+  |         evidence_policy: loop {},
+  |         ^^^^^^^^^^^^^^^ private field
+  |         counters: loop {},
+  |         ^^^^^^^^ private field
+  |         receipt: loop {},
+  |         ^^^^^^^ private field
+  |         canonical_digest: "Worthd".to_string(),
+  |         ^^^^^^^^^^^^^^^^ private field

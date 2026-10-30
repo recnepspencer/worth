@@ -1,0 +1,11 @@
+error[E0451]: fields `node`, `payload_contract_digest` and `frozen` of struct `FrozenAsyncNodeCapabilityDescriptor` are private
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/frozen_async_node_capability_descriptor_fields_are_private.rs:13:9
+   |
+12 |     let _frozen = FrozenAsyncNodeCapabilityDescriptor {
+   |                   ----------------------------------- in this type
+13 |         node: NodeId::new(1, 0),
+   |         ^^^^ private field
+14 |         payload_contract_digest: fake::<ResourcePayloadContractDigest>(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ private field
+15 |         frozen: fake::<FrozenResourcePolicyDescriptorSet>(),
+   |         ^^^^^^ private field

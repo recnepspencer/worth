@@ -14,9 +14,9 @@ use worth_query_host::facade::{
     worth_query_relation, worth_query_structured_value_binding,
 };
 
-#[path = "../../../tests/application_graph/document_retention_model/schema/document_retention_invariants.rs"]
+#[path = "../../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/schema/document_retention_invariants.rs"]
 mod document_retention_invariants;
-#[path = "../../../tests/application_graph/document_retention_model/schema/document_retention_query.rs"]
+#[path = "../../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/schema/document_retention_query.rs"]
 mod document_retention_query;
 
 pub use document_retention_invariants::{

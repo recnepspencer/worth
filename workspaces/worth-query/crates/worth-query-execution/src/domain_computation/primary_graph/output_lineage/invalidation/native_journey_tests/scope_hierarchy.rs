@@ -29,7 +29,7 @@ fn a_deep_native_leaf_has_identical_work_with_eight_or_sixty_four_sibling_subtre
 }
 
 fn run(siblings: usize) -> super::super::logical_marking::WorthQueryNativeMarkingWork {
-    let world = installed_authorization_world(true);
+    let world = population_world::install((siblings + 1) * DEPTH);
     world.application.with_host_advancement(|phase| {
  let custody = phase.test_host_request();
  let phase_custody = &custody;

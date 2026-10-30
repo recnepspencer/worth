@@ -23,35 +23,88 @@ impl super::super::WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        // A later stopped/in-flight row cannot expose an older cached Ready.
-        let Some(key) = super::super::refreshed_rejoin::newest_matching_row(
-            &state.records,
+        committed_ready(
+            &state,
             requested,
-            |key, record| {
-                key.same_semantic_source(requested)
-                    && record.product_occurrence == occurrence
-                    && record.source_scope == Some(scope)
-            },
-        ) else {
-            return false;
-        };
-        let DemandState::Output(output) = &state.records[&key].state else {
-            return false;
-        };
-        if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) {
-            return false;
-        }
-        let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
-            return false;
-        };
-        let super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt) =
-            &completion.authority
-        else {
-            return false;
-        };
-        receipt.idempotency_binding().key_identity() == idempotency_key
-            && std::ptr::eq(receipt.output_correspondence(), correspondence)
+            scope,
+            occurrence,
+            correspondence,
+            idempotency_key,
+        )
+        .is_some()
     }
+
+    /// The exact current Ready was executed for a performed program source.
+    /// This is delivery custody, never permission to run an Initial producer.
+    pub(in crate::domain_computation::primary_graph) fn committed_required_ready(
+        &self,
+        requested: &WorthQueryOutputDemandKey,
+        scope: WorthQueryOperationScopeEntityBinding,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        idempotency_key: &[u8; 32],
+    ) -> Option<super::super::ReadyCompletion> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let completion = committed_ready(
+            &state,
+            requested,
+            scope,
+            occurrence,
+            correspondence,
+            idempotency_key,
+        )?;
+        // Ready owns its original execution mode even after completed source
+        // custody releases its mutable links to this row.
+        use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority;
+        match completion.producer_mode() {
+            Some(WorthQueryProducerCommitAuthority::ProgramOutput) => Some(completion.clone()),
+            Some(
+                WorthQueryProducerCommitAuthority::Ordinary
+                | WorthQueryProducerCommitAuthority::SelectedProgram { .. },
+            )
+            | None => None,
+        }
+    }
+}
+
+fn committed_ready<'a>(
+    state: &'a DemandRegistryState,
+    requested: &WorthQueryOutputDemandKey,
+    scope: WorthQueryOperationScopeEntityBinding,
+    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    idempotency_key: &[u8; 32],
+) -> Option<&'a super::super::ReadyCompletion> {
+    // A later stopped/in-flight row cannot expose an older cached Ready.
+    let key = super::super::refreshed_rejoin::newest_matching_row(
+        &state.records,
+        requested,
+        |key, record| {
+            key.same_semantic_source(requested)
+                && record.product_occurrence == occurrence
+                && record.source_scope == Some(scope)
+        },
+    )?;
+    let record = &state.records[&key];
+    let DemandState::Output(output) = &record.state else {
+        return None;
+    };
+    if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) {
+        return None;
+    }
+    let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
+        return None;
+    };
+    let super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority
+    else {
+        return None;
+    };
+    (receipt.idempotency_binding().key_identity() == idempotency_key
+        && std::ptr::eq(receipt.output_correspondence(), correspondence))
+    .then_some(completion)
 }
 
 /// This returns scheduling custody only. The ordinary Ready path authenticates

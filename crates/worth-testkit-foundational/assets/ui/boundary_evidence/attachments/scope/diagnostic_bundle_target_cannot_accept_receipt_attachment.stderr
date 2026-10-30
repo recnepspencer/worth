@@ -1,0 +1,17 @@
+error[E0599]: no method named `with_receipt_attachment` found for struct `FoundationalDiagnosticBundleAttachmentBundle` in the current scope
+  --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/attachments/scope/diagnostic_bundle_target_cannot_accept_receipt_attachment.rs
+   |
+   |       let _ = boundary_evidence()
+   |  _____________-
+   | |         .attachment()
+   | |         .for_diagnostic_bundle(FoundationalDiagnosticLocator::BoundaryArtifact(
+   | |             BoundaryArtifactLocator::new(BoundaryArtifactId::new(1), BoundaryArtifactField::Basis),
+   | |         ))
+   | |         .with_receipt_attachment(
+   | |_________-^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: there is a method `with_provenance_attachment` with a similar name
+   |
+14 -         .with_receipt_attachment(
+14 +         .with_provenance_attachment(
+   |

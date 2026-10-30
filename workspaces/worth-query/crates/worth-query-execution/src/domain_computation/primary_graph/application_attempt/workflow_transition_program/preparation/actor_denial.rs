@@ -22,7 +22,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema> + 'static,
         Schema: ApplicationSchema,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    {
+{
         if !actor_permission_denial(denial)
             || !installed.advance_binding_matches::<Capability, Operation>()
         {

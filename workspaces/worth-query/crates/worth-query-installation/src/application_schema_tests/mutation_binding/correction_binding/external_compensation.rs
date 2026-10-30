@@ -2,6 +2,10 @@
 use super::*;
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 fn external_correction_requires_compensation_reconciliation_and_exact_action() {
     let source = MutationBinding::descriptor();
     let inventory = BTreeMap::from([(source.identity().to_owned(), &source)]);

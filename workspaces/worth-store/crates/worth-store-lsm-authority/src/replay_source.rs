@@ -10,11 +10,26 @@ pub struct LsmReplaySourceIdentity(u64);
 
 impl LsmReplaySourceIdentity {
     fn issue() -> Self {
-        let value = NEXT_LSM_REPLAY_SOURCE_IDENTITY
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current.checked_add(1)
-            })
-            .expect("LSM replay source identity space exhausted");
+        let value = {
+            let update_counter = &NEXT_LSM_REPLAY_SOURCE_IDENTITY;
+            let mut current = update_counter.load(Ordering::Relaxed);
+            loop {
+                let next_value = current.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .expect("LSM replay source identity space exhausted");
         Self(value)
     }
 }

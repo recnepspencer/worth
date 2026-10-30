@@ -380,10 +380,10 @@ impl WorthUiPlanRegionStore {
                 .map_or_else(Weak::new, Rc::downgrade),
             exclusive_family_roots: if include_exclusive_family_roots {
                 let mut roots = self.family_index.exclusive_root_probes();
-                if let Some(root) = &self.realtime_budget_exhaustion_root {
-                    if Rc::strong_count(root) == 1 {
-                        roots.push(Rc::downgrade(root));
-                    }
+                if let Some(root) = &self.realtime_budget_exhaustion_root
+                    && Rc::strong_count(root) == 1
+                {
+                    roots.push(Rc::downgrade(root));
                 }
                 roots
             } else {

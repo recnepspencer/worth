@@ -1,5 +1,8 @@
 # Milestone 9.16 Runtime Phase 10 Closure Ledger
 
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 ## Scope
 
 Runtime Phase 10 makes the already-proved application front door canonical. It
@@ -65,7 +68,7 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-host
 cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --all-features --no-fail-fast
 cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --test compile_certification phase_ten_contracts_the_audience_facades_and_documentation_route
 cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-estate-certification --all-features --no-fail-fast
-cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-estate-certification --test residue_certification
+cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p 'worth-query-bank-court-*' estate_certification::residue_certification::
 cargo check --manifest-path workspaces/worth-query-bank-world/Cargo.toml --workspace --all-targets --all-features
 cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
 cargo run --manifest-path tools/agent-context/Cargo.toml -- check

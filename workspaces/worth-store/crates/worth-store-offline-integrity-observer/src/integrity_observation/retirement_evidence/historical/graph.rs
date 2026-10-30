@@ -299,7 +299,11 @@ pub(super) fn graph(
                 if expected.family == Family::FreeSpaceMembershipBlock =>
             {
                 let count = usize::from(read_u16(&acquired.bytes, 66));
-                for entry in acquired.bytes[88..88 + count * 40].chunks_exact(40) {
+                for entry in acquired.bytes[88..88 + count * 40]
+                    .as_chunks::<40>()
+                    .0
+                    .iter()
+                {
                     if entry[0] == 2 {
                         graph.free.push((
                             read_u64(entry, 8),

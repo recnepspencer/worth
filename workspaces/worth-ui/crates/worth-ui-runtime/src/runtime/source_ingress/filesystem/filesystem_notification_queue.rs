@@ -70,10 +70,10 @@ impl WorthUiFilesystemNotificationQueue {
 
 impl EventHandler for WorthUiFilesystemNotificationHandler {
     fn handle_event(&mut self, event: notify::Result<Event>) {
-        if let Ok(event) = &event {
-            if !bears_on_source_tree(&event.kind) {
-                return;
-            }
+        if let Ok(event) = &event
+            && !bears_on_source_tree(&event.kind)
+        {
+            return;
         }
         let _ = self.observed_notification_count.fetch_update(
             Ordering::Relaxed,

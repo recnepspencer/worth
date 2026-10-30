@@ -1,0 +1,19 @@
+error[E0451]: fields `node`, `lifecycle`, `lifecycle_ordinal`, `output_continuity`, `denied_completion`, `scheduled_retry` and `observation_decision_digest` of struct `ObservedResourceNodeState` are private
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/observed_resource_node_state_fields_are_private.rs:9:9
+   |
+ 8 |     let _state = ObservedResourceNodeState {
+   |                  ------------------------- in this type
+ 9 |         node: fake(),
+   |         ^^^^ private field
+10 |         lifecycle: fake(),
+   |         ^^^^^^^^^ private field
+11 |         lifecycle_ordinal: fake(),
+   |         ^^^^^^^^^^^^^^^^^ private field
+12 |         output_continuity: fake(),
+   |         ^^^^^^^^^^^^^^^^^ private field
+13 |         denied_completion: fake(),
+   |         ^^^^^^^^^^^^^^^^^ private field
+14 |         scheduled_retry: fake(),
+   |         ^^^^^^^^^^^^^^^ private field
+15 |         observation_decision_digest: fake(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field

@@ -61,13 +61,11 @@ impl UiNativeHostState {
         {
             return UiNativeTextAtlasPhysicalProgress::NoProgress;
         }
-        if let Some(gpu) = self.text_atlas_gpu.as_mut() {
-            if gpu.transaction_pending(pending.transaction())
-                && !gpu
-                    .rebind_transaction_correlation(pending.transaction(), token.external_basis())
-            {
-                return UiNativeTextAtlasPhysicalProgress::NoProgress;
-            }
+        if let Some(gpu) = self.text_atlas_gpu.as_mut()
+            && gpu.transaction_pending(pending.transaction())
+            && !gpu.rebind_transaction_correlation(pending.transaction(), token.external_basis())
+        {
+            return UiNativeTextAtlasPhysicalProgress::NoProgress;
         }
         if self.physical_signal.token_uses_recovery(token)
             && self

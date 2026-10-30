@@ -1,0 +1,26 @@
+[package]
+name = "worth-query-testkit-installed-operation-fixture"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-query = { workspace = true }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+
+[lints]
+workspace = true

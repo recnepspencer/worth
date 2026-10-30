@@ -1,0 +1,22 @@
+[package]
+"name" = "worth-store-court-physical-integrity"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-testkit-compiler" = { "path" = "../../../../crates/worth-testkit-compiler" }
+"sha2" = { "version" = "^0.10" }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-physical-integrity" = { "path" = "../worth-store-physical-integrity" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_physical_integrity"
+path = "tests/worth_store_court_physical_integrity.rs"
+
+[lints]
+workspace = true

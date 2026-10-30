@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #![forbid(unsafe_code)]
 //!
 //! Backup/export custody readiness is not raw security metadata:

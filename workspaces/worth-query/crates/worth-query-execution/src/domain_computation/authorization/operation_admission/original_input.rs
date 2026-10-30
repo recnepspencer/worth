@@ -65,6 +65,10 @@ impl<Schema, Operation, Input, Scope>
     > {
         self.original_scope.as_ref()
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation) fn retain_original_input<Binding>(
         &mut self,
         input: ApplicationEncodedInput<Binding::InputBinding>,

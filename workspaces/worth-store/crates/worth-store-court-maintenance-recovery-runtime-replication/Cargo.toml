@@ -1,0 +1,41 @@
+[package]
+"name" = "worth-store-court-maintenance-recovery-runtime-replication"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"serde_json" = { "version" = "^1" }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-proof" = { "path" = "../../../../crates/worth-proof" }
+"worth-relational" = { "path" = "../../../../crates/worth-relational" }
+"worth-store" = { "path" = "../worth-store" }
+"worth-store-aspect-native" = { "path" = "../worth-store-aspect-native" }
+"worth-store-authority" = { "path" = "../worth-store-authority" }
+"worth-store-blob-chunks" = { "path" = "../worth-store-blob-chunks", "features" = ["certification-test-authority"] }
+"worth-store-budgets" = { "path" = "../worth-store-budgets" }
+"worth-store-certification" = { "path" = "../worth-store-certification" }
+"worth-store-contracts" = { "path" = "../worth-store-contracts" }
+"worth-store-io-scheduler" = { "path" = "../worth-store-io-scheduler", "features" = ["certification-test-authority"] }
+"worth-store-layout-indexes" = { "path" = "../worth-store-layout-indexes" }
+"worth-store-offline-verifier" = { "path" = "../worth-store-offline-verifier" }
+"worth-store-operations" = { "path" = "../worth-store-operations", "features" = ["certification-test-authority"] }
+"worth-store-physical-backend" = { "path" = "../worth-store-physical-backend", "features" = ["certification-test-authority"] }
+"worth-store-physical-certification" = { "path" = "../worth-store-physical-certification", "features" = ["certification-test-support"] }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-physical-isolation" = { "path" = "../worth-store-physical-isolation", "features" = ["certification-authority"] }
+"worth-store-reclaim-policy" = { "path" = "../worth-store-reclaim-policy", "features" = ["certification-test-authority"] }
+"worth-store-security" = { "path" = "../worth-store-security", "features" = ["certification-test-authority"] }
+"worth-store-test-support" = { "path" = "../worth-store-test-support", "features" = ["certification-world"], "default-features" = false }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+"worth-store-tiering" = { "path" = "../worth-store-tiering" }
+
+[[test]]
+name = "worth_store_court_maintenance_recovery_runtime_replication"
+path = "tests/worth_store_court_maintenance_recovery_runtime_replication.rs"
+
+[lints]
+workspace = true

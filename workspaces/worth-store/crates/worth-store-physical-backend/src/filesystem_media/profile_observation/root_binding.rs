@@ -52,7 +52,7 @@ pub(in crate::filesystem_media) fn derive(
 pub fn filesystem_media_build_identity() -> [u8; 32] {
     let encoded = env!("WORTH_STORE_MEDIA_BUILD_ID").as_bytes();
     let mut identity = [0_u8; 32];
-    for (index, pair) in encoded.chunks_exact(2).enumerate() {
+    for (index, pair) in encoded.as_chunks::<2>().0.iter().enumerate() {
         identity[index] = decode_hex(pair[0]) << 4 | decode_hex(pair[1]);
     }
     identity

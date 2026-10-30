@@ -28,6 +28,10 @@ where
     Self: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Self>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn append_required_bindings(bindings: &mut impl FnMut(std::any::TypeId)) {
         bindings(std::any::TypeId::of::<
             <RootConnection<Schema, Self> as WorthQueryApplicationRequiredOutputConnection<
@@ -44,6 +48,10 @@ where
     Self: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Self>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
 {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn append_required_bindings(bindings: &mut impl FnMut(std::any::TypeId)) {
         bindings(std::any::TypeId::of::<
             <RootConnection<Schema, Self> as WorthQueryApplicationDiscoveredOutputConnection<

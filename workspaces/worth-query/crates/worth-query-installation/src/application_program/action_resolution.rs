@@ -38,6 +38,10 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
 impl<'installed> WorthQueryInstalledActionInventory<'installed> {
     /// Resolve a binding only when exactly one installed feature occurrence owns it.
     /// Callers retaining a declaration can subsequently resolve that complete meaning.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn resolve_unique_binding<Schema, Binding>(
         &self,
     ) -> Result<&'installed ApplicationActionDeclaration, WorthQueryActionResolutionDenial>
@@ -102,6 +106,10 @@ impl<'installed> WorthQueryInstalledActionInventory<'installed> {
         }
         Ok(actual)
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn resolve_occurrence<Schema, Binding>(
         &self,
         instance: &str,

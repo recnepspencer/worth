@@ -1,0 +1,49 @@
+error: cannot construct `ResourceLifecycleRetentionCompactionReport` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_retention_compaction_report_fields_are_private.rs:10:19
+   |
+10 |     let _forged = ResourceLifecycleRetentionCompactionReport {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 |         selected_terminal_count: 1,
+   |         -------------------------- private field
+12 |         reclaimed_in_flight_count: 1,
+   |         ---------------------------- private field
+13 |         retained_history_write_count: 1,
+   |         ------------------------------- private field
+14 |         retained_history_pruned_count: 0,
+   |         -------------------------------- private field
+15 |         retained_history_unavailable_count: 0,
+   |         ------------------------------------- private field
+16 |         retained_history_width: 1,
+   |         ------------------------- private field
+17 |         hot_in_flight_width: 0,
+   |         ---------------------- private field
+18 |         compacted_terminal_summary_count: 0,
+   |         ----------------------------------- private field
+19 |         compacted_superseded_count: 0,
+   |         ----------------------------- private field
+20 |         compacted_cancelled_count: 0,
+   |         ---------------------------- private field
+21 |         compacted_timed_out_count: 0,
+   |         ---------------------------- private field
+22 |         performance: forged_performance(),
+   |         --------------------------------- private field
+   |
+   = note: ...and other private fields that were not provided
+help: you might have meant to use the `new` associated function
+   |
+10 -     let _forged = ResourceLifecycleRetentionCompactionReport {
+11 -         selected_terminal_count: 1,
+12 -         reclaimed_in_flight_count: 1,
+13 -         retained_history_write_count: 1,
+14 -         retained_history_pruned_count: 0,
+15 -         retained_history_unavailable_count: 0,
+16 -         retained_history_width: 1,
+17 -         hot_in_flight_width: 0,
+18 -         compacted_terminal_summary_count: 0,
+19 -         compacted_superseded_count: 0,
+20 -         compacted_cancelled_count: 0,
+21 -         compacted_timed_out_count: 0,
+22 -         performance: forged_performance(),
+23 -     };
+10 +     let _forged = ResourceLifecycleRetentionCompactionReport::new(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _);
+   |

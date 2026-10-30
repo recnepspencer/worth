@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Independently authenticated user-node process boundary.
 
 #![forbid(unsafe_code)]

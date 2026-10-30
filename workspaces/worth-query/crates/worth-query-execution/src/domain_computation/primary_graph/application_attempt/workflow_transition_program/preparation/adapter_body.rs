@@ -23,7 +23,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Binding: ApplicationMutationBinding<Schema, Result = (), Denial = WorthQueryOperationBodyDenial,
             Decision = WorthQueryOperationBodyDecision<Schema, <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>>,
         Binding::Input: Clone + Send + Sync + 'static,
-    {
+{
         prepared.prepare_body::<Binding>(
             access,
             phase,

@@ -1,5 +1,0 @@
-error[E0599]: no method named `attested_by` found for struct `worth_foundational::boundary_evidence::support_front_doors::FoundationalBoundaryEvidencePublishedSupportStep` in the current scope
- --> tests/ui/boundary_evidence/support/support_builder_requires_basis_disclosure.rs:4:64
-  |
-4 |     let _ = boundary_evidence().support().published_evidence().attested_by(
-  |             ---------------------------------------------------^^^^^^^^^^^ method not found in `worth_foundational::boundary_evidence::support_front_doors::FoundationalBoundaryEvidencePublishedSupportStep`

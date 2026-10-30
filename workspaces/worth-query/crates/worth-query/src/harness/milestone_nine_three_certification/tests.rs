@@ -5,7 +5,7 @@ use crate::harness::certification::{
 };
 
 #[test]
-fn milestone_nine_three_rows_enforce_required_assertion_classes() {
+fn rows_enforce_required_assertion_classes() {
     let matrix = MilestoneNineThreeCertificationAdapter::
         query_subscription_bridge_parity_and_diagnostic_sufficiency_test();
     let mut covered = Vec::new();
@@ -47,7 +47,7 @@ fn milestone_nine_three_rows_enforce_required_assertion_classes() {
 }
 
 #[test]
-fn milestone_nine_three_grouped_and_inspector_rows_preserve_query_family_distinction() {
+fn grouped_and_inspector_rows_preserve_query_family_distinction() {
     let matrix = MilestoneNineThreeCertificationAdapter::
         query_subscription_bridge_parity_and_diagnostic_sufficiency_test();
 
@@ -99,7 +99,7 @@ fn milestone_nine_three_grouped_and_inspector_rows_preserve_query_family_distinc
 }
 
 #[test]
-fn milestone_nine_three_support_scale_row_keeps_query_meaning_fixed_while_cost_posture_changes() {
+fn support_scale_row_keeps_query_meaning_fixed_while_cost_posture_changes() {
     let matrix = MilestoneNineThreeCertificationAdapter::
         query_subscription_bridge_parity_and_diagnostic_sufficiency_test();
     let row = matrix
@@ -172,8 +172,7 @@ fn milestone_nine_three_support_scale_row_keeps_query_meaning_fixed_while_cost_p
 }
 
 #[test]
-fn milestone_nine_three_declaration_family_drift_row_distinguishes_runtime_churn_from_declaration_identity(
-) {
+fn declaration_family_drift_row_distinguishes_runtime_churn_from_declaration_identity() {
     let matrix = MilestoneNineThreeCertificationAdapter::
         query_subscription_bridge_parity_and_diagnostic_sufficiency_test();
     let row = matrix

@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/rows/aggregate_row_cannot_satisfy_decision_row_api.rs
+  |
+  |     needs_decision_row(aggregate);
+  |     ------------------ ^^^^^^^^^ expected `FoundationalDiagnosticDecisionRow`, found `FoundationalDiagnosticRow`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/rows/aggregate_row_cannot_satisfy_decision_row_api.rs
+  |
+  | fn needs_decision_row(_row: FoundationalDiagnosticDecisionRow) {}
+  |    ^^^^^^^^^^^^^^^^^^ ---------------------------------------

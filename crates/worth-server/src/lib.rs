@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! `worth-server` owns the typed server facade and network bootstrap boundary.
 //!
 //! Milestone 1 establishes:

@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-subscription-support"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 durable subscription-support artifacts and accuracy certification."
+"workspace" = "../.."
+"name" = "worth-store-subscription-support"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 durable subscription-support artifacts and accuracy certification."
+"autotests" = false
+
 
 [dependencies]
 worth-store-contracts.workspace = true
@@ -15,3 +17,6 @@ worth-store-retention.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+"test" = false

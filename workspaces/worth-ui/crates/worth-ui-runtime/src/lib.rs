@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 // A cast that can drop a value's high bits, its sign, or its fraction reads
 // some other number without saying so. Counts convert with `try_from` against
 // the capacity that bounds them, floats cross `whole_number`, and distances

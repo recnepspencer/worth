@@ -1,7 +1,0 @@
-error[E0451]: field `denied_completion` of struct `StagedDeniedResourceCompletionEffect` is private
- --> tests/ui/staged_denied_resource_completion_effect_fields_are_private.rs:9:9
-  |
-8 |     let _forged = StagedDeniedResourceCompletionEffect {
-  |                   ------------------------------------ in this type
-9 |         denied_completion: forged_denied_completion(),
-  |         ^^^^^^^^^^^^^^^^^ private field

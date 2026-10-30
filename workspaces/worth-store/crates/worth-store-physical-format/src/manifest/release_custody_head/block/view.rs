@@ -80,7 +80,7 @@ impl<'a> ReleaseCustodyHeadBlockViewV1<'a> {
         let data = &payload[PREFIX_BYTES..];
         let (items, first, last) = if level == 0 {
             let mut previous = None;
-            for part in data.chunks_exact(ENTRY_BYTES) {
+            for part in data.as_chunks::<ENTRY_BYTES>().0.iter() {
                 let entry = ReleaseCustodyHeadEntryV1::decode(part)?;
                 if previous.is_some_and(|key| key >= entry.key()) {
                     return Err(ReleaseCustodyHeadDenial::CanonicalOrder);
@@ -91,7 +91,7 @@ impl<'a> ReleaseCustodyHeadBlockViewV1<'a> {
             (BlockItems::Entries(data), first, previous.unwrap())
         } else {
             let mut previous = None;
-            for part in data.chunks_exact(REFERENCE_BYTES) {
+            for part in data.as_chunks::<REFERENCE_BYTES>().0.iter() {
                 let child = ReleaseCustodyHeadBlockReferenceV1::decode(part)?;
                 if child.level().checked_add(1) != Some(level)
                     || child.generation() > generation
@@ -136,9 +136,11 @@ impl<'a> ReleaseCustodyHeadBlockViewV1<'a> {
     ) -> Option<impl DoubleEndedIterator<Item = ReleaseCustodyHeadEntryV1> + ExactSizeIterator + '_>
     {
         match self.items {
-            BlockItems::Entries(bytes) => Some(bytes.chunks_exact(ENTRY_BYTES).map(|part| {
-                ReleaseCustodyHeadEntryV1::decode(part).expect("validated head entry")
-            })),
+            BlockItems::Entries(bytes) => {
+                Some(bytes.as_chunks::<ENTRY_BYTES>().0.iter().map(|part| {
+                    ReleaseCustodyHeadEntryV1::decode(part).expect("validated head entry")
+                }))
+            }
             BlockItems::Children(_) => None,
         }
     }
@@ -149,9 +151,12 @@ impl<'a> ReleaseCustodyHeadBlockViewV1<'a> {
         impl DoubleEndedIterator<Item = ReleaseCustodyHeadBlockReferenceV1> + ExactSizeIterator + '_,
     > {
         match self.items {
-            BlockItems::Children(bytes) => Some(bytes.chunks_exact(REFERENCE_BYTES).map(|part| {
-                ReleaseCustodyHeadBlockReferenceV1::decode(part).expect("validated child reference")
-            })),
+            BlockItems::Children(bytes) => {
+                Some(bytes.as_chunks::<REFERENCE_BYTES>().0.iter().map(|part| {
+                    ReleaseCustodyHeadBlockReferenceV1::decode(part)
+                        .expect("validated child reference")
+                }))
+            }
             BlockItems::Entries(_) => None,
         }
     }

@@ -180,10 +180,10 @@ fn reachable(
         if node == target {
             return true;
         }
-        if visited.insert(node) {
-            if let Some(successors) = edges.get(&node) {
-                pending.extend(successors.iter().copied());
-            }
+        if visited.insert(node)
+            && let Some(successors) = edges.get(&node)
+        {
+            pending.extend(successors.iter().copied());
         }
     }
     false

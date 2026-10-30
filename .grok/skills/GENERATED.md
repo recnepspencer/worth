@@ -1,5 +1,5 @@
-Generated from repository skills/ by boundary-check --write-guidance.
-Edit skills/ only. Installed user skills are outside this generated zone.
+Mirror of repository skills/. Keep these copies synchronized with skills/.
+Installed user skills are outside this mirror.
 - cad-engineering/SKILL.md
 - code-quality-qa/SKILL.md
 - code-quality-qa/agents/openai.yaml

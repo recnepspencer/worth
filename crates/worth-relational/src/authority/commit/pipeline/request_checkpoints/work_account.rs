@@ -1,7 +1,7 @@
 use crate::transactions::data::{
     CommitExecutionDenialKind, CommitResult, TransactionCommitError, WorkerIntentBatch,
 };
-use worth_execution::{CancellationSource, ExecutionRequest, LeaseRequest};
+use worth_execution::{CancellationSource, ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
@@ -23,28 +23,15 @@ const ENTRIES: [Entry; 5] = [
     Entry::Authoritative,
 ];
 
-// The commit-track invoice included one serial-strategy diagnostic per
-// validation point. The edges width law prices that metadata at zero while
-// retaining its liveness consult and storage claim. Adjust only that row of
-// the existing invoice; no observed charge supplies this quote.
-const INVOICE_WITH_DIAGNOSTIC_WORK: u64 = 116;
-const VALIDATION_POINTS: u64 = 3;
-const FORMER_DIAGNOSTIC_PRICE: u64 = 1;
-const DIAGNOSTIC_PRICE: u64 = 0;
-// Empty CommitBoundary and SnapshotPublication stages no longer construct a
-// partition scope: one intent visit, one partition visit and the final slice
-// admission per point. The two real sidecar checks now each charge their final
-// result move separately from summary observation and decision projection.
-const EMPTY_VALIDATION_POINTS: u64 = 2;
-const EMPTY_PARTITION_SCOPE_WORK: u64 = 1 + 1 + 1;
-const SIDECAR_CHECK_RESULTS: u64 = 2;
-const RESULT_MOVE_PRICE: u64 = 1;
-const COMMIT_WORK: u64 = INVOICE_WITH_DIAGNOSTIC_WORK
-    - VALIDATION_POINTS * (FORMER_DIAGNOSTIC_PRICE - DIAGNOSTIC_PRICE)
-    - EMPTY_VALIDATION_POINTS * EMPTY_PARTITION_SCOPE_WORK
-    + SIDECAR_CHECK_RESULTS * RESULT_MOVE_PRICE;
+// Fixture funding, not a price for an implementation's incidental dispatches.
+const FUNDED_WORK_CEILING: u64 = 1_000_000;
 
-fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommitError>, u64) {
+fn commit(
+    entry: Entry,
+    ceiling: u64,
+    observe_whole_request: bool,
+    cancel_before_entry: bool,
+) -> (Result<CommitResult, TransactionCommitError>, u64) {
     // All entries receive the same lowered mutation: one entity, two fields,
     // the same empty basis and installed invariant families. Only Batch adds
     // two empty batch descriptors; these add no data-work units.
@@ -64,48 +51,68 @@ fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommit
         })
         .unwrap();
     let execution = ExecutionRequest::leased(&lease);
-    let (outcome, charges) = crate::execution::work_observation::capture(|| match entry {
-        Entry::Strategy => {
-            let mut authority = runtime.commit_strategies_authority();
-            let proposal = authority.validate_lowered_plan(&execution, &runtime, lowered)?;
-            let candidate = authority.prepare_validated_commit(&execution, &runtime, proposal)?;
-            runtime.publish_prepared_candidate(&execution, candidate)
-        }
-        Entry::Ordinary
-        | Entry::Batch
-        | Entry::Split
-        | Entry::Authoritative
-        | Entry::AuthoritativeCancelled => {
-            let (mut transaction, _, _, _) = lowered.into_validation_parts();
-            if matches!(entry, Entry::Batch) {
-                for label in ["empty-left", "empty-right"] {
-                    transaction
-                        .push_batch(WorkerIntentBatch::new(label), execution.allocation_policy())
-                        .unwrap();
+    let run = || {
+        crate::execution::work_observation::capture(|| match entry {
+            Entry::Strategy => {
+                if cancel_before_entry {
+                    cancellation.cancel();
                 }
+                let mut authority = runtime.commit_strategies_authority();
+                let proposal = authority.validate_lowered_plan(&execution, &runtime, lowered)?;
+                let candidate =
+                    authority.prepare_validated_commit(&execution, &runtime, proposal)?;
+                runtime.publish_prepared_candidate(&execution, candidate)
             }
-            if matches!(
-                entry,
-                Entry::Split | Entry::Authoritative | Entry::AuthoritativeCancelled
-            ) {
-                let proposal = runtime.validate_branch_transaction(&execution, transaction)?;
-                if matches!(entry, Entry::Authoritative | Entry::AuthoritativeCancelled) {
-                    if matches!(entry, Entry::AuthoritativeCancelled) {
-                        cancellation.cancel();
+            Entry::Ordinary
+            | Entry::Batch
+            | Entry::Split
+            | Entry::Authoritative
+            | Entry::AuthoritativeCancelled => {
+                let (mut transaction, _, _, _) = lowered.into_validation_parts();
+                if matches!(entry, Entry::Batch) {
+                    for label in ["empty-left", "empty-right"] {
+                        transaction
+                            .push_batch(
+                                WorkerIntentBatch::new(label),
+                                execution.allocation_policy(),
+                            )
+                            .unwrap();
                     }
-                    return crate::authority::commit::pipeline::execute_authoritative_commit(
+                }
+                if cancel_before_entry {
+                    cancellation.cancel();
+                }
+                if matches!(
+                    entry,
+                    Entry::Split | Entry::Authoritative | Entry::AuthoritativeCancelled
+                ) {
+                    let proposal = runtime.validate_branch_transaction(&execution, transaction)?;
+                    if matches!(entry, Entry::Authoritative | Entry::AuthoritativeCancelled) {
+                        if matches!(entry, Entry::AuthoritativeCancelled) {
+                            cancellation.cancel();
+                        }
+                        return crate::authority::commit::pipeline::execute_authoritative_commit(
                         &execution,
                         &runtime,
                         crate::authority::commit::pipeline::AuthoritativeCommitContext::from_validated_proposal(proposal),
                     );
+                    }
+                    let candidate = runtime.prepare_validated_proposal(&execution, proposal)?;
+                    runtime.publish_prepared_candidate(&execution, candidate)
+                } else {
+                    runtime.commit_branch_transaction(&execution, transaction)
                 }
-                let candidate = runtime.prepare_validated_proposal(&execution, proposal)?;
-                runtime.publish_prepared_candidate(&execution, candidate)
-            } else {
-                runtime.commit_branch_transaction(&execution, transaction)
             }
-        }
-    });
+        })
+    };
+    let ((outcome, charges), whole_work) = if observe_whole_request {
+        let (result, report) = execution
+            .run(ExecutionWorkCeiling::new(None), |_| run())
+            .unwrap();
+        (result, Some(report.charged_work()))
+    } else {
+        (run(), None)
+    };
     if let Ok(ref result) = outcome {
         assert_eq!(
             result.changed_records.len(),
@@ -119,37 +126,62 @@ fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommit
             "{entry:?}: refusal moves no head"
         );
     }
-    (outcome, charges.into_iter().sum())
+    (
+        outcome,
+        whole_work.unwrap_or_else(|| charges.into_iter().sum()),
+    )
 }
 
 #[test]
 fn one_work_account_bounds_the_same_proposal_on_every_entry() {
-    // Sum dispatch reports, rather than reading the account's stored balance.
-    // No enclosing scope is allowed to hide the split-account defect.
+    // The SDK report includes native evidence work outside the packet recorder.
+    let (reference, required_work) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, true, false);
+    reference.unwrap();
+    assert!(required_work > 0 && required_work < FUNDED_WORK_CEILING);
+    let (unwrapped, recorded) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, false, false);
+    unwrapped.unwrap();
+    assert_eq!(
+        recorded, required_work,
+        "the authoritative account settles all SDK work"
+    );
     let completed = ENTRIES.map(|entry| {
-        let (outcome, charged) = commit(entry, COMMIT_WORK);
+        let (outcome, charged) = commit(entry, required_work, true, false);
         outcome.unwrap();
         charged
     });
     assert_eq!(
         completed,
-        [COMMIT_WORK; ENTRIES.len()],
-        "one entity with two fields: every commit entry pays the same exact invoice"
+        [required_work; ENTRIES.len()],
+        "the same proposal pays the same full work through every entry"
     );
-    let refused = ENTRIES.map(|entry| {
-        let (outcome, _) = commit(entry, COMMIT_WORK - 1);
+    // No enclosing account may make an internally reset allowance look sound.
+    let outcomes = ENTRIES.map(|entry| commit(entry, required_work - 1, false, false).0);
+    let refused = outcomes.each_ref().map(|outcome| {
         matches!(outcome, Err(TransactionCommitError::Execution { denial, .. })
             if denial.kind == CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::WorkExhausted))
     });
     assert_eq!(
         refused, [true; 5],
-        "ordinary, batch, split, strategy and authoritative all spend one ceiling"
+        "all entries spend one ceiling below {required_work}"
     );
 }
 
 #[test]
 fn a_cancelled_authoritative_commit_keeps_its_typed_stop_and_head() {
-    let (outcome, _) = commit(Entry::AuthoritativeCancelled, COMMIT_WORK);
+    for entry in ENTRIES {
+        let (outcome, _) = commit(entry, FUNDED_WORK_CEILING, false, true);
+        assert_cancelled(outcome);
+    }
+    let (outcome, _) = commit(
+        Entry::AuthoritativeCancelled,
+        FUNDED_WORK_CEILING,
+        false,
+        false,
+    );
+    assert_cancelled(outcome);
+}
+
+fn assert_cancelled(outcome: Result<CommitResult, TransactionCommitError>) {
     let TransactionCommitError::Execution { denial, .. } = outcome.unwrap_err() else {
         panic!("an authoritative commit retains the request stop");
     };

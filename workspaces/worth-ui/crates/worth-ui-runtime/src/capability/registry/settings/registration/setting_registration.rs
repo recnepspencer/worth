@@ -168,17 +168,15 @@ fn add_default_value_schema_mismatch_diagnostic(
 ) -> RegistrationCandidate {
     if let (Some(schema), Some(default_posture)) =
         (descriptor.value_schema(), descriptor.default_posture())
-    {
-        if default_posture
+        && default_posture
             .default_value()
             .is_some_and(|value| !schema.admits_default_value(value))
-        {
-            candidate = with_descriptor_diagnostic(
-                candidate,
-                CapabilityDiagnosticCode::SettingDefaultValueSchemaMismatch,
-                "setting default value must satisfy the declared value schema",
-            );
-        }
+    {
+        candidate = with_descriptor_diagnostic(
+            candidate,
+            CapabilityDiagnosticCode::SettingDefaultValueSchemaMismatch,
+            "setting default value must satisfy the declared value schema",
+        );
     }
     candidate
 }

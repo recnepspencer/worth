@@ -16,7 +16,7 @@ fn hostile_certification_artifact_matches_serialized_replay_and_repeated_runs() 
 }
 
 #[test]
-fn hostile_certification_counters_prove_zero_shared_read_lock_and_phase_eleven_residue() {
+fn hostile_certification_counters_prove_zero_shared_read_lock_and_residue() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

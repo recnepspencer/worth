@@ -143,7 +143,7 @@ pub(super) fn record(value: &str) -> Result<SelectedRecordIdentity, Denial> {
         return Err(Denial::InvalidRecordIdentity);
     }
     let mut raw = [0_u8; 24];
-    for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
+    for (index, pair) in value.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         raw[index] = (hex_digit(pair[0]) << 4) | hex_digit(pair[1]);
     }
     let allocation_epoch: [u8; 16] = raw[..16].try_into().expect("fixed record epoch");

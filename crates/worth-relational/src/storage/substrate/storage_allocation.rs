@@ -36,6 +36,10 @@ impl<T> StorageAllocation<T> {
     pub(crate) fn new(value: T) -> Self {
         Self(Arc::new(value))
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn id(&self) -> u64 {
         // An observation borrows retained roots throughout its traversal. Arc
         // keeps each compared allocation alive, so addresses cannot be recycled

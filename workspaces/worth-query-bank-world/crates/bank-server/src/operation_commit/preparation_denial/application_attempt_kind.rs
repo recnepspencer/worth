@@ -10,6 +10,8 @@ pub(super) const fn application_attempt_kind(
         Query::ForeignPhase => BankApplicationAttemptDenialKind::ForeignPhase,
         Query::StorageUnavailable => BankApplicationAttemptDenialKind::StorageUnavailable,
         Query::ExecutionRequest(cause) => BankApplicationAttemptDenialKind::ExecutionRequest(cause),
+        Query::EffectExecution(cause) => BankApplicationAttemptDenialKind::EffectExecution(cause),
+        Query::UnobservedWrite => BankApplicationAttemptDenialKind::UnobservedWrite,
         Query::Cancelled => BankApplicationAttemptDenialKind::Cancelled,
         Query::DeadlineExceeded => BankApplicationAttemptDenialKind::DeadlineExceeded,
         Query::ForeignApplication => BankApplicationAttemptDenialKind::ForeignApplication,

@@ -1,0 +1,16 @@
+error: cannot construct `LoweredMergePlan` with struct literal syntax due to private fields
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/lowered_merge_plan_fields_are_private.rs:4:17
+  |
+4 |     let _plan = LoweredMergePlan {
+  |                 ^^^^^^^^^^^^^^^^
+5 |         source_branch_id: unsafe { std::mem::zeroed() },
+  |         ----------------------------------------------- private field
+  |
+  = note: ...and other private fields that were not provided
+help: you might have meant to use the `new` associated function
+  |
+4 -     let _plan = LoweredMergePlan {
+5 -         source_branch_id: unsafe { std::mem::zeroed() },
+6 -     };
+4 +     let _plan = LoweredMergePlan::new(_);
+  |

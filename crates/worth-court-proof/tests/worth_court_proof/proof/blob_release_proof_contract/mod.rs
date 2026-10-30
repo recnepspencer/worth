@@ -1,0 +1,22 @@
+#[cfg(any())]
+pub(crate) use worth_proof::AdmittedBlobReleaseProof;
+
+#[cfg(any())]
+#[test]
+fn certification_issuer_binds_one_selected_publication() {
+    let proof = worth_proof::AdmittedBlobReleaseProof::certification_admit(
+        [1; 16], [2; 16], 3, [4; 16], 5, [6; 32], [7; 32],
+    )
+    .expect("complete selected identity and issuer evidence");
+    assert_eq!(proof.store(), [1; 16]);
+    assert_eq!(proof.object(), [2; 16]);
+    assert_eq!(proof.generation(), 3);
+    assert_eq!(proof.publication_allocation_epoch(), [4; 16]);
+    assert_eq!(proof.publication_record_ordinal(), 5);
+    assert_eq!(proof.publication_frame_sha256(), [6; 32]);
+    assert_eq!(proof.issuer_evidence_sha256(), [7; 32]);
+    assert!(worth_proof::AdmittedBlobReleaseProof::certification_admit(
+        [1; 16], [2; 16], 3, [4; 16], 0, [6; 32], [7; 32],
+    )
+    .is_err());
+}

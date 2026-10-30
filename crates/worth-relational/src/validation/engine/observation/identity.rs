@@ -19,6 +19,10 @@ impl PartialEq for InvariantObservationIdentity {
 impl Eq for InvariantObservationIdentity {}
 
 impl Hash for InvariantObservationIdentity {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn hash<H: Hasher>(&self, state: &mut H) {
         Arc::as_ptr(&self.0).hash(state);
     }

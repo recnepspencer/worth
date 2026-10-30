@@ -164,6 +164,10 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
         &self.actions
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn contains_action_type<Binding: 'static>(&self) -> bool {
         let binding = std::any::TypeId::of::<Binding>();
         self.actions
@@ -171,6 +175,10 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
             .any(|action| !action.conditional_only() && action.action_type() == binding)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn repeated_optional_member<Binding, Correspondence>(
         &self,
     ) -> Option<WorthQueryInstalledRepeatedOptionalMember<Schema, Binding, Correspondence>>
@@ -183,7 +191,7 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
             Schema,
             Binding,
         >,
-    {
+{
         let binding = std::any::TypeId::of::<Binding>();
         let correspondence = std::any::TypeId::of::<Correspondence>();
         self.actions
@@ -197,6 +205,10 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
             .then(|| WorthQueryInstalledRepeatedOptionalMember::new(self.schema_binding.clone()))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn evaluated_requirement<Operation, Rule>(
         &self,
     ) -> Option<WorthQueryInstalledEvaluatedRequirement<Schema, Operation, Rule>>
@@ -204,7 +216,7 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
         Schema: ApplicationSchema,
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema> + 'static,
         Rule: worth_query_declaration::facade::application_program::ApplicationEvaluatedRequirementRule<Schema, Operation>,
-    {
+{
         let rule_type = std::any::TypeId::of::<Rule>();
         let operation_type = std::any::TypeId::of::<Operation>();
         self.actions
@@ -218,6 +230,10 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
             .then(|| WorthQueryInstalledEvaluatedRequirement::new(self.schema_binding.clone()))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn external_input_provider<Operation, Provider>(
         &self,
     ) -> Option<WorthQueryInstalledExternalInputProvider<Schema, Operation, Provider>>
@@ -225,7 +241,7 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
         Schema: ApplicationSchema,
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema> + 'static,
         Provider: worth_query_declaration::facade::application_program::ApplicationExternalInputProvider<Schema, Operation>,
-    {
+{
         let provider_type = std::any::TypeId::of::<Provider>();
         let operation_type = std::any::TypeId::of::<Operation>();
         self.actions
@@ -239,6 +255,10 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
             .then(|| WorthQueryInstalledExternalInputProvider::new(self.schema_binding.clone()))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn contains_operation_type<Operation: 'static>(&self) -> bool {
         let operation = std::any::TypeId::of::<Operation>();
         self.actions

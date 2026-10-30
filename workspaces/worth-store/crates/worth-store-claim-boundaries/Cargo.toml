@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-claim-boundaries"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Proof-bearing Store claim tiers and promotion boundaries."
+"workspace" = "../.."
+"name" = "worth-store-claim-boundaries"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Proof-bearing Store claim tiers and promotion boundaries."
+"autotests" = false
+
 
 [dependencies]
 worth-store-contracts.workspace = true

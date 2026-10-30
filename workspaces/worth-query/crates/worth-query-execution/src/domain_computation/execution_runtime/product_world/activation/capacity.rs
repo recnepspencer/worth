@@ -21,15 +21,30 @@ impl ActivationCapacity {
     pub(super) fn reserve(
         self: &Arc<Self>,
     ) -> Result<ActivationCapacityReservation, WorthQueryProductActivationDenial> {
-        self.live
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |live| {
-                if self.maximum.is_some_and(|maximum| live >= maximum) {
+        {
+            let update_counter = &self.live;
+            let mut live = update_counter.load(Ordering::Acquire);
+            loop {
+                let next_value = if self.maximum.is_some_and(|maximum| live >= maximum) {
                     None
                 } else {
                     live.checked_add(1)
+                };
+                let Some(updated_value) = next_value else {
+                    break Err(live);
+                };
+                match update_counter.compare_exchange_weak(
+                    live,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => live = reloaded_value,
                 }
-            })
-            .map_err(|_| WorthQueryProductActivationDenial::CapacityExhausted)?;
+            }
+        }
+        .map_err(|_| WorthQueryProductActivationDenial::CapacityExhausted)?;
         Ok(ActivationCapacityReservation(Arc::clone(self)))
     }
 }

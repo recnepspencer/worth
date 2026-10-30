@@ -1,0 +1,43 @@
+error: cannot construct `BridgeSubscriptionReferenceWorkloadCoverageReport` with struct literal syntax due to private fields
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_reference_workload_coverage_report_constructor_private.rs:8:21
+   |
+ 8 |     let _coverage = BridgeSubscriptionReferenceWorkloadCoverageReport {
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |         lane_kinds: Vec::new(),
+   |         ---------------------- private field
+10 |         family_kinds: Vec::new(),
+   |         ------------------------ private field
+11 |         lane_coverage_rows: Vec::new(),
+   |         ------------------------------ private field
+12 |         first_ship_lane_matrix_covered: true,
+   |         ------------------------------------ private field
+13 |         multi_family_covered: true,
+   |         -------------------------- private field
+14 |         comparison_evidence_complete: true,
+   |         ---------------------------------- private field
+15 |         expected_lane_outcomes_covered: true,
+   |         ------------------------------------ private field
+16 |         counters: BridgeSubscriptionCertificationCounterSnapshot::default(),
+   |         ------------------------------------------------------------------- private field
+17 |         canonical_basis: sealed_authority_placeholder(),
+   |         ----------------------------------------------- private field
+18 |         digest: sealed_authority_placeholder(),
+   |         -------------------------------------- private field
+   |
+   = note: ...and other private fields `covered_required_facets`, `required_phase_17_facets_covered` and `required_hostile_lane_set_covered` that were not provided
+help: you might have meant to use the `from_indexed_lane_and_comparison_reports` associated function
+   |
+ 8 -     let _coverage = BridgeSubscriptionReferenceWorkloadCoverageReport {
+ 9 -         lane_kinds: Vec::new(),
+10 -         family_kinds: Vec::new(),
+11 -         lane_coverage_rows: Vec::new(),
+12 -         first_ship_lane_matrix_covered: true,
+13 -         multi_family_covered: true,
+14 -         comparison_evidence_complete: true,
+15 -         expected_lane_outcomes_covered: true,
+16 -         counters: BridgeSubscriptionCertificationCounterSnapshot::default(),
+17 -         canonical_basis: sealed_authority_placeholder(),
+18 -         digest: sealed_authority_placeholder(),
+19 -     };
+ 8 +     let _coverage = BridgeSubscriptionReferenceWorkloadCoverageReport::from_indexed_lane_and_comparison_reports(_, _, _);
+   |

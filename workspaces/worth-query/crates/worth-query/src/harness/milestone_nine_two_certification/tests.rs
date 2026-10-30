@@ -5,7 +5,7 @@ use crate::harness::certification::{
 };
 
 #[test]
-fn milestone_nine_two_rows_enforce_lifecycle_semantics() {
+fn rows_enforce_lifecycle_semantics() {
     let matrix = MilestoneNineTwoCertificationAdapter::
         subscription_lifecycle_sharing_and_preview_parity_test();
     let mut covered = Vec::new();
@@ -46,7 +46,7 @@ fn milestone_nine_two_rows_enforce_lifecycle_semantics() {
 }
 
 #[test]
-fn milestone_nine_two_preview_rows_emit_real_preview_evidence() {
+fn preview_rows_emit_real_preview_evidence() {
     let matrix = MilestoneNineTwoCertificationAdapter::
         subscription_lifecycle_sharing_and_preview_parity_test();
 
@@ -70,7 +70,7 @@ fn milestone_nine_two_preview_rows_emit_real_preview_evidence() {
 }
 
 #[test]
-fn milestone_nine_two_sharing_row_proves_shared_lane_and_consumer_local_delivery() {
+fn sharing_row_proves_shared_lane_and_consumer_local_delivery() {
     let matrix = MilestoneNineTwoCertificationAdapter::
         subscription_lifecycle_sharing_and_preview_parity_test();
     let row = matrix
@@ -98,7 +98,7 @@ fn milestone_nine_two_sharing_row_proves_shared_lane_and_consumer_local_delivery
 }
 
 #[test]
-fn milestone_nine_two_performance_receipt_row_is_posture_sensitive() {
+fn performance_receipt_row_is_posture_sensitive() {
     let matrix = MilestoneNineTwoCertificationAdapter::
         subscription_lifecycle_sharing_and_preview_parity_test();
     let row = matrix
@@ -127,7 +127,7 @@ fn milestone_nine_two_performance_receipt_row_is_posture_sensitive() {
 }
 
 #[test]
-fn milestone_nine_two_scale_row_binds_widths_not_only_row_count() {
+fn scale_row_binds_widths_not_only_row_count() {
     let matrix = MilestoneNineTwoCertificationAdapter::
         subscription_lifecycle_sharing_and_preview_parity_test();
     let row = matrix

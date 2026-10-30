@@ -1,0 +1,204 @@
+pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_approval::program_adoption::*;
+
+#[test]
+fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
+    let (mut application, _, instance, proposal, _, _) = approval_journey("approved", 86_000);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
+    let main = application.current_world();
+    publish_adoption(
+        &application,
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
+        ),
+    );
+
+    let required = match advance_instance(&application, instance.clone(), 86_010)
+        .expect("the carried approval requirement prepares under P1")
+    {
+        WorkflowProgressOutcome::AwaitingApproval(required) => required,
+        other => panic!("expected the carried instance to await approval, got {other:?}"),
+    };
+    assert!(matches!(
+        approve_instance(
+            &application,
+            instance.clone(),
+            &required,
+            &proposal,
+            WorkflowApprovalDecision::Approve,
+            86_011,
+        ),
+        Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
+            WorkflowTransitionPreparationDenial::Attempt(attempt)
+        )) if attempt.kind()
+            == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
+    ));
+
+    for (node, key) in [("checks/structural", 86_020), ("checks/compliance", 86_030)] {
+        let settlement = settle_early_assessment_for(
+            &application,
+            instance.clone(),
+            node,
+            key,
+            DOCUMENT_IDENTITY,
+        );
+        match accept_early_assessment(&application, instance.clone(), node, &settlement, key + 1) {
+            Ok(WorkflowProgressOutcome::Completed(_)) => {}
+            other => panic!("{node} did not collect fresh P1 evidence: {other:?}"),
+        }
+    }
+    // The requirement names its evidence; fresh evidence means a fresh one.
+    let required = match advance_instance(&application, instance.clone(), 86_039)
+        .expect("the approval requirement re-reads fresh P1 evidence")
+    {
+        WorkflowProgressOutcome::AwaitingApproval(required) => required,
+        other => panic!("expected the recollected instance to await approval, got {other:?}"),
+    };
+    match approve_instance(
+        &application,
+        instance,
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        86_040,
+    ) {
+        Ok(WorkflowProgressOutcome::Completed(_)) => {}
+        other => panic!("fresh P1 evidence authorizes the approval, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
+    let (mut application, definition, _, _, _, _) = approval_journey("approved", 86_300);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
+    let main = application.current_world();
+    let sibling = fork_of(&application, main);
+    let unaffected = match start_instance(&application, definition.held_on(sibling), 86_310)
+        .expect("the sibling starts under its own copy of the definition")
+    {
+        WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),
+        other => panic!("expected a sibling instance, got {other:?}"),
+    };
+    // The sibling waits for approval while its parent moves to P1.
+    let (proposal, required, _) = approval_requirement(&application, unaffected.clone(), 86_320);
+    publish_adoption(
+        &application,
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
+        ),
+    );
+
+    // The carriage belongs to main's truth; the sibling's copy of the
+    // definition still executes under P0, and its approved effect runs.
+    match approve_instance(
+        &application,
+        unaffected.clone(),
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        86_330,
+    ) {
+        Ok(WorkflowProgressOutcome::Completed(_)) => {}
+        other => panic!("the sibling approves under P0, got {other:?}"),
+    }
+    perform_approved_effect(&application, &unaffected, 86_340);
+}
+
+#[test]
+fn an_outstanding_approval_requires_migration_before_adoption() {
+    let (mut application, definition, instance, proposal, required, _) =
+        approval_journey("approved", 86_100);
+    match approve_instance(
+        &application,
+        instance.clone(),
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        86_110,
+    ) {
+        Ok(WorkflowProgressOutcome::Completed(_)) => {}
+        other => panic!("expected approval to complete, got {other:?}"),
+    }
+    support_workflow_program::<RetentionProgramP1>(&mut application);
+    let main = application.current_world();
+    for choices in [
+        worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible(),
+        worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+            .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Carry)
+            .instance(&instance, WorthQueryWorkflowInstanceDisposition::Cancel),
+        worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+            .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Carry),
+    ] {
+        assert!(matches!(prepare_second_program_adoption(&application, main, Some(choices)),
+            Err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+                WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
+            "the existing native legality owner preserves approval custody for Carry, Cancel and omission");
+    }
+}
+
+#[test]
+fn a_cancelled_instance_names_its_cancellation_to_every_request() {
+    let (mut application, definition, instance, proposal, required, _) =
+        approval_journey("approved", 86_200);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
+    let main = application.current_world();
+    publish_adoption(
+        &application,
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(
+                worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+                    .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Carry)
+                    .instance(&instance, WorthQueryWorkflowInstanceDisposition::Cancel),
+            ),
+        ),
+    );
+
+    let cancelled = |denial: &WorthQueryWorkflowAdvancePreparationDenial| {
+        matches!(
+            denial,
+            WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
+                WorkflowTransitionPreparationDenial::Attempt(attempt)
+            ) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled
+        )
+    };
+    let advance = advance_instance(&application, instance.clone(), 86_210)
+        .expect_err("a cancelled instance never advances");
+    assert!(cancelled(&advance), "{advance:?}");
+    let decision = approve_instance(
+        &application,
+        instance.clone(),
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        86_211,
+    )
+    .expect_err("a cancelled instance takes no decision");
+    assert!(cancelled(&decision), "{decision:?}");
+    let proposal = propose_instance(&application, instance.clone(), 86_212)
+        .expect_err("a cancelled instance takes no proposal");
+    assert!(
+        matches!(
+            &proposal,
+            WorthQueryWorkflowProposalPreparationDenial::ProposalPreparation(
+                WorkflowProposalPreparationDenial::Attempt(attempt)
+            ) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled
+        ),
+        "{proposal:?}"
+    );
+    let cancellation = cancel_instance(&application, instance, 86_213)
+        .expect_err("an instance adoption cancelled takes no cancellation");
+    assert!(
+        matches!(
+            &cancellation,
+            WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
+                WorkflowInstancePreparationDenial::Attempt(attempt)
+            ) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled
+        ),
+        "{cancellation:?}"
+    );
+}

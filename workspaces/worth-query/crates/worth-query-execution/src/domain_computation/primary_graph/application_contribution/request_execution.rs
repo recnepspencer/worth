@@ -267,7 +267,9 @@ pub use advancement::{
 };
 
 #[cfg(test)]
-pub(crate) use advancement::{with_test_advancement, TestHostRequest};
+pub(crate) use advancement::{
+    with_test_advancement, with_test_bootstrap_advancement, TestHostRequest,
+};
 
 pub use advancement::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 

@@ -1,0 +1,5 @@
+error[E0599]: no method named `executed_receipt` found for struct `FoundationalBoundaryEvidenceReplayDerivedLineageArtifact` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/lineage/replay_derived_lineage_cannot_satisfy_attested_receipt_api.rs
+  |
+  |     let _ = replay.executed_receipt();
+  |                    ^^^^^^^^^^^^^^^^ method not found in `FoundationalBoundaryEvidenceReplayDerivedLineageArtifact`

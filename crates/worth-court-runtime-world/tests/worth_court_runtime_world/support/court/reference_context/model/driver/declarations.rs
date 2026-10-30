@@ -1,0 +1,232 @@
+pub(crate) use crate::court::reference_context::model::observation::ProductObserver;
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_signal::facade::branch::validate_signal_branch_name;
+pub(crate) use {
+    crate::court::ordinary_context::relational,
+    crate::court::ordinary_context::CompositeSupplyChainCourt,
+    crate::court::reference_context::model,
+    crate::oracle::support::ordinary_context::product::ProductModel, std::collections::BTreeMap,
+    worth_runtime_world::facade::*,
+};
+
+pub(crate) struct ModelRun {
+    pub(crate) court: CompositeSupplyChainCourt,
+    pub(crate) model: ProductModel,
+    pub(crate) heads: BTreeMap<String, ProductBranchObservation>,
+    pub(crate) held: BTreeMap<usize, ProductBranchObservation>,
+    pub(crate) observer: ProductObserver,
+    pub(crate) steps: Vec<String>,
+}
+pub(crate) fn run(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    seed: u64,
+    rounds: usize,
+) {
+    let court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile();
+    let model = crate::oracle::support::ordinary_context::product::ProductModel::bootstrap();
+    let root = court.bootstrap();
+    let mut run = ModelRun {
+        court,
+        model,
+        heads: std::collections::BTreeMap::from([("main".into(), root)]),
+        held: std::collections::BTreeMap::new(),
+        observer: crate::court::reference_context::model::observation::ProductObserver::default(),
+        steps: vec!["bootstrap".into()],
+    };
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        run.check(request_execution);
+        for (index, (relational, signal)) in
+            [(false, false), (true, false), (false, true), (true, true)]
+                .into_iter()
+                .enumerate()
+        {
+            run.create(request_execution, index, relational, signal);
+            run.retire_and_reclaim(request_execution);
+        }
+        let mut random = seed;
+        for round in 0..rounds {
+            random ^= random << 13;
+            random ^= random >> 7;
+            random ^= random << 17;
+            run.create(request_execution, round + 4, true, true);
+            // Vary legal boundary adjacencies, while every round still visits
+            // all publication postures, cancellation, staleness and recovery.
+            let early_hold = random & 1 == 0;
+            if early_hold {
+                run.hold(request_execution);
+            }
+            let amount = 1 + random % 11;
+            if random & 2 == 0 {
+                run.publish(request_execution, Some(amount), false);
+                if !early_hold {
+                    run.hold(request_execution);
+                }
+                run.publish(request_execution, None, true);
+            } else {
+                run.publish(request_execution, None, true);
+                if !early_hold {
+                    run.hold(request_execution);
+                }
+                run.publish(request_execution, Some(amount), false);
+            }
+            run.publish(request_execution, Some(1 + (random >> 8) % 11), true);
+            if random & 4 == 0 {
+                run.release(request_execution);
+            }
+            if random & 8 == 0 {
+                run.cancel(request_execution);
+                run.stale(request_execution);
+            } else {
+                run.stale(request_execution);
+                run.cancel(request_execution);
+            }
+            if random & 4 != 0 {
+                run.release(request_execution);
+            }
+            run.partial_cleanup(request_execution);
+            run.retire_and_reclaim(request_execution);
+        }
+    }));
+    if let Err(payload) = result {
+        eprintln!(
+            "seed={seed:#x}; shortest checked failing prefix ({} transitions): {:?}",
+            run.steps.len(),
+            run.steps
+        );
+        std::panic::resume_unwind(payload);
+    }
+    run.heads.clear();
+    run.court.finish();
+}
+impl ModelRun {
+    pub(crate) fn hold(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
+        self.steps.push("observe/retain".into());
+        self.model.hold(0, "work");
+        self.held.insert(0, self.court.observe(&self.heads["work"]));
+        self.check(request_execution);
+    }
+    pub(crate) fn release(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
+        self.steps.push("release observation".into());
+        self.model.release(0);
+        self.held.remove(&0);
+        self.check(request_execution);
+    }
+    pub(crate) fn check(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
+        self.observer.check(
+            request_execution,
+            &self.court,
+            &self.model,
+            &self.heads,
+            &self.held,
+        );
+    }
+    pub(crate) fn create(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        index: usize,
+        relational: bool,
+        signal: bool,
+    ) {
+        self.steps
+            .push(format!("create work/{relational}/{signal}/{index}"));
+        self.model.create("work", relational, signal);
+        let target = format!("model-component-{index}");
+        let plans = ProductBranchCreationPlans::new(
+            if relational {
+                RelationalBranchCreationPlan::ForkExact {
+                    target: BranchId(target.clone()),
+                }
+            } else {
+                RelationalBranchCreationPlan::ReuseExact
+            },
+            if signal {
+                SignalBranchCreationPlan::ForkExact {
+                    target: validate_signal_branch_name(target).unwrap(),
+                }
+            } else {
+                SignalBranchCreationPlan::ReuseExact
+            },
+        );
+        let RuntimeWorldBranchCreationOutcome::Performed(head) = self
+            .court
+            .world
+            .branch_port()
+            .create_product_branch(
+                request_execution,
+                self.heads["main"].clone(),
+                ProductBranchCreationIntent::from_source("work", plans).unwrap(),
+                &RuntimeWorldCancellationSource::new().token(),
+            )
+            .unwrap()
+        else {
+            panic!("model predicts a healthy branch creation");
+        };
+        self.heads.insert("work".into(), head);
+        self.check(request_execution);
+    }
+    pub(crate) fn retire_and_reclaim(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
+        self.steps.push("retire work".into());
+        let head = self.heads.remove("work").unwrap();
+        let chain = self.model.ancestry(self.model.branches["work"].head);
+        let trace = self
+            .court
+            .world
+            .inspection_port()
+            .trace_ancestry(
+                head.selected_commit().clone(),
+                std::num::NonZeroUsize::new(128).unwrap(),
+            )
+            .unwrap();
+        let keys: Vec<_> = trace
+            .commits()
+            .flat_map(|c| {
+                [
+                    RuntimeWorldRetentionKey::relational(c.basis()),
+                    RuntimeWorldRetentionKey::signal(c.basis()),
+                ]
+            })
+            .collect();
+        drop(trace);
+        self.model.retire("work");
+        drop(
+            self.court
+                .world
+                .branch_port()
+                .retire_product_branch(&head)
+                .unwrap(),
+        );
+        drop(head);
+        self.check(request_execution);
+        self.steps.push("release work history".into());
+        // The model reclaims head first; what it frees is the walk's prefix.
+        let expected: Vec<_> = chain
+            .iter()
+            .copied()
+            .filter(|&identity| self.model.reclaim(identity))
+            .map(|identity| self.observer.commit(identity))
+            .collect();
+        let released = self
+            .court
+            .world
+            .lifecycle_port()
+            .release_retired_branch_history(&self.observer.commit(chain[0]))
+            .unwrap();
+        assert_eq!(released.reclaimed_commits(), expected.as_slice());
+        self.check(request_execution);
+        for keys in keys.chunks(2) {
+            let report = self
+                .court
+                .world
+                .lifecycle_port()
+                .reclaim_retention(keys, 2)
+                .unwrap();
+            assert!(report.examined() <= 2);
+        }
+    }
+}

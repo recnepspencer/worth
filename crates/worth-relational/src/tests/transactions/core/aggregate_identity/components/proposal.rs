@@ -69,6 +69,7 @@ fn component_proposed_and_committed_rule_reads_share_sealed_identity_and_last_dr
     release_test_commit_snapshot(&runtime, &born);
     release_test_commit_snapshot(&runtime, &split);
     control.captures.lock().unwrap().clear();
+    drop((runtime, born, split));
     assert!(memory.charged_memory_bytes() > 0);
     assert_eq!(survivor.members().collect::<Vec<_>>(), ids[1..3]);
     drop(survivor);

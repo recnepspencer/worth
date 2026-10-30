@@ -1,0 +1,7 @@
+error: cannot construct `BridgeSubscriptionTemporalAsyncCertificationCloseoutArtifact` with struct literal syntax due to private fields
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_closeout_artifact_constructor_private.rs:4:13
+  |
+4 |     let _ = BridgeSubscriptionTemporalAsyncCertificationCloseoutArtifact {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields `support_matrix`, `workload_sufficiency_digest`, `canonical_basis`, `digest` and `counters` that were not provided

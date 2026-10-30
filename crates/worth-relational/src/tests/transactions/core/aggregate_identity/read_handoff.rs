@@ -64,10 +64,13 @@ fn created_members_keep_one_original_projection_payer_through_two_rules_and_fina
         held,
         "every rule/phase retained the same conservative grant"
     );
-    assert_eq!(survivor.members().collect::<Vec<_>>(), members(&born, 4));
+    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    let expected_members = members(&born, 4);
+    drop((runtime, born));
+    assert!(memory.charged_memory_bytes() > 0);
+    assert_eq!(survivor.members().collect::<Vec<_>>(), expected_members);
     drop(survivor);
     assert_eq!(memory.charged_memory_bytes(), 0);
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
 }
 
 #[test]
@@ -121,6 +124,7 @@ fn proposed_split_merge_and_before_image_agree_with_complete_published_tuples() 
     for result in [&born, &split, &merged] {
         release_test_commit_snapshot(&runtime, result);
     }
+    drop((runtime, born, split, merged));
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
 }
 
@@ -238,6 +242,7 @@ fn swallowed_original_memory_refusal_cannot_publish_and_funded_twin_succeeds() {
     for result in [&born, &funded] {
         release_test_commit_snapshot(&runtime, result);
     }
+    drop((runtime, born, funded));
     assert_eq!(memory.charged_memory_bytes(), 0);
 }
 
@@ -312,8 +317,9 @@ fn deliberate_stored_group_spends_rule_allowance_with_accounted_and_unaccounted_
             drop(captures);
             control.captures.lock().unwrap().clear();
             release_test_commit_snapshot(&runtime, &born);
-            assert_eq!(lease.charged_memory_bytes(), 0);
             assert!(runtime.record_identity.pending_snapshot().is_empty());
+            drop((runtime, born));
+            assert_eq!(lease.charged_memory_bytes(), 0);
         }
     }
 }
@@ -357,6 +363,7 @@ fn cancellation_after_real_preparation_and_discard_release_original_custody() {
     transaction
         .push_batch(batch, Allocation::SystemAllocation)
         .unwrap();
+    let retained_before_preparation = setup.memory().unwrap().charged_memory_bytes();
     let candidate = runtime
         .prepare_branch_transaction(setup_execution, transaction)
         .unwrap();
@@ -368,7 +375,12 @@ fn cancellation_after_real_preparation_and_discard_release_original_custody() {
     );
     assert!(runtime.record_identity.pending_snapshot().is_empty());
     control.captures.lock().unwrap().clear();
+    assert_eq!(
+        setup.memory().unwrap().charged_memory_bytes(),
+        retained_before_preparation
+    );
     release_test_commit_snapshot(&runtime, &born);
+    drop((runtime, born));
     assert_eq!(setup.memory().unwrap().charged_memory_bytes(), 0);
 }
 

@@ -1,0 +1,8 @@
+error[E0599]: no function or associated item named `new` found for struct `CanonicalProductionReadinessAuthority` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/production_readiness/production_readiness_authority_cannot_be_minted.rs
+  |
+  |     let _authority = CanonicalProductionReadinessAuthority::new();
+  |                                                             ^^^ function or associated item not found in `CanonicalProductionReadinessAuthority`
+  |
+help: there is a method `ne` with a similar name, but with different arguments
+ --> $RUST/core/src/cmp.rs

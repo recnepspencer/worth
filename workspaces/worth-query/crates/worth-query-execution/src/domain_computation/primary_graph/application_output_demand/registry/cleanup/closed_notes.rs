@@ -183,6 +183,10 @@ impl ClosedOrder {
         self.len -= 1;
     }
     #[cfg(test)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(in super::super) fn valid_order(&self) -> bool {
         let mut node = self.first.clone();
         let mut previous = None;

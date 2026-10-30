@@ -222,7 +222,9 @@ fn decode_block(
     if frame.schema == 3
         && (level != 0
             || !payload[BLOCK_PREFIX_BYTES..]
-                .chunks_exact(PLACEMENT_BYTES)
+                .as_chunks::<PLACEMENT_BYTES>()
+                .0
+                .iter()
                 .any(|entry| entry[25..32] != [0; 7]))
     {
         return Err(OfflineDurableManifestDenial::MalformedBlock);
@@ -241,15 +243,19 @@ fn decode_block(
     let (width, decoded) = match payload[20] {
         1 if level == 0 => {
             let entries = payload[BLOCK_PREFIX_BYTES..]
-                .chunks_exact(PLACEMENT_BYTES)
+                .as_chunks::<PLACEMENT_BYTES>()
+                .0
+                .iter()
                 .map(|entry| decode_placement(entry, frame.schema))
                 .collect::<Result<Vec<_>, _>>()?;
             (PLACEMENT_BYTES, DecodedRecordBlock::Leaf(entries))
         }
         2 if level != 0 => {
             let children = payload[BLOCK_PREFIX_BYTES..]
-                .chunks_exact(REFERENCE_BYTES)
-                .map(decode_reference)
+                .as_chunks::<REFERENCE_BYTES>()
+                .0
+                .iter()
+                .map(|bytes| decode_reference(bytes))
                 .collect::<Result<Vec<_>, _>>()?;
             if !children.iter().all(|child| {
                 child.level.checked_add(1) == Some(level) && child.generation <= generation

@@ -53,11 +53,27 @@ impl WorthQueryExecutionCapacityPort for WorthQueryFixedExecutionCapacity {
     }
 
     fn try_reserve(&self) -> Option<Box<dyn WorthQueryExecutionCapacityReservation>> {
-        self.active_attempts
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |active| {
-                (active < self.concurrent_attempt_limit).then_some(active + 1)
-            })
-            .ok()?;
+        {
+            let update_counter = &self.active_attempts;
+            let mut active = update_counter.load(Ordering::Acquire);
+            loop {
+                let Some(updated_value) =
+                    (active < self.concurrent_attempt_limit).then_some(active + 1)
+                else {
+                    break Err(active);
+                };
+                match update_counter.compare_exchange_weak(
+                    active,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => active = reloaded_value,
+                }
+            }
+        }
+        .ok()?;
         Some(Box::new(WorthQueryFixedExecutionCapacityReservation {
             active_attempts: Arc::clone(&self.active_attempts),
         }))

@@ -1,0 +1,25 @@
+[package]
+name = "worth-query-court-decl-host"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+serde_json = "1"
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-certification-canonical = { path = "../worth-query-testkit-certification-canonical" }
+worth-query-testkit-certification-operation = { path = "../worth-query-testkit-certification-operation" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_decl_host"
+path = "tests/worth_query_court_decl_host.rs"

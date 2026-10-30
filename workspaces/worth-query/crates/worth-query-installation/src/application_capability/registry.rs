@@ -35,7 +35,7 @@ impl ApplicationCapabilityRegistryKey {
     where
         Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
-    {
+{
         use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionMode;
         let (name, capability_type) = Binding::Admission::capability_identity()?;
         let operation =

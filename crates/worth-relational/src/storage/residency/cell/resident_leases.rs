@@ -15,11 +15,25 @@ impl RelationalRegionResidency {
         self.check_damage()?;
         match &*state {
             ResidencyState::Head { region } | ResidencyState::Full(region) => {
-                self.leases
-                    .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
-                        count.checked_add(1)
-                    })
-                    .map_err(|_| self.failure(Cause::MemoryExhausted))?;
+                {
+                    let update_counter = &self.leases;
+                    let mut count = update_counter.load(Ordering::Acquire);
+                    loop {
+                        let Some(updated_value) = count.checked_add(1) else {
+                            break Err(count);
+                        };
+                        match update_counter.compare_exchange_weak(
+                            count,
+                            updated_value,
+                            Ordering::AcqRel,
+                            Ordering::Acquire,
+                        ) {
+                            Ok(previous) => break Ok(previous),
+                            Err(reloaded_value) => count = reloaded_value,
+                        }
+                    }
+                }
+                .map_err(|_| self.failure(Cause::MemoryExhausted))?;
                 Ok(Some(RelationalResidencyLease::accepted(
                     self.clone(),
                     region.clone(),
@@ -42,11 +56,25 @@ impl RelationalRegionResidency {
             ResidencyState::Head { region, .. } | ResidencyState::Full(region)
                 if self.backing.is_none() =>
             {
-                self.leases
-                    .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
-                        count.checked_add(1)
-                    })
-                    .map_err(|_| self.failure(Cause::MemoryExhausted))?;
+                {
+                    let update_counter = &self.leases;
+                    let mut count = update_counter.load(Ordering::Acquire);
+                    loop {
+                        let Some(updated_value) = count.checked_add(1) else {
+                            break Err(count);
+                        };
+                        match update_counter.compare_exchange_weak(
+                            count,
+                            updated_value,
+                            Ordering::AcqRel,
+                            Ordering::Acquire,
+                        ) {
+                            Ok(previous) => break Ok(previous),
+                            Err(reloaded_value) => count = reloaded_value,
+                        }
+                    }
+                }
+                .map_err(|_| self.failure(Cause::MemoryExhausted))?;
                 Ok(Some(RelationalResidencyLease::accepted(
                     self.clone(),
                     region.clone(),
@@ -66,11 +94,25 @@ impl RelationalRegionResidency {
         self.check_damage()?;
         match &*state {
             ResidencyState::Full(region) if self.backing.is_none() => {
-                self.leases
-                    .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
-                        count.checked_add(1)
-                    })
-                    .map_err(|_| self.failure(Cause::MemoryExhausted))?;
+                {
+                    let update_counter = &self.leases;
+                    let mut count = update_counter.load(Ordering::Acquire);
+                    loop {
+                        let Some(updated_value) = count.checked_add(1) else {
+                            break Err(count);
+                        };
+                        match update_counter.compare_exchange_weak(
+                            count,
+                            updated_value,
+                            Ordering::AcqRel,
+                            Ordering::Acquire,
+                        ) {
+                            Ok(previous) => break Ok(previous),
+                            Err(reloaded_value) => count = reloaded_value,
+                        }
+                    }
+                }
+                .map_err(|_| self.failure(Cause::MemoryExhausted))?;
                 Ok(Some(RelationalResidencyLease::accepted(
                     self.clone(),
                     region.clone(),

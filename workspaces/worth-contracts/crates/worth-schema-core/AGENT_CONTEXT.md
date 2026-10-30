@@ -12,11 +12,11 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 - `worth-derived-publication` -> retained/publication facade (Milestone 4)
 - `worthy-derived-brep` -> first consumer-facing retained artifact path (Milestone 4)
 - Public surface: facade-only
-- Facade exports: `Identity, IdentityName, InvalidName, InvalidTolerance, Name, Tolerance, Unit`
+- Declared facade exports (glob routes remain explicit): `Identity, IdentityName, InvalidName, InvalidTolerance, Name, Tolerance, Unit`
 - Owned internal modules: `identity, identity_name, naming, tolerance, units`
 - Allowed in-tree dependency bands: `none`
 
-Machine fences:
+Boundary guidance (the compiler and retained checks own enforcement):
 - Must not depend on worthy-* crates.
 - Must not depend on Query engine `worth-query` directly; consume only through configured audience facades.
 - No Query audience facade is legal for this band; derived and other ordinary bands have no Query audience in this milestone.
@@ -26,4 +26,4 @@ Machine fences:
 - Must not depend on replay surface families such as certification replay [worth-cert-replay, worthy-cert-replay; cert domains: replay, reconstruction].
 
 Skeleton fence:
-- Seed skeleton is machine-fenced by boundary-check; undeclared files and mixed-class modules are denied.
+- Seed skeleton records the starting topology; visibility and code review own its composition.

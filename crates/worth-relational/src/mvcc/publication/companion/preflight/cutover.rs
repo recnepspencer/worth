@@ -1,8 +1,7 @@
 //! Candidate-bound, callback-free companion installation after Native verifies the head.
 use super::cell_swap::{PreparedCellCutover, PreparedCellSwap};
 use super::{
-    CandidateCompanionBinding, CompanionBranchCellCore, CompanionPreflightStop,
-    CompanionPublicationCompletionObserver, CompanionRootImage, PublicationCellAdmission,
+    CandidateCompanionBinding, CompanionPreflightStop, CompanionPublicationCompletionObserver,
     PublicationCompanionPreflight,
 };
 use crate::publication::patch::data::PatchStreamPosition;

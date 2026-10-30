@@ -1,5 +1,9 @@
 # Milestone 9.16 Runtime Phase 6 Closure Ledger
 
+Historical record: verification commands, counts, and timings below describe the milestone checkout and are not current invocation guidance. For current product-frontier court selection and complete Gate commands, see [Query verification](../../workspaces/worth-query/README.md) and [the Gate entry point](../../scripts/ci/query_gate.py). No current target is credited with these historical results.
+
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
 > Root test commands below use the consolidated target names and module filters. Recorded results and feature flags describe the historical revision.
 
 **Owner:** Runtime Hardening Track, Phase 6
@@ -294,9 +298,9 @@ Production ownership:
 - `worth-query-execution/primary_graph/application_attempt/`
 - `worth-query-execution/provider_session/`
 - `worth-query-execution/managed_run/run_identity.rs`
-- `bank-server/tests/ordinary_reads/canonical_work_scale.rs`
-- `bank-server/tests/ordinary_mutations/preconditions.rs`
-- `bank-server/tests/live_activity.rs`
+- `worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/cost/server/ordinary_reads/canonical_work_scale/mod.rs`
+- `worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_mutations/preconditions/mod.rs`
+- `worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/cost/server/live_activity/mod.rs` and `worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/live_activity/mod.rs`
 
 Exact digest, budget, and authority evidence:
 

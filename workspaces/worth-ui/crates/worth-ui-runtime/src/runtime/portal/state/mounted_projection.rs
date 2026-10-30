@@ -77,19 +77,19 @@ impl super::UiPortalRuntimeState {
                     })
             })
             .collect::<Vec<_>>();
-        if transition.opens_portal() {
-            if let Some(placement) = transition.placement() {
-                inputs.push(crate::mounting::UiMountedPortalOverlayProjectionInput::new(
-                    target.diagnostic_value(),
-                    transition
-                        .stack_ordinal()
-                        .expect("opening Portal carries issued stack order"),
-                    target.owner().mounted_instance_identity(),
-                    transition.request().semantic_surface(),
-                    placement,
-                    super::super::UiPortalLifecyclePosture::Visible,
-                ));
-            }
+        if transition.opens_portal()
+            && let Some(placement) = transition.placement()
+        {
+            inputs.push(crate::mounting::UiMountedPortalOverlayProjectionInput::new(
+                target.diagnostic_value(),
+                transition
+                    .stack_ordinal()
+                    .expect("opening Portal carries issued stack order"),
+                target.owner().mounted_instance_identity(),
+                transition.request().semantic_surface(),
+                placement,
+                super::super::UiPortalLifecyclePosture::Visible,
+            ));
         }
         inputs
     }

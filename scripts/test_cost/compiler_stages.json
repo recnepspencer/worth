@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "workspaces": {
+    "root": [
+      {
+        "source": "crates/worth-court-foundational-expressions/tests/worth_court_foundational_expressions/sources/worth_foundational/value_shape/ui/fail/nullable_optional.rs",
+        "stage": "codegen"
+      }
+    ]
+  }
+}

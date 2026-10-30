@@ -58,7 +58,7 @@ impl WorthQueryConvergenceDomainProvider for ProvisionalProvider {
 }
 
 #[test]
-fn one_installed_anchor_retains_convergence_and_phase_seven_through_ten() {
+fn one_installed_anchor_retains_convergence() {
     let provider = ProvisionalProvider {
         state: std::sync::Arc::new(std::sync::Mutex::new(ProvisionalProviderState::default())),
     };

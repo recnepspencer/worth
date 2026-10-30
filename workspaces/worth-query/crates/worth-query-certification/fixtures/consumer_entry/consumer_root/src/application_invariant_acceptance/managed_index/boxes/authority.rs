@@ -173,8 +173,7 @@ fn run() {
                 access::InspectBoxes::reference(),
                 access("boxes"),
             )
-            .err()
-            .expect("rebuild still needs Parent READ"),
+            .expect_err("rebuild still needs Parent READ"),
     ] {
         let WorthQueryApplicationRequestQueryDenial::Admission(cause) = error else {
             panic!("actual Parent READ admission: {error:?}")
@@ -249,8 +248,7 @@ fn run() {
             access::InspectBoxes::reference(),
             access("boxes"),
         )
-        .err()
-        .expect("actual foreign installed/runtime owner");
+        .expect_err("actual foreign installed/runtime owner");
     assert!(
         matches!(foreign,WorthQueryApplicationRequestQueryDenial::ManagedIndex(ref cause) if matches!(cause.cause(),WorthQueryManagedIndexDenialCause::Refused(WorthQueryManagedIndexRefusal::ForeignAssociation)))
     );
@@ -326,8 +324,7 @@ fn run() {
                 access::InspectBoxes::reference(),
                 access("boxes"),
             )
-            .err()
-            .expect("revoked rebuild"),
+            .expect_err("revoked rebuild"),
     );
     assert_eq!(
         calls.totals(),

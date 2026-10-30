@@ -1,0 +1,19 @@
+[package]
+name = "worth-testkit-compiler"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+autotests = false
+description = "Reads attributed compiler outcomes for compile-boundary courts."
+
+[dependencies]
+serde_json = { workspace = true }
+glob = { workspace = true }
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

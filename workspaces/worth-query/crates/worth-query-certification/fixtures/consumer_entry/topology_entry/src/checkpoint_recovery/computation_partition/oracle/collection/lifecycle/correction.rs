@@ -190,85 +190,90 @@ pub(super) fn assert_restored(before: &Snapshot, after: &Snapshot) {
     );
     assert!(after.extra.is_some());
 }
-#[test]
-fn recorded_source_correction_changes_family_membership_and_preserves_unaffected_members() {
-    let _guard = checkpoint_recovery_test_guard();
-    let mut app = install(0);
-    let (scope, principal) = authenticate(&app);
-    let request = app.request(&principal, &scope);
-    let before = settled(&app, &request, true);
-    assert_eq!(before.value, 13);
-    let source = source(&app, &request);
-    assert!(
-        source.aftermath_causality().is_none(),
-        "ordinary source publication is separate"
-    );
-    let changed = settled(&app, &request, false);
-    assert_eq!(changed.value, 2 + 3 + 7);
-    assert!(changed.members.is_empty());
-    assert_eq!(
-        (&before.total, &before.support),
-        (&changed.total, &changed.support)
-    );
-    edit(
-        &request,
-        &app,
-        EntryEdit::new(
-            "odd",
-            99,
-            crate::checkpoint_recovery::computation_partition::entry_edit::EntryFact::Value,
-            40.0_f64.to_bits(),
-        ),
-        0x9184_0003,
-    );
-    let inverse = reverse(&app, &request, &source);
-    assert_eq!(
-        inverse
-            .aftermath_causality()
-            .unwrap()
-            .recorded_source()
-            .relational(),
-        source.commit_reference()
-    );
-    let restored = settled(&app, &request, false);
-    assert_restored(&before, &restored);
-    let authored = request
-        .query(source_query::SourceRead {
-            body_key: SCOPE.to_owned(),
-        })
-        .execute()
-        .unwrap();
-    assert_eq!(
-        authored.rows()[0].total("odd"),
-        40,
-        "unrelated authored edit survives"
-    );
-    drop((authored, inverse, source, principal, scope));
-    app.close_conditional_runtime().unwrap();
-}
 
-#[test]
-fn correction_scope_refuses_an_entry_owned_by_another_body() {
-    let _guard = checkpoint_recovery_test_guard();
-    let app = install(1);
-    let (scope, principal) = authenticate(&app);
-    let request = app.request(&principal, &scope);
-    let before = app.producer_contacts_on_this_thread_for_test();
-    let outcome = request
-        .advanced()
-        .mutate(EntryCorrection {
-            scope_key: SCOPE.to_owned(),
-            entry: population::ENTRY_BASE,
-            mask: 1,
-            expected: None,
-        })
-        .without_source()
-        .idempotency(&0x9184_00ff_u64)
-        .execute_capability_in_program::<custody::Program>(
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn recorded_source_correction_changes_family_membership_and_preserves_unaffected_members() {
+        let _guard = checkpoint_recovery_test_guard();
+        let mut app = install(0);
+        let (scope, principal) = authenticate(&app);
+        let request = app.request(&principal, &scope);
+        let before = settled(&app, &request, true);
+        assert_eq!(before.value, 13);
+        let source = source(&app, &request);
+        assert!(
+            source.aftermath_causality().is_none(),
+            "ordinary source publication is separate"
+        );
+        let changed = settled(&app, &request, false);
+        assert_eq!(changed.value, 2 + 3 + 7);
+        assert!(changed.members.is_empty());
+        assert_eq!(
+            (&before.total, &before.support),
+            (&changed.total, &changed.support)
+        );
+        edit(
+            &request,
             &app,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    assert!(matches!(outcome, WorthQueryApplicationMutationOutcome::DomainDenied(crate::checkpoint_recovery::computation_partition::entry_correction::EntryCorrectionDenial::OutsideScope)));
-    assert_eq!(app.producer_contacts_on_this_thread_for_test(), before);
+            EntryEdit::new(
+                "odd",
+                99,
+                crate::checkpoint_recovery::computation_partition::entry_edit::EntryFact::Value,
+                40.0_f64.to_bits(),
+            ),
+            0x9184_0003,
+        );
+        let inverse = reverse(&app, &request, &source);
+        assert_eq!(
+            inverse
+                .aftermath_causality()
+                .unwrap()
+                .recorded_source()
+                .relational(),
+            source.commit_reference()
+        );
+        let restored = settled(&app, &request, false);
+        assert_restored(&before, &restored);
+        let authored = request
+            .query(source_query::SourceRead {
+                body_key: SCOPE.to_owned(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(
+            authored.rows()[0].total("odd"),
+            40,
+            "unrelated authored edit survives"
+        );
+        drop((authored, inverse, source, principal, scope));
+        app.close_conditional_runtime().unwrap();
+    }
+
+    #[test]
+    fn correction_scope_refuses_an_entry_owned_by_another_body() {
+        let _guard = checkpoint_recovery_test_guard();
+        let app = install(1);
+        let (scope, principal) = authenticate(&app);
+        let request = app.request(&principal, &scope);
+        let before = app.producer_contacts_on_this_thread_for_test();
+        let outcome = request
+            .advanced()
+            .mutate(EntryCorrection {
+                scope_key: SCOPE.to_owned(),
+                entry: population::ENTRY_BASE,
+                mask: 1,
+                expected: None,
+            })
+            .without_source()
+            .idempotency(&0x9184_00ff_u64)
+            .execute_capability_in_program::<custody::Program>(
+                &app,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        assert!(matches!(outcome, WorthQueryApplicationMutationOutcome::DomainDenied(crate::checkpoint_recovery::computation_partition::entry_correction::EntryCorrectionDenial::OutsideScope)));
+        assert_eq!(app.producer_contacts_on_this_thread_for_test(), before);
+    }
 }

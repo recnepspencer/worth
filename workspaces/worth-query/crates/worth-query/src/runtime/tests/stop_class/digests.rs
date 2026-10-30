@@ -23,7 +23,7 @@ fn compose_certification_sequence_digest(
 }
 
 #[test]
-fn typed_stop_class_taxonomy_phase_three_outputs_are_non_empty_and_stable() {
+fn typed_stop_class_taxonomy_outputs_are_non_empty_and_stable() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -49,7 +49,7 @@ fn typed_stop_class_taxonomy_phase_three_outputs_are_non_empty_and_stable() {
 }
 
 #[test]
-fn typed_stop_class_matching_phase_four_outputs_are_non_empty_and_stable() {
+fn typed_stop_class_matching_outputs_are_non_empty_and_stable() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

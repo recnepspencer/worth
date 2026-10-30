@@ -22,23 +22,23 @@ pub(super) fn canonical_golden_artifact_evidence(
     vec![
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::PrimitiveCategoryAndMaterializationMeaning,
-            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/primitives/mod.rs"),
         ),
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::FamilyDistinctRowTopologyMeaning,
-            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/rows/mod.rs"),
         ),
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::MaterializationRichnessAndDebtMeaning,
-            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/materialization/mod.rs"),
         ),
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::CanonicalBundleAndComparisonMeaning,
-            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/basis/mod.rs"),
         ),
         FoundationalDiagnosticCanonicalGoldenArtifactEvidence::new(
             FoundationalDiagnosticCanonicalGoldenArtifact::CertifiedCoverageAndAttachmentMeaning,
-            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/certified/mod.rs"),
         ),
     ]
 }
@@ -57,27 +57,27 @@ pub(super) fn property_seed_evidence() -> Vec<FoundationalDiagnosticPropertySeed
     vec![
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::PrimitiveOrderingAndTokenCanonicalization,
-            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/primitives/mod.rs"),
             "ordering hostility and canonical token-segment rejection",
         ),
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::RowFamilyOrderingAndSemanticTieBreaks,
-            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/basis/mod.rs"),
             "tied-common-field row ordering must still canonicalize by family-specific meaning",
         ),
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::RichnessElisionPreservesTruthUnderPartiality,
-            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/materialization/mod.rs"),
             "reduced richness narrows breadth while preserving outcome truth and explicit partiality",
         ),
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::IndependentProducerCanonicalParity,
-            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/basis/mod.rs"),
             "independent producer layouts and input order must still lower to one diagnostic meaning",
         ),
         FoundationalDiagnosticPropertySeedEvidence::new(
             FoundationalDiagnosticPropertySeed::CertifiedCoverageNamedGapParity,
-            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/certified/mod.rs"),
             "partial coverage and typed named gaps must stay canonical under certified attachment pressure",
         ),
     ]
@@ -96,19 +96,19 @@ pub(super) fn harness_expansion_evidence() -> Vec<FoundationalDiagnosticHarnessE
     vec![
         FoundationalDiagnosticHarnessExpansionEvidence::new(
             FoundationalDiagnosticHarnessExpansionPoint::IndependentProducerDiagnosticParityMatrix,
-            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/basis/mod.rs"),
         ),
         FoundationalDiagnosticHarnessExpansionEvidence::new(
             FoundationalDiagnosticHarnessExpansionPoint::RichnessAvailabilityAndFallbackReplayMatrix,
-            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/materialization/mod.rs"),
         ),
         FoundationalDiagnosticHarnessExpansionEvidence::new(
             FoundationalDiagnosticHarnessExpansionPoint::BlindConsumerInterpretationReplaySuite,
-            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/rows/mod.rs"),
         ),
         FoundationalDiagnosticHarnessExpansionEvidence::new(
             FoundationalDiagnosticHarnessExpansionPoint::CertifiedCoverageAttachmentParityMatrix,
-            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/certified/mod.rs"),
         ),
     ]
 }

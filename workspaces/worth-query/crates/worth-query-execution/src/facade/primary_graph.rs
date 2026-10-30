@@ -305,6 +305,7 @@ pub use worth_relational::facade::storage::{
     RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
 };
 pub use worth_relational::facade::{
+    history::RelationalAuthoredWriteDenial,
     indexes::{
         DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
         DerivedIndexId,

@@ -162,6 +162,10 @@ impl KernelContext<'_, '_> {
         self.latch_checkpoint_result(result)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn poll_inner(&mut self, settling_frontier: bool) -> Result<(), KernelStop> {
         let mut meter = self.meter.borrow_mut();
         if let Some(stop) = meter.checkpoint_stop {
@@ -188,6 +192,10 @@ impl KernelContext<'_, '_> {
         self.latch_checkpoint_result(result)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn latch_checkpoint_result(
         &mut self,
         result: Result<(), KernelStop>,

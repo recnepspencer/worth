@@ -77,14 +77,14 @@ impl super::WorthUiPlanRegionStore {
         &mut self,
         record: &super::WorthUiPlanRegionRecord,
     ) {
-        if let Some((provenance, plan_index)) = mounted_projection_entry(record) {
-            if let Some(mut entries) = self.mounted_projection_index.get(&provenance).cloned() {
-                entries.remove_with_work(&plan_index);
-                if entries.is_empty() {
-                    self.mounted_projection_index.remove(&provenance);
-                } else {
-                    self.mounted_projection_index.insert(provenance, entries);
-                }
+        if let Some((provenance, plan_index)) = mounted_projection_entry(record)
+            && let Some(mut entries) = self.mounted_projection_index.get(&provenance).cloned()
+        {
+            entries.remove_with_work(&plan_index);
+            if entries.is_empty() {
+                self.mounted_projection_index.remove(&provenance);
+            } else {
+                self.mounted_projection_index.insert(provenance, entries);
             }
         }
         self.remove_mounted_theme_token_record(record);

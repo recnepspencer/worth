@@ -176,33 +176,38 @@ fn run(workers: usize) -> Vec<String> {
     arm(None);
     committed
 }
-#[test]
-fn three_members_apply_by_producer_and_source_epoch_under_a_constructed_schedule() {
-    let _guard = checkpoint_recovery_test_guard();
-    if let Ok(width) = std::env::var("WORTH_THREE_MEMBER_WIDTH") {
-        println!(
-            "\nWORTH_THREE_MEMBER_HISTORY:{:?}",
-            run(width.parse().unwrap())
-        );
-        return;
-    }
-    let mut first = None;
-    for width in [2, 4] {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", "checkpoint_recovery::required_chain::concurrent_waves::three_members::three_members_apply_by_producer_and_source_epoch_under_a_constructed_schedule", "--nocapture"])
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn three_members_apply_by_producer_and_source_epoch_under_a_constructed_schedule() {
+        let _guard = checkpoint_recovery_test_guard();
+        if let Ok(width) = std::env::var("WORTH_THREE_MEMBER_WIDTH") {
+            println!(
+                "\nWORTH_THREE_MEMBER_HISTORY:{:?}",
+                run(width.parse().unwrap())
+            );
+            return;
+        }
+        let mut first = None;
+        for width in [2, 4] {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "checkpoint_recovery::required_chain::concurrent_waves::three_members::serial::three_members_apply_by_producer_and_source_epoch_under_a_constructed_schedule", "--nocapture"])
             .env("WORTH_THREE_MEMBER_WIDTH", width.to_string()).output().unwrap();
-        assert!(
-            output.status.success(),
-            "width {width}: {}{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-        let stdout = String::from_utf8(output.stdout).unwrap();
-        let actual = stdout
-            .lines()
-            .find_map(|line| line.strip_prefix("WORTH_THREE_MEMBER_HISTORY:"))
-            .unwrap()
-            .to_owned();
-        assert_eq!(actual, *first.get_or_insert_with(|| actual.clone()));
+            assert!(
+                output.status.success(),
+                "width {width}: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let stdout = String::from_utf8(output.stdout).unwrap();
+            let actual = stdout
+                .lines()
+                .find_map(|line| line.strip_prefix("WORTH_THREE_MEMBER_HISTORY:"))
+                .unwrap()
+                .to_owned();
+            assert_eq!(actual, *first.get_or_insert_with(|| actual.clone()));
+        }
     }
 }

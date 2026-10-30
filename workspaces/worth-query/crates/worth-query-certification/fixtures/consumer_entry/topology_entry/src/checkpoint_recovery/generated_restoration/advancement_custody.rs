@@ -62,81 +62,88 @@ fn assert_cause(cause: Denial, memory: bool) {
         assert_eq!(admitted, 0);
     }
 }
-#[test]
-fn suspension_and_restoration_refuse_before_their_real_reader_at_both_placements() {
-    let _guard = checkpoint_recovery_test_guard();
-    for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
-        let _restore = Restore(place(placement), bound(None));
-        for memory in [false, true] {
-            bound(None);
-            let application = install(None);
-            let (scope, principal) = authenticate(&application);
-            let request = application.request(&principal, &scope);
-            drop(settle(&request, &application));
-            let ring = ring(&request);
-            let source = request
-                .query(PlanarRead {
-                    body_key: ROOT.to_owned(),
-                })
-                .execute()
-                .unwrap()
-                .observed_sources()[0]
-                .clone();
-            let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn suspension_and_restoration_refuse_before_their_real_reader_at_both_placements() {
+        let _guard = checkpoint_recovery_test_guard();
+        for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
+            let _restore = Restore(place(placement), bound(None));
+            for memory in [false, true] {
+                bound(None);
+                let application = install(None);
+                let (scope, principal) = authenticate(&application);
+                let request = application.request(&principal, &scope);
+                drop(settle(&request, &application));
+                let ring = ring(&request);
+                let source = request
+                    .query(PlanarRead {
+                        body_key: ROOT.to_owned(),
+                    })
+                    .execute()
+                    .unwrap()
+                    .observed_sources()[0]
+                    .clone();
+                let selected =
+                    crate::checkpoint_recovery::support::host_call(&application, |phase| {
+                        application
+                            .on_branch(application.current_world())
+                            .select(phase)
+                    })
+                    .unwrap();
+                limit(memory);
+                let before = reads();
+                let Err(SuspensionFailure::ExecutionDenied(cause)) =
+                    selected.suspend_current_generated_output::<Final>(&scope, source.clone())
+                else {
+                    panic!("suspension refuses at open")
+                };
+                assert_cause(cause, memory);
+                assert_eq!(reads(), before);
+                bound(None);
+                let selected =
+                    crate::checkpoint_recovery::support::host_call(&application, |phase| {
+                        application
+                            .on_branch(application.current_world())
+                            .select(phase)
+                    })
+                    .unwrap();
+                let before = reads();
+                let suspended = selected
+                    .suspend_current_generated_output::<Final>(&scope, source)
+                    .unwrap_or_else(|_| panic!("admitted suspension"));
+                assert!(
+                    reads() > before,
+                    "admitted suspension contacts its materialization reader"
+                );
+                let completed = reconstruct_ring(&application, suspended, &ring);
+                limit(memory);
+                let before = reads();
+                let Err(RestorationFailure::Rejected {
+                    suspended,
+                    cause:
+                        Cause::ExecutionDenied(ProviderKind::ExecutionResource {
+                            denial: resource, ..
+                        }),
+                }) = application.restore_generated_output(completed, &scope)
+                else {
+                    panic!("restoration carries its opening refusal")
+                };
+                assert_cause(Denial::Resource(resource), memory);
+                assert_eq!(reads(), before);
+                bound(None);
+                let completed = reconstruct_ring(&application, suspended, &ring);
+                let before = reads();
                 application
-                    .on_branch(application.current_world())
-                    .select(phase)
-            })
-            .unwrap();
-            limit(memory);
-            let before = reads();
-            let Err(SuspensionFailure::ExecutionDenied(cause)) =
-                selected.suspend_current_generated_output::<Final>(&scope, source.clone())
-            else {
-                panic!("suspension refuses at open")
-            };
-            assert_cause(cause, memory);
-            assert_eq!(reads(), before);
-            bound(None);
-            let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
-                application
-                    .on_branch(application.current_world())
-                    .select(phase)
-            })
-            .unwrap();
-            let before = reads();
-            let suspended = selected
-                .suspend_current_generated_output::<Final>(&scope, source)
-                .unwrap_or_else(|_| panic!("admitted suspension"));
-            assert!(
-                reads() > before,
-                "admitted suspension contacts its materialization reader"
-            );
-            let completed = reconstruct_ring(&application, suspended, &ring);
-            limit(memory);
-            let before = reads();
-            let Err(RestorationFailure::Rejected {
-                suspended,
-                cause:
-                    Cause::ExecutionDenied(ProviderKind::ExecutionResource {
-                        denial: resource, ..
-                    }),
-            }) = application.restore_generated_output(completed, &scope)
-            else {
-                panic!("restoration carries its opening refusal")
-            };
-            assert_cause(Denial::Resource(resource), memory);
-            assert_eq!(reads(), before);
-            bound(None);
-            let completed = reconstruct_ring(&application, suspended, &ring);
-            let before = reads();
-            application
-                .restore_generated_output(completed, &scope)
-                .unwrap_or_else(|_| panic!("admitted restoration"));
-            assert!(
-                reads() > before,
-                "admitted restoration contacts its materialization reader"
-            );
+                    .restore_generated_output(completed, &scope)
+                    .unwrap_or_else(|_| panic!("admitted restoration"));
+                assert!(
+                    reads() > before,
+                    "admitted restoration contacts its materialization reader"
+                );
+            }
         }
     }
 }

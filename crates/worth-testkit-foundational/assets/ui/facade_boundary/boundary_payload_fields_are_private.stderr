@@ -1,0 +1,11 @@
+error[E0451]: fields `crate_name`, `standardizes` and `does_not_standardize` of struct `FoundationalBoundaryDeclaration` are private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/facade_boundary/boundary_payload_fields_are_private.rs
+  |
+  |     let _ = FoundationalBoundaryDeclaration {
+  |             ------------------------------- in this type
+  |         crate_name: "worth-foundational",
+  |         ^^^^^^^^^^ private field
+  |         standardizes: "whatever a caller claims",
+  |         ^^^^^^^^^^^^ private field
+  |         does_not_standardize: "whatever a caller claims",
+  |         ^^^^^^^^^^^^^^^^^^^^ private field

@@ -1,0 +1,21 @@
+[package]
+"name" = "worth-testkit-relational"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"sha2" = { "version" = "^0.10" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-relational" = { "path" = "../worth-relational" }
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true

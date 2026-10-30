@@ -1,0 +1,19 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/lineage/closeout_receipt_cannot_satisfy_attested_lineage_api.rs
+  |
+  |           .attested_by(
+  |            ----------- arguments to this method are incorrect
+  | /             boundary_evidence()
+  | |                 .receipt()
+  | |                 .blocked_closeout(FoundationalBoundaryEvidenceReceiptBoundary::transition(
+  | |                     FoundationalTransitionLocator::CommitParentage(FoundationalCommitParentageLocator::new(
+... |
+  | |                         .unwrap_success(),
+  | |                 ),
+  | |_________________^ expected `FoundationalBoundaryEvidenceExecutedReceiptArtifact`, found `FoundationalBoundaryEvidenceCompletedReceiptArtifact`
+  |
+note: method defined here
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_evidence/lineage_front_doors.rs
+  |
+  |     pub fn attested_by(
+  |            ^^^^^^^^^^^

@@ -27,6 +27,10 @@ fn admission_effects_are_faulted_before_and_after_the_real_boundary() {
     assert!(after_root.is_dir());
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: contention returns prior authority only when this attempt changed nothing; source: worth-store-physical-backend::filesystem_media::tests::admission_fault_interposition::contention_returns_prior_authority_only_when_this_attempt_changed_nothing; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn contention_returns_prior_authority_only_when_this_attempt_changed_nothing() {
     let parent = tempfile::tempdir().unwrap();

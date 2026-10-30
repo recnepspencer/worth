@@ -4,10 +4,10 @@
 //! intent. Component identities and Runtime World service ports are absent.
 
 pub use crate::basis::{
-    WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial,
-    WorthQueryProductBranchAdmissionRefusalKind, WorthQueryProductBranchCreateError,
-    WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchCreationRecoveryCause,
-    WorthQueryProductBranchCreationRecoveryFailure,
+    WorthQueryExpectedProductBasisDescription, WorthQueryProductBranch,
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
+    WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationRecovery,
+    WorthQueryProductBranchCreationRecoveryCause, WorthQueryProductBranchCreationRecoveryFailure,
     WorthQueryProductBranchCreationRecoveryInspection,
     WorthQueryProductBranchCreationRecoveryNextAction,
     WorthQueryProductBranchCreationRecoveryRelease,
@@ -36,6 +36,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalClockObservationOutcome,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionTerminal, WorthQueryConditionalSignalDecision,
+    WorthQueryExpectedProductBasisSelectionDenial, WorthQueryExpectedProductBranch,
+    WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
+    WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
     WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
     WorthQueryProductQueryControls, WorthQueryProductTransaction,

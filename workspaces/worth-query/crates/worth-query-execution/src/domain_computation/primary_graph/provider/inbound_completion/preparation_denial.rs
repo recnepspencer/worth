@@ -49,7 +49,7 @@ fn commit_denial(error: &Error, stage: Stage, ordinary: Denial) -> Denial {
             if let Some(allocation) = error.allocation_denial() {
                 return Denial::AllocationDenied {
                     stage,
-                    kind: allocation.kind(),
+                    kind: allocation.classify(),
                     requested_payload_bytes: allocation.requested_payload_bytes(),
                 };
             }

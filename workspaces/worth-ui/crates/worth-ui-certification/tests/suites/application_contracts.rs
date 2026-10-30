@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Semantic integration suite. Individual responsibilities remain in named child modules.
 
 #[path = "../admission_support_runtime.rs"]

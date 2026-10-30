@@ -1,0 +1,15 @@
+{"count": 14, "kind": "leaf"}
+{"binary": "worth-query-execution", "slots": 2, "test": "domain_computation::primary_graph::conditional_operation::lifecycle::commit_watch::tests::original_watch_backing_is_shared_and_successor_allocation_refuses_without_releasing_it"}
+{"binary": "worth-query-execution", "slots": 2, "test": "domain_computation::primary_graph::tests::application_attempt::checked_invariant_hooks::checked_application_rule_charges_its_exact_work_and_refuses_one_unit_short"}
+{"binary": "worth-query-execution", "slots": 2, "test": "domain_computation::primary_graph::workflow::definition::compilation::reuse::tests::production_counters_distinguish_cold_misses_from_warm_hits"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_operation::installed::operation_compilation::invariant_selection::tests::entity_create_requires_only_its_declared_entity_applicability"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_operation::installed::operation_compilation_tests::portable_source_seam::retained_portable_reads_are_the_aftermath_coverage_source"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_program::adoption::requirements_tests::a_program_this_host_does_not_support_names_itself_in_the_refusal"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_schema::native_contract::canonical_basis::tests::prepared_contract_entries_cannot_cross_the_schema_derived_budget"}
+{"binary": "worth-query-installation", "slots": 2, "test": "domain_computation::execution_resource_contract::strategy::tests::strategy_names_reject_nonportable_boundaries"}
+{"binary": "worth-query-installation", "slots": 2, "test": "domain_computation_canonical_identity_tests::every_search_semantic_dimension_changes_contract_identity"}
+{"binary": "worth-query-installation", "slots": 2, "test": "package::reconstruction::exact_semantic_readmission_tests::oversized_schema_text_is_denied_before_canonical_basis_allocation"}
+{"binary": "worth-query-installation", "slots": 2, "test": "package::reconstruction::work_budget_tests::oversized_operation_workflow_identity_is_denied_at_push_before_records_can_close"}
+{"binary": "worth-query-package-archive", "slots": 2, "test": "record::application_schema::tests::derived_relation::derived_recipe_collection_and_read_meaning_round_trip_without_stored_ids"}
+{"binary": "worth-query-package-archive", "slots": 2, "test": "record::operation_body::tests::creation_links::creation_link_directions_roundtrip_and_old_record_cannot_consume_them"}
+{"binary": "worth-query-package-archive", "slots": 2, "test": "record::operation_body::tests::path_capture::certified_path_v29_roundtrips_identity_and_reverse_path_with_exact_decode_measure"}

@@ -1,0 +1,21 @@
+error: cannot construct `ResourcePolicyCompatibilityReport` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_compatibility_report_fields_are_private.rs:15:19
+   |
+15 |     let _report = ResourcePolicyCompatibilityReport {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 |         descriptor_id: ResourceDescriptorId::new(1),
+   |         ------------------------------------------- private field
+17 |         node: ResourceNodeId::from_node(node),
+   |         ------------------------------------- private field
+18 |         compared_width: 9,
+   |         ----------------- private field
+19 |         incompatible_width: 1,
+   |         --------------------- private field
+20 |         families: vec![fake::<ResourcePolicyCompatibilityFamilyReport>()],
+   |         ----------------------------------------------------------------- private field
+21 |         compatibility_digest: fake(),
+   |         ---------------------------- private field
+22 |         performance: fake::<ResourceBoundaryPerformanceEnvelope>(),
+   |         ---------------------------------------------------------- private field
+   |
+   = note: ...and other private fields `historical_registry_digest` and `current_registry_digest` that were not provided

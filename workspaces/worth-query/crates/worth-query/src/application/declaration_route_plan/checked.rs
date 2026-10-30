@@ -134,18 +134,19 @@ pub(crate) fn worth_query_checked_declaration_route_plan<
                 ),
             );
         }
-        WorthQueryDeclarationRouteIntentRequirement::Forbidden => {
-            if route_intent.is_some_and(|intent| intent != WorthQueryDeclarationRouteIntent::Auto) {
-                return WorthQueryDeclarationRoutePlanChecked::Denied(
-                    WorthQueryDeclarationRoutePlanDenied::new(
-                        progressed,
-                        evidence,
-                        route_intent,
-                        route_contract,
-                        WorthQueryDeclarationRoutePlanDenialCause::IntentForbidden,
-                    ),
-                );
-            }
+        WorthQueryDeclarationRouteIntentRequirement::Forbidden
+            if route_intent
+                .is_some_and(|intent| intent != WorthQueryDeclarationRouteIntent::Auto) =>
+        {
+            return WorthQueryDeclarationRoutePlanChecked::Denied(
+                WorthQueryDeclarationRoutePlanDenied::new(
+                    progressed,
+                    evidence,
+                    route_intent,
+                    route_contract,
+                    WorthQueryDeclarationRoutePlanDenialCause::IntentForbidden,
+                ),
+            );
         }
         _ => {}
     }

@@ -42,7 +42,7 @@ fn read_execution_eligibility_admits_runtime_current_route() {
 }
 
 #[test]
-fn read_execution_basis_context_mismatch_stops_as_phase_two_violation() {
+fn read_execution_basis_context_mismatch_stops_as_violation() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

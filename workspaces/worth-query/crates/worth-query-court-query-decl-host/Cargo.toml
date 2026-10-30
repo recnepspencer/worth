@@ -1,0 +1,30 @@
+[package]
+name = "worth-query-court-query-decl-host"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-decl = { path = "../worth-query-decl" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-certification = { path = "../worth-query-testkit-certification" }
+worth-query-testkit-certification-canonical = { path = "../worth-query-testkit-certification-canonical" }
+worth-query-testkit-certification-correction = { path = "../worth-query-testkit-certification-correction" }
+worth-query-testkit-certification-granular-invalidation = { path = "../worth-query-testkit-certification-granular-invalidation" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+worth-query-testkit-host = { path = "../worth-query-testkit-host" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+
+[[test]]
+name = "worth_query_court_query_decl_host"
+path = "tests/worth_query_court_query_decl_host.rs"
+
+[lints]
+workspace = true

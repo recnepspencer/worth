@@ -1,0 +1,10 @@
+error[E0616]: field `rows` of struct `AsyncNodeMilestoneDScenarioMatrix` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_milestone_d_scenario_matrix_fields_are_private.rs:9:20
+  |
+9 |     let _ = matrix.rows;
+  |                    ^^^^ private field
+  |
+help: a method `rows` also exists, call it with parentheses
+  |
+9 |     let _ = matrix.rows();
+  |                        ++

@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/worth-query-testkit*",
+    "crates/worth-query-court-*",
     "crates/worth-query",
     "crates/worth-query-decl",
     "crates/worth-query-host",
@@ -14,6 +16,7 @@ members = [
     "crates/worth-query-publication",
 ]
 default-members = [
+    "crates/worth-query-court-*",
     "crates/worth-query",
     "crates/worth-query-decl",
     "crates/worth-query-host",

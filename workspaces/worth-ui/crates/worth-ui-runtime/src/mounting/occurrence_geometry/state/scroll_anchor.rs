@@ -45,13 +45,12 @@ impl UiMountedOccurrenceGeometryState {
         let positions = self.scroll_content_positions(surface, owner);
         if let Some(item) =
             previous.and_then(crate::runtime::scroll::UiScrollAnchor::mounted_identity)
+            && let Some(surviving) = positions.iter().find(|(instance, _, _)| *instance == item)
         {
-            if let Some(surviving) = positions.iter().find(|(instance, _, _)| *instance == item) {
-                return (
-                    anchor_at(*surviving, binding),
-                    crate::runtime::scroll::UiScrollAnchorPolicy::Rebase,
-                );
-            }
+            return (
+                anchor_at(*surviving, binding),
+                crate::runtime::scroll::UiScrollAnchorPolicy::Rebase,
+            );
         }
         // Nothing to measure against, so the offset is clamped rather than
         // moved. A fresh anchor is chosen from the new layout in the same

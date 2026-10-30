@@ -131,23 +131,34 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::from_selected(selected)
         };
 
-        let attempt = self
-            .next_output_producer_attempt
-            .fetch_update(
-                std::sync::atomic::Ordering::Relaxed,
-                std::sync::atomic::Ordering::Relaxed,
-                |current| current.checked_add(1),
+        let attempt = {
+            let update_counter = &self.next_output_producer_attempt;
+            let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = current.checked_add(1) else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| {
+            denial(
+                WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                if admitted.is_some() {
+                    String::new()
+                } else {
+                    format!("{producer_identity}: readiness attempt identity exhausted")
+                },
             )
-            .map_err(|_| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                    if admitted.is_some() {
-                        String::new()
-                    } else {
-                        format!("{producer_identity}: readiness attempt identity exhausted")
-                    },
-                )
-            })?;
+        })?;
         let bridge = self.bridge.conditional();
         let execution = super::super::evaluate_output_readiness(
             phase

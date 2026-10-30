@@ -145,12 +145,12 @@ impl<Client: UiNativeEventLoopClient> WorthUiNativeOffscreenSession<Client> {
             let close = UiNativeOffscreenEvent::Window(WindowEvent::CloseRequested);
             self.turn(Some(close), 0);
             let settle = self.run_until_idle(max_turns);
-            if !matches!(settle, UiNativeOffscreenSettle::Exited { .. }) {
-                if let Some(application) = self.application.as_mut() {
-                    application
-                        .failure
-                        .get_or_insert(UiNativeEventLoopRunDenial::CloseUnhonored);
-                }
+            if !matches!(settle, UiNativeOffscreenSettle::Exited { .. })
+                && let Some(application) = self.application.as_mut()
+            {
+                application
+                    .failure
+                    .get_or_insert(UiNativeEventLoopRunDenial::CloseUnhonored);
             }
         }
         self.finish()

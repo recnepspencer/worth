@@ -85,13 +85,27 @@ impl OperationAllocationGrant {
         bytes: u64,
     ) -> Result<OperationAllocationUse<'_>, super::PhysicalResidencyDenial> {
         let scope = self.scope_for(owner)?;
-        let result =
-            self.active_use_bytes
-                .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-                    current
-                        .checked_add(bytes)
-                        .filter(|next| *next <= self.bytes)
-                });
+        let result = {
+            let update_counter = &self.active_use_bytes;
+            let mut current = update_counter.load(Ordering::Acquire);
+            loop {
+                let next_value = current
+                    .checked_add(bytes)
+                    .filter(|next| *next <= self.bytes);
+                let Some(updated_value) = next_value else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        };
         match result {
             Ok(_) => Ok(OperationAllocationUse { grant: self, bytes }),
             Err(current) => Err(self

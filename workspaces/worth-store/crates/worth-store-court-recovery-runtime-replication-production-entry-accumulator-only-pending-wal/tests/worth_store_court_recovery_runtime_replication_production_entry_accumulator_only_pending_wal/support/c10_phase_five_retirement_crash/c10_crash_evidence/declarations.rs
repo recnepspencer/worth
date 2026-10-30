@@ -1,0 +1,108 @@
+pub(crate) use std::path::Path;
+
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_recovery_runtime::PhysicalRecoveryLimits;
+pub(crate) use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PreparedPhysicalMutation,
+};
+
+pub(crate) use worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration;
+
+pub(crate) fn prepare_rewrite(
+    world: &PhysicalResidencyStoreWorld,
+    material: [u8; 32],
+) -> PreparedPhysicalMutation {
+    let submission = world.serving().record_submission();
+    let key = submission
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
+        .unwrap();
+    match submission
+        .rewrite_selected_inline_segment(
+            world.placement(),
+            worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
+                key,
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000)
+                    .unwrap(),
+            ),
+        )
+        .into_raw()
+    {
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
+        _ => panic!("rewrite preparation must succeed"),
+    }
+}
+
+pub(crate) fn ordinary_limits() -> PhysicalRecoveryLimits {
+    ordinary_limits_observing(32 * 1024 * 1024)
+}
+
+/// The ordinary limits, admitted `observation_bytes` to observe with.
+pub(crate) fn ordinary_limits_observing(observation_bytes: u64) -> PhysicalRecoveryLimits {
+    let mut declaration = limit_declaration(2, 8, 2 * 1024 * 1024);
+    declaration.manifest_entries = 4_096;
+    declaration.wal_bytes = 2 * 1024 * 1024;
+    declaration.redo_targets = 4_096;
+    declaration.redo_bytes = 4 * 1024 * 1024;
+    declaration.distinct_pages_and_extents = 4_096;
+    declaration.operation_bindings = 4_096;
+    declaration.staging_bytes = 32 * 1024 * 1024;
+    declaration.recovery_memory_bytes = 32 * 1024 * 1024;
+    declaration.dirty_frames = 4_096;
+    declaration.publication_effects = 64;
+    declaration.observation_bytes = observation_bytes;
+    worth_store_recovery_runtime::PhysicalRecoveryLimits::admit(declaration).unwrap()
+}
+
+pub(crate) fn segment_snapshot(root: &Path) -> Vec<(String, u64)> {
+    directory_snapshot(root, "families/records/segments")
+}
+
+pub(crate) fn directory_snapshot(root: &Path, relative: &str) -> Vec<(String, u64)> {
+    let mut files = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(root.join(relative)) {
+        for entry in entries.flatten() {
+            let bytes = std::fs::read(entry.path()).unwrap_or_default();
+            let mut checksum = 0_u64;
+            for byte in bytes {
+                checksum = checksum
+                    .wrapping_mul(16_777_619)
+                    .wrapping_add(u64::from(byte));
+            }
+            files.push((entry.file_name().to_string_lossy().into_owned(), checksum));
+        }
+    }
+    files.sort();
+    files
+}
+
+pub(crate) fn wal_contains_rewrite(root: &Path) -> bool {
+    let domain = worth_store_physical_format::REWRITE_REDO_DOMAIN;
+    let mut stack = vec![root.join("families").join("wal")];
+    while let Some(directory) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(directory) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            if let Ok(bytes) = std::fs::read(&path)
+                && bytes.windows(domain.len()).any(|window| window == domain)
+            {
+                return true;
+            }
+        }
+    }
+    false
+}

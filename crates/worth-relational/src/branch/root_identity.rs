@@ -147,9 +147,23 @@ fn issue(
     counter: &AtomicU64,
     denial: RelationalBranchRootCaptureDenial,
 ) -> Result<u64, RelationalBranchRootCaptureDenial> {
-    counter
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-            current.checked_add(1)
-        })
-        .map_err(|_| denial)
+    {
+        let update_counter = counter;
+        let mut current = update_counter.load(Ordering::Relaxed);
+        loop {
+            let Some(updated_value) = current.checked_add(1) else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    }
+    .map_err(|_| denial)
 }

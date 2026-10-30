@@ -16,6 +16,10 @@ pub(super) struct SourceChanges {
 }
 
 impl SourceChanges {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "coordinated storage-owner unit-test harness: a real metadata writer overlaps the offline observer and restores the timestamp before joining; source item c9_integrity_localization::artifact_courtroom::disagreement::source_changes::SourceChanges::start; thread-spawn=1"
+    )]
     pub(super) fn start(path: &Path) -> Self {
         let mut options = OpenOptions::new();
         options.read(true);

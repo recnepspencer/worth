@@ -1,0 +1,32 @@
+warning: unreachable expression
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_revalidation_lineage_constructor_private.rs:8:24
+  |
+7 |         causality_identity: todo!(),
+  |                             ------- any code following this expression is unreachable
+8 |         prior_request: todo!(),
+  |                        ^^^^^^^ unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+  = note: this warning originates in the macro `todo` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0451]: fields `causality_identity`, `prior_request`, `newer_request`, `class`, `counters`, `receipt`, `canonical_basis` and `digest` of struct `BridgeAsyncRevalidationLineage` are private
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_revalidation_lineage_constructor_private.rs:7:9
+   |
+ 6 |     let _ = BridgeAsyncRevalidationLineage {
+   |             ------------------------------ in this type
+ 7 |         causality_identity: todo!(),
+   |         ^^^^^^^^^^^^^^^^^^ private field
+ 8 |         prior_request: todo!(),
+   |         ^^^^^^^^^^^^^ private field
+ 9 |         newer_request: todo!(),
+   |         ^^^^^^^^^^^^^ private field
+10 |         class: BridgeAsyncForwardCausalityClass::RevalidationAfterTruthBasisDrift,
+   |         ^^^^^ private field
+11 |         counters: todo!(),
+   |         ^^^^^^^^ private field
+12 |         receipt: todo!(),
+   |         ^^^^^^^ private field
+13 |         canonical_basis: todo!(),
+   |         ^^^^^^^^^^^^^^^ private field
+14 |         digest: todo!(),
+   |         ^^^^^^ private field

@@ -1,0 +1,14 @@
+#[path = "adversarial/mod.rs"]
+pub(crate) mod adversarial;
+#[path = "batch_parity/mod.rs"]
+pub(crate) mod batch_parity;
+#[path = "conditional_nested_reuse/mod.rs"]
+pub(crate) mod conditional_nested_reuse;
+#[path = "facade_smoke/mod.rs"]
+pub(crate) mod facade_smoke;
+#[path = "legacy_cutover/mod.rs"]
+pub(crate) mod legacy_cutover;
+#[path = "legacy_surface/mod.rs"]
+pub(crate) mod legacy_surface;
+#[path = "signal_world/mod.rs"]
+pub(crate) mod signal_world;

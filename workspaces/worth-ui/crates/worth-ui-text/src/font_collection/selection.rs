@@ -43,10 +43,8 @@ impl UiGlobalFontCollection {
                 push_once(&mut slots, &mut selected, slot);
             }
         }
-        if rgi_emoji {
-            if let Some(slot) = emoji {
-                push_once(&mut slots, &mut selected, slot);
-            }
+        if rgi_emoji && let Some(slot) = emoji {
+            push_once(&mut slots, &mut selected, slot);
         }
         if !rgi_emoji {
             for (slot, _) in self.faces.iter().enumerate().filter(|(_, face)| {

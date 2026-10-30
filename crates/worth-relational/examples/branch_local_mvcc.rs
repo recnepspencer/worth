@@ -135,6 +135,10 @@ fn fork_reports_branch(
 /// Each worker takes its own clone of the owner services. A worker that fails
 /// is not summarized away: its panic payload is resumed on this thread so the
 /// worker's own named diagnostic is what the reader sees.
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 thread-spawn=1: The example joins one independent caller per branch and propagates each worker failure"
+)]
 fn publish_concurrently(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,

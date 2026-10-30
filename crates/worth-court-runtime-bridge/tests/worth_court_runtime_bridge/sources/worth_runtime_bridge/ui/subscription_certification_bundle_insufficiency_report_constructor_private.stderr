@@ -1,0 +1,28 @@
+error[E0451]: fields `complete_bundle_digest`, `insufficient_bundle_digest`, `complete_completeness_report_digest`, `insufficient_completeness_report_digest`, `comparison_report_digest`, `primary_failure_boundary`, `primary_failure_precedence_stage`, `insufficiency_is_primary_without_semantic_drift`, `counters`, `canonical_basis` and `digest` of struct `BridgeSubscriptionCertificationBundleInsufficiencyReport` are private
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_bundle_insufficiency_report_constructor_private.rs:9:9
+   |
+ 8 |     let _report = BridgeSubscriptionCertificationBundleInsufficiencyReport {
+   |                   -------------------------------------------------------- in this type
+ 9 |         complete_bundle_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^ private field
+10 |         insufficient_bundle_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+11 |         complete_completeness_report_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+12 |         insufficient_completeness_report_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+13 |         comparison_report_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ private field
+14 |         primary_failure_boundary: BridgeSubscriptionCertificationFailureBoundary::BundleInsufficiency,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ private field
+15 |         primary_failure_precedence_stage:
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+16 |             BridgeSubscriptionCertificationFailurePrecedenceStage::RetainedArtifactCompleteness,
+17 |         insufficiency_is_primary_without_semantic_drift: true,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+18 |         counters: BridgeSubscriptionCertificationCounterSnapshot::default(),
+   |         ^^^^^^^^ private field
+19 |         canonical_basis: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^ private field
+20 |         digest: sealed_authority_placeholder(),
+   |         ^^^^^^ private field

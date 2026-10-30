@@ -212,7 +212,7 @@ fn node(
     }
     let mut entries = Vec::with_capacity(count);
     let mut covered = 0_u64;
-    for entry in content[8..].chunks_exact(64) {
+    for entry in content[8..].as_chunks::<64>().0.iter() {
         let edge = BlobEdge {
             digest: entry[..32].try_into().ok()?,
             record: entry[32..56].try_into().ok()?,

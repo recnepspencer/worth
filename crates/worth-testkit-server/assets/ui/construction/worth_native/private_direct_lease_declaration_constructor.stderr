@@ -1,0 +1,12 @@
+error[E0624]: associated function `from_admitted_declaration` is private
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/worth_native/private_direct_lease_declaration_constructor.rs
+  |
+  |       let _constructor = worth_server::WorthServerDirectLeaseDeclaration::from_admitted_declaration;
+  |                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-server/src/worth_native/direct/lease_declaration.rs
+  |
+  | /     pub(crate) fn from_admitted_declaration(
+  | |         declaration: &WorthServerAdmittedDirectDeclaration,
+  | |     ) -> Result<Self, WorthQueryRuntimeError> {
+  | |_____________________________________________- private associated function defined here

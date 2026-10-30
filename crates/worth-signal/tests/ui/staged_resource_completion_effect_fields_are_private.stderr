@@ -1,7 +1,0 @@
-error[E0451]: field `admitted_completion` of struct `StagedResourceCompletionEffect` is private
- --> tests/ui/staged_resource_completion_effect_fields_are_private.rs:9:9
-  |
-8 |     let _ = StagedResourceCompletionEffect {
-  |             ------------------------------ in this type
-9 |         admitted_completion: forged_admitted_completion(),
-  |         ^^^^^^^^^^^^^^^^^^^ private field

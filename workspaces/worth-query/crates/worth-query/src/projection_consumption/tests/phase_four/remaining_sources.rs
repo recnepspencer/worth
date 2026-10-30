@@ -212,7 +212,7 @@ fn aspect_key(label: &str) -> AspectKey {
 }
 
 #[test]
-fn bridge_phase_four_entry_points_are_publicly_reachable() {
+fn bridge_entry_points_are_publicly_reachable() {
     let _row_set_extract: fn(
         &MaterializedProjectionContract,
         &worth_runtime_bridge::facade::BridgeMaterializedRowSetArtifact,

@@ -11,7 +11,7 @@ use super::support::{
 };
 
 #[test]
-fn denied_route_receipts_preserve_typed_phase_nine_cause() {
+fn denied_route_receipts_preserve_typed_cause() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

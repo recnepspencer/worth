@@ -1,0 +1,5 @@
+error[E0599]: no method named `proofs` found for struct `FoundationalBranchCandidateArtifact<T>` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/committed_authority/branch_candidate_has_no_committed_authority_api.rs
+  |
+  |     let _ = candidate.proofs();
+  |                       ^^^^^^ method not found in `FoundationalBranchCandidateArtifact<&str>`

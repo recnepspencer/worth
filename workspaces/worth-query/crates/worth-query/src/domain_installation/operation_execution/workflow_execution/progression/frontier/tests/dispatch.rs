@@ -207,17 +207,50 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
+    // The original SDK's complete frontier invoice is 4003 units, including
+    // computation, native application and workflow orchestration. This positive
+    // ordering oracle funds that finite request; the default ceiling stays 1024.
+    let work = 4_003;
+    for workers in [0, 1, 2, 4] {
+        let (refusal, charged, failed) =
+            observe(request_execution, 29, None, Policy::width(workers), &probe);
+        let Some(domain::WorthQueryWorkflowAdvanceDenialKind::StageExecutionRequest {
+            stage_identity,
+            cause: Ok(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                denial: worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                policy_ancestor,
+                ..
+            }),
+        }) = &refusal.outcome else {
+            panic!("the unchanged default ceiling keeps its typed stop: {refusal:?}");
+        };
+        assert_eq!(stage_identity, "middle");
+        assert_eq!(policy_ancestor, &None);
+        assert_eq!(charged, COSTS.iter().sum::<u64>());
+        assert!(!failed);
+        assert_eq!(
+            refusal
+                .receipts
+                .iter()
+                .map(|receipt| receipt.0.as_str())
+                .collect::<Vec<_>>(),
+            ["start", "left"]
+        );
+        assert_eq!(refusal.effects.len(), 1);
+    }
+    let funded = |workers| Policy {
+        work,
+        ..Policy::width(workers)
+    };
     probe.take_computes();
-    let expected = observe(request_execution, 29, None, Policy::width(0), &probe);
+    let expected = observe(request_execution, 29, None, funded(0), &probe);
     // Reset observations between runs: any purity mutant must prove order
     // dependence, not simply a counter carried over from a previous run.
     probe.take_computes();
-    assert_eq!(
-        observe(request_execution, 29, None, Policy::width(0), &probe),
-        expected,
-        "two reset serial runs agree"
-    );
     assert_eq!(expected.0.outcome, None);
+    let repeated = observe(request_execution, 29, None, funded(0), &probe);
+    assert_eq!(repeated.0.outcome, None);
+    assert_eq!(repeated, expected, "two reset serial runs agree");
     assert_eq!(
         expected
             .0
@@ -230,7 +263,8 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
 
     probe.take_computes();
     probe.reorder();
-    let actual = observe(request_execution, 29, None, Policy::width(4), &probe);
+    let actual = observe(request_execution, 29, None, funded(4), &probe);
+    assert_eq!(actual.0.outcome, None);
     probe.assert_schedule_completed();
     assert_eq!(actual, expected);
     let completions = probe.take_computes();

@@ -74,7 +74,9 @@ fn decode_windows_path(bytes: &[u8]) -> Result<PathBuf, RecoveryPathCodecDenial>
         .map_err(|_| RecoveryPathCodecDenial::AllocationFailed)?;
     units.extend(
         bytes
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u16::from_le_bytes([pair[0], pair[1]])),
     );
     Ok(PathBuf::from(OsString::from_wide(&units)))

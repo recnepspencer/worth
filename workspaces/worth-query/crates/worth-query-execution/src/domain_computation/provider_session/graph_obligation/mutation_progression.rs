@@ -101,6 +101,10 @@ impl WorthQueryMutationRunBinding {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "certification-harness thread-spawn=1: A receiver-owned compiled cleanup scheduling guard joins one foreign native cleanup actor and returns the real lower terminal failure to its Signal owner; unarmed cleanup stays on its original thread and no query computation is parallelized."
+    )]
     pub(in crate::domain_computation) fn finish(
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,

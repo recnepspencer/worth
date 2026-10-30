@@ -48,6 +48,10 @@ fn disjoint_candidate_sessions_and_reads_progress_independently() {
     assert!(!pool.close().requires_inspection());
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: unrelated faults do not hold the metadata lock during io; source: worth-store-buffer-pool::physical_residency::tests::candidate_concurrency::unrelated_faults_do_not_hold_the_metadata_lock_during_io; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn unrelated_faults_do_not_hold_the_metadata_lock_during_io() {
     let identity = store(6);

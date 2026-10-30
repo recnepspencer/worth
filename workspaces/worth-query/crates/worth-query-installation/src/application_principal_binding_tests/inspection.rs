@@ -1,9 +1,7 @@
 use super::*;
 use worth_query_declaration::facade::{
     application_query::*,
-    application_schema::{
-        ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
-    },
+    application_schema::{ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder},
 };
 
 fn declaration(inspect: bool) -> ApplicationSchemaDeclaration<IdentitySchema> {

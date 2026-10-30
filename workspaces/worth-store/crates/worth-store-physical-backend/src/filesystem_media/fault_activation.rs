@@ -66,13 +66,26 @@ impl CertificationMediaFaultActivation {
         if self.state.disposition.load(Ordering::Acquire) != ARMED {
             return false;
         }
-        let prior = self
-            .state
-            .matching_operations
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |observed| {
-                Some(observed.saturating_add(1))
-            })
-            .expect("the matching-operation counter always accepts saturation");
+        let prior = {
+            let update_counter = &self.state.matching_operations;
+            let mut observed = update_counter.load(Ordering::Acquire);
+            loop {
+                let next_value = Some(observed.saturating_add(1));
+                let Some(updated_value) = next_value else {
+                    break Err(observed);
+                };
+                match update_counter.compare_exchange_weak(
+                    observed,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => observed = reloaded_value,
+                }
+            }
+        }
+        .expect("the matching-operation counter always accepts saturation");
         if prior.saturating_add(1) != selected_match.get() {
             return false;
         }

@@ -69,13 +69,13 @@ fn audit_public_use(
                 path.display()
             ));
         }
-        if let Some(name) = leaf.last() {
-            if let Some(reason) = forbidden_authority_family(name) {
-                violations.push(format!(
-                    "{} exposes `{name}` through a public facade; {reason}",
-                    path.display()
-                ));
-            }
+        if let Some(name) = leaf.last()
+            && let Some(reason) = forbidden_authority_family(name)
+        {
+            violations.push(format!(
+                "{} exposes `{name}` through a public facade; {reason}",
+                path.display()
+            ));
         }
 
         let runtime_facade_root =

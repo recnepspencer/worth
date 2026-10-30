@@ -29,6 +29,10 @@ pub(crate) struct PlatformPulseSourceWatch {
 }
 
 impl PlatformPulseSourceWatch {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "event-loop-watcher thread-builder=1: UI readiness, source, theme or event-loop observation runs independently of computation."
+    )]
     pub(crate) fn spawn(watcher: WorthUiFilesystemSourceWatcher) -> Self {
         let (stop, stop_requests) = mpsc::channel();
         let (event_publications, events) = mpsc::channel();

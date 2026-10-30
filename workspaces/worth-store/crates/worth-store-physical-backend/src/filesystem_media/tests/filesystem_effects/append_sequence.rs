@@ -1,6 +1,10 @@
 use super::super::super::*;
 use super::fixture::{created, owner, staged_path};
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: append contention assigns disjoint exact ranges inside one owner; source: worth-store-physical-backend::filesystem_media::tests::filesystem_effects::append_sequence::append_contention_assigns_disjoint_exact_ranges_inside_one_owner; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=1, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn append_contention_assigns_disjoint_exact_ranges_inside_one_owner() {
     let (_root, owner) = owner();
@@ -44,6 +48,10 @@ fn append_contention_assigns_disjoint_exact_ranges_inside_one_owner() {
     ));
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: append and positioned extension are one serializable file sequence; source: worth-store-physical-backend::filesystem_media::tests::filesystem_effects::append_sequence::append_and_positioned_extension_are_one_serializable_file_sequence; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=2, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn append_and_positioned_extension_are_one_serializable_file_sequence() {
     let (_root, owner) = owner();

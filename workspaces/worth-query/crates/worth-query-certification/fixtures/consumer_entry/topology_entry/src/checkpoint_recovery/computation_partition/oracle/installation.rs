@@ -274,15 +274,25 @@ pub(super) fn install_variant_with_observations<
         524_288 + 4_096 * additional_observations,
         execution_policy,
     );
-    support::install_program_with_limits::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
-        checkpoint,
-        profile,
-        limits,
-        |graph| {
-            support::seed_cycle(graph);
-            seed(graph);
-        },
-    )
+    let seed = |graph: &mut Graph| {
+        support::seed_cycle(graph);
+        seed(graph);
+    };
+    match checkpoint {
+        Some(checkpoint) => support::install_program_with_limits::<
+            OracleProgram<REUSE, WORK, RUNS, MODE>,
+        >(Some(checkpoint), profile, limits, seed),
+        None => worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+            support::observation::POPULATION_BOOTSTRAP_POLICY,
+            |phase| {
+                support::install_program_in_bootstrap::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
+                    &phase, profile, limits, seed,
+                )
+            },
+        )
+        .expect("the original fixture setup request opens")
+        .expect("the seed installs under its own request, keeping World policy"),
+    }
 }
 
 pub(super) fn install_configured<const REUSE: bool, const WORK: usize, const RUNS: usize>(

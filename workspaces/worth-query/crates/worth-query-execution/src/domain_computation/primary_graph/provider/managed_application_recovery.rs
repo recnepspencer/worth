@@ -136,7 +136,7 @@ where
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<(WorthQueryManagedApplicationRecoveryOutcome, Option<crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource>), WorthQueryManagedApplicationRecoveryDenial>
     where Input: Clone + Send + Sync + 'static,
-    {
+{
         self.recover_admitted_unpublished_application_delivery(
             phase,
             recovery,
@@ -180,7 +180,7 @@ where
         delivery: RecoveredPublicationDelivery,
     ) -> Result<(WorthQueryManagedApplicationRecoveryOutcome, Option<crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource>), WorthQueryManagedApplicationRecoveryDenial>
     where Input: Clone + Send + Sync + 'static,
-    {
+{
         use WorthQueryManagedApplicationRecoveryDenial as Denial;
         let request = phase
             .execution_request_for(&self.product_runtime)

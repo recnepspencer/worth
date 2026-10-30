@@ -6,13 +6,13 @@ impl UiNativeAppearanceRetained {
         key: UiNativeAppearanceCommandKey,
         command: &UiNativeAppearanceCommand,
     ) {
-        if let UiNativeAppearanceCommand::Backdrop(backdrop) = command {
-            if let Some(target) = backdrop.motion_target() {
-                self.backdrop_keys_by_portal
-                    .entry((target.owner(), target.portal_identity()))
-                    .or_default()
-                    .insert(key);
-            }
+        if let UiNativeAppearanceCommand::Backdrop(backdrop) = command
+            && let Some(target) = backdrop.motion_target()
+        {
+            self.backdrop_keys_by_portal
+                .entry((target.owner(), target.portal_identity()))
+                .or_default()
+                .insert(key);
         }
     }
 

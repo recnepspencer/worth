@@ -46,10 +46,7 @@ fn restore_branch_snapshot_rejects_cross_branch_payloads_and_keeps_catalog_consi
 
     let err = runtime.restore_branch_snapshot(feature.clone(), &main_snapshot);
     assert!(
-        matches!(
-            err,
-            Err(SignalError::IncompatibleSnapshot { reason: _, .. })
-        ),
+        matches!(err, Err(SignalError::IncompatibleSnapshot { .. })),
         "cross-branch restore should be rejected"
     );
 

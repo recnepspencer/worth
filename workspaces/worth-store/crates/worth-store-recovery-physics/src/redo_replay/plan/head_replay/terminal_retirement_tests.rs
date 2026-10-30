@@ -76,7 +76,7 @@ fn replay(
             assert_eq!(reference, selected.retirement.source_root());
             assert_eq!(bytes, u64::from(format.page_size().bytes()));
             reads += 1;
-            selected_frame.map(<[u8]>::to_vec)
+            selected_frame.map(|chunk| chunk.to_vec())
         },
     );
     (admitted, reads)

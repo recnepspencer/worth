@@ -61,10 +61,10 @@ pub(super) fn capture(
     let mut motion_rows = motion
         .map(|owner| owner.overlay_rows_for_surface(surface.runtime_surface))
         .unwrap_or_default();
-    if let Some(row) = surface.staged_motion {
-        if row.target().semantic_surface() == surface.runtime_surface {
-            motion_rows.insert(row.target(), row);
-        }
+    if let Some(row) = surface.staged_motion
+        && row.target().semantic_surface() == surface.runtime_surface
+    {
+        motion_rows.insert(row.target(), row);
     }
     let portals = surface.portal_stack.clone().unwrap_or_else(|| {
         portal_owner
@@ -76,10 +76,9 @@ pub(super) fn capture(
             if motion_targets.contains_key(target)
                 && portals.row(*portal).is_some()
                 && motion_rows.get(target).is_none()
+                && let Some(row) = previous.motion.get(target).copied()
             {
-                if let Some(row) = previous.motion.get(target).copied() {
-                    motion_rows.insert(*target, row);
-                }
+                motion_rows.insert(*target, row);
             }
         }
     }

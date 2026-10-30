@@ -1,0 +1,221 @@
+//! The programs authored over the document-retention schema.
+//!
+//! P0 and P1 declare the same feature and the same action. They differ in one
+//! thing only: which document-retention rule contract they declare. That single
+//! difference is what the court holds the platform to.
+
+pub use worth_query_host::facade::declaration::application_program::{
+    ApplicationChangePosture, ApplicationChangeShape, ApplicationCommitBoundary,
+    ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
+    ApplicationLocalRuleRef, ApplicationLocalityGranule, ApplicationLocalityScope,
+    ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
+    ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf,
+    ApplicationRuleList, ValidatedApplicationProgram,
+};
+
+pub use super::assessment_output::PublishRetentionAssessment;
+pub use super::retention_entry::{
+    ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding,
+    ReviewedSetRetentionBinding, SetRetentionBinding,
+};
+pub use super::schema::{
+    DocumentRetentionContribution, DocumentRetentionSchema, DocumentRetentionV1,
+    DocumentRetentionV2, DocumentRetentionV3,
+};
+pub use super::workflow::{
+    ReviewRequirementBinding, UnlinkReviewRequirementBinding, WorkflowAdvanceBinding,
+    WorkflowApprovalBinding, WorkflowDefinitionAuthoringBinding, WorkflowGrantStatusBinding,
+    WorkflowInstanceStartBinding,
+};
+
+#[path = "programs/removed_assessment_supplier.rs"]
+pub mod removed_assessment_supplier;
+pub use removed_assessment_supplier::{
+    validated_removed_assessment_supplier_program, RemovedAssessmentSupplierProgram,
+};
+
+/// The one feature both programs govern.
+pub struct DocumentRetentionFeature;
+pub struct DocumentRetentionFeatureV2;
+
+impl ApplicationFeature<DocumentRetentionSchema> for DocumentRetentionFeature {
+    type Inputs = ApplicationFeatureInputLeaf;
+
+    const IDENTITY: &'static str = "worth.query.certification.document-retention.feature.v1";
+}
+
+impl ApplicationFeature<DocumentRetentionSchema> for DocumentRetentionFeatureV2 {
+    type Inputs = ApplicationFeatureInputLeaf;
+
+    const IDENTITY: &'static str = "worth.query.certification.document-retention.feature.v1";
+    const MAJOR: u16 = 2;
+}
+
+pub type CommitBoundaryRule<Invariant> = ApplicationRuleList<
+    ApplicationRuleAt<
+        ApplicationLocalRuleRef<DocumentRetentionSchema, DocumentRetentionFeature, Invariant>,
+        ApplicationCommitBoundary,
+    >,
+    ApplicationRuleLeaf,
+>;
+
+/// The program that reads `document-retention-v1` as the law.
+pub struct RetentionProgramP0;
+
+/// The program that reads `document-retention-v2` as the law.
+pub struct RetentionProgramP1;
+/// A rostered target whose feature meaning cannot be carried without migration.
+pub struct ChangedFeatureRetentionProgram;
+/// A rostered target that deliberately removes the only ordinary operation.
+pub struct RemovedOperationRetentionProgram;
+/// A rostered target that keeps the operation identity but changes its
+/// locality/change contract, forcing fresh current admission.
+pub struct ChangedOperationRetentionProgram;
+
+pub struct ChangedOperationLocality;
+pub struct ChangedOperationShape;
+
+impl ApplicationLocalityScope for ChangedOperationLocality {
+    const IDENTITY: &'static str =
+        "worth.query.certification.document-retention.changed-operation-locality.v1";
+    const GRANULE: ApplicationLocalityGranule = ApplicationLocalityGranule::Root;
+}
+
+impl ApplicationChangeShape for ChangedOperationShape {
+    const IDENTITY: &'static str =
+        "worth.query.certification.document-retention.changed-operation-shape.v1";
+    const POSTURE: ApplicationChangePosture = ApplicationChangePosture::Replace;
+}
+
+/// A program this court never rosters on any host.
+pub struct UnrosteredRetentionProgram;
+
+/// A program declaring a rule contract no host installs.
+pub struct ForeignRuleRetentionProgram;
+
+impl ApplicationProgramDefinition<DocumentRetentionSchema> for RetentionProgramP0 {
+    type Contributions = (DocumentRetentionContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = CommitBoundaryRule<DocumentRetentionV1>;
+
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.query.certification.document-retention.p0.v1");
+
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+    }
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        retention_feature_specs()
+    }
+}
+
+impl ApplicationProgramDefinition<DocumentRetentionSchema> for RetentionProgramP1 {
+    type Contributions = (DocumentRetentionContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = CommitBoundaryRule<DocumentRetentionV2>;
+
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.query.certification.document-retention.p1.v1");
+
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+    }
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        retention_feature_specs()
+    }
+}
+
+impl ApplicationProgramDefinition<DocumentRetentionSchema> for UnrosteredRetentionProgram {
+    type Contributions = (DocumentRetentionContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = CommitBoundaryRule<DocumentRetentionV1>;
+
+    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
+        "worth.query.certification.document-retention.unrostered.v1",
+    );
+
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+    }
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        retention_feature_specs()
+    }
+}
+
+impl ApplicationProgramDefinition<DocumentRetentionSchema> for ForeignRuleRetentionProgram {
+    type Contributions = (DocumentRetentionContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = CommitBoundaryRule<DocumentRetentionV3>;
+
+    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
+        "worth.query.certification.document-retention.foreign-rule.v1",
+    );
+
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+    }
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        retention_feature_specs()
+    }
+}
+
+pub fn validated_first_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP0> {
+    validate::<RetentionProgramP0>()
+}
+
+pub fn validated_second_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP1> {
+    validate::<RetentionProgramP1>()
+}
+
+pub fn validated_changed_feature_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedFeatureRetentionProgram> {
+    validate::<ChangedFeatureRetentionProgram>()
+}
+
+pub fn validated_removed_operation_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, RemovedOperationRetentionProgram> {
+    validate::<RemovedOperationRetentionProgram>()
+}
+
+pub fn validated_changed_operation_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedOperationRetentionProgram> {
+    validate::<ChangedOperationRetentionProgram>()
+}
+
+pub fn validated_foreign_rule_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, ForeignRuleRetentionProgram> {
+    validate::<ForeignRuleRetentionProgram>()
+}
+
+pub fn validate<Program>() -> ValidatedApplicationProgram<DocumentRetentionSchema, Program>
+where
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+    Program::Outputs:
+        worth_query_host::facade::declaration::application_program::ApplicationProgramOutputsShape<
+            DocumentRetentionSchema,
+        >,
+{
+    ApplicationProgramAuthoring::<DocumentRetentionSchema, Program>::begin()
+        .validated_program()
+        .expect("the authored document-retention program must validate")
+}
+
+#[path = "programs/completion.rs"]
+pub mod completion;
+#[path = "programs/workflow_owner.rs"]
+pub mod workflow_owner;
+pub use completion::RetentionCompletion;
+#[path = "programs/features.rs"]
+pub mod features;
+#[path = "programs/successors.rs"]
+pub mod successors;
+pub use features::retention_feature_specs;
+pub use workflow_owner::{
+    GrantStatusAction, OccurrenceAction, ReviewedAction, SavedSourceAction, WorkflowOwnerProgram,
+};

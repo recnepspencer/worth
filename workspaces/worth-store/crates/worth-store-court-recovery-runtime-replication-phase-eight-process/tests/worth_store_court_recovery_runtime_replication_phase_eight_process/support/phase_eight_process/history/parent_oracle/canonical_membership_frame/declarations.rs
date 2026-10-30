@@ -1,0 +1,82 @@
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64,
+};
+
+pub(crate) const FRAME_BYTES: usize = 48;
+pub(crate) const ROOT_ROUTING_KIND: u8 = 8;
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Frame<'a> {
+    pub(crate) kind: u8,
+    pub(crate) schema: u8,
+    pub(crate) format: [u8; 10],
+    pub(crate) identity: u64,
+    pub(crate) payload: &'a [u8],
+}
+
+pub(crate) fn find_file<'a>(files: &'a [(String, Vec<u8>)], suffix: &str) -> Option<&'a [u8]> {
+    files
+        .iter()
+        .find(|(path, _)| path == suffix || path.ends_with(&format!("/{suffix}")))
+        .map(|(_, bytes)| bytes.as_slice())
+}
+
+pub(crate) fn frame_at(bytes: &[u8], offset: usize) -> Option<Frame<'_>> {
+    let total = frame_total(bytes, offset).ok()?;
+    decode_frame(bytes.get(offset..offset + total)?)
+}
+
+pub(crate) fn frame_total(bytes: &[u8], offset: usize) -> Result<usize, String> {
+    let header = bytes
+        .get(offset..offset + FRAME_BYTES)
+        .ok_or("parent oracle frame header is truncated")?;
+    if header[..8] != *b"WRC5FRM\0" {
+        return Err("parent oracle frame magic is invalid".to_owned());
+    }
+    let payload =
+        usize::try_from(read_u32(header, 24).ok_or("parent oracle frame length missing")?)
+            .map_err(|_| "parent oracle frame length is too large")?;
+    FRAME_BYTES
+        .checked_add(payload)
+        .ok_or_else(|| "parent oracle frame length overflow".to_owned())
+}
+
+pub(crate) fn decode_frame(bytes: &[u8]) -> Option<Frame<'_>> {
+    if bytes.len() < FRAME_BYTES
+        || bytes[..8] != *b"WRC5FRM\0"
+        || !matches!(bytes[8], 1..=11)
+        || !matches!((bytes[8], bytes[9]), (_, 2) | (ROOT_ROUTING_KIND, 3))
+        || read_u16(bytes, 10)? != 2
+        || !matches!(read_u32(bytes, 12)?, 16_384 | 32_768 | 65_536)
+        || bytes[16..20] != [1, 1, 1, 24]
+        || read_u16(bytes, 20)? as usize != FRAME_BYTES
+        || bytes[22..24] != [0; 2]
+        || bytes.len() != FRAME_BYTES + read_u32(bytes, 24)? as usize
+    {
+        return None;
+    }
+    let mut covered = Vec::with_capacity(bytes.len() - 4);
+    covered.extend_from_slice(&bytes[..44]);
+    covered.extend_from_slice(&bytes[FRAME_BYTES..]);
+    (crc32c(&covered) == read_u32(bytes, 44)?).then_some(Frame {
+        kind: bytes[8],
+        schema: bytes[9],
+        format: bytes[10..20].try_into().ok()?,
+        identity: read_u64(bytes, 28)?,
+        payload: &bytes[FRAME_BYTES..],
+    })
+}
+
+pub(crate) fn crc32c(bytes: &[u8]) -> u32 {
+    let mut value = !0_u32;
+    for byte in bytes {
+        value ^= u32::from(*byte);
+        for _ in 0..8 {
+            let mask = 0_u32.wrapping_sub(value & 1);
+            value = (value >> 1) ^ (0x82f6_3b78 & mask);
+        }
+    }
+    !value
+}

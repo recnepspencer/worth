@@ -49,11 +49,25 @@ impl PhysicalSignalReconciliation {
             return true;
         }
         if pending.len() == self.capacity {
-            let _ = self
-                .overflow
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-                    Some(value.saturating_add(1))
-                });
+            let _ = {
+                let update_counter = &self.overflow;
+                let mut value = update_counter.load(Ordering::Relaxed);
+                loop {
+                    let next_value = Some(value.saturating_add(1));
+                    let Some(updated_value) = next_value else {
+                        break Err(value);
+                    };
+                    match update_counter.compare_exchange_weak(
+                        value,
+                        updated_value,
+                        Ordering::Relaxed,
+                        Ordering::Relaxed,
+                    ) {
+                        Ok(previous) => break Ok(previous),
+                        Err(reloaded_value) => value = reloaded_value,
+                    }
+                }
+            };
             return false;
         }
         pending.push_back(PendingPhysicalCompletion {

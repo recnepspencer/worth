@@ -24,11 +24,25 @@ pub(in crate::domain_computation::primary_graph) enum PublicationHeadSelection {
 pub(super) struct UndeliveredPublication(Arc<AtomicUsize>);
 impl UndeliveredPublication {
     pub(super) fn new(counter: Arc<AtomicUsize>) -> Self {
-        counter
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
-                count.checked_add(1)
-            })
-            .expect("one undelivered hold per admitted row");
+        {
+            let update_counter = &counter;
+            let mut count = update_counter.load(Ordering::Acquire);
+            loop {
+                let Some(updated_value) = count.checked_add(1) else {
+                    break Err(count);
+                };
+                match update_counter.compare_exchange_weak(
+                    count,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => count = reloaded_value,
+                }
+            }
+        }
+        .expect("one undelivered hold per admitted row");
         Self(counter)
     }
 }

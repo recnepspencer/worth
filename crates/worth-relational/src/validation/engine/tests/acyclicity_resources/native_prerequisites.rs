@@ -204,6 +204,7 @@ fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commit
             .collect::<Vec<_>>();
         assert_eq!(reverse.len(), 1);
         crate::tests::support::release_test_commit_snapshot(&fixture.runtime, &seeded);
+        let retained_seed_memory = charged_memory();
         let before = fixture.head();
         let baseline = hooks.observed();
         assert_eq!(
@@ -241,7 +242,7 @@ fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commit
             "native denial must protect custom preparation, {posture:?}"
         );
         assert_eq!(fixture.head(), before);
-        assert_eq!(charged_memory(), 0);
+        assert_eq!(charged_memory(), retained_seed_memory);
 
         let twin = fixture
             .edge_batch(source, target, "closing")
@@ -288,6 +289,8 @@ fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commit
             1
         );
         crate::tests::support::release_test_commit_snapshot(&fixture.runtime, &committed);
+        drop(boundary);
+        drop((fixture, seeded, committed));
         assert_eq!(charged_memory(), 0);
     }
 }

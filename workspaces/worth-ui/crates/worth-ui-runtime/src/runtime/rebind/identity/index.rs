@@ -147,16 +147,16 @@ fn insert_transition(
     identity: Box<str>,
     transition: WorthUiNodeLifecycleTransition,
 ) -> Result<(), UiIdentityLifecycleDenial> {
-    if let Some(first) = transitions.insert(identity.clone(), transition) {
-        if first != transition {
-            return Err(
-                UiIdentityLifecycleDenial::ConflictingDeclarationTransition {
-                    authored_identity: identity,
-                    first,
-                    second: transition,
-                },
-            );
-        }
+    if let Some(first) = transitions.insert(identity.clone(), transition)
+        && first != transition
+    {
+        return Err(
+            UiIdentityLifecycleDenial::ConflictingDeclarationTransition {
+                authored_identity: identity,
+                first,
+                second: transition,
+            },
+        );
     }
     Ok(())
 }

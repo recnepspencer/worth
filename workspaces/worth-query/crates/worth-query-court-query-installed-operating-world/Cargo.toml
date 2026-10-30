@@ -1,0 +1,27 @@
+[package]
+name = "worth-query-court-query-installed-operating-world"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-query = { path = "../worth-query" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-testkit-installed-operation-fixture = { path = "../worth-query-testkit-installed-operation-fixture" }
+worth-query-testkit-query = { path = "../worth-query-testkit-query" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+
+[[test]]
+name = "worth_query_court_query_installed_operating_world"
+path = "tests/worth_query_court_query_installed_operating_world.rs"
+
+[lints]
+workspace = true

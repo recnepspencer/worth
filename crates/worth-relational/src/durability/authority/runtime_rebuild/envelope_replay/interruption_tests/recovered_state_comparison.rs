@@ -25,6 +25,7 @@ pub(super) fn comparable_recovered_state(target: &RelationalRuntime) -> String {
     let mut allocations = std::collections::BTreeMap::new();
     let mut proofs = std::collections::BTreeMap::new();
     let mut owners = std::collections::BTreeMap::new();
+    let mut index_catalogs = std::collections::BTreeMap::new();
     let mut previous = "";
     let mut normalized = Vec::new();
     let state = canonicalize_unordered_fields(&canonicalize_retired_roots(
@@ -63,6 +64,15 @@ pub(super) fn comparable_recovered_state(target: &RelationalRuntime) -> String {
             let next = owners.len();
             let owner = *owners.entry(id).or_insert(next);
             normalized.push(format!("{indent}owner_identity: <owner {owner}>,"));
+        } else if previous.trim() == "coverage: IndexCatalogCoverage {" {
+            let id = field
+                .strip_prefix("incarnation: ")
+                .and_then(|id| id.strip_suffix(','))
+                .and_then(|id| id.parse::<u64>().ok())
+                .expect("index coverage carries its process-local catalog incarnation first");
+            let next = index_catalogs.len();
+            let catalog = *index_catalogs.entry(id).or_insert(next);
+            normalized.push(format!("{indent}incarnation: <index catalog {catalog}>,"));
         } else if previous.trim() == "Allocation {" {
             let id = field
                 .strip_prefix("id: ")

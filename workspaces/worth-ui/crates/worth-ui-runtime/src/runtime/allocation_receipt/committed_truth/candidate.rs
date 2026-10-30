@@ -84,14 +84,11 @@ impl UiAllocationCandidate {
     }
 
     pub fn planning_identity_digest(&self) -> u64 {
-        let digest =
-            self.resize_basis
-                .as_ref()
-                .map_or(self.planning.planning_identity_digest(), |basis| {
-                    self.planning.planning_identity_digest()
-                        ^ basis.identity_digest().rotate_left(17)
-                });
-        digest
+        self.resize_basis
+            .as_ref()
+            .map_or(self.planning.planning_identity_digest(), |basis| {
+                self.planning.planning_identity_digest() ^ basis.identity_digest().rotate_left(17)
+            })
     }
 
     pub fn denial_posture(&self) -> Option<&crate::runtime::WorthUiAllocationPlanningDenial> {

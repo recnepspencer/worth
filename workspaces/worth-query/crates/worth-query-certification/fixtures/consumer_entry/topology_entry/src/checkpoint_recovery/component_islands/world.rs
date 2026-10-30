@@ -48,10 +48,24 @@ impl World {
             support::invalidation(),
             policy,
         );
-        let application = support::install_configured_seed(configuration, limits, |graph| {
-            authority = Some(graph.retain_invariant_projection_authority());
-            seed::rings(graph, rings, coupling);
-        });
+        let application =
+            worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+                support::observation::POPULATION_BOOTSTRAP_POLICY,
+                |phase| {
+                    support::install_configured_in_bootstrap::<CheckpointProgram>(
+                        &phase,
+                        Default::default(),
+                        limits,
+                        |graph| {
+                            authority = Some(graph.retain_invariant_projection_authority());
+                            seed::rings(graph, rings, coupling);
+                        },
+                        configuration,
+                    )
+                },
+            )
+            .expect("the original population setup request opens")
+            .expect("population setup leaves the World's request policy unchanged");
         events.lock().unwrap().clear();
         Self {
             application,

@@ -1,0 +1,16 @@
+#[path = "attachments/mod.rs"]
+pub(crate) mod attachments;
+#[path = "grouped_surface/mod.rs"]
+pub(crate) mod grouped_surface;
+#[path = "lineage/mod.rs"]
+pub(crate) mod lineage;
+#[path = "primitives/mod.rs"]
+pub(crate) mod primitives;
+#[path = "provenance/mod.rs"]
+pub(crate) mod provenance;
+#[path = "readiness/mod.rs"]
+pub(crate) mod readiness;
+#[path = "receipts/mod.rs"]
+pub(crate) mod receipts;
+#[path = "support/mod.rs"]
+pub(crate) mod support;

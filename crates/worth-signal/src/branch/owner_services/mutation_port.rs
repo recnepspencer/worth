@@ -76,6 +76,10 @@ where
         self.diagnostic_owner_runtime_instance_id
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(super) fn matches_owner(&self, owner: &Arc<SignalOwner<D, I, T>>) -> bool {
         std::ptr::eq(self.owner.as_ptr(), Arc::as_ptr(owner))
     }

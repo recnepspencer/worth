@@ -1,0 +1,14 @@
+#[path = "canonical_basis/mod.rs"]
+pub(crate) mod canonical_basis;
+#[path = "categories/mod.rs"]
+pub(crate) mod categories;
+#[path = "current_basis/mod.rs"]
+pub(crate) mod current_basis;
+#[path = "descriptive_extensions/mod.rs"]
+pub(crate) mod descriptive_extensions;
+#[path = "materialization/mod.rs"]
+pub(crate) mod materialization;
+#[path = "readiness/mod.rs"]
+pub(crate) mod readiness;
+#[path = "roles_and_authority/mod.rs"]
+pub(crate) mod roles_and_authority;

@@ -66,7 +66,8 @@ impl WorthQuerySourceExpectationDenial {
             retention_denial: Some(denial),
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn retention_interruption(
+    /// The original caller interruption while retaining this source's facts.
+    pub fn retention_interruption(
         &self,
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {
@@ -135,3 +136,6 @@ impl worth_execution::ChargedBytes for WorthQuerySourceExpectationDenial {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

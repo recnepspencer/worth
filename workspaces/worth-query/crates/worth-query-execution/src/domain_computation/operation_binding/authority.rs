@@ -149,14 +149,14 @@ impl WorthQueryExecutionBoundOperationAuthority {
     pub fn direct_support(
         &self,
     ) -> Option<&worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot>
-    {
+{
         self.installed_support.direct_operation()
     }
 
     pub fn workflow_operation_support(
         &self,
     ) -> Option<&worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot>
-    {
+{
         self.installed_support.workflow_operation()
     }
 
@@ -164,7 +164,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         &self,
         stage_identity: &str,
     ) -> Option<&worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot>
-    {
+{
         self.installed_support.workflow_stage(stage_identity)
     }
 

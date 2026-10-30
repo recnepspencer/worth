@@ -1,0 +1,56 @@
+warning: unreachable expression
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_availability_report_fields_are_private.rs:6:45
+  |
+5 |         class: todo!(),
+  |                ------- any code following this expression is unreachable
+6 |         retained_history_unavailable_count: 0,
+  |                                             ^ unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error: cannot construct `ResourceReplayAvailabilityReport` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_availability_report_fields_are_private.rs:4:13
+   |
+ 4 |     let _ = ResourceReplayAvailabilityReport {
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 5 |         class: todo!(),
+   |         -------------- private field
+ 6 |         retained_history_unavailable_count: 0,
+   |         ------------------------------------- private field
+ 7 |         denied_completion_unavailable_count: 0,
+   |         -------------------------------------- private field
+ 8 |         retry_lineage_unavailable_count: 0,
+   |         ---------------------------------- private field
+ 9 |         summary_read: todo!(),
+   |         --------------------- private field
+10 |         restore_compatibility: None,
+   |         --------------------------- private field
+11 |         restore_compatibility_denial: None,
+   |         ---------------------------------- private field
+12 |         diagnostics_summary: None,
+   |         ------------------------- private field
+13 |         diagnostics_denial: None,
+   |         ------------------------ private field
+14 |         availability_digest: String::new(),
+   |         ---------------------------------- private field
+15 |         performance: todo!(),
+   |         -------------------- private field
+   |
+   = note: ...and other private field `denial_class` that was not provided
+help: you might have meant to use the `new` associated function
+   |
+ 4 -     let _ = ResourceReplayAvailabilityReport {
+ 5 -         class: todo!(),
+ 6 -         retained_history_unavailable_count: 0,
+ 7 -         denied_completion_unavailable_count: 0,
+ 8 -         retry_lineage_unavailable_count: 0,
+ 9 -         summary_read: todo!(),
+10 -         restore_compatibility: None,
+11 -         restore_compatibility_denial: None,
+12 -         diagnostics_summary: None,
+13 -         diagnostics_denial: None,
+14 -         availability_digest: String::new(),
+15 -         performance: todo!(),
+16 -     };
+ 4 +     let _ = ResourceReplayAvailabilityReport::new(_, _, _, _, _, _, _, _);
+   |

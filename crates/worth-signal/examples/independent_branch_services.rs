@@ -21,6 +21,10 @@ type Services = SignalOwnerServicePorts<(), (), (), (), ()>;
 type BasisPort = SignalBranchBasisPort<(), (), ()>;
 type MutationPort = SignalBranchMutationPort<(), (), (), (), ()>;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "owner-thread thread-builder=1: The example owns and joins its Signal workflow thread with the required native stack"
+)]
 fn main() {
     thread::Builder::new()
         .stack_size(16 * 1024 * 1024)
@@ -99,6 +103,10 @@ fn owner_workflow() {
     println!("independent_branch_services: public owner workflow held.");
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 thread-spawn=2: Joined example callers demonstrate independent branch services without sharing a runtime borrow"
+)]
 fn advance_both_without_runtime_borrow(
     mutation: MutationPort,
     left_basis: AdmittedSignalBranchBasis,

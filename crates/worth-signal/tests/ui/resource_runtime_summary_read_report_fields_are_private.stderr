@@ -1,9 +1,0 @@
-error[E0451]: fields `summary` and `performance` of struct `ResourceRuntimeSummaryReadReport` are private
-  --> tests/ui/resource_runtime_summary_read_report_fields_are_private.rs:11:9
-   |
-10 |     let _forged = ResourceRuntimeSummaryReadReport {
-   |                   -------------------------------- in this type
-11 |         summary: ResourceRuntimeSummary::default(),
-   |         ^^^^^^^ private field
-12 |         performance: forged_performance(),
-   |         ^^^^^^^^^^^ private field

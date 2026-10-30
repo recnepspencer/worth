@@ -292,7 +292,7 @@ fn cell(workers: usize, failure: Option<(usize, Failure)>) -> String {
     let output = std::process::Command::new(executable)
         .args([
             "--exact",
-            "checkpoint_recovery::required_chain::concurrent_waves::history::a_real_diamond_agrees_across_widths_and_failure_phases",
+            "checkpoint_recovery::required_chain::concurrent_waves::history::serial::a_real_diamond_agrees_across_widths_and_failure_phases",
             "--nocapture",
         ])
         .env("WORTH_WAVE_CELL_WORKERS", workers.to_string())
@@ -313,50 +313,55 @@ fn cell(workers: usize, failure: Option<(usize, Failure)>) -> String {
         .expect("the cell returns its system observation")
         .to_owned()
 }
-#[test]
-fn a_real_diamond_agrees_across_widths_and_failure_phases() {
-    let _guard = checkpoint_recovery_test_guard();
-    if let Ok(workers) = std::env::var("WORTH_WAVE_CELL_WORKERS") {
-        let workers: usize = workers.parse().unwrap();
-        let rank = std::env::var("WORTH_WAVE_CELL_RANK")
-            .unwrap()
-            .parse()
-            .unwrap();
-        let failure = match std::env::var("WORTH_WAVE_CELL_PHASE").unwrap().as_str() {
-            "none" => None,
-            "prepare" => Some((rank, Failure::Prepare)),
-            "compute" => Some((rank, Failure::Compute)),
-            "complete" => Some((rank, Failure::Complete)),
-            phase => panic!("unknown declared failure phase {phase}"),
-        };
-        let posture = NonZeroUsize::new(workers).map_or(Placement::Serial, Placement::Leased);
-        let observed = run(posture, failure);
-        if failure.is_none() {
-            assert!(
-                observed.span < observed.work,
-                "two positive independent members reduce structural span: {observed:?}"
-            );
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn a_real_diamond_agrees_across_widths_and_failure_phases() {
+        let _guard = checkpoint_recovery_test_guard();
+        if let Ok(workers) = std::env::var("WORTH_WAVE_CELL_WORKERS") {
+            let workers: usize = workers.parse().unwrap();
+            let rank = std::env::var("WORTH_WAVE_CELL_RANK")
+                .unwrap()
+                .parse()
+                .unwrap();
+            let failure = match std::env::var("WORTH_WAVE_CELL_PHASE").unwrap().as_str() {
+                "none" => None,
+                "prepare" => Some((rank, Failure::Prepare)),
+                "compute" => Some((rank, Failure::Compute)),
+                "complete" => Some((rank, Failure::Complete)),
+                phase => panic!("unknown declared failure phase {phase}"),
+            };
+            let posture = NonZeroUsize::new(workers).map_or(Placement::Serial, Placement::Leased);
+            let observed = run(posture, failure);
+            if failure.is_none() {
+                assert!(
+                    observed.span < observed.work,
+                    "two positive independent members reduce structural span: {observed:?}"
+                );
+            }
+            // Captured subprocess protocol, not a recorded expected value.
+            println!("\nWORTH_WAVE_OBSERVATION:{observed:?}");
+            return;
         }
-        // Captured subprocess protocol, not a recorded expected value.
-        println!("\nWORTH_WAVE_OBSERVATION:{observed:?}");
-        return;
-    }
-    for failure in [
-        None,
-        Some((0, Failure::Prepare)),
-        Some((1, Failure::Prepare)),
-        Some((0, Failure::Compute)),
-        Some((1, Failure::Compute)),
-        Some((0, Failure::Complete)),
-        Some((1, Failure::Complete)),
-    ] {
-        let serial = cell(0, failure);
-        for workers in [1, 2, 4] {
-            assert_eq!(
-                cell(workers, failure),
-                serial,
-                "width {workers}, phase failure {failure:?}"
-            );
+        for failure in [
+            None,
+            Some((0, Failure::Prepare)),
+            Some((1, Failure::Prepare)),
+            Some((0, Failure::Compute)),
+            Some((1, Failure::Compute)),
+            Some((0, Failure::Complete)),
+            Some((1, Failure::Complete)),
+        ] {
+            let serial = cell(0, failure);
+            for workers in [1, 2, 4] {
+                assert_eq!(
+                    cell(workers, failure),
+                    serial,
+                    "width {workers}, phase failure {failure:?}"
+                );
+            }
         }
     }
 }

@@ -19,7 +19,7 @@ pub enum WorthQueryWorkspaceErrorKind {
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
     TransactionAllocationDenied {
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     TransactionStagingCardinalityOverflow,

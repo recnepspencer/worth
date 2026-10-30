@@ -13,6 +13,10 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn birth_capability_identity_bytes<Binding, Role>(&self) -> Option<&[u8; 32]>
     where
         Binding: ApplicationMutationBinding<Schema>,

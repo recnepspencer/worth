@@ -34,6 +34,10 @@ pub(super) fn run_until(
     run_until_with_cancellation(command, deadline, label, None)
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-spawn=1: Certification drives independent actors to expose concurrency behavior."
+)]
 pub(super) fn run_until_with_cancellation(
     command: &mut Command,
     deadline: u128,

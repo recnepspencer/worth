@@ -102,7 +102,7 @@ fn assert_support_and_eligibility_sync_for_live_binding() {
 }
 
 #[test]
-fn retained_and_live_support_reports_match_phase_eleven_family_boundaries() {
+fn retained_and_live_support_reports_match_family_boundaries() {
     let retained = retained_binding().discover_projection_fact_consumption_support();
     let live = live_binding().discover_projection_fact_consumption_support();
 

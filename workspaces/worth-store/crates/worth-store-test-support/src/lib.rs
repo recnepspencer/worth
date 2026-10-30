@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #![doc = include_str!("test_support_compile_fail_proofs.md")]
 #![forbid(unsafe_code)]
 
@@ -30,11 +31,12 @@ mod terminal_projection_json_fixtures;
 
 pub mod compiler_boundary;
 pub mod harness;
-mod independent_executable;
+mod prebuilt_executable;
 mod test_directory;
 
-pub use independent_executable::{
-    IndependentExecutable, FRESH_PROCESS_RECOVERY, OFFLINE_RECOVERY_OBSERVER, OFFLINE_ROOT_OBSERVER,
+pub use prebuilt_executable::{
+    IndependentExecutable, PrebuiltExecutableRefusal, FRESH_PROCESS_RECOVERY,
+    OFFLINE_RECOVERY_OBSERVER, OFFLINE_ROOT_OBSERVER,
 };
 pub use test_directory::TemporaryDirectory;
 

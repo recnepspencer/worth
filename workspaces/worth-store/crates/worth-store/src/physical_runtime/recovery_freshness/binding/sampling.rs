@@ -113,9 +113,9 @@ fn finish_sample(
             redo_bytes,
         )
     };
-    let (cleanups, cleanup_peak) = cleanups.finish().map_err(&failure)?;
+    let (cleanups, cleanup_peak) = cleanups.finish().map_err(failure)?;
     let retirements =
-        fold_retirement_records(retirement_records, retirement_output).map_err(&failure)?;
+        fold_retirement_records(retirement_records, retirement_output).map_err(failure)?;
     let mut sample = StoreRecoveryBindingFreshnessSample {
         store: source.store,
         selected_checkpoint_generation: source.generation,

@@ -294,13 +294,45 @@ impl MediaCounterCells {
 }
 
 pub(super) fn increment(cell: &AtomicU64, amount: u64) {
-    let _ = cell.fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-        Some(current.saturating_add(amount))
-    });
+    let _ = {
+        let update_counter = cell;
+        let mut current = update_counter.load(Ordering::Acquire);
+        loop {
+            let next_value = Some(current.saturating_add(amount));
+            let Some(updated_value) = next_value else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    };
 }
 
 fn retain_max(cell: &AtomicU64, candidate: u64) {
-    let _ = cell.fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-        (candidate > current).then_some(candidate)
-    });
+    let _ = {
+        let update_counter = cell;
+        let mut current = update_counter.load(Ordering::Acquire);
+        loop {
+            let next_value = (candidate > current).then_some(candidate);
+            let Some(updated_value) = next_value else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    };
 }

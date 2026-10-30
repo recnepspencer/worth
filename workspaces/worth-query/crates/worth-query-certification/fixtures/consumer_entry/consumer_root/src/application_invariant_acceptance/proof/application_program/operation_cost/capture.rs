@@ -6,7 +6,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryExecutionPlacementForTest,
 };
 use worth_query_host::facade::runtime::{
-    ExecutionAllocationDenialKind, ExecutionAllocationPolicy, LeaseDenial, MemoryLimitLevel,
+    ExecutionAllocationDenialClass, ExecutionAllocationPolicy, LeaseDenial, MemoryLimitLevel,
 };
 #[test]
 fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh_retry() {
@@ -111,8 +111,9 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
         allocation.requested_payload_bytes(),
         Some(u64::try_from(payload).unwrap())
     );
-    let ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(limit)) =
-        allocation.kind()
+    let ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+        LeaseDenial::MemoryExhausted(limit),
+    )) = allocation.classify()
     else {
         panic!("actual typed payload must meet its native lease refusal: {allocation:?}")
     };

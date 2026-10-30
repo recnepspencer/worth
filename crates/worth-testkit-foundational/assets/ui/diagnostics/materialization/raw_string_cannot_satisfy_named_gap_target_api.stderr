@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/materialization/raw_string_cannot_satisfy_named_gap_target_api.rs
+  |
+  |     needs_gap_target("gap-note");
+  |     ---------------- ^^^^^^^^^^ expected `FoundationalDiagnosticGapTarget`, found `&str`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/materialization/raw_string_cannot_satisfy_named_gap_target_api.rs
+  |
+  | fn needs_gap_target(_target: FoundationalDiagnosticGapTarget) {}
+  |    ^^^^^^^^^^^^^^^^ ----------------------------------------

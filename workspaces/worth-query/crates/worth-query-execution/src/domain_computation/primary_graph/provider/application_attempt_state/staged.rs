@@ -44,7 +44,7 @@ impl WorthQueryStagedApplicationAttempt<'_> {
     pub(in crate::domain_computation::primary_graph::provider) fn product_publication(
         &self,
     ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding
-    {
+{
         self.attempt.affinity().product_publication()
     }
 

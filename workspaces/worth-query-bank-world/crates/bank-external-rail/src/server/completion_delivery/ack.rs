@@ -45,7 +45,9 @@ mod tests {
         let body = include_str!("estate_v1.hex")
             .trim()
             .as_bytes()
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
             .collect::<Vec<_>>();
         let message_id: [u8; 32] = body[58..90].try_into().unwrap();
@@ -54,7 +56,9 @@ mod tests {
         let ack = include_str!("custody_ack_v1.hex")
             .trim()
             .as_bytes()
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
             .collect::<Vec<_>>();
         assert_eq!(

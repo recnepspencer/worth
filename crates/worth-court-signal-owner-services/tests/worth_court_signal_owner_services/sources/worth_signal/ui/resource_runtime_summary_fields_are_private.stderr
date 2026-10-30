@@ -1,0 +1,47 @@
+error: cannot construct `ResourceRuntimeSummary` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_summary_fields_are_private.rs:4:13
+   |
+ 4 |     let _ = ResourceRuntimeSummary {
+   |             ^^^^^^^^^^^^^^^^^^^^^^
+ 5 |         descriptor_count: 0,
+   |         ------------------- private field
+ 6 |         declared_resource_node_count: 0,
+   |         ------------------------------- private field
+ 7 |         in_flight_request_count: 0,
+   |         -------------------------- private field
+ 8 |         retained_lifecycle_history_count: 0,
+   |         ----------------------------------- private field
+ 9 |         active_in_flight_node_count: 0,
+   |         ------------------------------ private field
+10 |         denied_completion_count: 0,
+   |         -------------------------- private field
+11 |         next_descriptor_id: ResourceDescriptorId::new(0),
+   |         ------------------------------------------------ private field
+   |
+   = note: ...and other private fields `retained_history_unavailable_count`, `retained_retry_lineage_count`, `retained_retry_lineage_unavailable_count`, `retained_denied_completion_count` and `retained_denied_completion_unavailable_count` that were not provided
+help: you might have meant to use the `new` associated function
+   |
+ 4 -     let _ = ResourceRuntimeSummary {
+ 5 -         descriptor_count: 0,
+ 6 -         declared_resource_node_count: 0,
+ 7 -         in_flight_request_count: 0,
+ 8 -         retained_lifecycle_history_count: 0,
+ 9 -         active_in_flight_node_count: 0,
+10 -         denied_completion_count: 0,
+11 -         next_descriptor_id: ResourceDescriptorId::new(0),
+12 -     };
+ 4 +     let _ = ResourceRuntimeSummary::new(_, _, _, _, _, _, _, _, _, _, _, _);
+   |
+help: consider using the `Default` trait
+   |
+ 4 -     let _ = ResourceRuntimeSummary {
+ 5 -         descriptor_count: 0,
+ 6 -         declared_resource_node_count: 0,
+ 7 -         in_flight_request_count: 0,
+ 8 -         retained_lifecycle_history_count: 0,
+ 9 -         active_in_flight_node_count: 0,
+10 -         denied_completion_count: 0,
+11 -         next_descriptor_id: ResourceDescriptorId::new(0),
+12 -     };
+ 4 +     let _ = <ResourceRuntimeSummary as std::default::Default>::default();
+   |

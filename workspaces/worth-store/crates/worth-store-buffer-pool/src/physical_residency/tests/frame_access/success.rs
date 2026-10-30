@@ -39,6 +39,10 @@ fn hot_access_has_no_source_execution_surface() {
     );
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: forced overlap has one fault owner and one waiter; source: worth-store-buffer-pool::physical_residency::tests::frame_access::success::forced_overlap_has_one_fault_owner_and_one_waiter; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn forced_overlap_has_one_fault_owner_and_one_waiter() {
     let identity = store(7);

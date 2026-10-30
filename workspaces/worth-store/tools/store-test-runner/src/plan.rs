@@ -12,7 +12,7 @@ mod structural_product;
 
 use execution_unit::apply_ci_profiles;
 pub(crate) use execution_unit::TestExecutionUnit;
-use integration_product::{formal, scenario, ui};
+use integration_product::{cost, formal, scenario, ui};
 use owner_product::{owner, owner_ci};
 use process_scenario_product::process_scenario;
 use smoke_product::smoke;
@@ -43,6 +43,7 @@ impl TestPlan {
                 CiTestLane::Scenario => scenario(*shard, workspace_root),
                 CiTestLane::Ui => ui(*shard, workspace_root),
                 CiTestLane::Formal => formal(*shard, workspace_root),
+                CiTestLane::Cost => cost(*shard, workspace_root),
             },
         };
         if matches!(product, TestProduct::Ci { .. }) {

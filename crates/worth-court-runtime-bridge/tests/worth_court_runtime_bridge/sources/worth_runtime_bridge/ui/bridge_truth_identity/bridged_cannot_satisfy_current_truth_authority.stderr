@@ -1,0 +1,12 @@
+error[E0624]: method `revalidate_bridge_retained_reference` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/bridged_cannot_satisfy_current_truth_authority.rs:9:29
+  |
+9 |       let _bridged = evidence.revalidate_bridge_retained_reference();
+  |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private method
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity/evidence.rs
+  |
+  | /     pub(crate) fn revalidate_bridge_retained_reference(
+  | |         &self,
+  | |     ) -> BridgeTruthBoundaryBridgedIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind> {
+  | |__________________________________________________________________________________________- private method defined here

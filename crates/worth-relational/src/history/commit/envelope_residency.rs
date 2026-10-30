@@ -296,9 +296,7 @@ impl RelationalCommitEnvelopeResidency {
             subject: RelationalStorageSubject::Envelope(entry.position),
             cause,
         };
-        let bytes = source
-            .read_commit(entry.position, limit)
-            .map_err(&failure)?;
+        let bytes = source.read_commit(entry.position, limit).map_err(failure)?;
         let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
             .map_err(|_| failure(Cause::Damaged))?;
         if artifact.position() != entry.position

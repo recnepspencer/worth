@@ -7,22 +7,22 @@
 //! | Reducer installation | Proved at owner boundary: `installation::a_reinstalled_reducer_runs_in_full_with_its_own_reduction`. |
 //! | Owner installation | Proved at owner boundary: `installation::a_reinstalled_owner_runs_in_full`. |
 //! | Producer edition | Proved at owner boundary: `partitioned_computation::incremental::tests::carrying::another_input_or_edition_or_an_evicted_state_runs_in_full`; program adoption preserves the installed edition and is driven by `courtroom::adoption`. |
-//! | Canonical input | Sensitive seeded case: `parallel_history_reuse::canonical_input`. |
+//! | Canonical input | Sensitive seeded case: `parallel_history_reuse::serial::canonical_input`. |
 //! | Membership facts | Varied here: `membership_join`, `membership_leave`, `membership_replacement`. |
 //! | Empty membership | Matrix cells cover empty-to-member, member-to-empty, and empty-to-empty input replacement; before/after kernel counts (0/1, 1/0, 0/0) and actual retained-prior presence are judged independently of run labels. |
 //! | Item digest | Varied here: `persisting_item_digest_swap`; digest drift on persisting item ids changes their declared operations. |
-//! | Item key facts | Sensitive seeded case: `parallel_history_reuse::key_facts`. |
-//! | Partition gather facts | Sensitive seeded case: `parallel_history_reuse::gather_facts`. |
-//! | Shared gather facts | Sensitive seeded case: `parallel_history_reuse::shared_facts`. |
-//! | Typed absence | `computation_partition::oracle::absence::checkpoint_absence_rebuilds_every_owner_call_like_fresh` checks genuine restore absence against an independent fresh computation and exact owner calls. |
+//! | Item key facts | Sensitive seeded case: `parallel_history_reuse::serial::key_facts`. |
+//! | Partition gather facts | Sensitive seeded case: `parallel_history_reuse::serial::gather_facts`. |
+//! | Shared gather facts | Sensitive seeded case: `parallel_history_reuse::serial::shared_facts`. |
+//! | Typed absence | `computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh` checks genuine restore absence against an independent fresh computation and exact owner calls. |
 //! | Schema changes | Unreachable with retained computation state: the runtime keeps its installed schema fixed, and restoration reconstructs lineage with an absent computation prior. |
 //! | Program changes | Proved by `computation_partition::oracle::courtroom::adoption`; edits under the adopted program preserve the owner, with model-derived partition calls. |
 //! | Lineage | Proved by `computation_partition::oracle::branch_sharing` and `courtroom::branches`, with independent model counts on forks, nested forks, switches and ancestor deletion. |
 //! | Merge | Product history has no merge entry; native unique-value merge lookup is proved by `merge_unique_values::counts::merge_unique_lookup_count_is_bounded_by_its_writes`. |
-//! | Recorded correction | `courtroom::undo::recorded_correction_reuses_the_retained_partitions` proves accepted correction against independent fresh execution and model calls. `undo::after_publication` proves successful correction after a real output publication and SourceDiverged refusal after an intervening source-value edit. |
+//! | Recorded correction | `courtroom::undo::serial::recorded_correction_reuses_the_retained_partitions` proves accepted correction against independent fresh execution and model calls. `undo::after_publication` proves successful correction after a real output publication and SourceDiverged refusal after an intervening source-value edit. |
 //! | Commit racing settlement | `courtroom::interleaving::another_writer_between_passes_leaves_pending_after_one_contact` constructs and asserts another publication between managed passes. |
 //! | Deep scope hierarchy and sibling-disjoint subtrees | `scope_hierarchy::a_deep_native_leaf_has_identical_work_with_eight_or_sixty_four_sibling_subtrees` proves six ancestor scopes, one marked fact, five downstream edges, and zero sibling candidate/Ready work at 8 and 64 sibling subtrees. |
-//! | Restoration | Proved by `computation_partition::oracle::courtroom::lifecycle::seeded_edits_cross_restore_and_republication_with_model_counts`, with restored and republished exact causes and model-derived full-build calls. |
+//! | Restoration | Proved by `computation_partition::oracle::courtroom::lifecycle::serial::seeded_edits_cross_restore_and_republication_with_model_counts`, with restored and republished exact causes and model-derived full-build calls. |
 //! | Faults | `faults` and every prior/current width cell pin the canonical typed stop, exact changed/carried partition counts, and whole advancement work/span. |
 //! | Work ceiling | Proved at owner boundary: `carrying::growing_past_the_ceiling_is_denied_as_a_full_run_is_denied`; declarations are fixed for an installed owner. |
 //! | Placement | `parallel_history_reuse::worker_matrix` judges prior/current widths 1/2/5 with observed dispatch widths; serial-versus-leased prior handoff remains named for 7.6 part two. |

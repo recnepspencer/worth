@@ -1,0 +1,37 @@
+error: cannot construct `ResourceTimeoutDecisionPlan` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_decision_plan_fields_are_private.rs:8:17
+   |
+ 8 |     let _plan = ResourceTimeoutDecisionPlan {
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |         descriptor_id: fake(),
+   |         --------------------- private field
+10 |         semantic_name: String::from("signal.resource.timeout.fixed-timeout"),
+   |         -------------------------------------------------------------------- private field
+11 |         class: ResourceTimeoutDecisionClass::FixedTimeout,
+   |         ------------------------------------------------- private field
+12 |         timeout: fake(),
+   |         --------------- private field
+13 |         decision_digest: fake(),
+   |         ----------------------- private field
+   |
+   = note: ...and other private fields `heartbeat_extension` and `outcome_class` that were not provided
+help: you might have meant to use an associated function to build this type
+   |
+ 8 -     let _plan = ResourceTimeoutDecisionPlan {
+ 9 -         descriptor_id: fake(),
+10 -         semantic_name: String::from("signal.resource.timeout.fixed-timeout"),
+11 -         class: ResourceTimeoutDecisionClass::FixedTimeout,
+12 -         timeout: fake(),
+13 -         decision_digest: fake(),
+14 -     };
+ 8 +     let _plan = ResourceTimeoutDecisionPlan::new(_, _, _, _, _);
+   |
+ 8 -     let _plan = ResourceTimeoutDecisionPlan {
+ 9 -         descriptor_id: fake(),
+10 -         semantic_name: String::from("signal.resource.timeout.fixed-timeout"),
+11 -         class: ResourceTimeoutDecisionClass::FixedTimeout,
+12 -         timeout: fake(),
+13 -         decision_digest: fake(),
+14 -     };
+ 8 +     let _plan = ResourceTimeoutDecisionPlan::disabled_builtin_default();
+   |

@@ -165,10 +165,10 @@ fn lower_node(
     if node.portal_instance.is_some() && node.surface_paint.is_none() {
         return Err(UiMountedAppearanceLoweringDenial::PortalSurfaceMissing);
     }
-    if let Some(portal_instance) = node.portal_instance {
-        if portal_instance != node.node_receipt.mounted_instance() {
-            return Err(UiMountedAppearanceLoweringDenial::PortalTargetMismatch);
-        }
+    if let Some(portal_instance) = node.portal_instance
+        && portal_instance != node.node_receipt.mounted_instance()
+    {
+        return Err(UiMountedAppearanceLoweringDenial::PortalTargetMismatch);
     }
     if let Some(surface) = surface::lower(node)? {
         let damage = match &surface {

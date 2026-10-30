@@ -1,0 +1,17 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/attachments/materialization/raw_materialized_attachment_bundle_cannot_satisfy_current_basis_api.rs
+  |
+  |     accepts_current_basis_attachment(&materialized);
+  |     -------------------------------- ^^^^^^^^^^^^^ expected `CurrentBasisBoundaryEvidenceAttachmentBundle`, found `FoundationalMaterializedBoundaryEvidenceAttachmentBundle`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&CurrentBasisBoundaryEvidenceAttachmentBundle`
+             found reference `&FoundationalMaterializedBoundaryEvidenceAttachmentBundle`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/attachments/materialization/raw_materialized_attachment_bundle_cannot_satisfy_current_basis_api.rs
+  |
+  | fn accepts_current_basis_attachment(
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |     _: &worth_foundational::CurrentBasisBoundaryEvidenceAttachmentBundle,
+  |     --------------------------------------------------------------------

@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/basis/readiness/digest_ready_artifact_cannot_satisfy_canonical_basis.rs
+  |
+  |     requires_canonical_basis(ready);
+  |     ------------------------ ^^^^^ expected `Artifact<..., ..., ..., ...>`, found `Artifact<DigestPreparationReady, ...>`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected struct `worth_proof::Artifact<CanonicalBasisReady, CanonicalBasisSequence, ProofSetCons<Proof<CanonicalOrder, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<Uniqueness, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<CanonicalDomainCoherence, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<CanonicalRuleVersionBound, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, Proof<CanonicalizationCostObserved, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>>>>>, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<CanonicalizationRuleVersion>>>`
+             found struct `worth_proof::Artifact<DigestPreparationReady, DigestPreparationReadyAspectContract, NoProofs, NoAssumptionBasis>`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/basis/readiness/digest_ready_artifact_cannot_satisfy_canonical_basis.rs
+  |
+  | fn requires_canonical_basis(_: CanonicalBasisReadyArtifact) {}
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^ ------------------------------

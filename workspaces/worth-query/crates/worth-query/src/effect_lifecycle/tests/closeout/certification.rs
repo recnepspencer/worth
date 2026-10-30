@@ -116,7 +116,7 @@ fn seeded_certification_never_certifies_less_than_full_template_coverage() {
 }
 
 #[test]
-fn phase4_certification_covers_named_execution_and_boundary_lanes() {
+fn certification_covers_named_execution_and_boundary_lanes() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -168,7 +168,7 @@ fn phase4_certification_covers_named_execution_and_boundary_lanes() {
 }
 
 #[test]
-fn phase4_certification_retains_batch_native_and_zero_rediscovery_evidence() {
+fn certification_retains_batch_native_and_zero_rediscovery_evidence() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

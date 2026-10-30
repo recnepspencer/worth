@@ -83,6 +83,10 @@ pub struct BankHttpMutationContinuation {
     pub(super) transport: Arc<MutationTransport>,
 }
 impl BankHttpMutationContinuation {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "async-runtime async-runtime=1; owner-thread thread-builder=1: Current-thread Tokio and LocalSet drive bounded transport commands and I/O while preserving the owning thread for failed native Signal cleanup."
+    )]
     pub(super) fn start<A: BankHttpApplicationAuthenticator>(
         application: Arc<A>,
         queue_capacity: NonZeroUsize,
@@ -242,6 +246,10 @@ impl BankHttpMutationContinuation {
         }
         Ok(remaining)
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "async-runtime async-blocking=1: Tokio's blocking executor joins the actual owned OS threads after quiescence reports zero custody; it schedules no parallel computation."
+    )]
     pub(super) async fn join_closed(&self) -> Result<(), ()> {
         if self.transport.stopped.load(Ordering::Acquire) {
             return Ok(());

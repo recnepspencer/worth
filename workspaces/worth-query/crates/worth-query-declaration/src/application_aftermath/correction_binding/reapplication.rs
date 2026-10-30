@@ -49,7 +49,7 @@ pub trait ApplicationReapplicationVisitor<S: ApplicationSchema>: Sized {
         C::Source: ApplicationCapabilityMutationBinding<S, Capability = Capability>,
         <C::Source as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, C::Source> + ApplicationCapabilityRequest<S, Capability, Scope = <<C::Source as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope>,
         <C::Source as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<S, <C::Source as ApplicationMutationBinding<S>>::PrincipalIdentity>,
-    {
+{
         self.declared::<C>()
     }
 }
@@ -109,7 +109,7 @@ where
         C::Source: ApplicationCapabilityMutationBinding<S, Capability = Capability>,
         <C::Source as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, C::Source> + ApplicationCapabilityRequest<S, Capability, Scope = <<C::Source as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope>,
         <C::Source as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<S, <C::Source as ApplicationMutationBinding<S>>::PrincipalIdentity>,
-    {
+{
         self.visitor.capability::<C, Capability>()
     }
 }

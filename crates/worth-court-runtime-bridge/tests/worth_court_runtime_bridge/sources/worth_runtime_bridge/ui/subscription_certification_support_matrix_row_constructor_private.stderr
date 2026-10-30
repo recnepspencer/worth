@@ -1,0 +1,12 @@
+error: cannot construct `BridgeSubscriptionTemporalAsyncCertificationSupportMatrixRow` with struct literal syntax due to private fields
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_support_matrix_row_constructor_private.rs:4:13
+  |
+4 |     let _ = BridgeSubscriptionTemporalAsyncCertificationSupportMatrixRow {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields `suite_id`, `verdict`, `evidence_digest`, `primary_failure_boundary`, `canonical_basis` and `digest` that were not provided
+help: you might have meant to use the `new` associated function
+  |
+4 -     let _ = BridgeSubscriptionTemporalAsyncCertificationSupportMatrixRow {};
+4 +     let _ = BridgeSubscriptionTemporalAsyncCertificationSupportMatrixRow::new(_, _, _, _);
+  |

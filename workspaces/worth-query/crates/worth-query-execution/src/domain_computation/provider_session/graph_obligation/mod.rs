@@ -8,9 +8,9 @@ pub(in crate::domain_computation) use resource_terminal::WorthQueryResourceReadC
 mod session;
 pub(in crate::domain_computation) use session::{
     WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
-    WorthQueryManagedIndexCallbackProof, WorthQueryManagedIndexReadSession,
-    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
-    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
+    WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
+    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQuerySessionResourceReadProof,
 };
 mod session_identity;

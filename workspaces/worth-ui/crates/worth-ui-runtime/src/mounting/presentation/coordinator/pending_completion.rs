@@ -68,22 +68,19 @@ pub(super) fn observe_pending_surface(
         UiHostSurfaceInFlightCompletion::RejectedBeforeEffects(denial) => {
             if denial
                 == worth_ui_host_contract::UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred
-            {
-                if let Some(candidate) = text_candidate {
+                && let Some(candidate) = text_candidate {
                     context.text.commit_surface_candidate(candidate);
                 }
-            }
-            if let Some(owner) = context.presentation_async.as_deref_mut() {
-                if semantic_receipts
+            if let Some(owner) = context.presentation_async.as_deref_mut()
+                && semantic_receipts
                     .iter()
                     .any(|receipt| owner.reject_recovery_before_effects(receipt).is_err())
-                {
-                    return Some(PresentationSurfaceUncertainty::semantic(
-                        binding,
-                        None,
-                        semantic_receipts.into_vec(),
-                    ));
-                }
+            {
+                return Some(PresentationSurfaceUncertainty::semantic(
+                    binding,
+                    None,
+                    semantic_receipts.into_vec(),
+                ));
             }
             context
                 .progress

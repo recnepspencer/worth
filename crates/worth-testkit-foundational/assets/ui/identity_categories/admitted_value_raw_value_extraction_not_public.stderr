@@ -1,0 +1,10 @@
+error[E0624]: method `into_value` is private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/admitted_value_raw_value_extraction_not_public.rs
+  |
+  |     let _raw = admitted.into_value();
+  |                         ^^^^^^^^^^ private method
+  |
+ ::: $WORKSPACE/crates/worth-foundational/src/identities/authority_identity/current.rs
+  |
+  |     pub(super) fn into_value(self) -> Value {
+  |     --------------------------------------- private method defined here

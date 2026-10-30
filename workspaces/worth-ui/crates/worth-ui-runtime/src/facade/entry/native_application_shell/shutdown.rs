@@ -279,11 +279,11 @@ impl WorthUiNativeApplicationCleanup {
                 }
             }
         }
-        if let Some(recovery) = self.host_cleanup.take() {
-            if let Err(recovery) = recovery.retry() {
-                self.host_cleanup = Some(recovery);
-                return Err(self);
-            }
+        if let Some(recovery) = self.host_cleanup.take()
+            && let Err(recovery) = recovery.retry()
+        {
+            self.host_cleanup = Some(recovery);
+            return Err(self);
         }
         Ok(UiNativeApplicationQueryCloseObservation::from_runtime(
             *self.query_close,

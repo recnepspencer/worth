@@ -15,6 +15,10 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::InstalledSourceDisclosureBinding;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 pub(in crate::domain_computation::primary_graph) fn capture_inspection<Schema, Source>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -69,6 +73,10 @@ impl<Schema: ApplicationSchema, Source: ApplicationMutationBinding<Schema>>
     fn unavailable(self) -> Self::Output {
         Err(denied("declared source inspection dispatch is unavailable"))
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn declared<Binding: ApplicationSourceDisclosureBinding<Schema, Source = Source>>(
         self,
     ) -> Self::Output {

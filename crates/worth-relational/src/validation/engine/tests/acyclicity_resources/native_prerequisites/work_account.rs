@@ -56,5 +56,10 @@ fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
     assert_eq!(hooks.observed(), (baseline.0 + 1, baseline.1 + 1));
     assert_ne!(fixture.head(), before);
     crate::tests::support::release_test_commit_snapshot(&fixture.runtime, &receipt);
+    assert!(
+        funded.charged_memory_bytes() > 0,
+        "canonical history retains its payer"
+    );
+    drop((fixture, receipt));
     assert_eq!(funded.charged_memory_bytes(), 0);
 }

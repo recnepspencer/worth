@@ -167,7 +167,7 @@ mod tests {
     use std::collections::BTreeSet;
 
     #[test]
-    fn certified_surface_inventory_covers_each_named_phase_six_category_once() {
+    fn certified_surface_inventory_covers_each_named_category_once() {
         let inventory = worth_query_domain_capability_public_surface_inventory();
         let categories = inventory
             .rows()

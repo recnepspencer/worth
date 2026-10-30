@@ -92,11 +92,25 @@ impl MediaQualificationIdentity {
 
     pub(super) fn generate() -> Option<Self> {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        NEXT.fetch_update(
-            std::sync::atomic::Ordering::Relaxed,
-            std::sync::atomic::Ordering::Relaxed,
-            |current| current.checked_add(1),
-        )
+        {
+            let update_counter = &NEXT;
+            let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
+            loop {
+                let next_value = current.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
         .ok()
         .map(Self)
     }

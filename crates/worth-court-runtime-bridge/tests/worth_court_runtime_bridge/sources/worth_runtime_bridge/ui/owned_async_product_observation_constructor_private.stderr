@@ -1,0 +1,5 @@
+error[E0432]: unresolved import `worth_runtime_bridge::facade::BridgeOwnedAsyncProductObservation`
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/owned_async_product_observation_constructor_private.rs:1:5
+  |
+1 | use worth_runtime_bridge::facade::BridgeOwnedAsyncProductObservation;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `BridgeOwnedAsyncProductObservation` in `facade`

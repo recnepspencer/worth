@@ -42,13 +42,26 @@ where
         admission
             .owner_lock_acquisition()
             .map_err(|denial| map_fork_owner_lock_denial(denial, parent_branch_id))?;
-        let branch_id = self
-            .next_branch_id
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-                current.checked_add(1)
-            })
-            .map(SignalBranchId)
-            .map_err(|_| SignalBranchForkOperationDenial::BranchIdentityExhausted)?;
+        let branch_id = {
+            let update_counter = &self.next_branch_id;
+            let mut current = update_counter.load(Ordering::Acquire);
+            loop {
+                let Some(updated_value) = current.checked_add(1) else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .map(SignalBranchId)
+        .map_err(|_| SignalBranchForkOperationDenial::BranchIdentityExhausted)?;
         let parent_head_snapshot_id = source
             .observation()
             .target()

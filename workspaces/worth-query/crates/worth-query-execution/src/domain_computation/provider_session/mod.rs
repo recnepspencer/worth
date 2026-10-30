@@ -5,9 +5,9 @@ mod execution_attempt_identity;
 mod graph_obligation;
 pub(in crate::domain_computation) use graph_obligation::{
     WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
-    WorthQueryManagedIndexCallbackProof, WorthQueryManagedIndexReadSession,
-    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
-    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
+    WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
+    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQueryResourceReadCompletion, WorthQuerySessionResourceReadProof,
 };
 pub(crate) mod graph_provider;

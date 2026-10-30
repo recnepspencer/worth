@@ -151,7 +151,7 @@ fn durable_overclaims_are_typed_denials_with_exact_counters() {
 }
 
 #[test]
-fn phase_four_execution_shortcuts_are_typed_denials_with_exact_counters() {
+fn execution_shortcuts_are_typed_denials_with_exact_counters() {
     let allocation = deny_policy_per_row_allocation_claim();
     let fanout = deny_policy_cross_tenant_fanout_claim();
     let saved = deny_saved_query_policy_bypass_claim();

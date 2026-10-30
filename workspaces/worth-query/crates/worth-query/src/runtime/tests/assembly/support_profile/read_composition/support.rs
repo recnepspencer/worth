@@ -1,7 +1,7 @@
 use super::super::super::super::support::*;
 
 #[test]
-fn runtime_public_read_composition_support_report_freezes_phase_one_kernel_surface() {
+fn runtime_public_read_composition_support_report_freezes_kernel_surface() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

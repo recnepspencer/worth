@@ -85,7 +85,7 @@ impl ArenaAccounting {
                 if expected.family == PhysicalArtifactFamily::FreeSpaceMembershipBlock =>
             {
                 let count = usize::from(read_u16(bytes, 66));
-                for entry in bytes[88..88 + count * 40].chunks_exact(40) {
+                for entry in bytes[88..88 + count * 40].as_chunks::<40>().0.iter() {
                     if entry[0] == 2 {
                         let arena = read_u64(entry, 8);
                         let offset = read_u64(entry, 16);

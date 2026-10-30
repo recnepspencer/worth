@@ -18,7 +18,7 @@ impl RelationalPublicationCompanion for ForkOwner {
         execution: &ExecutionRequest<'_, '_>,
         target: &ManagedIndexSourceForkPreparation<'_>,
     ) -> Result<Box<dyn Any + Send + Sync>, CompanionPreflightStop> {
-        crate::authority::commit::pipeline::consult_stage_control(
+        crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Publication,
         )

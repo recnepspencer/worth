@@ -4,7 +4,7 @@ use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryApplicationAttemptDenial,
 };
-pub(crate) struct PlanarIslandCouplingHandler;
+pub struct PlanarIslandCouplingHandler;
 
 impl<S: TopologySchemaBinding> OperationHandler<S, PlanarIslandCouplingBinding<S>>
     for PlanarIslandCouplingHandler

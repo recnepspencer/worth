@@ -8,6 +8,10 @@ use worth_query_declaration::facade::application_schema::{
 use super::{installed_index, TestSchema};
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 fn installed_schema_exposes_exact_indexed_field_binding_recipes() {
     let installed = installed_index()
         .bind_application_schema(TestSchema::declaration().unwrap())

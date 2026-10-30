@@ -1,0 +1,21 @@
+error[E0277]: the trait bound `ReportCategory: worth_foundational::boundary_artifacts::roles::FoundationalReceiptEvidenceCategory` is not satisfied
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/role_legality/report_cannot_claim_receipt_evidence.rs
+  |
+  |     let _ = claim_receipt_evidence_boundary_surface(report);
+  |             --------------------------------------- ^^^^^^ the trait `worth_foundational::boundary_artifacts::roles::FoundationalReceiptEvidenceCategory` is not implemented for `ReportCategory`
+  |             |
+  |             required by a bound introduced by this call
+  |
+help: the trait `worth_foundational::boundary_artifacts::roles::FoundationalReceiptEvidenceCategory` is implemented for `ReceiptCategory`
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/roles.rs
+  |
+  | impl FoundationalReceiptEvidenceCategory for ReceiptCategory {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `claim_receipt_evidence_boundary_surface`
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/roles.rs
+  |
+  | pub fn claim_receipt_evidence_boundary_surface<Surface>(
+  |        --------------------------------------- required by a bound in this function
+...
+  |     Surface::Category: FoundationalReceiptEvidenceCategory,
+  |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `claim_receipt_evidence_boundary_surface`

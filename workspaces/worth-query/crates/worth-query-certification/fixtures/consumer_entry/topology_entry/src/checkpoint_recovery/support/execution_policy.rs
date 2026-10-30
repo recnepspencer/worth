@@ -8,3 +8,12 @@ pub(crate) const CHECKPOINT_EXECUTION_POLICY: ExecutionRequestPolicy = Execution
     DeterminismContract::CanonicalBitwise,
     ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(8_000_000)),
 );
+
+// Large authored populations belong to setup's original request, outside the
+// World calls whose locality or exhaustion these fixtures measure. This finite
+// grant never becomes the installed World's request policy.
+pub(crate) const POPULATION_BOOTSTRAP_POLICY: ExecutionRequestPolicy = ExecutionRequestPolicy::new(
+    ExecutionPosture::Serial,
+    DeterminismContract::CanonicalBitwise,
+    ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(16_000_000_000)),
+);

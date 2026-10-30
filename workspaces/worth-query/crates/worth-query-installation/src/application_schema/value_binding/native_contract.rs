@@ -73,6 +73,10 @@ impl WorthQueryInstalledApplicationValueBinding {
     }
 
     /// Exact compiled binding/type match, without deriving a second catalogue.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn matches_binding<Binding: ApplicationScalarValueBinding>(&self) -> bool {
         self.binding_type() == TypeId::of::<Binding>()
             && self.value_type() == TypeId::of::<Binding::Value>()
@@ -139,6 +143,10 @@ impl WorthQueryInstalledApplicationValueBinding {
 
     /// Reconstruct through the installed owner's admitted dispatch. Canonical
     /// contracts lacking this dispatch cannot enter the installed catalogue.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn decode_admitted<Value: 'static>(
         &self,
         value: &AspectValue,

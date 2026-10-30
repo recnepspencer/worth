@@ -1,41 +1,6 @@
 //! A changed consumer must disclose its new decision before following obsolete edges.
 use super::*;
 
-#[test]
-fn changed_own_output_can_drop_unresolved_consumed_dependencies() {
-    journey(true, ChildDelivery::Direct, false);
-}
-
-#[test]
-fn changed_own_decision_still_refreshes_the_dependency_it_reads() {
-    journey(false, ChildDelivery::Direct, false);
-}
-
-#[test]
-fn changed_decision_finishes_a_held_dependency_without_advancing_its_caller() {
-    journey(false, ChildDelivery::Held, false);
-}
-
-#[test]
-fn changed_decision_retries_after_cancellation_with_its_refreshed_child() {
-    journey(false, ChildDelivery::Direct, true);
-}
-
-#[test]
-fn changed_decision_retries_after_cancellation_with_a_held_child() {
-    journey(false, ChildDelivery::Held, true);
-}
-
-#[test]
-fn changed_decision_refreshes_a_child_superseded_before_readiness_delivery() {
-    journey(false, ChildDelivery::SupersededWhileHeld, false);
-}
-
-#[test]
-fn superseded_child_refresh_survives_cancellation_of_its_consumer() {
-    journey(false, ChildDelivery::SupersededWhileHeld, true);
-}
-
 #[derive(Clone, Copy, Eq, PartialEq)]
 enum ChildDelivery {
     Direct,
@@ -270,4 +235,43 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
 /// Counts actual handler entries; source-input preparation does not enter here.
 fn take_decision_entries() -> usize {
     crate::handler::DECISION_ENTRIES.swap(0, std::sync::atomic::Ordering::SeqCst)
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn changed_own_output_can_drop_unresolved_consumed_dependencies() {
+        journey(true, ChildDelivery::Direct, false);
+    }
+
+    #[test]
+    fn changed_own_decision_still_refreshes_the_dependency_it_reads() {
+        journey(false, ChildDelivery::Direct, false);
+    }
+
+    #[test]
+    fn changed_decision_finishes_a_held_dependency_without_advancing_its_caller() {
+        journey(false, ChildDelivery::Held, false);
+    }
+
+    #[test]
+    fn changed_decision_retries_after_cancellation_with_its_refreshed_child() {
+        journey(false, ChildDelivery::Direct, true);
+    }
+
+    #[test]
+    fn changed_decision_retries_after_cancellation_with_a_held_child() {
+        journey(false, ChildDelivery::Held, true);
+    }
+
+    #[test]
+    fn changed_decision_refreshes_a_child_superseded_before_readiness_delivery() {
+        journey(false, ChildDelivery::SupersededWhileHeld, false);
+    }
+
+    #[test]
+    fn superseded_child_refresh_survives_cancellation_of_its_consumer() {
+        journey(false, ChildDelivery::SupersededWhileHeld, true);
+    }
 }

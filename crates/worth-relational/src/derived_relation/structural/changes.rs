@@ -3,9 +3,7 @@ mod frontier;
 mod proof;
 pub use proof::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
 
-use super::{
-    DefinitionDenial, Denial, Handle, Reads, SourceRead, StructuralRelationView, StructuralSource,
-};
+use super::{DefinitionDenial, Denial, Handle, Reads, StructuralRelationView, StructuralSource};
 use crate::validation::data::TouchedStructuralSet;
 use std::sync::Arc;
 

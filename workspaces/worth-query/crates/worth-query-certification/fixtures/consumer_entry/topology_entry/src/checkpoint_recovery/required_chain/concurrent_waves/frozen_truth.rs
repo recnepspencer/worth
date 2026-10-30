@@ -151,14 +151,19 @@ fn case(transitive: bool, changed_own_source: bool) {
     }
 }
 
-#[test]
-fn direct_and_transitive_dependents_are_pending_on_a_frozen_head() {
-    let _guard = checkpoint_recovery_test_guard();
-    case(false, false);
-    case(true, false);
-}
-#[test]
-fn an_unrelated_changed_source_waits_without_execution_until_the_head_thaws() {
-    let _guard = checkpoint_recovery_test_guard();
-    case(false, true);
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn direct_and_transitive_dependents_are_pending_on_a_frozen_head() {
+        let _guard = checkpoint_recovery_test_guard();
+        case(false, false);
+        case(true, false);
+    }
+
+    #[test]
+    fn an_unrelated_changed_source_waits_without_execution_until_the_head_thaws() {
+        let _guard = checkpoint_recovery_test_guard();
+        case(false, true);
+    }
 }

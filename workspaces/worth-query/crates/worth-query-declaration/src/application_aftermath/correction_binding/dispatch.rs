@@ -65,7 +65,7 @@ where
         <ApplicationInverseBinding<Schema, Correction> as ApplicationMutationBinding<Schema>>::ScopeBinding: ApplicationMutationScopeResolution<
             Schema, <ApplicationInverseBinding<Schema, Correction> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
-    {
+{
         self.visitor.conventional::<Correction>()
     }
 
@@ -80,7 +80,7 @@ where
         <ApplicationInverseBinding<Schema, Correction> as ApplicationMutationBinding<Schema>>::ScopeBinding: ApplicationMutationScopeResolution<
             Schema, <ApplicationInverseBinding<Schema, Correction> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
-    {
+{
         self.visitor.capability::<Correction, Capability>()
     }
 }

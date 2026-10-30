@@ -48,7 +48,7 @@ impl StagedNamespaceName {
             return None;
         }
         let mut bytes = [0; ATTEMPT_BYTES];
-        for (index, pair) in encoded.as_bytes().chunks_exact(2).enumerate() {
+        for (index, pair) in encoded.as_bytes().as_chunks::<2>().0.iter().enumerate() {
             bytes[index] = decode_hex(pair[0])? << 4 | decode_hex(pair[1])?;
         }
         NamespaceInitializationAttempt::from_nonzero_bytes(bytes)?;

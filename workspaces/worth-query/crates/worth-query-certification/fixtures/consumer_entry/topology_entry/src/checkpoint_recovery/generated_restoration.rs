@@ -25,89 +25,6 @@ type Final = PlanarFinalOutputProducer<CheckpointSchema>;
 /// One vertex of the generated ring: its key, abscissa, ordinate and length.
 type Vertex = (String, PositiveLength, PositiveLength, PositiveLength);
 
-#[test]
-fn an_output_restored_on_the_runtime_that_performed_it_is_reused() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    drop(settle(&request, &application));
-    let ring = ring(&request);
-
-    suspend_and_restore(&application, &request, &scope, &ring);
-
-    // The restoration continued the performed record: nothing is contacted.
-    assert_eq!(
-        redemanded(&request, &application),
-        (Posture::StableReused, 0)
-    );
-    assert_eq!(self::ring(&request), ring);
-}
-
-#[test]
-fn an_output_restored_after_a_checkpoint_is_never_created_a_second_time() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    drop(settle(&request, &application));
-    drop(principal);
-    drop(scope);
-    let checkpoint = application
-        .with_host_advancement(|host_phase| {
-            application
-                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                .expect("the ready outputs are checkpointable")
-        })
-        .expect("installed host call opens");
-    drop(application);
-
-    let restored = install(Some(checkpoint));
-    let (scope, principal) = authenticate(&restored);
-    let request = restored.request(&principal, &scope);
-    let ring = ring(&request);
-
-    // The restored row holds no performed proof, so the restoration has no
-    // performed record to continue.
-    suspend_and_restore(&restored, &request, &scope, &ring);
-
-    assert_preserved_once(&request, &restored, &ring);
-}
-
-#[test]
-fn an_output_readmitted_after_a_checkpoint_then_restored_is_never_created_a_second_time() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    drop(settle(&request, &application));
-    drop(principal);
-    drop(scope);
-    let checkpoint = application
-        .with_host_advancement(|host_phase| {
-            application
-                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                .expect("the ready outputs are checkpointable")
-        })
-        .expect("installed host call opens");
-    drop(application);
-
-    let restored = install(Some(checkpoint));
-    let (scope, principal) = authenticate(&restored);
-    let request = restored.request(&principal, &scope);
-    let ring = ring(&request);
-    assert_eq!(
-        redemanded(&request, &restored),
-        (Posture::RecoveredPerformed, 0)
-    );
-
-    // The restored row holds no performed proof, so the restoration has no
-    // performed record to continue.
-    suspend_and_restore(&restored, &request, &scope, &ring);
-
-    assert_preserved_once(&request, &restored, &ring);
-}
-
 /// Demands the program's outputs and reports how its final output settled.
 /// A second creation over the live ring would leave two bodies under one key,
 /// which `ring` refuses to read.
@@ -252,3 +169,90 @@ fn reconstruct_ring(
 }
 
 mod advancement_custody;
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn an_output_restored_on_the_runtime_that_performed_it_is_reused() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install(None);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        drop(settle(&request, &application));
+        let ring = ring(&request);
+
+        suspend_and_restore(&application, &request, &scope, &ring);
+
+        // The restoration continued the performed record: nothing is contacted.
+        assert_eq!(
+            redemanded(&request, &application),
+            (Posture::StableReused, 0)
+        );
+        assert_eq!(self::ring(&request), ring);
+    }
+
+    #[test]
+    fn an_output_restored_after_a_checkpoint_is_never_created_a_second_time() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install(None);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        drop(settle(&request, &application));
+        drop(principal);
+        drop(scope);
+        let checkpoint = application
+            .with_host_advancement(|host_phase| {
+                application
+                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                    .expect("the ready outputs are checkpointable")
+            })
+            .expect("installed host call opens");
+        drop(application);
+
+        let restored = install(Some(checkpoint));
+        let (scope, principal) = authenticate(&restored);
+        let request = restored.request(&principal, &scope);
+        let ring = ring(&request);
+
+        // The restored row holds no performed proof, so the restoration has no
+        // performed record to continue.
+        suspend_and_restore(&restored, &request, &scope, &ring);
+
+        assert_preserved_once(&request, &restored, &ring);
+    }
+
+    #[test]
+    fn an_output_readmitted_after_a_checkpoint_then_restored_is_never_created_a_second_time() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install(None);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        drop(settle(&request, &application));
+        drop(principal);
+        drop(scope);
+        let checkpoint = application
+            .with_host_advancement(|host_phase| {
+                application
+                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                    .expect("the ready outputs are checkpointable")
+            })
+            .expect("installed host call opens");
+        drop(application);
+
+        let restored = install(Some(checkpoint));
+        let (scope, principal) = authenticate(&restored);
+        let request = restored.request(&principal, &scope);
+        let ring = ring(&request);
+        assert_eq!(
+            redemanded(&request, &restored),
+            (Posture::RecoveredPerformed, 0)
+        );
+
+        // The restored row holds no performed proof, so the restoration has no
+        // performed record to continue.
+        suspend_and_restore(&restored, &request, &scope, &ring);
+
+        assert_preserved_once(&request, &restored, &ring);
+    }
+}

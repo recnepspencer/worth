@@ -1180,7 +1180,7 @@ returned outcome requires it.
 
 The [workflow correction guide](../execution/recorded-source-correction.md#correct-an-operation-performed-inside-a-workflow)
 explains declaration and settlement requirements. Its
-[document retention example](../../../worth-query-certification/tests/application_graph/workflow_approval/correction.rs)
+[document retention example](../../../worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/correction/mod.rs)
 shows an approved operation corrected under current authority while preserving
 the workflow's terminal or live disposition.
 

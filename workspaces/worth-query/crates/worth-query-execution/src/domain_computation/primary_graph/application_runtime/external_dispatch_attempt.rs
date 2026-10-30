@@ -101,13 +101,25 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         }
         self.refuse_completed_external_effect(committed.record())?;
         let ordinal = WorthQueryExternalDispatchAttemptOrdinal::mint(
-            self.next_external_dispatch_attempt
-                .fetch_update(
-                    std::sync::atomic::Ordering::AcqRel,
-                    std::sync::atomic::Ordering::Acquire,
-                    |current| current.checked_add(1),
-                )
-                .map_err(|_| WorthQueryExternalDispatchAdmissionDenial::AttemptIdentityExhausted)?,
+            {
+                let update_counter = &self.next_external_dispatch_attempt;
+                let mut current = update_counter.load(std::sync::atomic::Ordering::Acquire);
+                loop {
+                    let Some(updated_value) = current.checked_add(1) else {
+                        break Err(current);
+                    };
+                    match update_counter.compare_exchange_weak(
+                        current,
+                        updated_value,
+                        std::sync::atomic::Ordering::AcqRel,
+                        std::sync::atomic::Ordering::Acquire,
+                    ) {
+                        Ok(previous) => break Ok(previous),
+                        Err(reloaded_value) => current = reloaded_value,
+                    }
+                }
+            }
+            .map_err(|_| WorthQueryExternalDispatchAdmissionDenial::AttemptIdentityExhausted)?,
         );
         Ok(WorthQueryAdmittedExternalDispatchAttempt::seal(
             committed,

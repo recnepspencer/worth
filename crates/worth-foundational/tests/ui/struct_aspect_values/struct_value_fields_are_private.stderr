@@ -1,5 +1,0 @@
-error[E0451]: field `fields` of struct `StructAspectValue` is private
- --> tests/ui/struct_aspect_values/struct_value_fields_are_private.rs:4:33
-  |
-4 |     let _ = StructAspectValue { fields: Default::default() };
-  |                                 ^^^^^^ private field

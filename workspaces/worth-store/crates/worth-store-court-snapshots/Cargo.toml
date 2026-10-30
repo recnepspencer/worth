@@ -1,0 +1,20 @@
+[package]
+"name" = "worth-store-court-snapshots"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-store-contracts" = { "path" = "../worth-store-contracts" }
+"worth-store-snapshots" = { "path" = "../worth-store-snapshots" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_snapshots"
+path = "tests/worth_store_court_snapshots.rs"
+
+[lints]
+workspace = true

@@ -274,6 +274,10 @@ fn initialized_roots_preserve_valid_residue_but_reject_ambiguous_staged_names() 
     assert!(residue_path.exists());
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: opened root binding survives a real name aba; source: worth-store-physical-backend::filesystem_media::tests::root_qualification::opened_root_binding_survives_a_real_name_aba; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn opened_root_binding_survives_a_real_name_aba() {
     let parent = tempfile::tempdir().unwrap();
@@ -322,6 +326,10 @@ fn opened_root_binding_survives_a_real_name_aba() {
     media.close();
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: different root left at the ambient name fails after ownership; source: worth-store-physical-backend::filesystem_media::tests::root_qualification::different_root_left_at_the_ambient_name_fails_after_ownership; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn different_root_left_at_the_ambient_name_fails_after_ownership() {
     let parent = tempfile::tempdir().unwrap();

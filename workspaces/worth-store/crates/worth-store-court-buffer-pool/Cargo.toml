@@ -1,0 +1,20 @@
+[package]
+"name" = "worth-store-court-buffer-pool"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-store-buffer-pool" = { "path" = "../worth-store-buffer-pool" }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_buffer_pool"
+path = "tests/worth_store_court_buffer_pool.rs"
+
+[lints]
+workspace = true

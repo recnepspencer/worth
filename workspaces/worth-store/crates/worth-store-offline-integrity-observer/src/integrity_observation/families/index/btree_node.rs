@@ -94,7 +94,9 @@ pub(crate) fn inspect_btree_node_payload(
     let mut cursor = directory_end;
     let mut previous_key: Option<&[u8]> = None;
     for (index, slot) in bytes[HEADER_BYTES..directory_end]
-        .chunks_exact(DIRECTORY_ENTRY_BYTES)
+        .as_chunks::<DIRECTORY_ENTRY_BYTES>()
+        .0
+        .iter()
         .enumerate()
     {
         let key_start = read_u16(slot, 0) as usize;

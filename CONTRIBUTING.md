@@ -11,10 +11,8 @@ evidence as mechanically enforced architecture rather than local convention.
 ## Rust toolchain and canonical sort qualification
 
 The repository toolchain and CI select stable Rust **1.99.1**, compiler commit
-`58cf8f9c35b355199727627d07ae34a4e2846d67`. This is the current
-[Phase 18 qualification candidate](plans/WORTH-query/milestone-9.18.1.md#phase-18-mandatory-current-rust-toolchain-qualification);
-runtime and Proprietary acceptance remain pending. The minimum language version
-remains Rust 1.94. The supported older canonical-sort identities remain exact
+`58cf8f9c35b355199727627d07ae34a4e2846d67`. The minimum language version remains
+Rust 1.94. The supported older canonical-sort identities remain exact
 Rust 1.94.0 / `4a4ef493e3a1488c6e321570238084b38948f6db` and Rust 1.98.0 /
 `88d9e12ae178fab0fb5cc050a94da85685d449ea`.
 

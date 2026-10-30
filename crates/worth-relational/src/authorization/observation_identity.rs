@@ -7,11 +7,25 @@ static NEXT_AUTHORIZATION_OBSERVATION_ORDINAL: AtomicU64 = AtomicU64::new(1);
 pub(super) fn mint_observation_identity(
     plan: &RelationalAuthorizationObservationPlan,
 ) -> Option<RelationalAuthorizationObservationIdentity> {
-    let ordinal = NEXT_AUTHORIZATION_OBSERVATION_ORDINAL
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-            current.checked_add(1)
-        })
-        .ok()?;
+    let ordinal = {
+        let update_counter = &NEXT_AUTHORIZATION_OBSERVATION_ORDINAL;
+        let mut current = update_counter.load(Ordering::Relaxed);
+        loop {
+            let Some(updated_value) = current.checked_add(1) else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    }
+    .ok()?;
     let snapshot = plan.snapshot();
     let mut bytes = [0_u8; 32];
     bytes[0..8].copy_from_slice(&snapshot.runtime_instance_id.to_le_bytes());

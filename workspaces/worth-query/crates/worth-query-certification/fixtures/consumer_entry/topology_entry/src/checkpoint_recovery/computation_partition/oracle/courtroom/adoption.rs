@@ -107,74 +107,78 @@ fn active(app: &Application) -> (usize, Vec<OracleRun>) {
     (settled.producer_contacts_in_this_demand(), runs)
 }
 
-#[test]
-fn program_adoption_carries_retained_state_and_reuses_only_unchanged_partitions() {
-    let _guard = checkpoint_recovery_test_guard();
-    for seed in SEEDS {
-        let mut rng = Lcg(seed);
-        let mut model = Model::new(&mut rng);
-        let app = install_rostered(&model);
-        let (scope, principal) = authenticate(&app);
-        demand(&app.request(&principal, &scope), &app);
-        for round in 0..ROUNDS {
-            let target = *app.supported_program::<Adopted>().unwrap().owned_revision();
-            let programs = app.runtime().request(&principal, &scope).programs();
-            let requirements = programs.compare(&target).unwrap();
-            let prepared = programs
-                .adopt(&requirements)
-                .unwrap()
-                .prepare(4096)
-                .unwrap();
-            let performed = app
-                .runtime()
-                .request(&principal, &scope)
-                .programs()
-                .publish(prepared);
-            assert!(matches!(performed, worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::Performed(_)), "adoption must publish");
-            let prior = model.clone();
-            let step = model.step(Kind::Value, &mut rng);
-            for change in step.changes {
-                let Change::Entry(change) = change else {
-                    panic!("a value edit")
-                };
-                let outcome = app
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn program_adoption_carries_retained_state_and_reuses_only_unchanged_partitions() {
+        let _guard = checkpoint_recovery_test_guard();
+        for seed in SEEDS {
+            let mut rng = Lcg(seed);
+            let mut model = Model::new(&mut rng);
+            let app = install_rostered(&model);
+            let (scope, principal) = authenticate(&app);
+            demand(&app.request(&principal, &scope), &app);
+            for round in 0..ROUNDS {
+                let target = *app.supported_program::<Adopted>().unwrap().owned_revision();
+                let programs = app.runtime().request(&principal, &scope).programs();
+                let requirements = programs.compare(&target).unwrap();
+                let prepared = programs
+                    .adopt(&requirements)
+                    .unwrap()
+                    .prepare(4096)
+                    .unwrap();
+                let performed = app
+                    .runtime()
+                    .request(&principal, &scope)
+                    .programs()
+                    .publish(prepared);
+                assert!(matches!(performed, worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::Performed(_)), "adoption must publish");
+                let prior = model.clone();
+                let step = model.step(Kind::Value, &mut rng);
+                for change in step.changes {
+                    let Change::Entry(change) = change else {
+                        panic!("a value edit")
+                    };
+                    let outcome = app
                     .request(&principal, &scope)
                     .advanced().mutate(change.commanded(0x612_ad0 + round as u64))
                     .without_source()
                     .idempotency(&(0x612_ad0_u64 + round as u64))
                     .execute_in_program::<OracleProgram>(&app, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
-                assert!(
-                    matches!(
-                        outcome,
-                        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-                    ),
-                    "adopted edit {outcome:?}"
-                );
+                    assert!(
+                        matches!(
+                            outcome,
+                            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+                        ),
+                        "adopted edit {outcome:?}"
+                    );
+                }
+                // Direct demand selection still presents the initial program (Phase 7.6).
+                // Return to that rostered program before demanding; the retained state
+                // must survive both adoptions and the edit made under the other owner.
+                let initial = *app.installed_program().revision();
+                let programs = app.runtime().request(&principal, &scope).programs();
+                let requirements = programs.compare(&initial).unwrap();
+                let prepared = programs
+                    .adopt(&requirements)
+                    .unwrap()
+                    .prepare(4096)
+                    .unwrap();
+                let performed = app
+                    .runtime()
+                    .request(&principal, &scope)
+                    .programs()
+                    .publish(prepared);
+                assert!(matches!(performed, worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::Performed(_)), "adoption must publish");
+                let (contacts, runs) = active(&app);
+                assert_eq!((contacts, runs.len()), (1, 1));
+                assert_eq!(runs[0].calls, model.expected_calls(Some(&prior)));
+                let fresh = install(|graph| model.seed(graph));
+                let (scope, principal) = authenticate(&fresh);
+                let (_, reference) = demand(&fresh.request(&principal, &scope), &fresh);
+                assert_eq!(runs[0].outcome, reference[0].outcome);
             }
-            // Direct demand selection still presents the initial program (Phase 7.6).
-            // Return to that rostered program before demanding; the retained state
-            // must survive both adoptions and the edit made under the other owner.
-            let initial = *app.installed_program().revision();
-            let programs = app.runtime().request(&principal, &scope).programs();
-            let requirements = programs.compare(&initial).unwrap();
-            let prepared = programs
-                .adopt(&requirements)
-                .unwrap()
-                .prepare(4096)
-                .unwrap();
-            let performed = app
-                .runtime()
-                .request(&principal, &scope)
-                .programs()
-                .publish(prepared);
-            assert!(matches!(performed, worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::Performed(_)), "adoption must publish");
-            let (contacts, runs) = active(&app);
-            assert_eq!((contacts, runs.len()), (1, 1));
-            assert_eq!(runs[0].calls, model.expected_calls(Some(&prior)));
-            let fresh = install(|graph| model.seed(graph));
-            let (scope, principal) = authenticate(&fresh);
-            let (_, reference) = demand(&fresh.request(&principal, &scope), &fresh);
-            assert_eq!(runs[0].outcome, reference[0].outcome);
         }
     }
 }

@@ -1,0 +1,22 @@
+warning: unreachable expression
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/host_computed_evaluation_response_fields_are_private.rs:4:13
+  |
+4 |     let _ = HostComputedEvaluationResponse { inner: loop {} };
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------^^
+  |             |                                       |
+  |             |                                       any code following this expression is unreachable
+  |             unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0451]: field `inner` of struct `HostComputedEvaluationResponse` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/host_computed_evaluation_response_fields_are_private.rs:4:46
+  |
+4 |     let _ = HostComputedEvaluationResponse { inner: loop {} };
+  |                                              ^^^^^ private field
+
+error: type `worth_signal::data::host_computed::response::HostComputedEvaluationResponseKind` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/host_computed_evaluation_response_fields_are_private.rs:4:53
+  |
+4 |     let _ = HostComputedEvaluationResponse { inner: loop {} };
+  |                                                     ^^^^^^^ private type

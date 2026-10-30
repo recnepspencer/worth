@@ -19,6 +19,10 @@ use super::route::{BankRailMaintenanceBatch, BankRailMaintenancePool};
 // external owner change or explicit host continuation cues another attempt.
 const MAXIMUM_AUTOMATIC_SWEEPS_PER_CUE: usize = 4;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+)]
 pub(in crate::http::server) fn start_maintenance(
     route: Arc<dyn BankRailCompletionRoute>,
     mut shutdown: watch::Receiver<bool>,

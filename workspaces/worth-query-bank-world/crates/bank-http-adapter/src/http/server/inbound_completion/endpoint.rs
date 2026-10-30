@@ -53,6 +53,10 @@ pub(in crate::http::server) async fn rail_completion(
     .await
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+)]
 pub(in crate::http::server) async fn receive(
     state: BankRailCompletionEndpointState,
     envelope: Bytes,

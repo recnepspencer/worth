@@ -213,15 +213,19 @@ fn decode_block(
             ENTRY_BYTES,
             DecodedFreeSpaceBlock::Leaf(
                 payload[BLOCK_PREFIX_BYTES..]
-                    .chunks_exact(ENTRY_BYTES)
-                    .map(decode_entry)
+                    .as_chunks::<ENTRY_BYTES>()
+                    .0
+                    .iter()
+                    .map(|bytes| decode_entry(bytes))
                     .collect::<Result<Vec<_>, _>>()?,
             ),
         ),
         2 if level != 0 => {
             let children = payload[BLOCK_PREFIX_BYTES..]
-                .chunks_exact(REFERENCE_BYTES)
-                .map(decode_reference)
+                .as_chunks::<REFERENCE_BYTES>()
+                .0
+                .iter()
+                .map(|bytes| decode_reference(bytes))
                 .collect::<Result<Vec<_>, _>>()?;
             if !children.iter().all(|child| {
                 child.level.checked_add(1) == Some(level) && child.generation <= generation

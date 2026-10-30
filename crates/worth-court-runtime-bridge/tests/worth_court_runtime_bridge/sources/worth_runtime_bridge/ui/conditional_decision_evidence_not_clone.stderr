@@ -1,0 +1,11 @@
+error[E0277]: the trait bound `BridgeConditionalDecisionEvidence: Clone` is not satisfied
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/conditional_decision_evidence_not_clone.rs:6:21
+  |
+6 |     require_clone::<BridgeConditionalDecisionEvidence>();
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `BridgeConditionalDecisionEvidence`
+  |
+note: required by a bound in `require_clone`
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/conditional_decision_evidence_not_clone.rs:3:21
+  |
+3 | fn require_clone<T: Clone>() {}
+  |                     ^^^^^ required by this bound in `require_clone`

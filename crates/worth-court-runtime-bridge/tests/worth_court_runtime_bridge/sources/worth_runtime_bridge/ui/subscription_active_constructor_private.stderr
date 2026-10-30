@@ -1,0 +1,14 @@
+error[E0624]: associated function `activate` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_active_constructor_private.rs:4:50
+  |
+4 |       let _constructor = BridgeActiveSubscription::activate;
+  |                                                    ^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/active_delivery.rs
+  |
+  | /     pub(crate) fn activate(
+  | |         activation_ready: BridgeSubscriptionActivationReady,
+  | |         cost_profile: BridgeSubscriptionDeliveryCostProfile,
+  | |         consumer_contract: BridgeSubscriptionConsumerContract,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

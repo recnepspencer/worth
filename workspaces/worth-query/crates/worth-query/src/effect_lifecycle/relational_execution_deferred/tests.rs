@@ -82,14 +82,16 @@ fn resource_pressure_remains_typed_across_the_effect_boundary() {
         staging,
         RelationalEffectExecutionFailure::Denied {
             kind: EffectExecutionDenialKind::TransactionAllocationDenied {
-                kind: worth_execution::ExecutionAllocationDenialKind::Lease(
-                    worth_execution::LeaseDenial::MemoryExhausted(
-                        worth_execution::MemoryLimitDenial::Capacity {
-                            requested: 65,
-                            admitted: 64,
-                            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-                        }
-                    ),
+                kind: worth_execution::ExecutionAllocationDenialClass::Request(
+                    worth_execution::WorkCeilingDenial::Admission(
+                        worth_execution::LeaseDenial::MemoryExhausted(
+                            worth_execution::MemoryLimitDenial::Capacity {
+                                requested: 65,
+                                admitted: 64,
+                                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                            }
+                        ),
+                    )
                 ),
                 requested_payload_bytes: Some(65),
             },
@@ -214,8 +216,10 @@ fn owner_allocation_denials_split_control_from_resource_pressure() {
         allocation_failure(&denial),
         RelationalEffectExecutionFailure::Denied {
             kind: EffectExecutionDenialKind::TransactionAllocationDenied {
-                kind: worth_execution::ExecutionAllocationDenialKind::Lease(
-                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                kind: worth_execution::ExecutionAllocationDenialClass::Request(
+                    worth_execution::WorkCeilingDenial::Admission(
+                        worth_execution::LeaseDenial::MemoryExhausted(_)
+                    )
                 ),
                 requested_payload_bytes: Some(65),
             },

@@ -6,10 +6,26 @@
 too-many-arguments-threshold = 32
 enum-variant-size-threshold = 32768
 type-complexity-threshold = 512
-# Milestone 3.16.2 requirements 1 and 3: a mint called as a method is resolved
-# only by Clippy. Each caller carries an `expect` that boundary-check admits only
-# at the callers road1.toml [[truth_type_denials]] declares.
+# Geometry mints carry reviewed expectations at their owning call sites.
 disallowed-methods = [
+  { path = "std::any::TypeId::of", reason = "Type identity is for point lookup; canonical order uses declared identity" },
+  { path = "std::ptr::from_ref", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::ptr::from_mut", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::ptr::NonNull::as_ptr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::ptr::NonNull::addr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::sync::Arc::as_ptr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::rc::Rc::as_ptr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
+  { path = "std::thread::spawn", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
+  { path = "std::thread::scope", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
+  { path = "std::thread::Builder::new", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
+  { path = "std::thread::Builder::spawn", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
+  { path = "std::thread::Builder::spawn_scoped", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
+  { path = "std::thread::Scope::spawn", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
+  { path = "tokio::task::spawn_blocking", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners", allow-invalid = true },
+  { path = "tokio::runtime::Builder::new_current_thread", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners", allow-invalid = true },
+  { path = "tokio::runtime::Builder::new_multi_thread", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners", allow-invalid = true },
+  { path = "std::any::type_name", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
+  { path = "std::any::type_name_of_val", reason = "Order uses declared semantic identity; machine observations and thread creation stay at their reviewed owners" },
   { path = "std::collections::HashMap::iter", reason = "canonical order: hash containers are for point lookup only" },
   { path = "std::collections::HashMap::iter_mut", reason = "canonical order: hash containers are for point lookup only" },
   { path = "std::collections::HashMap::keys", reason = "canonical order: hash containers are for point lookup only" },
@@ -47,3 +63,5 @@ ignore-interior-mutability = [
   # never retained footprint custody or its shared owner/ledger state.
   "worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch",
 ]
+
+# Operator-based pointer ordering is outside disallowed-methods coverage (owner ruling).

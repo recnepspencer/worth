@@ -8,7 +8,7 @@ mod resource_access;
 mod resource_fixture;
 
 #[test]
-fn admission_accepts_only_real_phase_one_semantic_owners() {
+fn admission_accepts_only_real_semantic_owners() {
     assert!(owner_requirement_is_exact(
         Kind::GraphRead,
         &[Owner::RelationalGraph]

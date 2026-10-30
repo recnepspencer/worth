@@ -68,7 +68,7 @@ pub(super) fn admit(
                 .observed()
                 .map_err(|failure| unread = Some(discovery_failure(failure)))?
                 .bytes()
-                .map(<[u8]>::to_vec)
+                .map(|chunk| chunk.to_vec())
                 .ok_or(())
         },
     )

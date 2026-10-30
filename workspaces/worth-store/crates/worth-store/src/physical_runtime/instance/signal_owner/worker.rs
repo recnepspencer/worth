@@ -215,6 +215,10 @@ fn bind_routes(
         .into_boxed_slice()
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "owner-thread thread-builder=1: Store owns one Signal graph owner thread for serialized graph mutation."
+)]
 fn spawn_graph_worker(
     boot: PhysicalSignalWorkerBoot,
 ) -> Result<JoinHandle<()>, PhysicalSignalConstructionFailure> {

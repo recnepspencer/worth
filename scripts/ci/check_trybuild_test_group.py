@@ -9,6 +9,7 @@ membership while it executes test binaries directly.
 from __future__ import annotations
 
 import pathlib
+import os
 import re
 import sys
 import tomllib
@@ -42,7 +43,10 @@ def session_tests() -> tuple[set[str], list[str]]:
     """
     names: set[str] = set()
     misplaced: list[str] = []
-    for crate in sorted((ROOT / "crates").iterdir()):
+    root = ROOT
+    if os.name == "nt" and not str(root).startswith("\\\\?\\"):
+        root = pathlib.Path("\\\\?\\" + str(root.resolve()))
+    for crate in sorted((root / "crates").iterdir()):
         tests = crate / "tests"
         if not tests.is_dir():
             continue
@@ -52,13 +56,13 @@ def session_tests() -> tuple[set[str], list[str]]:
             if compile_boundary_path(path, crate):
                 names.update(functions)
             elif functions and SESSION.search(text):
-                misplaced.append(str(path.relative_to(ROOT)))
+                misplaced.append(str(path.relative_to(root)))
         # Unit tests are fast by definition. A compiler session left in src
         # would escape the compile_fail path group during nextest execution.
         for path in sorted((crate / "src").rglob("*.rs")):
             text = path.read_text(encoding="utf-8")
             if SESSION.search(text):
-                misplaced.append(str(path.relative_to(ROOT)))
+                misplaced.append(str(path.relative_to(root)))
     return names, misplaced
 
 

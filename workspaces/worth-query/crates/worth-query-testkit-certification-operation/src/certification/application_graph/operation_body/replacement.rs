@@ -1,0 +1,38 @@
+//! An attempted host replacement must be refused before any method can run.
+pub use super::{binding::BodyBinding, schema::*};
+pub use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerResult, OperationHandler,
+    WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
+};
+
+pub struct Replacement;
+impl<const DESTINATION: u64>
+    OperationHandler<DocumentRetentionSchema<DESTINATION>, BodyBinding<DESTINATION>>
+    for Replacement
+{
+    fn decide(
+        &self,
+        _: &SetRetentionInput,
+        _: &mut DecisionReader<
+            '_,
+            '_,
+            '_,
+            DocumentRetentionSchema<DESTINATION>,
+            BodyBinding<DESTINATION>,
+        >,
+    ) -> HandlerResult<
+        WorthQueryOperationBodyDecision<DocumentRetentionSchema<DESTINATION>, Document>,
+        WorthQueryOperationBodyDenial,
+    > {
+        panic!("a host replacement must never execute")
+    }
+
+    fn build_candidate(
+        &self,
+        _: &SetRetentionInput,
+        _: WorthQueryOperationBodyDecision<DocumentRetentionSchema<DESTINATION>, Document>,
+        _: &mut CandidateWriter<'_, DocumentRetentionSchema<DESTINATION>, BodyBinding<DESTINATION>>,
+    ) -> HandlerResult<(), WorthQueryOperationBodyDenial> {
+        panic!("a host replacement must never execute")
+    }
+}

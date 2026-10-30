@@ -80,7 +80,7 @@ impl BankEstateEmergencyAccessActivityLiveUpdate {
     pub fn receipt(
         &self,
     ) -> &worth_query_host::facade::publication::domain_computation::WorthQueryApplicationQueryPublicationReceipt
-    {
+{
         self.published.receipt()
     }
 }

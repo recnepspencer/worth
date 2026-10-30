@@ -1,0 +1,25 @@
+error: cannot construct `ScheduledTemporalWake` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/scheduled_temporal_wake_fields_are_private.rs:6:17
+   |
+ 6 |     let _wake = ScheduledTemporalWake {
+   |                 ^^^^^^^^^^^^^^^^^^^^^
+ 7 |         id: TemporalWakeId::new(0),
+   |         -------------------------- private field
+ 8 |         ordinal: WakeOrdinal::new(1),
+   |         ---------------------------- private field
+ 9 |         condition: TemporalCondition::after(5).unwrap(),
+   |         ----------------------------------------------- private field
+10 |         due_tick: ClockTick::new(5),
+   |         --------------------------- private field
+   |
+   = note: ...and other private field `owner` that was not provided
+help: you might have meant to use the `new` associated function
+   |
+ 6 -     let _wake = ScheduledTemporalWake {
+ 7 -         id: TemporalWakeId::new(0),
+ 8 -         ordinal: WakeOrdinal::new(1),
+ 9 -         condition: TemporalCondition::after(5).unwrap(),
+10 -         due_tick: ClockTick::new(5),
+11 -     };
+ 6 +     let _wake = ScheduledTemporalWake::new(_, _, _, _, _);
+   |

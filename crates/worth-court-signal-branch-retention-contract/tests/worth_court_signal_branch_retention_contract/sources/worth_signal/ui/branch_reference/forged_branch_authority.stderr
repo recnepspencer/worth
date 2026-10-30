@@ -1,0 +1,23 @@
+error[E0423]: cannot initialize a tuple struct which contains private fields
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/forged_branch_authority.rs:4:18
+  |
+4 |     let marker = SignalBranchBasisAuthorityMarker(());
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: a struct named `SignalBranchBasisAuthorityMarker` exists in another namespace
+note: constructor is not visible here due to private fields
+ --> $WORKSPACE/crates/worth-proof/src/proof/marker_authoring.rs
+  |
+  |         $vis struct $name(::core::marker::PhantomData<()>);
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+  |
+ ::: $WORKSPACE/crates/worth-signal/src/branch/authority.rs
+  |
+  | worth_proof::authority_marker!(pub SignalBranchBasisAuthorityMarker);
+  | -------------------------------------------------------------------- in this macro invocation
+  = note: this error originates in the macro `worth_proof::authority_marker` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: you might have meant to use the `seal` associated function
+  |
+4 -     let marker = SignalBranchBasisAuthorityMarker(());
+4 +     let marker = SignalBranchBasisAuthorityMarker::seal();
+  |

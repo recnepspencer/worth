@@ -349,15 +349,15 @@ impl GeometryWorld {
         let overlays: Vec<_> = open
             .iter()
             .map(|&i| {
-                if i == 1 {
-                    if let Some(input) = previous.and_then(|previous| {
+                if i == 1
+                    && let Some(input) = previous.and_then(|previous| {
                         previous
                             .portal_overlays
                             .iter()
                             .find(|input| input.owner() == self.owners[1])
-                    }) {
-                        return *input;
-                    }
+                    })
+                {
+                    return *input;
                 }
                 portal_overlay(frame, self.owners[i], self.surfaces[i], self.bindings[i])
             })

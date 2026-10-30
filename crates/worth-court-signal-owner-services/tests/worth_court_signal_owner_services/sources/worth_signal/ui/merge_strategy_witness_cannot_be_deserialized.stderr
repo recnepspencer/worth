@@ -1,0 +1,91 @@
+error[E0277]: the trait bound `SignalMergeStrategyIdentity: serde::de::DeserializeOwned` is not satisfied
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/merge_strategy_witness_cannot_be_deserialized.rs:9:34
+  |
+9 |     requires_deserialize_owned::<SignalMergeStrategyIdentity>();
+  |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `SignalMergeStrategyIdentity`
+  |
+  = help: the following other types implement trait `Deserialize<'de>`:
+            &'a Path
+            &'a [u8]
+            &'a serde_json::raw::RawValue
+            &'a str
+            ()
+            (T,)
+            (T0, T1)
+            (T0, T1, T2)
+          and $N others
+  = note: required for `SignalMergeStrategyIdentity` to implement `DeserializeOwned`
+note: required by a bound in `requires_deserialize_owned`
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/merge_strategy_witness_cannot_be_deserialized.rs:6:34
+  |
+6 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
+  |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
+
+error[E0277]: the trait bound `SignalInvalidationStrategyIdentity: serde::de::DeserializeOwned` is not satisfied
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/merge_strategy_witness_cannot_be_deserialized.rs:10:34
+   |
+10 |     requires_deserialize_owned::<SignalInvalidationStrategyIdentity>();
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `SignalInvalidationStrategyIdentity`
+   |
+   = help: the following other types implement trait `Deserialize<'de>`:
+             &'a Path
+             &'a [u8]
+             &'a serde_json::raw::RawValue
+             &'a str
+             ()
+             (T,)
+             (T0, T1)
+             (T0, T1, T2)
+           and $N others
+   = note: required for `SignalInvalidationStrategyIdentity` to implement `DeserializeOwned`
+note: required by a bound in `requires_deserialize_owned`
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/merge_strategy_witness_cannot_be_deserialized.rs:6:34
+   |
+ 6 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
+
+error[E0277]: the trait bound `SignalDeliveryStrategyIdentity: serde::de::DeserializeOwned` is not satisfied
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/merge_strategy_witness_cannot_be_deserialized.rs:11:34
+   |
+11 |     requires_deserialize_owned::<SignalDeliveryStrategyIdentity>();
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `SignalDeliveryStrategyIdentity`
+   |
+   = help: the following other types implement trait `Deserialize<'de>`:
+             &'a Path
+             &'a [u8]
+             &'a serde_json::raw::RawValue
+             &'a str
+             ()
+             (T,)
+             (T0, T1)
+             (T0, T1, T2)
+           and $N others
+   = note: required for `SignalDeliveryStrategyIdentity` to implement `DeserializeOwned`
+note: required by a bound in `requires_deserialize_owned`
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/merge_strategy_witness_cannot_be_deserialized.rs:6:34
+   |
+ 6 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
+
+error[E0277]: the trait bound `SignalMergeStrategyWitness: serde::de::DeserializeOwned` is not satisfied
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/merge_strategy_witness_cannot_be_deserialized.rs:12:34
+   |
+12 |     requires_deserialize_owned::<SignalMergeStrategyWitness>();
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `SignalMergeStrategyWitness`
+   |
+   = help: the following other types implement trait `Deserialize<'de>`:
+             &'a Path
+             &'a [u8]
+             &'a serde_json::raw::RawValue
+             &'a str
+             ()
+             (T,)
+             (T0, T1)
+             (T0, T1, T2)
+           and $N others
+   = note: required for `SignalMergeStrategyWitness` to implement `DeserializeOwned`
+note: required by a bound in `requires_deserialize_owned`
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/merge_strategy_witness_cannot_be_deserialized.rs:6:34
+   |
+ 6 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`

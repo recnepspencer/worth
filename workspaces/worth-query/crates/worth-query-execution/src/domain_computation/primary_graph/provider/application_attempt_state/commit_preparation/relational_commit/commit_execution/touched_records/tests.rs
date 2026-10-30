@@ -11,7 +11,7 @@ use std::alloc::Layout;
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use worth_execution::CancellationToken;
-use worth_execution::ExecutionAllocationDenialKind;
+use worth_execution::ExecutionAllocationDenialClass;
 use worth_execution::ExecutionAuthority;
 use worth_execution::ExecutionAuthorityConfig;
 use worth_execution::LeaseDenial;
@@ -172,13 +172,13 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         };
         let cause = denied.allocation_denial().unwrap();
         assert_eq!(
-            cause.kind(),
-            ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial::Capacity {
+            cause.classify(),
+            ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+                LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
                     requested: quote,
                     admitted: 0,
                     level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-                }
+                })
             ))
         );
         assert_eq!(cause.requested_payload_bytes(), Some(quote));
@@ -214,8 +214,10 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
             _ => panic!("cancelled backing cannot reach publication"),
         };
         assert_eq!(
-            cancelled.allocation_denial().unwrap().kind(),
-            ExecutionAllocationDenialKind::Cancelled
+            cancelled.allocation_denial().unwrap().classify(),
+            ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::Cancelled
+            ))
         );
         world
             .application

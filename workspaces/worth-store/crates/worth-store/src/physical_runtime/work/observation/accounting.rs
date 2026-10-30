@@ -16,11 +16,25 @@ impl PhysicalWorkAccounting {
     }
 
     pub(in crate::physical_runtime::work) fn record_declared(&self) {
-        let _ = self
-            .declared
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-                value.checked_add(1)
-            });
+        let _ = {
+            let update_counter = &self.declared;
+            let mut value = update_counter.load(Ordering::Relaxed);
+            loop {
+                let next_value = value.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        };
     }
 
     pub(in crate::physical_runtime::work) fn declared(&self) -> u64 {
@@ -32,11 +46,26 @@ impl PhysicalWorkAccounting {
         family: PhysicalWorkOperationFamily,
         pressure: PhysicalWorkPressureClass,
     ) {
-        let _ = self.terminal_by_family_and_pressure[family_index(family)]
-            [pressure_index(pressure)]
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-            value.checked_add(1)
-        });
+        let _ = {
+            let update_counter = &self.terminal_by_family_and_pressure[family_index(family)]
+                [pressure_index(pressure)];
+            let mut value = update_counter.load(Ordering::Relaxed);
+            loop {
+                let next_value = value.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        };
     }
 
     pub(in crate::physical_runtime::work) fn terminal_by_family_and_pressure(

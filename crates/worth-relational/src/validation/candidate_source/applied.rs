@@ -10,7 +10,7 @@ use crate::derived_relation::DerivedRelationReadDenial;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::OverlayStateView;
 use crate::transactions::data::{RecordRef, TransactionCommitError};
-use crate::validation::custom_rule::{CustomInvariantWorkMeter, CustomPreparationBudget};
+use crate::validation::custom_rule::CustomInvariantWorkMeter;
 use crate::validation::data::{
     CustomInvariantRegistration, StructuralAspectStateView, StructuralRelationView,
 };

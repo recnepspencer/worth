@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/digest_slots/raw_bytes_cannot_satisfy_digest_derivation.rs
+  |
+  |     let _ = derive_canonical_digest([0_u8; 32]);
+  |             ----------------------- ^^^^^^^^^^ expected `Artifact<..., ..., ..., ...>`, found `[u8; 32]`
+  |             |
+  |             arguments to this function are incorrect
+  |
+  = note: expected struct `worth_proof::artifact::carrier::Artifact<CanonicalDigestDerivationReady, CanonicalDigestDerivationInput, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<CanonicalDigestInputShapeBound, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::Proof<CanonicalRuleVersionBound, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<CanonicalDigestAlgorithmMetadata>>>`
+              found array `[u8; 32]`
+note: function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/digest_slots/derived.rs
+  |
+  | pub fn derive_canonical_digest(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^

@@ -17,9 +17,7 @@ pub struct Replace {
 #[derive(Debug)]
 pub struct Changed;
 #[derive(Debug)]
-pub enum Denial {
-    Missing,
-}
+pub enum Denial {}
 worth_query_structured_value_binding!(pub InputBinding for Replace { identity: "managed-catalog.directory-edit.input.v1" });
 worth_query_structured_value_binding!(pub ChangedBinding for Changed { identity: "managed-catalog.directory-edit.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "managed-catalog.directory-edit.denial.v1" });

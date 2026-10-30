@@ -80,14 +80,25 @@ where
             definition,
             &owner.conditional_retention,
         )?;
-        let ordinal = self
-            .next_installation_ordinal
-            .fetch_update(
-                std::sync::atomic::Ordering::Relaxed,
-                std::sync::atomic::Ordering::Relaxed,
-                |current| current.checked_add(1),
-            )
-            .map_err(|_| Denial::PublicationOrdinalExhausted)?;
+        let ordinal = {
+            let update_counter = &self.next_installation_ordinal;
+            let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = current.checked_add(1) else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| Denial::PublicationOrdinalExhausted)?;
         let scope = SignalConditionalDefinitionPublicationScope::issue(
             Arc::clone(&self.authority),
             ordinal,

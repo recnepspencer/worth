@@ -1,3 +1,4 @@
+mod bootstrap_funding;
 mod execution_policy;
 pub(super) mod observation;
 use std::sync::{
@@ -24,6 +25,7 @@ use worth_query_host::facade::{
 
 use super::*;
 mod installation;
+pub(super) use installation::{install_configured_in_bootstrap, install_program_in_bootstrap};
 pub(super) mod observed;
 mod principal_bootstrap;
 pub(super) use principal_bootstrap::bind_model_owner;
@@ -34,21 +36,6 @@ pub(super) type Application = application_installation::WorthQueryProgramApplica
 >;
 
 pub(super) const DEFAULT_RETAINED_COMMITS: u64 = 32;
-
-pub(super) fn install_configured_seed(
-    configuration: TopologyConfiguration,
-    limits: WorthQueryInMemoryApplicationLimits,
-    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
-) -> Application {
-    installation::install_configured::<CheckpointProgram>(
-        None,
-        Default::default(),
-        limits,
-        seed,
-        configuration,
-    )
-    .expect("the configured checkpoint source installs")
-}
 
 pub(super) fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,

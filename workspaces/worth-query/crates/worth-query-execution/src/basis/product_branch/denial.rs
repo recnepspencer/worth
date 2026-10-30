@@ -14,6 +14,11 @@ pub enum WorthQueryProductBranchAdmissionDenial {
 /// Why a selected product basis could not be admitted for a read.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchAdmissionRefusalKind {
+    ExpectedDescriptionVersionUnsupported {
+        supported: u16,
+        actual: u16,
+    },
+    ExpectedDescriptionNameInvalid,
     ForeignPhase,
     /// The runtime's branch-observation state is unusable after an internal failure.
     ObservationStatePoisoned,

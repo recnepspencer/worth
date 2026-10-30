@@ -13,15 +13,6 @@ use worth_query_host::facade::{
 // distinct from the retry court's two-checkpoint-minus-one bound.
 const CALLER_WORK: u64 = ENTRY_WORK as u64 + ENTRY_WORK as u64 / 2;
 
-#[test]
-fn producer_completes_but_delivery_cannot_reset_its_remaining_budget() {
-    let _guard = checkpoint_recovery_test_guard();
-    let _restore = Restore(place(Placement::Serial), bound(None));
-    for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
-        refused_delivery(placement);
-    }
-}
-
 worth_execution::needs_os_threads! {
 #[test]
 fn a_wider_lease_funds_delivery_from_the_same_request() {
@@ -146,4 +137,17 @@ fn funded_delivery(placement: Placement) {
         room().is_empty(),
         "settlement cannot duplicate the producer effect"
     );
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn producer_completes_but_delivery_cannot_reset_its_remaining_budget() {
+        let _guard = checkpoint_recovery_test_guard();
+        let _restore = Restore(place(Placement::Serial), bound(None));
+        for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
+            refused_delivery(placement);
+        }
+    }
 }

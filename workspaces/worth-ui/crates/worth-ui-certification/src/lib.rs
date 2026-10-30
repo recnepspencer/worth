@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 pub mod allocation;
 mod intent_execution_provider;
 mod rust_authored_declaration_fixture;

@@ -1,0 +1,14 @@
+#[path = "authority_matrix/mod.rs"]
+pub(crate) mod authority_matrix;
+#[path = "concurrency/mod.rs"]
+pub(crate) mod concurrency;
+#[path = "fault_matrix/mod.rs"]
+pub(crate) mod fault_matrix;
+#[path = "journeys/mod.rs"]
+pub(crate) mod journeys;
+#[path = "root_projection_carriage/mod.rs"]
+pub(crate) mod root_projection_carriage;
+#[path = "root_signal_progression/mod.rs"]
+pub(crate) mod root_signal_progression;
+#[path = "scheduler_capacity/mod.rs"]
+pub(crate) mod scheduler_capacity;

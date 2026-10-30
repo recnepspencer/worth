@@ -140,9 +140,7 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
 }
 
 #[cfg(test)]
-mod native_changes;
-#[cfg(test)]
-mod native_fixture;
+use worth_testkit_relational::derived_relation as native_fixture;
 #[cfg(test)]
 mod native_snapshot;
 #[cfg(test)]

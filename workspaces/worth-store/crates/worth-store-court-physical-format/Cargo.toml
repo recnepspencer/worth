@@ -1,0 +1,23 @@
+[package]
+"name" = "worth-store-court-physical-format"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"serde_json" = { "version" = "^1" }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-store-contracts" = { "path" = "../worth-store-contracts" }
+"worth-store-offline-integrity-observer" = { "path" = "../worth-store-offline-integrity-observer" }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_physical_format"
+path = "tests/worth_store_court_physical_format.rs"
+
+[lints]
+workspace = true

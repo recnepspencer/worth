@@ -40,7 +40,8 @@ pub(in crate::http::server) fn commit_denial(
         } => super::denial::pending_execution_denial(cause),
         // Bank's money commands install neither native bodies nor signing
         // lifecycles. A new client attempt cannot configure those host lanes.
-        Denial::OperationBodyExecutionRequired
+        Denial::UnobservedWrite
+        | Denial::OperationBodyExecutionRequired
         | Denial::SignedCreationAuthentication { .. }
         | Denial::SignedEntityImmutable
         | Denial::SigningLifecycleForgery

@@ -35,17 +35,17 @@ pub(super) fn admit_peer_contracts(
                 neighborhood,
             ));
         }
-        if let Some(intrinsic_axis_scope) = intrinsic_axis_scope {
-            if intrinsic_axis_scope != axis_scope {
-                return Err(sibling_denial(
-                    UiConstraintPropagationDenialReason::ContradictorySiblingRequirements,
-                    member.identity_digest()
-                        ^ stable_text_digest(
-                            "worth-ui.constraint-sibling-negotiation.intrinsic-axis-contract-mismatch",
-                        ),
-                    neighborhood,
-                ));
-            }
+        if let Some(intrinsic_axis_scope) = intrinsic_axis_scope
+            && intrinsic_axis_scope != axis_scope
+        {
+            return Err(sibling_denial(
+                UiConstraintPropagationDenialReason::ContradictorySiblingRequirements,
+                member.identity_digest()
+                    ^ stable_text_digest(
+                        "worth-ui.constraint-sibling-negotiation.intrinsic-axis-contract-mismatch",
+                    ),
+                neighborhood,
+            ));
         }
         peer_contracts.push(UiSiblingNegotiationPeerContract {
             identity_digest: member.identity_digest(),

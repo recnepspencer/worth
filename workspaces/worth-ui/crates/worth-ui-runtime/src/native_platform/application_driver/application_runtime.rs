@@ -202,18 +202,18 @@ impl UiNativeApplicationDriver {
     }
 
     pub(super) fn arm_motion_readiness_now(&self) {
-        if self.motion_can_request_readiness() {
-            if let Some(readiness) = self.motion_readiness.as_ref() {
-                readiness.arm_now();
-            }
+        if self.motion_can_request_readiness()
+            && let Some(readiness) = self.motion_readiness.as_ref()
+        {
+            readiness.arm_now();
         }
     }
 
     fn arm_motion_readiness_next_frame(&self) {
-        if self.motion_can_request_readiness() {
-            if let Some(readiness) = self.motion_readiness.as_ref() {
-                readiness.arm_next_frame();
-            }
+        if self.motion_can_request_readiness()
+            && let Some(readiness) = self.motion_readiness.as_ref()
+        {
+            readiness.arm_next_frame();
         }
     }
 

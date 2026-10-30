@@ -154,8 +154,10 @@ fn checkpoint_impossible_payload_layout_is_a_typed_allocation_refusal() {
         panic!("exact lower allocation refusal must survive");
     };
     assert_eq!(
-        denial.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Layout
+        denial.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Physical(
+            worth_execution::ExecutionPhysicalAllocationDenialKind::Layout
+        )
     );
     assert_eq!(denial.requested_payload_bytes(), None);
 }

@@ -92,7 +92,7 @@ impl ServingPhysicalRuntime {
         let mut level = 1;
         while leaves.len() > 1 {
             let mut parents = Vec::with_capacity(leaves.len() / 2);
-            for pair in leaves.chunks_exact(2) {
+            for pair in leaves.as_chunks::<2>().0.iter() {
                 let parent = append_node(
                     self,
                     interior(level, pair[0].1, key(pair[1].0), pair[1].1)?,

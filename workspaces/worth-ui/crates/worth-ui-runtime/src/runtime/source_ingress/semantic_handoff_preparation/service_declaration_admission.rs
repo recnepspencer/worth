@@ -31,16 +31,15 @@ pub(super) fn admit_service_declarations(
         {
             admit_scroll_wheel(declaration_index, scroll.wheel())?;
         }
-        if let Some(policy) = declaration.policy_digest() {
-            if family_policies
+        if let Some(policy) = declaration.policy_digest()
+            && family_policies
                 .insert(family, policy)
                 .is_some_and(|prior| prior != policy)
-            {
-                return Err(service_stop(
-                    declaration_index,
-                    WorthUiServiceDeclarationAdmissionCause::ConflictingFamilyPolicy,
-                ));
-            }
+        {
+            return Err(service_stop(
+                declaration_index,
+                WorthUiServiceDeclarationAdmissionCause::ConflictingFamilyPolicy,
+            ));
         }
         if let worth_ui_dsl::WorthUiServiceDeclarationMeaning::Command(command) =
             declaration.meaning()

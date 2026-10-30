@@ -4,7 +4,7 @@ use crate::application::{
 };
 
 #[test]
-fn milestone_nine_seven_closes_only_from_required_phase_local_closures() {
+fn closes_only_from_required_phase_local_closures() {
     let closed = phase_local_closure(WorthQueryMilestoneClosureStatus::Closed);
 
     assert_eq!(closed.status(), WorthQueryMilestoneClosureStatus::Closed);
@@ -37,7 +37,7 @@ fn milestone_nine_seven_closes_only_from_required_phase_local_closures() {
 }
 
 #[test]
-fn milestone_nine_seven_support_profile_contract_names_defended_exclusion() {
+fn support_profile_contract_names_defended_exclusion() {
     let contract =
         WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract();
 

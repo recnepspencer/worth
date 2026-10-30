@@ -2,6 +2,10 @@
 use super::*;
 use crate::domain_computation::primary_graph::component_selection::ComponentSelection;
 impl SourceReadEquivalence {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph) fn equal_component(
         &mut self,
         left: &Arc<ComponentSelection>,

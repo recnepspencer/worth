@@ -132,7 +132,8 @@ impl<Class: UiMountedVisualLeaseClass> UiMountedVisualLease<Class> {
             .authority
             .upgrade()
             .ok_or(super::UiMountedVisualRetentionDenial::ExpiredFrame)?;
-        let relation = match authority.borrow().frame(self.pin.release.frame) {
+
+        match authority.borrow().frame(self.pin.release.frame) {
             UiMountedRetainedFrameLookup::Found { relation, .. } => match relation {
                 UiPresentedFrameBasisRelation::Current => {
                     Ok(worth_ui_inspection::UiVisualSnapshotRelation::Current)
@@ -147,8 +148,7 @@ impl<Class: UiMountedVisualLeaseClass> UiMountedVisualLease<Class> {
             UiMountedRetainedFrameLookup::Unknown { .. } => {
                 Err(super::UiMountedVisualRetentionDenial::UnknownFrame)
             }
-        };
-        relation
+        }
     }
 
     #[cfg(any(test, feature = "certification-support"))]

@@ -79,6 +79,10 @@ impl PhysicalMutationRuntimeOwner {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "io-durability-worker thread-builder=1: Store owns this durability or mutation worker independently of parallel computation."
+    )]
     fn start(self: &Arc<Self>, prepared: PreparedPhysicalMutation) -> PhysicalMutationHandle {
         let identity = prepared.mutation_identity();
         let mut state = self.state();

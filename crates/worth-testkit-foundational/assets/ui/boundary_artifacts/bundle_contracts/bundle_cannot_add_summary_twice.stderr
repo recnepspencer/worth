@@ -1,0 +1,18 @@
+error[E0599]: no method named `with_summary` found for struct `FoundationalBoundaryMaterializationBundlePlan<Vec<u8>, (), worth_foundational::boundary_artifacts::materialization::bundle_types::SummaryPresent>` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/bundle_contracts/bundle_cannot_add_summary_twice.rs
+  |
+  |       let _ = plan_artifact_boundary_bundle(primary)
+  |               --------------------------------------
+  |               |
+  |  _____________method `with_summary` is available on `FoundationalBoundaryMaterializationBundlePlan<Vec<u8>>`
+  | |
+  | |         .with_summary(summary.clone())
+  | |         .expect("first summary")
+  | |         .with_summary(summary)
+  | |_________-^^^^^^^^^^^^
+  |
+help: there is a method `summary` with a similar name, but with different arguments
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/materialization/bundle.rs
+  |
+  |     pub fn summary(&self) -> Option<&FoundationalSummaryBundlePlan> {
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

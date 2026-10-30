@@ -103,7 +103,7 @@ fn only_relinquishment_returns_a_commits_mint_claim() {
 }
 
 #[test]
-fn phase8_world_construction_installs_via_production_derivation() {
+fn world_construction_installs_via_production_derivation() {
     let installed = fixture::notify_death();
     assert_eq!(
         installed.published_posture(),

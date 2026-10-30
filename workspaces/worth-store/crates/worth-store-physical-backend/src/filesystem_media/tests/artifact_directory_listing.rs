@@ -225,7 +225,15 @@ fn long_local_artifact_directory_preserves_unicode_and_near_maximum_names() {
     assert!(tree.listing_storage_requirement(0).is_none());
     assert!(tree.listing_storage_requirement(usize::MAX).is_none());
     let before = media.counters();
-    let entries = tree.list_bounded(&directory, 3).unwrap();
+    let mut entries = None;
+    let requested = super::allocation_probe::allocated_bytes_during(|| {
+        entries = Some(tree.list_bounded(&directory, 3).unwrap());
+    });
+    // This sample's cumulative requested bytes (net growth for reallocations)
+    // are a cross-check; old/new overlap is covered by the source-derived bound.
+    assert!(requested as u64 <= requirement.listing_construction_peak_bytes());
+    eprintln!("long Unicode listing requested {requested} bytes");
+    let entries = entries.unwrap();
     assert_eq!(
         listing_names(&entries),
         BTreeMap::from([

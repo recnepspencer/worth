@@ -1,0 +1,29 @@
+[package]
+"name" = "worth-court-server-certification-suite"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
+"flate2" = { "version" = "^1" }
+"serde" = { "version" = "^1", "features" = ["derive", "rc"] }
+"serde_json" = { "version" = "^1" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+"worth-query" = { "path" = "../../workspaces/worth-query/crates/worth-query" }
+"worth-query-host" = { "path" = "../../workspaces/worth-query/crates/worth-query-host" }
+"worth-runtime-bridge" = { "path" = "../worth-runtime-bridge" }
+"worth-server" = { "path" = "../worth-server" }
+"worth-testkit-server" = { "path" = "../worth-testkit-server" }
+
+[[test]]
+name = "worth_court_server_certification_suite"
+path = "tests/worth_court_server_certification_suite.rs"
+
+[lints]
+workspace = true

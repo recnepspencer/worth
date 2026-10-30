@@ -1,7 +1,0 @@
-error[E0451]: field `lifecycle` of struct `ResourceInitialLifecycleClass` is private
- --> tests/ui/resource_initial_lifecycle_class_fields_are_private.rs:5:9
-  |
-4 |     let _ = ResourceInitialLifecycleClass {
-  |             ----------------------------- in this type
-5 |         lifecycle: ResourceLifecycleClass::Pending,
-  |         ^^^^^^^^^ private field

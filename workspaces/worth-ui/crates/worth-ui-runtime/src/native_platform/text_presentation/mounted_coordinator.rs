@@ -84,18 +84,17 @@ impl UiNativeMountedTextCoordinator {
                 && receipts
                     .iter()
                     .all(|receipt| receipt.raster_keys_cached(&self.raster_cache))
-        }) {
-            if let Some(prepared) = prepare_from_foreground_reuse(work, &retained, basis, &resolve)
-            {
-                let candidate = self.pins.candidate(requirement.binding(), &prepared);
-                let pins_continue = candidate.has_no_pin_churn()
-                    && UiMountedTextForegroundReuseReceipt::pins_are_continuous(
-                        retained.iter().copied(),
-                        UiMountedTextPinState::binding_pins(&candidate),
-                    );
-                if pins_continue {
-                    return Some(UiNativeTextPresentationPreparation::Prepared(prepared));
-                }
+        }) && let Some(prepared) =
+            prepare_from_foreground_reuse(work, &retained, basis, &resolve)
+        {
+            let candidate = self.pins.candidate(requirement.binding(), &prepared);
+            let pins_continue = candidate.has_no_pin_churn()
+                && UiMountedTextForegroundReuseReceipt::pins_are_continuous(
+                    retained.iter().copied(),
+                    UiMountedTextPinState::binding_pins(&candidate),
+                );
+            if pins_continue {
+                return Some(UiNativeTextPresentationPreparation::Prepared(prepared));
             }
         }
         super::prepare_mounted_semantic_text(work, dpi, resolve)

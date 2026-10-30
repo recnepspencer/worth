@@ -1,0 +1,11 @@
+error[E0603]: module `data` is private
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/invalidation_progression_is_private.rs:1:19
+  |
+1 | use worth_signal::data::proof::invalidation::progression::ReadyInvalidationBatch;
+  |                   ^^^^ private module        ----------- module `progression` is not publicly re-exported
+  |
+note: the module `data` is defined here
+ --> $WORKSPACE/crates/worth-signal/src/lib.rs
+  |
+  | mod data;
+  | ^^^^^^^^

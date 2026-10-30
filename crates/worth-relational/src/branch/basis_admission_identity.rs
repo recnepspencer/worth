@@ -39,6 +39,10 @@ impl PartialEq for RelationalBranchBasisAdmissionIdentity {
 impl Eq for RelationalBranchBasisAdmissionIdentity {}
 
 impl Hash for RelationalBranchBasisAdmissionIdentity {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn hash<H: Hasher>(&self, state: &mut H) {
         (Arc::as_ptr(&self.0) as usize).hash(state);
     }

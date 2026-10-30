@@ -79,6 +79,10 @@ impl RelationalBranchRetentionBinding {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn acquire(
         &self,
         kind: RelationalRetentionObligationKind,
@@ -214,6 +218,10 @@ impl RelationalRetentionGuard {
     pub(crate) fn record_interruption(&self, event: crate::runtime::RelationalInterruptionEvent) {
         lock_lane(&self.lane).interruption_counters.record(event);
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn owner_relationship(
         &self,
         binding: &RelationalBranchRetentionBinding,

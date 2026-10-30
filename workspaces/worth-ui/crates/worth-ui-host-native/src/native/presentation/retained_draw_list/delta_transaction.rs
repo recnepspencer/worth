@@ -177,10 +177,10 @@ impl UiNativeRetainedDrawList {
             }
         }
         for (identity, _) in &undo.commands {
-            if let Some(current) = self.commands.remove(identity) {
-                if visible_bounds(&current).is_some() {
-                    self.damage.remove(*identity)?;
-                }
+            if let Some(current) = self.commands.remove(identity)
+                && visible_bounds(&current).is_some()
+            {
+                self.damage.remove(*identity)?;
             }
         }
         for (identity, _) in &undo.glyph_runs {

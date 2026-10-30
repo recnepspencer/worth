@@ -35,12 +35,13 @@ pub use crate::branch::{
     ProductBranchAncestorSelectionDenial, ProductBranchCreationIntent, ProductBranchCreationPlans,
     ProductBranchCurrentnessFailure, ProductBranchHistoryTraversal, ProductBranchName,
     ProductBranchNameDenial, ProductBranchObservation, ProductBranchObservationMismatch,
-    ProductBranchObservationMismatchAxis, ProductBranchReferenceSnapshot,
+    ProductBranchObservationMismatchAxis, ProductBranchReferenceDescription,
+    ProductBranchReferenceReadmissionDenial, ProductBranchReferenceSnapshot,
     ProductBranchRetirementReport, ProductExactHistoryCursor, ProductExactHistoryDenial,
     ProductExactHistoryPage, RecoveredRuntimeWorldRootAuthority, RelationalBranchCreationPlan,
     RuntimeWorldBootstrapIntent, RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchRetirementDenial,
-    SignalBranchCreationPlan,
+    SignalBranchCreationPlan, PRODUCT_BRANCH_REFERENCE_DESCRIPTION_VERSION,
 };
 
 pub use crate::budget::{

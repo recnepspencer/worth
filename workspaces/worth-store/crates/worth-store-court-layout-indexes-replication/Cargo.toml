@@ -1,0 +1,22 @@
+[package]
+"name" = "worth-store-court-layout-indexes-replication"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"sha2" = { "version" = "^0.10" }
+"tempfile" = { "version" = "^3" }
+"worth-store-offline-verifier" = { "path" = "../worth-store-offline-verifier" }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_layout_indexes_replication"
+path = "tests/worth_store_court_layout_indexes_replication.rs"
+
+[lints]
+workspace = true

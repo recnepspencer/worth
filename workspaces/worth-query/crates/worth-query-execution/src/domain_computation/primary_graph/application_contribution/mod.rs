@@ -119,7 +119,9 @@ pub use request_execution::{
 };
 
 #[cfg(test)]
-pub(crate) use request_execution::{with_test_advancement, TestHostRequest};
+pub(crate) use request_execution::{
+    with_test_advancement, with_test_bootstrap_advancement, TestHostRequest,
+};
 
 pub use request_execution::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 

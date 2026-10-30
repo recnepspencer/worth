@@ -1,0 +1,19 @@
+[package]
+"name" = "worth-store-court-source"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"store-test-runner" = { "path" = "../../tools/store-test-runner" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_source"
+path = "tests/worth_store_court_source.rs"
+
+[lints]
+workspace = true

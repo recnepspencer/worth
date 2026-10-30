@@ -1,16 +1,6 @@
 //! Complete binding scopes cannot hide an unbound installed portable target.
 use super::*;
 
-#[test]
-fn extra_valid_operation_node_refuses_before_initialization() {
-    refusal::<{ super::super::ORPHAN_OPERATION }>("unbound-output-ready");
-}
-
-#[test]
-fn same_named_unbound_workflow_stage_node_refuses_before_initialization() {
-    refusal::<{ super::super::ORPHAN_STAGE }>("orphan-stage");
-}
-
 fn refusal<const MODE: u8>(target: &str) {
     use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
     let _guard = checkpoint_recovery_test_guard();
@@ -33,5 +23,19 @@ fn refusal<const MODE: u8>(target: &str) {
             assert!(denial.subject().contains(target), "full target location: {denial:?}");
         }
         other => panic!("expected installed target-coverage refusal, not an earlier malformed package/admission: {other:?}"),
+    }
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn extra_valid_operation_node_refuses_before_initialization() {
+        refusal::<{ super::super::super::ORPHAN_OPERATION }>("unbound-output-ready");
+    }
+
+    #[test]
+    fn same_named_unbound_workflow_stage_node_refuses_before_initialization() {
+        refusal::<{ super::super::super::ORPHAN_STAGE }>("orphan-stage");
     }
 }

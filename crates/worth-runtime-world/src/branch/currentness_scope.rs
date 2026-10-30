@@ -43,6 +43,48 @@ pub enum ProductBranchCurrentnessFailure<Argument> {
 }
 
 impl<'selected> ProductBranchCurrentnessScope<'selected> {
+    /// Both scopes are admitted before either cell is locked. Guard acquisition
+    /// follows occurrence order; the callback may only install prepared state.
+    pub(crate) fn while_both_current<Argument, Output>(
+        self,
+        other: Self,
+        argument: Argument,
+        install: impl for<'guard> FnOnce(
+            Argument,
+            CurrentProductHead<'guard>,
+            CurrentProductHead<'guard>,
+        ) -> Output,
+    ) -> Result<Output, ProductBranchCurrentnessFailure<Argument>> {
+        let first = self.expected.lifecycle_incarnation();
+        let second = other.expected.lifecycle_incarnation();
+        if first == second {
+            if self.expected != other.expected {
+                return Err(ProductBranchCurrentnessFailure::ExpectedHeadUnavailable(
+                    argument,
+                ));
+            }
+            let expected = other.expected;
+            drop(other);
+            return self.while_current(argument, |argument, head| {
+                install(argument, head, CurrentProductHead { expected })
+            });
+        }
+        if first < second {
+            self.while_current(argument, |argument, first| {
+                other.while_current(argument, |argument, second| {
+                    install(argument, first, second)
+                })
+            })
+            .and_then(std::convert::identity)
+        } else {
+            other
+                .while_current(argument, |argument, second| {
+                    self.while_current(argument, |argument, first| install(argument, first, second))
+                })
+                .and_then(std::convert::identity)
+        }
+    }
+
     pub(crate) fn owner_issued(
         cell: ProductBranchReferenceCell,
         expected: &'selected ProductBranchObservation,

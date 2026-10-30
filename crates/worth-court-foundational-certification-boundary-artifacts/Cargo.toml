@@ -1,0 +1,23 @@
+[package]
+"name" = "worth-court-foundational-certification-boundary-artifacts"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
+"serde" = { "version" = "^1", "features" = ["derive", "rc"] }
+"serde_json" = { "version" = "^1", "features" = ["unbounded_depth"] }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+"worth-testkit-foundational" = { "path" = "../worth-testkit-foundational" }
+
+[[test]]
+name = "worth_court_foundational_certification_boundary_artifacts"
+path = "tests/worth_court_foundational_certification_boundary_artifacts.rs"
+
+[lints]
+workspace = true

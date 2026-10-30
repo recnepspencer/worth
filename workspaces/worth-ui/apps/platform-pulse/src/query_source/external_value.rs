@@ -65,6 +65,10 @@ struct PlatformPulseExternalValue {
 }
 
 impl PlatformPulseExternalValueWatch {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "event-loop-watcher thread-builder=1: UI readiness, source, theme or event-loop observation runs independently of computation."
+    )]
     pub(crate) fn spawn(root: &Path) -> Result<Self, PlatformPulseExternalValueWatchDenial> {
         let metadata = std::fs::metadata(root)
             .map_err(|_| PlatformPulseExternalValueWatchDenial::RootMetadata)?;

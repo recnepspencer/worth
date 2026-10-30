@@ -175,10 +175,11 @@ fn collect_references(
     let mut index = 0;
     while let Some(field) = table.get_field(index) {
         index += 1;
-        if table.type_name() == "PaintColrGlyph" && field.name == "glyph_id" {
-            if let FieldType::GlyphId16(glyph) = &field.value {
-                references.insert(glyph.to_u16());
-            }
+        if table.type_name() == "PaintColrGlyph"
+            && field.name == "glyph_id"
+            && let FieldType::GlyphId16(glyph) = &field.value
+        {
+            references.insert(glyph.to_u16());
         }
         match (field.name, &field.value) {
             ("first_layer_index", FieldType::U32(value)) => first_layer = Some(*value),

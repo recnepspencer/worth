@@ -10,23 +10,6 @@ mod alias_spans;
 mod checkpoint_polling;
 mod unrebased_settlement;
 
-#[test]
-fn fresh_source_suffix_with_equal_declared_input_reuses_without_a_handler_or_world_commit() {
-    checkpoint_polling::equal_input_receipt(|| {
-        exercise("anchor-a", "anchor-b", 2, true, controls());
-    });
-}
-
-#[test]
-fn raw_native_reader_prevents_input_cutoff_even_when_the_declared_input_is_equal() {
-    exercise("anchor-isolated", "anchor-island", 51, false, controls());
-}
-
-#[test]
-fn undeclared_key_consumption_prevents_input_cutoff_even_when_the_declared_input_is_equal() {
-    exercise("anchor-island", "anchor-atoll", 61, false, controls());
-}
-
 fn exercise(
     root: &str,
     changed_successor: &str,
@@ -250,4 +233,25 @@ fn direct_demand_with_controls<'application, 'principal, 'scope>(
         }
     }
     panic!("the demand did not settle within its synchronous bound")
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn fresh_source_suffix_with_equal_declared_input_reuses_without_a_handler_or_world_commit() {
+        checkpoint_polling::equal_input_receipt(|| {
+            exercise("anchor-a", "anchor-b", 2, true, controls());
+        });
+    }
+
+    #[test]
+    fn raw_native_reader_prevents_input_cutoff_even_when_the_declared_input_is_equal() {
+        exercise("anchor-isolated", "anchor-island", 51, false, controls());
+    }
+
+    #[test]
+    fn undeclared_key_consumption_prevents_input_cutoff_even_when_the_declared_input_is_equal() {
+        exercise("anchor-island", "anchor-atoll", 61, false, controls());
+    }
 }

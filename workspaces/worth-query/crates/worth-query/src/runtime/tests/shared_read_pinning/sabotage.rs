@@ -2,7 +2,7 @@ use super::*;
 use crate::application::WorthQuerySharedReadPinningBoundaryPosture;
 
 #[test]
-fn shared_read_phase_twelve_counter_sabotage_reopens_lock_posture() {
+fn shared_read_counter_sabotage_reopens_lock_posture() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -21,7 +21,7 @@ fn shared_read_phase_twelve_counter_sabotage_reopens_lock_posture() {
 }
 
 #[test]
-fn shared_read_phase_twelve_counter_sabotage_reopens_pin_residue() {
+fn shared_read_counter_sabotage_reopens_pin_residue() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -44,7 +44,7 @@ fn shared_read_phase_twelve_counter_sabotage_reopens_pin_residue() {
 }
 
 #[test]
-fn shared_read_phase_thirteen_closure_sabotage_reopens_boundary_posture() {
+fn shared_read_closure_sabotage_reopens_boundary_posture() {
     let inventory = shared_read_pinning_inventory_evidence();
     let counters = WorthQuerySharedReadPinningCounterEvidence::new(0, 0, 0, 0, 0);
     let matrix = WorthQuerySharedReadPinningHostileMatrixEvidence::new(

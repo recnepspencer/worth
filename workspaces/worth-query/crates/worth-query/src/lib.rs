@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! `worth-query` is the internal Query engine crate. Its `facade` module is the
 //! Workspace engine surface (`WorthQueryWorkspace`), and the crate owns typed
 //! query authoring and proof-carrying canonical query artifacts.

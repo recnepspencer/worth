@@ -162,10 +162,10 @@ impl UiIntentExecutionState {
     }
 
     fn admit_monotonic_tick(&mut self, tick: u64) -> Result<(), (u64, u64)> {
-        if let Some(previous) = self.last_tick {
-            if tick < previous {
-                return Err((previous, tick));
-            }
+        if let Some(previous) = self.last_tick
+            && tick < previous
+        {
+            return Err((previous, tick));
         }
         self.last_tick = Some(tick);
         Ok(())

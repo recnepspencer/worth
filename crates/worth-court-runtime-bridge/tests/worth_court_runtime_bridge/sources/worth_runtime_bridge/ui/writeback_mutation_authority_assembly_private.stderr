@@ -1,0 +1,18 @@
+error[E0624]: associated function `from_successful_writeback_artifacts` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mutation_authority_assembly_private.rs:4:44
+  |
+4 |       let _ = BridgeMutationAuthorityBundle::from_successful_writeback_artifacts;
+  |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/writeback/mutation_evidence/authority.rs
+  |
+  | /     pub(crate) fn from_successful_writeback_artifacts(
+  | |         artifacts: SuccessfulWritebackArtifactChain<'_>,
+  | |     ) -> Result<Self, BridgeMutationAuthorityBundleError> {
+  | |_________________________________________________________- private associated function defined here
+
+error[E0599]: no function or associated item named `from_writeback_artifacts` found for struct `BridgeMutationAuthorityBundle` in the current scope
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mutation_authority_assembly_private.rs:5:44
+  |
+5 |     let _ = BridgeMutationAuthorityBundle::from_writeback_artifacts;
+  |                                            ^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `BridgeMutationAuthorityBundle`

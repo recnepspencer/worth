@@ -1,14 +1,16 @@
 [package]
-name = "worth-signal"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-description = "Generic deterministic reactive computation runtime"
-readme = "README.md"
-repository = "https://github.com/recnepspencer/WORTH"
-publish = false
-keywords = ["incremental", "runtime", "reactive", "diagnostics", "replay"]
-categories = ["data-structures", "caching", "science"]
+"name" = "worth-signal"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"description" = "Generic deterministic reactive computation runtime"
+"readme" = "README.md"
+"repository" = "https://github.com/recnepspencer/WORTH"
+"publish" = false
+"keywords" = ["incremental", "runtime", "reactive", "diagnostics", "replay"]
+"categories" = ["data-structures", "caching", "science"]
+"autotests" = false
+
 
 [features]
 default = ["profile-extended"]
@@ -28,21 +30,12 @@ sha2 = "0.10"
 # Retained-storage charges describe im 15.1 nodes; ordered_index courts drift.
 im = { version = "=15.1.0", features = ["serde"] }
 arc-swap = "1"
-
 [dev-dependencies]
-worth-harness.workspace = true
-serde_json = { version = "1", features = ["arbitrary_precision"] }
-stats_alloc = "0.1"
-tracking-allocator = { version = "0.4", default-features = false }
-trybuild = "1"
+"worth-harness" = { "workspace" = true }
+"serde_json" = { "version" = "1", "features" = ["arbitrary_precision"] }
+"stats_alloc" = "0.1"
+"tracking-allocator" = { "version" = "0.4", "default-features" = false }
 
-# The documented owner workflow is evidence, not decoration: the test lane must
-# run it, not merely build it. The signal_contracts suite compiles this same
-# file as a module and calls its `main`, so what the test lane executes is
-# byte-identical to what `cargo run --example branch_bases` shows a developer.
-# The example itself is not a test target: a `harness = false` binary cannot
-# answer nextest's test listing, which made `cargo verify --workspace` refuse
-# the whole root.
 [[example]]
 name = "branch_bases"
 test = false

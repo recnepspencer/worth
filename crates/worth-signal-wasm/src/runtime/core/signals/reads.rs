@@ -187,10 +187,9 @@ impl RuntimeCore {
         &self,
     ) -> Result<(Vec<PendingCallbackDependencyPatch>, u64), WorthSignalJsError> {
         let mut store = self.lock_store()?;
-        let pending = store
-            .pending_callback_dependency_patches
-            .drain(..)
-            .collect::<Vec<_>>();
+        // Retain the queue's allocation for the next callback batch.
+        let mut pending = Vec::with_capacity(store.pending_callback_dependency_patches.len());
+        pending.append(&mut store.pending_callback_dependency_patches);
         let runtime_read_breadth = store.pending_callback_runtime_read_breadth;
         store.pending_callback_runtime_read_breadth = 0;
         Ok((pending, runtime_read_breadth))

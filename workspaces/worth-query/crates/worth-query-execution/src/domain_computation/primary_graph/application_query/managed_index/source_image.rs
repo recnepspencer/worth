@@ -37,11 +37,12 @@ pub(super) struct SourceImage<S: ApplicationSchema, I: ApplicationManagedIndexBi
     pub(super) installed: WorthQueryInstalledManagedIndex<S, I>,
     pub(super) material: Arc<SourceMaterial>,
     pub(super) dependencies: Arc<super::super::observed_source::ManagedSourceDependencies>,
-    pub(super) sources: Vec<WorthQueryObservedSource<SourceQuery<S, I>>>,
-    pub(super) result_set: WorthQueryObservedResultSet<SourceQuery<S, I>>,
-    pub(super) affinity: WorthQueryApplicationQueryRequestAffinity,
+    // Keep the original observations and their custody for this image's lifetime.
+    pub(super) _sources: Vec<WorthQueryObservedSource<SourceQuery<S, I>>>,
+    pub(super) _result_set: WorthQueryObservedResultSet<SourceQuery<S, I>>,
+    pub(super) _affinity: WorthQueryApplicationQueryRequestAffinity,
     pub(super) terminal: Arc<WorthQueryCompletedSourceRead>,
-    pub(super) allocation: Arc<SourceFactsAllocation>,
+    pub(super) _allocation: Arc<SourceFactsAllocation>,
 }
 
 /// Immutable disclosed rows carry no completed READ, World or Native root custody.

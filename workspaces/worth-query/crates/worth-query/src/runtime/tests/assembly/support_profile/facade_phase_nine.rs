@@ -33,7 +33,7 @@ impl WorthQueryDerivedViewMaintainer for PhaseNineMaintainer {
 }
 
 #[test]
-fn phase_nine_facade_families_are_supported_and_admitted() {
+fn facade_families_are_supported_and_admitted() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

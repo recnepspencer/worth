@@ -162,14 +162,26 @@ impl RelationalPreparationRuntime {
     }
 
     pub(crate) fn allocate_snapshot_id(&self) -> Option<crate::snapshots::data::SnapshotId> {
-        self.snapshot_ids
-            .fetch_update(
-                std::sync::atomic::Ordering::Relaxed,
-                std::sync::atomic::Ordering::Relaxed,
-                |current| current.checked_add(1),
-            )
-            .ok()
-            .map(crate::snapshots::data::SnapshotId)
+        {
+            let update_counter = &self.snapshot_ids;
+            let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = current.checked_add(1) else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .ok()
+        .map(crate::snapshots::data::SnapshotId)
     }
 
     pub(crate) fn validate_reserved_lineage_events(

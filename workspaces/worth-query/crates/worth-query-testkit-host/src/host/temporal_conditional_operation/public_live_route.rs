@@ -1,0 +1,183 @@
+pub use worth_query_host::facade::{
+    declaration::application_query::ApplicationQueryParameterSet, primary_graph,
+};
+
+pub use super::{courtroom_support, product_query_support, schema, world, CourtroomWorld};
+
+pub fn world_no_effect_retains_conditional_provenance(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let world = CourtroomWorld::publish_with_world_history_limit("ready", 1);
+    let request = world::request_scope();
+    let principal = product_query_support::principal(&world, &request);
+    let branch = world.application.current_world();
+    let scope = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    schema::IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let query = world
+        .application
+        .installed_schema()
+        .certification_query(schema::TemporalIntentLiveQuery::reference())
+        .unwrap();
+    let live = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+        .application
+        .on_branch(branch)
+        .select(&phase)
+        .unwrap()
+        .open_application_query_live::<
+            schema::TemporalIntentLiveQuery,
+            schema::IntentLiveQueryParameters,
+            schema::IntentLiveQueryResult,
+            _,
+            _,
+            schema::TemporalIntent,
+            schema::TemporalIntent,
+            schema::TemporalIntentLiveCause,
+        >(
+            &phase, query,
+            &principal,
+            scope,
+            ApplicationQueryParameterSet::new(),
+            primary_graph::WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16)
+            .unwrap(),
+        )
+        .unwrap()
+        })
+        .expect("installed host call opens");
+
+    let transaction = world.change_input_on_branch(branch, "history-pressure");
+    let Err(transaction) = transaction.require_committed() else {
+        panic!("an exhausted World history budget cannot satisfy require_committed");
+    };
+    let primary_graph::WorthQueryApplicationCommitOutcome::NoEffect(transaction) = transaction
+    else {
+        panic!("the public transaction must preserve its typed NoEffect terminal");
+    };
+    assert_eq!(
+        transaction.cause(),
+        worth_query_host::facade::product::WorthQueryApplicationNoEffectCause::CapacityExhausted,
+    );
+    let diagnostic = format!("{transaction:?}");
+    assert!(diagnostic.contains("CapacityExhausted"));
+    assert!(
+        diagnostic.len() < 1_024,
+        "a no-effect diagnostic must not traverse retained graph storage"
+    );
+
+    let no_effect = courtroom_support::observe(request_execution, &world);
+    assert_eq!(no_effect.committed_operation_count(), 0);
+    let [provenance] = no_effect.execution_provenance() else {
+        panic!("one due operation must retain its exact NoEffect provenance");
+    };
+    assert_eq!(
+        provenance.terminal(),
+        primary_graph::WorthQueryConditionalExecutionTerminal::NoEffect
+    );
+    assert_eq!(
+        provenance.cause(),
+        Some(primary_graph::WorthQueryConditionalExecutionCause::NoEffect(
+            worth_query_host::facade::product::WorthQueryApplicationNoEffectCause::CapacityExhausted,
+        ))
+    );
+    courtroom_support::assert_authoritative_value(
+        &world,
+        schema::IntentEffectField::reference(),
+        "pending".to_owned(),
+    );
+    assert!(matches!(
+        live.close(),
+        primary_graph::WorthQueryApplicationLiveCloseOutcome::Completed(_)
+    ));
+}
+
+pub fn live_query_receives_conditional_world_publication(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let world = CourtroomWorld::publish("ready");
+    let request = world::request_scope();
+    let principal = product_query_support::principal(&world, &request);
+    let branch = world.application.current_world();
+    let scope = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    schema::IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let query = world
+        .application
+        .installed_schema()
+        .certification_query(schema::TemporalIntentLiveQuery::reference())
+        .unwrap();
+    let mut live = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+        .application
+        .on_branch(branch)
+        .select(&phase)
+        .unwrap()
+        .open_application_query_live::<
+            schema::TemporalIntentLiveQuery,
+            schema::IntentLiveQueryParameters,
+            schema::IntentLiveQueryResult,
+            _,
+            _,
+            schema::TemporalIntent,
+            schema::TemporalIntent,
+            schema::TemporalIntentLiveCause,
+        >(
+            &phase, query,
+            &principal,
+            scope,
+            ApplicationQueryParameterSet::new(),
+            primary_graph::WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16)
+            .unwrap(),
+        )
+        .unwrap()
+        })
+        .expect("installed host call opens");
+
+    let committed = courtroom_support::observe(request_execution, &world);
+    assert_eq!(committed.committed_operation_count(), 1);
+    assert!(matches!(
+        world
+            .application
+            .with_host_advancement(|phase| live.next(&phase, &principal, &request))
+            .expect("installed host call opens"),
+        primary_graph::WorthQueryApplicationLiveOutcome::Delivered(_)
+    ));
+    assert!(matches!(
+        live.close(),
+        primary_graph::WorthQueryApplicationLiveCloseOutcome::Completed(_)
+    ));
+}

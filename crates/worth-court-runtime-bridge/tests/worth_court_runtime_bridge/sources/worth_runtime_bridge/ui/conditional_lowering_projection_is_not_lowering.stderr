@@ -1,0 +1,10 @@
+error[E0308]: mismatched types
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/conditional_lowering_projection_is_not_lowering.rs:8:5
+  |
+7 | ) -> BridgeInstalledConditionalLowering {
+  |      ---------------------------------- expected `BridgeInstalledConditionalLowering` because of return type
+8 |     projection
+  |     ^^^^^^^^^^ expected `BridgeInstalledConditionalLowering`, found `FoundationalProjectionIdentity<..., ...>`
+  |
+  = note: expected struct `BridgeInstalledConditionalLowering`
+             found struct `worth_foundational::identities::authority_identity::derived::FoundationalProjectionIdentity<Arc<str>, BridgeConditionalLoweringIdentityKind>`

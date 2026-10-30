@@ -40,7 +40,7 @@ pub(crate) fn read_segment_membership(
     let mut children = Vec::with_capacity(usize::from(frame.count));
     let mut previous = None;
     let page_bytes = u64::from(read_u32(&expected.format, 2));
-    for (index, entry) in frame.body.chunks_exact(40).enumerate() {
+    for (index, entry) in frame.body.as_chunks::<40>().0.iter().enumerate() {
         let start = 88 + index * 40;
         let segment = read_u64(entry, 0);
         let page = read_u64(entry, 8);

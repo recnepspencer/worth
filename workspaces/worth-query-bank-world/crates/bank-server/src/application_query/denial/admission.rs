@@ -17,6 +17,7 @@ pub enum BankApplicationQueryParameterDenialKind {
     CanonicalEntryBudgetExceeded,
     CanonicalEncodedByteBudgetExceeded,
     CanonicalDigestSlotRejected,
+    UnsupportedSortImplementation(worth_foundational::facade::CanonicalSortImplementationDenial),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -133,6 +134,9 @@ const fn parameter(kind: QueryParameter) -> BankApplicationQueryParameterDenialK
             Bank::CanonicalEncodedByteBudgetExceeded
         }
         QueryParameter::CanonicalDigestSlotRejected => Bank::CanonicalDigestSlotRejected,
+        QueryParameter::UnsupportedSortImplementation(cause) => {
+            Bank::UnsupportedSortImplementation(cause)
+        }
     }
 }
 

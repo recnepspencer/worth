@@ -1,0 +1,23 @@
+warning: unreachable expression
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_overlapping_generation_admission_fields_are_private.rs:7:20
+  |
+6 |         previous: panic!("private"),
+  |                   ----------------- any code following this expression is unreachable
+7 |         replacing: panic!("private"),
+  |                    ^^^^^^^^^^^^^^^^^ unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0451]: fields `previous`, `replacing`, `policy_decision_digest` and `old_host_work_cancellation_advisory` of struct `ResourceOverlappingGenerationAdmission` are private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_overlapping_generation_admission_fields_are_private.rs:6:9
+  |
+5 |     let _ = ResourceOverlappingGenerationAdmission {
+  |             -------------------------------------- in this type
+6 |         previous: panic!("private"),
+  |         ^^^^^^^^ private field
+7 |         replacing: panic!("private"),
+  |         ^^^^^^^^^ private field
+8 |         policy_decision_digest: panic!("private"),
+  |         ^^^^^^^^^^^^^^^^^^^^^^ private field
+9 |         old_host_work_cancellation_advisory: panic!("private"),
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field

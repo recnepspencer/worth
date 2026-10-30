@@ -69,7 +69,7 @@ where
             >,
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
-    {
+{
         self.application
             .with_application_advancement(self.scope, |phase| {
                 self.start_program_outputs_in_advancement::<Program, Root>(
@@ -119,7 +119,7 @@ where
             >,
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
-    {
+{
         if !std::ptr::eq(application.runtime(), self.application) {
             return Err(
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ForeignProgram,
@@ -174,7 +174,7 @@ where
             >,
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
-    {
+{
         self.application
             .with_application_advancement(self.scope, |phase| {
                 self.recover_required_outputs_in_advancement::<Program, Root>(
@@ -229,7 +229,7 @@ where
             >,
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
-    {
+{
         if !std::ptr::eq(application.runtime(), self.application) {
             return Err(
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ForeignProgram,
@@ -292,7 +292,7 @@ where
             >,
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
-    {
+{
         admission
             .validate_current_authority()
             .map_err(WorthQueryAdmittedRequiredOutputRecoveryDenial::Authorization)?;

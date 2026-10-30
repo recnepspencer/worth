@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Which posture this build holds (milestone-3.10.3 §D5) is decided by one
 //! alias, `worth_ui_certified_executable`, emitted by `build.rs` for Windows
 //! and for the Linux X11 certification profile. Outside that alias every

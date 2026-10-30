@@ -302,44 +302,40 @@ impl WorthUiApplicationSessionState {
         }
         if let Some(receipt) = selection.as_ref().map(
             crate::runtime::selection::UiStagedDeclaredSelectionTransition::family_stage_receipt,
-        ) {
-            if let Err(denial) = self
-                .runtime
-                .service_proposals
-                .advance_staging(&mut staging, receipt)
-            {
-                self.cancel_portal_staging(
-                    staging,
-                    &portal,
-                    &focus,
-                    &scroll,
-                    selection.as_ref(),
-                    motion_state,
-                    motion,
-                );
-                return Err(UiPortalProposalPreparationDenial::Staging(denial));
-            }
+        ) && let Err(denial) = self
+            .runtime
+            .service_proposals
+            .advance_staging(&mut staging, receipt)
+        {
+            self.cancel_portal_staging(
+                staging,
+                &portal,
+                &focus,
+                &scroll,
+                selection.as_ref(),
+                motion_state,
+                motion,
+            );
+            return Err(UiPortalProposalPreparationDenial::Staging(denial));
         }
         if let Some(receipt) = motion
             .as_ref()
             .map(crate::runtime::motion::UiStagedMotionServiceProposal::family_stage_receipt)
-        {
-            if let Err(denial) = self
+            && let Err(denial) = self
                 .runtime
                 .service_proposals
                 .advance_staging(&mut staging, receipt)
-            {
-                self.cancel_portal_staging(
-                    staging,
-                    &portal,
-                    &focus,
-                    &scroll,
-                    selection.as_ref(),
-                    motion_state,
-                    motion,
-                );
-                return Err(UiPortalProposalPreparationDenial::Staging(denial));
-            }
+        {
+            self.cancel_portal_staging(
+                staging,
+                &portal,
+                &focus,
+                &scroll,
+                selection.as_ref(),
+                motion_state,
+                motion,
+            );
+            return Err(UiPortalProposalPreparationDenial::Staging(denial));
         }
         Ok(UiPortalProposalPreparation {
             staging,

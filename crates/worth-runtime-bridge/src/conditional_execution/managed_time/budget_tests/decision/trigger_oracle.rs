@@ -6,6 +6,10 @@ use crate::correspondence::{
 use std::{collections::HashMap, mem::size_of, sync::Arc};
 use worth_foundational::facade::{AspectShape, CanonicalFieldPath, FieldDeclaration};
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+)]
 pub(super) fn expected(set: &BridgeDeliveredCorrespondenceChangeSet) -> u64 {
     // The decision core includes the inline trigger and its guard.
     let mut bytes = 0;

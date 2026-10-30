@@ -34,6 +34,11 @@ pub enum BankApplicationQueryInstallationDenialKind {
     InvalidInspectionDefinition,
     InspectionBindingMeaningChanged,
     InspectionUnavailable,
+    InvalidManagedIndexDefinition,
+    ManagedIndexBindingMeaningChanged,
+    ManagedIndexSourceUnsupported,
+    ManagedIndexParentUnsupported,
+    ManagedIndexUnavailable,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -101,6 +106,13 @@ pub(super) const fn query_installation(
         QueryInstallation::InvalidInspectionDefinition => Bank::InvalidInspectionDefinition,
         QueryInstallation::InspectionBindingMeaningChanged => Bank::InspectionBindingMeaningChanged,
         QueryInstallation::InspectionUnavailable => Bank::InspectionUnavailable,
+        QueryInstallation::InvalidManagedIndexDefinition => Bank::InvalidManagedIndexDefinition,
+        QueryInstallation::ManagedIndexBindingMeaningChanged => {
+            Bank::ManagedIndexBindingMeaningChanged
+        }
+        QueryInstallation::ManagedIndexSourceUnsupported => Bank::ManagedIndexSourceUnsupported,
+        QueryInstallation::ManagedIndexParentUnsupported => Bank::ManagedIndexParentUnsupported,
+        QueryInstallation::ManagedIndexUnavailable => Bank::ManagedIndexUnavailable,
     }
 }
 

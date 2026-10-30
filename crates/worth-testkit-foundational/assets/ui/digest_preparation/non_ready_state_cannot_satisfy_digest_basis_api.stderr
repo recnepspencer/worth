@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/non_ready_state_cannot_satisfy_digest_basis_api.rs
+  |
+  |     let _basis = aspect_state_digest_preparation_basis(&state);
+  |                  ------------------------------------- ^^^^^^ expected `&Artifact<DigestPreparationReady, ...>`, found `&Artifact<..., ...>`
+  |                  |
+  |                  arguments to this function are incorrect
+  |
+  = note: expected reference `&worth_proof::Artifact<DigestPreparationReady, DigestPreparationReadyAspectState>`
+             found reference `&worth_proof::Artifact<AuthoritativeRecordAspectStateAdmitted, AuthoritativeRecordAspectState>`
+note: function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/state_preparation.rs
+  |
+  | pub fn aspect_state_digest_preparation_basis(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

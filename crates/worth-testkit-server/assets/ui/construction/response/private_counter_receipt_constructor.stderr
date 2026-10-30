@@ -1,0 +1,16 @@
+warning: unreachable expression
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/response/private_counter_receipt_constructor.rs
+  |
+  |     let _ = WorthServerOperatorCounterReceipt { inner: loop {} };
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------^^
+  |             |                                          |
+  |             |                                          any code following this expression is unreachable
+  |             unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0451]: field `inner` of struct `WorthServerOperatorCounterReceipt` is private
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/response/private_counter_receipt_constructor.rs
+  |
+  |     let _ = WorthServerOperatorCounterReceipt { inner: loop {} };
+  |                                                 ^^^^^ private field

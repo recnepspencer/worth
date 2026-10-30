@@ -88,10 +88,10 @@ impl UiNativePhysicalSignalOwner {
         &mut self,
         observation: UiNativePhysicalSignalExternalObservation,
     ) -> Option<UiNativePhysicalSignalRequestToken> {
-        if observation.runtime() == self.runtime_identity {
-            if let Ok(token) = self.begin_work(observation.work()) {
-                return Some(token);
-            }
+        if observation.runtime() == self.runtime_identity
+            && let Ok(token) = self.begin_work(observation.work())
+        {
+            return Some(token);
         }
         self.note_stale();
         None

@@ -176,10 +176,10 @@ impl UiMountedOccurrenceGeometryState {
                 .iter()
                 .zip(row.mosaic_clips.iter_mut())
             {
-                if let super::super::UiMountedMosaicClipBinding::Region { owner, .. } = binding {
-                    if let Some(shift) = translations.get(owner) {
-                        *clip = UiPublishedRect::box_following_pose(*clip, shift.geometry);
-                    }
+                if let super::super::UiMountedMosaicClipBinding::Region { owner, .. } = binding
+                    && let Some(shift) = translations.get(owner)
+                {
+                    *clip = UiPublishedRect::box_following_pose(*clip, shift.geometry);
                 }
             }
             if let (Ok(bindings), Ok(clips)) = (&row.scroll_clip_bindings, &mut row.scroll_clips) {

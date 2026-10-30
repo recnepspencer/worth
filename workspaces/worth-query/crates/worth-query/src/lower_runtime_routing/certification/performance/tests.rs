@@ -45,7 +45,7 @@ fn scenario_profiles_are_monotonic_across_width_variants() {
 }
 
 #[test]
-fn slope_report_emits_all_phase_seven_outputs_from_observed_profiles() {
+fn slope_report_emits_all_outputs_from_observed_profiles() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

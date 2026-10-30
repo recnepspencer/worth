@@ -1,0 +1,26 @@
+error[E0061]: this method takes 2 arguments but 1 argument was supplied
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_completion_admission_requires_request_identity.rs:9:13
+  |
+9 |     runtime.admit_async_completion(envelope)
+  |             ^^^^^^^^^^^^^^^^^^^^^^ -------- argument #1 of type `&AdmittedBridgeAsyncRequestIdentity` is missing
+  |
+note: method defined here
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/source/async_completion.rs
+  |
+  |     pub fn admit_async_completion(
+  |            ^^^^^^^^^^^^^^^^^^^^^^
+help: provide the argument
+  |
+9 |     runtime.admit_async_completion(/* &AdmittedBridgeAsyncRequestIdentity */, envelope)
+  |                                    ++++++++++++++++++++++++++++++++++++++++++
+
+error[E0308]: mismatched types
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_completion_admission_requires_request_identity.rs:9:5
+  |
+8 | ) -> Result<(), BridgeAsyncCompletionRejection> {
+  |      ------------------------------------------ expected `Result<(), BridgeAsyncCompletionRejection>` because of return type
+9 |     runtime.admit_async_completion(envelope)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<(), ...>`, found `Result<..., ...>`
+  |
+  = note: expected enum `Result<(), BridgeAsyncCompletionRejection>`
+             found enum `Result<BridgeAsyncCompletionAdmissionReport, BridgeAsyncCompletionRejection>`

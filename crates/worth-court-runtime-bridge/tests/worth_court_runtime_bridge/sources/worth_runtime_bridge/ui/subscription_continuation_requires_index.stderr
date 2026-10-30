@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_continuation_requires_index.rs:10:60
+   |
+10 |     let _ = runtime.plan_subscription_continuation(active, &candidate, 0);
+   |                     ------------------------------         ^^^^^^^^^^ expected `&BridgeSubscriptionContinuationIndex`, found `&...`
+   |                     |
+   |                     arguments to this method are incorrect
+   |
+   = note: expected reference `&BridgeSubscriptionContinuationIndex`
+              found reference `&BridgeSubscriptionContinuationCandidateInput`
+note: method defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription.rs
+   |
+   |     pub fn plan_subscription_continuation(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

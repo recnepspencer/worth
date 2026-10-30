@@ -56,7 +56,7 @@ for quick failure; this only reorders unmetered arithmetic assertions.
 
 Before the Native admission correction, one 50k candidate exhausted its declared
 20-billion work ceiling before measured edits. A 5,000-edge setup batch cost
-4,562,603,028; five 1,250-edge batches cost approximately 1.12–1.15 billion each.
+4,562,603,028; five 1,250-edge batches cost approximately 1.12â€“1.15 billion each.
 Those partial runs were stopped without a warm 50k claim. An interim long shared
 request was replaced by ordinary per-batch scopes/authentication.
 
@@ -119,4 +119,4 @@ Final gates: the full growth court and 35 quick public regressions pass. Boundar
 agent context, rustfmt, nine dirty Rust line caps and staged diff checks pass.
 Function scrutiny reports eight coherent advisories and zero scan errors.
 Independent qa-loop, qa-tests and code-quality-qa give unconditional commit
-clearance. Phase 2 is qualified; Phases 3–6 remain unfinished.
+clearance. Phase 2 is qualified; Phases 3â€“6 remain unfinished.

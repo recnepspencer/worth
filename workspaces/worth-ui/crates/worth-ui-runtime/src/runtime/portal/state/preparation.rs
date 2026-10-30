@@ -41,10 +41,10 @@ impl super::UiPortalRuntimeState {
             .checked_add(1)
             .ok_or(super::super::UiPortalServiceTransitionDenial::RevisionExhausted)?;
         let existing = self.records.get(&request.portal());
-        if let Some(record) = existing {
-            if record.semantic_surface != request.semantic_surface() {
-                return Err(super::super::UiPortalServiceTransitionDenial::PortalSurfaceMismatch);
-            }
+        if let Some(record) = existing
+            && record.semantic_surface != request.semantic_surface()
+        {
+            return Err(super::super::UiPortalServiceTransitionDenial::PortalSurfaceMismatch);
         }
         let parent = request
             .parent()

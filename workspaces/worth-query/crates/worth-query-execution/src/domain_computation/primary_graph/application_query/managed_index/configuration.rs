@@ -25,14 +25,22 @@ struct ConfiguredProvider<S> {
     source: Arc<dyn super::source::service::SourceFactory>,
 }
 
+struct ConfiguredProviders<S> {
+    entries: HashMap<EqualityTypeId, ConfiguredProvider<S>>,
+    registration_order: Vec<EqualityTypeId>,
+}
+
 pub(in crate::domain_computation::primary_graph) struct ManagedIndexProviderCatalog<S> {
-    entries: Arc<HashMap<EqualityTypeId, ConfiguredProvider<S>>>,
+    providers: Arc<ConfiguredProviders<S>>,
     marker: PhantomData<fn() -> S>,
 }
 impl<S> Default for ManagedIndexProviderCatalog<S> {
     fn default() -> Self {
         Self {
-            entries: Arc::new(HashMap::new()),
+            providers: Arc::new(ConfiguredProviders {
+                entries: HashMap::new(),
+                registration_order: Vec::new(),
+            }),
             marker: PhantomData,
         }
     }
@@ -41,22 +49,28 @@ impl<S> Default for ManagedIndexProviderCatalog<S> {
 impl<S> Clone for ManagedIndexProviderCatalog<S> {
     fn clone(&self) -> Self {
         Self {
-            entries: Arc::clone(&self.entries),
+            providers: Arc::clone(&self.providers),
             marker: PhantomData,
         }
     }
 }
 
 impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
+    fn in_registration_order(&self) -> impl Iterator<Item = &ConfiguredProvider<S>> {
+        self.providers
+            .registration_order
+            .iter()
+            .map(|identity| &self.providers.entries[identity])
+    }
+
     pub(super) fn is_empty(&self) -> bool {
-        self.entries.is_empty()
+        self.providers.entries.is_empty()
     }
     pub(super) fn source_factory(
         &self,
         definition: &worth_query_declaration::facade::application_query::ErasedApplicationManagedIndexDefinition,
     ) -> Option<Arc<dyn super::source::service::SourceFactory>> {
-        self.entries
-            .values()
+        self.in_registration_order()
             .find(|entry| entry.source.definition() == definition)
             .map(|entry| Arc::clone(&entry.source))
     }
@@ -72,7 +86,7 @@ impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
         &self,
         schema: &WorthQueryInstalledApplicationSchema<S>,
     ) -> Result<(), Denial> {
-        for entry in self.entries.values() {
+        for entry in self.in_registration_order() {
             if !(entry.belongs_to)(entry.adapter.as_ref(), schema) {
                 return Err(Denial::new(
                     Kind::ManagedIndexProviderMeaningMismatch,
@@ -81,17 +95,15 @@ impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
             }
         }
         for member in schema.installed_declaration().members() {
-            if let ApplicationSchemaMember::ManagedIndex { definition } = member {
-                if !self
-                    .entries
-                    .values()
+            if let ApplicationSchemaMember::ManagedIndex { definition } = member
+                && !self
+                    .in_registration_order()
                     .any(|entry| entry.name == definition.parts().name)
-                {
-                    return Err(Denial::new(
-                        Kind::MissingManagedIndexProvider,
-                        &definition.parts().name,
-                    ));
-                }
+            {
+                return Err(Denial::new(
+                    Kind::MissingManagedIndexProvider,
+                    &definition.parts().name,
+                ));
             }
         }
         Ok(())
@@ -127,8 +139,10 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
             return Err(Denial::new(Kind::ContributionMemberMismatch, I::NAME));
         }
         let index_type = EqualityTypeId::of::<I>();
-        if self.entries.contains_key(&index_type)
-            || self.entries.values().any(|entry| entry.name == I::NAME)
+        if self.providers.entries.contains_key(&index_type)
+            || self
+                .in_registration_order()
+                .any(|entry| entry.name == I::NAME)
         {
             return Err(Denial::new(Kind::DuplicateManagedIndexProvider, I::NAME));
         }
@@ -140,18 +154,19 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         let adapter: Arc<dyn InstalledIndexProvider<S, I>> = concrete.clone();
         let executor: Arc<dyn ErasedIndexExecutor<S>> = concrete.clone();
         let source: Arc<dyn super::source::service::SourceFactory> = concrete;
-        Arc::get_mut(&mut self.entries)
-            .ok_or_else(|| Denial::new(Kind::ManagedIndexProviderConfigurationSealed, I::NAME))?
-            .insert(
-                index_type,
-                ConfiguredProvider {
-                    name: I::NAME.to_owned(),
-                    adapter: Box::new(adapter),
-                    belongs_to: configured_in::<S, I>,
-                    executor,
-                    source,
-                },
-            );
+        let providers = Arc::get_mut(&mut self.providers)
+            .ok_or_else(|| Denial::new(Kind::ManagedIndexProviderConfigurationSealed, I::NAME))?;
+        providers.entries.insert(
+            index_type,
+            ConfiguredProvider {
+                name: I::NAME.to_owned(),
+                adapter: Box::new(adapter),
+                belongs_to: configured_in::<S, I>,
+                executor,
+                source,
+            },
+        );
+        providers.registration_order.push(index_type);
         Ok(())
     }
 
@@ -169,6 +184,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         use crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion;
         use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
         let work = self
+            .providers
             .entries
             .len()
             .checked_add(1)
@@ -177,19 +193,17 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
             .ok_or(Cause::WorkCounterOverflow)?;
         MaterialCompletion::new(execution, allocation).work(work)?;
         Ok(self
-            .entries
-            .values()
+            .in_registration_order()
             .find(|entry| entry.executor.admits(association))
             .map(|entry| Arc::clone(&entry.executor)))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn get<I>(
-        &self,
-    ) -> Option<Arc<dyn InstalledIndexProvider<S, I>>>
+    pub(super) fn get<I>(&self) -> Option<Arc<dyn InstalledIndexProvider<S, I>>>
     where
         I: ApplicationManagedIndexBinding<S>,
     {
-        self.entries
+        self.providers
+            .entries
             .get(&EqualityTypeId::of::<I>())?
             .adapter
             .downcast_ref::<Arc<dyn InstalledIndexProvider<S, I>>>()
@@ -212,6 +226,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         use crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion;
         use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
         let work = self
+            .providers
             .entries
             .len()
             .checked_add(1)

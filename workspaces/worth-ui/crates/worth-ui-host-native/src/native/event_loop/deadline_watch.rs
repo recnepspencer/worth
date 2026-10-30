@@ -53,6 +53,10 @@ struct UiNativeDeadlineWatchState {
 }
 
 impl UiNativeDeadlineWatch {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "event-loop-watcher thread-builder=1: UI readiness, source, theme or event-loop observation runs independently of computation."
+    )]
     pub(super) fn start(wake: UiNativeWakeSender) -> Option<Self> {
         let shared = Arc::new((
             Mutex::new(UiNativeDeadlineWatchState::default()),

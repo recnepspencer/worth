@@ -307,15 +307,19 @@ where
         .is_empty());
 }
 
-#[test]
-fn a_deferral_freezes_selection_in_both_commit_orders() {
-    let _guard = checkpoint_recovery_test_guard();
-    case::<application::Program>(0, false);
-    case::<application::Program>(1, false);
-}
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn a_deferral_freezes_selection_in_both_commit_orders() {
+        let _guard = checkpoint_recovery_test_guard();
+        case::<application::Program>(0, false);
+        case::<application::Program>(1, false);
+    }
 
-#[test]
-fn a_stale_credit_after_deferral_leaves_the_unrelated_row_queued() {
-    let _guard = checkpoint_recovery_test_guard();
-    case::<ordinary_read_application::Program>(0, true);
+    #[test]
+    fn a_stale_credit_after_deferral_leaves_the_unrelated_row_queued() {
+        let _guard = checkpoint_recovery_test_guard();
+        case::<ordinary_read_application::Program>(0, true);
+    }
 }

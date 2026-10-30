@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/attachment_boundaries/plain_payload_cannot_satisfy_boundary_profiled_api.rs
+  |
+  |     requires_boundary_profiled("plain payload");
+  |     -------------------------- ^^^^^^^^^^^^^^^ expected `Artifact<..., ...>`, found `&str`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected struct `worth_proof::artifact::carrier::Artifact<MaterializedFoundationalProfilePhase, FoundationalProfiledArtifact<BoundaryArtifactTarget, &'static str>>`
+          found reference `&'static str`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/attachment_boundaries/plain_payload_cannot_satisfy_boundary_profiled_api.rs
+  |
+  | fn requires_boundary_profiled(_: BoundaryProfiledArtifact<&'static str>) {}
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^ -----------------------------------------

@@ -12,6 +12,10 @@ use super::shard_contract;
 
 const EVIDENCE_PREFIX: &str = "WORTH_UI_PHASE5_PRODUCTION_LOCALITY=";
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-spawn=1: Certification drives independent actors to expose concurrency behavior."
+)]
 pub(super) fn execute(
     worker_executable: &Path,
     worker_arguments: &[&str],

@@ -1,0 +1,10 @@
+error[E0624]: associated function `new` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/host_computed_descriptor_fields_are_private.rs:5:50
+  |
+5 |         descriptor_id: HostComputedDescriptorId::new(1),
+  |                                                  ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-signal/src/data/host_computed/descriptor.rs
+  |
+  |     pub(crate) fn new(value: u64) -> Self {
+  |     ------------------------------------- private associated function defined here

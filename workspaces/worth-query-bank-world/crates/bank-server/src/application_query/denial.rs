@@ -86,6 +86,8 @@ pub enum BankApplicationOutputSettlementDenialKind {
     Closed,
     DuplicatePerformedSource,
     IncompleteDependencyCoverage,
+    ManagedSourceExpansionUnsupported,
+    UnobservedWrite(worth_query_host::facade::primary_graph::WorthQueryApplicationUnobservedWrite),
 }
 
 impl<Kind> BankApplicationQueryLaneDenial<Kind>
@@ -133,6 +135,7 @@ pub enum BankApplicationQueryDenial {
     Admission(BankApplicationQueryLaneDenial<BankApplicationQueryAdmissionDenialKind>),
     Execution(BankApplicationQueryLaneDenial<BankApplicationOneShotDenialKind>),
     OutputSettlement(BankApplicationOutputSettlementDenialKind),
+    ManagedIndex(Box<worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenial>),
     ContinuationExecution(BankApplicationQueryLaneDenial<BankApplicationContinuationDenialKind>),
     LiveOpen(BankApplicationQueryLaneDenial<BankApplicationLiveOpenDenialKind>),
 }
@@ -219,6 +222,9 @@ impl BankApplicationQueryDenial {
             }
             WorthQueryApplicationRequestQueryDenial::ContinuationExecution(denial) => {
                 Self::from_continuation_execution(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause) => {
+                Self::ManagedIndex(Box::new(cause))
             }
             WorthQueryApplicationRequestQueryDenial::RequestMode => Self::RequestMode,
             WorthQueryApplicationRequestQueryDenial::CapabilityInstallation(denial) => {
@@ -316,6 +322,8 @@ impl BankApplicationQueryDenial {
             Query::Closed => Bank::Closed,
             Query::DuplicatePerformedSource => Bank::DuplicatePerformedSource,
             Query::IncompleteDependencyCoverage => Bank::IncompleteDependencyCoverage,
+            Query::ManagedSourceExpansionUnsupported => Bank::ManagedSourceExpansionUnsupported,
+            Query::UnobservedWrite(cause) => Bank::UnobservedWrite(cause),
         };
         Self::OutputSettlement(kind)
     }

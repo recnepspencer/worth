@@ -38,11 +38,11 @@ fn prepare_graphics(
             {
                 return false;
             }
-            if let Some(gpu) = state.text_atlas_gpu.take() {
-                if let Err(gpu) = gpu.try_close(&mut state.resources) {
-                    state.text_atlas_gpu = Some(gpu);
-                    return false;
-                }
+            if let Some(gpu) = state.text_atlas_gpu.take()
+                && let Err(gpu) = gpu.try_close(&mut state.resources)
+            {
+                state.text_atlas_gpu = Some(gpu);
+                return false;
             }
             if !state.text_atlas.clear() {
                 return false;

@@ -1,0 +1,16 @@
+#[path = "aspect_native_authority_ui/mod.rs"]
+pub(crate) mod aspect_native_authority_ui;
+#[path = "authority_projection_readmission_ui/mod.rs"]
+pub(crate) mod authority_projection_readmission_ui;
+#[path = "recovery_read_authority_compile_fail/mod.rs"]
+pub(crate) mod recovery_read_authority_compile_fail;
+#[path = "s4_5_driver_contract_boundary_compile_fail/mod.rs"]
+pub(crate) mod s4_5_driver_contract_boundary_compile_fail;
+#[path = "s5_1_security_scope_admission_compile_fail/mod.rs"]
+pub(crate) mod s5_1_security_scope_admission_compile_fail;
+#[path = "s5_tier_movement_future_chunk_compile_fail/mod.rs"]
+pub(crate) mod s5_tier_movement_future_chunk_compile_fail;
+#[path = "s6_secure_io_authority_compile_fail/mod.rs"]
+pub(crate) mod s6_secure_io_authority_compile_fail;
+#[path = "terminal_projection_quarantine_ui/mod.rs"]
+pub(crate) mod terminal_projection_quarantine_ui;

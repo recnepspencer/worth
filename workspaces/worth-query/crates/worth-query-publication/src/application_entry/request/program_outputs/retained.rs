@@ -11,7 +11,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryApplicationRequest<'_, '_, '_, S>
         <RootSource<S,R> as ApplicationQueryBinding<S>>::Input: ApplicationQueryIntent<S,Binding=RootSource<S,R>>,
         <RootSource<S,R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S,<RootSource<S,R> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
         RootValue<S,R>: WorthQueryApplicationProjection<S,RootQuery<S,R>> + Clone,
-    {
+{
         if !std::ptr::eq(application.runtime(), self.application) {
             return Err(
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ForeignProgram,

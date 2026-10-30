@@ -1,0 +1,23 @@
+error[E0599]: no function or associated item named `mint` found for struct `AuthorityWitness<A>` in the current scope
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs:10:63
+   |
+10 |     let _authority = AuthorityWitness::<DeploymentAuthority>::mint();
+   |                                                               ^^^^ function or associated item not found in `AuthorityWitness<DeploymentAuthority>`
+   |
+note: if you're trying to build a new `AuthorityWitness<DeploymentAuthority>`, consider using `AuthorityWitness::<A>::from_authority_marker` which returns `AuthorityWitness<_>`
+  --> $WORKSPACE/crates/worth-proof/src/proof/witnesses.rs
+   |
+   |     pub fn from_authority_marker(_marker: A) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `mint` found for struct `CapabilityWitness<C>` in the current scope
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs:11:72
+   |
+11 |     let _capability = CapabilityWitness::<CanonicalizationCapability>::mint();
+   |                                                                        ^^^^ function or associated item not found in `CapabilityWitness<CanonicalizationCapability>`
+   |
+note: if you're trying to build a new `CapabilityWitness<CanonicalizationCapability>`, consider using `CapabilityWitness::<C>::from_capability_marker` which returns `CapabilityWitness<_>`
+  --> $WORKSPACE/crates/worth-proof/src/proof/witnesses.rs
+   |
+   |     pub fn from_capability_marker(_marker: C) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

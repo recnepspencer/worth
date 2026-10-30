@@ -1,0 +1,19 @@
+warning: unreachable expression
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/query_handoff/private_prepared_query_handoff_constructor.rs
+  |
+  |         kind: panic!("sealed"),
+  |               ---------------- any code following this expression is unreachable
+  |         operation_name: "users.profile".to_string(),
+  |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0451]: fields `kind` and `operation_name` of struct `WorthServerPreparedQueryHandoffIntent` are private
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/query_handoff/private_prepared_query_handoff_constructor.rs
+  |
+  |     let _ = WorthServerPreparedQueryHandoffIntent {
+  |             ------------------------------------- in this type
+  |         kind: panic!("sealed"),
+  |         ^^^^ private field
+  |         operation_name: "users.profile".to_string(),
+  |         ^^^^^^^^^^^^^^ private field

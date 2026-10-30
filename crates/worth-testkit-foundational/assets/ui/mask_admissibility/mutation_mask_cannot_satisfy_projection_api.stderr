@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/mask_admissibility/mutation_mask_cannot_satisfy_projection_api.rs
+  |
+  |     let _ = contract.admits_projection_mask(&mask);
+  |                      ---------------------- ^^^^^ expected `&AspectMask<ProjectionMask>`, found `&AspectMask<MutationMask>`
+  |                      |
+  |                      arguments to this method are incorrect
+  |
+  = note: expected reference `&worth_foundational::AspectMask<ProjectionMask>`
+             found reference `&worth_foundational::AspectMask<MutationMask>`
+note: method defined here
+ --> $WORKSPACE/crates/worth-foundational/src/aspects/contracts/contract/mask_admission.rs
+  |
+  |     pub fn admits_projection_mask(
+  |            ^^^^^^^^^^^^^^^^^^^^^^

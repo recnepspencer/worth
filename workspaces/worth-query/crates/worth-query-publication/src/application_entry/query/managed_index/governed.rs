@@ -70,6 +70,9 @@ where
         let request = self.scope;
         application
             .with_application_advancement(request, |phase| {
+                if self.retained.is_some() {
+                    return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
+                }
                 self.with_admitted_governed_query(
                     &phase,
                     approved,
@@ -143,6 +146,10 @@ where
         let mut completed = None;
         let advancement = application
             .with_application_advancement(request, |phase| {
+                if self.retained.is_some() {
+                    completed = Some(Err(WorthQueryApplicationRequestQueryDenial::RequestMode));
+                    return;
+                }
                 completed = Some(self.with_admitted_governed_query(
                     &phase,
                     approved,

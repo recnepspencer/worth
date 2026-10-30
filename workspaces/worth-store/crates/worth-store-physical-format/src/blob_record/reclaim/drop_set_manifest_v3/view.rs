@@ -107,7 +107,7 @@ impl<'a> DropSetManifestV3View<'a> {
         hash.update(DROPPED_DIGEST_DOMAIN);
         hash.update(count.to_le_bytes());
         let mut prior = None;
-        for chunk in bytes.chunks_exact(24) {
+        for chunk in bytes.as_chunks::<24>().0.iter() {
             let record = read_record(chunk)?;
             if prior.is_some_and(|previous| previous >= record) {
                 return Err(BlobRecordDenial::InvalidDropSet);
@@ -228,7 +228,7 @@ impl<'a> DropSetManifestV3View<'a> {
         let mut records = Vec::with_capacity(usize::from(self.count));
         match self.dropped {
             DroppedIdentities::Encoded(bytes) => {
-                for chunk in bytes.chunks_exact(24) {
+                for chunk in bytes.as_chunks::<24>().0.iter() {
                     records.push(read_record(chunk).expect("validated identity"));
                 }
             }

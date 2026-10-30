@@ -26,6 +26,10 @@ where
     D::Mode: ApplicationActionOutputRoots<S>,
     <D::Mode as ApplicationActionOutputRoots<S>>::Roots: WorthQueryApplicationProgramRoots<S>,
 {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn append_distinct_required(seen: &mut Vec<TypeId>, bindings: &mut impl FnMut(TypeId)) {
         type Roots<S, B, D> = <<D as ApplicationActionDelivery<S, B>>::Mode as ApplicationActionOutputRoots<S>>::Roots;
         let identity = TypeId::of::<Roots<S, B, D>>();

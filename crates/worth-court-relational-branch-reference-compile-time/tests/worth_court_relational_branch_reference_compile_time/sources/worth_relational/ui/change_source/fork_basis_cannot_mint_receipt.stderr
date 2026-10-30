@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/change_source/fork_basis_cannot_mint_receipt.rs:5:52
+  |
+5 |     let _ = runtime.mint_change_receipt(execution, basis, None);
+  |                     -------------------            ^^^^^ expected `RelationalSelectedCommit`, found `AdmittedRelationalForkSourceBasis`
+  |                     |
+  |                     arguments to this method are incorrect
+  |
+note: method defined here
+ --> $WORKSPACE/crates/worth-relational/src/change_source/receipt_minting.rs
+  |
+  |     pub fn mint_change_receipt(
+  |            ^^^^^^^^^^^^^^^^^^^

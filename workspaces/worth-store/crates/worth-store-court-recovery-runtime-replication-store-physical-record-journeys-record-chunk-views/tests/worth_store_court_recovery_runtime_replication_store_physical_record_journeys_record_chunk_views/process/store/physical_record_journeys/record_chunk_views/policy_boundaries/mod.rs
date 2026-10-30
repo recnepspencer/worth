@@ -1,0 +1,154 @@
+use worth_store_testkit_store::durable_publication::root::publish_single;
+
+#[test]
+fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("caller-limit");
+    let (serving, placement) = worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::initialize(&root);
+    let expected = worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::payload(2 * worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::CHUNK_PAYLOAD_BYTES + 17);
+    let publication = publish_single(
+        &serving,
+        placement,
+        worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([171; 32]),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
+    );
+    let operation_bytes_before_read = serving
+        .residency_observation()
+        .counters()
+        .active_operation_bytes();
+    let record = publication.settled_members()[0].record_id(0).unwrap();
+
+    let denial = match serving.records().expect("read protection admission").open(
+        record,
+        worth_store::physical_runtime::RecordReadLimits::new(
+            worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32 - 1).unwrap(),
+        ),
+    ) {
+        Err(error) => error,
+        Ok(_) => panic!("a caller limit below the logical payload must deny the read session"),
+    };
+
+    assert_eq!(
+        denial.denial(),
+        worth_store::physical_runtime::RecordReadDenial::CallerLimitExceeded
+    );
+    assert_eq!(
+        denial.observation().bytes_requested(),
+        expected.len() as u64
+    );
+    assert_eq!(denial.observation().bytes_completed(), 0);
+    assert_eq!(serving.observer().record_counters().read_sessions_live(), 0);
+    let residency = serving.residency_observation().counters();
+    assert_eq!(residency.pin_leases(), 0);
+    assert_eq!(residency.pinned_frames(), 0);
+    assert_eq!(
+        residency.active_operation_bytes(),
+        operation_bytes_before_read
+    );
+
+    let mut admitted = serving
+        .records()
+        .expect("read protection admission")
+        .open(
+            record,
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
+        )
+        .unwrap();
+    {
+        let first = admitted.next_chunk().unwrap().unwrap();
+        assert_eq!(first.bytes(), &expected[..worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::CHUNK_PAYLOAD_BYTES]);
+    }
+    let cancellation = admitted.cancel();
+    assert_eq!(
+        cancellation.observation().bytes_requested(),
+        expected.len() as u64
+    );
+    assert_eq!(
+        cancellation.observation().bytes_completed(),
+        worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::CHUNK_PAYLOAD_BYTES as u64
+    );
+    assert_eq!(
+        cancellation.unread_payload_bytes(),
+        (expected.len() - worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::CHUNK_PAYLOAD_BYTES) as u64
+    );
+    worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::assert_clean_close(serving);
+}
+
+#[test]
+fn public_extent_views_preserve_exact_over_pin_pressure_without_revoking_store_health() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("public-over-pin");
+    let (serving, placement) = worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::initialize(&root);
+    let expected = worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::payload(2 * worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::CHUNK_PAYLOAD_BYTES + 17);
+    let publication = publish_single(
+        &serving,
+        placement,
+        worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([171; 32]),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
+    );
+    let record = publication.settled_members()[0].record_id(0).unwrap();
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+    );
+    let reader = serving.records().expect("read protection admission");
+    {
+        let mut first = reader.open(record, limits).unwrap();
+        let mut second = reader.open(record, limits).unwrap();
+        let mut denied = reader.open(record, limits).unwrap();
+        let first_view = first.next_chunk().unwrap().unwrap();
+        let second_view = second.next_chunk().unwrap().unwrap();
+        assert_eq!(
+            first_view.basis().frame_coordinate(),
+            second_view.basis().frame_coordinate()
+        );
+        let failure = match denied.next_chunk() {
+            Err(failure) => failure,
+            Ok(_) => panic!("the third public view must exceed the two-lease policy"),
+        };
+        assert_eq!(
+            failure.kind(),
+            worth_store::physical_runtime::RecordStreamFailureKind::PhysicalPressure
+        );
+        assert_eq!(failure.completed_range(), 0..0);
+        let pressure = failure
+            .pressure()
+            .expect("stream pressure must carry exact Store-facing evidence");
+        assert_eq!(
+            pressure.dimension(),
+            worth_store::physical_runtime::PhysicalResidencyDimension::PinLeases
+        );
+        assert_eq!(
+            pressure.scope(),
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundRead
+        );
+        assert_eq!(pressure.requested(), 1);
+        assert_eq!(pressure.admitted(), 2);
+        assert_eq!(pressure.limit(), 2);
+        assert_eq!(
+            pressure.retry_posture(),
+            worth_store::physical_runtime::PhysicalResidencyRetryPosture::AfterLeaseRelease
+        );
+        assert!(!pressure.effect_may_have_started());
+        assert_eq!(pressure.basis().store_identity(), serving.store_identity());
+        assert_eq!(pressure.basis().record(), Some(record));
+        assert_eq!(
+            pressure.basis().frame_coordinate(),
+            Some(first_view.basis().frame_coordinate())
+        );
+        assert_eq!(denied.observation().bytes_completed(), 0);
+    }
+    let mut retry = reader
+        .open(record, limits)
+        .expect("pre-effect pressure must not revoke Store health");
+    assert_eq!(
+        retry.next_chunk().unwrap().unwrap().bytes(),
+        &expected[..worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::CHUNK_PAYLOAD_BYTES]
+    );
+    drop(retry);
+    drop(reader);
+    worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::assert_clean_close(serving);
+}

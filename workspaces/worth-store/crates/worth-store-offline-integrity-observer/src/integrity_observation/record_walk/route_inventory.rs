@@ -96,7 +96,7 @@ impl RouteInventory {
             self.intact = false;
             return;
         }
-        for entry in body.chunks_exact(88) {
+        for entry in body.as_chunks::<88>().0.iter() {
             let Some(record) = entry.get(..24).and_then(|bytes| bytes.try_into().ok()) else {
                 self.intact = false;
                 return;

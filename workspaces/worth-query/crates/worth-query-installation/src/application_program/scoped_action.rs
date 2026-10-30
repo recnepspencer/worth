@@ -18,6 +18,10 @@ where
     Schema: ApplicationSchema,
 {
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn action_for_mutation<Binding>(
         &self,
     ) -> Option<&worth_query_declaration::facade::application_program::ApplicationActionDeclaration>
@@ -30,6 +34,10 @@ where
             .find(|action| action.ordinary_mutation_binding_type() == Some(binding))
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn scoped_action<Binding, Scope, Shape>(
         &self,
     ) -> Option<WorthQueryInstalledScopedAction<Schema, Binding, Scope, Shape>>

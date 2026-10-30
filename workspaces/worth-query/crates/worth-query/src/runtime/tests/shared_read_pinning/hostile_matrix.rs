@@ -3,7 +3,7 @@ use crate::application::WorthQuerySharedReadPinningBoundaryPosture;
 use super::*;
 
 #[test]
-fn shared_read_pinning_boundary_closes_only_with_all_phase_thirteen_evidence() {
+fn shared_read_pinning_boundary_closes_only_with_all_evidence() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

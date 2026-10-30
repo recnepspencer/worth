@@ -81,10 +81,7 @@ impl SignalGraph {
         }
 
         newly_freed.sort_unstable();
-        loop {
-            let Some(last_index) = self.arena.nodes.len().checked_sub(1) else {
-                break;
-            };
+        while let Some(last_index) = self.arena.nodes.len().checked_sub(1) {
             if newly_freed.binary_search(&last_index).is_err()
                 || self.arena.nodes[last_index].is_occupied()
             {

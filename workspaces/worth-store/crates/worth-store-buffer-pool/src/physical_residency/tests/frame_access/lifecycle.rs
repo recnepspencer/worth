@@ -25,6 +25,10 @@ fn panicking_source_abandons_loading_and_releases_pin_budget() {
     assert_eq!(&*recovered, &[3; 32]);
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: close during source execution cancels unpublished frame; source: worth-store-buffer-pool::physical_residency::tests::frame_access::lifecycle::close_during_source_execution_cancels_unpublished_frame; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn close_during_source_execution_cancels_unpublished_frame() {
     let identity = store(12);

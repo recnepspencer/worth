@@ -11,7 +11,7 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 use worth_execution::{
-    CancellationToken, ExecutionAllocationDenialKind as Kind, ExecutionAllocationPolicy as Policy,
+    CancellationToken, ExecutionAllocationDenialClass as Kind, ExecutionAllocationPolicy as Policy,
     ExecutionAuthority, ExecutionAuthorityConfig, LeaseDenial, LeaseRequest,
 };
 use worth_foundational::{
@@ -71,13 +71,13 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
         _ => panic!("first nonzero chunk must require its actual layout"),
     };
     assert_eq!(
-        denied.kind(),
-        Kind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial::Capacity {
+        denied.classify(),
+        Kind::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
                 requested: starting_quote(),
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert_eq!(
@@ -106,13 +106,13 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
         _ => panic!("old+new coexistence must require a second actual layout"),
     };
     assert_eq!(
-        denied.kind(),
-        Kind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial::Capacity {
+        denied.classify(),
+        Kind::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
                 requested: quote,
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert_eq!(denied.requested_payload_bytes(), Some(quote));
@@ -127,13 +127,13 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
         _ => panic!("replacement fits alone; coexistence must still require the old layout"),
     };
     assert_eq!(
-        denied.kind(),
-        Kind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial::Capacity {
+        denied.classify(),
+        Kind::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
                 requested: directory_quote,
                 admitted: directory_quote - layout::<RefCell<Option<Run<Body>>>>(1),
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert_eq!(denied.requested_payload_bytes(), Some(directory_quote));
@@ -228,11 +228,11 @@ fn live_child_stop_refuses_partial_success_without_stopping_parent() {
         merge,
     );
     assert!(
-        matches!(denied, Err(StoreDenial::Allocation(ref denied)) if denied.kind() == Kind::Cancelled)
+        matches!(denied, Err(StoreDenial::Allocation(ref denied)) if denied.classify() == Kind::Request(worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)))
     );
     assert!(matches!(
         store.finish(policy),
-        Err(StoreDenial::Allocation(ref denial)) if denial.kind() == Kind::Cancelled
+        Err(StoreDenial::Allocation(ref denial)) if denial.classify() == Kind::Request(worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled))
     ));
     assert!(!parent_stop.is_cancelled());
     assert_eq!(parent.reserve_memory(budget).unwrap().bytes(), budget);

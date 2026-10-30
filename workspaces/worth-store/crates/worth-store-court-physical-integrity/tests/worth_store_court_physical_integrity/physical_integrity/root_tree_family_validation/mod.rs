@@ -1,0 +1,12 @@
+#[path = "bootstrap_catalog/mod.rs"]
+pub(crate) mod bootstrap_catalog;
+#[path = "borrowed_root_routing_block/mod.rs"]
+pub(crate) mod borrowed_root_routing_block;
+#[path = "hostile_prefixes/mod.rs"]
+pub(crate) mod hostile_prefixes;
+#[path = "reference_scope_evidence/mod.rs"]
+pub(crate) mod reference_scope_evidence;
+#[path = "root_routing_block/mod.rs"]
+pub(crate) mod root_routing_block;
+#[path = "segment_membership_block/mod.rs"]
+pub(crate) mod segment_membership_block;

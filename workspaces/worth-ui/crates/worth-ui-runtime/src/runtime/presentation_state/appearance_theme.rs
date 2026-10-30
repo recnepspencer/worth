@@ -25,11 +25,9 @@ impl super::UiApplicationPresentationState {
         &mut self,
         capability: crate::runtime::appearance::UiThemeCapabilityReceipt,
     ) -> Result<(), crate::runtime::appearance::UiThemeInitialBindingDenial> {
-        let result = self
-            .appearance_theme_state
+        self.appearance_theme_state
             .get_or_insert_with(crate::runtime::appearance::UiAppearanceThemeState::default)
-            .install_initial(capability);
-        result
+            .install_initial(capability)
     }
 
     pub(crate) fn commit_published_appearance_theme_switch(

@@ -4,16 +4,6 @@ use crate::checkpoint_recovery::computation_partition::entry_correction::EntryCo
 mod after_publication;
 use super::super::source_delivery::correction as preparation;
 
-#[test]
-fn recorded_correction_reuses_the_retained_partitions() {
-    let _guard = checkpoint_recovery_test_guard();
-    let reused = directly_undone::<true, 0>();
-    let fresh = directly_undone::<false, 3>();
-    assert_eq!(
-        reused.outcome, fresh.outcome,
-        "correction: result bits, typed outcome and charged work"
-    );
-}
 fn directly_undone<const REUSE: bool, const MODE: u8>() -> OracleRun {
     let case = Model::law_cases()
         .into_iter()
@@ -69,4 +59,19 @@ fn directly_undone<const REUSE: bool, const MODE: u8>() -> OracleRun {
         "the step after undo is unchanged"
     );
     run
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn recorded_correction_reuses_the_retained_partitions() {
+        let _guard = checkpoint_recovery_test_guard();
+        let reused = directly_undone::<true, 0>();
+        let fresh = directly_undone::<false, 3>();
+        assert_eq!(
+            reused.outcome, fresh.outcome,
+            "correction: result bits, typed outcome and charged work"
+        );
+    }
 }

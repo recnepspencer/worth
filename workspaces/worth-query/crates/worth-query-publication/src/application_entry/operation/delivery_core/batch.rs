@@ -22,7 +22,7 @@ where
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = BatchRead<Schema, Intent, Action, N>>,
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query>,
-    {
+{
         self.read_batch_current_with_policy::<N>(
             request,
             WorthQueryOperationDeliveryPolicy::default(),
@@ -34,7 +34,7 @@ where
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = BatchRead<Schema, Intent, Action, N>>,
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query>,
-    {
+{
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application)
             || self.description.branch != request.branch
@@ -64,7 +64,7 @@ where
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = BatchRead<Schema, Intent, Action, N>>,
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query>,
-    {
+{
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application)
             || self.description.branch != request.branch

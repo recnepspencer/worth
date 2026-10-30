@@ -10,11 +10,11 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 - Deferred next homes:
 
 - Public surface: facade-only
-- Facade exports: `ScopedReplayBasis, WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope, WorthQueryCertificationReplayAdmissionDenial, WorthQueryCertificationReplayCapability, WorthQueryCertificationReplayCounters, WorthQueryCertificationReplayOutcome, WorthQueryCertificationReplayResult, WorthQueryCertificationReplayStop, WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention, WorthQueryHistoricalContext, WorthQueryHistoricalReplayAdmission, WorthQueryHistoricalReplayAdmissionDenial, WorthQueryInstalledHistoricalReplayPath, WorthQueryReplayBasisRelationship, WorthQueryReplayComparison, WorthQueryReplayDivergence, admit_installed_historical_replay_basis, issue_query_certification_replay_capability, replay_installed_workflow, replay_installed_workflow_historical`
+- Declared facade exports (glob routes remain explicit): `ScopedReplayBasis, WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope, WorthQueryCertificationReplayAdmissionDenial, WorthQueryCertificationReplayCapability, WorthQueryCertificationReplayCounters, WorthQueryCertificationReplayOutcome, WorthQueryCertificationReplayResult, WorthQueryCertificationReplayStop, WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention, WorthQueryHistoricalContext, WorthQueryHistoricalReplayAdmission, WorthQueryHistoricalReplayAdmissionDenial, WorthQueryInstalledHistoricalReplayPath, WorthQueryReplayBasisRelationship, WorthQueryReplayComparison, WorthQueryReplayDivergence, admit_installed_historical_replay_basis, issue_query_certification_replay_capability, replay_installed_workflow, replay_installed_workflow_historical`
 - Owned internal modules: `none`
 - Allowed in-tree dependency bands: `none`
 
-Machine fences:
+Boundary guidance (the compiler and retained checks own enforcement):
 - Framework Query audience facade (`replay`); legal consuming bands: cert.
 - May depend only on its configured authority packages: `worth-query`; must not depend on other audience facades.
 - Leaf re-export surface only; guidance: cert-only reconstruction and replay.

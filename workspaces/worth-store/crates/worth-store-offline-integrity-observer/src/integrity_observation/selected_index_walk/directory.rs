@@ -71,7 +71,7 @@ pub(super) fn inspect_directory(
     }
     let mut entries = Vec::with_capacity(count);
     let mut previous = 0;
-    for frame in bytes[prefix_bytes..].chunks_exact(26) {
+    for frame in bytes[prefix_bytes..].as_chunks::<26>().0.iter() {
         let code = read_u16(frame, 0);
         let record = record_key(&frame[2..26]).ok_or_else(pointer)?;
         if !matches!(code, 1 | 2) || code <= previous {

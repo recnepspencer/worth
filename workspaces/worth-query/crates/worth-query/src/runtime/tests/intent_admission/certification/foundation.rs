@@ -2,7 +2,7 @@ use super::*;
 use std::collections::BTreeSet;
 
 #[test]
-fn intent_admission_certification_bundle_assembles_phase_six_foundation_artifacts() {
+fn intent_admission_certification_bundle_assembles_foundation_artifacts() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

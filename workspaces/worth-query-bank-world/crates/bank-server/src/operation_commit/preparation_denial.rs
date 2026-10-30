@@ -23,6 +23,7 @@ pub enum BankApplicationAttemptDenialKind {
     CurrentAuthorityDenied,
     OutsideRealizedReadScope,
     UndeclaredDecisionRead,
+    UnobservedWrite,
     StaleEntityIdentity,
     MissingAuthoritativeFact,
     InvalidAuthoritativeValue,

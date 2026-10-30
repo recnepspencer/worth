@@ -1,0 +1,11 @@
+error: cannot construct `ManagedSignalBranchReference` with struct literal syntax due to private fields
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/managed_reference_fields_are_private.rs:4:19
+  |
+4 |     let _forged = ManagedSignalBranchReference {};
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: you might have meant to use the `owner_issued` associated function
+  |
+4 -     let _forged = ManagedSignalBranchReference {};
+4 +     let _forged = ManagedSignalBranchReference::owner_issued(_, _, _);
+  |

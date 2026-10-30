@@ -1,0 +1,30 @@
+error[E0061]: this method takes 5 arguments but 4 arguments were supplied
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/certification_reference_workload_sufficiency_requires_coverage_proof.rs:18:21
+   |
+18 |       let _ = runtime.seal_subscription_reference_workload_sufficiency(
+   |  _____________________^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-
+19 | |         &manifest,
+20 | |         &declaration,
+21 | |         lane_artifacts,
+22 | |         &report,
+   | |         ------- expected `BridgeSubscriptionReferenceWorkloadCoverageProof`, found `BridgeSubscriptionReferenceWorkloadReport`
+23 | |     );
+   | |_____- argument #5 of type `&str` is missing
+   |
+   = note: expected reference `&BridgeSubscriptionReferenceWorkloadCoverageProof`
+              found reference `&BridgeSubscriptionReferenceWorkloadReport`
+note: method defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription/certification/reference_workload.rs
+   |
+   |     pub fn seal_subscription_reference_workload_sufficiency(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: provide the argument
+   |
+18 ~     let _ = runtime.seal_subscription_reference_workload_sufficiency(
+19 +         &manifest,
+20 +         &declaration,
+21 +         lane_artifacts,
+22 +         /* &BridgeSubscriptionReferenceWorkloadCoverageProof */,
+23 +         /* &str */,
+24 ~     );
+   |

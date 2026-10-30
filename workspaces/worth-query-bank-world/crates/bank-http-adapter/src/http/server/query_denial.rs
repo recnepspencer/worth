@@ -39,12 +39,20 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::Admission(denial) => admission(denial.kind()),
         BankApplicationQueryDenial::Execution(denial) => execution(denial.kind()),
         BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement(kind),
+        BankApplicationQueryDenial::ManagedIndex(cause) => managed_index(&cause),
     }
 }
+
+mod managed_index;
+use managed_index::managed_index;
 
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
     use BankProductSelectionDenialKind as Selection;
     match kind {
+        Selection::ExpectedDescriptionVersionUnsupported { .. } => {
+            BankHttpDenial::new(Kind::UnsupportedProtocol, Next::CorrectRequest)
+        }
+        Selection::ExpectedDescriptionNameInvalid => malformed(),
         Selection::ReadExecution(stop) => super::mutation_application::pending_execution_stop(stop),
         Selection::ForeignPhase => internal_denied(),
         Selection::ForeignOwner
@@ -163,7 +171,9 @@ fn parameter(kind: BankApplicationQueryParameterDenialKind) -> BankHttpDenial {
         Parameter::CanonicalEntryBudgetExceeded | Parameter::CanonicalEncodedByteBudgetExceeded => {
             exhausted()
         }
-        Parameter::CanonicalDigestSlotRejected => internal_denied(),
+        Parameter::CanonicalDigestSlotRejected | Parameter::UnsupportedSortImplementation(_) => {
+            internal_denied()
+        }
     }
 }
 
@@ -275,7 +285,9 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         Settlement::ProductSelection(kind) => product_selection(kind),
         Settlement::RequiredSuccessorStateUnavailable
         | Settlement::DuplicatePerformedSource
-        | Settlement::IncompleteDependencyCoverage => internal_denied(),
+        | Settlement::IncompleteDependencyCoverage
+        | Settlement::ManagedSourceExpansionUnsupported
+        | Settlement::UnobservedWrite(_) => internal_denied(),
     }
 }
 

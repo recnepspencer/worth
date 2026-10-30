@@ -199,40 +199,45 @@ fn run(workers: usize, failure: Failure, caught: bool) -> History {
         work,
     }
 }
-#[test]
-fn queued_phase_failures_and_caught_denials_agree_across_widths() {
-    let _guard = checkpoint_recovery_test_guard();
-    if let Ok(workers) = std::env::var("WORTH_QUEUE_FAILURE_WIDTH") {
-        let phase = std::env::var("WORTH_QUEUE_FAILURE_PHASE").unwrap();
-        let (failure, caught) = match phase.as_str() {
-            "prepare" => (Failure::Prepare, false),
-            "complete" => (Failure::Complete, false),
-            "caught" => (Failure::Compute, true),
-            _ => panic!("unknown phase"),
-        };
-        println!(
-            "\nWORTH_QUEUE_HISTORY:{:?}",
-            run(workers.parse().unwrap(), failure, caught)
-        );
-        return;
-    }
-    for phase in ["prepare", "complete", "caught"] {
-        let mut serial = None;
-        for workers in [0, 1, 2, 4] {
-            let output = std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact", "checkpoint_recovery::required_chain::concurrent_waves::queue_failures::queued_phase_failures_and_caught_denials_agree_across_widths", "--nocapture"]).env("WORTH_QUEUE_FAILURE_WIDTH", workers.to_string()).env("WORTH_QUEUE_FAILURE_PHASE", phase).output().unwrap();
-            assert!(
-                output.status.success(),
-                "width {workers}, {phase}: {}{}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn queued_phase_failures_and_caught_denials_agree_across_widths() {
+        let _guard = checkpoint_recovery_test_guard();
+        if let Ok(workers) = std::env::var("WORTH_QUEUE_FAILURE_WIDTH") {
+            let phase = std::env::var("WORTH_QUEUE_FAILURE_PHASE").unwrap();
+            let (failure, caught) = match phase.as_str() {
+                "prepare" => (Failure::Prepare, false),
+                "complete" => (Failure::Complete, false),
+                "caught" => (Failure::Compute, true),
+                _ => panic!("unknown phase"),
+            };
+            println!(
+                "\nWORTH_QUEUE_HISTORY:{:?}",
+                run(workers.parse().unwrap(), failure, caught)
             );
-            let stdout = String::from_utf8(output.stdout).unwrap();
-            let actual = stdout
-                .lines()
-                .find_map(|line| line.strip_prefix("WORTH_QUEUE_HISTORY:"))
-                .unwrap()
-                .to_owned();
-            assert_eq!(actual, *serial.get_or_insert_with(|| actual.clone()));
+            return;
+        }
+        for phase in ["prepare", "complete", "caught"] {
+            let mut serial = None;
+            for workers in [0, 1, 2, 4] {
+                let output = std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact", "checkpoint_recovery::required_chain::concurrent_waves::queue_failures::serial::queued_phase_failures_and_caught_denials_agree_across_widths", "--nocapture"]).env("WORTH_QUEUE_FAILURE_WIDTH", workers.to_string()).env("WORTH_QUEUE_FAILURE_PHASE", phase).output().unwrap();
+                assert!(
+                    output.status.success(),
+                    "width {workers}, {phase}: {}{}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                let stdout = String::from_utf8(output.stdout).unwrap();
+                let actual = stdout
+                    .lines()
+                    .find_map(|line| line.strip_prefix("WORTH_QUEUE_HISTORY:"))
+                    .unwrap()
+                    .to_owned();
+                assert_eq!(actual, *serial.get_or_insert_with(|| actual.clone()));
+            }
         }
     }
 }

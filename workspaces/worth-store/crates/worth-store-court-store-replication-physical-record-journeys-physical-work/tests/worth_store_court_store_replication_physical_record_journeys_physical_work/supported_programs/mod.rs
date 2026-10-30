@@ -1,0 +1,15 @@
+mod admitted_residency_policy_supported;
+mod blob_ingest_supported;
+mod blob_relocation_supported;
+mod declarations;
+mod independent_scan_and_mutation_capabilities_compile;
+mod ordinary_mutation_outcomes_are_supported;
+mod physical_data_progression_examples;
+mod physical_durability_guide_examples;
+mod physical_wal_append_examples;
+mod protected_record_reads_supported;
+mod raw_lease_can_only_observe_descriptive_record;
+mod record_chunk_views_supported;
+mod responsibility_named_store_facade_supported;
+mod supported_admission;
+mod supported_physical_work;

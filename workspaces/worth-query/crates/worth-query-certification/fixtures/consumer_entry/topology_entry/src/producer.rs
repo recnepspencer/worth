@@ -97,12 +97,25 @@ impl<Schema: TopologySchemaBinding>
             contacts.record();
         }
         let mut input = planar_producer_input(source);
-        if self
-            .authorization_denials
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |remaining| {
-                remaining.checked_sub(1)
-            })
-            .is_ok()
+        if {
+            let update_counter = &self.authorization_denials;
+            let mut remaining = update_counter.load(Ordering::SeqCst);
+            loop {
+                let Some(updated_value) = remaining.checked_sub(1) else {
+                    break Err(remaining);
+                };
+                match update_counter.compare_exchange_weak(
+                    remaining,
+                    updated_value,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => remaining = reloaded_value,
+                }
+            }
+        }
+        .is_ok()
         {
             input.scope_key.push_str(":authorization-denied");
         }

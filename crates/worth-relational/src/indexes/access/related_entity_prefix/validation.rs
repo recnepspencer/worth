@@ -126,7 +126,7 @@ pub(super) fn row(
                 Denial::Read(cause)
             }
         })?
-        .ok_or_else(&corrupt)?;
+        .ok_or_else(corrupt)?;
     let (parent, child) = match parent_endpoint {
         RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
         RelatedEntityEndpoint::TargetParent => (relation.target, relation.source),
@@ -154,7 +154,7 @@ pub(super) fn row(
                 Denial::Read(cause)
             }
         })?
-        .ok_or_else(&corrupt)?;
+        .ok_or_else(corrupt)?;
     if actual_child.kind_id != *child_kind {
         return Err(corrupt());
     }

@@ -1,0 +1,34 @@
+[package]
+"name" = "worth-store-testkit-recovery-runtime"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"serde_json" = { "version" = "^1" }
+"sha2" = { "version" = "^0.10" }
+"tempfile" = { "version" = "^3" }
+"worth-execution" = { "path" = "../../../../crates/worth-execution" }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-proof" = { "path" = "../../../../crates/worth-proof" }
+"worth-relational" = { "path" = "../../../../crates/worth-relational" }
+"worth-store" = { "path" = "../worth-store", "features" = ["certification-test-authority", "recovery-runtime-owner", "test-support", "volatile-sync-for-tests"] }
+"worth-store-authority" = { "path" = "../worth-store-authority" }
+"worth-store-blob-chunks" = { "path" = "../worth-store-blob-chunks" }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-physical-integrity" = { "path" = "../worth-store-physical-integrity", "features" = ["test-support"] }
+"worth-store-recovery-physics" = { "path" = "../worth-store-recovery-physics", "features" = ["test-support"] }
+"worth-store-recovery-runtime" = { "path" = "../worth-store-recovery-runtime" }
+"worth-store-security" = { "path" = "../worth-store-security" }
+"worth-store-test-support" = { "path" = "../worth-store-test-support", "features" = ["recovery-runtime-fixtures"], "default-features" = false }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true

@@ -174,72 +174,76 @@ pub(super) fn seeded_sequence_with_stops(
     }
 }
 
-#[test]
-fn every_reused_run_equals_a_full_run_of_the_same_facts() {
-    let _guard = checkpoint_recovery_test_guard();
-    let mut last: Option<OracleRun> = None;
-    let (mut incremental, mut full) = (0_usize, 0_usize);
-    sequence(true, |at, mut demanded| {
-        let reference = full_run(
-            demanded.model,
-            demanded
-                .reference
-                .expect("the full-run oracle requested independent model history"),
-            demanded.own_write,
-        );
-        if !demanded.runs.is_empty() {
-            assert_published_state(&demanded.runs, &reference);
-        }
-        // A demand that runs nothing keeps the output of the last run, which
-        // must equal a full run of the facts as they are now.
-        if let (Some(last_run), true) = (last.as_ref(), demanded.runs.is_empty()) {
-            let reference = reference.last().expect("a fresh runtime runs");
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn every_reused_run_equals_a_full_run_of_the_same_facts() {
+        let _guard = checkpoint_recovery_test_guard();
+        let mut last: Option<OracleRun> = None;
+        let (mut incremental, mut full) = (0_usize, 0_usize);
+        sequence(true, |at, mut demanded| {
+            let reference = full_run(
+                demanded.model,
+                demanded
+                    .reference
+                    .expect("the full-run oracle requested independent model history"),
+                demanded.own_write,
+            );
+            if !demanded.runs.is_empty() {
+                assert_published_state(&demanded.runs, &reference);
+            }
+            // A demand that runs nothing keeps the output of the last run, which
+            // must equal a full run of the facts as they are now.
+            if let (Some(last_run), true) = (last.as_ref(), demanded.runs.is_empty()) {
+                let reference = reference.last().expect("a fresh runtime runs");
+                assert_eq!(
+                    demanded.contacts, 0,
+                    "{at}: a demand that ran nothing kept its output"
+                );
+                assert!(!demanded.moved, "{at}: an edit that moved a fact runs");
+                assert_eq!(
+                    reference.outcome, last_run.outcome,
+                    "{at}: the kept output is current"
+                );
+                assert_published_state(
+                    std::slice::from_ref(last_run),
+                    std::slice::from_ref(reference),
+                );
+                return;
+            }
+            // Each run equals the full run at its place: the first over the
+            // edited facts, and a rerun over the producer's own write.
             assert_eq!(
-                demanded.contacts, 0,
-                "{at}: a demand that ran nothing kept its output"
+                outcomes(&demanded.runs),
+                outcomes(&reference),
+                "{at}: reuse equals a full run, run by run"
             );
-            assert!(!demanded.moved, "{at}: an edit that moved a fact runs");
-            assert_eq!(
-                reference.outcome, last_run.outcome,
-                "{at}: the kept output is current"
-            );
-            assert_published_state(
-                std::slice::from_ref(last_run),
-                std::slice::from_ref(reference),
-            );
-            return;
-        }
-        // Each run equals the full run at its place: the first over the
-        // edited facts, and a rerun over the producer's own write.
-        assert_eq!(
-            outcomes(&demanded.runs),
-            outcomes(&reference),
-            "{at}: reuse equals a full run, run by run"
-        );
-        let Some(last_run) = last.as_ref() else {
-            assert_eq!(demanded.contacts, 1);
+            let Some(last_run) = last.as_ref() else {
+                assert_eq!(demanded.contacts, 1);
+                last = demanded.runs.pop();
+                return;
+            };
+            for rerun in &demanded.runs[1..] {
+                assert_eq!(rerun.runs, [Run::Incremental], "{at}: a rerun reuses");
+            }
+            let run = &demanded.runs[0];
+            match run.runs.as_slice() {
+                [Run::Incremental] => incremental += 1,
+                [Run::Full(_)] => full += 1,
+                _ => {}
+            }
+            if let (Some(expected), true) = (
+                demanded.kind.and_then(expected),
+                last_run.outcome.is_ok() && run.outcome.is_ok(),
+            ) {
+                assert_eq!(run.runs, [expected], "{at}: the run's kind");
+            }
             last = demanded.runs.pop();
-            return;
-        };
-        for rerun in &demanded.runs[1..] {
-            assert_eq!(rerun.runs, [Run::Incremental], "{at}: a rerun reuses");
-        }
-        let run = &demanded.runs[0];
-        match run.runs.as_slice() {
-            [Run::Incremental] => incremental += 1,
-            [Run::Full(_)] => full += 1,
-            _ => {}
-        }
-        if let (Some(expected), true) = (
-            demanded.kind.and_then(expected),
-            last_run.outcome.is_ok() && run.outcome.is_ok(),
-        ) {
-            assert_eq!(run.runs, [expected], "{at}: the run's kind");
-        }
-        last = demanded.runs.pop();
-    });
-    assert!(
-        incremental > full,
-        "most steps reuse partitions: {incremental} incremental, {full} full"
-    );
+        });
+        assert!(
+            incremental > full,
+            "most steps reuse partitions: {incremental} incremental, {full} full"
+        );
+    }
 }

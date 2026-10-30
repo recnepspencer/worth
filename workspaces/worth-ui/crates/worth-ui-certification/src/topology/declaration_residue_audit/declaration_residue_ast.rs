@@ -53,10 +53,10 @@ pub(super) fn collect_method_names_for_function(
             }
             Item::Impl(item_impl) => {
                 for impl_item in item_impl.items {
-                    if let ImplItem::Fn(function) = impl_item {
-                        if function.sig.ident == function_name {
-                            collector.visit_block(&function.block);
-                        }
+                    if let ImplItem::Fn(function) = impl_item
+                        && function.sig.ident == function_name
+                    {
+                        collector.visit_block(&function.block);
                     }
                 }
             }

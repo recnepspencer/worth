@@ -202,7 +202,7 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         }, settling),
         (Kind::CompletionAllocationDenied {
             stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit,
-            kind: worth_query_host::facade::runtime::ExecutionAllocationDenialKind::Allocator,
+            kind: worth_query_host::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_query_host::facade::runtime::ExecutionPhysicalAllocationDenialKind::Allocator),
             requested_payload_bytes: Some(17),
         }, settling),
         (Kind::CompletionStagingCardinalityOverflow, settling),

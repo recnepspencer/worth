@@ -5,6 +5,10 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 pub(in crate::domain_computation::primary_graph::operation_body) fn install<
     Schema: worth_query_installation::facade::ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,

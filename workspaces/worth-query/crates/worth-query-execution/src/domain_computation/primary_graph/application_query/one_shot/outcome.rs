@@ -113,7 +113,7 @@ where
         }
         material
             .affinity(plan.principal)
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
     }
     let request_affinity =
         super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity::new(
@@ -159,7 +159,7 @@ where
     if let Some(material) = &material {
         material
             .basis(plan.basis.identity())
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
     }
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
@@ -174,17 +174,15 @@ where
     if let Some(material) = &material {
         material
             .arc::<super::super::observed_source::WorthQueryRetainedObservedParameters>()
-            .map_err(&material_failure)?;
-        material.arc::<String>().map_err(&material_failure)?;
-        material
-            .text(plan.query.name())
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
+        material.arc::<String>().map_err(material_failure)?;
+        material.text(plan.query.name()).map_err(material_failure)?;
         material
             .arc::<worth_relational::facade::history::BranchId>()
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
         material
             .text(&basis_identity.branch_id().0)
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
     }
     let source_parameters = std::sync::Arc::new(
         super::super::observed_source::WorthQueryRetainedObservedParameters::new(plan.parameters),
@@ -226,7 +224,7 @@ where
     let mut observed_sources = if let Some(material) = &material {
         material
             .slots::<super::super::WorthQueryObservedSource<Query>>(source_footprints.len())
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
         let mut sources = Vec::new();
         sources.try_reserve_exact(source_footprints.len()).map_err(|_| material_failure(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed))?;
         sources

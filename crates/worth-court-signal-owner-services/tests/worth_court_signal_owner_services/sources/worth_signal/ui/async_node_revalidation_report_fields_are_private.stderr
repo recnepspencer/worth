@@ -1,0 +1,9 @@
+error[E0451]: fields `classification` and `resource_revalidation` of struct `AsyncNodeRevalidationReport` are private
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_revalidation_report_fields_are_private.rs:9:9
+   |
+ 8 |     let _report = AsyncNodeRevalidationReport {
+   |                   --------------------------- in this type
+ 9 |         classification: fake(),
+   |         ^^^^^^^^^^^^^^ private field
+10 |         resource_revalidation: fake(),
+   |         ^^^^^^^^^^^^^^^^^^^^^ private field

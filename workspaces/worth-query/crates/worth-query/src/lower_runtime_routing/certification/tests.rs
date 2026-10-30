@@ -24,7 +24,7 @@ use crate::lower_runtime_routing::{
 };
 
 #[test]
-fn certification_bundle_contains_phase_seven_lanes() {
+fn certification_bundle_contains_lanes() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 

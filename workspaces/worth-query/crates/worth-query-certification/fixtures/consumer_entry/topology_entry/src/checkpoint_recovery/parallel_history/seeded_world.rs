@@ -68,14 +68,18 @@ pub(super) fn world(family: Family, seed: u64) -> World {
     World { members, requested }
 }
 
-#[test]
-fn each_cell_obeys_the_operation_budget() {
-    for family in FAMILIES {
-        let world = world(family, SEED);
-        assert!(world.requested.len() <= 8 && world.members.len() <= 8);
-        for member in world.members {
-            assert!(member.partitions.len() <= 4);
-            assert!(member.partitions.iter().all(|part| part.work <= 128));
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn each_cell_obeys_the_operation_budget() {
+        for family in FAMILIES {
+            let world = world(family, SEED);
+            assert!(world.requested.len() <= 8 && world.members.len() <= 8);
+            for member in world.members {
+                assert!(member.partitions.len() <= 4);
+                assert!(member.partitions.iter().all(|part| part.work <= 128));
+            }
         }
     }
 }

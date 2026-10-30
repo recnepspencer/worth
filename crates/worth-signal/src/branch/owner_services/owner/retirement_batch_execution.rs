@@ -49,10 +49,7 @@ where
         }
 
         let mut receipts = Vec::with_capacity(batch.plans.len());
-        for (position, (reservation, plan)) in reservations
-            .into_iter()
-            .zip(batch.plans.into_iter())
-            .enumerate()
+        for (position, (reservation, plan)) in reservations.into_iter().zip(batch.plans).enumerate()
         {
             match reservation.execute(plan, cancellation) {
                 Ok(receipt) => receipts.push(receipt),

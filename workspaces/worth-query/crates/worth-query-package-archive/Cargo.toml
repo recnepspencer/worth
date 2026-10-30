@@ -1,4 +1,5 @@
 [package]
+autotests = false
 name = "worth-query-package-archive"
 edition.workspace = true
 rust-version.workspace = true

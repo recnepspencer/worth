@@ -2,7 +2,7 @@
 use super::*;
 
 #[test]
-fn unified_effect_execution_certification_binds_phase4_seeded_and_phase5_surfaces() {
+fn unified_effect_execution_certification_binds_seeded_and_surfaces() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

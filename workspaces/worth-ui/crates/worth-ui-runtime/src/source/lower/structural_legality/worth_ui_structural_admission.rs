@@ -153,19 +153,18 @@ impl StructuralAdmission<'_, '_> {
             .map_err(|diagnostic| vec![diagnostic])?;
         if let (Some((_, state_descriptor)), Some(scroll_ownership)) =
             (state_slot.as_ref(), descriptor.scroll_ownership())
-        {
-            if let Err(code) = region_state_slot_is_legal(
+            && let Err(code) = region_state_slot_is_legal(
                 descriptor.id(),
                 descriptor.role(),
                 scroll_ownership,
                 state_descriptor,
-            ) {
-                diagnostics.push(self.diagnostic(
-                    code,
-                    state_descriptor.id().as_str(),
-                    structural_locus,
-                ));
-            }
+            )
+        {
+            diagnostics.push(self.diagnostic(
+                code,
+                state_descriptor.id().as_str(),
+                structural_locus,
+            ));
         }
         Ok(state_slot)
     }
@@ -314,25 +313,20 @@ impl StructuralAdmission<'_, '_> {
         mount_locus: &str,
     ) -> Vec<WorthUiStructuralLegalityDiagnostic> {
         let mut diagnostics = Vec::new();
-        if let Some((_, policy_descriptor)) = placement_policy {
-            if !placement_policy_matches_mount(descriptor, region_role, policy_descriptor) {
-                diagnostics.push(self.diagnostic(
-                    WorthUiStructuralLegalityDiagnosticCode::IllegalPlacementPolicyForMount,
-                    policy_descriptor.id().as_str(),
-                    mount_locus,
-                ));
-            }
+        if let Some((_, policy_descriptor)) = placement_policy
+            && !placement_policy_matches_mount(descriptor, region_role, policy_descriptor)
+        {
+            diagnostics.push(self.diagnostic(
+                WorthUiStructuralLegalityDiagnosticCode::IllegalPlacementPolicyForMount,
+                policy_descriptor.id().as_str(),
+                mount_locus,
+            ));
         }
-        if let Some((_, state_descriptor)) = state_slot {
-            if let Err(code) =
+        if let Some((_, state_descriptor)) = state_slot
+            && let Err(code) =
                 mount_state_slot_is_legal(descriptor.id(), descriptor, state_descriptor)
-            {
-                diagnostics.push(self.diagnostic(
-                    code,
-                    state_descriptor.id().as_str(),
-                    mount_locus,
-                ));
-            }
+        {
+            diagnostics.push(self.diagnostic(code, state_descriptor.id().as_str(), mount_locus));
         }
         diagnostics
     }

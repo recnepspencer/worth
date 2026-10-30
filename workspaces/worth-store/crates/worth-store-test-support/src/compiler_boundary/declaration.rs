@@ -5,15 +5,24 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UiProofSuiteDeclaration {
     suite_identity: String,
-    environment: UiProofEnvironment,
+    environment: UiCompilerEnvironment,
     fixtures: Vec<UiFixtureDeclaration>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct UiProofEnvironment {
-    dependency_manifest: String,
-    feature_identity: String,
-    profile_identity: String,
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum UiCompilerEnvironment {
+    Production,
+    Certification,
+}
+
+impl UiCompilerEnvironment {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Production => "production",
+            Self::Certification => "certification",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -42,7 +51,7 @@ pub struct ExpectedCompilerDenial {
 impl UiProofSuiteDeclaration {
     pub fn new(
         suite_identity: impl Into<String>,
-        environment: UiProofEnvironment,
+        environment: UiCompilerEnvironment,
         fixtures: Vec<UiFixtureDeclaration>,
     ) -> Result<Self, String> {
         let suite_identity = suite_identity.into();
@@ -72,47 +81,12 @@ impl UiProofSuiteDeclaration {
         &self.suite_identity
     }
 
-    pub const fn environment(&self) -> &UiProofEnvironment {
-        &self.environment
+    pub const fn environment(&self) -> UiCompilerEnvironment {
+        self.environment
     }
 
     pub fn fixtures(&self) -> &[UiFixtureDeclaration] {
         &self.fixtures
-    }
-}
-
-impl UiProofEnvironment {
-    pub fn cargo(
-        dependency_manifest: impl Into<String>,
-        feature_identity: impl Into<String>,
-        profile_identity: impl Into<String>,
-    ) -> Result<Self, String> {
-        let dependency_manifest = normalize_manifest(dependency_manifest.into());
-        if !dependency_manifest.contains("[dependencies]") {
-            return Err("UI Cargo environment must declare [dependencies]".to_owned());
-        }
-        let feature_identity = feature_identity.into();
-        let profile_identity = profile_identity.into();
-        if feature_identity.trim().is_empty() || profile_identity.trim().is_empty() {
-            return Err("UI feature and profile identities cannot be empty".to_owned());
-        }
-        Ok(Self {
-            dependency_manifest,
-            feature_identity,
-            profile_identity,
-        })
-    }
-
-    pub fn dependency_manifest(&self) -> &str {
-        &self.dependency_manifest
-    }
-
-    pub fn feature_identity(&self) -> &str {
-        &self.feature_identity
-    }
-
-    pub fn profile_identity(&self) -> &str {
-        &self.profile_identity
     }
 }
 
@@ -185,10 +159,6 @@ impl ExpectedCompilerDenial {
             .extend(fragments.into_iter().map(Into::into));
         self
     }
-}
-
-fn normalize_manifest(value: String) -> String {
-    format!("{}\n", value.replace("\r\n", "\n").trim())
 }
 
 const fn default_setup_failures() -> [&'static str; 8] {

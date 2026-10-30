@@ -130,7 +130,6 @@ fn descriptor_outcome(
         candidate_root,
         predecessor,
         cumulative_dropped,
-        terminal: _,
         ..
     }) = rows[index].fact.as_ref()
     else {

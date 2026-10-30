@@ -12,12 +12,16 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn operation<Binding>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
-    {
+{
         self.insert_marker(0, TypeId::of::<Binding>(), Binding::IDENTITY)?;
         if !self
             .program

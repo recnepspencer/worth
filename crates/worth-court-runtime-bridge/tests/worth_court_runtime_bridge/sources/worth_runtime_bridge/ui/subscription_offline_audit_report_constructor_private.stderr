@@ -1,0 +1,31 @@
+error: cannot construct `BridgeSubscriptionOfflineAuditReport` with struct literal syntax due to private fields
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_offline_audit_report_constructor_private.rs:6:19
+   |
+ 6 |     let _report = BridgeSubscriptionOfflineAuditReport {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 7 |         outcome: BridgeSubscriptionOfflineAuditOutcome::DiagnosedOffline,
+   |         ---------------------------------------------------------------- private field
+ 8 |         bundle_index_digest: sealed_authority_placeholder(),
+   |         --------------------------------------------------- private field
+ 9 |         comparison_report_count: 0,
+   |         -------------------------- private field
+10 |         counters: Default::default(),
+   |         ---------------------------- private field
+11 |         canonical_basis: sealed_authority_placeholder(),
+   |         ----------------------------------------------- private field
+12 |         digest: sealed_authority_placeholder(),
+   |         -------------------------------------- private field
+   |
+   = note: ...and other private field `outcome_summary` that was not provided
+help: you might have meant to use the `audit` associated function
+   |
+ 6 -     let _report = BridgeSubscriptionOfflineAuditReport {
+ 7 -         outcome: BridgeSubscriptionOfflineAuditOutcome::DiagnosedOffline,
+ 8 -         bundle_index_digest: sealed_authority_placeholder(),
+ 9 -         comparison_report_count: 0,
+10 -         counters: Default::default(),
+11 -         canonical_basis: sealed_authority_placeholder(),
+12 -         digest: sealed_authority_placeholder(),
+13 -     };
+ 6 +     let _report = BridgeSubscriptionOfflineAuditReport::audit(_);
+   |

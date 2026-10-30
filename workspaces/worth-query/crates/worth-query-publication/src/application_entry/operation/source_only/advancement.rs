@@ -33,7 +33,13 @@ where
         let phase_keepalive = self.admission.runtime.clone();
         let runtime = phase_keepalive.runtime();
         match runtime.with_application_advancement(request.scope, |phase| {
-            self.step(&phase, request, maximum_history_work)
+            let result = self.step(&phase, request, maximum_history_work);
+            if matches!(&result, Ok(Step::Completed))
+                && let Some(control) = &self.completion_handoff
+            {
+                control.pause();
+            }
+            result
         }) {
             Ok(Ok(Step::Progress)) => WorthQuerySourceOnlyAdvance::Progress(self),
             Ok(Ok(Step::Completed)) => {
@@ -141,6 +147,11 @@ where
                         self.keyed_terminal = Some(resolution);
                         return Ok(Step::Terminal);
                     }
+                }
+                // A late request handoff can retain the original Fresh result.
+                // Its exact evidence is already owned; only recovered delivery selects history.
+                if matches!(evidence, WorthQuerySourceCompletion::Fresh { .. }) {
+                    return Ok(Step::Completed);
                 }
                 self.deliver_retained(phase, request, maximum_history_work)
                     .map(|()| Step::Completed)

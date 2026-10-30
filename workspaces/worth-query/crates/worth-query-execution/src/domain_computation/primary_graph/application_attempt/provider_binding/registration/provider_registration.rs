@@ -189,7 +189,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn take_conditional_definition(
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>
-    {
+{
         self.conditional_definition.take()
     }
 
@@ -225,7 +225,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn take_publication_recovery_reservation(
         &mut self,
     ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation
-    {
+{
         self.publication_recovery_reservation
             .take()
             .expect("World publication reserved bounded recovery custody before owner effects")

@@ -1,0 +1,22 @@
+error[E0277]: the trait bound `DependencyChangeResourceRevalidationProof: serde::de::DeserializeOwned` is not satisfied
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/dependency_change_resource_revalidation_proof_cannot_be_deserialized.rs:6:34
+  |
+6 |     requires_deserialize_owned::<DependencyChangeResourceRevalidationProof>();
+  |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `DependencyChangeResourceRevalidationProof`
+  |
+  = help: the following other types implement trait `Deserialize<'de>`:
+            &'a Path
+            &'a [u8]
+            &'a serde_json::raw::RawValue
+            &'a str
+            ()
+            (T,)
+            (T0, T1)
+            (T0, T1, T2)
+          and $N others
+  = note: required for `DependencyChangeResourceRevalidationProof` to implement `DeserializeOwned`
+note: required by a bound in `requires_deserialize_owned`
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/dependency_change_resource_revalidation_proof_cannot_be_deserialized.rs:3:34
+  |
+3 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
+  |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`

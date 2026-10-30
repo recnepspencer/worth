@@ -1,0 +1,18 @@
+[package]
+name = "worth-query-court-decl"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+worth-query-testkit-decl = { path = "../worth-query-testkit-decl" }
+
+[[test]]
+name = "worth_query_court_decl"
+path = "tests/worth_query_court_decl.rs"
+
+[lints]
+workspace = true

@@ -1,0 +1,10 @@
+error[E0624]: associated function `milestone_4_phase_2` is private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/authority_admission/caller_cannot_mint_boundary_authority_admission.rs
+  |
+  |     let _ = FoundationalBoundaryAuthorityAdmission::milestone_4_phase_2();
+  |                                                     ^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/authority.rs
+  |
+  |     pub(crate) const fn milestone_4_phase_2() -> Self {
+  |     ------------------------------------------------- private associated function defined here

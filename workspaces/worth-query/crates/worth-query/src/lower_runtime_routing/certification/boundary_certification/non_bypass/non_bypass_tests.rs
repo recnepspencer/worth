@@ -31,7 +31,7 @@ fn routed_surface_paths_cover_mutation_and_batch_boundary_files() {
 }
 
 #[test]
-fn routed_surface_scan_targets_reconcile_remaining_phase_six_seam_files() {
+fn routed_surface_scan_targets_reconcile_remaining_seam_files() {
     let targets = routed_surface_scan_targets();
 
     for (path, allow_imports) in [

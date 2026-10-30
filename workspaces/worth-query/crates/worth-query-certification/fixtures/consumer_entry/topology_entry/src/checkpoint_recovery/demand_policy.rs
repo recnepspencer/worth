@@ -34,72 +34,6 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature> for 
     const STOPPED_OUTCOME: &'static str = "final-output-resource-denied";
 }
 
-#[test]
-fn installed_parent_produces_required_child_artifact() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let mut output = request
-        .advanced()
-        .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
-            &application,
-            PlanarOutputDemand::new("anchor-a"),
-            Default::default(),
-        )
-        .expect("installed parent starts with its required child");
-    let settled = (0..256)
-        .find_map(|_| match output.advance(&application, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending
-            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-        })
-        .expect("all installed child outputs settle");
-    assert_eq!(
-        settled
-            .outputs_for::<CheckpointSchema, PlanarOutputToFinalConnection>()
-            .count(),
-        1
-    );
-}
-
-#[test]
-fn omitted_controls_produce_and_reuse_real_output_under_installed_defaults() {
-    let _guard = checkpoint_recovery_test_guard();
-    let provider_observation = crate::producer::ProviderContacts::default();
-    let application = support::observed::install(None, &provider_observation);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let mut initial = request
-        .demand(PlanarOutputDemand::new("anchor-a"))
-        .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
-        .expect("installed defaults admit initial production");
-    let first = (0..64)
-        .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending
-            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
-            WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
-        })
-        .expect("default initial demand settles");
-    assert_eq!(first.producer_contacts_in_this_demand(), 1);
-    drop(first);
-    drop(initial);
-    provider_observation.reset();
-    let mut demand = request
-        .demand(PlanarOutputDemand::new("anchor-a"))
-        .start()
-        .expect("no application resource arithmetic is needed");
-    let settled = (0..64)
-        .find_map(|_| match demand.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending
-            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
-            WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
-        })
-        .expect("default demand settles");
-    assert_eq!(settled.producer_contacts_in_this_demand(), 0);
-    assert_eq!(provider_observation.count(), 0);
-}
-
 pub(super) fn feature_specs<Artifact>() -> Vec<ApplicationFeatureSpec>
 where
     Artifact: ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature>,
@@ -152,4 +86,74 @@ pub(super) fn feature_specs_with_final_output(
             .conditional_operation::<PublishAlternatePlanarOutput>()
             .finish(),
     ]
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn installed_parent_produces_required_child_artifact() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install(None);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let mut output = request
+            .advanced()
+            .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
+                &application,
+                PlanarOutputDemand::new("anchor-a"),
+                Default::default(),
+            )
+            .expect("installed parent starts with its required child");
+        let settled = (0..256)
+            .find_map(|_| match output.advance(&application, &request).unwrap() {
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => None,
+                WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+            })
+            .expect("all installed child outputs settle");
+        assert_eq!(
+            settled
+                .outputs_for::<CheckpointSchema, PlanarOutputToFinalConnection>()
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn omitted_controls_produce_and_reuse_real_output_under_installed_defaults() {
+        let _guard = checkpoint_recovery_test_guard();
+        let provider_observation = crate::producer::ProviderContacts::default();
+        let application = support::observed::install(None, &provider_observation);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let mut initial = request
+            .demand(PlanarOutputDemand::new("anchor-a"))
+            .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
+            .expect("installed defaults admit initial production");
+        let first = (0..64)
+            .find_map(|_| match initial.advance(&request).unwrap() {
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
+                WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
+            })
+            .expect("default initial demand settles");
+        assert_eq!(first.producer_contacts_in_this_demand(), 1);
+        drop(first);
+        drop(initial);
+        provider_observation.reset();
+        let mut demand = request
+            .demand(PlanarOutputDemand::new("anchor-a"))
+            .start()
+            .expect("no application resource arithmetic is needed");
+        let settled = (0..64)
+            .find_map(|_| match demand.advance(&request).unwrap() {
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
+                WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
+            })
+            .expect("default demand settles");
+        assert_eq!(settled.producer_contacts_in_this_demand(), 0);
+        assert_eq!(provider_observation.count(), 0);
+    }
 }

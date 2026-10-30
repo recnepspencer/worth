@@ -7,7 +7,7 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
 mod handler;
-pub(crate) use handler::PlanarIslandCouplingHandler;
+pub use handler::PlanarIslandCouplingHandler;
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct PlanarIslandCoupling {

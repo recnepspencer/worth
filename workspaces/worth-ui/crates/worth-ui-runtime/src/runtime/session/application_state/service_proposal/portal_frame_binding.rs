@@ -151,29 +151,27 @@ impl WorthUiApplicationSessionState {
         if let Some(receipt) = motion
             .as_ref()
             .map(crate::runtime::motion::UiDerivedMotionServiceProposal::derivation_receipt)
-        {
-            if let Err(denial) = self
+            && let Err(denial) = self
                 .runtime
                 .service_proposals
                 .advance_staging(&mut preparation.staging, receipt)
-            {
-                focus
-                    .discard_portal_proposal(preparation.focus.proposal())
-                    .expect("Focus owner discards the exact Motion derivation candidate");
-                if let Some(motion) = motion {
-                    motion_state.discard_derived(motion);
-                }
-                self.cancel_portal_staging(
-                    preparation.staging,
-                    &preparation.portal,
-                    &preparation.focus,
-                    &preparation.scroll,
-                    preparation.selection.as_ref(),
-                    motion_state,
-                    None,
-                );
-                return Err(UiPortalProposalPreparationDenial::Staging(denial));
+        {
+            focus
+                .discard_portal_proposal(preparation.focus.proposal())
+                .expect("Focus owner discards the exact Motion derivation candidate");
+            if let Some(motion) = motion {
+                motion_state.discard_derived(motion);
             }
+            self.cancel_portal_staging(
+                preparation.staging,
+                &preparation.portal,
+                &preparation.focus,
+                &preparation.scroll,
+                preparation.selection.as_ref(),
+                motion_state,
+                None,
+            );
+            return Err(UiPortalProposalPreparationDenial::Staging(denial));
         }
         match self
             .runtime

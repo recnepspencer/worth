@@ -88,12 +88,12 @@ fn admit_outcome(query: &UiInspectionQuery) -> UiInspectionRelevanceOutcome {
         };
     }
 
-    if let Some(family) = filter.family_filter() {
-        if !target_supports_family(query.target(), family) {
-            return UiInspectionRelevanceOutcome::NotApplicableToTarget {
-                target: UiInspectionTargetClass::from_target(query.target()),
-            };
-        }
+    if let Some(family) = filter.family_filter()
+        && !target_supports_family(query.target(), family)
+    {
+        return UiInspectionRelevanceOutcome::NotApplicableToTarget {
+            target: UiInspectionTargetClass::from_target(query.target()),
+        };
     }
 
     if matches!(query.target(), UiInspectionTarget::GraphNodeIdentity { .. })

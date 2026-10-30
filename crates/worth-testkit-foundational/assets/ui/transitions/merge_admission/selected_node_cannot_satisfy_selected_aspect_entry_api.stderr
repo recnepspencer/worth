@@ -1,0 +1,48 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/selected_node_cannot_satisfy_selected_aspect_entry_api.rs
+  |
+  |     requires_selected_aspect(node.clone());
+  |     ------------------------ ^^^^^^^^^^^^ expected `FoundationalSelectedAspectRequestEntry`, found `FoundationalSelectedNodeLocus`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/selected_node_cannot_satisfy_selected_aspect_entry_api.rs
+  |
+  | fn requires_selected_aspect(_: FoundationalSelectedAspectRequestEntry) {}
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^ -----------------------------------------
+
+error[E0271]: type mismatch resolving `<[FoundationalSelectedNodeLocus; 1] as IntoIterator>::Item == FoundationalSelectedAspectRequestEntry`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/selected_node_cannot_satisfy_selected_aspect_entry_api.rs
+  |
+  |     let _ = FoundationalMergeScope::selected_aspects([node]);
+  |             ---------------------------------------- ^^^^^^ expected `FoundationalSelectedAspectRequestEntry`, found `FoundationalSelectedNodeLocus`
+  |             |
+  |             required by a bound introduced by this call
+  |
+note: required by a bound in `FoundationalMergeScope::selected_aspects`
+ --> $WORKSPACE/crates/worth-foundational/src/transitions/merges/scoped.rs
+  |
+  |     pub fn selected_aspects(
+  |            ---------------- required by a bound in this associated function
+  |         aspects: impl IntoIterator<Item = FoundationalSelectedAspectRequestEntry>,
+  |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `FoundationalMergeScope::selected_aspects`
+
+error[E0271]: type mismatch resolving `<[FoundationalSelectedAspectRequestEntry; 1] as IntoIterator>::Item == FoundationalSelectedNodeLocus`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/selected_node_cannot_satisfy_selected_aspect_entry_api.rs
+  |
+  |       let _ = FoundationalMergeScope::selected_nodes([FoundationalSelectedAspectRequestEntry::new(
+  |  _____________--------------------------------------_^
+  | |             |
+  | |             required by a bound introduced by this call
+  | |         node, aspect,
+  | |     )]);
+  | |______^ expected `FoundationalSelectedNodeLocus`, found `FoundationalSelectedAspectRequestEntry`
+  |
+note: required by a bound in `FoundationalMergeScope::selected_nodes`
+ --> $WORKSPACE/crates/worth-foundational/src/transitions/merges/scoped.rs
+  |
+  |     pub fn selected_nodes(
+  |            -------------- required by a bound in this associated function
+  |         nodes: impl IntoIterator<Item = FoundationalSelectedNodeLocus>,
+  |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `FoundationalMergeScope::selected_nodes`

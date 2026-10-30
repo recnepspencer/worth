@@ -39,10 +39,9 @@ pub(crate) fn expand_evidence_ref(
         .unwrap_or(evidence_ref);
     if let Some(preflight) =
         preflight_evidence_expansion(current_generation, evidence_ref, requested_richness)
+        && !allows_refs_first_followup(evidence_ref.family(), preflight.outcome())
     {
-        if !allows_refs_first_followup(evidence_ref.family(), preflight.outcome()) {
-            return preflight;
-        }
+        return preflight;
     }
 
     if let Some(followup_query) = followup_query_for_ref(app, evidence_ref, requested_richness) {

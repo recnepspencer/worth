@@ -1,0 +1,18 @@
+[package]
+name = "worth-query-bank-court-source"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+worth-query-bank-testkit-user-node = { path = "../worth-query-bank-testkit-user-node" }
+
+[[test]]
+name = "worth_query_bank_court_source"
+path = "tests/worth_query_bank_court_source.rs"
+
+[lints]
+workspace = true

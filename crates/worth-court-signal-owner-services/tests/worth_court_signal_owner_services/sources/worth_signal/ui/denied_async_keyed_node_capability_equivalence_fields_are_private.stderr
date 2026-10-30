@@ -1,0 +1,10 @@
+error[E0616]: field `denial_class` of struct `DeniedAsyncKeyedNodeCapabilityEquivalence` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_keyed_node_capability_equivalence_fields_are_private.rs:9:20
+  |
+9 |     let _ = denial.denial_class;
+  |                    ^^^^^^^^^^^^ private field
+  |
+help: a method `denial_class` also exists, call it with parentheses
+  |
+9 |     let _ = denial.denial_class();
+  |                                ++

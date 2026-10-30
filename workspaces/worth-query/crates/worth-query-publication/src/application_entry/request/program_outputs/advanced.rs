@@ -39,7 +39,7 @@ where
             >,
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
-    {
+{
         self.request
             .start_program_outputs(application, root_demand, controls)
     }
@@ -75,7 +75,7 @@ where
             >,
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
-    {
+{
         self.request
             .recover_required_outputs(application, source_receipt, root_demand, controls)
     }

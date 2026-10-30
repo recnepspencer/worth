@@ -1,0 +1,80 @@
+pub(crate) use worth_query_testkit_query::facade::query::suite::advancement_custody::artifact_roots::*;
+
+#[test]
+fn moved_artifact_advancement_opens_before_its_reader() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    verify(
+        "artifact move advance",
+        || {
+            let (mut workspace, _probe) =
+                artifact_move_workspace(request_execution, "artifact-move-custody").unwrap();
+            let run = bind_artifact_workflow(&workspace)
+                .admit_workflow_resources(execution_resource_request(), &workspace)
+                .unwrap()
+                .start_workflow(&mut workspace)
+                .unwrap()
+                .advance(
+                    "produce",
+                    domain::WorthQueryWorkflowValue::Text("produce".into()),
+                    &mut workspace,
+                )
+                .unwrap();
+            (workspace, run)
+        },
+        |run, workspace| match run.advance_with_artifact("consume", "produce", workspace) {
+            TransitionOutcome::Success(_) => None,
+            TransitionOutcome::Denied(denial) => match denial.kind() {
+                domain::WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause) => {
+                    Some(*cause)
+                }
+                other => panic!("unexpected artifact denial: {other:?}"),
+            },
+            _ => panic!("unexpected artifact move posture"),
+        },
+    );
+}
+
+#[test]
+fn leased_artifact_advancement_opens_before_its_reader() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    verify(
+        "artifact lease advance",
+        || {
+            let (mut workspace, _probe) =
+                artifact_lease_workspace(request_execution, "artifact-lease-custody").unwrap();
+            let run = bind_artifact_workflow(&workspace)
+                .admit_workflow_resources(execution_resource_request(), &workspace)
+                .unwrap()
+                .start_workflow(&mut workspace)
+                .unwrap()
+                .advance(
+                    "produce",
+                    domain::WorthQueryWorkflowValue::Text("produce".into()),
+                    &mut workspace,
+                )
+                .unwrap();
+            (workspace, run)
+        },
+        |run, workspace| match run.advance_with_artifact_lease(
+            "observe-a",
+            "produce",
+            "observer-a",
+            workspace,
+        ) {
+            TransitionOutcome::Success(_) => None,
+            TransitionOutcome::Denied(denial) => match denial.kind() {
+                domain::WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause) => {
+                    Some(*cause)
+                }
+                other => panic!("unexpected leased artifact denial: {other:?}"),
+            },
+            _ => panic!("unexpected artifact lease posture"),
+        },
+    );
+}

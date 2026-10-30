@@ -1,0 +1,4 @@
+[package]
+name = "worth-extra"
+version.workspace = true
+edition.workspace = true

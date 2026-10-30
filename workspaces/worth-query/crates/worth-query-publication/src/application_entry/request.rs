@@ -162,7 +162,7 @@ where
     ) -> WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>
     where
         Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
-    {
+{
         WorthQueryApplicationOutputDemandRequest::new(
             self.application,
             self.principal,
@@ -354,7 +354,7 @@ where
     ) -> WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>
     where
         Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
-    {
+{
         WorthQueryApplicationOutputDemandRequest::new_at(
             self.application,
             self.principal,

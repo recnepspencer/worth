@@ -8,6 +8,10 @@ thread_local! {
 }
 
 impl ExecutionResourceLease<'_> {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn enter_worker_context(&self) -> ActiveWorkerGuard {
         let identity = Arc::as_ptr(&self.authority) as usize;
         ACTIVE_WORKER.with(|active| {
@@ -18,6 +22,10 @@ impl ExecutionResourceLease<'_> {
         ActiveWorkerGuard
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn is_current_worker_in_lineage(&self) -> bool {
         let identity = Arc::as_ptr(&self.authority) as usize;
         let active = ACTIVE_WORKER.with(|workers| workers.borrow().last().cloned());
@@ -28,6 +36,10 @@ impl ExecutionResourceLease<'_> {
 
     /// A prepared memory ticket does not reserve a worker yet. It must still
     /// reject a sibling lease's active worker before it retains memory.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn accepts_current_worker_context(&self) -> bool {
         let identity = Arc::as_ptr(&self.authority) as usize;
         ACTIVE_WORKER.with(|workers| match workers.borrow().last().cloned() {
@@ -39,6 +51,10 @@ impl ExecutionResourceLease<'_> {
     }
     /// Reborrow the already-active descendant of this request lease. No policy
     /// or account is created; sibling/foreign workers are never substituted.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(in crate::authority) fn current_descendant(&self) -> Option<Self> {
         let identity = Arc::as_ptr(&self.authority) as usize;
         let active = ACTIVE_WORKER.with(|workers| workers.borrow().last().cloned());

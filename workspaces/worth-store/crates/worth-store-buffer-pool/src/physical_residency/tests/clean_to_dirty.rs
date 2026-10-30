@@ -63,6 +63,10 @@ fn competing_pin_prevents_clean_to_dirty_transition() {
     assert_eq!(pool.counters().dirty_frames(), 0);
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: pin racing after replacement admission preserves the original allocation; source: worth-store-buffer-pool::physical_residency::tests::clean_to_dirty::pin_racing_after_replacement_admission_preserves_the_original_allocation; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn pin_racing_after_replacement_admission_preserves_the_original_allocation() {
     let identity = store(93);

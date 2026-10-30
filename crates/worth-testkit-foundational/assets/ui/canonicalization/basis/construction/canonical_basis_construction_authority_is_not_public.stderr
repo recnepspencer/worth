@@ -1,0 +1,8 @@
+error[E0432]: unresolved import `worth_foundational::CanonicalBasisConstructionAuthority`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/basis/construction/canonical_basis_construction_authority_is_not_public.rs
+  |
+  | use worth_foundational::CanonicalBasisConstructionAuthority;
+  |     ^^^^^^^^^^^^^^^^^^^^-----------------------------------
+  |     |                   |
+  |     |                   help: a similar name exists in the module: `CanonicalBasisConstructionDenial`
+  |     no `CanonicalBasisConstructionAuthority` in the root

@@ -1,7 +1,7 @@
 use super::matrix::MilestoneSixHistoricalDiffCertificationAdapter;
 
 #[test]
-fn historical_diff_branch_to_branch_lane_emits_exact_phase_three_posture() {
+fn historical_diff_branch_to_branch_lane_emits_exact_posture() {
     let matrix =
         MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test();
     let row = matrix
@@ -97,7 +97,7 @@ fn historical_diff_current_to_historical_lane_emits_exact_comparison_family() {
 }
 
 #[test]
-fn historical_diff_rejection_rows_emit_exact_phase_three_failure_counters() {
+fn historical_diff_rejection_rows_emit_exact_failure_counters() {
     let matrix =
         MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test();
 

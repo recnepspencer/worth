@@ -7,5 +7,5 @@ cd "$ROOT_DIR"
 # The seven-configuration test matrix owns conditional reachability. Dead-code
 # diagnostics are therefore excluded while every Clippy finding remains fatal.
 cargo clippy -p worth-relational -p worth-runtime-bridge -p worth-signal --lib -- -D warnings -A dead-code
-cargo clippy -p worth-relational --test worth_relational -- -D warnings -A dead-code
+cargo clippy -p worth-court-relational-certification --test worth_court_relational_certification -- -D warnings -A dead-code
 cargo clippy -p worth-signal --lib --tests -- -D warnings -A dead-code

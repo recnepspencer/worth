@@ -87,6 +87,10 @@ where
     }
 
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn authoring_binding_matches<Capability, Operation>(&self) -> bool
     where
         Capability: worth_query_declaration::facade::application_capability::ApplicationCapabilityMarkerIdentity<
@@ -95,7 +99,7 @@ where
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
                 Schema,
             > + 'static,
-    {
+{
         self.authoring_capability.binding.matches_binding(
             std::any::TypeId::of::<Capability>(),
             Capability::IDENTIFIER,

@@ -1,0 +1,10 @@
+#[path = "blob_release_proof_contract/mod.rs"]
+pub(crate) mod blob_release_proof_contract;
+#[path = "core_artifact_and_proof_substrate_certification/mod.rs"]
+pub(crate) mod core_artifact_and_proof_substrate_certification;
+#[path = "dx_entrypoint_certification/mod.rs"]
+pub(crate) mod dx_entrypoint_certification;
+#[path = "supported_public_workflows/mod.rs"]
+pub(crate) mod supported_public_workflows;
+#[path = "upfront_contract_vocabulary_certification/mod.rs"]
+pub(crate) mod upfront_contract_vocabulary_certification;

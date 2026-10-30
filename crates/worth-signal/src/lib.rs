@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! # worth-signal
 //!
 //! `worth-signal` is a deterministic incremental runtime for derived work.

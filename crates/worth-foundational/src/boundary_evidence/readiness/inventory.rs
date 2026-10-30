@@ -43,43 +43,43 @@ pub(super) fn certified_surface_evidence(
             FoundationalBoundaryEvidenceCertifiedSurface::PrimitiveCategoryAndRoleLaw,
             FoundationalBoundaryEvidenceSyntheticRuntimePressure::PrimitiveAdjacencyHostility,
             FoundationalBoundaryEvidenceCompileFailBoundary::PrimitiveNonSubstitution,
-            "tests/worth_foundational/fast/certification/boundary_evidence/primitives.rs",
-            "tests/ui/boundary_evidence/primitives/locality_cannot_satisfy_category_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/primitives/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/boundary_evidence/primitives/locality_cannot_satisfy_category_api.rs"),
         ),
         FoundationalBoundaryEvidenceCertifiedSurfaceEvidence::new(
             FoundationalBoundaryEvidenceCertifiedSurface::ProvenanceLayeringAndFreshnessLaw,
             FoundationalBoundaryEvidenceSyntheticRuntimePressure::FreshnessDisclosureHostility,
             FoundationalBoundaryEvidenceCompileFailBoundary::ProvenanceFreshnessAndArtifactBoundaries,
-            "tests/worth_foundational/fast/certification/boundary_evidence/provenance.rs",
-            "tests/ui/boundary_evidence/provenance/provenance_builder_requires_freshness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/provenance/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/boundary_evidence/provenance/provenance_builder_requires_freshness.rs"),
         ),
         FoundationalBoundaryEvidenceCertifiedSurfaceEvidence::new(
             FoundationalBoundaryEvidenceCertifiedSurface::ReceiptFamilyAndCloseoutTruth,
             FoundationalBoundaryEvidenceSyntheticRuntimePressure::PlannedVersusExecutedSeparation,
             FoundationalBoundaryEvidenceCompileFailBoundary::ReceiptPlanningVersusCompletedBoundarySeparation,
-            "tests/worth_foundational/fast/certification/boundary_evidence/receipts.rs",
-            "tests/ui/boundary_evidence/receipts/planning_receipt_cannot_satisfy_completed_receipt_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/receipts/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/boundary_evidence/receipts/planning_receipt_cannot_satisfy_completed_receipt_api.rs"),
         ),
         FoundationalBoundaryEvidenceCertifiedSurfaceEvidence::new(
             FoundationalBoundaryEvidenceCertifiedSurface::LineageContinuityAndDivergence,
             FoundationalBoundaryEvidenceSyntheticRuntimePressure::ReplayVersusHistoryMasqueradeRejection,
             FoundationalBoundaryEvidenceCompileFailBoundary::LineageContinuityStrengthBoundaries,
-            "tests/worth_foundational/fast/certification/boundary_evidence/lineage.rs",
-            "tests/ui/boundary_evidence/lineage/replay_derived_lineage_cannot_satisfy_attested_receipt_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/lineage/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/boundary_evidence/lineage/replay_derived_lineage_cannot_satisfy_attested_receipt_api.rs"),
         ),
         FoundationalBoundaryEvidenceCertifiedSurfaceEvidence::new(
             FoundationalBoundaryEvidenceCertifiedSurface::SupportTruthRecoveryAndDebt,
             FoundationalBoundaryEvidenceSyntheticRuntimePressure::SupportGradeOverclaimRejection,
             FoundationalBoundaryEvidenceCompileFailBoundary::SupportGradeAndBasisDisclosureBoundaries,
-            "tests/worth_foundational/fast/certification/boundary_evidence/support.rs",
-            "tests/ui/boundary_evidence/support/published_support_cannot_satisfy_executed_receipt_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/support/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/boundary_evidence/support/published_support_cannot_satisfy_executed_receipt_api.rs"),
         ),
         FoundationalBoundaryEvidenceCertifiedSurfaceEvidence::new(
             FoundationalBoundaryEvidenceCertifiedSurface::AttachmentMaterializationAndReadmission,
             FoundationalBoundaryEvidenceSyntheticRuntimePressure::TrustBoundaryReadmissionWORTHry,
             FoundationalBoundaryEvidenceCompileFailBoundary::AttachmentScopeAndReadmissionBoundaries,
-            "tests/worth_foundational/fast/certification/boundary_evidence/attachments.rs",
-            "tests/ui/boundary_evidence/attachments/readmission/unbridged_current_basis_attachment_cannot_be_readmitted.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/attachments/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/boundary_evidence/attachments/readmission/unbridged_current_basis_attachment_cannot_be_readmitted.rs"),
         ),
     ]
 }
@@ -124,31 +124,31 @@ pub(super) fn property_seed_evidence() -> Vec<FoundationalBoundaryEvidenceProper
     vec![
         FoundationalBoundaryEvidencePropertySeedEvidence::new(
             FoundationalBoundaryEvidencePropertySeed::PrimitiveDefinitionOrdering,
-            "tests/worth_foundational/fast/certification/boundary_evidence/primitives.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/primitives/mod.rs"),
             "definition order remains blind-consumer stable across category and locality rows",
             FoundationalBoundaryEvidenceHarnessExpansionPoint::GroupedPublicSurfaceLane,
         ),
         FoundationalBoundaryEvidencePropertySeedEvidence::new(
             FoundationalBoundaryEvidencePropertySeed::ProvenanceLayerAndSupportContextOrdering,
-            "tests/worth_foundational/fast/certification/boundary_evidence/provenance.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/provenance/mod.rs"),
             "independent producer ordering cannot change canonical provenance meaning",
             FoundationalBoundaryEvidenceHarnessExpansionPoint::ReplayHistoryMasqueradeMatrix,
         ),
         FoundationalBoundaryEvidencePropertySeedEvidence::new(
             FoundationalBoundaryEvidencePropertySeed::PlanningExecutedAndCloseoutStrength,
-            "tests/worth_foundational/fast/certification/boundary_evidence/receipts.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/receipts/mod.rs"),
             "planning and closeout receipts remain weaker than executed receipts",
             FoundationalBoundaryEvidenceHarnessExpansionPoint::TrustBoundaryReadmissionParityMatrix,
         ),
         FoundationalBoundaryEvidencePropertySeedEvidence::new(
             FoundationalBoundaryEvidencePropertySeed::ReplayHistoryAndPromotionStrength,
-            "tests/worth_foundational/fast/certification/boundary_evidence/lineage.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/lineage/mod.rs"),
             "replay-derived and denied-promotion results stay visibly weaker than attested continuity",
             FoundationalBoundaryEvidenceHarnessExpansionPoint::ReplayHistoryMasqueradeMatrix,
         ),
         FoundationalBoundaryEvidencePropertySeedEvidence::new(
             FoundationalBoundaryEvidencePropertySeed::MixedAttachmentCanonicalAndDigestParity,
-            "tests/worth_foundational/fast/certification/boundary_evidence/attachments.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/attachments/mod.rs"),
             "mixed-family attachment bundles stay canonical and digest-stable across independent orderings",
             FoundationalBoundaryEvidenceHarnessExpansionPoint::MixedAttachmentCanonicalDigestParityMatrix,
         ),
@@ -195,31 +195,31 @@ pub(super) fn phase_gates() -> Vec<FoundationalBoundaryEvidencePhaseGateEvidence
     vec![
         FoundationalBoundaryEvidencePhaseGateEvidence::new(
             FoundationalBoundaryEvidenceMilestone7PhaseGate::PrimitiveCategoryAndRoleLaw,
-            "tests/worth_foundational/fast/certification/boundary_evidence/primitives.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/primitives/mod.rs"),
         ),
         FoundationalBoundaryEvidencePhaseGateEvidence::new(
             FoundationalBoundaryEvidenceMilestone7PhaseGate::ProvenanceLayeringAndFreshnessLaw,
-            "tests/worth_foundational/fast/certification/boundary_evidence/provenance.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/provenance/mod.rs"),
         ),
         FoundationalBoundaryEvidencePhaseGateEvidence::new(
             FoundationalBoundaryEvidenceMilestone7PhaseGate::ReceiptFamilyAndCloseoutTruth,
-            "tests/worth_foundational/fast/certification/boundary_evidence/receipts.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/receipts/mod.rs"),
         ),
         FoundationalBoundaryEvidencePhaseGateEvidence::new(
             FoundationalBoundaryEvidenceMilestone7PhaseGate::LineageContinuityAndDivergence,
-            "tests/worth_foundational/fast/certification/boundary_evidence/lineage.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/lineage/mod.rs"),
         ),
         FoundationalBoundaryEvidencePhaseGateEvidence::new(
             FoundationalBoundaryEvidenceMilestone7PhaseGate::SupportTruthRecoveryAndDegradedOperation,
-            "tests/worth_foundational/fast/certification/boundary_evidence/support.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/support/mod.rs"),
         ),
         FoundationalBoundaryEvidencePhaseGateEvidence::new(
             FoundationalBoundaryEvidenceMilestone7PhaseGate::AttachmentMaterializationAndReadmission,
-            "tests/worth_foundational/fast/certification/boundary_evidence/attachments.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/attachments/mod.rs"),
         ),
         FoundationalBoundaryEvidencePhaseGateEvidence::new(
             FoundationalBoundaryEvidenceMilestone7PhaseGate::ProductionReadiness,
-            "tests/worth_foundational/fast/certification/boundary_evidence/readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/readiness/mod.rs"),
         ),
         FoundationalBoundaryEvidencePhaseGateEvidence::new(
             FoundationalBoundaryEvidenceMilestone7PhaseGate::FeatureDocsAndCrateDocIntegration,
@@ -252,9 +252,9 @@ pub(super) fn documentation_surface_inventory() -> Vec<&'static str> {
 }
 
 pub(super) const fn public_surface_evidence_path() -> &'static str {
-    "tests/worth_foundational/fast/certification/boundary_evidence/grouped_surface.rs"
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-evidence/tests/worth_court_foundational_certification_boundary_evidence/foundational/certification/boundary_evidence/grouped_surface/mod.rs")
 }
 
 pub(super) const fn public_surface_compile_fail_path() -> &'static str {
-    "tests/ui/boundary_evidence/grouped_surface/readiness_report_cannot_enter_grouped_stronger_lane.rs"
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/boundary_evidence/grouped_surface/readiness_report_cannot_enter_grouped_stronger_lane.rs")
 }

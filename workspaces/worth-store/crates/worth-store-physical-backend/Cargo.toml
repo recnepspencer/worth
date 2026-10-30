@@ -1,12 +1,14 @@
 [package]
-workspace = "../.."
-name = "worth-store-physical-backend"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Internal OS-backed filesystem effects and media qualification for Worth Store."
-publish = false
+"workspace" = "../.."
+"name" = "worth-store-physical-backend"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Internal OS-backed filesystem effects and media qualification for Worth Store."
+"publish" = false
+"autotests" = false
+
 
 [dependencies]
 cap-std = "=4.0.2"
@@ -31,11 +33,11 @@ worth-store-wal.workspace = true
 [target.'cfg(windows)'.dependencies]
 winapi-util = "0.1"
 winx = "=0.36.4"
-
 [dev-dependencies]
-stats_alloc = "0.1.10"
-worth-store-aspect-native.workspace = true
-worth-store-security = { workspace = true, features = ["certification-test-authority"] }
+"stats_alloc" = "0.1.10"
+"worth-store-aspect-native" = { "workspace" = true }
+"worth-store-security" = { "workspace" = true, "features" = ["certification-test-authority"] }
+
 
 [build-dependencies]
 sha2 = "0.10"

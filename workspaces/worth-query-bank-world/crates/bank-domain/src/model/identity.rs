@@ -111,7 +111,7 @@ fn parse_created_identity(value: &str) -> Option<CreatedDomainIdentity> {
         return None;
     }
     let mut idempotency_key = [0_u8; 32];
-    for (index, pair) in key.as_bytes().chunks_exact(2).enumerate() {
+    for (index, pair) in key.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         idempotency_key[index] = (hex_nibble(pair[0])? << 4) | hex_nibble(pair[1])?;
     }
     Some(CreatedDomainIdentity::Operation {

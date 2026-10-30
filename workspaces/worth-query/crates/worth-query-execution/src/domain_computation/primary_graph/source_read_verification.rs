@@ -57,6 +57,10 @@ impl<'runtime> SourceReadVerification<'runtime> {
         std::ptr::eq(self.runtime, runtime) && self.pin.snapshot() == snapshot
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph) fn check_walk(
         &mut self,
         body: &Arc<StructuralWalkObservation>,
@@ -98,6 +102,10 @@ impl<'runtime> SourceReadVerification<'runtime> {
             Err(stop) => Err(Failure::Execution(stop.into())),
         }
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph) fn check_aggregate(
         &mut self,
         body: &Arc<AggregateObservation>,

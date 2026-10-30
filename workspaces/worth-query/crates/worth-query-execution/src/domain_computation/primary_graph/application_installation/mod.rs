@@ -24,6 +24,7 @@ pub use program::{
     in_memory_rostered_program_from_checkpoint,
     in_memory_rostered_program_from_checkpoint_with_transition,
     in_memory_rostered_program_from_checkpoint_with_transition_in_advancement,
+    in_memory_rostered_program_in_advancement,
     in_memory_rostered_program_with_authorization_time_source, WorthQueryAdmittedProgramOperation,
     WorthQueryAdmittedProgramOutput, WorthQueryApplicationPreviewReadmissionDenial,
     WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,

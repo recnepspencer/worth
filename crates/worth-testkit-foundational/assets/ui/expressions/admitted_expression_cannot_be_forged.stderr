@@ -1,0 +1,7 @@
+error: cannot construct `AdmittedExpression` with struct literal syntax due to private fields
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/expressions/admitted_expression_cannot_be_forged.rs
+  |
+  |     let _forged = AdmittedExpression {};
+  |                   ^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields that were not provided

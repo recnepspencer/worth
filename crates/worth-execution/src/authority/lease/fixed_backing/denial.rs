@@ -3,7 +3,7 @@ use crate::{MapKernelStop, WorkCeilingDenial};
 
 /// The request or physical boundary that refused a fixed payload backing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ExecutionAllocationDenialKind {
+pub(crate) enum ExecutionAllocationDenialKind {
     Layout,
     Lease(LeaseDenial),
     Cancelled,
@@ -73,7 +73,8 @@ impl ExecutionAllocationDenial {
             requested_payload_bytes: quote,
         }
     }
-    pub fn kind(&self) -> ExecutionAllocationDenialKind {
+    #[cfg(test)]
+    pub(crate) fn kind(&self) -> ExecutionAllocationDenialKind {
         self.kind
     }
     /// Separate the request cause from a physical refusal through the owner.

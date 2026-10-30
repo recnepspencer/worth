@@ -28,6 +28,10 @@ pub(crate) struct PlatformPulseThemePreferenceWatch {
 }
 
 impl PlatformPulseThemePreferenceWatch {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "event-loop-watcher thread-builder=1: UI readiness, source, theme or event-loop observation runs independently of computation."
+    )]
     pub(crate) fn open(root: &Path) -> Result<Self, Denial> {
         let root = root.canonicalize().map_err(|_| Denial::WatchUnavailable)?;
         let (wake, notifications) = mpsc::sync_channel(1);

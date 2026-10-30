@@ -4,30 +4,73 @@ pub(super) fn acquire(
     counter: &AtomicUsize,
     amount: usize,
 ) -> Result<usize, LifecycleCountOverflow> {
-    counter
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-            current.checked_add(amount)
-        })
-        .map(|previous| previous + amount)
-        .map_err(|_| LifecycleCountOverflow)
+    {
+        let update_counter = counter;
+        let mut current = update_counter.load(Ordering::Acquire);
+        loop {
+            let Some(updated_value) = current.checked_add(amount) else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    }
+    .map(|previous| previous + amount)
+    .map_err(|_| LifecycleCountOverflow)
 }
 
 pub(super) fn release(
     counter: &AtomicUsize,
     amount: usize,
 ) -> Result<usize, LifecycleCountUnderflow> {
-    counter
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-            current.checked_sub(amount)
-        })
-        .map(|previous| previous - amount)
-        .map_err(|_| LifecycleCountUnderflow)
+    {
+        let update_counter = counter;
+        let mut current = update_counter.load(Ordering::Acquire);
+        loop {
+            let Some(updated_value) = current.checked_sub(amount) else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    }
+    .map(|previous| previous - amount)
+    .map_err(|_| LifecycleCountUnderflow)
 }
 
 pub(super) fn record_one_saturating(counter: &AtomicUsize) {
-    let _ = counter.fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-        Some(current.saturating_add(1))
-    });
+    let _ = {
+        let update_counter = counter;
+        let mut current = update_counter.load(Ordering::Acquire);
+        loop {
+            let Some(updated_value) = Some(current.saturating_add(1)) else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    };
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

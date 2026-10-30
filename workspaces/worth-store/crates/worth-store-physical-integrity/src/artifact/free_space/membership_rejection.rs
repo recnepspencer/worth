@@ -186,35 +186,51 @@ fn canonical_order(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalIntegr
 }
 
 fn first_invalid_child(bytes: &[u8]) -> Option<usize> {
-    bytes.get(88..)?.chunks_exact(72).position(|child| {
-        child[18..20] != [0; 2]
-            || read_at_u64(child, 0) == 0
-            || read_at_u64(child, 8) == 0
-            || !valid_key(&child[24..48])
-            || !valid_key(&child[48..72])
-            || read_key(child, 24) > read_key(child, 48)
-    })
+    bytes
+        .get(88..)?
+        .as_chunks::<72>()
+        .0
+        .iter()
+        .position(|child| {
+            child[18..20] != [0; 2]
+                || read_at_u64(child, 0) == 0
+                || read_at_u64(child, 8) == 0
+                || !valid_key(&child[24..48])
+                || !valid_key(&child[48..72])
+                || read_key(child, 24) > read_key(child, 48)
+        })
 }
 
 fn first_invalid_entry(bytes: &[u8]) -> Option<usize> {
-    bytes.get(88..)?.chunks_exact(40).position(|entry| {
-        !valid_key(&entry[..16])
-            || (entry[0] == 1 && read_at_u64(entry, 16) == 0)
-            || read_at_u64(entry, 24) == 0
-            || read_at_u64(entry, 32) == 0
-            || read_at_u64(entry, 16)
-                .checked_add(read_at_u64(entry, 24))
-                .is_none()
-    })
+    bytes
+        .get(88..)?
+        .as_chunks::<40>()
+        .0
+        .iter()
+        .position(|entry| {
+            !valid_key(&entry[..16])
+                || (entry[0] == 1 && read_at_u64(entry, 16) == 0)
+                || read_at_u64(entry, 24) == 0
+                || read_at_u64(entry, 32) == 0
+                || read_at_u64(entry, 16)
+                    .checked_add(read_at_u64(entry, 24))
+                    .is_none()
+        })
 }
 
 fn first_nonmember_child(bytes: &[u8]) -> Option<usize> {
     let parent_level = read_u16(bytes, MembershipField::LEVEL);
     let parent_generation = read_u64(bytes, MembershipField::GENERATION);
-    bytes.get(88..)?.chunks_exact(72).position(|child| {
-        u16::from_le_bytes(child[16..18].try_into().unwrap()).checked_add(1) != Some(parent_level)
-            || read_at_u64(child, 0) > parent_generation
-    })
+    bytes
+        .get(88..)?
+        .as_chunks::<72>()
+        .0
+        .iter()
+        .position(|child| {
+            u16::from_le_bytes(child[16..18].try_into().unwrap()).checked_add(1)
+                != Some(parent_level)
+                || read_at_u64(child, 0) > parent_generation
+        })
 }
 
 fn valid_key(bytes: &[u8]) -> bool {

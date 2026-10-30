@@ -13,6 +13,10 @@ use worth_query_declaration::facade::{
 };
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 fn correction_binding_resolves_exact_native_members_and_rejects_changed_meaning() {
     let source = MutationBinding::descriptor();
     let inventory = BTreeMap::from([(source.identity().to_owned(), &source)]);
@@ -85,6 +89,10 @@ fn parts(source: &ApplicationMutationBindingDescriptor) -> DeclaredCorrectionBin
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 fn correction_compensation_resolves_its_actual_action_and_refuses_slot_or_authority_drift() {
     let source = MutationBinding::descriptor();
     let inventory = BTreeMap::from([(source.identity().to_owned(), &source)]);

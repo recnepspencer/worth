@@ -112,10 +112,9 @@ impl<Record: UiSpatialRecord> UiImmutableIntervalIndex<Record> {
         if let Some(left) = node
             .left
             .filter(|left| self.nodes[*left].subtree_max_right > traversal.point.x())
+            && self.collect_point(Some(left), traversal)
         {
-            if self.collect_point(Some(left), traversal) {
-                return true;
-            }
+            return true;
         }
         let record = &self.records[node.entry];
         if record.region().contains(traversal.point) {
@@ -162,10 +161,9 @@ impl<Record: UiSpatialRecord> UiImmutableIntervalIndex<Record> {
         if let Some(left) = node
             .left
             .filter(|left| self.nodes[*left].subtree_max_right > traversal.region.left())
+            && self.collect_region(Some(left), traversal)
         {
-            if self.collect_region(Some(left), traversal) {
-                return true;
-            }
+            return true;
         }
         let record = &self.records[node.entry];
         if record.region().intersects(traversal.region) {

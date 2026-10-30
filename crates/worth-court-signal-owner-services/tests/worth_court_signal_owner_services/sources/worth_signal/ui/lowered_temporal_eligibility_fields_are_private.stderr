@@ -1,0 +1,25 @@
+error: cannot construct `ReadyTemporalEligibility` with struct literal syntax due to private fields
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/lowered_temporal_eligibility_fields_are_private.rs:5:13
+  |
+5 |     let _ = ReadyTemporalEligibility {
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^
+6 |         condition,
+  |         --------- private field
+7 |         clock_domain: ClockDomain::MonotonicExecution,
+  |         --------------------------------------------- private field
+  |
+  = note: ...and other private fields `authority`, `authority_tick`, `wake_id` and `wake_ordinal` that were not provided
+help: you might have meant to use an associated function to build this type
+  |
+5 -     let _ = ReadyTemporalEligibility {
+6 -         condition,
+7 -         clock_domain: ClockDomain::MonotonicExecution,
+8 -     };
+5 +     let _ = ReadyTemporalEligibility::runtime_clock_backed(_, _);
+  |
+5 -     let _ = ReadyTemporalEligibility {
+6 -         condition,
+7 -         clock_domain: ClockDomain::MonotonicExecution,
+8 -     };
+5 +     let _ = ReadyTemporalEligibility::runtime_wake_backed(_, _, _, _);
+  |

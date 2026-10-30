@@ -1,8 +1,0 @@
-error[E0599]: no method named `lower_with_capability` found for struct `Recipe<worth_proof::Resolved, &str, FreshnessScopedBasis<worth_proof::RebindRequired, AssumptionBasis<u8>>>` in the current scope
-  --> tests/ui/milestone3/rebind_required_recipe_cannot_lower.rs:18:36
-   |
-18 |     let _lowered = rebind_required.lower_with_capability(lowering_capability);
-   |                                    ^^^^^^^^^^^^^^^^^^^^^ method not found in `Recipe<worth_proof::Resolved, &str, FreshnessScopedBasis<worth_proof::RebindRequired, AssumptionBasis<u8>>>`
-   |
-   = note: the method was found for
-           - `Recipe<worth_proof::Resolved, T, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<B>>>`

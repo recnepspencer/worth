@@ -148,6 +148,10 @@ fn metadata_budget() -> super::super::ForegroundResourceBudget {
         .with_worker_permits(WorkerPermit::new(1).unwrap())
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: competing background reservations preserve live foreground headroom; source: worth-store-io-scheduler::foreground_reservation::tests::physical_instance::competing_background_reservations_preserve_live_foreground_headroom; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=2, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn competing_background_reservations_preserve_live_foreground_headroom() {
     use super::super::{

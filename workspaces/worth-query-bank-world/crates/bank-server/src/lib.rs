@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Authoritative bank runtime composition.
 //!
 //! Transport and Authentik protocol details belong to downstream adapters.
@@ -151,7 +152,7 @@ extern crate self as bank_server;
     dead_code,
     reason = "shared integration fixture support is reused by the workflow request proof"
 )]
-#[path = "../tests/support/mod.rs"]
+#[path = "../../worth-query-bank-testkit-server/src/support/mod.rs"]
 mod support;
 
 pub use application_definition::{

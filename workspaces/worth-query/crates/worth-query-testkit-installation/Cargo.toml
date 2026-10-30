@@ -1,0 +1,20 @@
+[package]
+name = "worth-query-testkit-installation"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-installation = { path = "../worth-query-installation" }
+
+[lints]
+workspace = true

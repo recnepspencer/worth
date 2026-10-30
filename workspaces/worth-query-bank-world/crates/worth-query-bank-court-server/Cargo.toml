@@ -1,0 +1,20 @@
+[package]
+name = "worth-query-bank-court-server"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+bank-server = { workspace = true }
+serde_json = { workspace = true }
+worth-query-bank-testkit-estate-certification = { path = "../worth-query-bank-testkit-estate-certification" }
+
+[[test]]
+name = "worth_query_bank_court_server"
+path = "tests/worth_query_bank_court_server.rs"
+
+[lints]
+workspace = true

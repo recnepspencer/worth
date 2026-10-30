@@ -26,7 +26,7 @@ pub(super) fn counter_values(counters: &QueryContextCounters) -> Vec<String> {
             "historical_lookup_width:{}",
             counters.historical_lookup_width()
         ),
-        format!("comparison_binding_width:0"),
+        "comparison_binding_width:0".to_string(),
         format!(
             "comparison_scope_width:{}",
             counters.comparison_scope_width()
@@ -57,11 +57,11 @@ pub(super) fn counter_values(counters: &QueryContextCounters) -> Vec<String> {
             "predicted_comparison_width:{}",
             counters.comparison_row_width()
         ),
-        format!("realized_comparison_width:0"),
-        format!("metadata_attachment_width:0"),
-        format!("query_context_execution_count:0"),
-        format!("query_context_metadata_attachment_count:0"),
-        format!("query_context_executor_rediscovery:0"),
+        "realized_comparison_width:0".to_string(),
+        "metadata_attachment_width:0".to_string(),
+        "query_context_execution_count:0".to_string(),
+        "query_context_metadata_attachment_count:0".to_string(),
+        "query_context_executor_rediscovery:0".to_string(),
         format!("basis_rediscovery:{}", counters.basis_rediscovery_count()),
         format!(
             "historical_path_rediscovery:{}",

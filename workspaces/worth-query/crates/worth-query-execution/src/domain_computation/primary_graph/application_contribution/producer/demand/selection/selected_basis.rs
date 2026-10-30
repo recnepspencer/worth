@@ -27,7 +27,7 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, Some(shared), &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+        self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, Some(shared), SelectionPurpose::OutputDelivery, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn select_output_producer_for_observation<
         Family,
@@ -51,6 +51,7 @@ where
             profile_kind,
             None,
             Some(shared),
+            SelectionPurpose::Lifecycle,
             native,
         )
     }

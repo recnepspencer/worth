@@ -37,7 +37,7 @@ impl RelationalCommitEnvelopeResidency {
         };
         let result = source
             .read_commit(entry.position, 1 << 30)
-            .map_err(&failure)
+            .map_err(failure)
             .and_then(|bytes| {
                 Artifact::from_untrusted_bytes(bytes).map_err(|_| failure(Cause::Damaged))
             })

@@ -1,0 +1,21 @@
+[package]
+"name" = "worth-store-court-branch-deltas"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-store-branch-deltas" = { "path" = "../worth-store-branch-deltas" }
+"worth-store-contracts" = { "path" = "../worth-store-contracts" }
+"worth-store-live-query" = { "path" = "../worth-store-live-query" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_branch_deltas"
+path = "tests/worth_store_court_branch_deltas.rs"
+
+[lints]
+workspace = true

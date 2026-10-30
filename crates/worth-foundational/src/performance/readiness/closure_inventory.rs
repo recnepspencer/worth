@@ -64,11 +64,11 @@ pub(super) fn runtime_adoption_pressure_evidence(
     vec![
         FoundationalPerformanceRuntimeAdoptionPressureEvidence::new(
             FoundationalPerformanceRuntimeAdoptionPressure::CrossCrateMeaningParityMatrix,
-            "tests/worth_foundational/fast/certification/performance/runtime_parity.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/performance/runtime_parity/mod.rs"),
         ),
         FoundationalPerformanceRuntimeAdoptionPressureEvidence::new(
             FoundationalPerformanceRuntimeAdoptionPressure::CertifiedBundleSourceCompatibilityMatrix,
-            "tests/worth_foundational/fast/certification/performance/runtime_parity.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/performance/runtime_parity/mod.rs"),
         ),
     ]
 }
@@ -135,9 +135,9 @@ pub(super) fn public_surface_documentation_coverage(
 }
 
 pub(super) const fn public_surface_evidence_path() -> &'static str {
-    "tests/worth_foundational/fast/certification/performance/grouped_surface.rs"
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/performance/grouped_surface/mod.rs")
 }
 
 pub(super) const fn public_surface_compile_fail_path() -> &'static str {
-    "tests/ui/performance/grouped_surface_stronger_lane/plain_counter_backed_receipt_cannot_enter_grouped_stronger_lane_certified_api.rs"
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/performance/grouped_surface_stronger_lane/plain_counter_backed_receipt_cannot_enter_grouped_stronger_lane_certified_api.rs")
 }

@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "physical_store_recover/admission.rs"]
 mod admission;
 #[path = "physical_store_recover/arguments.rs"]
@@ -25,6 +26,10 @@ fn main() -> ExitCode {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "owner-thread thread-builder=1: The recover binary runs recovery on one owner thread with a stack sized for the recovery walk."
+)]
 fn run_on_recovery_worker(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
     let worker = std::thread::Builder::new()
         .name("physical-store-recovery".to_owned())

@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 mod leased_signal_support;
 
 use serde_json::json;

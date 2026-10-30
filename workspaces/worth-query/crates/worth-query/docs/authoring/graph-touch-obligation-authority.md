@@ -153,8 +153,8 @@ row. That row names `RelationalGraph` as its required owner and
 graph to the specialized graph-read review, reserves capacity, opens one
 managed session, and consumes the read through the session-owned port.
 
-The executable public proof is
-`worth-query-host/tests/canonical_graph_progression.rs`.
+The executable public proof is the
+[host graph-progression court](../../../worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/canonical_graph_progression/mod.rs).
 
 An application mutation may install several rows. Query must obtain the
 complete authorization facts, build proposed state, execute every selected

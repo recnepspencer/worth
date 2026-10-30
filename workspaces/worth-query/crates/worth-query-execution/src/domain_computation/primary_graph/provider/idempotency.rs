@@ -177,11 +177,14 @@ impl WorthQueryPrimaryGraphProvider {
             }
             if let Some(Some(recorded)) = self.inspect_pending_application_idempotency(
                 product.observation().lifecycle_incarnation())
-                && recorded.correction_identity().is_some() && recorded != binding
+                && recorded != binding
             {
-                return Ok(if recorded.key_identity() == binding.key_identity() {
-                    WorthQueryProviderIdempotencyResolution::Drift
-                } else { WorthQueryProviderIdempotencyResolution::Unpublished });
+                if recorded.key_identity() == binding.key_identity() {
+                    return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+                }
+                if recorded.correction_identity().is_some() {
+                    return Ok(WorthQueryProviderIdempotencyResolution::Unpublished);
+                }
             }
             self.resume_pending_application_publication(execution,
                 runtime,

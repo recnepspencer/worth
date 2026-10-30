@@ -1,0 +1,325 @@
+pub use bank_domain::schema::{BankPrincipalBinding, BankSchema};
+pub use worth_query_decl::facade::application_schema::ApplicationSchemaMember;
+
+#[path = "schema_inventory/field_inventory.rs"]
+pub mod field_inventory;
+#[path = "schema_inventory/source_contract.rs"]
+pub mod source_contract;
+#[path = "schema_inventory/support.rs"]
+pub mod support;
+
+pub use support::*;
+
+pub fn assert_entity_and_relation_inventory(members: &[ApplicationSchemaMember]) {
+    assert_eq!(
+        names(members, entity_name),
+        expected(&[
+            "Account",
+            "AccountAuthorization",
+            "Approval",
+            "ApprovedBusinessPaymentGrant",
+            "Branch",
+            "Business",
+            "CapabilityGrant",
+            "Customer",
+            "DeathNotice",
+            "EmployeeAssignment",
+            "EmergencyAccess",
+            "EstateCase",
+            "ExternalPrincipalMapping",
+            "Institution",
+            "JournalEntry",
+            "LegalAuthority",
+            "MandatoryReview",
+            "PaymentIntent",
+            "Posting",
+            "Principal",
+            "ProgramDeploymentGrant",
+            "ProgramDeploymentScope",
+        ])
+    );
+    assert_eq!(
+        names(members, relation_name),
+        expected(&[
+            "AccountAuthorizedUser",
+            "ApprovalPrincipal",
+            "ApprovedBusinessPaymentGrantGrantee",
+            "ApprovedBusinessPaymentGrantGrantor",
+            "ApprovedBusinessPaymentGrantParent",
+            "ApprovedBusinessPaymentGrantResource",
+            "AssignmentPrincipal",
+            "AuthorizationAccount",
+            "BusinessAccount",
+            "BusinessOwner",
+            "BranchInstitution",
+            "CapabilityAccount",
+            "CapabilityBranch",
+            "CapabilityEstate",
+            "CapabilityGrantee",
+            "CapabilityGrantor",
+            "CapabilityInstitution",
+            "CapabilityParent",
+            "DeathNoticeSubject",
+            "EmergencyApprover",
+            "EmergencyEstate",
+            "EmergencyGrant",
+            "EmergencyRequester",
+            "EmergencyReview",
+            "EstateAccount",
+            "EstateAssignment",
+            "EstateAuthorizedSigner",
+            "EstateBeneficiary",
+            "EstateBranch",
+            "EstateDeathNotice",
+            "EstateDeceased",
+            "EstateExecutor",
+            "EstateJointOwner",
+            "ExternalPrincipal",
+            "InstitutionAccount",
+            "InstitutionCashAccount",
+            "InstitutionEmployee",
+            "JournalPosting",
+            "JournalReversal",
+            "LegalAuthorityEstate",
+            "LegalAuthorityHolder",
+            "PaymentApproval",
+            "PaymentBusiness",
+            "PaymentDestination",
+            "PaymentInitiator",
+            "PaymentSource",
+            "PersonalOwner",
+            "PostingAccount",
+            "PrincipalCustomer",
+            "ProgramDeploymentGrantGrantee",
+            "ProgramDeploymentGrantGrantor",
+            "ProgramDeploymentGrantParent",
+            "ProgramDeploymentGrantResource",
+            "ReviewEstate",
+            "ReviewPrincipal",
+        ])
+    );
+}
+
+pub fn assert_operation_inventory(members: &[ApplicationSchemaMember]) {
+    assert_eq!(
+        names(members, operation_name),
+        expected(&[
+            "ApplyOpeningFundingOperation",
+            "ApproveEstateEmergencyAccessOperation",
+            "ApprovePaymentOperation",
+            "ApprovedBusinessPaymentAdvanceOperation",
+            "ApprovedBusinessPaymentApprovalOperation",
+            "ApprovedBusinessPaymentAuthoringOperation",
+            "ApprovedBusinessPaymentInstanceStartOperation",
+            "CompleteEstateMandatoryReviewOperation",
+            "CreateBusinessAccountOperation",
+            "CreatePersonalAccountOperation",
+            "DelegateEstateCapabilityOperation",
+            "DeployBankProgramOperation",
+            "DepositOperation",
+            "DisburseEstateOperation",
+            "FreezeEstateAccountOperation",
+            "GrantAccountAuthorizationOperation",
+            "InitiateBusinessPaymentOperation",
+            "NotifyDeathEstateOperation",
+            "OpenEstateCaseOperation",
+            "ProgramDeploymentRevocationOperation",
+            "PublishApprovedPaymentAssessment",
+            "RecognizeEstateExecutorOperation",
+            "RejectPaymentOperation",
+            "ReleaseEstateOperation",
+            "RequestEstateEmergencyAccessOperation",
+            "RestoreFrozenEstateAccountOperation",
+            "RetransmitDeathNoticeEstateOperation",
+            "ReverseJournalOperation",
+            "RevokeAccountAuthorizationOperation",
+            "RevokeEstateCapabilityOperation",
+            "RevokeEstateEmergencyAccessOperation",
+            "SendMoneyOperation",
+            "ViewRestrictedEstateOperation",
+            "WithdrawOperation",
+        ])
+    );
+}
+
+pub fn assert_capability_inventory(members: &[ApplicationSchemaMember]) {
+    assert_eq!(
+        names(members, application_capability_name),
+        expected(&[
+            "ApproveEstateEmergencyAccessCapability",
+            "ApprovedBusinessPaymentAdvance",
+            "ApprovedBusinessPaymentApproval",
+            "ApprovedBusinessPaymentAuthoring",
+            "ApprovedBusinessPaymentInstanceStart",
+            "CompleteEstateMandatoryReviewCapability",
+            "DelegateEstateCapability",
+            "DeployBankProgram",
+            "DisburseEstateCapability",
+            "FreezeEstateAccountCapability",
+            "NotifyDeathEstateCapability",
+            "OpenEstateCaseCapability",
+            "RecognizeEstateExecutorCapability",
+            "ReleaseEstateCapability",
+            "RequestEstateEmergencyAccessCapability",
+            "RestoreFrozenEstateAccountCapability",
+            "RetransmitDeathNoticeEstateCapability",
+            "RevokeEstateCapability",
+            "RevokeEstateEmergencyAccessCapability",
+            "ViewEstateAdministrationCapability",
+            "ViewEstateEmergencyProtectionCapability",
+            "ViewEstateIdentityVerificationCapability",
+            "ViewEstateLegalComplianceCapability",
+            "ViewEstateMandatoryReviewCapability",
+        ])
+    );
+}
+
+pub fn assert_application_query_inventory(members: &[ApplicationSchemaMember]) {
+    assert_eq!(
+        names(members, application_query_name),
+        expected(&[
+            "account_activity",
+            "account_authorized_users",
+            "account_detail",
+            "account_discovery",
+            "account_summary",
+            "estate_case_overview",
+            "estate_customer_identity",
+            "estate_emergency_account_details",
+            "estate_emergency_access_activity",
+            "estate_governance_context",
+            "estate_legal_compliance",
+            "estate_mandatory_reviews",
+            "institution_audit",
+            "payment_amount",
+            "payment_detail",
+            "pending_payments",
+        ])
+    );
+}
+
+pub fn assert_account_creation_programs(members: &[ApplicationSchemaMember]) {
+    assert_program(
+        members,
+        "CreatePersonalAccountOperation",
+        &[
+            "create:Account",
+            "link:InstitutionAccount:Institution->Account",
+            "link:PersonalOwner:Principal->Account",
+            "write:Account/Identity/AccountIdentity",
+            "write:Account/AccountProfile/AccountDisplayName",
+            "write:Account/AccountProfile/Kind",
+            "write:Account/AccountState/AccountingRevision",
+            "write:Account/AccountState/Status",
+        ],
+    );
+    assert_program(
+        members,
+        "CreateBusinessAccountOperation",
+        &[
+            "create:Account",
+            "link:BusinessAccount:Business->Account",
+            "link:InstitutionAccount:Institution->Account",
+            "write:Account/Identity/AccountIdentity",
+            "write:Account/AccountProfile/AccountDisplayName",
+            "write:Account/AccountProfile/Kind",
+            "write:Account/AccountState/AccountingRevision",
+            "write:Account/AccountState/Status",
+        ],
+    );
+}
+
+pub fn assert_money_programs(members: &[ApplicationSchemaMember]) {
+    for operation in [
+        "ApplyOpeningFundingOperation",
+        "DepositOperation",
+        "DisburseEstateOperation",
+        "ReverseJournalOperation",
+        "SendMoneyOperation",
+        "WithdrawOperation",
+    ] {
+        assert_money_program(members, operation);
+    }
+}
+
+pub fn assert_payment_and_authorization_programs(members: &[ApplicationSchemaMember]) {
+    assert_program(
+        members,
+        "InitiateBusinessPaymentOperation",
+        &[
+            "create:ApprovedBusinessPaymentGrant",
+            "create:PaymentIntent",
+            "link:ApprovedBusinessPaymentGrantGrantee:Principal->ApprovedBusinessPaymentGrant",
+            "link:ApprovedBusinessPaymentGrantGrantor:Principal->ApprovedBusinessPaymentGrant",
+            "link:ApprovedBusinessPaymentGrantResource:ApprovedBusinessPaymentGrant->PaymentIntent",
+            "link:PaymentBusiness:PaymentIntent->Business",
+            "link:PaymentDestination:PaymentIntent->Account",
+            "link:PaymentInitiator:Principal->PaymentIntent",
+            "link:PaymentSource:PaymentIntent->Account",
+            "write:ApprovedBusinessPaymentGrant/ApprovedBusinessPaymentGrantFacts/ApprovedBusinessPaymentGrantAction",
+            "write:ApprovedBusinessPaymentGrant/ApprovedBusinessPaymentGrantFacts/ApprovedBusinessPaymentGrantDelegationLimit",
+            "write:ApprovedBusinessPaymentGrant/ApprovedBusinessPaymentGrantFacts/ApprovedBusinessPaymentGrantNotAfter",
+            "write:ApprovedBusinessPaymentGrant/ApprovedBusinessPaymentGrantFacts/ApprovedBusinessPaymentGrantNotBefore",
+            "write:ApprovedBusinessPaymentGrant/ApprovedBusinessPaymentGrantFacts/ApprovedBusinessPaymentGrantPurpose",
+            "write:ApprovedBusinessPaymentGrant/ApprovedBusinessPaymentGrantFacts/ApprovedBusinessPaymentGrantStatus",
+            "write:ApprovedBusinessPaymentGrant/ApprovedBusinessPaymentGrantFacts/ApprovedBusinessPaymentGrantWorkflow",
+            "write:PaymentIntent/PaymentIdentity/PaymentIdentityField",
+            "write:PaymentIntent/PaymentState/PaymentStatusField",
+            "write:PaymentIntent/PaymentValue/PaymentAmount",
+        ],
+    );
+    assert_program(
+        members,
+        "ApprovePaymentOperation",
+        &[
+            "create:Approval",
+            "create:JournalEntry",
+            "create:Posting",
+            "emit:AccountActivityEffect",
+            "emit:ApprovedPaymentSettlementEffect",
+            "link:ApprovalPrincipal:Approval->Principal",
+            "link:JournalPosting:JournalEntry->Posting",
+            "link:PaymentApproval:PaymentIntent->Approval",
+            "link:PostingAccount:Posting->Account",
+            "write:Account/AccountState/AccountingRevision",
+            "write:JournalEntry/JournalIdentity/JournalIdentityField",
+            "write:JournalEntry/JournalIdentity/JournalInstitutionContext",
+            "write:JournalEntry/JournalState/JournalPurpose",
+            "write:PaymentIntent/PaymentState/PaymentStatusField",
+            "write:Posting/PostingIdentity/PostingIdentityField",
+            "write:Posting/PostingValue/PostingAccountSequence",
+            "write:Posting/PostingValue/PostingAmount",
+            "write:Posting/PostingValue/Purpose",
+        ],
+    );
+    assert_program(
+        members,
+        "RejectPaymentOperation",
+        &[
+            "create:Approval",
+            "link:ApprovalPrincipal:Approval->Principal",
+            "link:PaymentApproval:PaymentIntent->Approval",
+            "write:PaymentIntent/PaymentState/PaymentStatusField",
+        ],
+    );
+    assert_program(
+        members,
+        "GrantAccountAuthorizationOperation",
+        &[
+            "create:AccountAuthorization",
+            "link:AccountAuthorizedUser:Principal->AccountAuthorization",
+            "link:AuthorizationAccount:AccountAuthorization->Account",
+            "write:AccountAuthorization/AuthorizationIdentity/AccountAuthorizationIdentity",
+            "write:AccountAuthorization/AuthorizationScope/AuthorizationRole",
+        ],
+    );
+    assert_program(
+        members,
+        "RevokeAccountAuthorizationOperation",
+        &[
+            "delete:AccountAuthorization",
+            "unlink:AccountAuthorizedUser:Principal->AccountAuthorization",
+            "unlink:AuthorizationAccount:AccountAuthorization->Account",
+        ],
+    );
+}

@@ -68,8 +68,10 @@ impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
     }
     fn idempotency_key(&self, _: &source::Result, identity: &[u8; 32]) -> u64 {
         (identity
-            .chunks_exact(8)
-            .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
+            .as_chunks::<8>()
+            .0
+            .iter()
+            .map(|chunk| u64::from_le_bytes(*chunk))
             .fold(0, u64::wrapping_add))
             | (3 << 62)
     }

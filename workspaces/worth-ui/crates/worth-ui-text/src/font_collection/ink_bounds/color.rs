@@ -132,14 +132,12 @@ impl ColorPainter for InkPainter<'_, '_, '_> {
         if let (Some(clip), Some(alpha)) = (
             self.clip.clone(),
             brush_alpha_range(&brush, &self.palette_alphas),
-        ) {
-            if self
-                .painted
-                .insert(clip.path(), alpha.minimum >= 1.0)
-                .is_err()
-            {
-                self.failed = true;
-            }
+        ) && self
+            .painted
+            .insert(clip.path(), alpha.minimum >= 1.0)
+            .is_err()
+        {
+            self.failed = true;
         }
     }
 

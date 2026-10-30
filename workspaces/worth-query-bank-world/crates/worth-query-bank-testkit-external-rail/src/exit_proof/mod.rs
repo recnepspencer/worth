@@ -1,0 +1,9 @@
+pub mod exactly_once;
+pub mod fault_acknowledge_without_completing;
+pub mod fault_complete_after_timeout;
+pub mod fault_disappear_mid_dispatch;
+pub mod fault_duplicate_acknowledgement;
+pub mod fault_lost_response;
+pub mod protocol_compatibility;
+pub mod semantic_rejection;
+pub mod separate_process;

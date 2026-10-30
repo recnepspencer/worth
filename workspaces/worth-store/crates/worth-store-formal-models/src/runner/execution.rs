@@ -48,6 +48,10 @@ impl TlcRunnerPaths {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "stream-reader thread-spawn=2: A process stream is read concurrently to prevent pipe backpressure."
+)]
 pub fn execute_protocol_check(
     invocation: &ProtocolCheckInvocation,
     runner: &TlcRunnerPaths,

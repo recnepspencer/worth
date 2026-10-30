@@ -279,10 +279,10 @@ fn named_cells(
 ) -> Result<BTreeMap<&str, usize>, UiAppearanceDecisionPartitionDenial> {
     let mut names = BTreeMap::new();
     for (index, cell) in cells.iter().enumerate() {
-        if let Some(name) = cell.name() {
-            if names.insert(name, index).is_some() {
-                return Err(UiAppearanceDecisionPartitionDenial::DuplicateCellName);
-            }
+        if let Some(name) = cell.name()
+            && names.insert(name, index).is_some()
+        {
+            return Err(UiAppearanceDecisionPartitionDenial::DuplicateCellName);
         }
     }
     Ok(names)

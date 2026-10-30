@@ -7,7 +7,7 @@ impl PreparedRelationalCommitCandidate {
         observed: &crate::mvcc::ManagedIndexSourceObservation,
     ) -> Result<(), super::super::CompanionPreflightStop> {
         use super::super::CompanionPreflightStop as Stop;
-        crate::authority::commit::pipeline::consult_stage_control(
+        crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::CandidateRegistration,
         )

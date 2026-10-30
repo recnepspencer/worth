@@ -1,0 +1,15 @@
+error[E0624]: associated function `new` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_fanout_consumer_binding_constructor_private.rs:4:65
+  |
+4 |       let _constructor = BridgeSubscriptionFanoutConsumerBinding::new;
+  |                                                                   ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/fanout/layout.rs
+  |
+  | /     fn new(
+  | |         layout_identity: &BridgeSubscriptionFanoutLayoutIdentity,
+  | |         slot_index: usize,
+  | |         consumer_contract_identity: BridgeSubscriptionConsumerContractIdentity,
+  | |         sharing_eligibility_digest: Arc<str>,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

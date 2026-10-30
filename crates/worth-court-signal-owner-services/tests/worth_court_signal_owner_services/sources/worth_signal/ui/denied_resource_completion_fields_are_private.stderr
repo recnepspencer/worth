@@ -1,0 +1,34 @@
+error: cannot construct `DeniedResourceCompletion` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_completion_fields_are_private.rs:7:13
+   |
+ 7 |     let _ = DeniedResourceCompletion {
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^
+ 8 |         denial_id: AsyncDenialId::new(0),
+   |         -------------------------------- private field
+ 9 |         class: CompletionDenialClass::UnknownRequest,
+   |         -------------------------------------------- private field
+10 |         request_id: ResourceRequestId::new(0),
+   |         ------------------------------------- private field
+11 |         generation: ResourceGeneration::new(0),
+   |         -------------------------------------- private field
+12 |         branch_epoch: ResourceBranchEpoch::new(SignalBranchId(0), 0),
+   |         ------------------------------------------------------------ private field
+13 |         attempt: ResourceAttemptId::new(0),
+   |         ---------------------------------- private field
+14 |         payload_byte_len: 0,
+   |         ------------------- private field
+   |
+   = note: ...and other private field `node` that was not provided
+help: you might have meant to use the `new` associated function
+   |
+ 7 -     let _ = DeniedResourceCompletion {
+ 8 -         denial_id: AsyncDenialId::new(0),
+ 9 -         class: CompletionDenialClass::UnknownRequest,
+10 -         request_id: ResourceRequestId::new(0),
+11 -         generation: ResourceGeneration::new(0),
+12 -         branch_epoch: ResourceBranchEpoch::new(SignalBranchId(0), 0),
+13 -         attempt: ResourceAttemptId::new(0),
+14 -         payload_byte_len: 0,
+15 -     };
+ 7 +     let _ = DeniedResourceCompletion::new(_, _, _, _);
+   |

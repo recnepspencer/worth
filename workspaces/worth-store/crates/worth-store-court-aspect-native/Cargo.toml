@@ -1,0 +1,19 @@
+[package]
+"name" = "worth-store-court-aspect-native"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-store-aspect-native" = { "path" = "../worth-store-aspect-native" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_aspect_native"
+path = "tests/worth_store_court_aspect_native.rs"
+
+[lints]
+workspace = true

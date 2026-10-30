@@ -27,6 +27,10 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn derived_artifact<Instance, Feature, Artifact>(
         &self,
     ) -> Option<WorthQueryInstalledDerivedArtifact<Schema, Instance, Feature, Artifact>>

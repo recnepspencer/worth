@@ -91,6 +91,10 @@ fn bounded_failure_shares_one_terminal_and_releases_reserved_limit() {
     assert_eq!(counters.pin_leases(), 0);
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: bounded completion collision wakes an already waiting participant; source: worth-store-buffer-pool::physical_residency::tests::frame_access::bounded::bounded_completion_collision_wakes_an_already_waiting_participant; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn bounded_completion_collision_wakes_an_already_waiting_participant() {
     let identity = store(27);

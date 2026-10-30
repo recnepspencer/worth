@@ -115,15 +115,13 @@ impl UiAppearanceResolver {
         }
         if let worth_ui_dsl::UiAppearanceRoleApplicability::Component(component) =
             role.applicability()
-        {
-            if target
+            && target
                 .component_reference()
                 .is_none_or(|target| target.as_str() != component.as_str())
-            {
-                return Err(UiAppearanceResolutionFailure::without_theme_work(
-                    UiAppearanceResolutionDenial::WrongRoleApplicability,
-                ));
-            }
+        {
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::WrongRoleApplicability,
+            ));
         }
         let mut aspects = Vec::with_capacity(role.partitions().len());
         let mut theme_slots_compared = 0_u32;

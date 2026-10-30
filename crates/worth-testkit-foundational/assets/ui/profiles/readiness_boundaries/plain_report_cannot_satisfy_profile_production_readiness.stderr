@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/readiness_boundaries/plain_report_cannot_satisfy_profile_production_readiness.rs
+  |
+  |     let _ = require_foundational_profile_milestone3_production_test_readiness(&report);
+  |             ----------------------------------------------------------------- ^^^^^^^ expected `&Artifact<..., ..., ..., ...>`, found `&...`
+  |             |
+  |             arguments to this function are incorrect
+  |
+  = note: expected reference `&worth_proof::artifact::carrier::Artifact<FoundationalProfileProductionTestReady, FoundationalProfileProductionReadinessReport, worth_proof::proof::sets::Proof<FoundationalProfileProductionReadinessCertified, FoundationalProfileProductionReadinessAuthority>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<FoundationalProfileProductionReadinessScope>>>`
+             found reference `&FoundationalProfileProductionReadinessReport`
+note: function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/profiles/readiness/certification.rs
+  |
+  | pub fn require_foundational_profile_milestone3_production_test_readiness(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

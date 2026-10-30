@@ -237,8 +237,7 @@ fn run() {
         request
             .query(input("invalid-boxes", broad))
             .rebuild_index(&invalid)
-            .err()
-            .expect("invalid Source interval"),
+            .expect_err("invalid Source interval"),
     );
     assert_eq!(invalid.lifecycle(), WorthQueryManagedIndexLifecycle::Failed);
     invalid.close();

@@ -1,0 +1,5 @@
+error[E0599]: no method named `issue_receipt` found for struct `FoundationalStagedBranchArtifact<T>` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/branch_local/staged_branch_has_no_receipt_api.rs
+  |
+  |     let _ = staged.issue_receipt();
+  |                    ^^^^^^^^^^^^^ method not found in `FoundationalStagedBranchArtifact<&str>`

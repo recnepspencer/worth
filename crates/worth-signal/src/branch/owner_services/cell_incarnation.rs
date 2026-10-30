@@ -9,11 +9,25 @@ pub(in crate::branch) struct SignalBranchCellIncarnation(NonZeroU64);
 
 impl SignalBranchCellIncarnation {
     pub(super) fn issue() -> Self {
-        let identity = NEXT_SIGNAL_BRANCH_CELL_INCARNATION
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current.checked_add(1)
-            })
-            .expect("Signal branch cell incarnation identity exhausted");
+        let identity = {
+            let update_counter = &NEXT_SIGNAL_BRANCH_CELL_INCARNATION;
+            let mut current = update_counter.load(Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = current.checked_add(1) else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .expect("Signal branch cell incarnation identity exhausted");
         Self(NonZeroU64::new(identity).expect("cell incarnation identities start at one"))
     }
 

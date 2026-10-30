@@ -14,19 +14,8 @@ slow-timeout = { period = "60s", terminate-after = 10, grace-period = "0s" }
 default-filter = 'all()'
 slow-timeout = { period = "60s", terminate-after = 10, grace-period = "0s" }
 
-# Compiler sessions share target/tests/trybuild. Its Windows cross-process
-# lock can expire while a build is active; serialize sessions by cost path.
-# Custom profiles inherit these default overrides.
-[test-groups.trybuild-project]
-max-threads = 1
-
 [test-groups.process-global]
 max-threads = 1
-
-[[profile.default.overrides]]
-filter = 'test(/^compile_fail::/)'
-test-group = 'trybuild-project'
-slow-timeout = { period = "60s", terminate-after = 30, grace-period = "0s" }
 
 [[profile.default.overrides]]
 filter = 'test(/^serial::/)'

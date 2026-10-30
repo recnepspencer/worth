@@ -1,0 +1,31 @@
+error[E0560]: struct `BridgeCausalEnvelopeReceipt` has no field named `envelope_identity_digest`
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_receipt_constructor_private.rs:5:9
+  |
+5 |         envelope_identity_digest: sealed_authority_placeholder(),
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^ `BridgeCausalEnvelopeReceipt` does not have this field
+  |
+  = note: all struct fields are already assigned
+
+error[E0560]: struct `BridgeCausalEnvelopeReceipt` has no field named `envelope_digest`
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_receipt_constructor_private.rs:6:9
+  |
+6 |         envelope_digest: sealed_authority_placeholder(),
+  |         ^^^^^^^^^^^^^^^ `BridgeCausalEnvelopeReceipt` does not have this field
+  |
+  = note: all struct fields are already assigned
+
+error[E0560]: struct `BridgeCausalEnvelopeReceipt` has no field named `counter_digest`
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_receipt_constructor_private.rs:7:9
+  |
+7 |         counter_digest: sealed_authority_placeholder(),
+  |         ^^^^^^^^^^^^^^ `BridgeCausalEnvelopeReceipt` does not have this field
+  |
+  = note: all struct fields are already assigned
+
+error[E0560]: struct `BridgeCausalEnvelopeReceipt` has no field named `receipt_digest`
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_receipt_constructor_private.rs:8:9
+  |
+8 |         receipt_digest: sealed_authority_placeholder(),
+  |         ^^^^^^^^^^^^^^ `BridgeCausalEnvelopeReceipt` does not have this field
+  |
+  = note: all struct fields are already assigned

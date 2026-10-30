@@ -16,11 +16,7 @@ struct Work {
     lineage_examined: usize,
     consumption_examined: usize,
 }
-#[test]
-fn correction_and_family_work_excludes_ten_and_one_thousand_unrelated_histories() {
-    let _guard = checkpoint_recovery_test_guard();
-    assert_eq!(run(10), run(1_000));
-}
+
 fn run(count: usize) -> Work {
     let mut app = correction::install(count);
     let (scope, principal) = authenticate(&app);
@@ -179,4 +175,14 @@ fn relevant_ancestry(
         ))
     ));
     drop(observations);
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn correction_and_family_work_excludes_ten_and_one_thousand_unrelated_histories() {
+        let _guard = checkpoint_recovery_test_guard();
+        assert_eq!(run(10), run(1_000));
+    }
 }

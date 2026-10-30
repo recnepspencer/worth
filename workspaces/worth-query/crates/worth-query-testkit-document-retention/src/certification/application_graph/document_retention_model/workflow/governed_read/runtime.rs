@@ -1,0 +1,55 @@
+//! The real retention host with a separate governed workflow vocabulary.
+pub use super::super::super::{host, programs::RetentionProgramP0};
+pub use super::*;
+pub use worth_query_host::facade::application_installation::WorthQueryWorkflowApplicationRuntime;
+pub type GovernedRuntime = WorthQueryWorkflowApplicationRuntime<
+    DocumentRetentionSchema,
+    GovernedDocumentWorkflow,
+    RetentionProgramP0,
+>;
+pub fn install() -> GovernedRuntime {
+    // Native request owners qualify exact fork reads and their catalog backing;
+    // this profile selects simultaneous graph admission, not a work invoice.
+    let queries = worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
+        std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+    );
+    retain(host::publish_on_first_program_with_limits(
+        host::with_query_resources(queries),
+    ))
+}
+pub fn retain(
+    application: super::super::super::host::DocumentRetentionRuntime<RetentionProgramP0>,
+) -> GovernedRuntime {
+    retain_with_auth(application).0
+}
+pub fn retain_with_auth(
+    application: super::super::super::host::DocumentRetentionRuntime<RetentionProgramP0>,
+) -> (
+    GovernedRuntime,
+    super::super::CertificationAuthenticationOwner,
+) {
+    let (authentication, _clock) = super::super::install_certification_authentication_with_clock(
+        application.runtime().installed_schema(),
+    );
+    retain_with_signing_owner(application, authentication)
+}
+pub fn retain_with_signing_owner(
+    application: super::super::super::host::DocumentRetentionRuntime<RetentionProgramP0>,
+    authentication: super::super::CertificationAuthenticationOwner,
+) -> (
+    GovernedRuntime,
+    super::super::CertificationAuthenticationOwner,
+) {
+    let workflow = super::super::runtime::install_workflow_spec_for::<
+        RetentionProgramP0,
+        GovernedDocumentWorkflow,
+    >(
+        application.runtime().installed_schema(),
+        application.installed_program(),
+        super::super::runtime::workflow_resources(),
+    );
+    let runtime = application
+        .retain_workflow_spec(workflow, authentication.signing_owner())
+        .expect("real governed vocabulary installs");
+    (runtime, authentication)
+}

@@ -207,10 +207,10 @@ impl UiMountedMotionSampler {
         // it hid that sample from the Scroll settle and from hit testing.
         let state = match built {
             Ok(mut state) => {
-                if terminal.is_none() {
-                    if let Some(predecessor) = &predecessor {
-                        state.depart_on_screen(predecessor);
-                    }
+                if terminal.is_none()
+                    && let Some(predecessor) = &predecessor
+                {
+                    state.depart_on_screen(predecessor);
                 }
                 state
             }

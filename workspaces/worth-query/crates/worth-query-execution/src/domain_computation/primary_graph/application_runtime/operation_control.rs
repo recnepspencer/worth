@@ -84,6 +84,18 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .pause_product_currentness_for_test(self.product_runtime.default_occurrence)
     }
 
+    /// Arms the existing World currentness latch for one opaque Query selector.
+    /// This closed scheduling control grants no selection or mutation authority.
+    #[doc(hidden)]
+    pub fn pause_product_branch_currentness_for_test(
+        &self,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> worth_runtime_world::facade::RuntimeWorldProductCurrentnessPauseForTest {
+        self.product_runtime
+            .operation_control_for_test()
+            .pause_product_currentness_for_test(branch.occurrence())
+    }
+
     /// Inspects the World's active-attempt obligations in this installed
     /// runtime in certification builds.
     #[doc(hidden)]

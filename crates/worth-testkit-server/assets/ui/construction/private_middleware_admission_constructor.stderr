@@ -1,0 +1,13 @@
+error[E0624]: associated function `new` is private
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/private_middleware_admission_constructor.rs
+  |
+  |       let _admission = WorthServerAdmission::new(bogus(), bogus());
+  |                                              ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-server/src/middleware/admission.rs
+  |
+  | /     pub(crate) fn new(
+  | |         resolved_request_context: WorthServerResolvedRequestContext,
+  | |         prepared_query_handoff_intent: WorthServerPreparedQueryHandoffIntent,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

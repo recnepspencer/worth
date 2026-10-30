@@ -3,7 +3,7 @@ use crate::live::LiveQueryFamily;
 use crate::view_shape_live::LiveViewShapeFamily;
 
 #[test]
-fn every_phase_one_family_maps_to_typed_delivery_intent() {
+fn every_family_maps_to_typed_delivery_intent() {
     let cases = [
         (
             LiveQueryFamily::Detail,

@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/locators/mutation_mask_locator_cannot_satisfy_diagnostic_locator.rs
+  |
+  |     needs_diagnostic_locator(locator);
+  |     ------------------------ ^^^^^^^ expected `AspectMaskLocator<DiagnosticMask>`, found `AspectMaskLocator<MutationMask>`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected struct `AspectMaskLocator<DiagnosticMask>`
+             found struct `AspectMaskLocator<MutationMask>`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/locators/mutation_mask_locator_cannot_satisfy_diagnostic_locator.rs
+  |
+  | fn needs_diagnostic_locator(_locator: AspectMaskLocator<DiagnosticMask>) {}
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^ -------------------------------------------

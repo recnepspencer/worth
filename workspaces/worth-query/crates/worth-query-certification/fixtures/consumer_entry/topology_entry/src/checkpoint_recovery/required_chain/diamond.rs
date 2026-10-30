@@ -135,136 +135,143 @@ mod dropped_dependency;
 mod dropped_plan;
 mod initial_dependency;
 
-#[test]
-fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
-    let _guard = checkpoint_recovery_test_guard();
-    let provider_observation = crate::producer::ProviderContacts::default();
-    take_decisions("diamond-join");
-    let profile =
-        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::observed::install_program_with_seed::<program::ChainProgram>(
-        None,
-        profile,
-        4_096,
-        seed,
-        &provider_observation,
-    );
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let mut left = request
-        .demand(PlanarOutputDemand::new("diamond-left"))
-        .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
-        .unwrap();
-    let mut right = request
-        .demand(PlanarOutputDemand::new("diamond-right"))
-        .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
-        .unwrap();
-    let mut join = request
-        .demand(ChainDemand("diamond-join".to_owned()))
-        .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(&application)
-        .unwrap();
-    settle!(left, request);
-    settle!(right, request);
-    settle!(join, request);
-    assert_eq!(
-        take_decisions("diamond-join"),
-        [[2, 51]],
-        "the shared dependent first reads both seeded root outputs"
-    );
-
-    // Both roots change; one caller advance of the shared dependent follows
-    // both consumed edges.
-    change_root!(request, application, "diamond-left", 5, 0x9176_3500_u64);
-    change_root!(request, application, "diamond-right", 54, 0x9176_3501_u64);
-    provider_observation.reset();
-    let settled = settled_in_one_advance!(join, request, "the shared dependent");
-    assert_eq!(
-        settled.producer_contacts_in_this_demand(),
-        2,
-        "initial execution plus 1 join refreshes"
-    );
-    let both_roots = provider_observation.count();
-    assert_eq!(
-        output_lengths!(request, ["diamond-left", "diamond-right"]),
-        [6, 55],
-        "both roots published their new outputs inside that advance"
-    );
-    assert_eq!(
-        take_decisions("diamond-join"),
-        [[6, 55]],
-        "the shared dependent decided once, reading both new root outputs"
-    );
-    let basis = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-    for (name, root) in [("left", &mut left), ("right", &mut right)] {
-        let settled = settled_in_one_advance!(root, request, "a refreshed root");
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
+        let _guard = checkpoint_recovery_test_guard();
+        let provider_observation = crate::producer::ProviderContacts::default();
+        take_decisions("diamond-join");
+        let profile =
+            worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
+        let application = support::observed::install_program_with_seed::<program::ChainProgram>(
+            None,
+            profile,
+            4_096,
+            seed,
+            &provider_observation,
+        );
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let mut left = request
+            .demand(PlanarOutputDemand::new("diamond-left"))
+            .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
+            .unwrap();
+        let mut right = request
+            .demand(PlanarOutputDemand::new("diamond-right"))
+            .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
+            .unwrap();
+        let mut join = request
+            .demand(ChainDemand("diamond-join".to_owned()))
+            .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(
+                &application,
+            )
+            .unwrap();
+        settle!(left, request);
+        settle!(right, request);
+        settle!(join, request);
         assert_eq!(
+            take_decisions("diamond-join"),
+            [[2, 51]],
+            "the shared dependent first reads both seeded root outputs"
+        );
+
+        // Both roots change; one caller advance of the shared dependent follows
+        // both consumed edges.
+        change_root!(request, application, "diamond-left", 5, 0x9176_3500_u64);
+        change_root!(request, application, "diamond-right", 54, 0x9176_3501_u64);
+        provider_observation.reset();
+        let settled = settled_in_one_advance!(join, request, "the shared dependent");
+        assert_eq!(
+            settled.producer_contacts_in_this_demand(),
+            2,
+            "initial execution plus 1 join refreshes"
+        );
+        let both_roots = provider_observation.count();
+        assert_eq!(
+            output_lengths!(request, ["diamond-left", "diamond-right"]),
+            [6, 55],
+            "both roots published their new outputs inside that advance"
+        );
+        assert_eq!(
+            take_decisions("diamond-join"),
+            [[6, 55]],
+            "the shared dependent decided once, reading both new root outputs"
+        );
+        let basis =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+        for (name, root) in [("left", &mut left), ("right", &mut right)] {
+            let settled = settled_in_one_advance!(root, request, "a refreshed root");
+            assert_eq!(
             settled.producer_contacts_in_this_demand(),
             1,
             "the {name} root retains its initial execution; the upstream refresh is counted by no demand handle"
         );
-    }
-    assert_eq!(
-        crate::checkpoint_recovery::support::retain_read(&application, &request)
-            .unwrap()
-            .selected_commit(),
-        basis.selected_commit(),
-        "the refreshed roots were already current"
-    );
+        }
+        assert_eq!(
+            crate::checkpoint_recovery::support::retain_read(&application, &request)
+                .unwrap()
+                .selected_commit(),
+            basis.selected_commit(),
+            "the refreshed roots were already current"
+        );
 
-    // Only the left root changes: the right branch is reused clean.
-    change_root!(request, application, "diamond-left", 7, 0x9176_3502_u64);
-    provider_observation.reset();
-    let settled = settled_in_one_advance!(join, request, "the shared dependent");
-    assert_eq!(
-        settled.producer_contacts_in_this_demand(),
-        3,
-        "initial execution plus 2 join refreshes"
-    );
-    // The shared planar provider counts each refresh contact the same way.
-    let left_root = provider_observation.count();
-    assert!(left_root > 0);
-    assert_eq!(
-        both_roots,
-        2 * left_root,
-        "each changed root producer was contacted once, the unchanged one never"
-    );
-    assert_eq!(
-        take_decisions("diamond-join"),
-        [[8, 55]],
-        "the shared dependent reads the new left output and the unchanged right one"
-    );
-    let settled = settled_in_one_advance!(right, request, "the clean right root");
-    assert_eq!(
-        settled.producer_contacts_in_this_demand(),
-        1,
-        "the unchanged right root retains its initial execution"
-    );
+        // Only the left root changes: the right branch is reused clean.
+        change_root!(request, application, "diamond-left", 7, 0x9176_3502_u64);
+        provider_observation.reset();
+        let settled = settled_in_one_advance!(join, request, "the shared dependent");
+        assert_eq!(
+            settled.producer_contacts_in_this_demand(),
+            3,
+            "initial execution plus 2 join refreshes"
+        );
+        // The shared planar provider counts each refresh contact the same way.
+        let left_root = provider_observation.count();
+        assert!(left_root > 0);
+        assert_eq!(
+            both_roots,
+            2 * left_root,
+            "each changed root producer was contacted once, the unchanged one never"
+        );
+        assert_eq!(
+            take_decisions("diamond-join"),
+            [[8, 55]],
+            "the shared dependent reads the new left output and the unchanged right one"
+        );
+        let settled = settled_in_one_advance!(right, request, "the clean right root");
+        assert_eq!(
+            settled.producer_contacts_in_this_demand(),
+            1,
+            "the unchanged right root retains its initial execution"
+        );
 
-    // The left root returns to an earlier value, so the shared dependent's
-    // inputs equal those of its first refreshed decision. Its consumed edge
-    // still names the newer left output; one advance settles it again.
-    change_root!(request, application, "diamond-left", 5, 0x9176_3503_u64);
-    let settled = settled_in_one_advance!(join, request, "the shared dependent");
-    assert_eq!(
-        settled.producer_contacts_in_this_demand(),
-        4,
-        "initial execution plus 3 join refreshes"
-    );
-    assert_eq!(
-        output_lengths!(request, ["diamond-left", "diamond-right"]),
-        [6, 55],
-        "the left root published its earlier output again"
-    );
-    assert_eq!(
-        take_decisions("diamond-join"),
-        [[6, 55]],
-        "the shared dependent reads the left output it returned to"
-    );
-    let settled = settled_in_one_advance!(left, request, "the returned left root");
-    assert_eq!(
+        // The left root returns to an earlier value, so the shared dependent's
+        // inputs equal those of its first refreshed decision. Its consumed edge
+        // still names the newer left output; one advance settles it again.
+        change_root!(request, application, "diamond-left", 5, 0x9176_3503_u64);
+        let settled = settled_in_one_advance!(join, request, "the shared dependent");
+        assert_eq!(
+            settled.producer_contacts_in_this_demand(),
+            4,
+            "initial execution plus 3 join refreshes"
+        );
+        assert_eq!(
+            output_lengths!(request, ["diamond-left", "diamond-right"]),
+            [6, 55],
+            "the left root published its earlier output again"
+        );
+        assert_eq!(
+            take_decisions("diamond-join"),
+            [[6, 55]],
+            "the shared dependent reads the left output it returned to"
+        );
+        let settled = settled_in_one_advance!(left, request, "the returned left root");
+        assert_eq!(
         settled.producer_contacts_in_this_demand(),
         1,
         "the left root retains its initial execution; the upstream refresh is counted by no demand handle"
     );
-    drop((left, right, join));
+        drop((left, right, join));
+    }
 }

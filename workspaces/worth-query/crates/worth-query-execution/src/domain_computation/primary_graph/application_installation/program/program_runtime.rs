@@ -225,7 +225,9 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     });
                 }
                 Err(BranchDenial::Refused(
-                    AdmissionRefusal::ForeignPhase
+                    AdmissionRefusal::ExpectedDescriptionVersionUnsupported { .. }
+                    | AdmissionRefusal::ExpectedDescriptionNameInvalid
+                    | AdmissionRefusal::ForeignPhase
                     | AdmissionRefusal::ObservationStatePoisoned
                     | AdmissionRefusal::OwnerUnavailable
                     | AdmissionRefusal::ForeignOwner

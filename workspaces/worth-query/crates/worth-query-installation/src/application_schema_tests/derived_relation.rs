@@ -232,8 +232,7 @@ fn logical_root_closed_count_refuses_its_actual_input_limitation() {
     .unwrap();
     let denial = index
         .bind_application_schema(declaration)
-        .err()
-        .expect("closed Input requires a genuine EntityIdentity");
+        .expect_err("closed Input requires a genuine EntityIdentity");
     assert_eq!(
         denial.kind(),
         WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable

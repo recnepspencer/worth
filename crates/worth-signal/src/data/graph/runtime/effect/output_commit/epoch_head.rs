@@ -132,13 +132,26 @@ impl SignalGraph {
     #[cfg(test)]
     pub(super) fn check_epoch_output_preparation_fault(&self) -> Result<(), SignalError> {
         use std::sync::atomic::Ordering;
-        let previous = self.epoch_output_preparation_fault_after.fetch_update(
-            Ordering::SeqCst,
-            Ordering::SeqCst,
-            |remaining| {
-                (remaining > 0 && remaining < (1 << (usize::BITS - 1))).then(|| remaining - 1)
-            },
-        );
+        let previous = {
+            let update_counter = &self.epoch_output_preparation_fault_after;
+            let mut remaining = update_counter.load(Ordering::SeqCst);
+            loop {
+                let next_value =
+                    (remaining > 0 && remaining < (1 << (usize::BITS - 1))).then(|| remaining - 1);
+                let Some(updated_value) = next_value else {
+                    break Err(remaining);
+                };
+                match update_counter.compare_exchange_weak(
+                    remaining,
+                    updated_value,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => remaining = reloaded_value,
+                }
+            }
+        };
         if matches!(previous, Ok(1)) {
             return Err(SignalError::internal(
                 "injected second output preparation failure",

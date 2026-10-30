@@ -1,0 +1,11 @@
+[package]
+name = "worth-store-testkit-sweep"
+publish = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Independent Store certification case placement and complete panic draining."
+
+[lints]
+workspace = true

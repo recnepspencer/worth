@@ -1,7 +1,0 @@
-error: cannot construct `StagedBridgeAsyncWritebackEffect` with struct literal syntax due to private fields
- --> tests/ui/source_async_writeback_staged_effect_constructor_private.rs:4:13
-  |
-4 |     let _ = StagedBridgeAsyncWritebackEffect {};
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields that were not provided

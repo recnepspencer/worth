@@ -1,0 +1,9 @@
+[package]
+name = "worth-entry-consumer"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+guarded-query-surface = { path = "../guarded-query-surface" }
+worth-proof = { path = "../../../../../../../../worth-proof" }

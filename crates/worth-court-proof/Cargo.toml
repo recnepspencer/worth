@@ -1,0 +1,19 @@
+[package]
+"name" = "worth-court-proof"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
+"worth-proof" = { "path" = "../worth-proof" }
+
+[[test]]
+name = "worth_court_proof"
+path = "tests/worth_court_proof.rs"
+
+[lints]
+workspace = true

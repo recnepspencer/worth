@@ -37,41 +37,41 @@ pub(super) fn certified_surface_evidence() -> Vec<FoundationalDiagnosticCertifie
             FoundationalDiagnosticCertifiedSurface::PrimitiveAndCategoryLaw,
             FoundationalDiagnosticSyntheticRuntimePressure::PrimitiveNonSubstitution,
             FoundationalDiagnosticCompileFailBoundary::PrimitiveAndCategoryPreserveNonSubstitution,
-            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
-            "tests/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs",
-            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/primitives/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/primitives/mod.rs"),
         ),
         FoundationalDiagnosticCertifiedSurfaceEvidence::new(
             FoundationalDiagnosticCertifiedSurface::OutcomeSubjectAndRowTopology,
             FoundationalDiagnosticSyntheticRuntimePressure::GenericRowCollapseRejection,
             FoundationalDiagnosticCompileFailBoundary::RowTopologyPreservesFamilyAndLocatorLaw,
-            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
-            "tests/ui/diagnostics/rows/aggregate_row_cannot_satisfy_decision_row_api.rs",
-            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/rows/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/rows/aggregate_row_cannot_satisfy_decision_row_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/rows/mod.rs"),
         ),
         FoundationalDiagnosticCertifiedSurfaceEvidence::new(
             FoundationalDiagnosticCertifiedSurface::MaterializationSupportAndNamedGapLaw,
             FoundationalDiagnosticSyntheticRuntimePressure::ThinOrEmptySupportOverclaimRejection,
             FoundationalDiagnosticCompileFailBoundary::MaterializationAndSupportPreserveExplicitSeams,
-            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
-            "tests/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs",
-            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/materialization/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/materialization/mod.rs"),
         ),
         FoundationalDiagnosticCertifiedSurfaceEvidence::new(
             FoundationalDiagnosticCertifiedSurface::CanonicalBasisAndComparisonLaw,
             FoundationalDiagnosticSyntheticRuntimePressure::BlindConsumerCanonicalParity,
             FoundationalDiagnosticCompileFailBoundary::BasisAndComparisonPreserveBlindConsumerCanonicalLaw,
-            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
-            "tests/ui/diagnostics/basis/raw_support_report_cannot_satisfy_diagnostic_comparison_bundle_api.rs",
-            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/basis/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/basis/raw_support_report_cannot_satisfy_diagnostic_comparison_bundle_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/basis/mod.rs"),
         ),
         FoundationalDiagnosticCertifiedSurfaceEvidence::new(
             FoundationalDiagnosticCertifiedSurface::CertifiedBundleAndAttachmentCompatibility,
             FoundationalDiagnosticSyntheticRuntimePressure::HiddenSourceDigestOrCoverageWORTHry,
             FoundationalDiagnosticCompileFailBoundary::CertifiedBundleAndAttachmentReuseProofLane,
-            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
-            "tests/ui/diagnostics/certified/raw_support_report_cannot_satisfy_certified_bundle_api.rs",
-            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/certified/mod.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/certified/raw_support_report_cannot_satisfy_certified_bundle_api.rs"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/certified/mod.rs"),
         ),
     ]
 }
@@ -181,31 +181,31 @@ pub(super) fn synthetic_pressure_evidence() -> Vec<FoundationalDiagnosticSynthet
     vec![
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::PrimitiveNonSubstitution,
-            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/primitives/mod.rs"),
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::GenericRowCollapseRejection,
-            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/rows/mod.rs"),
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::HiddenRediscoveryDebtRejection,
-            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/materialization/mod.rs"),
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::ThinOrEmptySupportOverclaimRejection,
-            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/materialization/mod.rs"),
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::BlindConsumerCanonicalParity,
-            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/basis/mod.rs"),
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::HiddenSourceDigestOrCoverageWORTHry,
-            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/certified/mod.rs"),
         ),
         FoundationalDiagnosticSyntheticPressureEvidence::new(
             FoundationalDiagnosticSyntheticRuntimePressure::ExplanationProvenanceBoundaryPreservation,
-            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/certified/mod.rs"),
         ),
     ]
 }
@@ -214,31 +214,31 @@ pub(super) fn compile_fail_evidence() -> Vec<FoundationalDiagnosticCompileFailEv
     vec![
         FoundationalDiagnosticCompileFailEvidence::new(
             FoundationalDiagnosticCompileFailBoundary::PrimitiveAndCategoryPreserveNonSubstitution,
-            "tests/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/primitives/scope_cannot_satisfy_code_api.rs"),
         ),
         FoundationalDiagnosticCompileFailEvidence::new(
             FoundationalDiagnosticCompileFailBoundary::RowTopologyPreservesFamilyAndLocatorLaw,
-            "tests/ui/diagnostics/rows/aggregate_row_cannot_satisfy_decision_row_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/rows/aggregate_row_cannot_satisfy_decision_row_api.rs"),
         ),
         FoundationalDiagnosticCompileFailEvidence::new(
             FoundationalDiagnosticCompileFailBoundary::MaterializationAndSupportPreserveExplicitSeams,
-            "tests/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs"),
         ),
         FoundationalDiagnosticCompileFailEvidence::new(
             FoundationalDiagnosticCompileFailBoundary::BasisAndComparisonPreserveBlindConsumerCanonicalLaw,
-            "tests/ui/diagnostics/basis/raw_support_report_cannot_satisfy_diagnostic_comparison_bundle_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/basis/raw_support_report_cannot_satisfy_diagnostic_comparison_bundle_api.rs"),
         ),
         FoundationalDiagnosticCompileFailEvidence::new(
             FoundationalDiagnosticCompileFailBoundary::CertifiedBundleAndAttachmentReuseProofLane,
-            "tests/ui/diagnostics/certified/raw_support_report_cannot_satisfy_certified_bundle_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/certified/raw_support_report_cannot_satisfy_certified_bundle_api.rs"),
         ),
         FoundationalDiagnosticCompileFailEvidence::new(
             FoundationalDiagnosticCompileFailBoundary::DiagnosticReadinessRequiresCertifiedArtifact,
-            "tests/ui/diagnostics/readiness_boundaries/plain_report_cannot_satisfy_diagnostic_production_readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/readiness_boundaries/plain_report_cannot_satisfy_diagnostic_production_readiness.rs"),
         ),
         FoundationalDiagnosticCompileFailEvidence::new(
             FoundationalDiagnosticCompileFailBoundary::DiagnosticReadinessAuthorityCannotBeMinted,
-            "tests/ui/diagnostics/readiness_boundaries/diagnostic_readiness_authority_cannot_be_minted.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/diagnostics/readiness_boundaries/diagnostic_readiness_authority_cannot_be_minted.rs"),
         ),
     ]
 }
@@ -247,27 +247,27 @@ pub(super) fn phase_gates() -> Vec<FoundationalDiagnosticPhaseGateEvidence> {
     vec![
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::PrimitiveAndCategoryLaw,
-            "tests/worth_foundational/fast/certification/diagnostics/primitives.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/primitives/mod.rs"),
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::OutcomeSubjectAndRowTopology,
-            "tests/worth_foundational/fast/certification/diagnostics/rows.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/rows/mod.rs"),
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::MaterializationSupportAndNamedGapLaw,
-            "tests/worth_foundational/fast/certification/diagnostics/materialization.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/materialization/mod.rs"),
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::CanonicalBasisAndComparisonLaw,
-            "tests/worth_foundational/fast/certification/diagnostics/basis.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/basis/mod.rs"),
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::CertifiedBundleAndAttachmentCompatibility,
-            "tests/worth_foundational/fast/certification/diagnostics/certified.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/certified/mod.rs"),
         ),
         FoundationalDiagnosticPhaseGateEvidence::new(
             FoundationalDiagnosticMilestone6PhaseGate::ProductionReadiness,
-            "tests/worth_foundational/fast/certification/diagnostics/readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-expressions/tests/worth_court_foundational_expressions/foundational/certification/diagnostics/readiness/mod.rs"),
         ),
     ]
 }

@@ -110,12 +110,28 @@ impl SnapshotHandles {
     }
 
     pub(crate) fn next_snapshot_id(&self) -> Option<SnapshotId> {
-        self.next_snapshot_id
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                (current != 0).then(|| current.checked_add(1).unwrap_or(0))
-            })
-            .ok()
-            .map(SnapshotId)
+        {
+            let update_counter = &self.next_snapshot_id;
+            let mut current = update_counter.load(Ordering::Relaxed);
+            loop {
+                let Some(updated_value) =
+                    (current != 0).then(|| current.checked_add(1).unwrap_or(0))
+                else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .ok()
+        .map(SnapshotId)
     }
 
     pub(crate) fn insert_active(&self, snapshot_id: SnapshotId, binding: SnapshotHandleBinding) {

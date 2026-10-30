@@ -143,12 +143,25 @@ impl WorthQueryNamedClockSource<BankApprovalClock> for BankApprovalClockSource {
     fn observe(
         &self,
     ) -> Result<WorthQueryNamedClockReading<BankApprovalClock>, WorthQueryNamedClockFailure> {
-        let sequence = self
-            .sequence
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |value| {
-                value.checked_add(1)
-            })
-            .map_err(|_| clock_range_exceeded())?;
+        let sequence = {
+            let update_counter = &self.sequence;
+            let mut value = update_counter.load(Ordering::SeqCst);
+            loop {
+                let Some(updated_value) = value.checked_add(1) else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| clock_range_exceeded())?;
         let elapsed =
             u64::try_from(self.started.elapsed().as_nanos()).map_err(|_| clock_range_exceeded())?;
         Ok(WorthQueryNamedClockReading::new(

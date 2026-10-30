@@ -54,6 +54,10 @@ fn paused_schedule(
     .unwrap()
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: positioned write holds the path until replacement finishes after it; source: worth-store-physical-backend::filesystem_media::tests::artifact_mutation_coordination::positioned_write_holds_the_path_until_replacement_finishes_after_it; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=2, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn positioned_write_holds_the_path_until_replacement_finishes_after_it() {
     let parent = tempfile::tempdir().unwrap();
@@ -104,6 +108,10 @@ fn positioned_write_holds_the_path_until_replacement_finishes_after_it() {
     media.close();
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: replacement first forces the later write to open the replacement; source: worth-store-physical-backend::filesystem_media::tests::artifact_mutation_coordination::replacement_first_forces_the_later_write_to_open_the_replacement; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=2, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn replacement_first_forces_the_later_write_to_open_the_replacement() {
     let parent = tempfile::tempdir().unwrap();
@@ -148,6 +156,10 @@ fn replacement_first_forces_the_later_write_to_open_the_replacement() {
     media.close();
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: disjoint artifact writes do not share a global store lock; source: worth-store-physical-backend::filesystem_media::tests::artifact_mutation_coordination::disjoint_artifact_writes_do_not_share_a_global_store_lock; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=2, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn disjoint_artifact_writes_do_not_share_a_global_store_lock() {
     let parent = tempfile::tempdir().unwrap();
@@ -200,6 +212,10 @@ fn disjoint_artifact_writes_do_not_share_a_global_store_lock() {
     media.close();
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: opposing replacements reserve both paths without deadlock; source: worth-store-physical-backend::filesystem_media::tests::artifact_mutation_coordination::opposing_replacements_reserve_both_paths_without_deadlock; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=2, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn opposing_replacements_reserve_both_paths_without_deadlock() {
     let parent = tempfile::tempdir().unwrap();

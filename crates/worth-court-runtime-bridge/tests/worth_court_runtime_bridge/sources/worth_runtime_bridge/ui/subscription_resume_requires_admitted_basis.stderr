@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_resume_requires_admitted_basis.rs:12:59
+   |
+12 |     let _ = runtime.prepare_subscription_replay_readiness(&retained);
+   |                     ------------------------------------- ^^^^^^^^^ expected `&AdmittedBridgeSubscriptionResumeBasis`, found `&BridgeRetainedSubscriptionResumeBasis`
+   |                     |
+   |                     arguments to this method are incorrect
+   |
+   = note: expected reference `&AdmittedBridgeSubscriptionResumeBasis`
+              found reference `&BridgeRetainedSubscriptionResumeBasis`
+note: method defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription/resume_basis.rs
+   |
+   |     pub fn prepare_subscription_replay_readiness(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

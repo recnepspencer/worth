@@ -47,10 +47,10 @@ impl WorthUiArtifact {
                     node_identity_index.insert(binding_id.clone(), (module_id.clone(), node_index));
                     query_binding_ids.insert(binding_id);
                 }
-                if let crate::source::WorthUiArtifactNode::Surface(surface) = node {
-                    if let Some(binding) = surface.semantics().view_binding() {
-                        query_binding_ids.insert(binding.view_binding().id().as_str().to_owned());
-                    }
+                if let crate::source::WorthUiArtifactNode::Surface(surface) = node
+                    && let Some(binding) = surface.semantics().view_binding()
+                {
+                    query_binding_ids.insert(binding.view_binding().id().as_str().to_owned());
                 }
             }
         }

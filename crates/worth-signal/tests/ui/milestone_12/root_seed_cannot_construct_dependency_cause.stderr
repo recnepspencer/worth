@@ -1,7 +1,0 @@
-error[E0432]: unresolved imports `worth_signal::facade::DependencyCauseKey`, `worth_signal::facade::SourceRecomputeSeed`
- --> tests/ui/milestone_12/root_seed_cannot_construct_dependency_cause.rs:1:28
-  |
-1 | use worth_signal::facade::{DependencyCauseKey, SourceRecomputeSeed};
-  |                            ^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^ no `SourceRecomputeSeed` in `facade`
-  |                            |
-  |                            no `DependencyCauseKey` in `facade`

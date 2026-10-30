@@ -1,9 +1,0 @@
-error[E0451]: fields `staged_effect` and `lifecycle_transition` of struct `CommittedResourceCompletionArtifact` are private
-  --> tests/ui/committed_resource_completion_artifact_fields_are_private.rs:15:9
-   |
-14 |     let _ = CommittedResourceCompletionArtifact {
-   |             ----------------------------------- in this type
-15 |         staged_effect: forged_staged_effect(),
-   |         ^^^^^^^^^^^^^ private field
-16 |         lifecycle_transition: forged_transition(),
-   |         ^^^^^^^^^^^^^^^^^^^^ private field

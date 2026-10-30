@@ -1,9 +1,0 @@
-error[E0451]: fields `parent` and `cancelled_dependents` of struct `ResourceDependentCancellationPropagation` are private
-  --> tests/ui/resource_dependent_cancellation_propagation_fields_are_private.rs:13:9
-   |
-12 |     let _ = ResourceDependentCancellationPropagation {
-   |             ---------------------------------------- in this type
-13 |         parent: forged_parent(),
-   |         ^^^^^^ private field
-14 |         cancelled_dependents: vec![forged_cancelled()],
-   |         ^^^^^^^^^^^^^^^^^^^^ private field

@@ -55,7 +55,7 @@ pub trait RelationalPublicationCompanion: Debug + Send + Sync {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &super::ManagedIndexSourceForkPreparation<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
-        crate::authority::commit::pipeline::consult_stage_control(
+        crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Publication,
         )
@@ -73,7 +73,7 @@ pub trait RelationalPublicationCompanion: Debug + Send + Sync {
         Vec<crate::validation::candidate_source::PreparedManagedIndexSourceRoot>,
         crate::validation::candidate_source::ManagedIndexSourcePreparationDenial,
     > {
-        crate::authority::commit::pipeline::consult_stage_control(
+        crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Validation,
         )

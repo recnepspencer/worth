@@ -1,0 +1,15 @@
+error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+  --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/export/boundary_readmission_requires_authority_witness.rs
+   |
+   |     let _ = readmit_canonical_export_after_boundary(bridged, version);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------------------ argument #3 of type `worth_proof::AuthorityWitness<CanonicalExportReadmissionAuthority>` is missing
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-foundational/src/canonicalization/export/readmission.rs
+   |
+   | pub fn readmit_canonical_export_after_boundary(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: provide the argument
+   |
+42 |     let _ = readmit_canonical_export_after_boundary(bridged, version, /* worth_proof::AuthorityWitness<CanonicalExportReadmissionAuthority> */);
+   |                                                                     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

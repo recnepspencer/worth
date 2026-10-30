@@ -307,6 +307,23 @@ pub(crate) fn with_test_advancement<R>(
 #[cfg(test)]
 mod standalone_test_custody;
 
+/// Positive fixture authoring has its own finite allowance, outside measured host calls.
+#[cfg(test)]
+pub(crate) fn with_test_bootstrap_advancement<R>(
+    work: u64,
+    body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
+) -> R {
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(work)),
+    );
+    with_owned_bootstrap_advancement(policy, |phase| {
+        body(test_host_policy::TestHostRequest::new(phase.active))
+    })
+    .expect("the declared fixture bootstrap allowance admits authoring")
+}
+
 #[cfg(test)]
 mod tests;
 

@@ -166,8 +166,12 @@ fn native_storage_returns_late_interruption_without_sealing_partial_evidence() {
                 builder.push(fact(0)).unwrap_err()
             };
             assert_eq!(
-                cause.kind(),
-                worth_execution::ExecutionAllocationDenialKind::Cancelled
+                cause.classify(),
+                worth_execution::ExecutionAllocationDenialClass::Request(
+                    worth_execution::WorkCeilingDenial::Stopped(
+                        worth_execution::MapKernelStop::Cancelled
+                    )
+                )
             );
             assert!(NativeFactPayloadBuilder::allocate(1, control).is_err());
         }

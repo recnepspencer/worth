@@ -1,0 +1,10 @@
+error[E0624]: associated function `inspect` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_delivery_replay_readiness_constructor_private.rs:4:73
+  |
+4 |     let _constructor = BridgeSubscriptionDeliveryWindowReplayReadiness::inspect;
+  |                                                                         ^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/retained_delivery/readiness.rs
+  |
+  |     pub(crate) fn inspect(sealed_window: &BridgeSubscriptionDeliveryWindowSealed) -> Self {
+  |     ------------------------------------------------------------------------------------- private associated function defined here

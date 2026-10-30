@@ -250,7 +250,7 @@ pub fn worth_query_lower_runtime_phase_manifest() -> WorthQueryLowerRuntimePhase
             "certify_lower_runtime_performance_slopes",
             "representative surface plus closeout/deferred width counters",
             "certify_lower_runtime_routing",
-            "slope_report_emits_all_phase_seven_outputs_from_observed_profiles",
+            "slope_report_emits_all_outputs_from_observed_profiles",
         ),
         row(
             AcceptanceSuite,

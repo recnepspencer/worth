@@ -17,6 +17,10 @@ pub(crate) struct RelationalHeadRetentionObligation {
 }
 
 impl RelationalHeadRetentionObligation {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(super) fn new(
         owner: &Arc<RelationalBranchRetentionOwnerInner>,
         identity: RelationalBranchIdentity,
@@ -38,6 +42,10 @@ impl RelationalHeadRetentionObligation {
         self.binding.clone()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(super) fn validate_binding(
         &self,
         owner: &Arc<RelationalBranchRetentionOwnerInner>,

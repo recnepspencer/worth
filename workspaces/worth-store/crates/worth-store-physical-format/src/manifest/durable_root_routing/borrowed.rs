@@ -152,7 +152,7 @@ impl<'a> RootRoutingBlockPreflight<'a> {
         scratch.clear();
         let mut first = None;
         let mut previous = None;
-        for bytes in self.body.chunks_exact(ROUTING_LEAF_ENTRY_BYTES) {
+        for bytes in self.body.as_chunks::<ROUTING_LEAF_ENTRY_BYTES>().0.iter() {
             let placement =
                 decode_entry(bytes, self.schema).map_err(RootRoutingBlockDenial::Placement)?;
             let record = placement.record();
@@ -180,7 +180,7 @@ impl<'a> RootRoutingBlockPreflight<'a> {
     > {
         let mut first = None;
         let mut previous = None;
-        for bytes in self.body.chunks_exact(ROUTING_REFERENCE_BYTES) {
+        for bytes in self.body.as_chunks::<ROUTING_REFERENCE_BYTES>().0.iter() {
             let child = decode_reference(bytes).ok_or(RootRoutingBlockDenial::InvalidReference)?;
             if child.level().checked_add(1) != Some(self.level)
                 || child.generation() > self.generation
@@ -237,7 +237,9 @@ impl<'a> PhysicalRootRoutingBlockView<'a> {
             BodyKind::Leaf => Some(
                 self.preflight
                     .body
-                    .chunks_exact(ROUTING_LEAF_ENTRY_BYTES)
+                    .as_chunks::<ROUTING_LEAF_ENTRY_BYTES>()
+                    .0
+                    .iter()
                     .map(|bytes| {
                         decode_entry(bytes, self.preflight.schema)
                             .expect("validated route placement")
@@ -254,7 +256,9 @@ impl<'a> PhysicalRootRoutingBlockView<'a> {
             BodyKind::Branch => Some(
                 self.preflight
                     .body
-                    .chunks_exact(ROUTING_REFERENCE_BYTES)
+                    .as_chunks::<ROUTING_REFERENCE_BYTES>()
+                    .0
+                    .iter()
                     .map(|bytes| decode_reference(bytes).expect("validated route reference")),
             ),
             BodyKind::Leaf => None,

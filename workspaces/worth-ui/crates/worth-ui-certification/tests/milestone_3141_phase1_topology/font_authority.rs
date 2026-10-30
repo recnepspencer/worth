@@ -244,10 +244,10 @@ impl<'ast> Visit<'ast> for CallInventory {
     }
 
     fn visit_expr_call(&mut self, expression: &'ast syn::ExprCall) {
-        if let syn::Expr::Path(path) = &*expression.func {
-            if let Some(segment) = path.path.segments.last() {
-                self.function_calls.push(segment.ident.to_string());
-            }
+        if let syn::Expr::Path(path) = &*expression.func
+            && let Some(segment) = path.path.segments.last()
+        {
+            self.function_calls.push(segment.ident.to_string());
         }
         syn::visit::visit_expr_call(self, expression);
     }

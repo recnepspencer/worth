@@ -177,38 +177,42 @@ fn installation_refusal<Binding: RegionTotalsBinding>(
     }
 }
 
-#[test]
-fn deterministic_computation_keeps_its_single_partition_owner_binding() {
-    assert_eq!(installation_refusal::<SerialOwner>(), None);
-}
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn deterministic_computation_keeps_its_single_partition_owner_binding() {
+        assert_eq!(installation_refusal::<SerialOwner>(), None);
+    }
 
-#[test]
-fn partitioned_computation_refuses_the_single_partition_owner_binding() {
-    assert_eq!(
+    #[test]
+    fn partitioned_computation_refuses_the_single_partition_owner_binding() {
+        assert_eq!(
         installation_refusal::<SerialOwnerOfPartitioned>(),
         Some(WorthQueryPrimaryGraphInstallationDenialKind::ManagedComputationOwnerBindingMismatch)
     );
-}
+    }
 
-#[test]
-fn deterministic_computation_refuses_the_partitioned_owner_binding() {
-    assert_eq!(
+    #[test]
+    fn deterministic_computation_refuses_the_partitioned_owner_binding() {
+        assert_eq!(
         installation_refusal::<PartitionedOwnerOfSerial>(),
         Some(WorthQueryPrimaryGraphInstallationDenialKind::ManagedComputationOwnerBindingMismatch)
     );
-}
+    }
 
-#[test]
-fn declared_equivalence_predicate_is_refused_at_installation() {
-    assert_eq!(
-        installation_refusal::<owner::PartitionedOwner>(),
-        None,
-        "the same owner and key install under the bitwise contract"
-    );
-    assert_eq!(
+    #[test]
+    fn declared_equivalence_predicate_is_refused_at_installation() {
+        assert_eq!(
+            installation_refusal::<owner::PartitionedOwner>(),
+            None,
+            "the same owner and key install under the bitwise contract"
+        );
+        assert_eq!(
         installation_refusal::<PartitionedOwnerOfEquivalent>(),
         Some(
             WorthQueryPrimaryGraphInstallationDenialKind::ManagedComputationEquivalenceUnavailable
         )
     );
+    }
 }

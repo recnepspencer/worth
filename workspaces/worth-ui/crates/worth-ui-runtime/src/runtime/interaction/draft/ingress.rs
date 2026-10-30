@@ -40,10 +40,10 @@ impl UiDraftRuntimeState {
             mounted,
             generation,
         };
-        if report_requires_recipient_affinity(report.payload()) {
-            if let Some(rejection) = self.reject_invalid_affinity(context, report) {
-                return rejection;
-            }
+        if report_requires_recipient_affinity(report.payload())
+            && let Some(rejection) = self.reject_invalid_affinity(context, report)
+        {
+            return rejection;
         }
         match report.payload() {
             UiHostObservationPayload::Keyboard {

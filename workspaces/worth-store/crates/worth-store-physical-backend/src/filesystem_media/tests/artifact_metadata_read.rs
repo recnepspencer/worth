@@ -79,6 +79,10 @@ fn setup_metadata_read_ordinal(root: &std::path::Path) -> u64 {
     ordinal
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: scheduled metadata receipt and counter share one identified operation; source: worth-store-physical-backend::filesystem_media::tests::artifact_metadata_read::scheduled_metadata_receipt_and_counter_share_one_identified_operation; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=1, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn scheduled_metadata_receipt_and_counter_share_one_identified_operation() {
     let parent = tempfile::tempdir().unwrap();

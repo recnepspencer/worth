@@ -1,0 +1,25 @@
+warning: unreachable statement
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_has_no_nonfork_capabilities.rs:7:5
+  |
+6 |     let runtime: &RelationalRuntime = todo!();
+  |                                       ------- any code following this expression is unreachable
+7 |     let basis: AdmittedRelationalForkSourceBasis = todo!();
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0308]: mismatched types
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_has_no_nonfork_capabilities.rs:8:46
+  |
+8 |     let _ = runtime.begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary());
+  |                     ------------------------ ^^^^^^ expected `&AdmittedRelationalBranchBasis`, found `&AdmittedRelationalForkSourceBasis`
+  |                     |
+  |                     arguments to this method are incorrect
+  |
+  = note: expected reference `&AdmittedRelationalBranchBasis`
+             found reference `&AdmittedRelationalForkSourceBasis`
+note: method defined here
+ --> $WORKSPACE/crates/worth-relational/src/mvcc/transaction/admission.rs
+  |
+  |     pub fn begin_branch_transaction(
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^

@@ -46,7 +46,9 @@ async fn public_payment_wait_and_callback_installation_refuse_unowned_completion
     let mut envelope = include_str!("../../protocol/inbound_payment_completion_v1.hex")
         .trim()
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
         .collect::<Vec<_>>();
     let now = SystemTime::now()

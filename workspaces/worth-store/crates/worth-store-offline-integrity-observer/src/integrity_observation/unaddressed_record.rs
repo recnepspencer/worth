@@ -177,7 +177,8 @@ fn classify(path: &str) -> Option<DeclaredFile> {
             true,
             pair(name, ".pages")?,
         )
-    } else if let Some(name) = path.strip_prefix("families/records/extents/extent-") {
+    } else {
+        let name = path.strip_prefix("families/records/extents/extent-")?;
         (
             Family::ExtentChunkFrame,
             4,
@@ -186,8 +187,6 @@ fn classify(path: &str) -> Option<DeclaredFile> {
             true,
             pair(name, ".data")?,
         )
-    } else {
-        return None;
     };
     Some(DeclaredFile {
         family,

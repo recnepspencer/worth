@@ -1,0 +1,13 @@
+error[E0624]: associated function `validate` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_fanout_projection_validation_constructor_private.rs:4:70
+  |
+4 |       let _constructor = BridgeSubscriptionFanoutProjectionValidation::validate;
+  |                                                                        ^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/fanout/validation.rs
+  |
+  | /     pub(crate) fn validate(
+  | |         layout: &BridgeSubscriptionFanoutLayout,
+  | |         projection_set: &BridgeSubscriptionFanoutDeliveryProjectionSet,
+  | |     ) -> Result<Self, BridgeSubscriptionFanoutProjectionValidationRejection> {
+  | |____________________________________________________________________________- private associated function defined here

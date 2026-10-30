@@ -2,41 +2,6 @@
 use super::*;
 mod sibling_program;
 
-#[test]
-fn an_initial_consumer_refreshes_the_pending_output_it_actually_reads() {
-    journey(false, false, false, false, None);
-}
-
-#[test]
-fn an_initial_consumer_does_not_certify_a_cancelled_decision() {
-    journey(true, false, false, false, None);
-}
-
-#[test]
-fn a_cancelled_initial_consumer_releases_and_retries_its_cached_dependency() {
-    journey(true, true, false, false, None);
-}
-
-#[test]
-fn an_initial_consumer_readmits_the_cached_dependency_it_actually_reads() {
-    journey(false, true, false, false, None);
-}
-
-#[test]
-fn a_cached_read_keeps_custody_while_another_demand_delivers_its_pending_child() {
-    journey(false, true, true, false, None);
-}
-
-#[test]
-fn convenience_settlement_follows_two_original_requested_outputs() {
-    journey(false, true, false, true, None);
-}
-
-#[test]
-fn explicit_one_step_returns_original_progress_before_later_same_request_completion() {
-    journey(false, true, false, true, Some(std::num::NonZeroUsize::MIN));
-}
-
 fn journey(
     cancel_decision: bool,
     close_dependencies: bool,
@@ -169,60 +134,6 @@ fn journey(
     assert!(take_decisions("diamond-join").is_empty());
 }
 
-#[test]
-fn an_initial_consumer_finishes_the_requested_middle_before_its_own_decision() {
-    let _guard = checkpoint_recovery_test_guard();
-    take_decisions("anchor-c");
-    let profile =
-        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<program::ChainProgram>(
-        None,
-        profile,
-        4096,
-        super::super::source_world::seed,
-    );
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let mut a = request
-        .demand(PlanarOutputDemand::new("anchor-a"))
-        .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
-        .unwrap();
-    let mut b = request
-        .demand(ChainDemand("anchor-b".into()))
-        .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(&application)
-        .unwrap();
-    settle!(a, request);
-    let initial_b = settle!(b, request);
-    take_decisions("anchor-c");
-    let mut c = request
-        .demand(ChainDemand("anchor-c".into()))
-        .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(&application)
-        .unwrap();
-    change_root!(request, application, "anchor-a", 5, 0x9176_3591_u64);
-    let done = settle!(c, request);
-    assert_eq!(done.producer_contacts_in_this_demand(), 2);
-    let decisions = take_all_decisions();
-    assert_eq!(
-        decisions
-            .iter()
-            .map(|(name, _)| name.as_str())
-            .collect::<Vec<_>>(),
-        ["anchor-b", "anchor-c"]
-    );
-    assert_eq!(output_lengths!(request, ["anchor-a"]), [6]);
-    assert_eq!(
-        settle!(b, request).producer_contacts_in_this_demand()
-            - initial_b.producer_contacts_in_this_demand(),
-        0
-    );
-    assert_eq!(
-        settle!(c, request).producer_contacts_in_this_demand()
-            - done.producer_contacts_in_this_demand(),
-        0
-    );
-    assert!(take_all_decisions().is_empty());
-}
-
 // The earlier C read really waits for B's deferred native readiness; the later
 // sibling B owns the exact settlement which makes that read runnable.
 macro_rules! sibling_tree {
@@ -314,31 +225,130 @@ macro_rules! sibling_tree {
         assert!(!prematurely_pending, "tree lost newly settled later sibling progress");
     }};
 }
-#[test]
-fn later_edge_member_settlement_unblocks_earlier_consumer_in_same_settle() {
-    sibling_tree!(
-        sibling_program::EdgeProgram,
-        sibling_program::EdgeRoot,
-        sibling_program::ReverseConnection,
-        false
-    );
-}
-#[test]
-fn later_branch_settlement_unblocks_earlier_consumer_in_same_settle() {
-    sibling_tree!(
-        sibling_program::BranchProgram,
-        sibling_program::BranchRoot,
-        sibling_program::LaterConnection,
-        false
-    );
-}
 
-#[test]
-fn already_settled_edge_member_does_not_replay_progress_during_later_wait() {
-    sibling_tree!(
-        sibling_program::EdgeProgram,
-        sibling_program::EdgeRoot,
-        sibling_program::ReverseConnection,
-        true
-    );
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn an_initial_consumer_refreshes_the_pending_output_it_actually_reads() {
+        journey(false, false, false, false, None);
+    }
+
+    #[test]
+    fn an_initial_consumer_does_not_certify_a_cancelled_decision() {
+        journey(true, false, false, false, None);
+    }
+
+    #[test]
+    fn a_cancelled_initial_consumer_releases_and_retries_its_cached_dependency() {
+        journey(true, true, false, false, None);
+    }
+
+    #[test]
+    fn an_initial_consumer_readmits_the_cached_dependency_it_actually_reads() {
+        journey(false, true, false, false, None);
+    }
+
+    #[test]
+    fn a_cached_read_keeps_custody_while_another_demand_delivers_its_pending_child() {
+        journey(false, true, true, false, None);
+    }
+
+    #[test]
+    fn convenience_settlement_follows_two_original_requested_outputs() {
+        journey(false, true, false, true, None);
+    }
+
+    #[test]
+    fn explicit_one_step_returns_original_progress_before_later_same_request_completion() {
+        journey(false, true, false, true, Some(std::num::NonZeroUsize::MIN));
+    }
+
+    #[test]
+    fn an_initial_consumer_finishes_the_requested_middle_before_its_own_decision() {
+        let _guard = checkpoint_recovery_test_guard();
+        take_decisions("anchor-c");
+        let profile =
+            worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
+        let application = support::install_program_with_seed::<program::ChainProgram>(
+            None,
+            profile,
+            4096,
+            super::super::super::source_world::seed,
+        );
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let mut a = request
+            .demand(PlanarOutputDemand::new("anchor-a"))
+            .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
+            .unwrap();
+        let mut b = request
+            .demand(ChainDemand("anchor-b".into()))
+            .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(
+                &application,
+            )
+            .unwrap();
+        settle!(a, request);
+        let initial_b = settle!(b, request);
+        take_decisions("anchor-c");
+        let mut c = request
+            .demand(ChainDemand("anchor-c".into()))
+            .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(
+                &application,
+            )
+            .unwrap();
+        change_root!(request, application, "anchor-a", 5, 0x9176_3591_u64);
+        let done = settle!(c, request);
+        assert_eq!(done.producer_contacts_in_this_demand(), 2);
+        let decisions = take_all_decisions();
+        assert_eq!(
+            decisions
+                .iter()
+                .map(|(name, _)| name.as_str())
+                .collect::<Vec<_>>(),
+            ["anchor-b", "anchor-c"]
+        );
+        assert_eq!(output_lengths!(request, ["anchor-a"]), [6]);
+        assert_eq!(
+            settle!(b, request).producer_contacts_in_this_demand()
+                - initial_b.producer_contacts_in_this_demand(),
+            0
+        );
+        assert_eq!(
+            settle!(c, request).producer_contacts_in_this_demand()
+                - done.producer_contacts_in_this_demand(),
+            0
+        );
+        assert!(take_all_decisions().is_empty());
+    }
+
+    #[test]
+    fn later_edge_member_settlement_unblocks_earlier_consumer_in_same_settle() {
+        sibling_tree!(
+            sibling_program::EdgeProgram,
+            sibling_program::EdgeRoot,
+            sibling_program::ReverseConnection,
+            false
+        );
+    }
+
+    #[test]
+    fn later_branch_settlement_unblocks_earlier_consumer_in_same_settle() {
+        sibling_tree!(
+            sibling_program::BranchProgram,
+            sibling_program::BranchRoot,
+            sibling_program::LaterConnection,
+            false
+        );
+    }
+
+    #[test]
+    fn already_settled_edge_member_does_not_replay_progress_during_later_wait() {
+        sibling_tree!(
+            sibling_program::EdgeProgram,
+            sibling_program::EdgeRoot,
+            sibling_program::ReverseConnection,
+            true
+        );
+    }
 }

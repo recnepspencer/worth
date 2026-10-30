@@ -1,0 +1,11 @@
+error[E0599]: no method named `into_value` found for struct `FoundationalBoundaryBridgedIdentity<Value, Authority, Kind>` in the current scope
+  --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/bridged_identity_raw_value_extraction_not_public.rs
+   |
+   |     let _raw_value = bridged.into_value();
+   |                              ^^^^^^^^^^
+   |
+help: there is a method `value` with a similar name
+   |
+24 -     let _raw_value = bridged.into_value();
+24 +     let _raw_value = bridged.value();
+   |

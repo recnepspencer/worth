@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-modes"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Durable, embedded, and absent Store mode contracts."
+"workspace" = "../.."
+"name" = "worth-store-modes"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Durable, embedded, and absent Store mode contracts."
+"autotests" = false
+
 
 [dependencies]
 worth-store-authority.workspace = true
@@ -13,3 +15,6 @@ worth-store-contracts.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+"test" = false

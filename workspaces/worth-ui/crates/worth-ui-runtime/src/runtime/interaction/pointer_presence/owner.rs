@@ -73,16 +73,16 @@ impl UiPointerPresenceOwner {
         pointer: UiHostPointerIdentity,
         kind: UiPrimaryPointerKind,
     ) -> Result<(), super::UiPointerPresenceAdmissionDenial> {
-        if let Some(record) = self.pointers.get(&pointer) {
-            if record.kind != kind {
-                return Err(
-                    super::UiPointerPresenceAdmissionDenial::PointerKindChanged {
-                        pointer,
-                        prior: record.kind.host_kind(),
-                        observed: kind.host_kind(),
-                    },
-                );
-            }
+        if let Some(record) = self.pointers.get(&pointer)
+            && record.kind != kind
+        {
+            return Err(
+                super::UiPointerPresenceAdmissionDenial::PointerKindChanged {
+                    pointer,
+                    prior: record.kind.host_kind(),
+                    observed: kind.host_kind(),
+                },
+            );
         }
         Ok(())
     }
@@ -134,12 +134,11 @@ impl UiPointerPresenceOwner {
         current: UiSemanticSurfaceIdentity,
         kind: UiPrimaryPointerKind,
     ) {
-        if prior != Some(current) || !primary_pointer_admitted(kind) {
-            if let Some(prior) = prior {
-                if self.primary_by_surface.get(&prior) == Some(&pointer) {
-                    self.primary_by_surface.remove(&prior);
-                }
-            }
+        if (prior != Some(current) || !primary_pointer_admitted(kind))
+            && let Some(prior) = prior
+            && self.primary_by_surface.get(&prior) == Some(&pointer)
+        {
+            self.primary_by_surface.remove(&prior);
         }
         if primary_pointer_admitted(kind) {
             self.primary_by_surface.insert(current, pointer);

@@ -1,0 +1,70 @@
+error[E0599]: no method named `resolve` found for struct `worth_proof::dx::scoped_flow::ScopedUnresolvedRecipeFlow<&str, worth_proof::dx::scoped_flow::NoResolutionAuthority, worth_proof::CapabilityWitness<LoweringCapability>, worth_proof::AuthorityWitness<ReadinessAuthority>>` in the current scope
+  --> tests/worth_court_proof/sources/worth_proof/ui/dx/compile_fail/scoped_defaults_missing_required_progression.rs:20:10
+   |
+16 |       let _ = proof_flow()
+   |  _____________-
+17 | |         .lowering_capability(lowering_capability)
+18 | |         .readiness_authority(readiness_authority)
+19 | |         .recipe("payload")
+20 | |         .resolve(7_u8);
+   | |_________-^^^^^^^
+   |
+help: there is a method `resolve_with` with a similar name, but with different arguments
+  --> $WORKSPACE/crates/worth-proof/src/dx/scoped_flow.rs
+   |
+   | /     pub fn resolve_with<B, Auth>(
+   | |         self,
+   | |         authority: AuthorityWitness<Auth>,
+   | |         basis: B,
+   | |     ) -> ScopedResolvedRecipeFlow<T, B, L, Ready>
+   | |     where
+   | |         Auth: AuthorityMarker,
+   | |______________________________^
+
+error[E0599]: no method named `lower` found for struct `worth_proof::dx::scoped_flow::ScopedResolvedRecipeFlow<&str, u8, worth_proof::dx::scoped_flow::NoLoweringCapability, worth_proof::AuthorityWitness<ReadinessAuthority>>` in the current scope
+  --> tests/worth_court_proof/sources/worth_proof/ui/dx/compile_fail/scoped_defaults_missing_required_progression.rs:32:10
+   |
+27 |       let _ = proof_flow()
+   |  _____________-
+28 | |         .resolution_authority(resolution_authority)
+29 | |         .readiness_authority(readiness_authority)
+30 | |         .recipe("payload")
+31 | |         .resolve(7_u8)
+32 | |         .lower();
+   | |_________-^^^^^
+   |
+help: there is a method `lower_with` with a similar name, but with different arguments
+  --> $WORKSPACE/crates/worth-proof/src/dx/scoped_flow.rs
+   |
+   | /     pub fn lower_with<Cap>(
+   | |         self,
+   | |         capability: CapabilityWitness<Cap>,
+   | |     ) -> ScopedLoweredRecipeFlow<T, B, Ready>
+   | |     where
+   | |         Cap: CapabilityMarker,
+   | |______________________________^
+
+error[E0599]: no method named `ready` found for struct `worth_proof::dx::scoped_flow::ScopedLoweredRecipeFlow<&str, u8, worth_proof::dx::scoped_flow::NoReadinessAuthority>` in the current scope
+  --> tests/worth_court_proof/sources/worth_proof/ui/dx/compile_fail/scoped_defaults_missing_required_progression.rs:45:10
+   |
+39 |       let _ = proof_flow()
+   |  _____________-
+40 | |         .resolution_authority(resolution_authority)
+41 | |         .lowering_capability(lowering_capability)
+42 | |         .recipe("payload")
+43 | |         .resolve(7_u8)
+44 | |         .lower()
+45 | |         .ready("runtime admission");
+   | |_________-^^^^^
+   |
+help: there is a method `ready_with` with a similar name, but with different arguments
+  --> $WORKSPACE/crates/worth-proof/src/dx/scoped_flow.rs
+   |
+   | /     pub fn ready_with<Rt, Auth>(
+   | |         self,
+   | |         authority: AuthorityWitness<Auth>,
+   | |         runtime: Rt,
+   | |     ) -> ExecutionReadyRecipe<T, CurrentBasis<B>>
+   | |     where
+   | |         Auth: AuthorityMarker,
+   | |______________________________^

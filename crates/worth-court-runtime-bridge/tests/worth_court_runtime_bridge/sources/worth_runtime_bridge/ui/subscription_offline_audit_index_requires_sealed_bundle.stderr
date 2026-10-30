@@ -1,0 +1,8 @@
+error[E0308]: mismatched types
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_offline_audit_index_requires_sealed_bundle.rs:5:76
+  |
+5 |         let _ = runtime.build_subscription_offline_audit_bundle_index(vec![draft]);
+  |                                                                            ^^^^^ expected `BridgeSubscriptionCertificationBundleSealed`, found `BridgeSubscriptionCertificationBundleDraft`
+  |
+  = note: expected reference `&BridgeSubscriptionCertificationBundleSealed`
+             found reference `&BridgeSubscriptionCertificationBundleDraft`

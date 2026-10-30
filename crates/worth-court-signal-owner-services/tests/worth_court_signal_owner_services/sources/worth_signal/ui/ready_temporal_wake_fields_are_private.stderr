@@ -1,0 +1,31 @@
+error: cannot construct `ReadyTemporalWake` with struct literal syntax due to private fields
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/ready_temporal_wake_fields_are_private.rs:6:17
+   |
+ 6 |     let _wake = ReadyTemporalWake {
+   |                 ^^^^^^^^^^^^^^^^^
+ 7 |         id: TemporalWakeId::new(0),
+   |         -------------------------- private field
+ 8 |         scheduled_ordinal: WakeOrdinal::new(1),
+   |         -------------------------------------- private field
+ 9 |         ready_ordinal: WakeOrdinal::new(2),
+   |         ---------------------------------- private field
+10 |         condition: TemporalCondition::after(5).unwrap(),
+   |         ----------------------------------------------- private field
+11 |         due_tick: ClockTick::new(5),
+   |         --------------------------- private field
+12 |         ready_tick: ClockTick::new(6),
+   |         ----------------------------- private field
+   |
+   = note: ...and other private field `owner` that was not provided
+help: you might have meant to use the `from_scheduled` associated function
+   |
+ 6 -     let _wake = ReadyTemporalWake {
+ 7 -         id: TemporalWakeId::new(0),
+ 8 -         scheduled_ordinal: WakeOrdinal::new(1),
+ 9 -         ready_ordinal: WakeOrdinal::new(2),
+10 -         condition: TemporalCondition::after(5).unwrap(),
+11 -         due_tick: ClockTick::new(5),
+12 -         ready_tick: ClockTick::new(6),
+13 -     };
+ 6 +     let _wake = ReadyTemporalWake::from_scheduled(_, _, _);
+   |
