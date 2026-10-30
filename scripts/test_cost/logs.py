@@ -30,6 +30,15 @@ def read_lane(path):
               'cpu': [], 'compiler_progress': [], 'telemetry': {}, 'headers': {},
               'failed_compiler_attempts': [], 'compiler_attempt_refusals': [], 'compiler_error_messages': 0}
     context, failed, refused, invocation, states, state = {}, {}, set(), -1, [], None
+    unscoped_artifacts = False
+    if not any(event.get('type') == 'cargo-invocation' for event in json_objects(text)):
+        inferred = leading_invocation(text)
+        if inferred is not None:
+            invocation = 0
+            context = dict(inferred, observation_invocation=f'{Path(path).resolve()}#0')
+            state = {'context': context, 'build_success': None, 'exit_code': None,
+                     'failed_units': set(), 'refused': False}
+            states.append(state)
     for event in json_objects(text):
         if event.get('type') == 'cargo-invocation':
             invocation += 1
@@ -45,6 +54,8 @@ def read_lane(path):
         active = state is None or state['build_success'] is None
         if event.get('reason') == 'compiler-artifact' and active and (not context.get('command') or compiler_context(context)):
             result['artifact_messages'] += 1
+            if context.get('unit_plan') is None and not compiler_context(context):
+                unscoped_artifacts = True
             if not event['fresh']:
                 result['artifacts'].append(artifact(event, context))
         if (event.get('reason') == 'compiler-message' and event.get('message', {}).get('level') == 'error'
@@ -88,6 +99,9 @@ def read_lane(path):
         found = re.findall(rf'^{re.escape(field)}: (.+)$', text, re.M)
         result['headers'][field] = found[-1].strip() if found else None
     h = result['headers']
+    if unscoped_artifacts:
+        result['compiler_attempt_refusals'].append({'kind': 'undeclared-compiler-invocation',
+            'reason': 'compiler artifact stream has no preexecution invocation declaration; observed cache hits do not verify a budget'})
     if states and states[-1]['exit_code'] is None and h['Exit code'] is not None:
         states[-1]['exit_code'] = int(h['Exit code'])
     for state in states:
@@ -99,6 +113,11 @@ def read_lane(path):
                 'invocation': state['context']['observation_invocation'],
                 'build_success': state['build_success'], 'exit_code': state['exit_code'],
                 'reason': 'unsuccessful compiler invocation has no attributable failed unit'})
+        elif (compiler_context(state['context']) and state['context'].get('unit_plan') is None
+              and not state['refused']):
+            result['compiler_attempt_refusals'].append({'kind': 'undeclared-compiler-invocation',
+                'invocation': state['context']['observation_invocation'],
+                'reason': 'compiler invocation has no preexecution unit declaration; observed cache hits do not verify a budget'})
     if h['Start'] and h['End']:
         elapsed = (datetime.fromisoformat(h['End']) - datetime.fromisoformat(h['Start'])).total_seconds()
         result['telemetry']['capture_wall_seconds'] = elapsed
@@ -114,6 +133,20 @@ def read_lane(path):
     result['duplicates'] = duplicates(result['artifacts'])
     result['compiler_attempt_groups'] = duplicates(result['artifacts'] + result['failed_compiler_attempts'])
     return result
+
+
+def leading_invocation(text):
+    first = text.splitlines()[0] if text else ''
+    if not first.startswith('Command: '):
+        return None
+    try:
+        command = json.loads(first.removeprefix('Command: '))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(command, list) or not command or any(not isinstance(value, str) for value in command):
+        return None
+    return {'command': command, 'mode': 'check' if command[1:2] in (['check'], ['clippy']) else 'build',
+            'header_only': True}
 
 
 def compiler_context(context):

@@ -48,6 +48,12 @@ compares terminal observations with the requested identities.
 * `CargoRunner` captures compiler JSON, command, revision, dirty status, start,
   end and exit code. Immutable retained copies live in `target/lane-evidence`.
   Metadata reuse prevents nextest execution from rebuilding the graph.
+  Direct Cargo commands supplied to `census.py` use this same planned runner;
+  non-Cargo wrappers retain their parent capture and registered nested captures.
+  Known aliases of one capture are counted once, while distinct invocations
+  remain separate even when their contents match. Historical markerless logs
+  use only their leading command header for outcome interpretation; missing
+  declarations cannot turn cached artifact observations into verified budgets.
 * `budgets.json` declares build profiles and per-lane compiler-unit budgets.
   Cargo's unit graph declares each required package/target, physical compilation
   platform, check/codegen output, profile and transitive dependency-feature

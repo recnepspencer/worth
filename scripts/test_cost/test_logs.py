@@ -19,6 +19,46 @@ def compiled(**changes):
 
 
 class ArtifactObservationTests(unittest.TestCase):
+    def header_lane(self, command, events, exit_code=101, prefix=''):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary)/'header-only.log'
+            path.write_text(prefix + 'Command: ' + json.dumps(command) + '\n\n' +
+                            '\n'.join(map(json.dumps, events)) + f'\nExit code: {exit_code}\n')
+            return read_lane(path)
+
+    def test_markerless_compiler_failure_uses_only_the_leading_command_header(self):
+        cached = compiled(fresh=True)
+        for events in ([cached, {'reason': 'build-finished', 'success': False}], [cached]):
+            with self.subTest(events=events):
+                lane = self.header_lane(['cargo', 'check'], events)
+                self.assertEqual(lane['artifacts'], [])
+                self.assertEqual(lane['failed_compiler_attempts'], [])
+                self.assertEqual(lane['compiler_attempt_refusals'][0]['kind'], 'unattributed-compiler-outcome')
+        nested = self.header_lane(['cargo', 'check'], [cached], prefix='A body heading first\n')
+        self.assertEqual(nested['compiler_attempt_refusals'][0]['kind'], 'undeclared-compiler-invocation')
+        self.assertNotIn('invocation', nested['compiler_attempt_refusals'][0])
+
+    def test_markerless_successful_build_retains_zero_observation_but_cannot_verify_missing_graph(self):
+        lane = self.header_lane(['cargo', 'test'], [compiled(fresh=True),
+                                {'reason': 'build-finished', 'success': True}], exit_code=101)
+        self.assertEqual(lane['artifacts'], [])
+        self.assertEqual(lane['failed_compiler_attempts'], [])
+        self.assertEqual(lane['compiler_attempt_refusals'][0]['kind'], 'undeclared-compiler-invocation')
+
+    def test_markerless_prebuilt_runtime_and_declaration_headers_do_not_infer_compilation(self):
+        for command in (['cargo', 'nextest', 'run', '--binaries-metadata=built.json'],
+                        ['cargo', 'check', '--unit-graph']):
+            with self.subTest(command=command):
+                lane = self.header_lane(command, [compiled(fresh=True), {'reason': 'build-finished', 'success': False}])
+                self.assertEqual(lane['failed_compiler_attempts'], [])
+                self.assertEqual(lane['compiler_attempt_refusals'], [])
+
+    def test_unscoped_cached_artifact_observation_cannot_verify_a_unit_budget(self):
+        lane = self.lane([compiled(fresh=True)])
+        self.assertEqual(lane['artifacts'], [])
+        self.assertEqual(lane['failed_compiler_attempts'], [])
+        self.assertEqual(lane['compiler_attempt_refusals'][0]['kind'], 'undeclared-compiler-invocation')
+
     def test_unsuccessful_build_without_error_target_is_unknown_not_zero_attempts(self):
         marker, cached = self.declared(unit('owner'))
         cached['fresh'] = True

@@ -40,8 +40,10 @@ class CaptureRecoveryTests(unittest.TestCase):
                             'unit_plan': {'units': declarations(graph(required)), 'compiler_inputs': 'flags'}})
         self.capture(root, source/'build/binaries-build.log', ['cargo', 'test'], marker + '\n' + '\n'.join([json.dumps(artifact)]*2))
         event = {'type': 'test', 'event': 'failed', 'name': 'owner::owner$case', 'exec_time': 1.0}
-        self.capture(root, source/'run-owner-unit.log', ['cargo', 'nextest', 'run'], json.dumps(event))
-        self.capture(root, source/'documentation/doctests.log', ['cargo', 'test', '--doc'], '')
+        self.capture(root, source/'run-owner-unit.log', ['cargo', 'nextest', 'run', '--binaries-metadata', 'built.json'], json.dumps(event))
+        self.capture(root, source/'documentation/doctests.log', ['cargo', 'test', '--doc'],
+                     marker + '\n' + json.dumps(dict(artifact, fresh=True)) + '\n' +
+                     json.dumps({'reason': 'build-finished', 'success': True}))
         (source/'documentation/result.json').write_text(json.dumps({'inventory': [], 'selections': [],
             'events': [], 'status': 'pass', 'exit_code': 0}), encoding='utf-8')
         (source/'reservations.json').write_text('{}', encoding='utf-8')
@@ -129,7 +131,7 @@ class CaptureRecoveryTests(unittest.TestCase):
                          json.dumps(records[0]) + '\n' + json.dumps(records[1]))
             run = source/'run-owner-unit.log'
             event = {'type': 'test', 'event': 'ok', 'name': 'owner::owner$case', 'exec_time': 1.0}
-            retained = self.capture(root, run, ['cargo', 'nextest', 'run'], json.dumps(event))
+            retained = self.capture(root, run, ['cargo', 'nextest', 'run', '--binaries-metadata', 'built.json'], json.dumps(event))
             for path in (run, retained):
                 path.write_text(path.read_text().replace('Exit code: 0', 'Exit code: 7'), encoding='utf-8')
             test = self

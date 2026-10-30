@@ -8,7 +8,8 @@ from pathlib import Path
 import sys
 
 from coverage import prove
-from cargo_capture import instrument
+from cargo_capture import CargoRunner, instrument
+from compiler_units import CompilerUnitRefusal
 from evidence import run
 from logs import llvm_lines, read_lane
 from ratchet import source_violations
@@ -137,6 +138,41 @@ def package_inventory_lines(groups, noun):
     return lines
 
 
+def capture_command(command, path, capture_index, repository, environment):
+    logs, actual, refusal = [], None, None
+    if command[0] == 'cargo':
+        command = instrument(command)
+        runner = CargoRunner(repository, environment)
+        try:
+            code = runner(command, Path.cwd(), path).returncode
+        except CompilerUnitRefusal as error:
+            code, refusal = 1, str(error)
+        # Only newly captured runner logs can identify this actual invocation.
+        # An older canonical lane.log is not evidence after preflight refusal.
+        for candidate in reversed(runner.logs):
+            with Path(candidate).open(encoding='utf-8-sig') as stream:
+                first = stream.readline().strip()
+            if first.startswith('Command: ') and json.loads(first.removeprefix('Command: ')) == command:
+                actual = Path(candidate)
+                logs.append(('command', actual))
+                break
+        captured = list(runner.logs)
+    else:
+        code = run(command, path, environment=environment)
+        logs.append(('command', path))
+        captured = []
+    captured += [Path(json.loads(line)['log']) for line in capture_index.read_text(encoding='utf-8').splitlines()]
+    seen = {Path(log).resolve() for _, log in logs}
+    for candidate in captured:
+        resolved = Path(candidate).resolve()
+        if actual is not None and resolved == path.resolve():
+            resolved = actual.resolve()  # Known alias of this invocation only.
+        if resolved not in seen:
+            seen.add(resolved)
+            logs.append((f'nested-{len(logs)}', Path(candidate)))
+    return code, logs, refusal
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     scope = parser.add_mutually_exclusive_group(required=True)
@@ -169,21 +205,19 @@ def main():
         if command:
             if includes_scheduled_selection(command):
                 parser.error('ignored tests are scheduled-only and cannot be measured here')
-            if command[0] == 'cargo':
-                command = instrument(command)
             path = destination / 'lane.log'
             capture_index = destination / 'capture-index.jsonl'
             capture_index.write_text('', encoding='utf-8')
             environment = dict(os.environ, WORTH_TEST_COST_CAPTURE_INDEX=str(capture_index.resolve()))
-            code = run(command, path, environment=environment)
-            logs.append(('command', path))
-            for index, line in enumerate(capture_index.read_text(encoding='utf-8').splitlines()):
-                logs.append((f'nested-{index}', Path(json.loads(line)['log'])))
+            code, captured, capture_refusal = capture_command(command, path, capture_index, repository, environment)
+            logs += captured
         else:
-            code = 0
+            code, capture_refusal = 0, None
         result = collect(manifest, repository, logs,
                          json.loads(args.inventory.read_text()) if args.inventory else None,
                          {lane: json.loads(p.read_text()) for lane, p in args.selection}, args.llvm)
+        if capture_refusal is not None:
+            result['capture_refusal'] = capture_refusal
         (destination / 'census.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n', encoding='utf-8')
         (destination / 'census.md').write_text(markdown(result), encoding='utf-8')
         print(f'{name}: {result["source_counts"]}; coverage={result["coverage"]["status"]}; {destination}')

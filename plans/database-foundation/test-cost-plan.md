@@ -67,7 +67,7 @@ govern compile size, test names and non-gating measurements respectively.
 
 | Requirement | Enforcement / named evidence |
 |---|---|
-| Build census, including nested gates | `test_nested_gate_processes_register_their_complete_evidence_logs`; `test_fresh_artifacts_do_not_count_as_compilation` |
+| Build census, including nested gates | `test_nested_gate_processes_register_their_complete_evidence_logs`; `test_direct_cargo_uses_planned_runner_and_deduplicates_only_its_known_alias`; `test_direct_preflight_refusal_never_reuses_an_old_canonical_capture`; `test_fresh_artifacts_do_not_count_as_compilation` |
 | No Cargo or trybuild in running tests | `census.py --all --check-sources`; `test_named_executable_and_imported_command_alias_cannot_bypass_the_rule`; `test_cargo_in_autodiscovered_binary_unit_tests_is_refused`; `test_external_unit_tests_keep_enclosing_alias_and_constant_bindings`; `test_literal_included_tests_keep_compiler_sleep_and_timeout_sites` |
 | Real batched compiler fixtures and workspace lock | `test_each_diagnostic_is_attributed_to_its_fixture_not_the_aggregate_exit`; `test_generated_package_may_be_new_but_registry_versions_stay_workspace_locked`; `compiler_probe.py` |
 | Missing prerequisites refuse through types | `CompilerFixtureRefusal`, `PrebuiltExecutableRefusal`, Store compiler-boundary refusal types; consumer courts assert the real outcomes |
@@ -134,6 +134,9 @@ workspace is needed to validate this infrastructure correction.
   an explicit unknown/refusal, including process failures without error JSON.
   Successful build completion separates later test/run runtime failures from
   compilation. Non-compiling graph declarations never mint compiler attempts.
+  Direct census Cargo commands use the same predeclaring runner. Markerless
+  historical captures may supply a leading command/outcome, never unit identity;
+  cached observations without a declaration cannot certify a compiler budget.
 - Closed Root/Query/Bank testkits observe only complete named construction
   recipes, using the optional non-gating transport documented in
   `scripts/test_cost/setup_observation.md`. Opaque and uninstrumented recipes
