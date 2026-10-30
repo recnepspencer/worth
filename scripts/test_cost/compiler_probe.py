@@ -6,6 +6,7 @@ from pathlib import Path
 from cargo_capture import CargoRunner
 from compile_batch import prepare_environment
 from compiler_audiences import group
+from logs import llvm_lines
 from run_lane import child_environment
 from workspace import repository_root
 
@@ -21,8 +22,10 @@ def main():
     fixtures = output / 'fixtures'
     fixtures.mkdir(exist_ok=True)
     denied, supported = fixtures / 'denied.rs', fixtures / 'supported.rs'
+    absent = fixtures / 'absent_dependency.rs'
     denied.write_text('fn main() { let _ = test_cost_sealed_probe::Sealed { field: 7 }; }\n', encoding='utf-8')
     supported.write_text('fn main() { let _ = test_cost_sealed_probe::admitted(7); }\n', encoding='utf-8')
+    absent.write_text('use test_cost_sealed_probe::admitted;\nfn main() {}\n', encoding='utf-8')
     environment = child_environment()
     environment['CARGO_TARGET_DIR'] = str(repository / 'target')
     runner = CargoRunner(repository, environment)
@@ -32,16 +35,32 @@ def main():
         raise ValueError('probe workspace metadata failed')
     row = dict(identity='production', profile='dev', reject_test_features=True, packages=group([{
         'dependencies': {'test-cost-sealed-probe': {'path': output.as_posix()}},
-        'sources': [denied, supported], 'audience': 'real-compiler-probe'}]))
+        'sources': [denied, supported], 'audience': 'real-compiler-probe'},
+        {'dependencies': {}, 'sources': [absent], 'audience': 'no-direct-dependency'}]))
     observed = prepare_environment(manifest, row, output / 'batch', runner)
     fates = {Path(source).stem: value['fate'] for source, value in observed['fixtures'].items()}
-    if fates != {'denied': 'denied', 'supported': 'compiled'}:
+    if fates != {'denied': 'denied', 'supported': 'compiled', 'absent_dependency': 'denied'}:
         raise ValueError(f'real compiler attribution failed: {fates}')
     messages = observed['fixtures'][str(denied.resolve())]['messages']
     if not any(message.get('code', {}).get('code') == 'E0451' for message in messages if message.get('code')):
         raise ValueError('real private-field boundary was not observed')
+    missing = observed['fixtures'][str(absent.resolve())]['messages']
+    if not any(message.get('code', {}).get('code') == 'E0432' for message in missing if message.get('code')):
+        raise ValueError('a sibling fixture exposed its direct dependency')
+    ir = output / 'sealed-probe.ll'
+    emitted = runner(['cargo', 'rustc', '--manifest-path', str(manifest), '--lib',
+                      '--', '--emit=llvm-ir=' + str(ir) + ',link'], output, output / 'ir-compiler.log')
+    if emitted.returncode or not ir.is_file():
+        raise ValueError('compiler did not emit the requested library IR')
+    measured = runner(['cargo', 'llvm-lines', '--files', str(ir)], output, output / 'ir-lines.log')
+    if measured.returncode:
+        raise ValueError('LLVM file-mode measurement failed')
+    total = next(row['lines'] for row in llvm_lines(measured.stdout) if row['name'] == 'TOTAL')
+    if total <= 0:
+        raise ValueError('real library has no measured IR')
     print(json.dumps({'fixtures': fates, 'diagnostic_messages': [
-        {'level': message['level'], 'message': message['message']} for message in messages]}, indent=2))
+        {'level': message['level'], 'message': message['message']} for message in messages],
+        'llvm_ir_lines': total}, indent=2))
 
 
 if __name__ == '__main__':

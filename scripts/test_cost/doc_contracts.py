@@ -32,7 +32,9 @@ class DocContractFailure(ValueError):
 
 HEADING = re.compile(r'^\s*Doc-tests\s+(\S+)\s*$')
 START = re.compile(r'^running (\d+) tests?(?: \(shuffle seed: \d+\))?$')
-ROW = re.compile(r'^test (.+?)\s+\.\.\. (ok|FAILED(?: \(time limit exceeded\))?|ignored(?:,.*)?)$')
+ROW = re.compile(r'^test (.+?)\s+\.\.\. (ok|FAILED(?: \(time limit exceeded\))?|ignored(?:,.*)?)$', re.S)
+PROGRESS = re.compile(r'^test .+ \(line \d+\)(?: - (?:compile fail|compile|should panic))? '
+                      r'has been running for over [\d.]+ seconds$', re.S)
 SUMMARY = re.compile(r'^test result: (ok|FAILED)\. (\d+) passed; (\d+) failed; (\d+) ignored; '
                      r'(\d+) measured; (\d+) filtered out(?:; finished in ([\d.]+)s)?$')
 MERGED = re.compile(r'^all doctests ran in [\d.]+s; merged doctests compilation took [\d.]+s$')
@@ -118,8 +120,14 @@ def framed_blocks(stdout, owners):
     Rust 1.94 can emit several merged edition/attribute groups and standalone
     cases for one heading. The final merged timing line closes that owner.
     """
-    blocks, headings, active, current = [], [], None, None
+    blocks, headings, active, current, pending = [], [], None, None, None
     for line in clean(stdout):
+        if pending is not None:
+            if (HEADING.fullmatch(line) or START.fullmatch(line) or SUMMARY.fullmatch(line)
+                    or MERGED.fullmatch(line) or line.startswith(('test ', 'test result:', '---- '))
+                    or line == 'failures:'):
+                raise DocContractFailure(DocFailureKind.FRAMING, 'multiline test row was interrupted')
+            line, pending = pending + '\n' + line, None
         if heading := HEADING.fullmatch(line):
             if active is not None:
                 raise DocContractFailure(DocFailureKind.FRAMING, 'heading before block completion')
@@ -154,10 +162,16 @@ def framed_blocks(stdout, owners):
             if active is None:
                 raise DocContractFailure(DocFailureKind.FRAMING, 'test result outside running block')
             name = MODES.sub('', row[1]).rstrip()
-            if not re.fullmatch(r'.+ \(line \d+\)', name):
+            if not re.fullmatch(r'.+ \(line \d+\)', name, re.S):
                 raise DocContractFailure(DocFailureKind.FRAMING, f'not an exact rustdoc test name: {name}')
             event = 'ignored' if row[2].startswith('ignored') else 'failed' if row[2].startswith('FAILED') else 'ok'
             active['rows'].append({'test': name, 'event': event})
+        elif active is not None and line.startswith('test ') and not PROGRESS.fullmatch(line):
+            # Rustdoc can emit a literal newline inside a generic item name.
+            # Preserve those bytes; only a complete framework row supplies a test.
+            pending = line
+    if pending is not None:
+        raise DocContractFailure(DocFailureKind.FRAMING, 'multiline test row was truncated')
     if active is not None:
         raise DocContractFailure(DocFailureKind.FRAMING, 'running block has no complete summary')
     return blocks, headings

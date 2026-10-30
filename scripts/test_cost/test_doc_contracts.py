@@ -30,6 +30,37 @@ class DocContractTests(unittest.TestCase):
         self.assertEqual(result['inventory'][2]['test'], 'src/lib.rs - second (line 9)')
         self.assertEqual([e['event'] for e in result['events']], ['ok', 'ok', 'ignored'])
 
+    def test_multiline_generic_item_identity_and_progress_preserve_the_real_framework_count(self):
+        name = ('src/authoring.rs - ApplicationQueryResultAuthoring<Schema,Query,Parameters,Scope,\n'
+                'Root>::result_shape (line 71)').replace('\\n', '\n')
+        text = ('Doc-tests owner_pkg\nrunning 1 test\ntest '+name+
+                ' has been running for over 60 seconds\ntest '+name+' - compile fail ... ok\n'
+                'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 148.57s\n')
+        result = parse_output(text, '', {'owner_pkg': 'owner-pkg'})
+        self.assertEqual(result['inventory'], [{'binary': 'owner-pkg::doc', 'test': name, 'ignored': False}])
+        self.assertEqual(len(result['events']), 1)
+        self.assertEqual(result['blocks'][0]['summary'], {'passed': 1, 'failed': 0, 'ignored': 0})
+        self.assertIn('\n', result['events'][0]['name'])
+
+    def test_adjacent_multiline_names_stay_distinct_and_complete_duplicates_refuse(self):
+        first = 'src/lib.rs - Generic<A,\nB>::first (line 7)'
+        second = 'src/lib.rs - Generic<A,\nB>::second (line 8)'
+        text = 'Doc-tests a\n'+block([(first, 'ok'), (second, 'ok')])
+        result = parse_output(text, '', {'a': 'a'})
+        self.assertEqual([row['test'] for row in result['inventory']], [first, second])
+        duplicate = 'Doc-tests a\n'+block([(first, 'ok'), (first, 'ok')])
+        with self.assertRaises(DocContractFailure) as raised:
+            parse_output(duplicate, '', {'a': 'a'})
+        self.assertEqual(raised.exception.kind, DocFailureKind.DUPLICATE)
+
+    def test_multiline_test_rows_cannot_absorb_other_rows_or_invent_summary_counts(self):
+        prefix = 'Doc-tests a\nrunning 1 test\ntest src/lib.rs - Generic<A,\n'
+        summary = 'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out\n'
+        for ending in [summary, 'test src/lib.rs - actual (line 3) ... ok\n'+summary, '']:
+            with self.subTest(ending=ending), self.assertRaises(DocContractFailure) as raised:
+                parse_output(prefix+ending, '', {'a': 'a'})
+            self.assertEqual(raised.exception.kind, DocFailureKind.FRAMING)
+
     def test_separate_streams_are_accepted_only_when_block_assignment_is_unique(self):
         text = block([('src/lib.rs - first (line 1)', 'ok')]) + block()
         result = parse_output(text, '   Doc-tests a\n   Doc-tests b\n', {'a': 'a', 'b': 'b'})

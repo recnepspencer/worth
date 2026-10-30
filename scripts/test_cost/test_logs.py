@@ -107,6 +107,14 @@ class ArtifactObservationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             llvm_lines('error: no such command')
 
+    def test_actual_llvm_file_mode_table_retains_parenthesized_total_and_percentages(self):
+        rows = llvm_lines('  Lines            Copies           Function name\n'
+                          '  -----            ------           -------------\n'
+                          '  1                1                (TOTAL)\n'
+                          '  1 (100.0%,100.0%) 1 (100.0%,100.0%) probe::admitted\n')
+        self.assertEqual(rows, [dict(lines=1, copies=1, name='TOTAL', testkit_helpers=[]),
+                                dict(lines=1, copies=1, name='probe::admitted', testkit_helpers=[])])
+
 
 if __name__ == '__main__':
     unittest.main()

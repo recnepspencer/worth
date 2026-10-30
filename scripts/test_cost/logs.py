@@ -129,6 +129,8 @@ def llvm_lines(text, helpers=()):
         match = re.match(r'\s*(\d+)\s+(?:\([^)]*\)\s+)?(\d+)\s+(?:\([^)]*\)\s+)?(.+?)\s*$', line)
         if match:
             name = match[3]
+            if name == '(TOTAL)':
+                name = 'TOTAL'
             inferred = re.findall(r'\b(worth_\w*(?:testkit\w*|test_support)::[^\s<>(),]+)', name)
             rows.append({'lines': int(match[1]), 'copies': int(match[2]), 'name': name,
                          'testkit_helpers': sorted(set(inferred) | {h for h in helpers if h in name})})
