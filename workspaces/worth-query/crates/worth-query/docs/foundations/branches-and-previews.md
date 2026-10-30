@@ -115,6 +115,13 @@ data through ordinary mutations and queries. Its collection query returns a
 complete result or a typed limit refusal; exact-key selection follows the
 successful read.
 
+Retain one observation privately and perform the model's governed read at that
+observation before describing it. Use `observation.select_on(&phase, runtime)`
+to describe the same selection after admission. The
+[compiled reader](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/model.rs)
+uses current READ authority with retained data; storage and model reads have
+independent policies over the actual grant facts on their respective branches.
+
 Call `selected.describe_basis()` before releasing an admitted selection. Store
 the returned `WorthQueryExpectedProductBasisDescription` with ordinary versioned
 application data. It implements Serde serialization and contains comparison

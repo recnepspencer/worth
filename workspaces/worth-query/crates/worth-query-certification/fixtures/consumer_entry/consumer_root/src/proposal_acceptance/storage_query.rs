@@ -84,6 +84,24 @@ worth_query_query_binding!(pub Binding for ReadProposals,schema Schema,
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    use super::access;
+    let influence = ApplicationQueryInfluenceContract::permit_all();
+    let disclosure = ApplicationQueryDisclosureContract::governed_by(
+        "stored-proposals",
+        access::ReadDomain::reference(),
+    )
+    .use_field_by(
+        ModelName::reference(),
+        access::encoded(1),
+        influence.clone(),
+    )
+    .use_field_by(
+        ProposalName::reference(),
+        access::encoded(1),
+        influence.clone(),
+    )
+    .disclose_field_by(key(), access::encoded(1), influence.clone())
+    .disclose_field_by(data(), access::encoded(1), influence);
     let definition = ApplicationQueryDefinitionBuilder::declare(ProposalQuery::reference())
         .root(Proposal::reference())
         .scope(Model::reference())
@@ -100,10 +118,10 @@ pub fn declare(
             .build(),
         )
         .cardinality(ApplicationQueryCardinality::Many)
-        .disclosure(ApplicationQueryDisclosureContract::public())
+        .disclosure(disclosure)
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
+        .requires_ability(access::ReadProposals::reference())
         .root_path(
             ApplicationQueryRootPath::from(Model::reference()).forward(ModelProposal::reference()),
         )

@@ -1,5 +1,5 @@
 //! A single declared schema/program installs every ordinary application handler.
-use super::{authentication::Actor, creation, recording, resources, schema::*};
+use super::{access, authentication::Actor, creation, recording, resources, schema::*};
 use worth_query_decl::facade::{application_program::*, authentication::*};
 use worth_query_host::facade::{
     application_contribution::*, application_installation::*, primary_graph::*,
@@ -23,6 +23,9 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .finish_action()
             .native_action::<recording::Binding>()
             .finish_action()
+            .native_action::<access::status::Binding>()
+            .finish_action()
+            .operation::<access::InspectDomain>()
             .finish()]
     }
 }
@@ -33,7 +36,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<creation::Binding, _>(creation::Handler)?;
-        setup.handler::<recording::Binding, _>(recording::Handler)
+        setup.handler::<recording::Binding, _>(recording::Handler)?;
+        setup.handler::<access::status::Binding, _>(access::status::Handler)
     }
 }
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;

@@ -1,6 +1,7 @@
 //! A genuine model incarnation and its actual independently owned head slot.
 use super::super::{
-    authentication::Caller, creation, failure::Failure, host::Host, model_query, schema::data::*,
+    access, authentication::Caller, creation, failure::Failure, host::Host, model_query,
+    schema::data::*,
 };
 use super::branch::{Closed, ForkFailure, InitializationFailure, OwnedBranch};
 use worth_query_host::facade::{application_entry::*, product::*};
@@ -46,17 +47,66 @@ impl<'host> Model<'host> {
         &self,
         caller: &Caller<'_>,
     ) -> Result<WorthQueryExpectedProductBasisDescription, Failure> {
+        let observation = self
+            .owner
+            .host
+            .request(&caller.principal, caller.scope)
+            .on_branch(self.branch())
+            .retain_current_read()
+            .map_err(|cause| match cause {
+                WorthQueryApplicationReadObservationDenial::ExecutionRequest(cause) => {
+                    Failure::Advancement(cause)
+                }
+                WorthQueryApplicationReadObservationDenial::ProductSelection(cause) => {
+                    Failure::Selection(cause)
+                }
+            })?;
+        self.describe_observed(caller, &observation)
+    }
+
+    pub fn describe_observed(
+        &self,
+        caller: &Caller<'_>,
+        observation: &WorthQueryApplicationReadObservation,
+    ) -> Result<WorthQueryExpectedProductBasisDescription, Failure> {
+        let rows = self
+            .owner
+            .host
+            .request(&caller.principal, caller.scope)
+            .on_branch(self.branch())
+            .at(observation)
+            .query(model_query::ReadModel {
+                model: self.identity.label.clone(),
+            })
+            .execute_governed(
+                access::ReadDomain::reference(),
+                access::InspectDomain::reference(),
+                access::ReadAccess {
+                    model: self.identity.label.clone(),
+                },
+            )
+            .map_err(Failure::Query)?;
+        let observed = rows.rows().first().ok_or(Failure::MissingModel)?;
+        if observed.occurrence != self.identity.occurrence {
+            return Err(Failure::ModelMismatch);
+        }
         self.owner
             .host
             .with_application_advancement(caller.scope, |phase| {
-                self.owner
-                    .host
-                    .on_branch(self.branch())
-                    .select(&phase)
-                    .map(|selected| selected.describe_basis())
+                let selected = observation
+                    .select_on(&phase, self.owner.host.runtime())
+                    .map_err(Failure::Selection)?;
+                if selected
+                    .product()
+                    .relational_basis_descriptor()
+                    .runtime_instance_id()
+                    != self.identity.runtime
+                {
+                    return Err(Failure::ModelMismatch);
+                }
+                Ok(selected.describe_basis())
             })
             .map_err(Failure::Advancement)?
-            .map_err(Failure::Selection)
     }
     pub fn read(&self, caller: &Caller<'_>) -> Result<model_query::TargetRow, Failure> {
         read_target(self.owner.host, self.branch(), caller, &self.identity.label)
@@ -101,7 +151,13 @@ fn initialize(
         .query(model_query::ReadModel {
             model: label.to_owned(),
         })
-        .execute()
+        .execute_governed(
+            access::ReadDomain::reference(),
+            access::InspectDomain::reference(),
+            access::ReadAccess {
+                model: label.to_owned(),
+            },
+        )
         .map_err(Failure::Query)?;
     let model = model.rows().first().cloned().ok_or(Failure::MissingModel)?;
     let target = read_target(owner.host, owner.branch(), caller, label)?;
@@ -146,7 +202,13 @@ fn read_target(
         .query(model_query::ReadTarget {
             model: label.to_owned(),
         })
-        .execute()
+        .execute_governed(
+            access::ReadDomain::reference(),
+            access::InspectDomain::reference(),
+            access::ReadAccess {
+                model: label.to_owned(),
+            },
+        )
         .map_err(Failure::Query)?;
     rows.rows().first().cloned().ok_or(Failure::MissingTarget)
 }

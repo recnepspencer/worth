@@ -1,4 +1,5 @@
 //! An ordinary application's versioned proposals and isolated model storage.
+mod access;
 mod authentication;
 mod creation;
 mod failure;
@@ -17,5 +18,6 @@ mod application {
 
 #[cfg(test)]
 mod courts {
+    mod disclosure;
     mod storage;
 }

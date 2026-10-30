@@ -1,6 +1,6 @@
 //! An isolated branch persists typed proposal data through ordinary requests.
 use super::super::{
-    authentication::Caller, failure::Failure, recording, schema::data::*, storage_query,
+    access, authentication::Caller, failure::Failure, recording, schema::data::*, storage_query,
 };
 use super::{
     branch::{ForkFailure, OwnedBranch},
@@ -8,7 +8,7 @@ use super::{
 };
 use worth_query_host::facade::{application_entry::*, product::*};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ProposalReference {
     pub key: String,
     pub occurrence: Coordinates,
@@ -55,10 +55,10 @@ impl<'host> Storage<'host> {
         idempotency: u64,
         intents: Vec<AuthoredIntent>,
     ) -> Result<ProposalReference, RecordFailure> {
+        let basis = model.describe(caller)?;
         if model.identity != self.model {
             return Err(Failure::ModelMismatch.into());
         }
-        let basis = model.describe(caller)?;
         let data = StoredProposal {
             format_version: 1,
             revision: 1,
@@ -115,10 +115,10 @@ impl<'host> Storage<'host> {
         caller: &Caller<'_>,
         reference: &ProposalReference,
     ) -> Result<StoredProposal, Failure> {
+        let row = self.read_key(caller, &reference.key)?;
         if self.model != reference.model {
             return Err(Failure::ModelMismatch);
         }
-        let row = self.read_key(caller, &reference.key)?;
         if row.occurrence != reference.occurrence {
             return Err(Failure::ProposalOccurrenceChanged);
         }
@@ -140,7 +140,13 @@ impl<'host> Storage<'host> {
             .query(storage_query::ReadProposals {
                 model: self.model.label.clone(),
             })
-            .execute()
+            .execute_governed(
+                access::ReadDomain::reference(),
+                access::InspectDomain::reference(),
+                access::ReadAccess {
+                    model: self.model.label.clone(),
+                },
+            )
             .map_err(Failure::Query)?;
         // One-shot execution refuses an oversized collection rather than paging it.
         // Select only after that complete ordinary read (and its disclosure admission).

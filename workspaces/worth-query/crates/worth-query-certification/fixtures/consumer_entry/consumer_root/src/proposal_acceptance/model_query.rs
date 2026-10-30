@@ -2,6 +2,7 @@
 use super::schema::{data::Coordinates, *};
 use worth_query_decl::facade::{application_query::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+mod disclosure;
 
 pub struct Parameters;
 worth_query_structured_value_binding!(pub ParametersBinding for Parameters { identity:"proposal-application.query.parameters.v1" });
@@ -150,10 +151,10 @@ pub fn declare(
             .build(),
         )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .disclosure(ApplicationQueryDisclosureContract::public())
+        .disclosure(disclosure::model())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
+        .requires_ability(super::access::ReadModels::reference())
         .build()
         .unwrap();
     let target = ApplicationQueryDefinitionBuilder::declare(TargetQuery::reference())
@@ -172,10 +173,10 @@ pub fn declare(
             .build(),
         )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .disclosure(ApplicationQueryDisclosureContract::public())
+        .disclosure(disclosure::target())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
+        .requires_ability(super::access::ReadModels::reference())
         .root_path(
             ApplicationQueryRootPath::from(Model::reference()).forward(ModelTarget::reference()),
         )

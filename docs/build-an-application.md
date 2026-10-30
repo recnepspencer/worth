@@ -2186,8 +2186,36 @@ let cancellation = WorthQueryCancellationSource::new();
 let scope = WorthQueryRequestScope::new(Some(Instant::now() + Duration::from_secs(60)), cancellation.token());
 ```
 
-The entity an operation acts on is a different thing: the intent's *scope
-binding*, shown next.
+#### Read governed data at one observation
+
+Retain a read observation when the data and a later basis description must name
+the same committed state. A governed query at that observation uses its original
+data and freshly checks the current principal, capability and READ policy on the
+requested branch. Revoking current READ therefore also refuses an older read.
+
+This sequence uses the query and capability names from the compiled
+[model reader](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/model.rs):
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let request = runtime.request(&principal, &scope).on_branch(model_branch);
+let observation = request.retain_current_read()?;
+let rows = request.at(&observation)
+    .query(ReadModel { model: label.clone() })
+    .execute_governed(
+        ReadDomain::reference(), InspectDomain::reference(), ReadAccess { model: label },
+    )?;
+```
+
+Keep the observation private until admission succeeds. To describe that same
+basis, use `observation.select_on(&phase, runtime)?.describe_basis()` inside the
+request's `with_application_advancement` call. The description grants no further
+permission and may already be stale for `select_expected` if the head moved.
+Drop the observation when its reads are finished. Managed-index open and rebuild
+require a current request and refuse retained mode with `RequestMode`.
+
+The entity a mutation acts on is its intent's *scope binding*, shown next.
 
 ### 5.2 Mutations: intent, binding, handler
 

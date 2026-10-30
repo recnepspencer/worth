@@ -2,6 +2,12 @@
 use super::schema::*;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+mod authorization;
+
+pub struct CreationTargets {
+    registry: WorthQueryInvariantMutationTarget<Schema, Registry>,
+    principals: [WorthQueryInvariantMutationTarget<Schema, Principal>; 2],
+}
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct CreateModel {
@@ -19,7 +25,7 @@ worth_query_structured_value_binding!(pub InputBinding for CreateModel { identit
 worth_query_structured_value_binding!(pub ResultBinding for Created { identity:"proposal-application.create.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity:"proposal-application.create.denial.v1" });
 worth_query_operation!(pub Create for Schema, input InputBinding);
-worth_query_operation_reads!(Create => [RegistryName]);
+worth_query_operation_reads!(Create => [RegistryName,PrincipalIdentity]);
 worth_query_operation_writes!(Create => [ModelName, TargetName, Retention]);
 worth_query_operation_creates!(Create => [Model, Target]);
 worth_query_operation_links!(Create => [ModelTarget]);
@@ -29,7 +35,7 @@ fn registry(_: &CreateModel) -> String {
 worth_query_mutation_binding!(pub Binding for CreateModel, schema Schema,
     identity "proposal-application.create.binding.v1", input InputBinding, operation Create,
     result ResultBinding, idempotency u64, identity "proposal-application.create.key.v1",
-    decision WorthQueryInvariantMutationTarget<Schema, Registry>, denial DenialBinding,
+    decision CreationTargets, denial DenialBinding,
     handler identity "proposal-application.create.handler.v1", program required,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(),
     outputs NoApplicationMutationOutputs,
@@ -45,11 +51,21 @@ impl OperationHandler<Schema, Binding> for Handler {
         &self,
         _: &CreateModel,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
-    ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Registry>, Denial> {
+    ) -> HandlerResult<CreationTargets, Denial> {
         let observed = (|| -> Result<_, HandlerExecutionDenial> {
             let registry = reader.resolve_entity(RegistryName::reference(), "models".to_owned())?;
             reader.field(&registry, RegistryName::reference())?;
-            reader.mutation_target(&registry)
+            let author = reader.resolve_entity(PrincipalIdentity::reference(), 1u64)?;
+            let reviewer = reader.resolve_entity(PrincipalIdentity::reference(), 2u64)?;
+            reader.field(&author, PrincipalIdentity::reference())?;
+            reader.field(&reviewer, PrincipalIdentity::reference())?;
+            Ok(CreationTargets {
+                registry: reader.mutation_target(&registry)?,
+                principals: [
+                    reader.mutation_target(&author)?,
+                    reader.mutation_target(&reviewer)?,
+                ],
+            })
         })();
         match observed {
             Ok(target) => HandlerResult::Completed(target),
@@ -59,12 +75,12 @@ impl OperationHandler<Schema, Binding> for Handler {
     fn build_candidate(
         &self,
         input: &CreateModel,
-        decision: WorthQueryInvariantMutationTarget<Schema, Registry>,
+        decision: CreationTargets,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<Created, Denial> {
         let applied = (|| -> Result<(), HandlerExecutionDenial> {
             let registry = writer
-                .projected_entity(&decision)
+                .projected_entity(&decision.registry)
                 .map_err(HandlerExecutionDenial::new)?;
             let model = writer
                 .create_entity_in_context(
@@ -99,7 +115,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                     &target,
                 )
                 .map_err(HandlerExecutionDenial::new)?;
-            Ok(())
+            authorization::issue(input, &registry, &model, &decision.principals, writer)
         })();
         match applied {
             Ok(()) => HandlerResult::Completed(Created),
@@ -112,15 +128,18 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let op = Create::reference();
-    schema
-        .operation(op.definition().no_external_effect().no_aftermath().finish())
-        .operation_projection_work_budget(op, 16)
-        .operation_read_field(op, RegistryName::reference())
-        .operation_create(op, Model::reference())
-        .operation_create(op, Target::reference())
-        .operation_write(op, ModelName::reference())
-        .operation_write(op, TargetName::reference())
-        .operation_write(op, Retention::reference())
-        .operation_link(op, ModelTarget::reference())
-        .application_mutation_binding::<Binding>()
+    authorization::declare(
+        schema
+            .operation(op.definition().no_external_effect().no_aftermath().finish())
+            .operation_projection_work_budget(op, 16)
+            .operation_read_field(op, RegistryName::reference())
+            .operation_read_field(op, PrincipalIdentity::reference())
+            .operation_create(op, Model::reference())
+            .operation_create(op, Target::reference())
+            .operation_write(op, ModelName::reference())
+            .operation_write(op, TargetName::reference())
+            .operation_write(op, Retention::reference())
+            .operation_link(op, ModelTarget::reference())
+            .application_mutation_binding::<Binding>(),
+    )
 }
