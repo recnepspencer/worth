@@ -305,11 +305,11 @@ mod tests {
         let cases = [
             (
                 WorthQueryExternalDispatchPreparationDenial::CompletionAllocationDenied {
-                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator),
+                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_query_execution::facade::runtime::ExecutionPhysicalAllocationDenialKind::Allocator),
                     requested_payload_bytes: Some(17),
                 },
                 WorthQueryPublishedExternalEffectFailure::CompletionAllocationDenied {
-                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator),
+                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialClass::Physical(worth_query_execution::facade::runtime::ExecutionPhysicalAllocationDenialKind::Allocator),
                     requested_payload_bytes: Some(17),
                 },
             ),
