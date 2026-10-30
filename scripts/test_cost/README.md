@@ -49,15 +49,21 @@ compares terminal observations with the requested identities.
   end and exit code. Immutable retained copies live in `target/lane-evidence`.
   Metadata reuse prevents nextest execution from rebuilding the graph.
 * `budgets.json` declares build profiles and per-lane compiler-unit budgets.
-  Libraries, their libtest executables and distinct binaries are distinct
-  compiler units. Recompiling an identical unit in another target directory
-  exceeds the budget. Package-level duplicate graphs remain visible with their
-  features, profiles, target directories and check modes.
+  Cargo's unit graph declares each required package/target, physical compilation
+  platform, check/codegen output, profile and transitive dependency-feature
+  graph before execution. Native host/target consumers can share a physically
+  identical linked unit; usage breadth is telemetry, not a second allowance.
+  The maximum remains one. Identical units in another directory still collide;
+  changed flags do not mint units. Command, environment, configuration, manifest
+  and lockfile guards refuse drift. Artifact hashes remain observations only.
+  `RUSTC_BOOTSTRAP=1` is scoped to Cargo's non-compiling `--unit-graph`
+  subprocess; the real pinned compiler invocation never receives that override.
 * The runner builds process helpers as independent executable targets. Tests
   read typed prebuilt manifests and refuse missing or malformed observations.
   They never silently build a fallback.
 * `compile_batch.py` runs actual fail fixtures together with
-  `cargo check --workspace --bins --keep-going`, once per required environment.
+  `cargo check --workspace --bins --keep-going`, or the explicitly declared
+  codegen `cargo build` stage, once per required graph and stage.
   Separate generated packages preserve each declared direct-dependency audience;
   an unrelated fixture cannot make a forbidden dependency available. It copies
   the owning workspace lockfile, checks dependency lock consistency and
