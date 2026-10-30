@@ -224,6 +224,33 @@ controls at the owners that consume the new correspondence. Do not mechanically
 duplicate the existing control portfolio. The ordinary unopened-B domain court,
 both providers and real 1,000/2,000 whole-path growth remain required.
 
+### Cross-Runtime Interference Court
+
+Extend the existing installed provider journey and World publication controls;
+do not build a second scheduler or simulated publication engine. Prepare two
+lawful attempts from the same selected product head. Pause one at the existing
+product-comparison boundary, publish the other, then release the first. Observe
+the graph, managed Source/root image and World head through genuine selected
+reads. Only the owner-admitted successor may become current. A loser before
+effects is a typed no-effect/refusal; a loser after an owner effect retains the
+actual unpublished-effect custody. Neither may expose a mixed graph/root image
+or discard recovery state as though cancellation had rolled the operation back.
+An old retained reader must still answer from its original immutable image.
+
+For Phase 3, interleave an empty managed read and its dependency registration
+with a matching insertion/rename. The completed observation must either include
+the entrant or become invalid under the existing currentness contract. Publishing
+between the read and registration must not create an observation that remains
+falsely current. Pair a stale retry with the existing idempotency receiver: no
+second committed occurrence or provider-root publication may result from replaying
+the same accepted action. Changed input retains the existing idempotency refusal.
+Use existing branch/observation and cancellation controls for these schedules;
+repeat a control only where a new consumer could otherwise accept it wrongly.
+
+This court proves process-local coordination among real owners. Network loss,
+process-crash persistence and cross-host agreement require their own runtime
+contracts and cannot be inferred from this result.
+
 ## Product Decision Lock
 
 1. Access products are derived managed resources, never authoritative truth.
@@ -302,6 +329,71 @@ failure must refuse before publication, or enter an explicitly unavailable state
 where the existing lifecycle permits that posture; correctness reads cannot use
 stale or partial state. Recovery/rebuild is admitted by its existing owner and
 never imports the cert-only replay facade into production.
+
+### Cross-Runtime Correctness And Implementation Rules
+
+The inherited boundary is the in-memory composite runtime of
+[9.17.2](./milestone-9.17.2.md) and [9.18](./milestone-9.18.md).
+Relational, Bridge, Signal and Runtime World have separate authority and failure
+boundaries even when they run in one process. This milestone preserves that
+coordination model; it adds neither a network consensus protocol nor durable
+index archives or restart-stable recovery. The following are implementation
+obligations, not claims that the current partial code already satisfies them.
+
+- **Consistent snapshots and one product-currentness owner.** Query's
+  `WorthQueryAdmittedApplicationQueryPlan` in
+  [graph_read_plan_binding.rs](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/graph_read_plan_binding.rs)
+  carries actual basis and security custody. Select graph and derived payload
+  through that same image. Runtime World's
+  [CompositePublicationReady](../../crates/worth-runtime-world/src/publication/product_cas.rs)
+  and [attempt_product_movement](../../crates/worth-runtime-world/src/publication/product_cas/movement.rs)
+  remain the product-head comparison/movement path. Native component movement
+  alone does not publish product currentness. Historical reads stay pinned;
+  matching version numbers or a fresh lookup of a current cell cannot join images.
+- **Optimistic concurrency and retry identity.** Preparation binds the exact
+  predecessor, branch incarnation, installed definition and full-generation
+  occurrences. Recheck at the existing consuming owner before cutover; a stale
+  attempt cannot overwrite a successor. Preserve existing idempotency resolution
+  and single-use candidates. Retrying an action does not imply exactly-once
+  external effects, and retrying never revives its old admission or request.
+  Use owner-issued ancestry/generations for ordering and fencing; wall-clock
+  timestamps, callback arrival order and equal revision counters from different
+  owners establish neither causality nor identity. Deadline clocks govern
+  interruption only. Parallel pure work preserves canonical owner completion.
+- **Failure atomicity and recovery.** Preserve World's existing
+  [Performed, NoEffect and ProductUnpublished outcomes](../../crates/worth-runtime-world/src/publication/outcome.rs).
+  Before effects, cancellation/refusal drops staging. After owner effects,
+  preserve exact custody and recovery posture until settlement; after product
+  movement, cancellation cannot report that the commit did not happen.
+  Current unavailable truth is a typed outcome, never permission to serve a
+  stale Ready root. Rebuild derives from authoritative truth under fresh admission.
+- **Isolation and progress.** Immutable roots support temporal readers without
+  mutating their predecessors. Fixed publication cells use their existing owner
+  order. Provider work, traversal, allocation, waits and final backing destruction
+  stay outside the irreversible swap. Shared publication/registry locks must not
+  span a provider callback or an external wait. Independent branches retain the predecessor
+  runtime's independent progress; a new world-wide index lock is forbidden.
+- **Complete incremental dependence.** Route actual changes through declared
+  reverse support, including negative space, indirect inputs and availability.
+  Register an observation against its selected image with currentness validation
+  sufficient to prevent a read/registration lost wakeup. Missing evidence means
+  conservative dependence or typed refusal where that posture is permitted.
+  It never means empty influence, and a full sweep cannot disguise failed routing.
+- **Explicit trust and proof.** Installed provider/domain code owns algorithmic
+  matching, bounds and exact predicates; independent qualification tests its
+  semantics. Runtime verification must check actual tracked coverage and binding
+  before narrowing authority. Merely inspecting returned rows cannot establish
+  completeness of an arbitrary algorithm. A strategy lacking checkable coverage
+  stays conservative or refuses; the required box/prefix strategies must supply
+  that coverage. No caller digest, serialized token or generic marker can mint
+  the installed receiver's legality witness.
+
+These obligations apply Architectural Laws 1–4, 9–11, 16–23 and Domain Structure
+Laws 7–11. Each implementation slice must trace its actual authority producer,
+consumer and failure handoff before editing, then identify the existing path it
+extends or removes. Use the phase anchors below and re-resolve moved symbols in
+their owning subtree; planned destinations are not existing implementation.
+Private topology may vary by adopted revision, but authority direction may not.
 
 ### Target Application DX
 
@@ -382,14 +474,6 @@ workspaces/worth-query/crates/
     managed_access/                      N membership, disclosure and footprint courts
 crates/worth-relational/src/
   schema/registry_custody.rs             E exact selected schema/definition owner
-  derived_relation/structural/
-    candidate_source/                   N Native Source scope/projection custody
-      association.rs                    N bind the installed physical Source plan
-      scope.rs                          N affected scope closure, including absence
-      projection.rs                     N admitted before/after row acquisition
-      loan.rs                           N reborrow for each actual observation
-      interpretation.rs                 N Native-minted logical/physical association
-      resumption.rs                     N actual rematerialization correspondence
   validation/custom_rule/                E real rule receivers and scoped invocations
   validation/engine/observation/
     custom_semantics.rs                 E sole custom Source interpretation policy
@@ -401,10 +485,25 @@ crates/worth-relational/src/
   mvcc/validation/proposal_round.rs      E prepare before first invariant
   mvcc/publication/companion/            E fixed effect bundle and atomic cutover
     preflight/cutover.rs                E reserve/check/install the complete fixed set
+    cell/managed_source.rs              N owned scoped Source observations/conditions
+  validation/candidate_source/          E Native Source scope/projection custody
+    program.rs                          E installed physical Source program
+    scope_closure.rs                    E before/after scope and occurrence closure
+    projection.rs                       E admitted physical row/field acquisition
+    preparation.rs                      E candidate-lived Source loans and staged roots
+    observation.rs                      E actual-observation reborrowing
+    interpretation.rs                   E qualify Native logical/physical association
+    resumption.rs                       N actual rematerialization correspondence
+    image.rs                            E association directory, opaque Query payloads
+    publication.rs                      E lend exact pre-first staged set to publication
 crates/worth-proof/src/
-  managed_source.rs                     N Source audience/correspondence witnesses
+  managed_source.rs                     E Source audience; extend for correspondence
+  managed_access/                       N Phase 3/4 coverage and narrowing legality
+    coverage.rs                         N installed receiver-bound coverage witness
+    realized_footprint.rs               N verified narrowing witness and issuer binding
 crates/worth-foundational/src/
-  managed_source.rs                     N portable association/interpretation meaning
+  managed_index_source.rs               E portable association/interpretation meaning
+  managed_access.rs                     N portable coverage/footprint contract meaning
 ```
 
 `E` means an existing owner to extend; `N` means a planned destination populated
@@ -412,6 +511,10 @@ by its implementing phase, not an instruction to create empty placeholders now.
 The Source subtree replaces the cold-image-only representation; it does not add
 another Source cache. Later access/membership/footprint destinations remain
 committed successors, not Phase 2 implementation scope.
+Native Source custody stays under `validation/candidate_source`; its structural
+path mechanisms are consumed from `derived_relation/structural`, not re-owned by
+a second `structural/candidate_source` tree. Existing partial files marked `E`
+still require the phase's qualification; existence is not acceptance.
 Provider construction, maintenance and query mechanics are children of their pure
 value/domain owner, outside the generic framework. Name-prefix and geometry
 providers must enter as siblings there without changing the framework facade or
@@ -445,6 +548,19 @@ pin or CAD production rewrite. Milestone closure also requires Phase 6.
 **Depends on:** 9.10 graph-read admission, 9.16 ordinary request/disclosure and the
 existing managed-derived-view lifecycle. **Result:** applications can declare,
 install, construct, read and dispose of a provider-owned index at a committed basis.
+
+**Implementation anchors.** Declaration's
+[managed_index](../../workspaces/worth-query/crates/worth-query-declaration/src/application_query/managed_index/mod.rs)
+owns portable provider meaning; Installation's
+[compile](../../workspaces/worth-query/crates/worth-query-installation/src/application_query/managed_index.rs)
+binds it to actual query/source/schema contracts. Execution's
+[managed_index](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/mod.rs)
+owns provider mechanics and retained payloads, alongside the existing
+[derived-view registry](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registry.rs).
+Extend these owners rather than adding a provider registry in Relational.
+The public lifecycle journeys linked below are the starting acceptance family;
+pure algorithms remain in `fixtures/consumer_values`. Phase 2 consumes these
+bindings and immutable backing, not a public owner's retained READ grant.
 
 **Requirements.** Declare source projection and query/result types, provider
 identity/version, determinism, ordering, dependency meaning and reconstruction
@@ -982,7 +1098,7 @@ opens one. A genuine pre-suspension historical reader keeps its own basis.
 | `PreparedManagedIndexSource`, Relational | Owns exact Source/support, logical and physical associations, original payer and prepared scope closure. Its new observation loan consumes the installed Source audience and the actual observation's interpretation; retained data is not retained Execution authority. |
 | `AdmittedManagedIndexSourceAudience`, Proof | Existing planned legality witness remains bound to the actual installed Native issuer and receiving audience, including the permitted Source posture. A foreign issuer opens no receiver. |
 | `AdmittedManagedIndexSourceCorrespondence`, Proof | Native-minted legality witness for reusing this exact logical payload as the specified new physical Source. Bound to its installed issuer; consumed with the sealed live Native correspondence, never accepted as a portable digest claim. |
-| `ManagedIndexBranchImage`, Query managed resource | One persistent directory holds the Native-bound interpretation, physical availability and optional logical/physical payload shares. Its private entries distinguish physical Ready from suspended logical-only and other unavailable states. It mints no Source grant. |
+| `ManagedIndexBranchImage`, Native association in the Query managed resource | One persistent directory holds Native-minted Source/scope association, physical availability and opaque logical/physical Query payload shares. Native alone creates its private records from the judged staged set. It mints no public READ or invariant Source grant. |
 
 The Native interpretation binds runtime/selected branch, before basis and
 physical proposal, real logical Source version, materialization occurrence and
@@ -1191,6 +1307,18 @@ refer to this owner; they do not maintain another mutable copy of its roots.
 Retained images remain valid temporal shares. Registration/retention limits and
 original allocation admission remain explicit, but neither those entries nor
 their capacity can be used as the affected-scope discovery universe.
+The directory's association records belong to Native so consuming decision
+expectations need no generic Query callback to validate an opaque payload.
+An owning observation retains the actual registered cell and scoped record.
+After idempotency resolution, Native reborrows that record at the consuming
+candidate's actual selected basis and pins its current image through the fixed
+compound cutover. Every Source input change conservatively replaces that scoped
+record; a true unchanged Source share requires Native's complete change closure,
+not equal values, a root number or a caller's scope roster. This is complete
+Source dependence, not selected-candidate membership or realized-footprint
+authority. An observation and a serialized revision describe material/currentness;
+the public receiver must still freshly admit principal, capability, purpose and
+Parent/Source READ. Ordinary row/set expectations retain their existing path.
 Fork sharing requires a fresh association from the actual Native/World fork
 owners and their retained source image; equal branch names or copied root IDs
 cannot confer it. Sharing immutable bytes does not share a read loan.
@@ -1253,7 +1381,7 @@ let rule = uniqueness_definition()
     .managed_index_cold_sources(ApplicationManagedIndexColdSource::AdmitRebuild);
 schema.invariant(rule);
 // This adds an installed Parent-read requirement, not a mutation permission.
-let rename = rename_definition().managed_index_read::<PrefixBinding>();
+schema.operation_managed_index_read::<PrefixBinding, _, _>(RenameItem::reference());
 ```
 
 ```rust,ignore
@@ -1486,6 +1614,45 @@ adapter rewrite or CAD cutover is required here.
 **Result:** managed access returns complete admitted candidates and the evidence
 needed to keep each query correct after both matching and nonmatching changes.
 
+**Implementation anchors and handoff.** Start at
+[ManagedSelectionLease::issue](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/selection.rs)
+and [source_dependencies::capture/capture_maintained](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_dependencies.rs).
+They currently carry candidate selection and conservative Source support; a
+candidate slot or whole-Source revision is not the new predicate coverage proof.
+Installation's [managed-index compiler](../../workspaces/worth-query/crates/worth-query-installation/src/application_query/managed_index.rs)
+must bind the provider's typed matching/ordering contract to the installed Parent
+and Source. Lower that contract once into query registration and change-to-query
+matching under the existing [DependencyIndex](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/publication.rs).
+Query retains and disposes predicate postings with the managed resource; providers
+own pure matching mechanics, not subscriptions or callbacks to consumers.
+
+Coverage must include the searched predicate/boundaries even when no row is
+returned, plus ordering/cardinality and exact-refinement inputs. Its canonical
+identity includes the full installed plan, source image and receiving audience.
+The coverage contract records the actual visited regions and certified pruning
+regions of that root, including their maintained Source support. Query's planned
+`access_strategy/coverage/` verifier checks that their decomposition covers the
+declared search and that every pruning premise follows the installed summary
+meaning. A provider's assertion that an unvisited subtree cannot match is not
+coverage. Unsupported pruning must visit that region under admission, retain
+its conservative dependencies, or refuse; it cannot erase the region. Summary
+construction/update and comparison semantics remain qualified pure provider
+mechanics, bound to the same installed version as the root.
+The required box and prefix matching structures may differ within their pure
+owners; generic Query orchestration must not switch on spatial/string meaning.
+Register and validate against the same selected image to close the interference
+court's read/registration race. Remove scan-all-retained-predicate routing at
+cutover, retaining a named conservative posture only where the contract permits.
+
+Extend [validate_influence](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/application_disclosure/influence_validation.rs)
+and [admit_application_query_governance](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/application_disclosure/decision.rs),
+with existing [continuation readmission](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/readmission.rs).
+These owners still decide protected influence and fresh disclosure; provider
+selection cannot bypass them. Extend the existing public provider journeys and
+[continuation court family](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/related/continuation.rs)
+at the new consumers. Phase 4 may trust qualified coverage and tracked refinement,
+but only its verifier may convert them into narrowed authority.
+
 **Requirements.** Bind access to the exact installed query, parameters, root,
 basis, ordering, result shape, principal/purpose and disclosed source scope.
 Preserve positive, negative, boundary, absence, cardinality and ordering facts.
@@ -1526,6 +1693,47 @@ both providers, without claiming verified narrowed authority or private adoption
 authority. **Result:** actual provider execution can narrow the admitted influence
 set for dependency, reuse, conflict and commit decisions without omitting facts.
 
+**Implementation anchors and proof progression.** Consume the actual
+[WorthQueryAdmittedApplicationQueryPlan](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/graph_read_plan_binding.rs),
+Phase 3's coverage, and tracked source/refinement execution in the planned
+`primary_graph/access_strategy/realized_footprint/` owner. An internal captured
+evidence state must progress through checked plan/coverage correspondence before
+it can produce a verified state. Missing coverage is an explicit conservative
+or denied result, never an empty verified footprint. Verification includes
+negative membership and influence on ordering, counts, continuation and effects;
+the returned rows alone are insufficient.
+
+The legality witness `VerifiedRealizedFootprint` belongs in the planned
+`worth-proof/src/managed_access/realized_footprint.rs`. Its issuer is retained by
+the actual installed Query verifier; consuming runtime handles bind that exact
+issuer and exact plan/product/basis/audience. A separately created issuer opens
+no installed consumer. The witness proves covered influence is within admitted
+authority, not current READ, mutation eligibility or product publication. Owned
+evidence and observation loans remain in Query Execution; portable versioned
+meaning belongs in Foundational. No serialization or public raw constructor
+reconstitutes a verified runtime state.
+
+Extend the existing fact/currentness path in
+[source_currentness_in](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/fact/source_currentness.rs)
+and [compare_retained_output_dependencies](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/output_reuse/selection.rs),
+the [commit-preparation owner](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs),
+and correction's [restored-support selection](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/overlap.rs).
+The latter currently explicitly refuses `ManagedIndexSource`; deleting that
+refusal is not support. Add exact covered selection, comparison and conflict
+meaning before accepting the new fact. Likewise
+[retain_selected_membership](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/source_identity/membership.rs)
+currently excludes managed selections: admit them only through qualified evidence.
+The entity set in [WorthQueryRealizedProjectionScope](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/realized_scope.rs)
+and [ResultSetFootprint](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/one_shot/outcome/result_set_footprint.rs)
+cannot substitute for complete managed predicate coverage.
+
+Carry verified evidence through these existing consumers; do not add a parallel
+conflict/reuse engine or turn an unsupported fact into an ignored fact. Extend
+the [installed correction courts](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction.rs)
+with genuine managed observations and the hostile/lawful twins below. The next
+phase may trust narrowing only after the issuing boundary and every applicable
+ordinary consumer enforce it; conservative execution remains visibly distinct.
+
 **Requirements.** Derive footprint evidence from actual tracked source reads,
 membership/absence, refinement, ordering and effect/artifact evidence. Query
 verifies this against the exact admitted plan and source coverage before the
@@ -1561,6 +1769,35 @@ not implement 9.20's path language or set execution and needs no private cutover
 **Owner:** Query public facades/certification and public Bank/geometry entries.
 **Depends on:** Phases 1–4. **Result:** one integrated public candidate is qualified
 for consumer adoption, with stable Decl/Host contracts and executable guidance.
+
+**Implementation anchors and cutover.** Bank's existing installed composition is
+[application_definition/providers.rs](../../workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/providers.rs).
+Keep the actual [account-discovery definition/binding](../../workspaces/worth-query-bank-world/crates/bank-domain/src/queries/account_discovery.rs)
+and [pending-payments definition/binding](../../workspaces/worth-query-bank-world/crates/bank-domain/src/queries/pending_payments.rs)
+as the reference for real principal/capability and graph-path semantics. Its
+[account_activity page/resume receivers](../../workspaces/worth-query-bank-world/crates/bank-server/src/application_query/account_activity.rs)
+and [governed emergency-activity continuation](../../workspaces/worth-query-bank-world/crates/bank-server/src/application_query/governed_execution/emergency_access_activity/continuation.rs)
+anchor cursor disclosure and fresh authority. These are existing contracts to
+preserve, not claims that they already use a managed provider or that principal
+admission may be copied into a shared Source. Add the managed access declaration
+and provider through the same contribution/configuration owner, preserving query
+identity/version compatibility and the actual ordinary server receiver.
+
+Public geometry extends the existing
+[planar invariant preparation](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant/preparation.rs)
+and [evaluation](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant/evaluation.rs)
+with the generic box provider; numerical meaning remains in the Query-free value
+owner. Grow the qualified Phase 2 provider fixture rather than creating another
+schema solely for the size court. Before adoption edits, name the actual affected
+public discovery/cache paths and their replacement receivers in the slice plan;
+delete displaced executable state/orchestration as that slice cuts over. A grep
+for old names alone cannot establish deletion of an equivalent fallback.
+
+Extend Bank's [ordinary read journeys](../../workspaces/worth-query-bank-world/crates/bank-server/tests/ordinary_reads.rs),
+the public consumer-entry provider family and existing `application_graph`
+target at their real boundaries. Phase 6 receives reviewed public facades,
+compiled examples and integrated evidence; no public pass supplies a private pin
+or excuses a missing private runtime journey.
 
 **Requirements.** Adopt the extension in Bank's existing public entry and the
 public geometry/topology entry, reusing their schemas and bindings. Include the
@@ -1602,6 +1839,33 @@ Its public contracts are then the baseline for one final Proprietary cutover.
 **Depends on:** completed Phases 1–5 and their integrated public candidate.
 **Result:** Proprietary uses the stable public extension and closes the actual
 retained spatial-discovery and scoped-invariant gaps.
+
+**Private implementation anchors.** Paths here are relative to the Proprietary
+repository, not this public checkout. In the existing 9.18.1 adoption tree,
+`crates/worth-cad-entry/src/integrity/{declaration,scope,evaluation}.rs` owns the
+installed rule; `Candidate::evaluate` calls the numerical/topology checking path.
+`crates/worth-topology/src/check/{spatial,index,contact}.rs` owns spatial candidate
+discovery and exact contact checking, and
+`crates/worth-math/src/proximity/` owns the pure spatial primitive. Follow
+`cad/docs/plans/platform-gaps.md` section 6 and
+`cad/docs/plans/query-9.18.1-adoption.md` for that lineage's actual limitation.
+Private checkouts have different layouts: the later boolean path includes
+`crates/worth-cad-entry/src/families/boolean/evaluation/arrangement.rs`, while
+older topology owners may have moved or been replaced. Resolve these symbols
+against the one selected adoption revision, recording the actual discovery,
+installed validation and numerical owners before edits. Never recreate an old
+owner just to match a stale path, or equate a pure spatial primitive's existence
+with managed Query integration.
+
+Cut over candidate discovery at the ordinary preparation and installed-rule
+receivers; preserve domain exact refinement, numerical validity and partitioned
+pair certification. The slice plan names each full-sweep/private-cache caller
+being replaced and the affected installed/oracle target from
+`cad/docs/plans/general-modeling.md` Acceptance 8 and
+`cad/docs/test-requirements/METABOSS.md`. Remove the displaced ordinary discovery
+path only as its real replacement is qualified. Full scans remain independent
+certification references. Public fixes return to their public owner and focused
+court; private adoption must not fork the generic lifecycle or publication engine.
 
 **Requirements.** Perform one integrated SDK pin/adoption sequence after public
 qualification, then replace CAD's warm full-sweep discovery and contact-check
@@ -1664,6 +1928,41 @@ final acceptance gate.
 - domain ownership of search meaning, exact predicates, and tolerances.
 
 ## Acceptance Evidence
+
+### Execution And Review Discipline
+
+Before each slice, select the smallest existing owner/court target that reaches
+the disputed boundary. Use repository iteration tooling under
+[Iteration Laws](../../docs/coding-guidelines/iteration_laws.md); resolve the real
+target/module prefix from its manifest and court registration rather than
+inventing a target or assuming a directory is a library. The external
+consumer-entry workspace's `worth-query-consumer-root` is currently a binary;
+the Query certification workspace has existing grouped `application_graph` and
+`runtime_world_branching` targets. Keep pure value tests and local verifier tests
+in their narrow owning targets. New integration scenarios belong in existing
+court families, without a fresh binary or compiler session per hostile case.
+
+Focused development runs the affected behavior and its smallest honest boundary
+smoke. Phase closure adds applicable provider/public integration, compiled facade
+examples, required boundary/context, formatting and scoped line-cap checks.
+Scale courts belong to the `cost` category; expensive private/METABOSS or external
+oracle work uses its named acceptance lane. They still gate the phase that
+claims their result, but do not rerun on unrelated local corrections. Reuse
+accepted predecessor evidence unless a changed boundary invalidates it.
+State the workload, selected basis, cold/warm posture, scale axis, expected growth
+and measurement boundary before collecting cost evidence. Do not fit exact-count
+goldens or add speculative resource-accounting matrices.
+
+Review checks the final production/test diff against the authority path above,
+the independent oracle and the intended typed cause. Successful setup, actual
+callback reach, publication posture and physical release must be distinguishable.
+Compile-fail evidence is reserved for valuable public construction guarantees,
+paired with a valid example and consolidated compilation. A documentation-only
+change verifies paths, symbols, links and contract consistency without compiling
+runtime worlds. These rules apply Testing Laws 2–3, 6–10, 15, 18–20 and 24–28;
+they introduce no evidence ledger or required test count.
+
+### Milestone Closure
 
 All six phases must close. Bank, public geometry and the nonspatial provider use
 the real facade; Proprietary then adopts that integrated public result in Phase
