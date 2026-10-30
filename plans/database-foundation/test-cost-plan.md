@@ -373,3 +373,42 @@ during the coordinator's controlled comparison. B3+ constructor/setup work and
 B4.3 require Phase 3 scope agreement. The controlled-comparison timing hold has
 been released. B4.0 runtime acceptance uses the focused real-tool fixture and
 explicit phase-end checks.
+
+### B4.2 focused native build selection
+
+Boundary review: `CostGate` already owns suite predicates; Cargo metadata owns
+package/target identity. Today `nextest_build.build` obtains that metadata but
+unconditionally builds every workspace target before `SuiteQueries` applies
+those predicates. The existing CargoRunner declares/checks required units and
+must remain the only compilation boundary. No new ownership registry is needed.
+Compiler fixture/executable prerequisites still derive from selected test cases.
+
+The first bounded owner journey exposed a second broad step: the lexical source
+census ran before Cargo metadata and spent minutes scanning unrelated Root
+sources. It subsequently built the owner target and passed the selected case,
+then was interrupted while repeating that broad scan for final aggregation.
+Preserve the actual inner build/test/CPU observations and incomplete outer
+capture; it is not a completed lane. Resolve metadata first, then check the requested packages and their
+resolved transitive workspace dependencies before the only compiling command.
+Check dependency testkits too; missing dependency resolution refuses. The final
+census uses the same explicit source scope. Full qualification still checks all
+workspace sources. This is scoped source selection, not a persisted cache or a
+replacement enforcement lane.
+
+Plan: resolve requested gate predicates against Cargo metadata before nextest's
+binary prebuild; a library-only owner uses its package and `--lib`, other gate
+requests use only their selected packages. Explicit full landing keeps the
+existing workspace/all-target inventory and complete membership proof. Provide
+the native runner an explicit package/target selection for direct owner requests;
+an arbitrary case filter alone cannot infer a Cargo owner and retains its
+existing build scope. Preserve default features, committed profiles/configuration
+and the pre-execution unit graph declaration. Scope receipts describe selection,
+never compiler output hashes. A scoped inventory must remain labeled partial
+against the workspace; it must not retire unrelated scheduling identities or
+replace the canonical complete census. Existing full qualification is unchanged.
+
+Acceptance: focused command/selection tests, partial/full coverage and retained
+history tests, then one real root owner-target build/run showing only that owner
+test executable and required dependencies. Use the existing target directory;
+no ignored/scale/UI or durability campaign. B4.3 identity and B4.5 default risk
+tiering remain separate. Root owns the external B4.1 instruction cleanup.
