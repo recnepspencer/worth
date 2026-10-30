@@ -14,7 +14,7 @@ def validate_landing_plan(repo):
     observed = subprocess.run([sys.executable, "-I", str(checker),
                                "--repository", str(Path(repo).resolve()),
                                "--external", str(Path(__file__).resolve()),
-                               "--check-only", "--root-pending"],
+                               "--check-only"],
                               capture_output=True, text=True)
     if observed.returncode:
         raise SystemExit("landing validation failed:" + observed.stdout + observed.stderr)
@@ -30,10 +30,10 @@ def main():
 
 
 class LandingPlanHookTests(unittest.TestCase):
-    def test_hook_uses_repository_checker_root_pending_and_no_metadata(self):
+    def test_hook_uses_repository_checker_without_metadata_or_temporary_modes(self):
         self.assertEqual(planner_hook_violations(ast.parse(PLANNER)), [])
         for old, new in [('str(checker)', '"cargo"'),
-                         ('"--root-pending"', '"--unproved-root"'),
+                         ('"--check-only"]', '"--check-only", "--unmeasured-mode"]'),
                          ('"--check-only"', '"--emit-output"'),
                          ('Path(repo).resolve() /', 'Path("elsewhere").resolve() /')]:
             with self.subTest(change=new):

@@ -4,14 +4,16 @@ import copy
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from landing_plan import (BANK, BANK_LANDING, QUERY, QUERY_LANDING, ROOT, STORE, STORE_LANDING,
+from landing_plan import (BANK, BANK_LANDING, QUERY, QUERY_LANDING, ROOT, ROOT_LANDING, STORE, STORE_LANDING,
                           captured_gate_command, configuration, consumer_document_lanes, gate_contract,
                           phase34_violations, violations)
 
 
 def workspaces():
-    return {ROOT: ['root: cargo test --workspace'], BANK: [BANK_LANDING, 'bank: clippy-bank'],
+    return {ROOT: [ROOT_LANDING, 'root: cargo clippy --workspace', 'root: cargo check product'],
+            BANK: [BANK_LANDING, 'bank: clippy-bank'], 'other/Cargo.toml': ['other: unchanged'],
             STORE: [STORE_LANDING, 'store: cargo clippy --workspace',
                     'store: scripts (phase34 dependency-direction, formal-toolchain, integrity)'],
             QUERY: [QUERY_LANDING, 'query: python scripts/ci/query_gate.py lint-query']}
@@ -30,15 +32,18 @@ class LandingPlanTests(unittest.TestCase):
                                    (QUERY, QUERY_LANDING), (BANK, BANK_LANDING),
                                    (BANK, 'bank: cargo test --workspace'),
                                    (BANK, 'bank: python scripts/ci/query_gate.py bank-process'),
-                                   (BANK, 'bank: python scripts/ci/query_gate.py doc')]:
+                                   (BANK, 'bank: python scripts/ci/query_gate.py doc'),
+                                   (ROOT, 'root: cargo test --workspace'), (ROOT, ROOT_LANDING),
+                                   (ROOT, 'root: python scripts/ci/query_gate.py root-doc'),
+                                   (ROOT, ROOT_LANDING+' root-scale')]:
             altered = copy.deepcopy(expected)
             altered[manifest].append(addition)
             with self.subTest(addition=addition):
                 self.assertTrue(violations(altered))
 
-    def test_root_and_warning_descriptors_stay_outside_this_cutover(self):
+    def test_unrelated_workspace_and_all_root_structural_descriptors_are_preserved(self):
         before = workspaces()
-        for manifest in (ROOT,):
+        for manifest in ('other/Cargo.toml',):
             changed = copy.deepcopy(before)
             changed[manifest] = ['new plan']
             self.assertTrue(any('unapproved workspace' in row for row in violations(changed, before)))
@@ -48,16 +53,22 @@ class LandingPlanTests(unittest.TestCase):
         changed = copy.deepcopy(before)
         changed[BANK].remove('bank: clippy-bank')
         self.assertTrue(violations(changed, before))
+        changed = copy.deepcopy(before)
+        changed[ROOT].remove('root: cargo check product')
+        self.assertTrue(any('Root structural' in row for row in violations(changed, before)))
 
-    def test_root_pending_refuses_unproved_cutover_and_gate_aliases_come_from_source(self):
+    def test_every_gate_contract_comes_from_source_and_root_keeps_compile_fail_selected(self):
         contracts = gate_contract(Path(__file__).resolve().parents[2])
-        self.assertEqual(violations(workspaces(), contracts=contracts, root_pending=True), [])
-        for workspace in ('bank', 'query'):
+        self.assertEqual(violations(workspaces(), contracts=contracts), [])
+        for workspace in ('root', 'bank', 'query'):
             self.assertEqual(contracts[workspace]['expanded'][-1], workspace+'-doc')
             self.assertFalse(any(name.endswith('-scale') for name in contracts[workspace]['expanded']))
-        changed = workspaces()
-        changed[ROOT] = ['root: python scripts/ci/root_gate.py']
-        self.assertTrue(any('Root cutover is pending' in row for row in violations(changed, root_pending=True)))
+        self.assertIn('root-compile-fail', contracts['root']['expanded'])
+        import root_gate
+        with patch.object(root_gate, 'ROOT_SUITES', tuple(name for name in root_gate.ROOT_SUITES
+                                                       if name != 'root-compile-fail')):
+            with self.assertRaisesRegex(ValueError, 'Root default must select every normal category'):
+                gate_contract(Path(__file__).resolve().parents[2])
         contracts['bank']['descriptor'] = 'bank: python scripts/ci/query_gate.py renamed-by-source'
         self.assertTrue(violations(workspaces(), contracts=contracts))
 
@@ -96,6 +107,16 @@ class LandingPlanTests(unittest.TestCase):
             self.assertIn('not runtime or completion', observed['scope'])
             with self.assertRaisesRegex(ValueError, 'differs'):
                 captured_gate_command(path, 'bank', ['bank'])
+
+    def test_root_command_uses_default_source_selection_without_claiming_green_execution(self):
+        import json
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary)/'gate.log'
+            path.write_text('Command: '+json.dumps(['python', 'scripts/ci/root_gate.py', '--census'])+
+                            '\nHEAD: captured-head\nStart: captured-start\nExit code: 1\n')
+            observed = captured_gate_command(path, 'root', ['root-rest','root-compile-fail','root-doc'])
+            self.assertEqual(observed['captured'], ['root-rest','root-compile-fail','root-doc'])
+            self.assertIn('not runtime or completion', observed['scope'])
 
     def test_phase34_retains_only_dependency_direction_and_failure_propagation(self):
         source = ('& python (Join-Path $root "scripts/ci/check_worth_store_phase34_dependencies.py")\n'

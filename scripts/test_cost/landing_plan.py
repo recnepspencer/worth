@@ -14,6 +14,7 @@ BANK = 'workspaces/worth-query-bank-world/Cargo.toml'
 STORE_LANDING = 'store: python scripts/test_cost/run_lane.py --workspace store --cargo-profile ci-test'
 QUERY_LANDING = 'query: python scripts/ci/query_gate.py query-landing'
 BANK_LANDING = 'bank: python scripts/ci/query_gate.py bank-landing'
+ROOT_LANDING = 'root: python scripts/ci/root_gate.py'
 DOC_WORKSPACES = ((ROOT, 'root'), (QUERY, 'query'), (BANK, 'bank'))
 
 
@@ -70,6 +71,7 @@ def gate_contract(repository):
     """Read the gate's actual alias and category declarations without running it."""
     sys.path.insert(0, str(Path(repository).resolve() / 'scripts/ci'))
     from query_gate_cost import LANDING_ALIASES, landing_suites, workspace_of
+    import root_gate
     from workspace import WORKSPACES
     contracts = {}
     for alias, expansion in LANDING_ALIASES.items():
@@ -87,10 +89,16 @@ def gate_contract(repository):
                             'descriptor': f'{owner}: python scripts/ci/query_gate.py {alias}'}
     if not {'query', 'bank'} <= contracts.keys():
         raise ValueError('Query and Bank require complete landing aliases')
+    root_suites = tuple(root_gate.ROOT_SUITES)
+    if root_suites != (*landing_suites('root'), 'root-doc') or len(set(root_suites)) != len(root_suites):
+        raise ValueError('Root default must select every normal category and its own documentation exactly once')
+    entrypoint = Path(root_gate.__file__).resolve().relative_to(Path(repository).resolve()).as_posix()
+    contracts['root'] = {'manifest': WORKSPACES['root'], 'entrypoint': entrypoint,
+                         'expanded': list(root_suites), 'descriptor': f'root: python {entrypoint}'}
     return contracts
 
 
-def violations(workspaces, before=None, source=None, contracts=None, root_pending=False):
+def violations(workspaces, before=None, source=None, contracts=None):
     result = []
     store, query = workspaces.get(STORE, []), workspaces.get(QUERY, [])
     if store.count(STORE_LANDING) != 1:
@@ -103,7 +111,8 @@ def violations(workspaces, before=None, source=None, contracts=None, root_pendin
         result.append('C9 ignored-phase script must not be a normal landing descriptor')
     if source is not None and not re.search(r'C9[^\n]*scheduled-only[^\n]*excluded', source):
         result.append('C9 scheduled-only exclusion must be explicit in the landing plan')
-    contracts = contracts or {'query': {'descriptor': QUERY_LANDING}, 'bank': {'descriptor': BANK_LANDING}}
+    contracts = contracts or {'query': {'descriptor': QUERY_LANDING}, 'bank': {'descriptor': BANK_LANDING},
+                              'root': {'descriptor': ROOT_LANDING}}
     if query.count(contracts['query']['descriptor']) != 1:
         result.append('Query must select query-landing exactly once')
     if any(value in lane for lane in query for value in ('query-execution,', 'query-process,', 'query_gate.py doc', 'observable-workflow', 'query-scale', 'cargo test')):
@@ -118,18 +127,27 @@ def violations(workspaces, before=None, source=None, contracts=None, root_pendin
         result.append('Bank retains serial, overlapping or scheduled selections')
     if not any('clippy-bank' in lane or 'lint-bank' in lane for lane in bank):
         result.append('Bank clippy descriptor disappeared')
-    if root_pending and workspaces.get(ROOT, []).count('root: cargo test --workspace') != 1:
-        result.append('Root cutover is pending complete execution proof; retain its current serial entry')
+    root = workspaces.get(ROOT, [])
+    if root.count(contracts['root']['descriptor']) != 1:
+        result.append('Root must select its complete default gate exactly once')
+    if any('cargo test' in lane or 'query_gate.py root' in lane or 'root_gate.py ' in lane for lane in root):
+        result.append('Root retains serial, overlapping or scheduled selections')
+    if not any('clippy' in lane for lane in root):
+        result.append('Root clippy descriptor disappeared')
     if before is not None:
         if set(workspaces) != set(before):
             result.append('workspace ownership keys changed outside the authorized cutover')
         for manifest in before:
-            if manifest not in (STORE, QUERY, BANK) and workspaces.get(manifest) != before[manifest]:
+            if manifest not in (STORE, QUERY, BANK, ROOT) and workspaces.get(manifest) != before[manifest]:
                 result.append('unapproved workspace descriptors changed: ' + manifest)
-        for manifest in (STORE, QUERY, BANK):
+        for manifest in (STORE, QUERY, BANK, ROOT):
             previous = [lane for lane in before[manifest] if 'clippy' in lane or 'lint-' in lane]
             if any(lane not in workspaces[manifest] for lane in previous):
                 result.append('existing warning/clippy descriptor changed: ' + manifest)
+        previous_root = [lane for lane in before[ROOT]
+                         if lane not in ('root: cargo test --workspace', contracts['root']['descriptor'])]
+        if [lane for lane in root if lane != contracts['root']['descriptor']] != previous_root:
+            result.append('existing Root structural or product-check descriptor changed')
     return result
 
 
@@ -167,10 +185,10 @@ def planner_hook_violations(tree):
     expected = ast.parse('''[sys.executable, "-I", str(checker),
                             "--repository", str(Path(repo).resolve()),
                             "--external", str(Path(__file__).resolve()),
-                            "--check-only", "--root-pending"]''', mode='eval').body
+                            "--check-only"]''', mode='eval').body
     if len(calls) != 1 or calls[0].func.attr != 'run' or not calls[0].args or ast.dump(
             calls[0].args[0], include_attributes=False) != ast.dump(expected, include_attributes=False):
-        return ['planner handoff must run its repository checker silently with Root pending, without metadata']
+        return ['planner handoff must run its repository checker silently, without metadata']
     assignments = [node for node in hook.body if isinstance(node, ast.Assign)
                    and any(isinstance(target, ast.Name) and target.id == 'checker' for target in node.targets)]
     expected_checker = ast.parse('Path(repo).resolve() / "scripts/test_cost/landing_plan.py"', mode='eval').body
@@ -203,10 +221,17 @@ def captured_gate_command(path, workspace, expanded):
     if any(headers[name] is None for name in ('Command', 'HEAD', 'Start')):
         raise ValueError('gate command capture has no original command provenance')
     command = json.loads(headers['Command'])
-    indices = [index for index, value in enumerate(command) if Path(value).name == 'query_gate.py']
-    if len(indices) != 1 or indices[0] + 1 >= len(command):
+    script = 'root_gate.py' if workspace == 'root' else 'query_gate.py'
+    indices = [index for index, value in enumerate(command) if Path(value).name == script]
+    if len(indices) != 1:
         raise ValueError('not an explicit workspace gate command')
-    selected = command[indices[0] + 1].split(',')
+    arguments = command[indices[0]+1:]
+    if workspace == 'root' and (not arguments or arguments[0].startswith('--')):
+        selected = list(expanded)
+    elif arguments:
+        selected = arguments[0].split(',')
+    else:
+        raise ValueError('workspace gate command omits its selection')
     if selected != list(expanded):
         raise ValueError('landing alias differs from captured explicit command: ' + workspace)
     return {'workspace': workspace, 'capture': str(path), 'expanded': list(expanded),
@@ -222,7 +247,6 @@ def main():
     parser.add_argument('--repository', type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument('--output', type=Path)
     parser.add_argument('--check-only', action='store_true', help='silent successful validation for the external planner')
-    parser.add_argument('--root-pending', action='store_true', help='refuse Root cutover before its complete proof')
     parser.add_argument('--gate-selection', action='append', default=[], metavar='WORKSPACE=PATH')
     parser.add_argument('--gate-command', action='append', default=[], metavar='WORKSPACE=LOG')
     args = parser.parse_args()
@@ -230,7 +254,7 @@ def main():
     before = configuration(args.before)[0] if args.before else None
     contracts = gate_contract(args.repository)
     errors = violations(values['WORKSPACES'], before['WORKSPACES'] if before else None, source,
-                        contracts, args.root_pending)
+                        contracts)
     errors += planner_hook_violations(tree)
     phase34 = args.phase34 or args.repository / 'scripts/ci/verify_worth_store_phase34.ps1'
     errors += phase34_violations(phase34.read_text(encoding='utf-8'))
@@ -240,29 +264,27 @@ def main():
     errors += route_errors
     gate_sets = []
     if args.gate_selection or args.gate_command:
-        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ci'))
-        from query_gate_cost import expand_suites
         for value in args.gate_selection:
             workspace, separator, path = value.partition('=')
-            if not separator or workspace not in ('query', 'bank'):
-                raise ValueError('gate selection input must be query=PATH or bank=PATH')
+            if not separator or workspace not in contracts:
+                raise ValueError('gate selection input must name a governed gate workspace')
             observed = json.loads(Path(path).read_text())
             actual = list(observed['suites']) + [workspace+'-doc']
-            expanded = expand_suites([workspace+'-landing'])
+            expanded = contracts[workspace]['expanded']
             if expanded != actual:
                 errors.append('landing alias differs from the actual captured suite order: ' + workspace)
             gate_sets.append({'workspace': workspace, 'capture': path, 'expanded': expanded, 'captured': actual})
     if args.gate_command:
         for value in args.gate_command:
             workspace, separator, path = value.partition('=')
-            if not separator or workspace not in ('query', 'bank'):
-                raise ValueError('gate command input must be query=LOG or bank=LOG')
-            gate_sets.append(captured_gate_command(Path(path), workspace, expand_suites([workspace+'-landing'])))
+            if not separator or workspace not in contracts:
+                raise ValueError('gate command input must name a governed gate workspace')
+            gate_sets.append(captured_gate_command(Path(path), workspace, contracts[workspace]['expanded']))
     result = {'status': 'pass' if not errors else 'fail', 'violations': errors,
               'scope': 'Read-only literal external WORKSPACES and pure document routing; no Cargo metadata execution.',
               'external': str(args.external.resolve()), 'sha256': hashlib.sha256(args.external.read_bytes()).hexdigest(),
               'workspaces': values['WORKSPACES'], 'consumer_document_routes': routes,
-              'source_gate_contracts': contracts, 'actual_gate_aliases': gate_sets, 'root_pending': args.root_pending}
+              'source_gate_contracts': contracts, 'actual_gate_aliases': gate_sets}
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, indent=2)+'\n', encoding='utf-8')
