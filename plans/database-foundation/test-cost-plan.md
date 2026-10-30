@@ -516,3 +516,12 @@ including five version dependencies, remains represented; the actual 153-package
 closure is unchanged. Store readers and all Cargo manifests/locks are restored
 unchanged. The broad Store test-support dependency was rejected and is absent
 from the accepted net tree. This is one pilot, not a completed snapshot migration.
+
+Root's accepted cohort `06c87ea1e1` extends that pilot to six semantic cases in
+the same physical audience: 48 sources, 25 dependencies, 42 remaining snapshots
+and six semantic readers. Native identities are unchanged. The registry grew to
+429 lines during the pilot; its assigned owner compacted dependency objects to
+readable single-line rows, preserving parsed values/order apart from the approved
+source/authority changes. It is now 300 lines. This closes that line-limit finding
+without a new registry scheme. The cohort is bounded, not a completed migration
+of the other compiler snapshots or new current whole-workspace qualification.
