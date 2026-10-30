@@ -15,7 +15,7 @@ const PROBE_TEST: &str = "WORTH_STORE_BACKEND_ALLOCATION_PROBE";
 /// True in the child that runs `test` alone, where its probe may count. In
 /// the parent, runs that child, asserts it passed, and returns false: the
 /// test returns without probing. `module` is the test's `module_path!()`.
-pub(super) fn alone_in_its_process(module: &str, test: &str) -> bool {
+pub(in crate::filesystem_media) fn alone_in_its_process(module: &str, test: &str) -> bool {
     let in_crate = module.split_once("::").map_or("", |(_, path)| path);
     let test = format!("{in_crate}::{test}");
     let test = test.as_str();
@@ -38,7 +38,7 @@ pub(super) fn alone_in_its_process(module: &str, test: &str) -> bool {
 
 /// The bytes `action` allocates, counted once over its first run. Call it
 /// only where `alone_in_its_process` returned true.
-pub(super) fn allocated_bytes_during(action: impl FnOnce()) -> usize {
+pub(in crate::filesystem_media) fn allocated_bytes_during(action: impl FnOnce()) -> usize {
     assert!(
         std::env::var_os(PROBE_TEST).is_some(),
         "an allocation probe counts only in a test running alone"
