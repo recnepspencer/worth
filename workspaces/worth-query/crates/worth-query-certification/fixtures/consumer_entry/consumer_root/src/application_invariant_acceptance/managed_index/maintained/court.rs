@@ -315,7 +315,7 @@ fn require_violation<D: std::fmt::Debug, R: std::fmt::Debug>(
     assert_eq!(identity.rule_id.as_str(), "AtMostOneTakenName");
 }
 
-fn accounted_request() -> Arc<worth_execution::ExecutionResourceLease<'static>> {
+pub(super) fn accounted_request() -> Arc<worth_execution::ExecutionResourceLease<'static>> {
     use std::num::NonZeroUsize;
     use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,

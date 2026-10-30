@@ -30,6 +30,20 @@ impl<'source> ManagedIndexSourceProjection<'source> {
         row: EntityId,
         column: usize,
     ) -> Result<Option<&AspectValue>, Denial> {
+        let field = self
+            .program
+            .fields()
+            .get(column)
+            .ok_or(Definition::InvalidExpression)?;
+        self.field_at(row, self.program.row_kind(), field)
+    }
+
+    pub(super) fn field_at(
+        &self,
+        row: EntityId,
+        kind: crate::identity::data::KindId,
+        field: &super::ManagedIndexSourceField,
+    ) -> Result<Option<&AspectValue>, Denial> {
         if !self.program.0.authority.admits(&self.audience) {
             return Err(Definition::OutsideDeclaredAccess.into());
         }
@@ -41,15 +55,10 @@ impl<'source> ManagedIndexSourceProjection<'source> {
             .relations
             .entity_kind(row)
             .map_err(|cause| Denial::Structural(self.relations.read_budget().refusal(cause)))?
-            != self.program.row_kind()
+            != kind
         {
             return Err(Definition::InvalidMemberDomain.into());
         }
-        let field = self
-            .program
-            .fields()
-            .get(column)
-            .ok_or(Definition::InvalidExpression)?;
         let state = self
             .aspects
             .entity_aspect_state(row)

@@ -522,9 +522,21 @@ original-request cancellation and retry, immediate original-funded staging/basis
 release, and physical allocator balance after all owners close. Parent decision
 reads require their declared portable query and the original operation scope and
 principal; installation and runtime hostile controls prove both boundaries.
-Box integration, cold invariant-root eviction/reconstruction, lifecycle/affinity
-hostile controls, materialization/recovery composition and the required
-1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
+Direct endpoint box integration is also qualified through genuine Vertex/Edge
+authoring in that same installed catalog. Vertex motion pulls back through both
+endpoint relations and all affected scopes before the first invariant; unopened
+B refuses the conflicting enclosure and accepts its valid twin. Discriminating
+probes prove enclosure refits, rewiring detaches the old endpoint, and two actual
+relations to the same vertex preserve multiplicity and refuse ExactlyOne with
+the original typed projection cause. Original-request cancellation/retry, retained
+result isolation, immediate staged funding release and all-owner allocator balance
+pass. Source rows and inverse postings retain individually funded immutable AVL
+cells; Source identity container grants follow their live coordinates rather than
+pinning unrelated decision-read batches. This qualifies direct unguarded endpoint
+projections and integer closed-box enclosure rules, not exact segment geometry.
+Cold invariant-root eviction/reconstruction, remaining lifecycle/affinity hostile
+controls, materialization/recovery composition and the required 1,000/2,000
+whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication
 and final-owner release across that path.
 

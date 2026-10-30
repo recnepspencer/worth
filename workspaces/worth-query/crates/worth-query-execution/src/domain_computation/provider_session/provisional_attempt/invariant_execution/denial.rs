@@ -180,6 +180,21 @@ impl WorthQueryInvariantExecutionFailure {
     ) -> Self {
         Self::native_denied(NativeDenial::Staging(denial), detail)
     }
+    pub(crate) fn managed_source(
+        denial: worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::ManagedSource(denial), detail)
+    }
+    /// Original Source preparation cause, including the provider's owned error chain.
+    pub fn managed_source_denial(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial> {
+        match self.native.as_ref()? {
+            NativeDenial::ManagedSource(denial) => Some(denial),
+            _ => None,
+        }
+    }
     pub(crate) fn relation_law_denied(
         fields: worth_relational::facade::transactions::InvariantViolationFields,
         detail: impl Into<Arc<str>>,

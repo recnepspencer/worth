@@ -1,7 +1,7 @@
 //! A candidate read reborrows the actual observation and original request each time.
 mod projection;
 use super::{
-    invocation::decoded_provider, source::occurrences::project_row,
+    invocation::decoded_provider, source::projection::project_row,
     source::service::ManagedSourceRoot, WorthQueryManagedIndexProbeValue,
     WorthQueryManagedIndexWorkDenial,
 };

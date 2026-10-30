@@ -33,11 +33,7 @@ where
                     program,
                     rows,
                     occurrence,
-                    root.installed
-                        .source_read()
-                        .query()
-                        .read_graph()
-                        .projections(),
+                    root.installed.source_read().query().read_graph(),
                 )
                 .map_err(|cause| Denial::Native(cause.into_native()))?;
                 let row = WorthQueryApplicationProjectionRow::new(

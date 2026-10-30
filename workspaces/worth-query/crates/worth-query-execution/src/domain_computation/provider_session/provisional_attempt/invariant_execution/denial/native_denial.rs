@@ -17,13 +17,14 @@ pub(super) enum NativeDenial {
     Staging(RelationalTransactionStagingDenial),
     Allocation(ExecutionAllocationDenial),
     RelationLaw(Box<worth_relational::facade::transactions::InvariantViolationFields>),
+    ManagedSource(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
 }
 impl NativeDenial {
     pub(super) fn allocation(&self) -> Option<&ExecutionAllocationDenial> {
         match self {
             Self::Staging(denial) => denial.allocation_denial(),
             Self::Allocation(denial) => Some(denial),
-            Self::RelationLaw(_) => None,
+            Self::RelationLaw(_) | Self::ManagedSource(_) => None,
         }
     }
     pub(super) fn classification(&self) -> (Kind, Posture) {

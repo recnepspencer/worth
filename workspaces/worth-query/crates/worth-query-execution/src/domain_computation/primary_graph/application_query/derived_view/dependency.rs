@@ -17,6 +17,17 @@ pub(in crate::domain_computation::primary_graph::application_query) enum ViewDep
 }
 
 impl ViewDependency {
+    pub(in crate::domain_computation::primary_graph::application_query) fn entity(
+        &self,
+    ) -> EntityId {
+        match self {
+            Self::Entity(entity)
+            | Self::Aspect(entity, _)
+            | Self::Field(entity, _)
+            | Self::Adjacency(entity, _, _) => *entity,
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn retained_bytes(
         &self,
     ) -> usize {

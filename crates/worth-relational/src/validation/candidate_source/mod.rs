@@ -23,9 +23,12 @@ mod applied;
 pub(crate) mod routing;
 pub use preparation::{
     ManagedIndexSourceAvailability, ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
-    ManagedIndexSourceRows, ManagedIndexSourceScope, PreparedManagedIndexSourceRoot,
+    ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceRows, ManagedIndexSourceScope,
+    PreparedManagedIndexProjectionRead, PreparedManagedIndexSourceRoot,
 };
-pub use program::{ManagedIndexSourceField, ManagedIndexSourceProgram};
+pub use program::{
+    ManagedIndexSourceField, ManagedIndexSourceProgram, ManagedIndexSourceProjectionRoute,
+};
 pub use projection::ManagedIndexSourceProjection;
 
 pub(crate) use interpretation::{

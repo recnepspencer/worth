@@ -1,6 +1,6 @@
 //! Ordinary contribution authoring/install, reusing the existing catalog and provider.
 use super::{
-    authoring,
+    authoring, geometry,
     handler::{DecisionRead, Handler},
     mutation, prefix, query, rule,
     schema::*,
@@ -34,6 +34,7 @@ pub struct Configuration {
     prefix: Arc<prefix::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
+    geometry: geometry::Configuration,
 }
 impl WorthQueryApplicationContribution<Catalog> for Contribution {
     type Configuration = Configuration;
@@ -41,6 +42,7 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
         configuration: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        geometry::configure(configuration.geometry, setup)?;
         setup.managed_index::<prefix::PrefixIndex, _>(prefix::Provider(configuration.prefix))?;
         setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
@@ -65,7 +67,13 @@ impl ApplicationProgramDefinition<Catalog> for Program {
             ApplicationSharedRuleRef<Catalog, rule::ReservedName>,
             ApplicationCommitBoundary,
         >,
-        ApplicationRuleLeaf,
+        ApplicationRuleList<
+            ApplicationRuleAt<
+                ApplicationSharedRuleRef<Catalog, geometry::rule::ProbeContact>,
+                ApplicationCommitBoundary,
+            >,
+            ApplicationRuleLeaf,
+        >,
     >;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("managed-catalog.maintained-program.v1");
@@ -74,6 +82,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
             .native_action::<mutation::Binding>()
             .finish_action()
             .native_action::<authoring::Binding>()
+            .finish_action()
+            .native_action::<geometry::authoring::Binding>()
             .finish_action()
             .finish()]
     }
@@ -87,7 +97,27 @@ pub(super) fn install_decision_read(
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
 ) -> Host {
-    let world = install_root(prefix, Arc::clone(&rules), decision_read);
+    install_configured(
+        prefix,
+        rules,
+        decision_read,
+        geometry::Configuration::default(),
+    )
+}
+pub(super) fn install_geometry(
+    prefix: Arc<prefix::Calls>,
+    rules: Arc<rule::Calls>,
+    geometry: geometry::Configuration,
+) -> Host {
+    install_configured(prefix, rules, DecisionRead::Declared, geometry)
+}
+fn install_configured(
+    prefix: Arc<prefix::Calls>,
+    rules: Arc<rule::Calls>,
+    decision_read: DecisionRead,
+    geometry: geometry::Configuration,
+) -> Host {
+    let world = install_root(prefix, Arc::clone(&rules), decision_read, geometry);
     authoring::populate(&world, &rules);
     rules.records.lock().unwrap().clear();
     world
@@ -96,11 +126,12 @@ fn install_root(
     prefix: Arc<prefix::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
+    geometry: geometry::Configuration,
 ) -> Host {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin().with_schema(&declaration).validated_program().unwrap(),
-        declaration, (Configuration { prefix, rules, decision_read },),
+        declaration, (Configuration { prefix, rules, decision_read, geometry },),
         ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191919").unwrap(),
         super::super::super::resources::application_limits(),
         |_, graph, installed| {

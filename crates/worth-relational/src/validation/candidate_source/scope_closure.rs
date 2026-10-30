@@ -14,6 +14,8 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::RecordRef;
 use crate::validation::data::{StructuralReadError, StructuralRelationView};
 
+mod projections;
+
 /// Support includes negative inverse reads. Scope discovery does not depend
 /// on public sessions, retained provider roots, or positive query matches.
 pub(crate) struct PreparedManagedIndexScopeClosure {
@@ -59,6 +61,15 @@ pub(crate) fn discover(
         closure.scopes.entry(scope).or_default();
     }
     let mut rows = affected.targets;
+    projections::pullback(
+        registry,
+        program,
+        records,
+        adjacency,
+        [&mut old, &mut new],
+        &mut closure,
+        &mut rows,
+    )?;
     // Lifecycle pullback intentionally excludes unchanged-kind scalar writes.
     // Route every actually changed row endpoint, including owner-induced edits,
     // through the same inverse Source program on BOTH real physical sides.

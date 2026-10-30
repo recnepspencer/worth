@@ -3,7 +3,10 @@ use super::{
     required_kind, WorthQueryPrimaryFieldLayout, WorthQueryPrimaryGraphInstallationDenial as Denial,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use worth_foundational::facade::{AspectFieldLocator, RelationDirection};
+
+mod membership;
+mod projection;
+use worth_foundational::facade::RelationDirection;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryRootPathTraversal, ErasedApplicationQueryDefinition,
 };
@@ -63,8 +66,10 @@ pub(super) fn lower(
             version: basis.1,
             name: format!("managed-index-source::{}", definition.parts().name),
         };
-        let nodes = path(source, entities, relations)?;
-        let projection = projection(source, fields)?;
+        let nodes = membership::path(source, entities, relations)?;
+        let (next_registry, projection, routes) =
+            projection::lower(registry, source, &identity, entities, relations, fields)?;
+        registry = next_registry;
         registry = registry
             .register_derived_relations(vec![DerivedRelationDefinitionParts {
                 identity: identity.clone(),
@@ -78,102 +83,11 @@ pub(super) fn lower(
             .derived_relation(&identity)
             .ok_or_else(|| unsupported(source_name))?;
         let program = registry
-            .bind_managed_index_source(
-                &handle,
-                projection
-                    .into_iter()
-                    .map(|locator| ManagedIndexSourceField { locator })
-                    .collect(),
-            )
+            .bind_managed_index_source(&handle, projection, routes)
             .map_err(|_| unsupported(source_name))?;
         programs.insert(definition.parts().name.clone(), program);
     }
     Ok((registry, programs))
-}
-
-fn path(
-    source: &ErasedApplicationQueryDefinition,
-    entities: &BTreeMap<String, KindId>,
-    relations: &BTreeMap<String, KindId>,
-) -> Result<Vec<Node>, Denial> {
-    if !source.predicates().is_empty()
-        || !source.parameters().is_empty()
-        || source.root_paths().is_empty()
-        || source.disclosure().posture() != worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture::Public
-        || !source.disclosure().rules().is_empty()
-    {
-        return Err(unsupported(source.name()));
-    }
-    let mut nodes = Vec::new();
-    let mut union = None;
-    for path in source.root_paths() {
-        if path.start_entity() != source.scope_entity()
-            || path.terminal_entity() != source.root_entity()
-            || !path.guards().is_empty()
-            || path.steps().is_empty()
-        {
-            return Err(unsupported(source.name()));
-        }
-        let mut composed = None;
-        for step in path.steps() {
-            if step.traversal() != ApplicationQueryRootPathTraversal::OneHop {
-                return Err(unsupported(source.name()));
-            }
-            let leaf = nodes.len();
-            nodes.push(Node::Stored {
-                relation: required_kind(relations, step.relation())?,
-                from: required_kind(entities, step.from())?,
-                to: required_kind(entities, step.to())?,
-            });
-            let leaf = if step.direction() == RelationDirection::Reverse {
-                nodes.push(Node::Reverse { input: leaf });
-                nodes.len() - 1
-            } else {
-                leaf
-            };
-            composed = Some(if let Some(left) = composed {
-                nodes.push(Node::Compose { left, right: leaf });
-                nodes.len() - 1
-            } else {
-                leaf
-            });
-        }
-        let right = composed.ok_or_else(|| unsupported(source.name()))?;
-        union = Some(if let Some(left) = union {
-            nodes.push(Node::Union { left, right });
-            nodes.len() - 1
-        } else {
-            right
-        });
-    }
-    Ok(nodes)
-}
-
-fn projection(
-    source: &ErasedApplicationQueryDefinition,
-    fields: &BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
-) -> Result<Vec<AspectFieldLocator>, Denial> {
-    if !source.result_shape().relations().is_empty() {
-        return Err(unsupported(source.name()));
-    }
-    source
-        .result_shape()
-        .fields()
-        .iter()
-        .map(|field| {
-            if field.entity() != source.root_entity() {
-                return Err(unsupported(source.name()));
-            }
-            fields
-                .get(&(
-                    field.entity().to_owned(),
-                    field.aspect().to_owned(),
-                    field.field().to_owned(),
-                ))
-                .map(|layout| layout.locator.clone())
-                .ok_or_else(|| unsupported(source.name()))
-        })
-        .collect()
 }
 
 fn unsupported(name: &str) -> Denial {

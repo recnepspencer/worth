@@ -415,9 +415,13 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Reverse a business change | Declare a domain action with its required source, authorization and effects, then execute it through the ordinary owning request path. | [Owning actions](build-an-application.md#53-execute-through-the-program) |
 
 Use the committed construction and explicit cold-refusal contract above.
-Structural candidate Source loans do not grant scalar or managed-index reads;
-managed-index Source requirements on invariants return
-`UnsupportedInvariantSource` at installation. A retained logical Source during
+Structural candidate Source loans do not grant scalar or managed-index reads.
+Declare an invariant's managed Source requirement separately: supported scalar
+and direct-endpoint Sources use the same maintained resource through committed
+DecisionReader and candidate invariant reads. Unsupported projection, predicate
+and ordering shapes return `UnsupportedInvariantSource` at installation. See
+[maintained Source authoring](build-an-application.md#maintain-a-provider-source-for-an-invariant).
+A retained logical Source during
 generated-output suspension does not make a current public physical read Ready.
 See the
 [current limits](build-an-application.md#prepare-candidate-structural-source-changes)

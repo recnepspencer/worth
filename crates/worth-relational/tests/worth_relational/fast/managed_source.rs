@@ -80,7 +80,11 @@ fn registry() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
         }])
         .unwrap();
     let program = registry
-        .bind_managed_index_source(&registry.derived_relation(&identity).unwrap(), vec![])
+        .bind_managed_index_source(
+            &registry.derived_relation(&identity).unwrap(),
+            vec![],
+            vec![],
+        )
         .unwrap();
     (registry, program)
 }

@@ -21,6 +21,14 @@ impl From<DerivedRelationReadDenial> for ManagedIndexSourcePreparationDenial {
 }
 
 impl ManagedIndexSourcePreparationDenial {
+    /// Borrow the provider's original owned failure without changing its custody.
+    pub fn provider_failure(&self) -> Option<&super::ManagedIndexSourceProviderFailure> {
+        match self {
+            Self::Provider(cause) => Some(cause),
+            _ => None,
+        }
+    }
+
     pub(super) fn execution_cause(
         &self,
     ) -> Option<crate::execution::RelationalExecutionDenialCause> {

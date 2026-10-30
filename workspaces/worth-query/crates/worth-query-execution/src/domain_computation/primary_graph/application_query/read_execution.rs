@@ -206,3 +206,5 @@ pub(super) fn read_prepared_root_rows(
 
 mod continuation_page;
 pub(super) use continuation_page::read_continuation_page;
+
+pub(in crate::domain_computation::primary_graph::application_query) use tree_materialization::validate_relation_cardinality;

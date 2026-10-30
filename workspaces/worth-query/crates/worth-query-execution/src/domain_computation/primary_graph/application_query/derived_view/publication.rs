@@ -87,12 +87,7 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
             .entry(dependency.clone())
             .or_default()
             .insert(target.clone());
-        let entity = match dependency {
-            ViewDependency::Entity(entity)
-            | ViewDependency::Aspect(entity, _)
-            | ViewDependency::Field(entity, _)
-            | ViewDependency::Adjacency(entity, _, _) => *entity,
-        };
+        let entity = dependency.entity();
         self.entity
             .entry(entity)
             .or_default()
@@ -146,12 +141,7 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
                     self.exact.remove(dependency);
                 }
             }
-            let entity = match dependency {
-                ViewDependency::Entity(entity)
-                | ViewDependency::Aspect(entity, _)
-                | ViewDependency::Field(entity, _)
-                | ViewDependency::Adjacency(entity, _, _) => *entity,
-            };
+            let entity = dependency.entity();
             if let Some(targets) = self.entity.get_mut(&entity) {
                 targets.remove(&target);
                 if targets.is_empty() {

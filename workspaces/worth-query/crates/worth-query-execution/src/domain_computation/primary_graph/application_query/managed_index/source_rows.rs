@@ -107,12 +107,8 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
                 )
             }
             SourceImageRows::Maintained(rows) => {
-                // Rank enumeration is a cold-build operation. Warm updates and
-                // queries use the issued full-generation occurrence coordinate.
-                self.control.checkpoint(
-                    u64::try_from(ordinal)
-                        .map_err(|_| self.control.refuse(Stop::CapacityOverflow))?,
-                )?;
+                // The owned ordered map resolves canonical rank without
+                // visiting or charging every preceding Source occurrence.
                 let (entity, node) = rows
                     .at(ordinal)
                     .ok_or_else(|| self.control.refuse(Stop::SourceSlotUnavailable))?;

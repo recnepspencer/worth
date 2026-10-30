@@ -17,7 +17,7 @@ impl SourceProgramPostings {
                 for kind in [source.scope_kind(), source.row_kind()] {
                     postings.entities.entry(kind).or_default().insert(slot);
                 }
-                for &(relation, from, to) in source.0.path.physical_sources() {
+                for &(relation, from, to) in source.physical_sources() {
                     postings.relations.entry(relation).or_default().insert(slot);
                     for kind in [from, to] {
                         postings.entities.entry(kind).or_default().insert(slot);

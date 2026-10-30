@@ -210,11 +210,12 @@ fn association(
     Denial,
 > {
     for view in [committed, proposed] {
-        view.require_derived_relation(&program.0.path)?;
-        view.require_derived_change_access(&program.0.path)
-            .map_err(|cause| {
+        for path in program.paths() {
+            view.require_derived_relation(path)?;
+            view.require_derived_change_access(path).map_err(|cause| {
                 DerivedRelationReadDenial::Structural(view.read_budget().refusal(cause))
             })?;
+        }
         view.read_budget()
             .check_live()
             .map_err(DerivedRelationReadDenial::Structural)?;

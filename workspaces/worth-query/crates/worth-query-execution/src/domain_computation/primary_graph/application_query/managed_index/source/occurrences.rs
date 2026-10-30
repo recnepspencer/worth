@@ -1,24 +1,20 @@
 //! Immutable material from actual Native Source loans, never a retained read grant.
 use super::super::source_rows::{SourceImageRows, SourceImageView};
+use super::projection::{project, Entry};
 use crate::domain_computation::primary_graph::{
     application_query::{
-        derived_view::{DependencyIndex, ViewDependency},
         disclosure::WorthQueryApplicationQueryGovernance,
-        projection::{
-            WorthQueryApplicationDisclosedProjectionNode as Node,
-            WorthQueryApplicationDisclosedProjectionTree as Tree,
-            WorthQueryApplicationProjectedField as Field,
-            WorthQueryApplicationProjectionNode as Row,
-            WorthQueryApplicationWorkingProjectionTree as WorkingTree,
-        },
+        projection::WorthQueryApplicationDisclosedProjectionNode as Node,
     },
     source_facts::SourceFactsAllocation,
 };
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
 use std::{collections::BTreeSet, sync::Arc};
-use worth_execution::ExecutionRequest;
+use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+mod postings;
+use postings::{ordered_denial, OccurrencePostings};
 use worth_query_installation::facade::{
-    WorthQueryInstalledApplicationValueBindingCatalog, WorthQueryInstalledGraphProjection,
+    WorthQueryInstalledApplicationValueBindingCatalog, WorthQueryInstalledGraphReadContract,
 };
 use worth_relational::facade::{
     identity::EntityId,
@@ -63,22 +59,13 @@ impl From<RelationalExecutionDenialCause> for MaterialDenial {
     }
 }
 
-struct Entry {
-    occurrence: ManagedIndexSourceOccurrence,
-    row: Tree,
-    dependencies: BTreeSet<ViewDependency>,
-    // Each changed path keeps only its own allocation, never a predecessor image.
-    _allocation: Arc<SourceFactsAllocation>,
-}
-
 pub(in crate::domain_computation::primary_graph::application_query::managed_index) struct PersistentSourceRows
 {
     owner: WorthQueryGraphWorkSessionIdentity,
     program: ManagedIndexSourceProgram,
     scope: EntityId,
-    entries: im::OrdMap<EntityId, Arc<Entry>>,
-    dependencies: DependencyIndex<EntityId>,
-    _allocation: Arc<SourceFactsAllocation>,
+    entries: ExecutionOrderedMap<EntityId, Arc<Entry>>,
+    dependencies: OccurrencePostings,
 }
 
 impl PersistentSourceRows {
@@ -87,10 +74,9 @@ impl PersistentSourceRows {
         scope: &ManagedIndexSourceScope<'_>,
         rows: &ManagedIndexSourceRows<'_>,
         owner: WorthQueryGraphWorkSessionIdentity,
-        projections: &[WorthQueryInstalledGraphProjection],
+        graph: &WorthQueryInstalledGraphReadContract,
         maximum: usize,
     ) -> Result<Self, MaterialDenial> {
-        let allocation = SourceFactsAllocation::open(execution)?;
         let support = rows.acquire_all()?;
         let occurrences = rows.occurrences(&support)?;
         if occurrences.len() > maximum {
@@ -99,16 +85,18 @@ impl PersistentSourceRows {
             )
             .into());
         }
-        let mut entries = im::OrdMap::new();
-        let mut dependencies = DependencyIndex::default();
+        let mut entries = ExecutionOrderedMap::default();
+        let mut dependencies = OccurrencePostings::default();
         for occurrence in occurrences {
             let entity = occurrence.entity();
-            let entry = project(execution, scope.program(), rows, occurrence, projections)?;
-            index_entry(execution, &mut dependencies, entity, &entry, &allocation)?;
-            allocation.claim_tree::<(EntityId, Arc<Entry>)>(execution, entries.len())?;
-            if entries.insert(entity, Arc::new(entry)).is_some() {
+            let entry = project(execution, scope.program(), rows, occurrence, graph)?;
+            if entries.contains_key(&entity) {
                 return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
             }
+            dependencies.insert_entry(entity, &entry.dependencies, execution)?;
+            entries
+                .insert_cloned_native_for_request(&entity, &entry.into_arc(execution)?, *execution)
+                .map_err(|cause| ordered_denial(execution, cause))?;
         }
         Ok(Self {
             owner,
@@ -116,7 +104,6 @@ impl PersistentSourceRows {
             scope: scope.scope(),
             entries,
             dependencies,
-            _allocation: allocation,
         })
     }
 
@@ -130,7 +117,7 @@ impl PersistentSourceRows {
             Option<ManagedIndexSourceOccurrence>,
             Option<ManagedIndexSourceOccurrence>,
         )],
-        projections: &[WorthQueryInstalledGraphProjection],
+        graph: &WorthQueryInstalledGraphReadContract,
     ) -> Result<Self, MaterialDenial> {
         if self.program != *scope.program() || self.scope != scope.scope() {
             return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
@@ -179,22 +166,23 @@ impl PersistentSourceRows {
                 let old = entries
                     .get(&before.entity())
                     .expect("checked retained occurrence");
-                dependencies.remove_entry(&before.entity(), &old.dependencies);
+                dependencies.remove_entry(before.entity(), &old.dependencies, execution)?;
             }
-            allocation.claim_tree::<(EntityId, Arc<Entry>)>(execution, entries.len())?;
             if let Some(proposed) = proposed {
                 let entity = proposed.entity();
-                let entry = project(
-                    execution,
-                    &self.program,
-                    &after,
-                    proposed.clone(),
-                    projections,
-                )?;
-                index_entry(execution, &mut dependencies, entity, &entry, &allocation)?;
-                entries.insert(entity, Arc::new(entry));
+                let entry = project(execution, &self.program, &after, proposed.clone(), graph)?;
+                dependencies.insert_entry(entity, &entry.dependencies, execution)?;
+                entries
+                    .insert_cloned_native_for_request(
+                        &entity,
+                        &entry.into_arc(execution)?,
+                        *execution,
+                    )
+                    .map_err(|cause| ordered_denial(execution, cause))?;
             } else if let Some(before) = before {
-                entries.remove(&before.entity());
+                entries
+                    .remove_for_request(&before.entity(), *execution)
+                    .map_err(|cause| ordered_denial(execution, cause))?;
             }
         }
         Ok(Self {
@@ -203,7 +191,6 @@ impl PersistentSourceRows {
             scope: self.scope,
             entries,
             dependencies,
-            _allocation: allocation,
         })
     }
 
@@ -232,7 +219,7 @@ impl PersistentSourceRows {
         &self,
         ordinal: usize,
     ) -> Option<(EntityId, Node<'_>)> {
-        let (entity, entry) = self.entries.iter().nth(ordinal)?;
+        let (entity, entry) = self.entries.entry_at(ordinal)?;
         Some((*entity, entry.row.only()?))
     }
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn get(
@@ -258,95 +245,4 @@ impl PersistentSourceRows {
             source_budget,
         }
     }
-}
-
-fn project(
-    execution: &ExecutionRequest<'_, '_>,
-    program: &ManagedIndexSourceProgram,
-    rows: &ManagedIndexSourceRows<'_>,
-    occurrence: ManagedIndexSourceOccurrence,
-    projections: &[WorthQueryInstalledGraphProjection],
-) -> Result<Entry, MaterialDenial> {
-    let allocation = SourceFactsAllocation::open(execution)?;
-    allocation.claim_slice::<Field>(execution, projections.len())?;
-    let mut fields = Vec::new();
-    fields
-        .try_reserve_exact(projections.len())
-        .map_err(|_| RelationalExecutionDenialCause::AllocationFailed)?;
-    for projection in projections {
-        let column = program
-            .fields()
-            .iter()
-            .position(|field| {
-                field.locator.aspect().aspect_key() == projection.aspect_key()
-                    && field.locator.field_path().fields()
-                        == std::slice::from_ref(projection.field_key())
-            })
-            .ok_or(DerivedRelationReadDenial::Definition(
-                DerivedRelationDenial::InvalidExpression,
-            ))?;
-        let value = match rows.field(&occurrence, column)? {
-            Some(value) => {
-                allocation.claim(execution, value.owned_allocation_capacity_bytes() as u64)?;
-                value.clone()
-            }
-            None if projection.presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => {
-                worth_foundational::facade::AspectValue::Null
-            }
-            None => return Err(DerivedRelationReadDenial::Definition(DerivedRelationDenial::RecordUnavailable).into()),
-        };
-        fields.push(Field::new(projection, value));
-    }
-    allocation.claim_slice::<Row>(execution, 1)?;
-    let row = Row::new(occurrence.entity(), None, true, fields, Vec::new());
-    let row =
-        WorkingTree::new(vec![row]).into_disclosed(&WorthQueryApplicationQueryGovernance::Public);
-    let mut dependencies = BTreeSet::new();
-    for dependency in std::iter::once(ViewDependency::Entity(occurrence.entity())).chain(
-        program
-            .fields()
-            .iter()
-            .map(|field| ViewDependency::Field(occurrence.entity(), field.locator.clone())),
-    ) {
-        allocation.claim_tree::<ViewDependency>(execution, dependencies.len())?;
-        allocation.claim(execution, dependency.retained_bytes() as u64)?;
-        dependencies.insert(dependency);
-    }
-    Ok(Entry {
-        occurrence,
-        row,
-        dependencies,
-        _allocation: allocation,
-    })
-}
-
-fn index_entry(
-    execution: &ExecutionRequest<'_, '_>,
-    index: &mut DependencyIndex<EntityId>,
-    entity: EntityId,
-    entry: &Entry,
-    allocation: &Arc<SourceFactsAllocation>,
-) -> Result<(), MaterialDenial> {
-    for dependency in &entry.dependencies {
-        allocation.claim(
-            execution,
-            u64::try_from(DependencyIndex::<EntityId>::entry_insertion_bound(
-                dependency,
-            ))
-            .map_err(|_| RelationalExecutionDenialCause::ChargedBytesOverflow)?,
-        )?;
-        index.insert_entry(dependency, &entity);
-    }
-    Ok(())
-}
-
-pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn project_row(
-    execution: &ExecutionRequest<'_, '_>,
-    program: &ManagedIndexSourceProgram,
-    rows: &ManagedIndexSourceRows<'_>,
-    occurrence: ManagedIndexSourceOccurrence,
-    projections: &[WorthQueryInstalledGraphProjection],
-) -> Result<(Tree, Arc<SourceFactsAllocation>), MaterialDenial> {
-    let entry = project(execution, program, rows, occurrence, projections)?;
-    Ok((entry.row, entry._allocation))
 }

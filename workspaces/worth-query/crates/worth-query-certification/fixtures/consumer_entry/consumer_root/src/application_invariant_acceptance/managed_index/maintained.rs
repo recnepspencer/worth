@@ -4,6 +4,7 @@ mod authoring;
 mod bounds;
 #[cfg(test)]
 mod court;
+mod geometry;
 mod handler;
 mod host;
 #[path = "mutation.rs"]

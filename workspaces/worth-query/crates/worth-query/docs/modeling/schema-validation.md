@@ -188,6 +188,21 @@ Query's persistent per-entry dependency postings cover scalar/lifecycle reads;
 Native supplies complete reverse scope closure from actual before/after changes.
 Neither public sessions nor a caller's initiating scope define that closure.
 
+Direct endpoint projections add schema-owned Native routes from each Source row
+to its projected entity. Lifecycle, scalar and adjacency effects pull back on
+both images through these routes and then through Source membership to scopes.
+The child loan retains the actual prepared read and full-generation physical
+relation occurrence; deduplicated endpoint sets cannot erase cardinality.
+Every read rechecks the originating row, route, audience and actual observation.
+Empty adjacency remains support. Child predicates, deeper projection trees and
+child-field ordering refuse installation rather than changing Source meaning.
+
+Maintained row maps and inverse entity postings use Execution's owned ordered
+cells. Each copied path is admitted through the original request, and unchanged
+cells retain their original grants until their last share closes. Projected row
+payloads retain their separate backing; successor images retain no predecessor
+grant chain. This applies to removal as well as insertion and endpoint refitting.
+
 The current backing uses immutable node pages in place of whole retained node
 arrays. An isolated edit shares untouched pages and allocates changed
 pages and directory paths under the current request. Prefix insertion/removal

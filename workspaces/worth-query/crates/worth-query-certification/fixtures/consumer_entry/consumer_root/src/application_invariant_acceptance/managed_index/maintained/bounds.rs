@@ -3,5 +3,5 @@
 mod coordinates;
 #[path = "../boxes/field.rs"]
 mod field;
-pub(super) use coordinates::Coordinates;
+pub(super) use coordinates::{Binding as CoordinatesBinding, Coordinates};
 pub(super) use field::{FixtureLength, ItemBounds};

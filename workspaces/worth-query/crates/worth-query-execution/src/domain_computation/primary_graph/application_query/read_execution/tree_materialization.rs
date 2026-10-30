@@ -30,6 +30,7 @@ pub(in crate::domain_computation::primary_graph::application_query) mod fallible
 mod fields;
 mod material_storage;
 mod relation_attachment;
+pub(in crate::domain_computation::primary_graph::application_query) use relation_attachment::validate_relation_cardinality;
 mod relation_distribution;
 mod relation_occurrence;
 mod relation_target_filter;

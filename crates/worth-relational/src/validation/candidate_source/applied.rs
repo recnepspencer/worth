@@ -279,14 +279,9 @@ fn changed_source_records(
                 .any(|metadata| {
                     metadata.kind_id == program.scope_kind()
                         || metadata.kind_id == program.row_kind()
-                        || program
-                            .0
-                            .path
-                            .physical_sources()
-                            .iter()
-                            .any(|&(_, from, to)| {
-                                metadata.kind_id == from || metadata.kind_id == to
-                            })
+                        || program.physical_sources().any(|&(_, from, to)| {
+                            metadata.kind_id == from || metadata.kind_id == to
+                        })
                 })
         })
         .cloned()

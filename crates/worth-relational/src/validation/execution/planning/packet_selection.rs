@@ -123,6 +123,26 @@ pub(super) fn eligible_registrations<'state>(
             if preparation_budget.is_some_and(|budget| budget.stop().is_some()) {
                 return None;
             }
+            // Managed applicability comes from the complete Native pullback,
+            // including indirect endpoint changes. An empty invocation set is
+            // non-applicability, never a successful zero-callback execution.
+            // Association failures continue through the rule's refusal path.
+            if !registration.managed_sources.is_empty()
+                && crate::validation::candidate_source::observed_scopes(
+                    &registration.managed_sources,
+                    &planner.committed_relations(),
+                    &planner.relations(),
+                )
+                .is_ok_and(|scopes| scopes.is_empty())
+            {
+                return Some(InvariantPacketRegistration::CustomNotApplicable {
+                    registration: registration.clone(),
+                    prepared_scope,
+                    retained_touched: planner.retained_touched(),
+                    work,
+                    basis: CustomInvariantNonApplicability::NoApplicableTouch,
+                });
+            }
             if request.merged_plan().is_some()
                 && registration.managed_sources.is_empty()
                 && has_declared_applicability

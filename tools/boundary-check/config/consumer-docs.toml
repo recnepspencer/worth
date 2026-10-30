@@ -187,3 +187,9 @@ name = "managed_prefix_invariant.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"
 source = "src/application_invariant_acceptance/managed_index/maintained/rule.rs"
+
+[[compiled_sources]]
+name = "managed_geometry_source.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/maintained/geometry/query.rs"

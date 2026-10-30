@@ -8,6 +8,9 @@ use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::data::CustomInvariantAccessContract;
 
+mod projection_routes;
+pub use projection_routes::ManagedIndexSourceProjectionRoute;
+
 /// A scalar field on the entity endpoint selected by the installed path.
 /// Codec and required/optional meaning remain with the Query compiler.
 #[derive(Clone, Debug)]
@@ -19,6 +22,7 @@ pub struct ManagedIndexSourceField {
 pub(crate) struct SourceProgram {
     pub(crate) path: DerivedRelationHandle,
     pub(crate) fields: Arc<[ManagedIndexSourceField]>,
+    pub(crate) routes: Arc<[ManagedIndexSourceProjectionRoute]>,
     pub(crate) issuer: ManagedIndexSourceAudienceIssuer,
     pub(crate) authority: ManagedIndexSourceAudienceAuthority,
 }
@@ -46,6 +50,7 @@ impl RelationalSchemaRegistry {
         &self,
         path: &DerivedRelationHandle,
         fields: Vec<ManagedIndexSourceField>,
+        routes: Vec<ManagedIndexSourceProjectionRoute>,
     ) -> Result<ManagedIndexSourceProgram, Denial> {
         if !self.admits_derived_relation(path) {
             return Err(Denial::ForeignDefinition);
@@ -59,20 +64,11 @@ impl RelationalSchemaRegistry {
             .from
             .entity_kind()
             .ok_or(Denial::InvalidMemberDomain)?;
-        let registration = self
-            .entity_kinds
-            .get(&row)
-            .ok_or(Denial::InvalidPhysicalSource(row))?;
-        for field in &fields {
-            // The first vertical supports physical scalar fields. Nested or
-            // projected endpoints require their own complete inverse program.
-            if field.locator.field_path().fields().len() != 1
-                || !registration.aspect_contract_declarations.aspects.iter().any(|aspect| {
-                    aspect.foundational_key() == field.locator.aspect().aspect_key()
-                        && matches!(aspect.contract.shape(), worth_foundational::facade::AspectShape::Struct(shape)
-                            if shape.field(&field.locator.field_path().fields()[0]).is_some())
-                })
-            {
+        projection_routes::validate_fields(self, row, &fields)?;
+        let mut names = std::collections::BTreeSet::new();
+        for route in &routes {
+            route.validate(self, row)?;
+            if !names.insert(route.name()) {
                 return Err(Denial::InvalidExpression);
             }
         }
@@ -81,6 +77,7 @@ impl RelationalSchemaRegistry {
         Ok(ManagedIndexSourceProgram(Arc::new(SourceProgram {
             path: path.clone(),
             fields: fields.into(),
+            routes: routes.into(),
             issuer,
             authority,
         })))
@@ -110,6 +107,18 @@ impl ManagedIndexSourceProgram {
         &self.0.fields
     }
 
+    pub fn projection_routes(&self) -> &[ManagedIndexSourceProjectionRoute] {
+        &self.0.routes
+    }
+
+    pub(crate) fn paths(&self) -> impl Iterator<Item = &DerivedRelationHandle> {
+        std::iter::once(&self.0.path).chain(self.0.routes.iter().map(|route| &route.path))
+    }
+
+    pub(crate) fn physical_sources(&self) -> impl Iterator<Item = &(KindId, KindId, KindId)> {
+        self.paths().flat_map(|path| path.physical_sources())
+    }
+
     pub(crate) fn require_access(
         &self,
         access: &CustomInvariantAccessContract,
@@ -119,7 +128,7 @@ impl ManagedIndexSourceProgram {
                 return Err(Denial::OutsideDeclaredAccess);
             }
         }
-        for &(relation, from, to) in self.0.path.physical_sources() {
+        for &(relation, from, to) in self.physical_sources() {
             if !access.reads_relation(relation)
                 || !access.affects_relation(relation)
                 || !access.reads_entity(from)

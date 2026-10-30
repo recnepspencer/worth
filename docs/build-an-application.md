@@ -5462,8 +5462,13 @@ unchanged nodes; do not replace a warm update with a complete Source rebuild.
 Provider and controlled-work refusals prevent publication.
 
 The Source must use `SameAdmittedScope` with `NoParameters`, public disclosure,
-physical scalar projections and supported stored/reverse/composed/union paths.
-Unsupported shapes return `UnsupportedInvariantSource` during installation.
+physical scalar fields and supported stored/reverse/composed/union membership
+paths. Direct endpoint result relations may project scalar fields from the
+related entity. Their actual relation occurrences preserve cardinality: two
+physical links to the same endpoint are still two results. Child predicates,
+deeper nested shapes and child-field ordering remain unsupported; ordering may
+refer to root fields. Unsupported shapes return `UnsupportedInvariantSource`
+during installation.
 Source result limits remain enforced; unavailable material is not an empty set.
 Native discovers affected scopes from actual before/after changes, including
 scopes with no open public handle, and prepares their roots before validation.
@@ -5517,11 +5522,53 @@ attachment; they cannot replace the invariant's matching committed image.
 See the [authored maintained catalog](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs)
 and [its installed rule](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs).
 
+For an edge Source, declare the start and end relations in its result shape and
+include both endpoint entities and relation kinds in the invariant's read and
+affected closure. A vertex field edit then pulls back through those actual
+relations to incident edge rows and every affected directory, on both physical
+sides. Rewiring removes the former endpoint's dependency. The box provider keeps
+its integer unit/frame binding and delegates validation and enclosure union to
+its numerical owner. The [geometry composition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry.rs)
+uses this path with the same provider installation and both reader entrances.
+
+A validation failure's `invariant_execution_failure().and_then(|failure|
+failure.managed_source_denial())` borrows the original Source preparation cause.
+Its `provider_failure().cause()` preserves the owned provider or projection error
+chain, including `WorthQueryApplicationProjectionDenial` with
+`RelationCardinalityMismatch`. Request interruption remains a typed request stop.
+
 Handle `BranchMaterializationSuspended` or `SnapshotUnavailable` from a current
 physical read during generated-output suspension. Retaining an earlier result
 does not make it current. After resumption, open the index through a fresh
 admitted request and handle its returned lifecycle status; an old payload or
 equal values cannot establish a new physical basis.
+The compiled endpoint shape preserves each actual `Starts` and `Ends` relation
+occurrence and checks its declared cardinality before provider maintenance:
+
+<!-- compiled: managed_geometry_source.rs -->
+```rust
+fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
+) -> TypedApplicationQueryResultShape<Catalog, Q, Edge, Row, ResultBinding> {
+    ApplicationQueryResultShapeBuilder::new(Edge::reference())
+        .field(identity())
+        .relation(
+            start(),
+            ApplicationQueryResultShapeBuilder::<Catalog, Q, Vertex, Row, ResultBinding>::new(
+                Vertex::reference(),
+            )
+            .field(start_region()),
+        )
+        .relation(
+            end(),
+            ApplicationQueryResultShapeBuilder::<Catalog, Q, Vertex, Row, ResultBinding>::new(
+                Vertex::reference(),
+            )
+            .field(end_region()),
+        )
+        .build()
+}
+```
+
 An unavailable maintained Source returns its typed Native Source refusal.
 Logical invariant material never authorizes a current physical public read.
 

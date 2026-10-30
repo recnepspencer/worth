@@ -164,19 +164,13 @@ where
         loan: &worth_relational::facade::runtime::ManagedIndexSourceRows<'_>,
     ) -> Result<Payload, Denial> {
         let owner = WorthQueryGraphWorkSessionIdentity::for_native_source(scope)?;
-        let projections = self
-            .provider
-            .installed
-            .source_read()
-            .query()
-            .read_graph()
-            .projections();
+        let graph = self.provider.installed.source_read().query().read_graph();
         let rows = PersistentSourceRows::acquire(
             execution,
             scope,
             loan,
             owner,
-            projections,
+            graph,
             self.maximum_source_rows(),
         )
         .map_err(super::super::source::occurrences::MaterialDenial::into_native)?;
@@ -210,16 +204,10 @@ where
         if changed.is_empty() {
             return Ok(Arc::clone(retained));
         }
-        let projections = self
-            .provider
-            .installed
-            .source_read()
-            .query()
-            .read_graph()
-            .projections();
+        let graph = self.provider.installed.source_read().query().read_graph();
         let rows = before
             .rows
-            .update(execution, scope, &changed, projections)
+            .update(execution, scope, &changed, graph)
             .map_err(super::super::source::occurrences::MaterialDenial::into_native)?;
         if rows.len() > self.maximum_source_rows() {
             return Err(
@@ -323,7 +311,7 @@ fn source_storage(
 ) -> Denial {
     Denial::Source(worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause))
 }
-fn retain_failure<E: std::error::Error + Send + Sync + 'static>(
+pub(super) fn retain_failure<E: std::error::Error + Send + Sync + 'static>(
     execution: &ExecutionRequest<'_, '_>,
     cause: E,
 ) -> Denial {
