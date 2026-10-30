@@ -18,6 +18,7 @@ mod arbitration;
 mod disclosure;
 mod disposal;
 mod previous;
+mod versions;
 
 fn progress(event: Result<Event, Failure>) {
     assert!(matches!(event.unwrap(), Event::Progress));
