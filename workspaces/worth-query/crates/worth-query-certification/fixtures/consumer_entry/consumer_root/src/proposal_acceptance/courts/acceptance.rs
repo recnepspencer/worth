@@ -14,7 +14,9 @@ use super::retention_action::edit;
 use worth_query_host::facade::{
     application_entry::*, primary_graph::*, product::*, runtime::ExecutionAllocationPolicy,
 };
+mod adoption_stop;
 mod arbitration;
+mod contenders;
 mod disclosure;
 mod disposal;
 mod identities;

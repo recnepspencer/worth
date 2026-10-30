@@ -2126,6 +2126,15 @@ adopting the application's unchanged source slot. Its private staging inspection
 is read-only and occurs through the freshly admitted attempt view; keep both
 control-owner caller entries exact and closed.
 
+The exact `courts/acceptance/adoption_stop.rs` consumer court may arm the existing
+World currentness pause for the actual candidate occurrence after Ready. Control
+issuance accepts the opaque Query branch selector through Execution's
+closed owner method; it must not expose or reconstruct a native occurrence.
+Earlier request admission reads Storage and the source. Cancellation requires observed
+contention on the candidate's real adoption guard; release and join precede
+assertions. The retained Ready owner must preserve candidate effects and admit
+a fresh retry. Keep its Execution and World control-owner entries exact and closed.
+
 The [existing expected-source cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance.rs),
 [adoption cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/adoption.rs)
 and [stored-basis cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/stored_basis.rs)
