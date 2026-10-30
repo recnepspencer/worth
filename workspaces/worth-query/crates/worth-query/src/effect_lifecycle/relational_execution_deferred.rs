@@ -285,7 +285,7 @@ fn allocation_failure(
     } else {
         RelationalEffectExecutionFailure::Denied {
             kind: EffectExecutionDenialKind::TransactionAllocationDenied {
-                kind: denial.kind(),
+                kind: denial.classify(),
                 requested_payload_bytes: denial.requested_payload_bytes(),
             },
             message: denial.to_string(),
