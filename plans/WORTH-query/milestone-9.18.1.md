@@ -1641,7 +1641,7 @@ all other findings retain their scope and priority.
 | P2 | Unobserved field write loses its cause | 14 — worth-query-execution |
 | P2 | Scoped invariants must stay local on real large bodies | 15 transferred to 9.19 — public qualification followed by final Proprietary adoption |
 | P3, required | Cell-version storage and live-at-k cost | 16 — Relational + Query, with Proprietary CAD acceptance |
-| P3, required | Proposal acceptance reissues ordinary requests | 17 — Query entry/admission + Proprietary authoring |
+| P3, required | Proposal acceptance reissues ordinary requests | 17 — Query entry/admission + public application authoring |
 | P3, required | Qualify Rust 1.99.x and keep the supported stable toolchain current | 18 — worth-foundational + workspace toolchain/CI owners |
 
 ### Decisive Proof For The Added Phases
@@ -1849,14 +1849,21 @@ expected-basis readmission is also a qualified public prerequisite:
 versioned comparison data re-enters the actual World/Native owners, including
 Native's separate exact-currentness check before application selection. The
 owner/application cases and current repository gates pass.
-Proposal persistence and the complete private acceptance journey remain unfinished.
-**Owner:** Query entry/basis admission, Native/World source-basis receivers and
-Proprietary authoring.
+The complete public stored-proposal acceptance journey remains unfinished.
+**Owner:** Query entry/basis admission and Native/World source-basis receivers;
+the public application fixture owns its domain intent and model selection.
 **Depends on:** ordinary governed application requests and existing source
 operation/correction contracts. Independent of spatial indexing and Phases 8–9.
-The ordinary expected-source handoff belongs to this phase; CAD must consume
-the platform's selected-source custody rather than substitute a private
-currentness check.
+The ordinary expected-source handoff belongs to this phase. Applications consume
+the platform's selected-source custody instead of implementing currentness.
+
+**Certification boundary:** public code and public tests are sufficient to close
+this phase. The real application composition uses only Decl/Host audience facades;
+focused owner tests supplement it where they expose private synchronization or
+retention semantics. No private repository, CAD integration, SDK pin change or
+private test run is a Phase 17 gate. Public closure certifies the public contracts
+below; it makes no claim that an untested private consumer has adopted them.
+Other phases' explicit private adoption gates remain unchanged.
 
 ### Requirements And Acceptance
 
@@ -1870,7 +1877,7 @@ references refuse through their existing owners; acceptance never silently
 rebases or substitutes identities. Multi-intent partial acceptance follows the
 existing operation/workflow effect posture and cannot imply rollback.
 
-Compile a Decl/Host acceptance journey and exercise the real CAD proposal path:
+Compile and exercise a real public Decl/Host application acceptance journey:
 record, retain, accept under fresh authority, then exercise revoked authority and
 stale-basis twins. Ordinary production import/dependency checks must reject
 `worth-query-replay` on this route; cert-only replay remains available only to its
@@ -1878,21 +1885,18 @@ existing audience. Document how the existing request mechanism supplies this
 path, correcting any missing facade integration without introducing a proposal
 executor or using certification replay to simulate ordinary acceptance.
 
-### Current Boundary And Decisive Court
+### Current Public Boundary And Decisive Court
 
-CAD's `CadSession::apply` checks a process-owned model revision, while its installed
-runtime later forks the branch currently selected by the model's head map. The
-counter is not an owner-issued Native/World basis. Query's ordinary fork builder
-admits the source occurrence when creating the fork; it does not consume the
-proposal's previously selected basis. Query's expected-source fork now consumes
-an admitted selection instead. Native rechecks that fork source under its
-transition coordination, and World carries the expected source observation
-through creation. The resulting candidate retains the source admission and
-offers guarded replacement of the actual model-owned branch slot. CAD still
-needs to join these ordinary platform transitions; it must not duplicate
-currentness or fork authority.
+`branches().select_expected` freshly admits stored comparison data through World
+and Native. Native readmission can admit retained history, so its separate exact
+currentness comparison and equality with World's component tuple remain mandatory.
+`fork_expected` consumes the resulting application selection. Native rechecks
+that source during creation; World carries the expected composite observation.
+The resulting candidate retains source custody and offers guarded replacement
+of the application's actual model-head slot. Ordinary `fork` still resolves a
+source during creation and cannot substitute for this contract.
 
-The decisive installed journey records a real edit against model A, releases the
+The decisive public journey records a real edit against model A, releases the
 recording request and later accepts under the current caller. Recording must not
 move A's authored-model head. Move A after expected-source comparison but before
 fork creation, and separately while the candidate is being evaluated before
@@ -1908,8 +1912,9 @@ mutation authority separately, including on an idempotent acceptance retry. The
 ordinary denial must occur before the protected lookup or effect it governs.
 Include a two-intent refusal and observe the real staged-fork cleanup and published
 model head; report the existing partial, committed, indeterminate or cleanup
-posture without inventing rollback. Observe authored parameters and resulting CAD
-geometry independently of the mechanism being tested.
+posture without inventing rollback. Observe typed authored parameters and committed
+application state independently of the proposal's returned result. Geometry is
+not a claim of this public phase and requires no private CAD fixture.
 
 ### Basis, Storage And Admission Contract
 
@@ -1945,11 +1950,11 @@ geometry independently of the mechanism being tested.
   the stored record. Specify close, cancellation, unavailable storage and pending
   cleanup through existing lifecycle owners; no immortal side map or retention
   ledger substitutes for versioned data.
-- Family-owned `Params<D>` retain their typed meaning in proposal storage. The
-  caller interprets those intents through the existing family inventory and
-  ordinary source operations. Do not widen `ReplaceDefinition` into a replay
-  route or treat realization's later source read as protection for an earlier
-  unguarded replacement.
+- Authored parameters retain their declared operation binding and typed codec
+  through storage and loading. The public fixture uses registered structured
+  operation inputs; it cannot store a generic JSON value and recover meaning
+  from an operation name alone. Applications interpret those intents through
+  ordinary source operations, never through receipt replay or a raw field writer.
 - Fresh proposal/model/result disclosure precedes cached-result disclosure at
   the proposal ingress. Create a new acceptance-attempt idempotency key and reuse
   it only for retries of that attempt. Do not reuse the recording token or an
@@ -1957,6 +1962,203 @@ geometry independently of the mechanism being tested.
   established semantics merely to conceal an unauthenticated proposal ingress.
   The accepting host/caller identity governs both loading and execution; stored
   authorship supplies neither identity nor authority.
+
+### Operational Sequence And Authority
+
+These are semantic boundaries in the existing application/owner path, not a new
+platform proposal executor. [Architecture Laws](../../docs/coding-guidelines/arch_laws.md)
+1, 4, 5, 9, 10, 14, 16, 17, 19–22
+govern the transitions; the [testing laws](../../docs/coding-guidelines/testing_laws.md)
+govern their evidence.
+
+1. **Initialize the application model.** Its owner holds a genuine model
+   incarnation and the actual mutable head slot. Model identity must survive
+   head movement and differ for another model or a recreated session, even when
+   display names match. Issue identity through ordinary installed domain
+   creation; never fabricate a generation or hash a display name. A model's
+   owned head and a shared borrowed seed have different close obligations.
+2. **Record data without authoring the model.** Through an ordinary authorized
+   operation, store the versioned proposal on its separately owned storage
+   branch: model incarnation, full-generation typed target references, ordered
+   typed inputs and expected-basis description. Storage custody stays in the
+   application runtime. Release the recording request and selection before
+   acceptance; only domain data survives. Unsupported record versions refuse
+   before candidate creation or authored effects. Coordinates address the
+   original live installation; durable process-restart restoration is outside
+   this phase, as it is for the milestone's other retained artifacts.
+   An attempt binds the selected proposal occurrence/version and ordered input
+   meaning. A later proposal revision cannot silently replace the loaded intent;
+   protocol format version and domain record version are distinct concepts.
+   Fork the component that proposal storage writes: a different product name
+   sharing a mutable Relational branch is not write isolation. Recording must
+   leave the original model basis admissible for subsequent expected selection,
+   not merely leave its displayed values and application slot unchanged.
+3. **Enter a fresh attempt.** The current caller supplies the principal, scope,
+   request lifetime and a fresh acceptance-attempt key. Fresh ordinary READ
+   admission covers proposal, model and any existing result before protected
+   result lookup or disclosure. Mutation authority is independently admitted
+   through the ordinary granting owner, including on a retry. A stored author,
+   cached result, boolean permission flag or descriptive basis grants none of
+   these permissions. Do not add a second permission registry.
+   Declare and invoke real governed reads for the independent READ cases. The
+   existing retention example supplies value/rule semantics; its unrestricted
+   public-read helpers alone cannot demonstrate revocation. Change genuine
+   admitted grant state through its ordinary owner, never a fixture-only flag.
+4. **Resolve retry before new execution.** An authorized retry of the same
+   attempt resolves its original ordinary outcome/continuation without another
+   adoption. A successful attempt has itself moved the model head: its retry
+   must not be rejected merely because the proposal's original basis is now
+   stale. A new attempt must compare the recorded basis again. Keep ordinary
+   operation idempotency ordering intact; changed intent under an existing key
+   receives the ordinary intent-drift refusal. Never reuse the recording key.
+5. **Readmit, then create from that selection.** Compare the loaded genuine model
+   and target occurrences with this application's model using declared ordinary
+   domain reads/affinity contracts. A valid target in B is not a target in A.
+   Ask
+   `branches().select_expected(&description, &phase)` for fresh World/Native
+   admission and pass its owned result to `fork_expected`. Do not drop it and
+   call unconditional `fork`, resample latest state or normalize equal values
+   into identity. Reject ineligible input before expensive construction.
+6. **Execute on the candidate.** Reissue the ordered authored inputs through
+   their declared ordinary operations under current authority. Preserve actual
+   source publication, invariant, required-output and request outcomes. Prepare
+   adoption metadata before the irreversible selection boundary. Partial work
+   on a private candidate is real staged work, even when the model stays on its
+   source. No authored handler runs inside World's guarded replacement callback.
+7. **Adopt the actual slot.** Consume the retained candidate with
+   `candidate.adopt(&mut model.head, &phase)`. Source/candidate currentness and
+   original-request liveness must cover replacement. A temporary local copy
+   followed by an unguarded map insertion is forbidden. Hold exclusive ownership
+   of the application's model state through its infallible metadata update;
+   `&mut` on an unrelated wrapper does not exclude aliased platform writes.
+8. **Finish or retain custody.** On refusal before adoption, the model's actual
+   selection remains unchanged; retain the same candidate/recovery owner or
+   close it through existing lifecycle. On success, update model metadata and
+   retain the actual performed outcome before retiring the previous owned
+   branch. A later old-head close, result delivery or result-storage failure is
+   committed-with-cleanup/delivery-failure, never an unchanged-model refusal.
+   Retain the attempt continuation across this gap so retry cannot apply twice.
+   Shutdown, cancellation and unavailable storage must leave each obligation
+   with an explicit owner; no permanent side map substitutes for managed custody.
+
+The stored record is non-authoritative data. The selected operation is freshly
+owner-admitted custody; the expected-source candidate carries it into creation
+and adoption. The actual replacement is the application selection commit point.
+Existing owner results decide whether component effects, unpublished recovery or
+deferred cleanup also exist. Translation may add application context but must
+preserve the owning typed cause and posture (Architecture Laws 5 and 14).
+
+### Public Failure Matrix
+
+Use one small installed public application with independently created models A
+and B, genuine target occurrences, a separately owned proposal-storage branch
+and real ordinary operations. Reuse the document-retention model's semantics
+where suitable: A starts at 7 days, B at 5 days, and the proposal sets A to 3
+days. Use the first program's installed rule (maximum 10 days), so the positive
+edit is lawful and a later 11-day edit reaches a genuine invariant refusal.
+The fixture's declared application type and registered schema/contributions
+must agree; no ad-hoc declaration may bypass installation or publication checks.
+A fresh declared query must read 7 before recording, still 7
+after recording, and 3 only after adoption; B must remain unchanged. Read the
+stored typed input independently of the acceptance return value. Registered
+structured inputs include their target identity and parameter value, so dropping
+either changes the intended operation. No producer-output feature from unfinished
+Phase 9 or spatial work from 9.19 is needed to prove this path.
+
+The rows are distinguishing scenarios, not a Cartesian product or a fixed test
+count. Parameterize cases sharing one cause. Every negative case first proves
+that its setup and unmodified positive counterpart reach the intended boundary.
+Assert the typed cause, actual model selection, committed reads and surviving
+custody; a generic `is_err`, string match or receipt echo is insufficient.
+
+| Failure pressure and lawful sequence | Required outcome and independent observation | Defect the public evidence must expose |
+| --- | --- | --- |
+| Record, release all original request/selection custody, load under a different authorized caller and accept. | Ordinary performed outcome; loaded typed input is 3; recording changes only storage, adoption changes A to 3, B stays unchanged. | Recording secretly edits A, stored authorship grants authority, or returned success hides an unchanged/wrong head. |
+| Store/load a structured input through its declared codec; splice a different registered binding with a similar representation, or supply an unsupported proposal/description version. | Intended decoding/binding/version refusal before candidate effects; authorized original roundtrip succeeds. Retain `UnsupportedDescriptionVersion`/admission cause where applicable. | Type erasure, name-based redispatch or silently interpreting unsupported bytes as current input. |
+| Record A's basis, move A, then try a new attempt; repeat after restoring equal payload values. | Typed stale World/Native selection refusal; no adoption and no silent rebase. Freshly recording the moved basis succeeds. | Revision counters or payload equality substituting for exact owner currentness. |
+| After successful expected selection, commit a real source move before fork creation. | Expected-source creation refusal at its receiving owner; actual head remains the moved source. A fresh selection creates successfully. | Compare-then-unconditional-fork race. |
+| Run a real candidate operation, then move the source before adoption. Separately replace the model's actual head slot. | Source-basis/head-currentness denial in the first case, `HeadReplaced` in the second; neither overwrites the winner. Candidate effects remain inspectable until ordinary close. | A standalone precheck or adoption of a temporary slot instead of the actual application slot. |
+| Present foreign installation/phase data, current World data with retained old Native history, and mismatched component data. | Preserve `Admission`, `NativeReadmission`, `NativeCurrentness`, `ComponentMismatch` or `ForeignPhase` at the deliberately reached boundary. No candidate/adoption from foreign custody. Carry existing qualified cases where unchanged. | Historical admission mistaken for currentness, cross-owner recombination or scope laundering. |
+| Retire and recreate the target under the same display name; create another session whose local model spelling is again `model-1`. | Genuine occurrence/incarnation refusal before target mutation. The replacement's committed state is unchanged; a proposal genuinely recorded for it succeeds. | Looking up the latest name or local handle and substituting its occurrence. |
+| Combine A's model/basis with B's genuinely issued target, or a result belonging to another proposal/attempt; revise a proposal after its selected input was loaded. | Typed domain/attempt-affinity or intent-drift refusal for cross-binding; both models remain unchanged. A loaded attempt retains its explicitly selected proposal version, never silently accepts the revision's different input. Valid matching bindings succeed. | Treating full-generation identity as proof of model membership, or a cache key/name as proof of proposal/version/attempt affinity. |
+| Revoke proposal READ, model READ and result READ independently, with a real cached successful result present. | Owning disclosure refusal before protected lookup/disclosure; no protected payload, result, identifier or debug detail escapes. Restoring the actual grant admits the corresponding read. | A cache hit or basis descriptor bypassing fresh disclosure, including on an idempotent retry. |
+| Leave all READ grants valid but revoke mutation authority; repeat with the same completed attempt key. | Owning mutation-authorization refusal before governed lookup/effect; the cached result cannot supply authority. Model state stays unchanged. | READ being treated as permission to author, or ordinary retry weakening proposal-ingress authority. |
+| Authorized same-attempt retry after success; changed input under that key; two contenders using the same attempt. | Existing idempotent prior outcome/continuation or intent-drift refusal as appropriate. At most one adoption for the attempt; losing candidate is retained or closed. Observe actual selected branch and performed occurrences, not a handler invocation counter. | Duplicate authoring, replaying after result-delivery loss, or stale-rejecting every successful retry because it moved its own source. |
+| Two-intent proposal: the first ordinarily commits 3 on the candidate; the second requests 11 and reaches the installed maximum-10 invariant. | The intended second-operation typed denial; actual model still selects its 7-day source. Candidate first-step state is independently readable as 3, and any unpublished recovery remains honestly owned until closed. | A preflight/setup failure masquerading as partial-work evidence, or claiming nothing happened anywhere. |
+| Cancel/expire the request before effects, after candidate work and while waiting to adopt. | Typed stop with the same request identity. No adoption before the commit point; preserve candidate/recovery custody after staged work. A fresh authorized request can close or retry the retained owner. | Treating cancellation as rollback, losing candidate effects, or ignoring a stop after waiting for guards. |
+| Separately retire the candidate before adoption, refuse candidate close, and retain a real reader that defers cleanup. | Candidate-admission/close denial preserves the identical candidate/source continuation and actual retired/live posture. The original model stays selected. Release the reader and settle deferred cleanup through its actual retry owner. | Replacing custody with a bare branch number, leaking an invisible branch, or interpreting pending cleanup as no effect. |
+| Force an existing owner publication gap during candidate creation or execution. | Real `ProductUnpublished`/ordinary publication recovery, unchanged application selection, retained original recovery custody. Resolve that recovery before issuing a replacement attempt. | Mocking a failed commit, losing component effects, or retrying as though publication was definitely absent. |
+| Adopt successfully, then refuse old-owned-head close or result delivery/storage. | The new head remains selected and reads 3. Return the committed posture with actual cleanup/delivery continuation; an authorized retry does not adopt again. | Closing the source before adoption, false rollback after the commit point, or dropping the only retry owner. |
+| Close or make proposal storage unavailable; cancel recording/acceptance; shut down with pending cleanup. | Owning unavailable/stop/cleanup outcome, no fallback to an ungoverned map and no mutation of A from a failed recording. Terminal disposal releases storage and candidate obligations after retained readers are released. | Immortal storage, hidden resources or unavailable storage silently becoming latest-model execution. |
+| Try to use description data as selected custody or import replay/internal runtimes from the ordinary application route. | Existing compiler/dependency enforcement refuses the invalid route; valid Decl/Host application still compiles. | A fixture-only bypass or a proposal-specific platform executor disguised as ordinary execution. |
+
+For races, use deterministic owner-local barriers or existing scoped controls at
+the comparison, creation and adoption boundaries; sleeping is not a schedule.
+Drive a genuine competing publication. If a model owner's typed exclusive
+interval makes one mutation schedule impossible, prove that exclusion and run
+the strongest reachable competing schedule; a comment or an unused mutex is
+not exclusion. Owner tests may expose an otherwise inaccessible interleaving,
+but the public application must also consume the real guarded receiver.
+
+### Evidence Boundaries And Certification Run
+
+The [existing expected-source cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance.rs),
+[adoption cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/adoption.rs)
+and [stored-basis cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/stored_basis.rs)
+already qualify their platform prerequisites. Carry that evidence unless a
+change invalidates it; they do not yet prove stored proposal I/O or ingress.
+Place the complete public application journey in the existing consumer-root
+target, with scenarios split by responsibility inside its proposal module.
+Owner tests stay with the relevant owner. Add no binary per matrix row.
+
+Before acquisition, derive affected owners/courts through the repository's
+iteration tooling and confirm actual target/selector discovery. Acquire each
+changed grouped artifact once, run the first positive storage-to-adoption case,
+then the affected failure families from that artifact. A setup refusal, zero
+matches, ignored case or compiler failure is not the intended negative result.
+Record ordinary CI/test output against the source revision; add no evidence
+registry, implementation journal or tests whose only job is to certify tests.
+Keep unit compilation, runtime, setup and observation failures distinguishable.
+
+Use the pinned build configuration and existing warm targets. Repeat only
+invalidated evidence after a correction; finish with required public repository
+gates and the persistent qa-loop, qa-tests and code-quality-qa review. The test
+reviewer must check fixture issuance, independent expected reads, intended denial
+causes, ownership after each effect boundary and meaningful sensitivity to a
+bypass of the disputed guard. Review can establish obvious sensitivity directly;
+do not demand an exhaustive mutation campaign or resource-budget portfolio.
+This phase adds no mandatory resource estimates or arbitrary work ceilings to
+ordinary authoring. Private test targets and private SDK qualification are not
+part of this certification run.
+
+### QA Considerations
+
+Authority review must trace actual grant issuance and the read/mutation/cache
+ordering, rather than accept a fixture flag as revocation. Currentness review
+must distinguish genuine Native/World comparisons from application counters and
+must inspect replacement of the actual slot. Lifecycle review must follow staged
+work, unpublished component effects, post-adoption delivery and cleanup to their
+remaining owners. Test review must distinguish the intended refusal from invalid
+setup and compare freshly read committed state with independently authored
+expectations. Review only causally affected evidence after a correction; no
+private adoption or recursive evidence machinery is needed for these claims.
+
+### How We Know Phase 17 Is Done
+
+- The public application records and loads a real versioned proposal, releases
+  the original request and accepts through fresh ordinary authority, exact owner
+  selection, expected-source creation and guarded actual-slot adoption.
+- The relevant matrix families have adequate passing public evidence at their
+  owning boundaries. Required race, identity, independent READ/mutation, retry,
+  staged-refusal and cleanup postures are proved; no known material defect is
+  hidden by a generic denial or a substitute fixture.
+- Stored records contain typed intent/comparison data only. Ordinary production
+  dependency checks exclude replay and internal owner access. No second
+  currentness engine, proposal executor, truth map or permission registry remains.
+- Current public docs show the compiled recipe, typed refusals, retry ordering
+  and cleanup. Public gates and all three QA reviews pass on the final change;
+  the complete phase is merged to public master. A private consumer run is not
+  required and private adoption is not claimed.
 
 ### Destination And Delivery Order
 
@@ -1993,35 +2195,55 @@ worth-query-certification/tests/application_graph/proposal_acceptance/
   adoption.rs                           C ordinary requests and guarded adoption
   stored_basis.rs                       C serialized basis owner readmission
 worth-query-certification/fixtures/consumer_entry/consumer_root/src/
-  proposal_acceptance.rs                 C two-facade application journey
-  proposal_acceptance/schema.rs          C ordinary versioned domain declarations
-  proposal_acceptance/courts.rs          C admission, basis and occurrence controls
-worth-cad-entry/src/
-  schema/proposals.rs                   C proposal identity and typed domain links
-  families/operation/schema/proposal.rs C family-owned authored parameter data
-  session/proposals/
-    data.rs                            C stored intent/reference descriptions
-    acceptance.rs                      C fresh request and attempt orchestration
-  session/runtime/proposals/
-    storage.rs                         C ordinary storage-branch custody and I/O
-    source_basis.rs                    C expected fork and model-head adoption join
-worth-cad-entry/tests/operation_family/installed/
-  proposals.rs                         C real CAD acceptance and hostile sequences
+  proposal_acceptance.rs                 C register the public journey modules
+  proposal_acceptance/
+    schema.rs                           C model, proposal and typed intent meaning
+    application/
+      model.rs                          C genuine incarnation and actual head slot
+      storage.rs                        C ordinary proposal I/O and branch custody
+      acceptance.rs                     C fresh ingress and expected-source workflow
+      attempt.rs                        C retry/result-delivery continuation
+    courts/
+      acceptance.rs                     C record/load/accept and independent reads
+      currentness.rs                    C stale source and guarded adoption races
+      disclosure.rs                     C separate READ/mutation and cached retries
+      identity.rs                       C retirement, recreation and foreign owners
+      lifecycle.rs                      C staged effects, stops and cleanup
 ```
 
 Existing owner types construct all admitted selections and transition custody.
 Only audience facades export the ordinary Query workflow; consumer code does not
-import World, Native or cert-only replay to perform it. CAD owns authored intent
-meaning and model-head selection. Cross-domain fork composition remains in Query
+import World, Native or cert-only replay to perform it. The public application's
+domain owns authored intent meaning and model-head selection. Cross-domain fork composition remains in Query
 and World, and Native remains authoritative for its source axes. No new Native
 algorithm is required where the existing receiver already proves the contract.
 
-First complete the ordinary expected-basis handoff and its comparison-to-fork
-race court through Decl/Host. Then record one typed proposal, release its original
-request and accept it through the real CAD family path with a freshly admitted
-selection. Expand that same journey with the hostile sequences above and actual
-storage/close lifecycle. Commit reviewed slices; phase acceptance still requires
-the complete public and private journeys and their required repository gates.
+The application's meaning axis is its declared schema; its application children
+separate model selection, storage lifecycle, acceptance control flow and attempt
+delivery. Courts group by the invariant they can independently break. Application
+code imports only the public facades; no owner test hook becomes a production
+capability. Facades aggregate exports and contain no workflow. New parameter
+families extend typed schema/codec declarations; they must not grow an untyped
+dispatcher in acceptance. These destinations are populated only as their
+responsibility is implemented and remain subject to the ordinary file limits.
+
+Implement the remaining work in this dependency order, committing reviewed slices:
+
+1. Declare the public application's model/proposal meaning and typed input
+   codecs. Establish genuine model creation, actual-slot ownership and separately
+   disposable storage. Prove recording does not change the authored model.
+2. Complete the public record/load/fresh-accept journey, consuming the already
+   qualified selection, fork and adoption path. Join fresh disclosure and
+   mutation admission before retry lookup; retain ordinary attempt outcomes and
+   delivery/cleanup custody before adding broad hostile coverage.
+3. Add the failure families at their actual boundaries. Remove unconditional
+   fork/resampling, name-only target binding, unguarded slot insertion, premature
+   old-head retirement and cached-disclosure shortcuts from this application
+   path. Repair shared public owners if the journey exposes a missing contract.
+4. Update the compiled consumer recipe, qualify affected public courts and
+   required public gates, and obtain final review of source, tests and docs.
+   Merge the complete public phase. No private lane is needed to establish any
+   of these claims.
 
 The compiled public basis handoff makes the freshly admitted selection explicit.
 The application must first load its proposal/model through ordinary READ admission:
@@ -2042,12 +2264,14 @@ application.on_branch(previous).close(&phase)?;
 For application authors, extend `docs/build-an-application.md` and
 `docs/capability-index.md` with the compiled expected-basis workflow, independent
 READ/mutation refusal, attempt retries and cleanup. Keep the ordinary request
-guide authoritative for admission. For CAD callers, update the entry usage in
-the Proprietary `README.md` and correct the proposal wording in
-`cad/docs/plans/general-modeling.md` to describe reissuing authored requests,
-storage ownership and typed stale/retired outcomes. Consumer guides teach the
-implemented behavior only; they do not advertise this target API before it works
-or contain handoff logistics, qualification counts or milestone history.
+guide authoritative for admission. Extend the branch guide's stored-basis recipe
+with the real compiled public proposal example. Explain the distinct proposal,
+model and result READs, independent mutation admission, new-attempt versus
+same-attempt retry, actual-head adoption and post-adoption cleanup/delivery
+failure. Remove guidance that equates acceptance with replay onto the latest
+basis. Consumer guides teach implemented behavior only; they do not advertise a
+target API before it works or contain handoff logistics, qualification counts,
+milestone history or private adoption claims.
 
 ---
 
@@ -2283,10 +2507,14 @@ shows the same calls with original receipts and retained endpoint observations.
   managed-derived-view explanation in the application guide and
   `workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md`
   with compiled two-facade examples. Update `CONTRIBUTING.md` with exact qualified
-  Rust identities and the upgrade procedure. In Proprietary, update
+  Rust identities and the upgrade procedure. For phases retaining explicit
+  private adoption obligations, update
   `cad/docs/plans/platform-gaps.md`, `query-9.18.1-adoption.md` beside it, and the
-  existing general-modeling Acceptance 8/proposal sections with actual adoption
+  existing general-modeling Acceptance 8 sections with actual adoption
   and measurements; a public platform court alone does not assert private closure.
+  Phase 17's public-only certification boundary is explicit: its proposal recipe
+  and failure matrix close through public Decl/Host tests and public gates.
+  It requires no private documentation edit or private adoption certificate.
 
 QA must review real receipt acquisition and request authority, exact source/product
 binding, disclosure and metadata leakage, refused-progress/close custody, retained
@@ -2306,7 +2534,7 @@ specification change checks links, scope and path claims without compiling runti
   is proved through the current two-facade public composition and grouped courts.
   No added finding is satisfied by a raw re-export, a future-work note or an old
   lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
-  The retained Proprietary findings include storage/acceptance qualification and
+  The retained Proprietary findings include storage qualification and
   mandatory current Rust qualification, plus P1 consecutive source undo after
   verified reversal/restoration. 9.19 owns the general index extension,
   both index readers and their final private locality cutover. Phase numbering
@@ -2316,6 +2544,10 @@ specification change checks links, scope and path claims without compiling runti
   update, with its workarounds deleted.
 - Platform certification alone is platform evidence. The Proprietary adoption
   gate stays open until the private build passes.
+- Phase 17 is certified entirely by its public application/owner courts, public
+  documentation and public gates. Its completion requires no private repository
+  edit, SDK pin or private build. This exception does not waive another phase's
+  expressly retained Proprietary requirement or assert private integration.
 - Each implementation commit runs:
   - `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .`;
   - `cargo run --manifest-path tools/agent-context/Cargo.toml -- check`;

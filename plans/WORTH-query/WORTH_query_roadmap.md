@@ -5815,9 +5815,10 @@ source identity, expose bounded native record/aspect history, and remove the two
 identified obsolete catalog/alias surfaces in one cleanup batch. All of it is
 domain-neutral and reached through Query declarations and ordinary governed
 requests, never through raw runtime handles or receipt-reconstructed authority.
-The retained Proprietary follow-through adds honest failure causes, measured
-cell-version/history cost, fresh proposal acceptance and current stable Rust
-qualification. The general index extension and spatial-dependent locality are
+The retained follow-through adds honest failure causes, measured
+cell-version/history cost, public proposal acceptance and current stable Rust
+qualification. Phase 17 is certified at the public application boundary without
+requiring private adoption. The general index extension and spatial-dependent locality are
 governed by 9.19 with its final integrated private cutover.
 P1 correction follow-through makes an earlier source reversible again once all
 later overlapping occurrences have been genuinely reversed; live or reapplied
@@ -5857,7 +5858,9 @@ The governing milestone spec is
   private platform workarounds; spatial-dependent locality is required in 9.19
 - proposal acceptance reissuing fresh ordinary requests from versioned domain
   intents, with exact Native/World expected-source fork/adoption and genuine
-  target occurrences; replay remains cert-only
+  target occurrences; public Decl/Host tests certify storage isolation, authority,
+  identity, retries, races and cleanup without a private consumer gate; replay
+  remains cert-only
 - mandatory exact-release Rust 1.99.x sort qualification and current qualified
   stable workspace/CI/Proprietary toolchains; the qualified workspace/CI 1.99.1/full
   `58cf8f9c35b355199727627d07ae34a4e2846d67` retains the reviewed
@@ -5886,8 +5889,12 @@ assertions. Exact caller/export inventory qualifies the single cleanup batch.
 Reuse existing grouped targets; a spec-only revision checks links and path claims.
 
 The retained installed write and compiler probes preserve their exact causes;
-proposal acceptance refuses revoked/stale authority through ordinary
-admission. Exact official Rust release/commit qualification preserves canonical
+proposal acceptance refuses revoked/stale authority through ordinary admission.
+[Phase 17's public failure matrix](milestone-9.18.1.md#public-failure-matrix)
+and operational sequence govern its complete public certification; private CAD
+integration is not a prerequisite or an implied result. Other phases retain
+their explicit private adoption obligations.
+Exact official Rust release/commit qualification preserves canonical
 ordering, work/storage bounds and versioned digest meaning; adding an allowlist
 entry or retaining Rust 1.98 alone cannot satisfy this milestone.
 
