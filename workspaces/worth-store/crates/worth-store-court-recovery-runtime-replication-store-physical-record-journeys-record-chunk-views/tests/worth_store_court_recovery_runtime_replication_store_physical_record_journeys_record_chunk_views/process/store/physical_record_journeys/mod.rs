@@ -1,3 +1,5 @@
+#[path = "child_process.rs"]
+pub(crate) mod child_process;
 #[path = "integrity_scrub/mod.rs"]
 pub(crate) mod integrity_scrub;
 #[path = "maintenance_interference/mod.rs"]

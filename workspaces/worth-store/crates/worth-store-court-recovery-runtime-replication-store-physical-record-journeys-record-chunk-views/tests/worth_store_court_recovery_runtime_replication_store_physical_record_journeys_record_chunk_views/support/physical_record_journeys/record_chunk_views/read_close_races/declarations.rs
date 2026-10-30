@@ -1,10 +1,18 @@
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
-pub(crate) use {std::time::Duration};
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::thread;
+pub(crate) use std::time::Duration;
 
-pub(crate) use {worth_store::physical_runtime::PhysicalReadProtectionDisposition, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordStreamFailureKind};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalReadProtectionDisposition,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordStreamFailureKind,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture, crate::record_chunk_views::managed_append::append};
+pub(crate) use {
+    crate::record_chunk_views::managed_append::append,
+    worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture,
+};
 
 pub(crate) fn race_read_with_shutdown(abort: bool, copy: bool) {
     let parent = tempfile::tempdir().unwrap();
@@ -17,7 +25,9 @@ pub(crate) fn race_read_with_shutdown(abort: bool, copy: bool) {
         .unwrap()
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(100).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(100).unwrap(),
+            ),
         )
         .unwrap();
     let work_before = session.observation().physical_work_count();
@@ -27,11 +37,15 @@ pub(crate) fn race_read_with_shutdown(abort: bool, copy: bool) {
         if copy {
             let mut bytes = [0; 100];
             let count = session.read_next(&mut bytes).unwrap();
-            await_close.recv_timeout(std::time::Duration::from_secs(10)).unwrap();
+            await_close
+                .recv_timeout(std::time::Duration::from_secs(10))
+                .unwrap();
             assert_eq!(&bytes[..count], expected);
         } else {
             let chunk = session.next_chunk().unwrap().unwrap();
-            await_close.recv_timeout(std::time::Duration::from_secs(10)).unwrap();
+            await_close
+                .recv_timeout(std::time::Duration::from_secs(10))
+                .unwrap();
             assert_eq!(chunk.bytes(), expected);
         }
         assert_eq!(session.observation().physical_work_count(), work_before);

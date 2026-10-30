@@ -1,10 +1,24 @@
-#[allow(unused_imports)] use worth_store_testkit_store::physical_record_journeys::maintenance_interference::canonical::*;
-use {std::io::Write};
-use {std::path::Path};
+use std::io::Write;
+use std::path::Path;
+#[allow(unused_imports)]
+use worth_store_testkit_store::physical_record_journeys::maintenance_interference::canonical::*;
 
-use {worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalWorkCapacity};
+use {
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalWorkCapacity,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append, worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies, worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize, worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement, worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files, worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_ids, worth_store_testkit_store::physical_record_journeys::maintenance_interference::RESIDENT_BYTES};
+use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_ids,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::RESIDENT_BYTES,
+};
 
 #[test]
 fn canonical_world_reopens_into_the_cold_extent_interleave() {
@@ -62,16 +76,22 @@ fn canonical_world_reopens_into_the_cold_extent_interleave() {
     assert!(rotations(&serving) >= 2);
     serving.close();
 
-    let format = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let walk = worth_store_testkit_store::physical_record_journeys::manifest_fixture::decode_routing_tree(&root, generation, format, 4);
+    let format = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap();
+    let walk =
+        worth_store_testkit_store::physical_record_journeys::manifest_fixture::decode_routing_tree(
+            &root, generation, format, 4,
+        );
     let level = walk.routing_level().unwrap_or(0);
     assert!(level >= 1, "routing height {level} is not multilevel");
 
-    let output = worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
-        "interference_canonical_child",
-        &root,
-        Some(&generation.to_string()),
-    );
+    let output =
+        worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
+            "interference_canonical_child",
+            &root,
+            Some(&generation.to_string()),
+        );
     let line = output
         .lines()
         .find(|line| line.starts_with("PHASE6_CANONICAL "))

@@ -1,7 +1,16 @@
-use {worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalResidencyRetryPosture, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordStreamFailureKind};
+use {
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::PhysicalResidencyRetryPosture,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordStreamFailureKind,
+};
 
-use {worth_store_testkit_store::durable_publication::root::publish_single};
-use {worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture};
+use worth_store_testkit_store::durable_publication::root::publish_single;
+use worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture;
 
 #[test]
 fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation() {
@@ -13,7 +22,8 @@ fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([171; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let operation_bytes_before_read = serving
         .residency_observation()
@@ -23,13 +33,18 @@ fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation
 
     let denial = match serving.records().expect("read protection admission").open(
         record,
-        worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32 - 1).unwrap()),
+        worth_store::physical_runtime::RecordReadLimits::new(
+            worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32 - 1).unwrap(),
+        ),
     ) {
         Err(error) => error,
         Ok(_) => panic!("a caller limit below the logical payload must deny the read session"),
     };
 
-    assert_eq!(denial.denial(), worth_store::physical_runtime::RecordReadDenial::CallerLimitExceeded);
+    assert_eq!(
+        denial.denial(),
+        worth_store::physical_runtime::RecordReadDenial::CallerLimitExceeded
+    );
     assert_eq!(
         denial.observation().bytes_requested(),
         expected.len() as u64
@@ -49,7 +64,9 @@ fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
     {
@@ -82,10 +99,13 @@ fn public_extent_views_preserve_exact_over_pin_pressure_without_revoking_store_h
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([171; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+    );
     let reader = serving.records().expect("read protection admission");
     {
         let mut first = reader.open(record, limits).unwrap();
@@ -101,12 +121,18 @@ fn public_extent_views_preserve_exact_over_pin_pressure_without_revoking_store_h
             Err(failure) => failure,
             Ok(_) => panic!("the third public view must exceed the two-lease policy"),
         };
-        assert_eq!(failure.kind(), worth_store::physical_runtime::RecordStreamFailureKind::PhysicalPressure);
+        assert_eq!(
+            failure.kind(),
+            worth_store::physical_runtime::RecordStreamFailureKind::PhysicalPressure
+        );
         assert_eq!(failure.completed_range(), 0..0);
         let pressure = failure
             .pressure()
             .expect("stream pressure must carry exact Store-facing evidence");
-        assert_eq!(pressure.dimension(), worth_store::physical_runtime::PhysicalResidencyDimension::PinLeases);
+        assert_eq!(
+            pressure.dimension(),
+            worth_store::physical_runtime::PhysicalResidencyDimension::PinLeases
+        );
         assert_eq!(
             pressure.scope(),
             worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundRead

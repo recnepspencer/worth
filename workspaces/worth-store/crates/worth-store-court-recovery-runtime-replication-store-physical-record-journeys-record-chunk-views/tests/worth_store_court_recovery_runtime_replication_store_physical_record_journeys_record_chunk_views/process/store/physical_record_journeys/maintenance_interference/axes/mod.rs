@@ -1,9 +1,17 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::maintenance_interference::axes::*;
-use {std::num::NonZeroU32};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::maintenance_interference::axes::*;
+use std::num::NonZeroU32;
 
-use {worth_store::physical_runtime::PhysicalReadProtectionDenial, worth_store::physical_runtime::PhysicalReadProtectionPolicy};
+use {
+    worth_store::physical_runtime::PhysicalReadProtectionDenial,
+    worth_store::physical_runtime::PhysicalReadProtectionPolicy,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize_protection, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement};
+use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize_protection,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+};
 
 #[test]
 fn live_leases_admit_one_and_reject_the_next() {
