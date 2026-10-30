@@ -136,6 +136,13 @@ pub(crate) fn discover(
 /// request stops retain their exact causes.
 struct LifecycleSource<'a, 'b>(StructuralSource<'a, 'b>);
 impl SourceRead for LifecycleSource<'_, '_> {
+    fn admit_definition(
+        &mut self,
+        registry: &RelationalSchemaRegistry,
+        handle: &crate::derived_relation::DerivedRelationHandle,
+    ) -> Result<(), Denial> {
+        self.0.admit_definition(registry, handle)
+    }
     fn checkpoint(&mut self, units: usize) -> Result<(), Denial> {
         self.0.checkpoint(units)
     }

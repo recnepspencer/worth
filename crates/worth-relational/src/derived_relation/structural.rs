@@ -66,6 +66,12 @@ impl<'runtime> StructuralRelationView<'runtime> {
         self.read_budget()
             .check_live()
             .map_err(Denial::Structural)?;
+        self.read_budget()
+            .checkpoint(self.derived_admissions.probe_work())
+            .map_err(Denial::Structural)?;
+        if self.derived_admissions.contains(definition) {
+            return Ok(());
+        }
         let (registry, _) = self
             .structural_source
             .as_ref()
@@ -114,6 +120,12 @@ impl<'runtime> StructuralRelationView<'runtime> {
             self.require_entity_kind(carrier)
                 .map_err(|error| self.derived_refusal(error))?;
         }
+        // Only the actual registry and this consumer's successful audience
+        // checks can populate this immutable view's inline admission cache.
+        self.read_budget()
+            .checkpoint(self.derived_admissions.probe_work())
+            .map_err(Denial::Structural)?;
+        self.derived_admissions.remember(definition);
         Ok(())
     }
 
@@ -219,6 +231,22 @@ pub(crate) struct StructuralSource<'borrow, 'runtime> {
 }
 
 impl SourceRead for StructuralSource<'_, '_> {
+    fn admit_definition(
+        &mut self,
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        handle: &Handle,
+    ) -> Result<(), Denial> {
+        if self
+            .view
+            .structural_source
+            .as_ref()
+            .is_some_and(|(actual, _)| std::ptr::eq(actual.registry(), registry))
+        {
+            self.view.require_derived_relation(handle)
+        } else {
+            super::evaluation::admit_definition(registry, handle, self)
+        }
+    }
     fn checkpoint(&mut self, units: usize) -> Result<(), Denial> {
         self.view
             .read_budget()

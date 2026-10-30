@@ -15,6 +15,16 @@ use navigation::Frame;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(crate) trait SourceRead {
+    fn admit_definition(
+        &mut self,
+        registry: &RelationalSchemaRegistry,
+        handle: &Handle,
+    ) -> Result<(), Denial>
+    where
+        Self: Sized,
+    {
+        admit_definition(registry, handle, self)
+    }
     fn checkpoint(&mut self, units: usize) -> Result<(), Denial>;
     fn retain(&mut self, bytes: usize) -> Result<(), Denial>;
     fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial>;
@@ -71,7 +81,7 @@ pub(crate) fn evaluate_position(
     root: Member,
     read: &mut impl SourceRead,
 ) -> Result<Data, Denial> {
-    admit_definition(registry, handle, read)?;
+    read.admit_definition(registry, handle)?;
     let key = Key {
         definition: handle.clone(),
         node,

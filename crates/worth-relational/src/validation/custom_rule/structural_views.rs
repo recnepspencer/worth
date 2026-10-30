@@ -2,6 +2,8 @@ use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::validation::engine::state_view::InvariantStateView;
+mod derived_admission;
+pub(crate) use derived_admission::DerivedAdmissionCache;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StructuralRelationRecord {
@@ -79,6 +81,8 @@ impl<'runtime> StructuralAspectStateView<'runtime> {
 
 #[derive(Clone)]
 pub struct StructuralRelationView<'runtime> {
+    // Clones retain this exact immutable access/source. Rebinding resets it.
+    pub(crate) derived_admissions: DerivedAdmissionCache,
     pub(crate) structural_source: Option<(
         crate::schema::SchemaRegistryCustody,
         crate::validation::engine::InvariantSourceAffinity,
@@ -148,6 +152,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
             work,
             access,
             structural_source: None,
+            derived_admissions: Default::default(),
             aggregate: None,
             #[cfg(test)]
             walk_observer: None,
