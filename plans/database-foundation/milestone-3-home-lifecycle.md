@@ -169,9 +169,15 @@ completion of this planned slice, not after individual writes. Record exact
 commands, head, clean/dirty state, times, exit and test counts in lane logs.
 Use pinned Rust 1.99.1 and committed profiles, preserve MSRV 1.94, and export
 no artifact-changing settings. Never run ignored, Query-scale or worth-ui
-tests. Timing-sensitive/process captures require an exclusive agreed slot.
+tests. Ordinary focused process correctness runs may overlap under Root
+coordination. Controlled timing comparisons require an exclusive agreed window.
 
 ### Next ownership transfer and reserved handoff
+
+The next concrete batch is specified in
+[Application home ownership](milestone-3-application-home.md). Its shared
+identity, issuer, frame and recovery contracts are in
+[Durable owner contracts](milestone-3-durable-owner-contracts.md).
 
 After this prerequisite, `worth-store-application` takes physical lifecycle,
 descriptor/registry and single checkpoint selection. `worth-store-relational`
