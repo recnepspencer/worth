@@ -19,6 +19,12 @@ pub enum WorthQueryManagedIndexStop {
     SourceSlotUnavailable,
     CapacityOverflow,
     IncrementalUnavailable,
+    SourceStructureUnavailable,
+    SourceStructureIncomplete,
+    DuplicateSourceSlot,
+    DuplicateNodeParent,
+    SourceStructureCycle,
+    OrderedStorage(worth_execution::ExecutionOrderedMapDenial),
     NativeSource(worth_relational::facade::runtime::StructuralWalkDenialKind),
 }
 
@@ -32,5 +38,15 @@ pub enum WorthQueryManagedIndexProviderStop<Domain> {
 impl<D> From<WorthQueryManagedIndexStop> for WorthQueryManagedIndexProviderStop<D> {
     fn from(cause: WorthQueryManagedIndexStop) -> Self {
         Self::Controlled(cause)
+    }
+}
+
+impl From<worth_execution::ExecutionOrderedMapDenial> for WorthQueryManagedIndexStop {
+    fn from(cause: worth_execution::ExecutionOrderedMapDenial) -> Self {
+        match cause {
+            worth_execution::ExecutionOrderedMapDenial::Request(cause) => Self::Request(cause),
+            worth_execution::ExecutionOrderedMapDenial::CapacityOverflow => Self::CapacityOverflow,
+            cause => Self::OrderedStorage(cause),
+        }
     }
 }

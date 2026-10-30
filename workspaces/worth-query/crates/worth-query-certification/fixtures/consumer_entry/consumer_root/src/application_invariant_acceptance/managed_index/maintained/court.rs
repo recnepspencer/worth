@@ -13,6 +13,7 @@ mod cancellation;
 mod decision_scope;
 mod membership;
 mod retirement;
+mod source_structure;
 
 fn find(scope: &str, prefix: &str) -> query::FindPrefix {
     query::FindPrefix {

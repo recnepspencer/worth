@@ -27,6 +27,11 @@ impl<S: ModelSchema> ApplicationManagedIndexBinding<S> for ModelIndex<S> {
     const NAME: &'static str = "PrincipalPrefix";
     const PROVIDER: &'static str = "worth.query.tests.prefix-provider.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const STRUCTURE: ApplicationManagedIndexSourceStructure = if S::MODE == 5 {
+        ApplicationManagedIndexSourceStructure::BinarySourceTree
+    } else {
+        ApplicationManagedIndexSourceStructure::Opaque
+    };
 }
 pub struct OtherIndex<S>(PhantomData<fn() -> S>);
 impl<S: ModelSchema> ApplicationManagedIndexBinding<S> for OtherIndex<S> {

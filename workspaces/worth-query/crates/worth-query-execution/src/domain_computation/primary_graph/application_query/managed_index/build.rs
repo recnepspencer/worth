@@ -16,7 +16,13 @@ pub(super) fn build<S, I, P>(
     provider: &P,
     build_session: WorthQueryGraphWorkSessionIdentity,
     image: SourceImageView<'_>,
-) -> Result<WorthQueryManagedIndexNodes<P::Node>, WorthQueryManagedIndexWorkDenial>
+) -> Result<
+    (
+        WorthQueryManagedIndexNodes<P::Node>,
+        Option<super::source_structure::SourceTree>,
+    ),
+    WorthQueryManagedIndexWorkDenial,
+>
 where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
@@ -43,6 +49,15 @@ where
         let result = provider.build(&sources, &mut writer, control);
         sources.check()?;
         let root = provider_result(execution, control, result)?;
-        writer.seal(execution, root).map_err(Into::into)
+        let mut nodes = writer.seal(execution, root)?;
+        let structure = super::source_structure::qualify(
+            execution,
+            provider,
+            &sources,
+            &mut nodes,
+            super::source_structure::Step::Cold,
+            control,
+        )?;
+        Ok((nodes, structure))
     })
 }

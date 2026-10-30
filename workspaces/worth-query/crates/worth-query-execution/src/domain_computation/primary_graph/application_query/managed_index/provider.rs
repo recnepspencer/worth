@@ -1,7 +1,8 @@
 //! One provider contract for spatial and nonspatial pure mechanisms.
 use super::{
     WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
-    WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
+    WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
+    WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
     WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexSourceRows,
 };
 use worth_query_declaration::facade::{
@@ -63,6 +64,20 @@ where
         candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), WorthQueryManagedIndexProviderStop<Self::Denial>>;
+
+    /// Describe the actual node's Source contribution and child coordinates.
+    /// BinarySourceTree roots are checked by Query; this is no query coverage assertion.
+    fn decompose(
+        &self,
+        _sources: &WorthQueryManagedIndexSourceRows<'_, S, I>,
+        _node: Self::Node,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<WorthQueryManagedIndexNodeRegion, WorthQueryManagedIndexProviderStop<Self::Denial>>
+    {
+        Err(control
+            .refuse(super::WorthQueryManagedIndexStop::SourceStructureUnavailable)
+            .into())
+    }
 
     /// Isolated maintenance of the actual changed occurrences. The writer edits
     /// immutable retained pages; returning a root never publishes it. A provider

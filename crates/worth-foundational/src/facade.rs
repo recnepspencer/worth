@@ -421,7 +421,8 @@ pub use crate::locators::{
     FoundationalSelectedNodeScopeLocator, FoundationalTransitionLocator, LocatorAuthority,
 };
 pub use crate::managed_index_source::{
-    ManagedIndexColdSourcePosture, ManagedSourceInterpretationCommitment,
+    ManagedIndexColdSourcePosture, ManagedIndexSourceStructure,
+    ManagedSourceInterpretationCommitment,
 };
 pub use crate::performance::{
     attach_counter_backed_performance_receipt, attach_performance_bundle,

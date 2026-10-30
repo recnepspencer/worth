@@ -196,15 +196,33 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
         self.control.poll()
     }
     pub(super) fn validate(&self, slot: WorthQueryManagedIndexSourceSlot) -> Result<(), Stop> {
-        if slot.owner != self.image.owner {
-            return Err(self.control.refuse(Stop::ForeignSourceSlot));
+        self.image.validate_slot(slot, self.control)
+    }
+}
+
+impl SourceImageView<'_> {
+    pub(super) fn len(&self) -> usize {
+        match self.rows {
+            SourceImageRows::Completed { order, .. } => order.len(),
+            SourceImageRows::Maintained(rows) => rows.len(),
         }
-        match (self.image.rows, slot.entity) {
+    }
+    pub(super) fn validate_slot(
+        &self,
+        slot: WorthQueryManagedIndexSourceSlot,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<(), Stop> {
+        if slot.owner != self.owner {
+            return Err(control.refuse(Stop::ForeignSourceSlot));
+        }
+        match (self.rows, slot.entity) {
             (SourceImageRows::Maintained(rows), Some(entity))
-                if slot.ordinal == 0 && rows.contains(entity) => {}
-            (SourceImageRows::Completed { .. }, None) if slot.ordinal < self.len() => {}
-            _ => return Err(self.control.refuse(Stop::SourceSlotUnavailable)),
+                if slot.ordinal == 0 && rows.contains(entity) =>
+            {
+                Ok(())
+            }
+            (SourceImageRows::Completed { .. }, None) if slot.ordinal < self.len() => Ok(()),
+            _ => Err(control.refuse(Stop::SourceSlotUnavailable)),
         }
-        Ok(())
     }
 }

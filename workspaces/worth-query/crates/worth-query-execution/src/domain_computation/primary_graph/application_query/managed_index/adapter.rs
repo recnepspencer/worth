@@ -64,8 +64,9 @@ where
         build_session: Session,
         image: source_rows::SourceImageView<'_>,
     ) -> Result<Arc<dyn Any + Send + Sync>, WorthQueryManagedIndexWorkDenial> {
-        let nodes = build::build::<S, I, P>(execution, &self.provider, build_session, image)?;
-        node_backing::retain::<S, I, P>(execution, nodes).map_err(Into::into)
+        let (nodes, structure) =
+            build::build::<S, I, P>(execution, &self.provider, build_session, image)?;
+        node_backing::retain::<S, I, P>(execution, nodes, structure).map_err(Into::into)
     }
     fn candidates(
         &self,
@@ -141,6 +142,9 @@ where
             let mut writer = retained
                 .nodes
                 .edit(*execution, capacity, after.len(), control)?;
+            if retained.structure.is_some() {
+                writer.track_changes();
+            }
             let root = provider_result(
                 execution,
                 control,
@@ -155,8 +159,14 @@ where
             )?;
             before.check()?;
             after.check()?;
-            let nodes = writer.seal(execution, root)?;
-            node_backing::retain::<S, I, P>(execution, nodes).map_err(Into::into)
+            let mut nodes = writer.seal(execution, root)?;
+            let structure = match (I::STRUCTURE, retained.structure.as_ref()) {
+                (worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceStructure::Opaque, None) => None,
+                (worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree, Some(previous)) => super::source_structure::qualify(execution, &self.provider, &after, &mut nodes,
+                    super::source_structure::Step::Warm { before: previous, changes }, control)?,
+                _ => return Err(control.refuse(WorthQueryManagedIndexStop::SourceStructureIncomplete).into()),
+            };
+            node_backing::retain::<S, I, P>(execution, nodes, structure).map_err(Into::into)
         })
     }
 }

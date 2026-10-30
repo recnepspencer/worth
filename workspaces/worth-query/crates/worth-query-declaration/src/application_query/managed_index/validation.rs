@@ -5,10 +5,15 @@ use super::{
 pub(super) fn validate_definition(
     parts: &WorthQueryPortableManagedIndexParts,
 ) -> Result<(), Denial> {
-    if parts.semantic_version != 1 {
+    if !matches!(parts.semantic_version, 1 | 2) {
         return Err(Denial::UnsupportedVersion {
             observed: parts.semantic_version,
         });
+    }
+    if parts.semantic_version == 1
+        && parts.structure != super::ApplicationManagedIndexSourceStructure::Opaque
+    {
+        return Err(Denial::UnsupportedSourceStructure);
     }
     if [&parts.name, &parts.provider, &parts.entity]
         .into_iter()

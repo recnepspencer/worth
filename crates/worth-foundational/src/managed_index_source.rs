@@ -44,3 +44,21 @@ impl ManagedIndexColdSourcePosture {
         }
     }
 }
+
+/// Portable structure exposed by an index, not a query-completeness or READ witness.
+#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+pub enum ManagedIndexSourceStructure {
+    /// Provider-private topology; dependencies remain conservative.
+    #[default]
+    Opaque,
+    /// One connected binary decomposition containing each Source occurrence once.
+    BinarySourceTree,
+}
+impl ManagedIndexSourceStructure {
+    pub const fn canonical_token(self) -> &'static str {
+        match self {
+            Self::Opaque => "opaque",
+            Self::BinarySourceTree => "binary-source-tree-v1",
+        }
+    }
+}

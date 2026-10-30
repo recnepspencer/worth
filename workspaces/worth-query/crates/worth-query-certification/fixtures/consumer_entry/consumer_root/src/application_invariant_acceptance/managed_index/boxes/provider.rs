@@ -18,6 +18,8 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const NAME: &'static str = "catalog_box_index";
     const PROVIDER: &'static str = "managed-catalog.closed-box2.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
 }
 // compiled-example: end
 pub type Node = BoxNode<WorthQueryManagedIndexNodeId>;
@@ -43,6 +45,23 @@ impl Calls {
 }
 pub struct Provider(pub Arc<Calls>);
 impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
+    fn decompose(
+        &self,
+        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
+        node: Node,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
+        control.checkpoint(1)?;
+        Ok(match node.links {
+            worth_query_consumer_values::BoxNodeLinks::Leaf { source } => {
+                WorthQueryManagedIndexNodeRegion::new(Some(sources.at(source)?.0), [None, None])
+            }
+            worth_query_consumer_values::BoxNodeLinks::Branch { left, right } => {
+                WorthQueryManagedIndexNodeRegion::new(None, [Some(left), Some(right)])
+            }
+        })
+    }
+
     type Node = Node;
     type Denial = BoxIndexDenial;
     const IDENTITY: &'static str = BoxIndex::PROVIDER;

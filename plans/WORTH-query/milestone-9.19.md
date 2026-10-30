@@ -1609,6 +1609,12 @@ adapter rewrite or CAD cutover is required here.
 
 ### Phase 3: Complete Membership, Exact Refinement And Disclosure
 
+The first slice now binds a versioned BinarySourceTree profile and admits the
+exact Source occurrence universe at cold construction and maintained edits.
+Its [boundary, implementation and evidence](milestone-9.19-phase3-source-structure-plan.md)
+do not establish query traversal coverage. The remaining requirements below are
+unfinished.
+
 **Owner:** Query access admission, managed dependencies and provider/domain refinement.
 **Depends on:** Phases 1–2 and existing installed capability/disclosure admission.
 **Result:** managed access returns complete admitted candidates and the evidence

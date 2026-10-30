@@ -17,6 +17,7 @@ mod affinity;
 mod installation;
 mod publication;
 mod registration;
+mod source_structure;
 
 fn find(prefix: &str) -> query::FindPrefix {
     query::FindPrefix {

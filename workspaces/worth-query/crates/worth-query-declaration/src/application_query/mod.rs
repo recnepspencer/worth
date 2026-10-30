@@ -27,9 +27,9 @@ pub use managed_index::{
     ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexRef,
     ApplicationManagedIndexSelectionRecipe, ApplicationManagedIndexSourceMeaning,
     ApplicationManagedIndexSourceParameters, ApplicationManagedIndexSourceScope,
-    ApplicationQueryManagedIndexMeaning, ErasedApplicationManagedIndexDefinition,
-    WorthQueryPortableManagedIndexParts, WorthQueryPortableManagedIndexProbeParts,
-    WorthQueryPortableQueryManagedIndexParts,
+    ApplicationManagedIndexSourceStructure, ApplicationQueryManagedIndexMeaning,
+    ErasedApplicationManagedIndexDefinition, WorthQueryPortableManagedIndexParts,
+    WorthQueryPortableManagedIndexProbeParts, WorthQueryPortableQueryManagedIndexParts,
 };
 mod orbit;
 mod ordering;

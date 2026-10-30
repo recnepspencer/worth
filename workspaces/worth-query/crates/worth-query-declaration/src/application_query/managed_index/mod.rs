@@ -15,7 +15,10 @@ pub use source::{
     ApplicationManagedIndexSourceScope,
 };
 mod validation;
-pub use worth_foundational::facade::ManagedIndexColdSourcePosture as ApplicationManagedIndexColdSource;
+pub use worth_foundational::facade::{
+    ManagedIndexColdSourcePosture as ApplicationManagedIndexColdSource,
+    ManagedIndexSourceStructure as ApplicationManagedIndexSourceStructure,
+};
 
 pub use definition::{
     ApplicationManagedIndexDefinition, ApplicationManagedIndexDefinitionDenial,

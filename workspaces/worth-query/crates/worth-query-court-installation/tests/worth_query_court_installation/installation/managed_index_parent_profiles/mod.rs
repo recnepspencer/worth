@@ -130,3 +130,55 @@ fn installed_parent_profiles_preserve_identity_and_refuse_codec_or_disclosure_dr
         queries::ModelIndex::<model::ParentSchema<3>>::NAME
     );
 }
+
+#[test]
+fn installed_source_structure_changes_canonical_meaning_and_keeps_its_typed_profile() {
+    type Opaque = model::ParentSchema<0>;
+    type Tree = model::ParentSchema<5>;
+    let opaque = Opaque::declaration().unwrap();
+    let tree = Tree::declaration().unwrap();
+    let normalize = |declaration: &ApplicationSchemaDeclaration<Tree>| {
+        declaration
+            .erased()
+            .members()
+            .iter()
+            .cloned()
+            .map(|member| {
+                if let ApplicationSchemaMember::ManagedIndex { definition } = member {
+                    let mut parts = definition.parts().clone();
+                    parts.structure = ApplicationManagedIndexSourceStructure::Opaque;
+                    ApplicationSchemaMember::ManagedIndex {
+                        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                            parts,
+                        ),
+                    }
+                } else {
+                    member
+                }
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        opaque.erased().members(),
+        normalize(&tree),
+        "only Source structure differs"
+    );
+    assert_ne!(
+        opaque.identity(),
+        tree.identity(),
+        "canonical identity binds that structural meaning"
+    );
+    let installed = bind::<5>().unwrap();
+    let index = installed
+        .installed_managed_index::<queries::ModelIndex<Tree>>()
+        .unwrap();
+    assert_eq!(
+        index.definition().parts().structure,
+        ApplicationManagedIndexSourceStructure::BinarySourceTree
+    );
+    assert!(index.admits_parent(
+        &installed
+            .installed_query_binding::<queries::ParentBinding<Tree>>()
+            .unwrap()
+    ));
+}

@@ -19,6 +19,19 @@ fn invoice<T>(operation: impl FnOnce() -> T) -> (T, u64) {
 }
 
 #[test]
+fn source_structure_warm_work_keeps_local_growth_on_real_small_chains() {
+    let small = journey(16, 0);
+    let large = journey(32, 0);
+    eprintln!("Source structure local invoices16={small:?}32={large:?}");
+    for (first, doubled) in [(small.0, large.0), (small.1, large.1)] {
+        assert!(
+            doubled <= first * 5 / 4,
+            "local structural admission must keep the original invoice's bounded growth"
+        );
+    }
+}
+
+#[test]
 fn geometry_chain_growth_uses_real_source_and_original_sdk_invoice() {
     let small = journey(1_000, 0);
     let large = journey(2_000, 0);

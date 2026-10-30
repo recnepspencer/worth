@@ -5638,6 +5638,19 @@ Use a fresh lawful request for another explicit rebuild. Historical/pinned
 managed-index reads and rebuilds remain unsupported; ordinary historical Source
 reads retain their existing contract.
 
+Declare `STRUCTURE = ApplicationManagedIndexSourceStructure::BinarySourceTree` and
+implement `decompose` to expose each node's own Source occurrence and binary
+children. Query checks exact Source membership, unique slots and parents,
+connectivity and absence of cycles before retaining the root. Warm edits carry
+that correspondence using actual changed node coordinates and Native Source
+deltas. Opaque structure remains an explicit conservative profile. Definition v1
+means Opaque; v2 transports the declared profile.
+
+A Source-complete tree is not complete query coverage or a verified narrowed
+footprint. Candidate matching still uses the provider; Source dependencies remain
+conservative. Framework traversal/pruning, tracked exact refinement and retained
+predicate routing remain unfinished Phase 3 work.
+
 Indexed results retain complete positive, empty and ordering dependencies from
 the original Source, including nonmatching rows. The ordinary `expect_source`
 and `expect_result_set` mutation entrances consume these observations under the
@@ -5680,6 +5693,8 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
 }
 ```
 
@@ -5692,6 +5707,8 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const NAME: &'static str = "catalog_box_index";
     const PROVIDER: &'static str = "managed-catalog.closed-box2.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
 }
 ```
 
@@ -5899,9 +5916,10 @@ authors 1,000/2,000-vertex chains and 50,000 genuine remote enclosures through
 installed actions. Both affected directories contain the remote geometry; the
 edited vertex keeps degree two and the fixed probe keeps sparse output. Complete
 ordinary Source reads are checked against authored coordinates outside measured
-work. Original SDK invoices include Source acquisition, reverse-scope discovery,
+work. The recorded Phase 2 predecessor invoices include Source acquisition, reverse-scope discovery,
 provider updates, rules and publication. Cold setup is admitted and invoiced
-separately; unchanged warm roots are never rebuilt. Retaining a one-shot response
+separately; unchanged warm roots are never rebuilt. The new BinarySourceTree
+admission adds structural work and is not yet requalified at this large scale. Retaining a one-shot response
 does not register a live predicate or qualify later retained-query routing.
 
 A branch created through `ForkExact` attaches the selected immutable managed

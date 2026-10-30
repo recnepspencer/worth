@@ -13,6 +13,12 @@ pub(super) fn append(
     basis.text(format!("{prefix}.name"), &parts.name);
     basis.text(format!("{prefix}.provider"), &parts.provider);
     basis.u32(format!("{prefix}.provider-version"), parts.provider_version);
+    if parts.semantic_version >= 2 {
+        basis.text(
+            format!("{prefix}.source-structure"),
+            parts.structure.canonical_token(),
+        );
+    }
     basis.text(format!("{prefix}.entity"), &parts.entity);
     for (name, value) in parts.source.binding.canonical_fields() {
         basis.text(format!("{prefix}.source.{name}"), value);

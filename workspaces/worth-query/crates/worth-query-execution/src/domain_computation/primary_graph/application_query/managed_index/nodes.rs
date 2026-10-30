@@ -2,7 +2,9 @@
 use super::{WorthQueryManagedIndexControl, WorthQueryManagedIndexStop as Stop};
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
 use std::{cell::Cell, sync::Arc};
-use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_execution::{
+    ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
+};
 mod lineage;
 mod pages;
 use lineage::NodeLineage;
@@ -11,8 +13,8 @@ use pages::NodePages;
 /// A node coordinate issued by one genuine provider-build session.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryManagedIndexNodeId {
-    owner: WorthQueryGraphWorkSessionIdentity,
-    ordinal: usize,
+    pub(super) owner: WorthQueryGraphWorkSessionIdentity,
+    pub(super) ordinal: usize,
 }
 
 /// Mutable finite build storage. Only the initialized prefix can be sealed.
@@ -24,6 +26,7 @@ pub struct WorthQueryManagedIndexNodeWriter<'a, Node: Copy> {
     live: usize,
     capacity: usize,
     source_count: usize,
+    changed: Option<ExecutionOrderedMap<usize, ()>>,
     control: &'a WorthQueryManagedIndexControl<'a>,
 }
 
@@ -43,6 +46,7 @@ pub struct WorthQueryManagedIndexNodes<Node> {
     frontier: usize,
     live: usize,
     root: Option<WorthQueryManagedIndexNodeId>,
+    changed: Option<ExecutionOrderedMap<usize, ()>>,
 }
 
 impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
@@ -73,6 +77,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
             live: 0,
             capacity,
             source_count,
+            changed: None,
             control,
         })
     }
@@ -124,7 +129,17 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
         self.control.poll()
     }
 
+    pub(super) fn track_changes(&mut self) {
+        self.changed = Some(ExecutionOrderedMap::default());
+    }
+
     fn write(&mut self, ordinal: usize, value: Option<Node>) -> Result<(), Stop> {
+        if let Some(changed) = &mut self.changed {
+            let Writing::Edit { request, .. } = &self.storage else {
+                unreachable!("only retained edits track changed coordinates");
+            };
+            super::source_structure::record_change(changed, ordinal, request, self.control)?;
+        }
         match &mut self.storage {
             Writing::Build(scratch) => {
                 let cell = scratch
@@ -176,11 +191,26 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
             frontier: self.written,
             live: self.live,
             root,
+            changed: self.changed,
         })
     }
 }
 
 impl<Node: Copy> WorthQueryManagedIndexNodes<Node> {
+    pub(super) fn frontier(&self) -> usize {
+        self.frontier
+    }
+    pub(super) fn node_at_ordinal(
+        &self,
+        ordinal: usize,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Option<&Node>, Stop> {
+        self.pages.get(ordinal, control)
+    }
+    pub(super) fn take_changes(&mut self) -> Option<ExecutionOrderedMap<usize, ()>> {
+        self.changed.take()
+    }
+
     pub fn len(&self) -> usize {
         self.live
     }
@@ -228,6 +258,7 @@ impl<Node: Copy> WorthQueryManagedIndexNodes<Node> {
             live: self.live,
             capacity,
             source_count,
+            changed: None,
             control,
         })
     }

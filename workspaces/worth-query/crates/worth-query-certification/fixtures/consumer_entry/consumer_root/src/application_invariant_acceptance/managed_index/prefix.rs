@@ -12,6 +12,8 @@ use worth_query_host::facade::primary_graph::*;
 
 #[path = "prefix/storage.rs"]
 mod storage;
+#[path = "prefix/structure.rs"]
+pub(super) mod structure;
 pub struct PrefixIndex;
 // compiled-example: begin
 impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
@@ -21,12 +23,16 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
 }
 // compiled-example: end
 pub type Node = PrefixNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
 pub type Stop = WorthQueryManagedIndexProviderStop<PrefixIndexDenial>;
 #[derive(Default)]
 pub struct Calls {
+    #[cfg(test)]
+    pub(super) structure_fault: Mutex<structure::Fault>,
     pub capacity: AtomicUsize,
     pub builds: AtomicUsize,
     pub queries: AtomicUsize,
@@ -47,6 +53,14 @@ impl Calls {
 }
 pub struct Provider(pub Arc<Calls>);
 impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
+    fn decompose(
+        &self,
+        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        node: Node,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
+        structure::describe(&self.0, sources, node, control)
+    }
     type Node = Node;
     type Denial = PrefixIndexDenial;
     const IDENTITY: &'static str = PrefixIndex::PROVIDER;
@@ -86,6 +100,10 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
             );
         }
         self.0.canonical_rows.store(sources.len(), Ordering::SeqCst);
+        #[cfg(test)]
+        if *self.0.structure_fault.lock().unwrap() == structure::Fault::DisconnectedCycle {
+            return structure::cyclic_sources(sources, nodes);
+        }
         let mut storage = storage::Build {
             sources,
             nodes,

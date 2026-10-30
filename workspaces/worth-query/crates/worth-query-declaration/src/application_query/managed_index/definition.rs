@@ -9,6 +9,7 @@ pub enum ApplicationManagedIndexDefinitionDenial {
     UnsupportedVersion { observed: u16 },
     InvalidIdentifier,
     UnsupportedProbeProfile,
+    UnsupportedSourceStructure,
     UnsupportedSourcePosture,
     UnsupportedSourceShape,
     SourceDependencyCycle,
@@ -27,6 +28,7 @@ pub struct WorthQueryPortableManagedIndexParts {
     pub name: String,
     pub provider: String,
     pub provider_version: u32,
+    pub structure: super::ApplicationManagedIndexSourceStructure,
     pub source: super::ApplicationManagedIndexSourceMeaning,
     pub entity: String,
     pub probe: ApplicationManagedIndexProbeMeaning,
@@ -34,13 +36,13 @@ pub struct WorthQueryPortableManagedIndexParts {
 
 /// A deterministic provider with canonical-source candidate ordering, complete
 /// source dependencies, same-admitted-scope/no-source-parameter correspondence
-/// and reconstruction from Public committed sources. Version1 fixes these policies.
+/// and reconstruction from Public committed sources. V1 is Opaque; v2 binds structure.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ErasedApplicationManagedIndexDefinition {
     parts: WorthQueryPortableManagedIndexParts,
 }
 impl ErasedApplicationManagedIndexDefinition {
-    pub const CURRENT_VERSION: u16 = 1;
+    pub const CURRENT_VERSION: u16 = 2;
 
     pub fn from_untrusted_parts(parts: WorthQueryPortableManagedIndexParts) -> Self {
         Self { parts }
@@ -69,6 +71,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
                     name: I::NAME.to_owned(),
                     provider: I::PROVIDER.to_owned(),
                     provider_version: I::PROVIDER_VERSION,
+                    structure: I::STRUCTURE,
                     source:
                         super::ApplicationManagedIndexSourceMeaning::same_scope_without_parameters(
                             ApplicationQueryBindingReference::of::<S, I::SourceBinding>(),
