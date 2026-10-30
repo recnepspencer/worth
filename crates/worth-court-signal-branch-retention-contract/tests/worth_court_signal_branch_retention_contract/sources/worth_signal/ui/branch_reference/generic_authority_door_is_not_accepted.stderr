@@ -5,7 +5,7 @@ error[E0308]: mismatched types
   |                 ---- found this type parameter
 ...
 7 |     let _owner_authority: SignalBranchBasisAuthority = authority;
-  |                           --------------------------   ^^^^^^^^^ expected `AuthorityWitness<...>`, found `AuthorityWitness<Auth>`
+  |                           --------------------------   ^^^^^^^^^ expected `AuthorityWitness<_>`, found `AuthorityWitness<Auth>`
   |                           |
   |                           expected due to this
   |

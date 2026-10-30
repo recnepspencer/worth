@@ -3,6 +3,11 @@ error[E0432]: unresolved import `worth_runtime_world::facade::ProductBranchRefer
   |
 1 | use worth_runtime_world::facade::ProductBranchReferenceCell;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^--------------------------
-  |     |                            |
-  |     |                            help: a similar name exists in the module: `ProductBranchReferenceSnapshot`
-  |     no `ProductBranchReferenceCell` in `facade`
+  |                                  |
+  |                                  no `ProductBranchReferenceCell` in `facade`
+  |
+help: a similar name exists in the module
+  |
+1 - use worth_runtime_world::facade::ProductBranchReferenceCell;
+1 + use worth_runtime_world::facade::ProductBranchReferenceSnapshot;
+  |

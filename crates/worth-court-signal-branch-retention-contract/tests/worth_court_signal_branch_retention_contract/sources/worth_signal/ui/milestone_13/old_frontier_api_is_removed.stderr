@@ -1,4 +1,4 @@
-error[E0433]: failed to resolve: could not find `FrontierPredictedCounters` in `surface`
+error[E0433]: cannot find `FrontierPredictedCounters` in `surface`
  --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/old_frontier_api_is_removed.rs:4:22
   |
 4 |     let _ = surface::FrontierPredictedCounters::default();
