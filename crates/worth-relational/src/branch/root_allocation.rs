@@ -1,5 +1,9 @@
 use super::RelationalBranchRoot;
 
+#[cfg(test)]
+#[path = "root_allocation_tests.rs"]
+mod tests;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum RelationalRootAuthoritativeAllocationKind {
     RootMetadata,
@@ -23,7 +27,9 @@ impl RelationalBranchRoot {
     ) -> Vec<RelationalRootAuthoritativeAllocationObservation> {
         let mut observations = vec![RelationalRootAuthoritativeAllocationObservation {
             kind: RelationalRootAuthoritativeAllocationKind::RootMetadata,
-            owner_id: self.id,
+            // The borrowed root remains alive during inspection. Readmission
+            // can preserve its semantic id in a different physical allocation.
+            owner_id: self as *const Self as usize as u64,
             authoritative_bytes: std::mem::size_of::<Self>() as u64,
         }];
         observations.push(RelationalRootAuthoritativeAllocationObservation {

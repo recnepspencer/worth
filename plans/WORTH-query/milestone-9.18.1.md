@@ -1917,7 +1917,10 @@ not a total held-history byte measurement. Summing successive head observations
 double-counts shared allocations and is not retained-history evidence. If a
 missing observation is needed, the actual retention/root owners supply a
 read-only diagnostic inventory using their existing allocation locators and
-deduplication. It must not become a second ledger or an ordinary publication
+deduplication. Root metadata locators identify physical allocations, including
+distinct readmissions that preserve one semantic root id; semantic identity
+does not authorize allocation deduplication. Version the inspection contract
+when correcting its locator meaning. It must not become a second ledger or an ordinary publication
 pre-admission requirement. Charged request allocation, copied-byte counters and
 owner-reported retained allocations keep their distinct meanings and exclusions.
 

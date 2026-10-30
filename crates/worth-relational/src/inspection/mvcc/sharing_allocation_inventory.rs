@@ -84,9 +84,12 @@ impl RelationalAuthoritativeAllocationLocator {
         self.kind
     }
 
-    /// Owner-issued id of the allocation itself: a region id for
-    /// region-scoped kinds, a root allocation id for root-scoped kinds, and a
-    /// commit id for canonical-commit kinds.
+    /// Diagnostic identity of the allocation itself: a region id for
+    /// region-scoped kinds, a physical allocation identity for root-scoped
+    /// kinds, and a commit id for canonical-commit kinds. RootMetadata uses
+    /// the retained object's process-local address, not its semantic root id.
+    /// Identities compare live allocations within one runtime inspection;
+    /// they grant no durable reconstruction, currentness or adoption authority.
     ///
     /// Truth source: the owning root, region, or commit artifact.
     pub const fn owner_id(self) -> u64 {
