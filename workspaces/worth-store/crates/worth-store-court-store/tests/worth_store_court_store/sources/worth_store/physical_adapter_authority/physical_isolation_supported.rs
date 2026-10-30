@@ -2,6 +2,10 @@ use worth_store::physical_runtime::{
     PhysicalRecordChunkView, PhysicalRecordPressureEvidence, PhysicalResidencyRetryPosture,
 };
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer/type projection witness; the complete signature and body are checked without fabricating owner-issued validated inputs"
+)]
 fn observe_stable_read_inputs(
     view: &PhysicalRecordChunkView<'_>,
     pressure: Option<&PhysicalRecordPressureEvidence>,
@@ -24,7 +28,15 @@ fn observe_stable_read_inputs(
     }
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer/type projection witness; the complete signature and body are checked without fabricating owner-issued validated inputs"
+)]
 fn observe<A, B, C, D>(_: A, _: B, _: C, _: D) {}
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer/type projection witness; the complete signature and body are checked without fabricating owner-issued validated inputs"
+)]
 fn observe_pressure<A, B, C, D>(_: A, _: B, _: C, _: D) {}
 
 pub(crate) fn main() {}

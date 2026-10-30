@@ -6,6 +6,10 @@ use worth_store::physical_runtime::{
     PhysicalSpeculativeWorkKind,
 };
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer/type projection witness; the complete signature and body are checked without fabricating owner-issued validated inputs"
+)]
 fn admit_successor_scopes(
     format: AdmittedPhysicalRecordFormat,
 ) -> AdmittedPhysicalRecordResidencyPolicy {
