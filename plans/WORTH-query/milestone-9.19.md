@@ -697,9 +697,23 @@ Warmed final runtime shutdown balances all physical owners; it does not claim
 successful adoption or Native rollback. All 31 public managed-index controls pass.
 See [the Source interference slice](milestone-9.19-phase2-source-interference-plan.md).
 Adoption across an independent Signal winner remains an unfinished owner contract.
-Cancellation after successful World movement, remaining hostile controls and
-whole-path growth remain open. These process-local courts do not qualify
-crash/network persistence.
+Cancellation after successful World movement is now qualified through a scoped
+one-shot observer of the actual performed result, outside World cutover locks.
+Cancelling the original suspension request there preserves the performed suspended
+output and its reconstruction custody across Query's final request poll. After
+real unpublished endpoint-20 restoration, cancelling a fresh adoption request
+only after its World CAS returns exact RecoveryHandoff with published-settlement
+custody. Fresh current Source/Parent answers already contain 20; the original
+recovery record remains until fresh continuation completes cleanup. That
+continuation preserves the exact published World head, provider build/update
+counts and both scope rule records. Fresh retained ordinary Source still answers
+original 10. The observer's opaque captures close outside its slot lock, and an
+old registration guard cannot disarm its replacement. Both focused controls,
+all 32 public managed-index controls and warmed exact final-owner balance pass.
+See [the late-cancellation slice](milestone-9.19-phase2-late-cancellation-plan.md).
+This does not retime World's frozen cancellation sampling or prove cancellation
+inside the atomic swap. Remaining hostile controls and whole-path growth remain
+open. These process-local courts do not qualify crash/network persistence.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication

@@ -13,9 +13,13 @@ use std::time::Duration;
 mod currentness_hold;
 pub(crate) use currentness_hold::ProductCurrentnessLatchForTest;
 pub use currentness_hold::RuntimeWorldProductCurrentnessPauseForTest;
+#[path = "operation_control/performed_publication.rs"]
+mod performed_publication;
+pub use performed_publication::RuntimeWorldPerformedPublicationObservationForTest;
 
 #[derive(Clone, Default)]
 pub struct RuntimeWorldOperationControlForTest {
+    performed_publication: Arc<performed_publication::PerformedPublicationSlot>,
     pending_product_compare: Arc<ProductCompareSlot>,
     pending_currentness: Arc<ProductCurrentnessSlot>,
 }
