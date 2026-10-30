@@ -1,5 +1,5 @@
 mod admission_fault_interposition;
-mod allocation_probe;
+pub(super) mod allocation_probe;
 mod arena_range_write;
 mod artifact_directory_listing;
 mod artifact_metadata_read;

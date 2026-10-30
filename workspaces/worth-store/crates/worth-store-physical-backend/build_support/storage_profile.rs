@@ -38,8 +38,10 @@ pub fn is_supported(compiler: &str, inputs: &[(&str, String)], lock: &str) -> bo
             .map(|(_, value)| value.as_str())
             .unwrap_or("")
     };
-    compiler == "rustc 1.94.0 (4a4ef493e 2026-03-02)"
-        && value("TARGET") == "x86_64-pc-windows-msvc"
+    matches!(
+        compiler,
+        "rustc 1.94.0 (4a4ef493e 2026-03-02)" | "rustc 1.99.1 (58cf8f9c3 2026-10-13)"
+    ) && value("TARGET") == "x86_64-pc-windows-msvc"
         && value("CARGO_CFG_TARGET_OS") == "windows"
         && value("CARGO_CFG_TARGET_POINTER_WIDTH") == "64"
         && approved_flags(value("CARGO_ENCODED_RUSTFLAGS"))
@@ -180,6 +182,16 @@ mod tests {
         ];
         let lock = lock();
         assert!(is_supported(COMPILER, &inputs, &lock));
+        assert!(is_supported(
+            "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+            &inputs,
+            &lock
+        ));
+        assert!(!is_supported(
+            "rustc 1.99.1 (different 2026-10-13)",
+            &inputs,
+            &lock
+        ));
         for variable in &PROFILE_INPUTS[..4] {
             inputs.push((variable, "injected".into()));
             assert!(!is_supported(COMPILER, &inputs, &lock));
