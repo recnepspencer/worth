@@ -192,7 +192,7 @@ fn box_scope(input: FindBoxes) -> String {
 worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog, identity "maintained-geometry.source-binding.v1", input SourceInputBinding,
     query SourceQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value source_scope, limits results 4096);
+    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value source_scope, limits results 100000);
 worth_query_query_binding!(pub BoxBinding for FindBoxes, schema Catalog, identity "maintained-geometry.box-binding.v1", input BoxInputBinding,
     query BoxQuery, parameters ParametersBinding => |input:&FindBoxes| ApplicationQueryParameterSet::new().bind(probe(),input.probe).unwrap(), result ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,

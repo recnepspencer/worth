@@ -109,12 +109,15 @@ unbilled work or whole-population traversal at their responsible owners.
    [the registration slice](milestone-9.19-phase2-index-registration-plan.md).
    Managed indexes no longer participate in late publication scans or mixed-owner
    lookup scans; unrelated derived views retain their existing owner.
-4. Qualify the actual 1,000/2,000 chain, 50,000 unrelated geometry and independently
-   retained-query axes through the real public path and original SDK invoice.
-5. Audit the Phase 2 required receiver/failure/lifecycle twins against concrete
-   existing courts; implement any missing required twin, then run final scoped
-   gates and record the evidence. Do not count local algorithm tests as whole-path
-   evidence or mark required hardening optional after a working path exists.
+4. Whole-path geometry growth: qualified by the actual 1,000/2,000 chain and
+   50,000 genuine unrelated enclosures in both Sources, with original SDK invoices
+   and unchanged bounds. See [growth evidence](milestone-9.19-phase2-geometry-growth-plan.md).
+   The independently retained-predicate axis remains required in Phase 3's actual
+   live-routing lane; one-shot outputs do not register live predicates.
+5. The independent finite receiver/failure/lifecycle audit found the required
+   hostile/twin boundaries covered by 35 public controls plus the earlier exact
+   Native/Proof owner evidence. The growth plan maps those boundaries and preserves
+   current qualifications. No required hardening is made optional.
 
 Cross-Signal recovery adoption is an explicit current limitation, separately
 recorded by the interference court. It is not silently added to Phase 2 unless

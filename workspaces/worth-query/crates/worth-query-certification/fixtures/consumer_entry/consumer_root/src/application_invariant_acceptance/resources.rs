@@ -25,6 +25,12 @@ pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     );
 
 pub(super) fn world_resources() -> WorthQueryProductWorldResources {
+    world_resources_with_policy(EXECUTION_POLICY)
+}
+
+fn world_resources_with_policy(
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -54,15 +60,21 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
         },
         WorthQueryProductWorldClock::start(),
         WorthQueryInvalidationResources::new(),
-        EXECUTION_POLICY,
+        policy,
     )
     .expect("the consumer's finite World resources are valid")
 }
 
 pub(super) fn application_limits(
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    application_limits_with_policy(EXECUTION_POLICY)
+}
+
+pub(super) fn application_limits_with_policy(
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
-        world_resources(),
+        world_resources_with_policy(policy),
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
         ),

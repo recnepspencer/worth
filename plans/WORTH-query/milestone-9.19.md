@@ -1,6 +1,6 @@
 # Milestone 9.19: Managed Advanced Access And Verified Footprints
 
-> **Status:** In progress. Phase 1 complete; Phases 2–6 unfinished.
+> **Status:** In progress. Phases 1–2 complete; Phases 3–6 unfinished.
 > **Scope revised 2026-10-27:** the general managed derived-index extension owns
 > the spatial-index finding formerly assigned to 9.18.1 Phase 12 and the dependent
 > CAD locality qualification from Phase 15. Proprietary cutover is the final phase.
@@ -743,12 +743,23 @@ SDK invoices beside 8/16/32 registrations have equal doubling increments under
 declared headroom. The focused memory control, 39 derived-view owner controls and
 all 35 public managed-index controls pass. See [the registration slice](milestone-9.19-phase2-index-registration-plan.md).
 This does not retime World's frozen cancellation sampling or prove cancellation
-inside the atomic swap. Remaining hostile controls and whole-path growth remain
-open. These process-local courts do not qualify crash/network persistence.
-Remaining lifecycle/affinity hostile controls, materialization/recovery composition
-and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
-cannot substitute for Source acquisition, reverse-scope discovery, publication
-and final-owner release across that path.
+inside the atomic swap. The finite Phase 2 receiver/lifecycle audit is qualified by
+the existing public and Native/Proof controls, including actual generated Source
+suspension, reconstruction, both-direction cancellation and publication custody.
+The real 1,000/2,000 chain and 50,000-unrelated-enclosure court now passes through
+installed actions and complete independent Source census in both affected scopes.
+Original SDK refusal invoices are 1,347,502 / 1,347,952 / 1,356,036; commit invoices
+are 1,428,663 / 1,436,444 / 1,483,040. The predeclared doubling, unrelated-population
+and incremental headroom bounds pass without rebuild or changed probe density.
+The Native admission prerequisite removes repeated actual registry lookups within
+the same immutable source/audience; it does not discount work still performed.
+See [growth qualification and finite audit](milestone-9.19-phase2-geometry-growth-plan.md)
+and [Native admission evidence](milestone-9.19-phase2-derived-admission-plan.md).
+Retained managed Parent execution still refuses UnsupportedMode; ordinary retained
+Source reads use current security. A competing Signal successor leaves genuine
+loser custody with typed StaleOccurrence. These process-local courts do not qualify
+crash/network/private CAD. Actual retained-predicate routing and complete access
+coverage remain Phase 3 requirements, not claims from retained decoded results.
 
 #### Explicit Source And Scope Association
 

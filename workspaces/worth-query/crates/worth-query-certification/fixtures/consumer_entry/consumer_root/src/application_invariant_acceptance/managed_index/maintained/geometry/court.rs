@@ -20,6 +20,7 @@ mod affinity;
 mod cancellation;
 mod close;
 mod cold;
+mod growth;
 mod rebuild;
 mod rewiring;
 type Principal = WorthQueryAuthenticatedExternalPrincipal<Catalog>;

@@ -5612,6 +5612,16 @@ its integer unit/frame binding and delegates validation and enclosure union to
 its numerical owner. The [geometry composition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry.rs)
 uses this path with the same provider installation and both reader entrances.
 
+The [whole-path growth court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth.rs)
+authors 1,000/2,000-vertex chains and 50,000 genuine remote enclosures through
+installed actions. Both affected directories contain the remote geometry; the
+edited vertex keeps degree two and the fixed probe keeps sparse output. Complete
+ordinary Source reads are checked against authored coordinates outside measured
+work. Original SDK invoices include Source acquisition, reverse-scope discovery,
+provider updates, rules and publication. Cold setup is admitted and invoiced
+separately; unchanged warm roots are never rebuilt. Retaining a one-shot response
+does not register a live predicate or qualify later retained-query routing.
+
 A branch created through `ForkExact` attaches the selected immutable managed
 Source under a fresh Native association for that branch. Subsequent edits on
 either sibling maintain their own image. `ReuseExact` continues reading the

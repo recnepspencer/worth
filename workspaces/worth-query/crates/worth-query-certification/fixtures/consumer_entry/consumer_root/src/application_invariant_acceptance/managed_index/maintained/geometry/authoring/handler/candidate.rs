@@ -7,6 +7,15 @@ pub(super) fn apply(
     writer: &mut CandidateWriter<'_, Catalog, Binding>,
 ) -> Result<(), HandlerExecutionDenial> {
     match (edit, decision) {
+        (
+            Edit::Chain { .. },
+            Decision::Chain {
+                directory,
+                shared_directory,
+            },
+        ) => {
+            super::chain::apply(edit, directory, shared_directory, writer)?;
+        }
         (Edit::Vertex { identity, x, y, .. }, Decision::Vertex(context)) => {
             let context = writer
                 .projected_entity(&context)

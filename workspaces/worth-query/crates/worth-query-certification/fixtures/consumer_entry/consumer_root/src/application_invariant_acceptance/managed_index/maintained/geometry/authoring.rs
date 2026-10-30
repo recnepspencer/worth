@@ -8,6 +8,13 @@ mod handler;
 pub(super) use handler::Handler;
 #[derive(Clone, Debug, serde::Serialize)]
 pub enum Edit {
+    Chain {
+        directory: String,
+        shared_directory: Option<String>,
+        prefix: String,
+        vertices: u32,
+        origin: i64,
+    },
     Vertex {
         directory: String,
         identity: String,
@@ -44,6 +51,7 @@ impl Edit {
     pub fn directory(&self) -> &str {
         match self {
             Self::Vertex { directory, .. }
+            | Self::Chain { directory, .. }
             | Self::Edge { directory, .. }
             | Self::Move { directory, .. }
             | Self::Share { directory, .. }
@@ -58,6 +66,10 @@ pub struct Changed;
 pub enum Denial {}
 type Target<T> = WorthQueryInvariantMutationTarget<Catalog, T>;
 pub enum Decision {
+    Chain {
+        directory: Target<Directory>,
+        shared_directory: Option<Target<Directory>>,
+    },
     Vertex(Target<Directory>),
     Edge {
         directory: Target<Directory>,

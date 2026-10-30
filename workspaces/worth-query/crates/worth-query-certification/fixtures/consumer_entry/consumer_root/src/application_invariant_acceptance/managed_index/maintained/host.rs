@@ -138,23 +138,64 @@ fn install_configured(
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
 ) -> Host {
-    let world = install_root(prefix, Arc::clone(&rules), decision_read, geometry);
+    install_configured_with_limits(
+        prefix,
+        rules,
+        decision_read,
+        geometry,
+        super::super::super::resources::application_limits(),
+    )
+}
+
+fn install_configured_with_limits(
+    prefix: Arc<prefix::Calls>,
+    rules: Arc<rule::Calls>,
+    decision_read: DecisionRead,
+    geometry: geometry::Configuration,
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> Host {
+    let world = install_root(prefix, Arc::clone(&rules), decision_read, geometry, limits);
     authoring::populate(&world, &rules);
     rules.records.lock().unwrap().clear();
     world
 }
+#[cfg(test)]
+pub(super) fn install_geometry_growth(
+    prefix: Arc<prefix::Calls>,
+    rules: Arc<rule::Calls>,
+    geometry: geometry::Configuration,
+) -> Host {
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(20_000_000_000),
+        ),
+    );
+    install_configured_with_limits(
+        prefix,
+        rules,
+        DecisionRead::Declared,
+        geometry,
+        super::super::super::resources::application_limits_with_policy(policy),
+    )
+}
+
 fn install_root(
     prefix: Arc<prefix::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
+    limits: WorthQueryInMemoryApplicationLimits,
 ) -> Host {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin().with_schema(&declaration).validated_program().unwrap(),
         declaration, (Configuration { prefix, rules, decision_read, geometry },),
         ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191919").unwrap(),
-        super::super::super::resources::application_limits(),
+        limits,
         |_, graph, installed| {
             graph.bind_principal(&installed.principal_binding(CatalogPrincipal::reference()).unwrap(),
                 WorthQueryApplicationPrincipalKey::new("catalog-reader").unwrap(), 1u64,

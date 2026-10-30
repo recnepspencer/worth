@@ -188,6 +188,18 @@ Query's persistent per-entry dependency postings cover scalar/lifecycle reads;
 Native supplies complete reverse scope closure from actual before/after changes.
 Neither public sessions nor a caller's initiating scope define that closure.
 
+Successful static derived-path admission is memoized only within the exact
+structural view's immutable source/schema custody and access roster. Cache hits
+still check original liveness and pay fixed pointer probes; rebinding clears the
+inline cache, and full capacity takes the ordinary registry/audience gate. The
+evaluator reuses this admission only for that same actual registry. Prepared
+observation, proposal, root, shape and consumer checks remain unchanged.
+The [public growth court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth.rs)
+qualifies whole original-request Source/scope/update work with real 1,000/2,000
+chains and 50,000 unrelated enclosures in both scopes, holding edit incidence and
+probe output fixed. This is public geometry evidence; actual CAD adoption and
+retained live-predicate routing remain their later milestone phases.
+
 Direct endpoint projections add schema-owned Native routes from each Source row
 to its projected entity. Lifecycle, scalar and adjacency effects pull back on
 both images through these routes and then through Source membership to scopes.

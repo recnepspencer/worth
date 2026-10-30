@@ -5,6 +5,7 @@ use std::sync::Arc;
 type Reader<'borrow, 'reader, 'runtime> =
     DecisionReader<'borrow, 'reader, 'runtime, Catalog, Binding>;
 mod candidate;
+mod chain;
 pub struct Handler(pub Arc<provider::Calls>);
 
 impl OperationHandler<Catalog, Binding> for Handler {
@@ -27,6 +28,17 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 *self.0.last_decision.lock().unwrap() = Some(rows);
             }
             match edit {
+                Edit::Chain {
+                    directory,
+                    shared_directory,
+                    ..
+                } => Ok(Decision::Chain {
+                    directory: directory_target(reader, directory)?,
+                    shared_directory: shared_directory
+                        .as_deref()
+                        .map(|key| directory_target(reader, key))
+                        .transpose()?,
+                }),
                 Edit::Vertex { directory, .. } => {
                     Ok(Decision::Vertex(directory_target(reader, directory)?))
                 }
