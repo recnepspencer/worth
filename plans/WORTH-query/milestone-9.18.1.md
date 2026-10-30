@@ -1806,31 +1806,110 @@ graph phases' existing tests. It is not a 9.18.1 closure dependency.
 ## Phase 16: Cell-Version Storage And Live-At-k Qualification
 
 **Status: unfinished; required. Priority: P3.**
-**Owner:** Relational + Query, with Proprietary CAD Acceptance 8.
-**Depends on:** real cell-bearing publication and the accepted history reader.
+**Owner:** Relational + Query, certified through public application courts.
+**Depends on:** real cell-bearing publication and genuine retained history custody.
 This phase qualifies cell-version storage and history reads independently of the
 transferred index work. Spatial-dependent integrated locality is rechecked in
 9.19's final Proprietary phase and is not a prerequisite for this phase's closure.
 
-### Requirements And Acceptance
+### Public Certification Boundary
 
-Measure entities, relations and retained bytes per cell version, versions made
-per local edit, and real `live_at(k)` query work at 1, 100 and 10,000 features.
-Separate authoritative version records, retained history, derived/index storage,
-transient/peak allocation and returned live cells. Vary history length and live
-body size independently; compare warm local edits, cold reconstruction and
-historical reads without charging one lane to another or omitting setup work.
+Public Decl/Host application tests and Native owner observations must be
+sufficient to certify the storage and history behavior. No private source,
+SDK pin, CAD acceptance-document edit or private build is a closure gate for
+this phase. This qualification does not claim CAD geometry validity or private
+adoption. Spatial-dependent integrated CAD locality remains in 9.19.
 
-Use installed cell-bearing publications and actual platform observations, with
-an independently authored live-cell reference. State the expected growth class
-before measuring and report observed results in the existing CAD acceptance
-document, with the named workload and environment. Repeated whole-body copies
-for local edits, hidden full-history rebuilds in the ordinary edit lane, or a
-failure of CAD Acceptance 8 must be fixed at the responsible platform owner.
-Output-sized historical materialization is reported honestly; no arbitrary
-constant-time live-history claim or fitted exact-count golden is required.
-No private packed store, second version table or replacement cost ledger may
-stand in for this acceptance.
+The public model declares actual Feature and Cell entities and Feature-to-Cell
+ownership. Ordinary program-owned edits publish cell changes through existing
+Query/Relational authority. Native MVCC owns their publication versions; do not
+introduce an application CellVersion table, copied body images or an alternate
+currentness registry to manufacture the measured behavior. Authored fixture
+values are valid domain inputs, not fabricated runtime identities or versions.
+
+`k` is the ordinal of a completed application feature step. Select its genuine
+retained read observation or original commit receipt through a fresh ordinary
+request. Numeric commit arithmetic, a current-head query labeled historical,
+or a fixture-local reconstruction cannot implement `live_at(k)`. Domain
+feature history and Native commit history are distinct scale/identity axes.
+The independent reference specifies complete live cells and values, including
+untouched cells, replacement and retirement; it must not call the production
+history traversal to compute its expected answer. Preserve actual issued cell
+occurrences when an edit changes a field of a long-lived cell.
+
+### Workload, Cost Boundaries And Acceptance
+
+Measure entities, relations and retained bytes per cell publication version,
+versions made per local edit, and actual historical query work at 1, 100 and
+10,000 feature steps. Independently vary retained history length and live body
+size, including long history with a small live body and a large body with short
+history. Declare which feature/cell population each workload changes.
+
+State the expected growth class before measuring. A local edit must scale with
+its affected cells and the Native persistent-path/physical granule, rather than
+copying every live cell or rebuilding all history. Historical materialization
+may scale with the returned cells and the actual owner traversal; report that
+work rather than requiring constant-time output or fitting exact-count goldens.
+
+Separate setup, warm local publication, historical read/materialization, cold
+checkpoint reconstruction and diagnostic allocation inspection. Report their
+elapsed distributions, repetitions, workload, compiler, runtime policy and
+machine environment in the run output. Run small functional cases ordinarily;
+place timing and scale qualification under the existing `cost` category and
+schedule the maximum-scale cases. Setup and cold work remain measured even when
+excluded from warm-edit results.
+
+Separate current authoritative storage, held historical roots/artifacts,
+derived/index storage, reclaimable queued storage, transient/peak allocation and
+returned live cells. Existing branch-sharing observations select current branch
+roots; Query's certification cost adds work and World history/retention counters,
+not a total held-history byte measurement. Summing successive head observations
+double-counts shared allocations and is not retained-history evidence. If a
+missing observation is needed, the actual retention/root owners supply a
+read-only diagnostic inventory using their existing allocation locators and
+deduplication. It must not become a second ledger or an ordinary publication
+pre-admission requirement. Charged request allocation, copied-byte counters and
+owner-reported retained allocations keep their distinct meanings and exclusions.
+
+The decisive public sequence retains an early feature-step basis, performs
+later local edits, reads both old and current cells, and compares independently
+specified complete answers. Include a foreign-feature edit refusal with no
+state/head movement and a lawful twin; a same-key retry must return its actual
+native recovered outcome without moving the current head back. Replacement,
+retirement, genuine checkpoint reconstruction and the independent scale matrix
+remain required even when the initial field-edit court passes. Fix any exposed
+copy/rebuild defect at the responsible platform owner. No private packed store
+or replacement cost ledger may stand in for this acceptance.
+
+### Destination And Evidence Ownership
+
+```text
+workspaces/worth-query/crates/worth-query-certification/tests/
+  application_graph.rs                         # existing grouped target
+  application_graph/cell_history.rs            # public functional courtroom
+  application_graph/cell_history/
+    schema.rs                                  # cell/feature meaning
+    edit.rs                                    # ordinary observed cell mutation
+    query.rs                                   # selected-basis live-cell projection
+    host.rs                                    # real installation and seed truth
+    live_at.rs                                 # fresh requests and original custody
+    cost/                                      # successor: independent scale axes
+    reconstruction/                            # successor: genuine checkpoint recovery
+crates/worth-relational/src/
+  history/retention/                            # existing historical root authority
+  inspection/mvcc/                             # existing read-only allocation observations
+```
+
+Populate successor children only with their implementation. The application
+model imports Decl/Host only; certification observations stay in the grouped
+court audience. A Native observation extension remains behind the Relational
+inspection facade. Do not move cell truth into Replay, expose root authority in
+diagnostics, flatten future cost/reconstruction work into the functional court,
+or create a separate build target, implementation journal or evidence ledger.
+Consumer documentation in `docs/build-an-application.md` and
+`docs/capability-index.md` must teach real retained-selection and cost-scope
+behavior when that behavior is qualified; it contains no phase history or
+private handoff instructions. Public run output supplies measured results.
 
 ---
 
@@ -2550,9 +2629,10 @@ shows the same calls with original receipts and retained endpoint observations.
   `cad/docs/plans/platform-gaps.md`, `query-9.18.1-adoption.md` beside it, and the
   existing general-modeling Acceptance 8 sections with actual adoption
   and measurements; a public platform court alone does not assert private closure.
-  Phase 17's public-only certification boundary is explicit: its proposal recipe
-  and failure matrix close through public Decl/Host tests and public gates.
-  It requires no private documentation edit or private adoption certificate.
+  Phases 16 and 17 have explicit public-only certification boundaries: their
+  cell-history qualification and proposal recipe close through public Decl/Host
+  tests, actual owner observations and public gates. Neither requires a private
+  documentation edit or private adoption certificate.
 
 QA must review real receipt acquisition and request authority, exact source/product
 binding, disclosure and metadata leakage, refused-progress/close custody, retained
@@ -2572,8 +2652,8 @@ specification change checks links, scope and path claims without compiling runti
   is proved through the current two-facade public composition and grouped courts.
   No added finding is satisfied by a raw re-export, a future-work note or an old
   lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
-  The retained Proprietary findings include storage qualification and
-  mandatory current Rust qualification, plus P1 consecutive source undo after
+  The retained Proprietary findings include mandatory current Rust
+  qualification, plus P1 consecutive source undo after
   verified reversal/restoration. 9.19 owns the general index extension,
   both index readers and their final private locality cutover. Phase numbering
   does not impose serial execution:
@@ -2582,8 +2662,9 @@ specification change checks links, scope and path claims without compiling runti
   update, with its workarounds deleted.
 - Platform certification alone is platform evidence. The Proprietary adoption
   gate stays open until the private build passes.
-- Phase 17 is certified entirely by its public application/owner courts, public
-  documentation and public gates. Its completion requires no private repository
+- Phases 16 and 17 require certification entirely by their public
+  application/owner courts, public documentation and public gates. Their
+  completion requires no private repository
   edit, SDK pin or private build. This exception does not waive another phase's
   expressly retained Proprietary requirement or assert private integration.
 - Each implementation commit runs:

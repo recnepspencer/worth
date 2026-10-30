@@ -5822,8 +5822,12 @@ domain-neutral and reached through Query declarations and ordinary governed
 requests, never through raw runtime handles or receipt-reconstructed authority.
 The retained follow-through adds honest failure causes, measured
 cell-version/history cost, public proposal acceptance and current stable Rust
-qualification. Phase 17 is certified at the public application boundary without
-requiring private adoption. The general index extension and spatial-dependent locality are
+qualification. Phase 17 is certified at the public application boundary; Phase 16
+requires that same public-only certification boundary. Neither requires private
+adoption. Cell-history qualification selects genuine
+retained feature-step custody, varies history and live body size independently,
+and distinguishes head-only bytes from held-history allocations. The general
+index extension and spatial-dependent locality are
 governed by 9.19 with its final integrated private cutover.
 P1 correction follow-through makes an earlier source reversible again once all
 later overlapping occurrences have been genuinely reversed; live or reapplied

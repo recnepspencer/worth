@@ -29,6 +29,8 @@ mod canonical_identity;
 mod canonical_transition;
 #[path = "application_graph/canonical_value.rs"]
 mod canonical_value;
+#[path = "application_graph/cell_history.rs"]
+mod cell_history;
 #[path = "application_graph/correction.rs"]
 mod correction;
 #[path = "application_graph/document_retention_model.rs"]
