@@ -35,6 +35,10 @@ pub fn first_page(
             .installed_schema()
             .installed_query_binding::<query::PageBinding>()
             .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
+        runtime
+            .resolve_application_query_limits(binding.limits())
+            .narrow(NonZeroUsize::MIN)
+            .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?;
         let selected = runtime
             .on_branch(host.program.current_world())
             .select(&phase)
